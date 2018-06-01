@@ -1276,6 +1276,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
+  @deprecated("Use `new WrappedString(s).diff(...).self` instead of `s.diff(...)`", "2.13.0")
   def diff(that: Seq[_ >: Char]): String = new WrappedString(s).diff(that).self
 
   /** Computes the multiset intersection between this string and another sequence.
@@ -1287,9 +1288,11 @@ final class StringOps(private val s: String) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
+  @deprecated("Use `new WrappedString(s).intersect(...).self` instead of `s.intersect(...)`", "2.13.0")
   def intersect(that: Seq[_ >: Char]): String = new WrappedString(s).intersect(that).self
 
   /** Selects all distinct chars of this string ignoring the duplicates. */
+  @deprecated("Use `new WrappedString(s).distinct.self` instead of `s.distinct`", "2.13.0")
   def distinct: String = new WrappedString(s).distinct.self
 
   /** Selects all distinct chars of this string ignoring the duplicates as determined by `==` after applying
@@ -1299,6 +1302,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new string consisting of all the chars of this string without duplicates.
     */
+  @deprecated("Use `new WrappedString(s).distinctBy(...).self` instead of `s.distinctBy(...)`", "2.13.0")
   def distinctBy[B](f: Char => B): String = new WrappedString(s).distinctBy(f).self
 
   /** Sorts the characters of this string according to an Ordering.
@@ -1312,6 +1316,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return     a string consisting of the chars of this string
     *              sorted according to the ordering `ord`.
     */
+  @deprecated("Use `new WrappedString(s).sorted.self` instead of `s.sorted`", "2.13.0")
   def sorted[B >: Char](implicit ord: Ordering[B]): String = new WrappedString(s).sorted(ord).self
 
   /** Sorts this string according to a comparison function.
@@ -1325,6 +1330,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return     a string consisting of the elements of this string
     *              sorted according to the comparison function `lt`.
     */
+  @deprecated("Use `new WrappedString(s).sortWith(...).self` instead of `s.sortWith(...)`", "2.13.0")
   def sortWith(lt: (Char, Char) => Boolean): String = new WrappedString(s).sortWith(lt).self
 
   /** Sorts this string according to the Ordering which results from transforming
@@ -1343,6 +1349,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *           sorted according to the ordering where `x < y` if
     *           `ord.lt(f(x), f(y))`.
     */
+  @deprecated("Use `new WrappedString(s).sortBy(...).self` instead of `s.sortBy(...)`", "2.13.0")
   def sortBy[B](f: Char => B)(implicit ord: Ordering[B]): String = new WrappedString(s).sortBy(f)(ord).self
 
   /** Partitions this string into a map of strings according to some discriminator function.
@@ -1357,6 +1364,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *               for which `f(x)` equals `k`.
     *
     */
+  @deprecated("Use `new WrappedString(s).groupBy(...).mapValues(_.self)` instead of `s.groupBy(...)`", "2.13.0")
   def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).mapValues(_.self).toMap
 
   /** Groups chars in fixed size blocks by passing a "sliding window"
@@ -1369,6 +1377,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *          last element (which may be the only element) will be truncated
     *          if there are fewer than `size` chars remaining to be grouped.
     */
+  @deprecated("Use `new WrappedString(s).sliding(...).map(_.self)` instead of `s.sliding(...)`", "2.13.0")
   def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.self)
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
@@ -1384,6 +1393,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return   An Iterator which traverses the possible n-element combinations of this string.
     *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
     */
+  @deprecated("Use `new WrappedString(s).combinations(...).map(_.self)` instead of `s.combinations(...)`", "2.13.0")
   def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.self)
 
   /** Iterates over distinct permutations.
@@ -1391,6 +1401,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return   An Iterator which traverses the distinct permutations of this string.
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
+  @deprecated("Use `new WrappedString(s).permutations(...).map(_.self)` instead of `s.permutations(...)`", "2.13.0")
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.self)
 }
 
