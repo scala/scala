@@ -28,12 +28,12 @@ class ScalaRunTimeTest {
         stringOf(Array(Array("", 1, Array(5)), Array(1))))
 
     val map = Map(1->"", 2->"a", 3->" a", 4->null)
-    assertEquals(s"""${map.stringPrefix}(1 -> "", 2 -> a, 3 -> " a", 4 -> null)""", stringOf(map))
-    assertEquals(s"""${map.stringPrefix}(1 -> "", 2 -> a)""", stringOf(map, 2))
+    assertEquals(s"""Map.Map4(1 -> "", 2 -> a, 3 -> " a", 4 -> null)""", stringOf(map))
+    assertEquals(s"""Map.Map4(1 -> "", 2 -> a)""", stringOf(map, 2))
 
     val iterable = Iterable("a", "", " c", null)
-    assertEquals(s"""${iterable.stringPrefix}(a, "", " c", null)""", stringOf(iterable))
-    assertEquals(s"""${iterable.stringPrefix}(a, "")""", stringOf(iterable, 2))
+    assertEquals(s"""List(a, "", " c", null)""", stringOf(iterable))
+    assertEquals(s"""List(a, "")""", stringOf(iterable, 2))
 
     val tuple1 = Tuple1(0)
     assertEquals("(0,)", stringOf(tuple1))

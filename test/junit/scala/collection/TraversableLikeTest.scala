@@ -51,20 +51,20 @@ class TraversableLikeTest {
     }
 
     val bar = Foo.mkBar()
-    assertEquals("Bar", bar.stringPrefix)  // Previously would have been outermost class, TraversableLikeTest
+    assertEquals("Bar", bar.collectionClassName)  // Previously would have been outermost class, TraversableLikeTest
 
     val baz = new Baz[Int]()
-    assertEquals("TraversableLikeTest.Baz", baz.stringPrefix)  // Make sure we don't see specialization $mcI$sp stuff
+    assertEquals("TraversableLikeTest.Baz", baz.collectionClassName)  // Make sure we don't see specialization $mcI$sp stuff
 
-    // The false positive unfortunately produces an empty stringPrefix
+    // The false positive unfortunately produces an empty collectionClassName
     val falsePositive = Foo.mkFalsePositiveToSyntheticTest()
-    assertEquals("", falsePositive.stringPrefix)
+    assertEquals("", falsePositive.collectionClassName)
 
     val french = Foo.mkFrench()
-    assertEquals("ÉtrangeNomDeClasse", french.stringPrefix)
+    assertEquals("ÉtrangeNomDeClasse", french.collectionClassName)
 
     val frenchLowercase = Foo.mkFrenchLowercase()
-    assertEquals("étrangeNomDeClasseMinuscules", frenchLowercase.stringPrefix)
+    assertEquals("étrangeNomDeClasseMinuscules", frenchLowercase.collectionClassName)
   }
 
   @Test

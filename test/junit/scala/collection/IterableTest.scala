@@ -121,4 +121,37 @@ class IterableTest {
     Assert.assertTrue(Seq('a', 'b', 'c').sameElements(s2))
     Assert.assertTrue(Seq(true, false, true).sameElements(s3))
   }
+
+  @Test
+  def overrideClassName: Unit = {
+    class Foo[+A] extends Iterable[A] {
+      def iterator = Iterator.empty[A]
+      override def className = "Fu"
+    }
+    val foo = new Foo
+    Assert.assertEquals("Fu()", foo.toString)
+  }
+
+  @Test
+  def overrideStringPrefix: Unit = {
+    class Foo[+A] extends Iterable[A] {
+      def iterator = Iterator.empty[A]
+      override def stringPrefix = "Bar"
+
+    }
+    val foo = new Foo
+    Assert.assertEquals("Bar()", foo.toString)
+  }
+
+  @Test
+  def overrideClassNameAndStringPrefix: Unit = {
+    class Foo[+A] extends Iterable[A] {
+      def iterator = Iterator.empty[A]
+      override def className = "Fu"
+      override def stringPrefix = "Bar"
+
+    }
+    val foo = new Foo
+    Assert.assertEquals("Fu()", foo.toString)
+  }
 }
