@@ -81,7 +81,7 @@ names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: I
 Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
                 ^
-names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
+names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int, y: String)
   A1() match { case A1(_) => () }
                       ^
 names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])

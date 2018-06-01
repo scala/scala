@@ -121,9 +121,9 @@ def compareTo(x$1: Integer): Int
 def compareTo(x$1: Long): Int
 def doubleValue(): Double
 def ensuring(cond: Boolean): Int
-def ensuring(cond: Boolean,msg: => Any): Int
+def ensuring(cond: Boolean, msg: => Any): Int
 def ensuring(cond: Int => Boolean): Int
-def ensuring(cond: Int => Boolean,msg: => Any): Int
+def ensuring(cond: Int => Boolean, msg: => Any): Int
 def equals(x$1: Any): Boolean
 def floatValue(): Float
 def floor: Double
@@ -140,9 +140,9 @@ def longValue(): Long
 def round: Long
 def shortValue(): Short
 def to(end: Int): scala.collection.immutable.Range.Inclusive
-def to(end: Int,step: Int): scala.collection.immutable.Range.Inclusive
+def to(end: Int, step: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
-def to(end: Long,step: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
+def to(end: Long, step: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
 def toBinaryString: String
 def toByte: Byte
 def toChar: Char
@@ -161,9 +161,9 @@ def unary_-: Int
 def unary_~: Int
 def underlying(): AnyRef
 def until(end: Int): scala.collection.immutable.Range
-def until(end: Int,step: Int): scala.collection.immutable.Range
+def until(end: Int, step: Int): scala.collection.immutable.Range
 def until(end: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
-def until(end: Long,step: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
+def until(end: Long, step: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
 def |(x: Byte): Int
 def |(x: Char): Int
 def |(x: Int): Int
@@ -182,7 +182,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def abs: Double
 override def isValidByte: Boolean
 override def isValidChar: Boolean

@@ -1074,7 +1074,7 @@ trait Definitions extends api.StandardDefinitions {
       normalizedParents(parents) mkString " with "
 
     def valueParamsString(tp: Type) = tp match {
-      case MethodType(params, _) => params map (_.defString) mkString ("(", ",", ")")
+      case MethodType(params, _) => params map (_.defString) mkString ("(", ", ", ")")
       case _                     => ""
     }
 
