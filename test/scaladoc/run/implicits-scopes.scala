@@ -20,26 +20,26 @@ object Test extends ScaladocModelTest {
 
 //// test1 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    val doTest1 = {
-      val test1 = base._package("test1")
-      val A = test1._class("A")
-
-      conv = A._conversion(test1.qualifiedName + ".toB")
-      assert(conv.members.length == 1)
-      assert(conv.constraints.length == 0)
-    }
+//    val doTest1 = {
+//      val test1 = base._package("test1")
+//      val A = test1._class("A")
+//
+//      conv = A._conversion(test1.qualifiedName + ".toB")
+//      assert(conv.members.length == 1)
+//      assert(conv.constraints.length == 0)
+//    }
 
 //// test2 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    val doTest2 = {
-      val test2 = base._package("test2")
-      val classes = test2._package("classes")
-      val A = classes._class("A")
-
-      conv = A._conversion(test2.qualifiedName + ".toB")
-      assert(conv.members.length == 1)
-      assert(conv.constraints.length == 0)
-    }
+//
+//    val doTest2 = {
+//      val test2 = base._package("test2")
+//      val classes = test2._package("classes")
+//      val A = classes._class("A")
+//
+//      conv = A._conversion(test2.qualifiedName + ".toB")
+//      assert(conv.members.length == 1)
+//      assert(conv.constraints.length == 0)
+//    }
 
 //// test3 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

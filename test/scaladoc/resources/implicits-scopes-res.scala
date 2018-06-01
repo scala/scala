@@ -4,27 +4,27 @@
 package scala.test.scaladoc.implicits.scopes
 import language.implicitConversions // according to SIP18
 
-// TEST1 - In package object
-package object test1 {
-  implicit def toB(a: A): B = null
-}
-package test1 {
-  class A
-  class B { def b = "" }
-}
-
-// TEST2 - In enclosing package - doesn't seem to work even in scalac
-package object test2 {
-  import classes._
-  implicit def toB(a: A): B = null
-}
-package test2 {
-  package classes {
-    class A
-    class B { def b = "" }
-    object test { (new A).b }
-  }
-}
+//// TEST1 - In package object
+//package object test1 {
+//  implicit def toB(a: A): B = null
+//}
+//package test1 {
+//  class A
+//  class B { def b = "" }
+//}
+//
+//// TEST2 - In enclosing package - doesn't seem to work even in scalac
+//package object test2 {
+//  import classes._
+//  implicit def toB(a: A): B = null
+//}
+//package test2 {
+//  package classes {
+//    class A
+//    class B { def b = "" }
+//    object test { (new A).b }
+//  }
+//}
 
 // TEST3 - In companion object
 package test3 {

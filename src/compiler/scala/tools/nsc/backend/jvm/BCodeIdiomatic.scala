@@ -28,6 +28,8 @@ abstract class BCodeIdiomatic {
   import bTypes._
   import coreBTypes._
   import genBCode.postProcessor.callGraph.callsitePositions
+  import BackendReporting.RightBiasedEither
+
 
   lazy val JavaStringBuilderClassName = jlStringBuilderRef.internalName
 

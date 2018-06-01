@@ -20,6 +20,8 @@ import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.util.control.{NoStackTrace, NonFatal}
 
+import BackendReporting.RightBiasedEither
+
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
  * instance.

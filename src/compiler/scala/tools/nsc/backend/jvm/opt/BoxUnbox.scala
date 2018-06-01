@@ -21,6 +21,8 @@ abstract class BoxUnbox {
 
   import postProcessor.{backendUtils, callGraph}
   import backendUtils._
+  import BackendReporting.RightBiasedEither
+
 
   /**
    * Eliminate box-unbox pairs within `method`. Such appear commonly after closure elimination:

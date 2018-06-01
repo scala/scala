@@ -15,6 +15,8 @@ abstract class BTypesFromClassfile {
   import bTypes._
   import coreBTypes._
   import frontendAccess.compilerSettings
+  import BackendReporting.RightBiasedEither
+
 
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType

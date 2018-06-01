@@ -24,6 +24,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import genBCode._
   import codeGen.CodeGenImpl._
   import postProcessor.{bTypesFromClassfile, byteCodeRepository}
+  import BackendReporting.RightBiasedEither
 
   val coreBTypes = new CoreBTypesFromSymbols[G] {
     val bTypes: BTypesFromSymbols.this.type = BTypesFromSymbols.this

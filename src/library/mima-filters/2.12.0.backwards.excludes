@@ -9,3 +9,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.Has
 ProblemFilters.exclude[MissingClassProblem]("scala.concurrent.impl.ExecutionContextImpl$AdaptedForkJoinTask")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessImpl#CompoundProcess.getExitValue")
+
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$IntProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$FileProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$DoubleProp$")
+ProblemFilters.exclude[MissingClassProblem]("scala.sys.Prop$StringProp$")

@@ -12,3 +12,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.Sync
 
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats")
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats$")
+
+
+ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.Settings$BooleanSetting")
+ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.Settings$IntSetting")
+ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.Settings$MultiStringSetting")
+ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.Settings$Setting")
