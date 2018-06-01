@@ -512,7 +512,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     val perGroup = if (testFile.isDirectory) {
       sources.flatMap(f => readOptionsFile(f changeExtension "flags"))
     } else Nil
-    perTest ++ perGroup
+    val perFile  = toolArgsFor(sources)("scalac")
+    perTest ++ perGroup ++ perFile
   }
 
   // inspect sources for tool args
@@ -532,7 +533,9 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
           case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
         }
       } finally src.close()
-      args.flatten map argsplitter getOrElse Nil
+      val parsed = args.flatten map argsplitter getOrElse Nil
+      // be forgiving of /* scalac: ... */
+      if (parsed.lastOption contains "*/") parsed.init else parsed
     }
     files flatMap argsFor
   }
