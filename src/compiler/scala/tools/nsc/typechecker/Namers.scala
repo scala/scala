@@ -177,10 +177,7 @@ trait Namers extends MethodSynthesis {
       sym
     }
     def namerOf(sym: Symbol): Namer = {
-      val usePrimary = sym.isTerm && (
-           (sym.isParamAccessor)
-        || (sym.isParameter && sym.owner.isPrimaryConstructor)
-      )
+      val usePrimary = sym.isTerm && (sym.isParameter && sym.owner.isPrimaryConstructor)
 
       if (usePrimary) createPrimaryConstructorParameterNamer
       else innerNamer
