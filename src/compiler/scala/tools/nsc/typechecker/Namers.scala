@@ -1461,14 +1461,24 @@ trait Namers extends MethodSynthesis {
       var ownerNamer: Option[Namer] = None
       var moduleNamer: Option[(ClassDef, Namer)] = None
       var posCounter = 1
+      var previousParamsCounter = 0
 
       // For each value parameter, create the getter method if it has a
       // default argument. previous denotes the parameter lists which
       // are on the left side of the current one. These get added to the
       // default getter. Example:
       //
-      //   def foo(a: Int)(b: Int = a)      becomes
-      //   foo$default$1(a: Int) = a
+      //   def foo(a: Int, b: Int = a)(c: Int = a + b)      becomes
+      //   foo$default$1(a: Int) = a // for b
+      //   foo$default$2(a: Int, b: Int) = a + b // for c
+      //
+      // This scheme allows a default argument on the right to depend
+      // on every argument on its left and applies for arguments both
+      // in the same parameter list and in previous curried parameter lists.
+      // Note that even if the parameters on the left are not used in the
+      // implementation of a default arg, the parameters are encoded in
+      // the signature of the synthetic method so that future changes
+      // in the implementation of default args does not break binary compat.
       //
       vparamss.foldLeft(Nil: List[List[ValDef]]) { (previous, vparams) =>
         assert(!overrides || vparams.length == baseParamss.head.length, ""+ meth.fullName + ", "+ overridden.fullName)
@@ -1500,7 +1510,8 @@ trait Namers extends MethodSynthesis {
             val name = nme.defaultGetterName(meth.name, posCounter)
 
             var defTparams = rtparams
-            val defVparamss = mmap(rvparamss.take(previous.length)){ rvp =>
+            val leftRvparams = rvparams.take(posCounter - previousParamsCounter - 1)
+            val leftRvparamss = mmap(rvparamss.take(previous.length) ++ List(leftRvparams)){ rvp =>
               copyValDef(rvp)(mods = rvp.mods &~ DEFAULTPARAM, rhs = EmptyTree)
             }
 
@@ -1558,7 +1569,7 @@ trait Namers extends MethodSynthesis {
             val defRhs = rvparam.rhs
 
             val defaultTree = atPos(vparam.pos.focus) {
-              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag, name, defTparams, defVparamss, defTpt, defRhs)
+              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag, name, defTparams, leftRvparamss, defTpt, defRhs)
             }
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now
@@ -1583,6 +1594,7 @@ trait Namers extends MethodSynthesis {
           if (overrides) baseParams = baseParams.tail
         })
         if (overrides) baseParamss = baseParamss.tail
+        previousParamsCounter += vparams.length
         previous :+ vparams
       }
     }

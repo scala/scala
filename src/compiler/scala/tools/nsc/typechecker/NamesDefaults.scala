@@ -436,6 +436,7 @@ trait NamesDefaults { self: Analyzer =>
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params, nameOfNamedArg)
       if (missing forall (_.hasDefault)) {
+        val generatedDefaults = mutable.HashMap[Symbol, Tree]()
         val defaultArgs = missing flatMap (p => {
           val defGetter = defaultGetter(p, context)
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
@@ -448,8 +449,23 @@ trait NamesDefaults { self: Analyzer =>
             }
             default1 = if (targs.isEmpty) default1
                        else TypeApply(default1, targs.map(_.duplicate))
-            val default2 = (default1 /: previousArgss)((tree, args) =>
+
+            var valuesArgs = givenArgs
+            val leftArgsInParamList = params.take(params.indexOf(p))
+            val valuesArgsOnLeft = leftArgsInParamList.map { arg =>
+              generatedDefaults.get(arg) match {
+                case Some(default) => default
+                case None =>
+                  val value = valuesArgs.head
+                  valuesArgs = givenArgs.tail
+                  value
+              }
+            }
+            val allLeftArgs: List[List[Tree]] = previousArgss ++ List(valuesArgsOnLeft)
+            val default2 = (default1 /: allLeftArgs)((tree, args) =>
               Apply(tree, args.map(_.duplicate)))
+
+            generatedDefaults += (p-> default2)
             Some(atPos(pos) {
               if (positional) default2
               else AssignOrNamedArg(Ident(p.name), default2)
