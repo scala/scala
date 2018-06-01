@@ -242,6 +242,13 @@ object PartialFunction {
     case ff => new Unlifted(ff)
   }
 
+  /**  Converts an ordinary function to a partial function. Note that calling `isDefinedAt(x)` on 
+   *   this partial function will return `true` for every `x`.
+   *   @param  f  an ordinary function
+   *   @return    a partial function which delegates to the ordinary function `f`
+   */
+  def fromFunction[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
+
   private[this] val constFalse: Any => Boolean = { _ => false}
 
   private[this] val empty_pf: PartialFunction[Any, Nothing] = new PartialFunction[Any, Nothing] with Serializable {
