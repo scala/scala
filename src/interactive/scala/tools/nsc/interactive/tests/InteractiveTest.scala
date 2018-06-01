@@ -67,12 +67,10 @@ abstract class InteractiveTest
   /** Add new presentation compiler actions to test. Presentation compiler's test
    *  need to extends trait `PresentationCompilerTestDef`.
    */
-  protected def ++(tests: PresentationCompilerTestDef*) {
-    testActions ++= tests
-  }
+  protected def ++(tests: PresentationCompilerTestDef*): Unit = testActions ++= tests
 
   /** Test's entry point */
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     try execute()
     finally askShutdown()
   }
@@ -89,7 +87,7 @@ abstract class InteractiveTest
   protected def normalize(s: String) = s
 
   /** Load all sources before executing the test. */
-  protected def loadSources() {
+  protected def loadSources(): Unit = {
     // ask the presentation compiler to track all sources. We do
     // not wait for the file to be entirely typed because we do want
     // to exercise the presentation compiler on scoped type requests.
@@ -101,7 +99,7 @@ abstract class InteractiveTest
   }
 
   /** Run all defined `PresentationCompilerTestDef` */
-  protected def runDefaultTests() {
+  protected def runDefaultTests(): Unit = {
     //TODO: integrate random tests!, i.e.: if (runRandomTests) randomTests(20, sourceFiles)
     testActions.foreach(_.runTest())
   }

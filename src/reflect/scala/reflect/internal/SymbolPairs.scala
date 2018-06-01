@@ -167,9 +167,9 @@ abstract class SymbolPairs {
     next()
 
     // populate the above data structures
-    private def init() {
+    private def init(): Unit = {
       // Fill `decls` with lower symbols shadowing higher ones
-      def fillDecls(bcs: List[Symbol], deferred: Boolean) {
+      def fillDecls(bcs: List[Symbol], deferred: Boolean): Unit = {
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferred)
           var e = bcs.head.info.decls.elems
@@ -201,7 +201,7 @@ abstract class SymbolPairs {
       fillDecls(bases, deferred = false)
     }
 
-    private def include(bs: BitSet, n: Int) {
+    private def include(bs: BitSet, n: Int): Unit = {
       val nshifted = n >> 5
       val nmask    = 1 << (n & 31)
       bs(nshifted) |= nmask
@@ -234,7 +234,7 @@ abstract class SymbolPairs {
       }
     }
 
-    @tailrec private def advanceNextEntry() {
+    @tailrec private def advanceNextEntry(): Unit = {
       if (nextEntry ne null) {
         nextEntry = decls lookupNextEntry nextEntry
         if (nextEntry ne null) {
@@ -250,7 +250,7 @@ abstract class SymbolPairs {
         }
       }
     }
-    @tailrec private def advanceCurEntry() {
+    @tailrec private def advanceCurEntry(): Unit = {
       if (curEntry ne null) {
         curEntry = curEntry.next
         if (curEntry ne null) {
@@ -277,7 +277,7 @@ abstract class SymbolPairs {
 
     // Note that next is called once during object initialization to
     // populate the fields tracking the current symbol pair.
-    def next() {
+    def next(): Unit = {
       if (curEntry ne null) {
         lowSymbol = curEntry.sym
         advanceNextEntry()        // sets highSymbol

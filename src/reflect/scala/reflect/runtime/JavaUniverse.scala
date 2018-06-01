@@ -138,7 +138,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   // 5) That will crash PackageScope.enter that helpfully detects double-enters.
   //
   // Therefore, before initializing ScalaPackageClass, we must pre-initialize ObjectClass
-  def init() {
+  def init(): Unit = {
     definitions.init()
 
     // workaround for http://groups.google.com/group/scala-internals/browse_thread/thread/97840ba4fd37b52e

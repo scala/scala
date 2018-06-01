@@ -29,7 +29,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   private[this] val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
   @volatile private[this] var testNumberFmt = "%3d"
   private[this] def testNumber = testNumberFmt format testNum.getAndIncrement()
-  def resetTestNumber(max: Int = -1) {
+  def resetTestNumber(max: Int = -1): Unit = {
     testNum set 1
     val width = if (max > 0) max.toString.length else 3
     testNumberFmt = s"%${width}d"
@@ -46,7 +46,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
   private[this] var dotCount = 0
   private[this] val DotWidth = 72
 
-  def leftFlush() {
+  def leftFlush(): Unit = {
     if (dotCount != 0) {
       normal("\n")
       dotCount = 0
@@ -131,7 +131,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
     wr.print(_default + msg)
   }
 
-  def usage() {
+  def usage(): Unit = {
     println(RunnerSpec.programInfo.usage)
     println(RunnerSpec.helpMsg)
     sys.exit(1)

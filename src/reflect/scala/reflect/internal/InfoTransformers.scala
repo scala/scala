@@ -20,7 +20,7 @@ trait InfoTransformers {
     val changesBaseClasses: Boolean
     def transform(sym: Symbol, tpe: Type): Type
 
-    def insert(that: InfoTransformer) {
+    def insert(that: InfoTransformer): Unit = {
       assert(this.pid != that.pid, this.pid)
 
       if (that.pid < this.pid) {

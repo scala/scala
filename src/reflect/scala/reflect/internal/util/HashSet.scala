@@ -19,7 +19,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   private def index(x: Int): Int = math.abs(x % table.length)
 
   def size: Int = used
-  def clear() {
+  def clear(): Unit = {
     used = 0
     table = new Array[AnyRef](initialCapacity)
   }
@@ -50,7 +50,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     entry.asInstanceOf[T]
   }
 
-  def addEntry(x: T) {
+  def addEntry(x: T): Unit = {
     var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
@@ -62,7 +62,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     used += 1
     if (used > (table.length >> 2)) growTable()
   }
-  def addEntries(xs: IterableOnce[T]) {
+  def addEntries(xs: IterableOnce[T]): Unit = {
     xs foreach addEntry
   }
 
@@ -77,7 +77,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
       else null
   }
 
-  private def addOldEntry(x: T) {
+  private def addOldEntry(x: T): Unit = {
     var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
@@ -87,7 +87,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     table(h) = x
   }
 
-  private def growTable() {
+  private def growTable(): Unit = {
     val oldtable = table
     val growthFactor =
       if (table.length <= initialCapacity) 8

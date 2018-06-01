@@ -20,12 +20,12 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
   type TimerSnapshot = (Long, Long)
 
   /** If enabled, increment counter by one */
-  @inline final def incCounter(c: Counter) {
+  @inline final def incCounter(c: Counter): Unit = {
     if (areStatisticsLocallyEnabled && c != null) c.value += 1
   }
 
   /** If enabled, increment counter by given delta */
-  @inline final def incCounter(c: Counter, delta: Int) {
+  @inline final def incCounter(c: Counter, delta: Int): Unit = {
     if (areStatisticsLocallyEnabled && c != null) c.value += delta
   }
 
@@ -40,7 +40,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
     if (areStatisticsLocallyEnabled && sc != null) sc.start() else null
 
   /** If enabled, stop subcounter from tracking its base counter. */
-  @inline final def stopCounter(sc: SubCounter, start: (Int, Int)) {
+  @inline final def stopCounter(sc: SubCounter, start: (Int, Int)): Unit = {
     if (areStatisticsLocallyEnabled && sc != null) sc.stop(start)
   }
 
@@ -49,7 +49,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
     if (areStatisticsLocallyEnabled && tm != null) tm.start() else null
 
   /** If enabled, stop timer */
-  @inline final def stopTimer(tm: Timer, start: TimerSnapshot) {
+  @inline final def stopTimer(tm: Timer, start: TimerSnapshot): Unit = {
     if (areStatisticsLocallyEnabled && tm != null) tm.stop(start)
   }
 
@@ -58,7 +58,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
     if (areStatisticsLocallyEnabled && timers != null) timers.push(timer) else null
 
   /** If enabled, stop and pop timer from timer stack */
-  @inline final def popTimer(timers: TimerStack, prev: TimerSnapshot) {
+  @inline final def popTimer(timers: TimerStack, prev: TimerSnapshot): Unit = {
     if (areStatisticsLocallyEnabled && timers != null) timers.pop(prev)
   }
 
@@ -169,7 +169,7 @@ quant)
 
   class SubCounter(prefix: String, override val underlying: Counter) extends Counter(prefix, underlying.phases) with SubQuantity {
     def start() = (value, underlying.value)
-    def stop(prev: (Int, Int)) {
+    def stop(prev: (Int, Int)): Unit = {
       val (value0, uvalue0) = prev
       value = value0 + underlying.value - uvalue0
     }
@@ -191,7 +191,7 @@ quant)
     def start(): TimerSnapshot = {
       (threadNanos.get.elem, System.nanoTime())
     }
-    def stop(prev: TimerSnapshot) {
+    def stop(prev: TimerSnapshot): Unit = {
       val (nanos0, start) = prev
       val newThreadNanos = nanos0 + System.nanoTime() - start
       val threadNanosCount = threadNanos.get

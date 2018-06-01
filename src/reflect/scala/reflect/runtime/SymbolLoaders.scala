@@ -60,7 +60,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   /** The type completer for packages.
    */
   class LazyPackageType extends LazyType with FlagAgnosticCompleter {
-    override def complete(sym: Symbol) {
+    override def complete(sym: Symbol): Unit = {
       assert(sym.isPackageClass)
       // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
       // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
@@ -172,7 +172,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType) {
+  override def validateClassInfo(tp: ClassInfoType): Unit = {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
 

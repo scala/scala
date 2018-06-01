@@ -142,7 +142,7 @@ trait Imports {
     }
 
     // add code for a new object to hold some imports
-    def addWrapper() {
+    def addWrapper(): Unit = {
       code append (request.wrapperDef(iw) + " {\n")
       trailingBraces append "}\n"+ request.postwrap +"\n"
       accessPath append s".$iw"

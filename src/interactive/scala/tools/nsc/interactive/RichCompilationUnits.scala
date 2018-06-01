@@ -48,7 +48,7 @@ trait RichCompilationUnits { self: Global =>
      */
     var _targetPos: Position = NoPosition
     override def targetPos: Position = _targetPos
-    def targetPos_=(p: Position) { _targetPos = p }
+    def targetPos_=(p: Position): Unit = { _targetPos = p }
 
     var contexts: Contexts = new Contexts
 

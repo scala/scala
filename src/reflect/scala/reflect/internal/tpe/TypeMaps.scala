@@ -434,7 +434,7 @@ private[internal] trait TypeMaps {
           qvar.tpe
       }
     }
-    protected def captureSkolems(skolems: List[Symbol]) {
+    protected def captureSkolems(skolems: List[Symbol]): Unit = {
       for (p <- skolems; if !(capturedSkolems contains p)) {
         debuglog(s"Captured $p seen from $seenFromPrefix")
         _capturedSkolems ::= p
@@ -819,7 +819,7 @@ private[internal] trait TypeMaps {
 
   // dependent method types
   object IsDependentCollector extends TypeCollector(false) {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (tp.isImmediatelyDependent) result = true
       else if (!result) tp.dealias.mapOver(this)
     }
@@ -954,7 +954,7 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `contains` method. */
   class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (!result) {
         tp match {
           case _: ExistentialType =>
@@ -993,7 +993,7 @@ private[internal] trait TypeMaps {
   class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
     override def collect(tp: Type) = super.collect(tp).reverse
 
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (p(tp)) result ::= tp
       tp.mapOver(this)
     }
@@ -1003,14 +1003,14 @@ private[internal] trait TypeMaps {
   class CollectTypeCollector[T](pf: PartialFunction[Type, T]) extends TypeCollector[List[T]](Nil) {
     override def collect(tp: Type) = super.collect(tp).reverse
 
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (pf.isDefinedAt(tp)) result ::= pf(tp)
       tp.mapOver(this)
     }
   }
 
   class ForEachTypeTraverser(f: Type => Unit) extends TypeTraverser {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       f(tp)
       tp.mapOver(this)
     }
@@ -1018,7 +1018,7 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `filter` method. */
   class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (result.isEmpty) {
         if (p(tp)) result = Some(tp)
         tp.mapOver(this)
@@ -1028,7 +1028,7 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `contains` method. */
   object ErroneousCollector extends TypeCollector(false) {
-    def traverse(tp: Type) {
+    def traverse(tp: Type): Unit = {
       if (!result) {
         result = tp.isError
         tp.mapOver(this)

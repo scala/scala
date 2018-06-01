@@ -45,7 +45,7 @@ trait AskParse extends AskCommand {
    *  (else commands such as `AskTypeCompletionAt` may fail simply because
    *  the source's AST is not yet loaded).
    */
-  def askParse(sources: Seq[SourceFile]) {
+  def askParse(sources: Seq[SourceFile]): Unit = {
     val responses = sources map (askParse(_))
     responses.foreach(_.get) // force source files parsing
   }

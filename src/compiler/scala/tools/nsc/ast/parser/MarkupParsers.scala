@@ -175,13 +175,13 @@ trait MarkupParsers {
     def appendText(pos: Position, ts: Buffer[Tree], txt: String): Unit = {
       def append(text: String): Unit = {
         val tree = handle.text(pos, text)
-        ts append tree
+        ts += tree
       }
       val clean = if (preserveWS) txt else {
         val sb = new StringBuilder()
         txt foreach { c =>
-          if (!isSpace(c)) sb append c
-          else if (sb.isEmpty || !isSpace(sb.last)) sb append ' '
+          if (!isSpace(c)) sb += c
+          else if (sb.isEmpty || !isSpace(sb.last)) sb += ' '
         }
         sb.toString.trim
       }
@@ -205,7 +205,7 @@ trait MarkupParsers {
           handle.entityRef(tmppos, n)
       }
 
-      ts append toAppend
+      ts += toAppend
     }
 
     /**
@@ -213,7 +213,7 @@ trait MarkupParsers {
      *  @postcond: xEmbeddedBlock == false!
      */
     def content_BRACE(p: Position, ts: ArrayBuffer[Tree]): Unit =
-      if (xCheckEmbeddedBlock) ts append xEmbeddedExpr
+      if (xCheckEmbeddedBlock) ts += xEmbeddedExpr
       else appendText(p, ts, xText)
 
     /** At an open angle-bracket, detects an end tag
@@ -228,7 +228,7 @@ trait MarkupParsers {
           case '?' => nextch() ; xProcInstr                            // PI
           case _   => element                                          // child node
         }
-        ts append toAppend
+        ts += toAppend
         false
       }
 
@@ -237,7 +237,7 @@ trait MarkupParsers {
       val coalescing = settings.XxmlSettings.isCoalescing
       @tailrec def loopContent(): Unit =
         if (xEmbeddedBlock) {
-          ts append xEmbeddedExpr
+          ts += xEmbeddedExpr
           loopContent()
         } else {
           tmppos = o2p(curOffset)
@@ -326,7 +326,7 @@ trait MarkupParsers {
             if (charComingAfter(nextch()) == '}') nextch()
             else errorBraces()
           }
-          buf append ch
+          buf += ch
           nextch()
         } while (!(ch == SU || xCheckEmbeddedBlock || ch == '<' ||  ch == '&'))
       buf.toString
@@ -449,7 +449,7 @@ trait MarkupParsers {
           else ch match {
             case '<'  => // tag
               nextch()
-              if (ch != '/') ts append xPattern   // child
+              if (ch != '/') ts += xPattern   // child
               else return false                   // terminate
 
             case '{' if xCheckEmbeddedBlock => // embedded Scala patterns, if not double brace

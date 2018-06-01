@@ -1427,7 +1427,7 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // documented in JavaUniverse.init
-    def init() {
+    def init(): Unit = {
       if (isInitialized) return
       ObjectClass.initialize
       ScalaPackageClass.initialize

@@ -53,10 +53,10 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   private val resAssign    = """^val (res\d+).*""".r
 
   private class PasteAnalyzer(val lines: List[String]) {
-    val referenced = lines flatMap (resReference findAllIn _.trim.stripPrefix("res")) toSet
+    val referenced = lines.flatMap(resReference findAllIn _.trim.stripPrefix("res")).toSet
     val ActualPromptString = lines find matchesPrompt map (s =>
       if (matchesString(s, PromptString)) PromptString else AltPromptString) getOrElse PromptString
-    val cmds       = lines reduceLeft append split ActualPromptString filterNot (_.trim == "") toList
+    val cmds       = (lines reduceLeft append split ActualPromptString filterNot(_.trim == "")).toList
 
     /** If it's a prompt or continuation line, strip the formatting bits and
      *  assemble the code.  Otherwise ship it off to be analyzed for res references
@@ -125,7 +125,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
    */
   def apply(lines: IterableOnce[String]): Option[String] = {
     isRunning = true
-    try new PasteAnalyzer(lines.toList).run()
+    try new PasteAnalyzer(List.from(lines)).run()
     finally isRunning = false
   }
 

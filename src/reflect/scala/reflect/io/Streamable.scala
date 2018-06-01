@@ -56,7 +56,7 @@ object Streamable {
       lazy val in = bufferedInput()
       var offset = 0
 
-      def loop() {
+      def loop(): Unit = {
         if (offset < len) {
           val read = in.read(arr, offset, len - offset)
           if (read >= 0) {

@@ -193,7 +193,7 @@ abstract class SymbolTable extends macros.Universe
   /** Check that the executing thread is the compiler thread. No-op here,
    *  overridden in interactive.Global. */
   @elidable(elidable.WARNING)
-  def assertCorrectThread() {}
+  def assertCorrectThread(): Unit = {}
 
   /** A last effort if symbol in a select <owner>.<name> is not found.
    *  This is overridden by the reflection compiler to make up a package
@@ -229,7 +229,7 @@ abstract class SymbolTable extends macros.Universe
     case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
   }
 
-  final def phase_=(p: Phase) {
+  final def phase_=(p: Phase): Unit = {
     //System.out.println("setting phase to " + p)
     assert((p ne null) && p != NoPhase, p)
     ph = p
@@ -243,7 +243,7 @@ abstract class SymbolTable extends macros.Universe
     }
     current
   }
-  final def popPhase(ph: Phase) {
+  final def popPhase(ph: Phase): Unit = {
     if (keepPhaseStack) {
       phStack.pop()
     }
@@ -331,7 +331,7 @@ abstract class SymbolTable extends macros.Universe
     }
   }
 
-  def openPackageModule(container: Symbol, dest: Symbol) {
+  def openPackageModule(container: Symbol, dest: Symbol): Unit = {
     // unlink existing symbols in the package
     for (member <- container.info.decls.iterator) {
       if (!member.isPrivate && !member.isConstructor) {
@@ -380,7 +380,7 @@ abstract class SymbolTable extends macros.Universe
   }
 
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
-  def openPackageModule(pkgClass: Symbol) {
+  def openPackageModule(pkgClass: Symbol): Unit = {
 
     val pkgModule = pkgClass.packageObject
     def fromSource = pkgModule.rawInfo match {

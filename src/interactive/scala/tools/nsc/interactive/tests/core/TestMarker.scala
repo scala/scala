@@ -6,7 +6,7 @@ object TestMarker {
   import scala.collection.mutable.Map
   private val markers: Map[String, TestMarker] = Map.empty
 
-  private def checkForDuplicate(marker: TestMarker) {
+  private def checkForDuplicate(marker: TestMarker): Unit = {
     markers.get(marker.marker) match {
       case None => markers(marker.marker) = marker
       case Some(otherMarker) =>

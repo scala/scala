@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 import scala.reflect.internal.util.{JavaClearable, Position, Statistics}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.jvm.BTypes.InternalName

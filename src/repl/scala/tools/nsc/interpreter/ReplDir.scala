@@ -11,7 +11,7 @@ import java.io.PrintWriter
 import io.VirtualDirectory
 import settings.MutableSettings
 import scala.reflect.io.{AbstractFile, Directory, PlainDirectory}
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 
 /** Directory to save .class files to. */
 trait ReplDir extends AbstractFile with Clearable { }
@@ -38,7 +38,7 @@ class ReplOutput(val dirSetting: MutableSettings#StringSetting) {
 
   // print the contents hierarchically
   def show(out: PrintWriter) = {
-    def pp(root: AbstractFile, indentLevel: Int) {
+    def pp(root: AbstractFile, indentLevel: Int): Unit = {
       val label = root.name
       val spaces = "    " * indentLevel
       out.println(spaces + label)

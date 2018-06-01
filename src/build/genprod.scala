@@ -77,7 +77,7 @@ package %s
     sys.exit(-1)
   }
   val out = args(0)
-  def writeFile(node: scala.xml.Node) {
+  def writeFile(node: scala.xml.Node): Unit = {
     import scala.tools.nsc.io._
     val f = Path(out) / node.attributes("name").toString
     f.parent.createDirectory(force = true)

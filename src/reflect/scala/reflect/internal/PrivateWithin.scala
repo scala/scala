@@ -12,7 +12,7 @@ trait PrivateWithin {
     propagatePackageBoundary(JavaAccFlags(c), syms: _*)
   def propagatePackageBoundary(m: jMember, syms: Symbol*): Unit =
     propagatePackageBoundary(JavaAccFlags(m), syms: _*)
-  def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*) {
+  def propagatePackageBoundary(jflags: JavaAccFlags, syms: Symbol*): Unit = {
     if (jflags.hasPackageAccessBoundary)
       syms foreach setPackageAccessBoundary
   }

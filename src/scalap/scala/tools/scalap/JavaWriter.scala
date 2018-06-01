@@ -115,7 +115,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
 
   def isConstr(name: String) = (name == "<init>")
 
-  def printField(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) {
+  def printField(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]): Unit = {
     print(flagsToStr(false, flags))
     if ((flags & 0x0010) != 0)
       print("val " + NameTransformer.decode(getName(name)))
@@ -124,7 +124,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     print(": " + getType(tpe) + ";").newline
   }
 
-  def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) {
+  def printMethod(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]): Unit = {
     if (getName(name) == "<init>")
     print(flagsToStr(false, flags))
     if (getName(name) == "<init>") {
@@ -150,7 +150,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     }
   }
 
-  def printClassHeader() {
+  def printClassHeader(): Unit = {
     if (isInterface(cf.flags)) {
       print("trait " + getSimpleClassName(cf.classname))
     } else {
@@ -163,7 +163,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     }
   }
 
-  def printClass() {
+  def printClass(): Unit = {
     val pck = getPackage(cf.classname)
     if (pck.length() > 0)
       println("package " + pck + ";")

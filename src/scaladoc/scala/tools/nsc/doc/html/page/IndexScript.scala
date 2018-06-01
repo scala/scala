@@ -18,10 +18,8 @@ class IndexScript(universe: doc.Universe) extends Page {
 
   def path = List("index.js")
 
-  override def writeFor(site: HtmlFactory) {
-    writeFile(site) {
-      _.write(s"Index.PACKAGES = $packages;")
-    }
+  override def writeFor(site: HtmlFactory): Unit = writeFile(site) {
+    _.write(s"Index.PACKAGES = $packages;")
   }
 
   val packages = {

@@ -4,6 +4,8 @@ import scala.tools.nsc.interpreter.{IMain, Repl, ReplCore}
 import scala.tools.nsc.interpreter.shell.{ILoop, ReplReporterImpl, ShellConfig}
 import scala.tools.nsc.reporters.Reporter
 
+import scala.language.implicitConversions
+
 // Pretty gross contortion to satisfy the de facto interface expected by sbt.
 // The idea is to have sbt stage a dummy interpreter, to extract the configuration
 // it's trying to create, only to then actually create our interpreter when needed.

@@ -9,7 +9,7 @@ trait Universer extends Generator {
 
   def universe: Universe = universeField
 
-  def setUniverse(u: Universe) {
+  def setUniverse(u: Universe): Unit = {
     assert(universeField == null)
     universeField = u
   }

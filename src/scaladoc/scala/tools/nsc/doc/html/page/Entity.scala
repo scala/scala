@@ -706,7 +706,7 @@ trait EntityPage extends HtmlPage {
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced =>
         val subs = mutable.HashSet.empty[DocTemplateEntity]
-        def transitive(dtpl: DocTemplateEntity) {
+        def transitive(dtpl: DocTemplateEntity): Unit = {
           for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
             subs add sub
             transitive(sub)

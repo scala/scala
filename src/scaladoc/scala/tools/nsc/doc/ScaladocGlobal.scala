@@ -31,14 +31,13 @@ trait ScaladocGlobalTrait extends Global {
     // scala/bug#5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
     // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
     // that are not in their correct place (see bug for details)
-    override protected def signalError(root: Symbol, ex: Throwable) {
+    override protected def signalError(root: Symbol, ex: Throwable): Unit =
       log(s"Suppressing error involving $root: $ex")
-    }
   }
 }
 
 class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with ScaladocGlobalTrait {
-  override protected def computeInternalPhases() {
+  override protected def computeInternalPhases(): Unit = {
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory
     phasesSet += analyzer.packageObjects

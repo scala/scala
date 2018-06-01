@@ -34,7 +34,7 @@ abstract class IcodeTest extends DirectTest {
 
   // Default show() compiles the code with and without optimization and
   // outputs the diff.
-  def show() {
+  def show(): Unit = {
     val lines1 = collectIcode("")
     val lines2 = collectIcode("-optimise")
 

@@ -199,14 +199,14 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol = classToScala(rtcls).companionModule.asModule
 
-    private def ensuringNotFree(sym: Symbol)(body: => Any) {
+    private def ensuringNotFree(sym: Symbol)(body: => Any): Unit = {
       val freeType = sym.ownerChain find (_.isFreeType)
       freeType match {
         case Some(freeType) => ErrorFree(sym, freeType)
         case _ => body
       }
     }
-    private def checkMemberOf(sym: Symbol, owner: ClassSymbol) {
+    private def checkMemberOf(sym: Symbol, owner: ClassSymbol): Unit = {
       if (sym.owner == AnyClass || sym.owner == AnyRefClass || sym.owner == ObjectClass) {
         // do nothing
       } else if (sym.owner == AnyValClass) {
@@ -218,7 +218,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       }
     }
 
-    private def checkConstructorOf(sym: Symbol, owner: ClassSymbol) {
+    private def checkConstructorOf(sym: Symbol, owner: ClassSymbol): Unit = {
       if (!sym.isClassConstructor) ErrorNotConstructor(sym, owner)
       if (owner == ArrayClass) ErrorArrayConstructor(sym, owner)
       ensuringNotFree(sym) {
@@ -681,7 +681,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      *  Pre: `sym` is already initialized with a concrete type.
      *  Note: If `sym` is a method or constructor, its parameter annotations are copied as well.
      */
-    private def copyAnnotations(sym: Symbol, jann: AnnotatedElement) {
+    private def copyAnnotations(sym: Symbol, jann: AnnotatedElement): Unit = {
       sym setAnnotations (jann.getAnnotations map JavaAnnotationProxy).toList
       // scala/bug#7065: we're not using getGenericExceptionTypes here to be consistent with ClassfileParser
       val jexTpes = jann match {
@@ -801,7 +801,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       }
 
       class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
-        override def complete(sym: Symbol) {
+        override def complete(sym: Symbol): Unit = {
           completeRest()
           markAllCompleted(clazz, module)
         }
@@ -1325,7 +1325,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType) {
+  override def validateClassInfo(tp: ClassInfoType): Unit = {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
 

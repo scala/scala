@@ -83,13 +83,13 @@ trait AnnotationCheckers {
   private var annotationCheckers: List[AnnotationChecker] = Nil
 
   /** Register an annotation checker.  Typically these are added by compiler plugins. */
-  def addAnnotationChecker(checker: AnnotationChecker) {
+  def addAnnotationChecker(checker: AnnotationChecker): Unit = {
     if (!(annotationCheckers contains checker))
       annotationCheckers = checker :: annotationCheckers
   }
 
   /** Remove all annotation checkers */
-  def removeAllAnnotationCheckers() {
+  def removeAllAnnotationCheckers(): Unit = {
     annotationCheckers = Nil
   }
 

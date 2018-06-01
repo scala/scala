@@ -40,7 +40,7 @@ abstract class InteractiveReporter extends Reporter {
     case ex: UnsupportedOperationException =>
   }
 
-  override def reset() {
+  override def reset(): Unit = {
     super.reset()
     otherProblems.clear()
   }

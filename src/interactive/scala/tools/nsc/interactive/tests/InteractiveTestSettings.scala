@@ -24,8 +24,8 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
    *        bootclasspath takes precedence over the scala-library used to run the current
    *        test.
    */
-  override protected def prepareSettings(settings: Settings) {
-    def adjustPaths(paths: settings.PathSetting*) {
+  override protected def prepareSettings(settings: Settings): Unit = {
+    def adjustPaths(paths: settings.PathSetting*): Unit = {
       for (p <- paths if argsString.contains(p.name)) p.value = p.value.map {
         case '/' => separatorChar
         case ':' => pathSeparatorChar
@@ -60,7 +60,7 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
     str.lines.filter(!_.startsWith(CommentStartDelimiter)).mkString(" ")
   }
 
-  override protected def printClassPath(implicit reporter: Reporter) {
+  override protected def printClassPath(implicit reporter: Reporter): Unit = {
     reporter.println("\toutDir: %s".format(outDir.path))
     reporter.println("\tbaseDir: %s".format(baseDir.path))
     reporter.println("\targsString: %s".format(argsString))

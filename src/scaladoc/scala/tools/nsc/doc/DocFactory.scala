@@ -101,7 +101,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   /** Generate document(s) for all `files` containing scaladoc documentation.
     * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
-  def document(files: List[String]) {
+  def document(files: List[String]): Unit = {
     def generate() = {
       import doclet._
       val docletClass    = Class.forName(settings.docgenerator.value) // default is html.Doclet
@@ -132,7 +132,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     catch documentError
   }
 
-  private[doc] def docdbg(msg: String) {
+  private[doc] def docdbg(msg: String): Unit = {
     if (settings.Ydocdebug)
       println(msg)
   }

@@ -204,7 +204,7 @@ trait Types
     override def prefixString = underlying.prefixString
     override def isComplete = underlying.isComplete
     override def complete(sym: Symbol) = underlying.complete(sym)
-    override def load(sym: Symbol) { underlying.load(sym) }
+    override def load(sym: Symbol): Unit = { underlying.load(sym) }
     override def withAnnotations(annots: List[AnnotationInfo]) = maybeRewrap(underlying.withAnnotations(annots))
     override def withoutAnnotations = maybeRewrap(underlying.withoutAnnotations)
   }
@@ -313,7 +313,7 @@ trait Types
     def isShowAsInfixType: Boolean = false
 
     /** If this is a lazy type, assign a new type to `sym`. */
-    def complete(sym: Symbol) {}
+    def complete(sym: Symbol): Unit = {}
 
     /** If this is a lazy type corresponding to a subclass add it to its
      *  parents children
@@ -783,7 +783,7 @@ trait Types
     def find(p: Type => Boolean): Option[Type] = new FindTypeCollector(p).collect(this)
 
     /** Apply `f` to each part of this type */
-    def foreach(f: Type => Unit) { new ForEachTypeTraverser(f).traverse(this) }
+    def foreach(f: Type => Unit): Unit = { new ForEachTypeTraverser(f).traverse(this) }
 
     /** Apply `pf` to each part of this type on which the function is defined */
     def collect[T](pf: PartialFunction[Type, T]): List[T] = new CollectTypeCollector(pf).collect(this)
@@ -981,7 +981,7 @@ trait Types
     }
 
     /** If this is a symbol loader type, load and assign a new type to `sym`. */
-    def load(sym: Symbol) {}
+    def load(sym: Symbol): Unit = {}
 
     private def findDecl(name: Name, excludedFlags: Int): Symbol = {
       var alts: List[Symbol] = List()
@@ -1390,7 +1390,7 @@ trait Types
     private[reflect] var baseTypeSeqPeriod = NoPeriod
     private[reflect] var baseClassesCache: List[Symbol] = _
     private[reflect] var baseClassesPeriod = NoPeriod
-    private[Types] def invalidatedCompoundTypeCaches() {
+    private[Types] def invalidatedCompoundTypeCaches(): Unit = {
       baseTypeSeqCache = null
       baseTypeSeqPeriod = NoPeriod
       baseClassesCache = null
@@ -1556,23 +1556,23 @@ trait Types
 
   object baseClassesCycleMonitor {
     private var open: List[Symbol] = Nil
-    @inline private def cycleLog(msg: => String) {
+    @inline private def cycleLog(msg: => String): Unit = {
       if (settings.debug)
         Console.err.println(msg)
     }
     def size = open.size
-    def push(clazz: Symbol) {
+    def push(clazz: Symbol): Unit = {
       cycleLog("+ " + ("  " * size) + clazz.fullNameString)
       open ::= clazz
     }
-    def pop(clazz: Symbol) {
+    def pop(clazz: Symbol): Unit = {
       assert(open.head eq clazz, (clazz, open))
       open = open.tail
     }
     def isOpen(clazz: Symbol) = open contains clazz
   }
 
-  protected def defineBaseClassesOfCompoundType(tpe: CompoundType) {
+  protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
     def define() = defineBaseClassesOfCompoundType(tpe, force = false)
     if (!breakCycles || isPastTyper) define()
     else tpe match {
@@ -1590,7 +1590,7 @@ trait Types
         define()
     }
   }
-  private def defineBaseClassesOfCompoundType(tpe: CompoundType, force: Boolean) {
+  private def defineBaseClassesOfCompoundType(tpe: CompoundType, force: Boolean): Unit = {
     val period = tpe.baseClassesPeriod
     if (period == currentPeriod) {
       if (force && breakCycles) {
@@ -1700,7 +1700,7 @@ trait Types
   }
 
   /** Overridden in reflection compiler */
-  def validateClassInfo(tp: ClassInfoType) {}
+  def validateClassInfo(tp: ClassInfoType): Unit = {}
 
   /** A class representing a class info
    */
@@ -1765,7 +1765,7 @@ trait Types
     /** Augment existing refs map with reference <pre>from -> to</pre>
      *  @param  which <- {NonExpansive, Expansive}
      */
-    private def addRef(which: Int, from: Symbol, to: Symbol) {
+    private def addRef(which: Int, from: Symbol, to: Symbol): Unit = {
       refs(which) = refs(which) + (from -> (getRefs(which, from) + to))
     }
 
@@ -1773,7 +1773,7 @@ trait Types
      *  all elements <pre>sym</pre> of set `to`.
      *  @param  which <- {NonExpansive, Expansive}
      */
-    private def addRefs(which: Int, from: Symbol, to: Set[Symbol]) {
+    private def addRefs(which: Int, from: Symbol, to: Set[Symbol]): Unit = {
       refs(which) = refs(which) + (from -> (getRefs(which, from) ++ to))
     }
 
@@ -1807,7 +1807,7 @@ trait Types
         }
         tp.mapOver(this)
       }
-      def enter(tparam0: Symbol, parent: Type) {
+      def enter(tparam0: Symbol, parent: Type): Unit = {
         this.tparam = tparam0
         this(parent)
       }
@@ -1815,7 +1815,7 @@ trait Types
 
     /** Compute initial (one-step) references and set state to `Initializing`.
      */
-    private def computeRefs() {
+    private def computeRefs(): Unit = {
       refs = Array(Map(), Map())
       typeSymbol.typeParams foreach { tparam =>
         parents foreach { p =>
@@ -3255,7 +3255,7 @@ trait Types
         this
       }
 
-    def addLoBound(tp: Type, isNumericBound: Boolean = false) {
+    def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
       //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
@@ -3264,7 +3264,7 @@ trait Types
       }
     }
 
-    def addHiBound(tp: Type, isNumericBound: Boolean = false) {
+    def addHiBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // assert(tp != this)
       //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
       if (!sharesConstraints(tp)) {
@@ -3311,7 +3311,7 @@ trait Types
         assert(tp != this)
 
       // side effect: adds the type to upper or lower bounds
-      def addBound(tp: Type) {
+      def addBound(tp: Type): Unit = {
         if (isLowerBound) addLoBound(tp, isNumericBound)
         else addHiBound(tp, isNumericBound)
       }
@@ -4783,7 +4783,7 @@ trait Types
   /** Make symbol `sym` a member of scope `tp.decls`
    *  where `thistp` is the narrowed owner type of the scope.
    */
-  def addMember(thistp: Type, tp: Type, sym: Symbol, depth: Depth) {
+  def addMember(thistp: Type, tp: Type, sym: Symbol, depth: Depth): Unit = {
     assert(sym != NoSymbol)
     // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!specializesSym(thistp, sym, depth)) {
@@ -4845,12 +4845,12 @@ trait Types
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `found <:< required`. */
-  def explainTypes(found: Type, required: Type) {
+  def explainTypes(found: Type, required: Type): Unit = {
     if (settings.explaintypes) withTypesExplained(found <:< required)
   }
 
   /** If option `explaintypes` is set, print a subtype trace for `op(found, required)`. */
-  def explainTypes(op: (Type, Type) => Any, found: Type, required: Type) {
+  def explainTypes(op: (Type, Type) => Any, found: Type, required: Type): Unit = {
     if (settings.explaintypes) withTypesExplained(op(found, required))
   }
 

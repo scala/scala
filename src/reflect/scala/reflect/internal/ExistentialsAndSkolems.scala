@@ -26,7 +26,7 @@ trait ExistentialsAndSkolems {
     class Deskolemizer extends LazyType {
       override val typeParams = tparams
       val typeSkolems  = typeParams map (_.newTypeSkolem setInfo this)
-      override def complete(sym: Symbol) {
+      override def complete(sym: Symbol): Unit = {
         // The info of a skolem is the skolemized info of the
         // actual type parameter of the skolem
         sym setInfo sym.deSkolemize.info.substSym(typeParams, typeSkolems)

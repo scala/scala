@@ -287,7 +287,7 @@ abstract class CopyProp {
           if (stackOffset >= 0) {
             val prods = producersIfSingleConsumer(prod, frame.stackTop - stackOffset)
             val nSize = frame.peekStack(stackOffset).getSize
-            if (prods.isEmpty) pops append getPop(nSize)
+            if (prods.isEmpty) pops += getPop(nSize)
             else queue ++= prods.map(ProducedValue(_, nSize))
             handle(stackOffset - 1)
           }

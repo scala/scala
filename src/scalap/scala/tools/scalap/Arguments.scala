@@ -57,7 +57,7 @@ object Arguments {
       res
     }
 
-    def parse(args: Array[String], res: Arguments) {
+    def parse(args: Array[String], res: Arguments): Unit = {
       if (args != null) {
         var i = 0
         while (i < args.length)

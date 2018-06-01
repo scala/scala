@@ -42,16 +42,16 @@ trait NodePrinters {
 
           val annotations = m.group(3)
           if (buf.nonEmpty || annotations != "")
-            buf.append("List(" + annotations + ")")
+            buf += s"List($annotations)"
 
           val privateWithin = "" + m.group(2)
           if (buf.nonEmpty || privateWithin != "")
-            buf.append("TypeName(\"" + privateWithin + "\")")
+            buf += {"TypeName(\"" + privateWithin + "\")"}
 
           val bits = m.group(1)
           if (buf.nonEmpty || bits != "0L") {
             flagsAreUsed = true
-            buf.append(show(bits.toLong))
+            buf += show(bits.toLong)
           }
 
           val replacement = "Modifiers(" + buf.reverse.mkString(", ")  + ")"

@@ -96,7 +96,7 @@ abstract class DirectTest extends App {
   protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
   protected def debugSettings = sys.props.getOrElse("partest.debug.settings", "")
 
-  final def log(msg: => Any) {
+  final def log(msg: => Any): Unit = {
     if (isDebug) Console.err println msg
   }
 

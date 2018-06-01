@@ -354,7 +354,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           }
         }
 
-        if (newDecls nonEmpty) {
+        if (newDecls.nonEmpty) {
           val allDecls = newScope
           origDecls foreach allDecls.enter
           newDecls  foreach allDecls.enter
@@ -679,7 +679,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs)
       }
 
-      (afterOwnPhase { clazz.info.decls } toList) filter checkAndClearNeedsTrees map {
+      (afterOwnPhase { clazz.info.decls }.toList) filter checkAndClearNeedsTrees map {
         case module if module hasAllFlags (MODULE | METHOD) => moduleAccessorBody(module)
         case getter if getter hasAllFlags (LAZY | METHOD)   => superLazy(getter)
         case setter if setter.isSetter                      => setterBody(setter)

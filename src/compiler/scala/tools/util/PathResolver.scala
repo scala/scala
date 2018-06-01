@@ -24,12 +24,12 @@ object PathResolver {
   import java.lang.System.{lineSeparator => EOL}
 
   implicit class MkLines(val t: IterableOnce[_]) extends AnyVal {
-    def mkLines: String = t.mkString("", EOL, EOL)
+    def mkLines: String = t.iterator.mkString("", EOL, EOL)
     def mkLines(header: String, indented: Boolean = false, embraced: Boolean = false): String = {
       val space = "\u0020"
       val sep = if (indented) EOL + space * 2 else EOL
       val (lbrace, rbrace) = if (embraced) (space + "{", EOL + "}") else ("", "")
-      t.mkString(header + lbrace + sep, sep, rbrace + EOL)
+      t.iterator.mkString(header + lbrace + sep, sep, rbrace + EOL)
     }
   }
   implicit class AsLines(val s: String) extends AnyVal {

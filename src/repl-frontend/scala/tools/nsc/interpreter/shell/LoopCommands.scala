@@ -77,7 +77,7 @@ trait LoopCommands {
   }
 
   def helpSummary() = {
-    val usageWidth = commands map (_.usageMsg.length) max
+    val usageWidth = commands.map(_.usageMsg.length).max
     val formatStr  = s"%-${usageWidth}s %s"
 
     echo("All commands can be abbreviated, e.g., :he instead of :help.")

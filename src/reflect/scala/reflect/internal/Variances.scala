@@ -35,7 +35,7 @@ trait Variances {
      *  escaped locals.
      *  @pre  sym.isLocalToThis
      */
-    @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
+    @tailrec final def checkForEscape(sym: Symbol, site: Symbol): Unit = {
       if (site == sym.owner || site == sym.owner.moduleClass || site.hasPackageFlag) () // done
       else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
       else escapedLocals += sym
@@ -94,7 +94,7 @@ trait Variances {
         case _                           => false
       }
 
-      private def checkVarianceOfSymbol(sym: Symbol) {
+      private def checkVarianceOfSymbol(sym: Symbol): Unit = {
         val relative = relativeVariance(sym)
         val required = relative * variance
         if (!relative.isBivariant) {
@@ -142,7 +142,7 @@ trait Variances {
         // As such, we need to expand references to them to retain soundness. Example: neg/t8079a.scala
         sym.isAliasType && isExemptFromVariance(sym)
       }
-      def validateDefinition(base: Symbol) {
+      def validateDefinition(base: Symbol): Unit = {
         val saved = this.base
         this.base = base
         try apply(base.info)
@@ -151,11 +151,11 @@ trait Variances {
     }
 
     /** Validate variance of info of symbol `base` */
-    private def validateVariance(base: Symbol) {
+    private def validateVariance(base: Symbol): Unit = {
       ValidateVarianceMap validateDefinition base
     }
 
-    override def traverse(tree: Tree) {
+    override def traverse(tree: Tree): Unit = {
       def sym = tree.symbol
       // No variance check for object-private/protected methods/values.
       // Or constructors, or case class factory or extractor.

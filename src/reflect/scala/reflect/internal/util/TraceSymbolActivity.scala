@@ -17,18 +17,18 @@ trait TraceSymbolActivity {
   val prevOwners  = mutable.Map[Int, List[(Int, Phase)]]() withDefaultValue Nil
   val allTrees    = mutable.Set[Tree]()
 
-  def recordSymbolsInTree(tree: Tree) {
+  def recordSymbolsInTree(tree: Tree): Unit = {
     if (enabled)
       allTrees += tree
   }
 
-  def recordNewSymbol(sym: Symbol) {
+  def recordNewSymbol(sym: Symbol): Unit = {
     if (enabled && sym.id > 1) {
       allSymbols(sym.id) = sym
       allChildren(sym.owner.id) ::= sym.id
     }
   }
-  def recordNewSymbolOwner(sym: Symbol, newOwner: Symbol) {
+  def recordNewSymbolOwner(sym: Symbol, newOwner: Symbol): Unit = {
     if (enabled) {
       val sid = sym.id
       val oid = sym.owner.id
@@ -44,14 +44,14 @@ trait TraceSymbolActivity {
   private def signature(id: Int) = enteringPhase(erasurePhase)(allSymbols(id).defString)
 
   private def dashes(s: Any): String = ("" + s) map (_ => '-')
-  private def show(s1: Any, ss: Any*) {
+  private def show(s1: Any, ss: Any*): Unit = {
     println("%-12s".format(s1) +: ss mkString " ")
   }
-  private def showHeader(s1: Any, ss: Any*) {
+  private def showHeader(s1: Any, ss: Any*): Unit = {
     show(s1, ss: _*)
     show(dashes(s1), ss map dashes: _*)
   }
-  private def showSym(sym: Symbol) {
+  private def showSym(sym: Symbol): Unit = {
     def prefix = ("  " * (sym.ownerChain.length - 1)) + sym.id
     try println("%s#%s %s".format(prefix, sym.accurateKindString, sym.name.decode))
     catch {
@@ -59,7 +59,7 @@ trait TraceSymbolActivity {
     }
     allChildren(sym.id).sorted foreach showIdAndRemove
   }
-  private def showIdAndRemove(id: Int) {
+  private def showIdAndRemove(id: Int): Unit = {
     allSymbols remove id foreach showSym
   }
   private def symbolStr(id: Int): String = {
@@ -78,7 +78,7 @@ trait TraceSymbolActivity {
     ys.toList sortBy (-_._2)
   }
 
-  private def showMapFreq[T](xs: scala.collection.Map[T, Iterable[_]])(showFn: T => String) {
+  private def showMapFreq[T](xs: scala.collection.Map[T, Iterable[_]])(showFn: T => String): Unit = {
     xs.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
       show(size, showFn(k))
     }
@@ -88,7 +88,7 @@ trait TraceSymbolActivity {
     showMapFreq(xs.toList groupBy groupFn)(showFn)
   }
 
-  def showAllSymbols() {
+  def showAllSymbols(): Unit = {
     if (!enabled) return
     enabled = false
     allSymbols(1) = NoSymbol

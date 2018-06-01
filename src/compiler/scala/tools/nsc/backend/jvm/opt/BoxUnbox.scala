@@ -229,9 +229,9 @@ abstract class BoxUnbox {
           val localSlots = Vector.from[(Int, Type)](boxKind.boxedTypes.iterator.map(tp => (getLocal(tp.getSize), tp)))
 
           // store boxed value(s) into localSlots
-          val storeOps = localSlots.toList reverseMap { case (slot, tp) =>
+          val storeOps = localSlots.reverseIterator map { case (slot, tp) =>
             new VarInsnNode(tp.getOpcode(ISTORE), slot)
-          }
+          } to(List)
           val storeInitialValues = creation.loadInitialValues match {
             case Some(ops) => ops ::: storeOps
             case None => storeOps
@@ -333,7 +333,7 @@ abstract class BoxUnbox {
                 pops ::: extraction.postExtractionAdaptationOps(boxKind.boxedTypes.head)
               } else {
                 var loadOps: List[AbstractInsnNode] = null
-                val consumeStack = boxKind.boxedTypes.zipWithIndex reverseMap {
+                val consumeStack = boxKind.boxedTypes.zipWithIndex.reverseIterator.map {
                   case (tp, i) =>
                     if (i == valueIndex) {
                       val resultSlot = getLocal(tp.getSize)
@@ -342,7 +342,7 @@ abstract class BoxUnbox {
                     } else {
                       getPop(tp.getSize)
                     }
-                }
+                }.to(List)
                 consumeStack ::: loadOps
               }
               toReplace(extraction.consumer) = replacementOps
@@ -512,7 +512,7 @@ abstract class BoxUnbox {
           new VarInsnNode(opc, tp._2)
         }
         val locs = newLocals(vi.`var`)
-        replacements += vi -> (if (isLoad) locs.map(typedVarOp) else locs.reverseMap(typedVarOp))
+        replacements += vi -> (if (isLoad) locs.map(typedVarOp) else locs.map(typedVarOp).reverse)
 
       case copyOp =>
         if (copyOp.getOpcode == DUP && valueTypes.lengthCompare(1) == 0) {

@@ -116,7 +116,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
         count += 1
       }
     }
-    if (mergedEntries isEmpty) Nil else mergedEntries.toIndexedSeq
+    if (mergedEntries.isEmpty) Nil else mergedEntries.toIndexedSeq
   }
 
   private def getDistinctEntries[EntryType <: ClassRepresentation](getEntries: ClassPath => Seq[EntryType]): Seq[EntryType] = {
@@ -128,7 +128,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     } {
       if (seenNames.add(entry.name)) entriesBuffer += entry
     }
-    if (entriesBuffer isEmpty) Nil else entriesBuffer.toIndexedSeq
+    if (entriesBuffer.isEmpty) Nil else entriesBuffer.toIndexedSeq
   }
 }
 

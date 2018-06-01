@@ -27,7 +27,7 @@ private[internal] trait TypeConstraints {
 
     /** Undo all changes to constraints to type variables up to `limit`. */
     //OPT this method is public so we can do `manual inlining`
-    def undoTo(limit: UndoPairs) {
+    def undoTo(limit: UndoPairs): Unit = {
       assertCorrectThread()
       while ((log ne limit) && log.nonEmpty) {
         val UndoPair(tv, constr) = log.head
@@ -44,7 +44,7 @@ private[internal] trait TypeConstraints {
       log ::= UndoPair(tv, tv.constr.cloneInternal)
     }
 
-    def clear() {
+    def clear(): Unit = {
       if (settings.debug)
         self.log("Clearing " + log.size + " entries from the undoLog.")
       log = Nil
@@ -98,7 +98,7 @@ private[internal] trait TypeConstraints {
     def stopWideningIfPrecluded(): Unit =
       if (instValid && TypeVar.precludesWidening(inst)) stopWidening
 
-    def addLoBound(tp: Type, isNumericBound: Boolean = false) {
+    def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // For some reason which is still a bit fuzzy, we must let Nothing through as
       // a lower bound despite the fact that Nothing is always a lower bound.  My current
       // supposition is that the side-effecting type constraint accumulation mechanism
@@ -120,7 +120,7 @@ private[internal] trait TypeConstraints {
       }
     }
 
-    def checkWidening(tp: Type) {
+    def checkWidening(tp: Type): Unit = {
       if (TypeVar.precludesWidening(tp)) stopWidening()
       else tp match {
         case HasTypeMember(_, _) => stopWidening()
@@ -128,7 +128,7 @@ private[internal] trait TypeConstraints {
       }
     }
 
-    def addHiBound(tp: Type, isNumericBound: Boolean = false) {
+    def addHiBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // My current test case only demonstrates the need to let Nothing through as
       // a lower bound, but I suspect the situation is symmetrical.
       val mustConsider = typeIsAny(tp) || !(hibounds contains tp)

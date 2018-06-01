@@ -19,7 +19,7 @@ private[internal] trait GlbLubs {
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
-  private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Depth) {
+  private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Depth): Unit = {
     import util.TableDef
     import TableDef.Column
     def str(tp: Type) = {

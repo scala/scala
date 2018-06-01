@@ -24,7 +24,7 @@ private[jvm] sealed trait GeneratedClassHandler {
   /**
     * Pass the result of code generation for a compilation unit to this handler for post-processing
     */
-  def process(unit: GeneratedCompilationUnit)
+  def process(unit: GeneratedCompilationUnit): Unit
 
   /**
    * If running in parallel, block until all generated classes are handled

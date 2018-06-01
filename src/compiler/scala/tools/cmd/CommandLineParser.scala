@@ -43,7 +43,7 @@ object CommandLineParser {
     }
     def skipToDelim(): Boolean =
       cur match {
-        case q @ (DQ | SQ)        => { qpos.append(pos); bump(); skipToQuote(q) } && { qpos.append(pos); bump(); skipToDelim() }
+        case q @ (DQ | SQ)        => { qpos += pos; bump(); skipToQuote(q) } && { qpos += pos; bump(); skipToDelim() }
         case -1                   => true
         case c if isWhitespace(c) => true
         case _                    => bump(); skipToDelim()
