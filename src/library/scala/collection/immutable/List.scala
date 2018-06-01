@@ -281,15 +281,6 @@ sealed abstract class List[+A]
     b.toList
   }
 
-  @inline final override def dropWhile(p: A => Boolean): List[A] = {
-    @tailrec
-    def loop(xs: List[A]): List[A] =
-      if (xs.isEmpty || !p(xs.head)) xs
-      else loop(xs.tail)
-
-    loop(this)
-  }
-
   @inline final override def span(p: A => Boolean): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var these = this

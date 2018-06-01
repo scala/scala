@@ -50,15 +50,17 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
 
   // Optimized version of `drop` that avoids copying
   override def drop(n: Int): C = {
-    @tailrec def loop(n: Int, s: LinearSeq[A]): C =
-      if (n <= 0 || s.isEmpty) s.asInstanceOf[C]
-      // implicit contract to guarantee success of asInstanceOf:
-      //   (1) coll is of type C[A]
-      //   (2) The tail of a LinearSeq is of the same type as the type of the sequence itself
-      // it's surprisingly tricky/ugly to turn this into actual types, so we
-      // leave this contract implicit.
+    @tailrec def loop(n: Int, s: C): C =
+      if (n <= 0 || s.isEmpty) s
       else loop(n - 1, s.tail)
     loop(n, coll)
+  }
+
+  override def dropWhile(p: A => Boolean): C = {
+    @tailrec def loop(s: C): C =
+      if (s.nonEmpty && p(s.head)) loop(s.tail)
+      else s
+    loop(coll)
   }
 
   // `apply` is defined in terms of `drop`, which is in turn defined in
