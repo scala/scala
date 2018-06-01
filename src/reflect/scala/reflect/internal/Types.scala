@@ -168,19 +168,7 @@ trait Types
    *  forwarded here. Some operations are rewrapped again.
    */
   trait RewrappingTypeProxy extends SimpleTypeProxy {
-    protected def maybeRewrap(newtp: Type) = (
-      if (newtp eq underlying) this
-      else {
-        // - BoundedWildcardTypes reach here during erroneous compilation: neg/t6258
-        // - Higher-kinded exclusion is because [x]CC[x] compares =:= to CC: pos/t3800
-        // - Avoid reusing the existing Wrapped(RefinedType) when we've be asked to wrap an =:= RefinementTypeRef, the
-        //   distinction is important in base type sequences. See TypesTest.testExistentialRefinement
-        // - Otherwise, if newtp =:= underlying, don't rewrap it.
-        val hasSpecialMeaningBeyond_=:= = newtp.isWildcard || newtp.isHigherKinded || newtp.isInstanceOf[RefinementTypeRef]
-        if (!hasSpecialMeaningBeyond_=:= && (newtp =:= underlying)) this
-        else rewrap(newtp)
-      }
-    )
+    protected def maybeRewrap(newtp: Type) = if (newtp eq underlying) this else rewrap(newtp)
     protected def rewrap(newtp: Type): Type
 
     // the following are all operations in class Type that are overridden in some subclass
