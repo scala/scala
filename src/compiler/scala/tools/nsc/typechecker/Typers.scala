@@ -3639,13 +3639,28 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case _ => tp
                 }
 
-                // Inline RHS of ValDef for right-associative by-value operator desugaring
-                val (args2, pos2) = (args1, mt.params) match {
-                  case ((ident: Ident) :: Nil, param :: Nil) if param.isByNameParam && rightAssocValDefs.contains(ident.symbol) =>
-                    inlinedRightAssocValDefs += ident.symbol
-                    val rhs = rightAssocValDefs.remove(ident.symbol).get
-                    (rhs.changeOwner(ident.symbol -> context.owner) :: Nil, wrappingPos(tree :: rhs :: Nil))
-                  case _ => (args1, tree.pos)
+                // Inline RHS of ValDef for right-associative by-value operator desugaring.
+                // Remove the ValDef also if the argument is a constant-folded reference to it.
+                var (args2, pos2) = (args1, tree.pos)
+                args1 match {
+                  case List(lit: Literal) =>
+                    lit.attachments.get[OriginalTreeAttachment] match {
+                      case Some(OriginalTreeAttachment(id: Ident)) if rightAssocValDefs.contains(id.symbol) =>
+                        inlinedRightAssocValDefs += id.symbol
+                        rightAssocValDefs.remove(id.symbol)
+                      case _ =>
+                    }
+
+                  case List(id: Ident) if rightAssocValDefs.contains(id.symbol) =>
+                    mt.params match {
+                      case List(p) if p.isByNameParam =>
+                        inlinedRightAssocValDefs += id.symbol
+                        val rhs = rightAssocValDefs.remove(id.symbol).get
+                        args2 = rhs.changeOwner(id.symbol -> context.owner) :: Nil
+                        pos2 = wrappingPos(tree :: rhs :: Nil)
+                      case _ =>
+                    }
+                  case _ =>
                 }
 
                 /*
