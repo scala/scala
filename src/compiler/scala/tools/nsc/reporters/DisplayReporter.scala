@@ -46,7 +46,7 @@ trait PrintReporter extends InternalReporter {
 
   /** Format a message and emit it. */
   def display(pos: Position, msg: String, severity: Severity): Unit = {
-    val text = formatMessage(pos, s"${clabel(severity)}${msg}", shortname)
+    val text = formatMessage(pos, s"${clabel(severity)}${DisplayReporter.explanation(msg)}", shortname)
     severity match {
       case INFO => echoMessage(text)
       case _    => printMessage(text)
@@ -97,6 +97,21 @@ object DisplayReporter {
     writer: PrintWriter     = new PrintWriter(Console.err, true),
     echoWriter: PrintWriter = new PrintWriter(Console.out, true)
   ) = new DisplayReporter(settings, reader, writer, echoWriter)
+
+  /** Take the message with its explanation, if it has one. */
+  def explanation(msg: String): String = splitting(msg, explaining = true)
+
+  /** Take the message without its explanation, if it has one. */
+  def stripExplanation(msg: String): String = splitting(msg, explaining = false)
+
+  /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
+  private def splitting(msg: String, explaining: Boolean): String =
+    if (msg.indexOf("\n----") > 0) {
+      val (err, exp) = msg.lines.span(!_.startsWith("----"))
+      if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
+    } else {
+      msg
+    }
 }
 
 /** A reporter that filters by position and forwards for display */
