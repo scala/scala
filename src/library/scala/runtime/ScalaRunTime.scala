@@ -254,12 +254,12 @@ object ScalaRunTime {
   }
 
   /** stringOf formatted for use in a repl result. */
-  def replStringOf(arg: Any, maxElements: Int): String = {
-    val s  = stringOf(arg, maxElements)
-    val nl = if (s contains "\n") "\n" else ""
-
-    nl + s + "\n"
-  }
+  def replStringOf(arg: Any, maxElements: Int): String =
+    stringOf(arg, maxElements) match {
+      case null => "null toString"
+      case s if s.indexOf('\n') >= 0 => "\n" + s + "\n"
+      case s => s + "\n"
+    }
 
   // Convert arrays to immutable.ArraySeq for use with Java varargs:
   def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =

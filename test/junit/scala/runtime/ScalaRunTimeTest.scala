@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 class ScalaRunTimeTest {
   @Test
   def testStringOf(): Unit = {
-    import ScalaRunTime.stringOf
+    import ScalaRunTime.{replStringOf, stringOf}
     import scala.collection._
 
     assertEquals("null", stringOf(null))
@@ -51,9 +51,15 @@ class ScalaRunTimeTest {
     assertEquals("(Array(0),1,2)", stringOf((Array(0), 1, 2)))
 
     val x = new Object {
-        override def toString(): String = "this is the stringOf string"
+      override def toString(): String = "this is the stringOf string"
     }
-    assertEquals(stringOf(x), "this is the stringOf string")
-    assertEquals(stringOf(x, 2), "this is the stringOf string")
+    assertEquals("this is the stringOf string", stringOf(x))
+    assertEquals("this is the stringOf string", stringOf(x, 2))
+
+    val tpolecat = new Object {
+      override def toString(): String = null
+    }
+    assertEquals(null, stringOf(tpolecat))
+    assertEquals("null toString", replStringOf(tpolecat, 100))
   }
 }
