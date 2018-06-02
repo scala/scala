@@ -46,16 +46,18 @@ trait PositionFiltering extends InternalReporter with Filtering {
         case ERROR                    => true  // already error at position
         case highest
           if highest.id > severity.id => true  // already message higher than present severity
-        case `severity`               => messages(fpos) contains msg // already issued this exact message
+        case `severity`               => matchAt(fpos, msg) // already issued this (in)exact message
         case _                        => false // good to go
       }
 
       suppress || {
         positions(fpos) = severity
-        messages(fpos) ::= msg
+        messages(fpos) ::= DisplayReporter.stripExplanation(msg)  // ignore explanatory suffix for suppressing duplicates
         false
       }
     }
+  // was a prefix of the msg already reported at this position for purposes of suppressing repetition?
+  private def matchAt(pos: Position, msg: String): Boolean = messages(pos).exists(msg.startsWith(_))
 }
 
 /** This reporter implements filtering by severity and position.

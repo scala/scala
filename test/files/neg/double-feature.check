@@ -1,0 +1,19 @@
+double-feature.scala:4: warning: implicit conversion method f should be enabled
+by making the implicit value scala.language.implicitConversions visible.
+This can be achieved by adding the import clause 'import scala.language.implicitConversions'
+or by setting the compiler option -language:implicitConversions.
+See the Scaladoc for value scala.language.implicitConversions for a discussion
+why the feature should be explicitly enabled.
+  implicit def f(t: T): String = "I am the tee"
+               ^
+double-feature.scala:6: warning: postfix operator + should be enabled
+by making the implicit value scala.language.postfixOps visible.
+This can be achieved by adding the import clause 'import scala.language.postfixOps'
+or by setting the compiler option -language:postfixOps.
+See the Scaladoc for value scala.language.postfixOps for a discussion
+why the feature should be explicitly enabled.
+  val g: Int => Int = 1 +
+                        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
