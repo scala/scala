@@ -30,7 +30,7 @@ object Test extends App {
         |package runtime
         |
         |trait JavaUniverseForce { self: runtime.JavaUniverse  =>
-        |  def force() {
+        |  def force(): Unit = {
         |    Literal(Constant(42)).duplicate
         |    nme.flattenedName()
         |    nme.raw

@@ -212,7 +212,7 @@ trait Interface extends ast.TreeDSL {
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
 
         val checkType = new TypeCollector[Boolean](false) {
-          def traverse(tp: Type) {
+          def traverse(tp: Type): Unit = {
             if (!result) {
               tp match {
                 case SingleType(_, sym) =>
