@@ -3,3 +3,4 @@
   scala.Predef.ArrowAssoc[Int](1).->[Int](2)
 }
 scala.tools.reflect.ToolBoxError: reflective typecheck has failed: value -> is not a member of Int
+did you mean >>>?

@@ -1,5 +1,5 @@
 noMember2.scala:2: error: object IterableOnceOps is not a member of package collection
-Note: trait IterableOnceOps exists, but it has no companion object.
+note: trait IterableOnceOps exists, but it has no companion object.
   val m = scala.collection.IterableOnceOps(1, 2, 3)
                            ^
 one error found

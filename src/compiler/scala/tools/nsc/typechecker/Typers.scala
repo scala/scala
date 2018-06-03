@@ -4287,9 +4287,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (name == nme.ERROR || qual.tpe.widen.isErroneous)
           NoSymbol
         else lookupInOwner(qual.tpe.typeSymbol, name) orElse {
-          NotAMemberError(tree, qual, name)
+          NotAMemberError(tree, qual, name, startingIdentContext)
           NoSymbol
         }
+      )
+
+      def startingIdentContext = (
+        // ignore current variable scope in patterns to enforce linearity
+        if (mode.inNone(PATTERNmode | TYPEPATmode)) context
+        else context.outer
       )
 
       def typedAnnotated(atd: Annotated): Tree = {
@@ -4583,7 +4589,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             && !(sym.isJavaAnnotation && context.inAnnotation))
           IsAbstractError(tree, sym)
         else if (isPrimitiveValueClass(sym)) {
-          NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR)
+          NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR, startingIdentContext)
           setError(tpt)
         }
         else if (!(  tp == sym.typeOfThis // when there's no explicit self type -- with (#3612) or without self variable
