@@ -16,7 +16,7 @@ trait Set[A]
   * @define coll mutable set
   * @define Coll `mutable.Set`
   */
-trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
+trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] with CC[A]]
   extends IterableOps[A, CC, C]
     with collection.SetOps[A, CC, C]
     with Cloneable[C]

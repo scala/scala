@@ -37,7 +37,7 @@ trait Set[A]
   * @define coll set
   * @define Coll `Set`
   */
-trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
+trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] with CC[A]]
   extends IterableOps[A, CC, C]
      with (A => Boolean) {
 

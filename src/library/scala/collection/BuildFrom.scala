@@ -70,7 +70,7 @@ object BuildFrom extends BuildFromLowPriority1 {
 trait BuildFromLowPriority1 extends BuildFromLowPriority2 {
 
   /** Build the source collection type from an Iterable with SortedOps */
-  implicit def buildFromSortedSetOps[CC[X] <: SortedSet[X] with SortedSetOps[X, CC, _], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
+  implicit def buildFromSortedSetOps[CC[X] <: SortedSetOps[X, CC, CC[X]] with SortedSet[X], A0, A : Ordering]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
     def newBuilder(from: CC[A0]): Builder[A, CC[A]] = from.sortedIterableFactory.newBuilder[A]
     def fromSpecificIterable(from: CC[A0])(it: Iterable[A]): CC[A] = from.sortedIterableFactory.from(it)
   }

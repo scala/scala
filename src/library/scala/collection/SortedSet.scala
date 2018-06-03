@@ -26,7 +26,7 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(sortedIterableFactory.evidenceIterableFactory[A], this)
 }
 
-trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
+trait SortedSetOps[A, +CC[X] <: SortedSetOps[X, CC, _] with SortedSet[X], +C <: SortedSetOps[A, CC, C] with CC[A]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
@@ -84,7 +84,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
       rangeUntil(next)
   }
 
-  override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, IterableCC, CC] = new SortedSetOps.WithFilter(this, p)
+  override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, IterableCC, CC] = new SortedSetOps.WithFilter[A, IterableCC, CC](this, p)
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll.
     *
@@ -138,7 +138,7 @@ object SortedSetOps {
     *
     * @define coll sorted collection
     */
-  class WithFilter[+A, +IterableCC[_], +CC[X] <: SortedSet[X]](
+  class WithFilter[+A, +IterableCC[_], +CC[X] <: SortedSetOps[X, CC, _] with SortedSet[X]](
     self: SortedSetOps[A, CC, _] with IterableOps[A, IterableCC, _],
     p: A => Boolean
   ) extends IterableOps.WithFilter[A, IterableCC](self, p) {
