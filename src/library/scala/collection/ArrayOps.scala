@@ -413,6 +413,24 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def filterNot(p: A => Boolean): Array[A] = filter(x => !p(x))
 
+  /** Selects all elements of this array which satisfy a predicate and then applying a function to the elements of this array.
+    *
+    * @param p the predicate used to test elements.
+    * @param f the function to apply to each element.
+    * @tparam B the element type of the returned array.
+    * @return a new array consisting of all elements of this array that satisfy the given predicate `p`.
+    */
+  def filterMap(p: A => Boolean)(f: A => B): Array[B] = {
+    var res = ArrayBuilder.make[B]
+    var i = 0
+    while (i < xs.length) {
+      val x = xs(i)
+      if (p(x)) res += f(x)
+      i += 1
+    }
+    res.result()
+  }
+
   /** Sorts this array according to an Ordering.
     *
     *  The sort is stable. That is, elements that are equal (as determined by
@@ -642,7 +660,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(1, 2, 3, 4).scanLeft(0)(_ + _) == Array(0, 1, 3, 6, 10)
-    *  }}}    
+    *  }}}
     *
     */
   def scanLeft[ B : ClassTag ](z: B)(op: (B, A) => B): Array[B] = {
@@ -655,7 +673,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       i += 1
     }
     res(i) = v
-    res 
+    res
   }
 
   /** Computes a prefix scan of the elements of the array.
@@ -681,7 +699,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(4, 3, 2, 1).scanRight(0)(_ + _) == Array(10, 6, 3, 1, 0)
-    *  }}}    
+    *  }}}
     *
     */
   def scanRight[ B : ClassTag ](z: B)(op: (A, B) => B): Array[B] = {
@@ -694,7 +712,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       res(i) = v
       i -= 1
     }
-    res 
+    res
   }
 
   /** Applies a binary operator to all elements of this array and a start value,
@@ -789,6 +807,25 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     var i = 0
     while (i < xs.length) {
       res(i) = f(xs(i))
+      i = i + 1
+    }
+    res
+  }
+
+  /** Builds a new array by selecting the elements of this array which satisfy a predicate after applying a function to all elements of this array.
+    *
+    * @param f the function to apply to each element.
+    * @tparam B the element type of the returned array.
+    * @param p the predicate used to test elements.
+    * @return a new aray resulting from applying the given function
+    *         `f` to each element of this array and collecting the results.
+    */
+  def mapFilter[B: ClassTag](f: A => B)(p: B => Boolean): Array[B] = {
+    var res = new Array[B](xs.length)
+    var i = 0
+    while (i < xs.length) {
+      var x = f(xs(i))
+      if (p(x)) res(i) = x
       i = i + 1
     }
     res

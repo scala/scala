@@ -30,10 +30,24 @@ trait HOSeq {
       buf.result
     }
 
+    def filterMap(p: t => Boolean)(f: t => s): m[s] = {
+      val buf = accumulator[s]
+      val elems = iterator
+      while (elems.hasNext) { val x = elems.next; if (p(x)) buf += f(x) }
+      buf.result
+    }
+
     def map[s](f: t => s): m[s] = {
       val buf = accumulator[s]
       val elems = iterator
       while (elems.hasNext) buf += f(elems.next)
+      buf.result
+    }
+
+    def mapFilter[s](f: t => s)(p: s => Boolean): m[s] = {
+      val buf = accumulator[s]
+      val elems = iterator
+      while (elems.hasNext) { val x = f(elems.next); if(p(x)) buf += x }
       buf.result
     }
 
