@@ -429,7 +429,7 @@ trait Solving extends Logic {
           if (model ne NoTseitinModel) {
             // note that we should not expand the auxiliary variables (from Tseitin transformation)
             // since they are existentially quantified in the final solution
-            val unassigned: List[Int] = (relevantVars -- model.map(lit => lit.variable)).toList
+            val unassigned: List[Int] = (relevantVars diff model.map(lit => lit.variable)).toList
             debug.patmat("unassigned "+ unassigned +" in "+ model)
 
             val solution = TseitinSolution(model, unassigned)

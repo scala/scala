@@ -63,7 +63,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     if (used > (table.length >> 2)) growTable()
   }
   def addEntries(xs: IterableOnce[T]): Unit = {
-    xs foreach addEntry
+    xs.iterator foreach addEntry
   }
 
   def iterator = new Iterator[T] {

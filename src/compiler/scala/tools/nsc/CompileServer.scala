@@ -73,7 +73,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
     val ss1 = trim(s1)
     val ss2 = trim(s2)
 
-    (ss1 union ss2) -- (ss1 intersect ss2)
+    (ss1 union ss2) diff (ss1 intersect ss2)
   }
 
   def session(): Unit = {

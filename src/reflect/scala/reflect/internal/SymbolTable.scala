@@ -165,7 +165,7 @@ abstract class SymbolTable extends macros.Universe
     throw new java.lang.IllegalArgumentException(s"requirement failed: ${supplementErrorMessage(String valueOf msg)}")
 
   @inline final def findSymbol(xs: IterableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
-    xs find p getOrElse NoSymbol
+    xs.iterator find p getOrElse NoSymbol
   }
 
   // For too long have we suffered in order to sort NAMES.
@@ -215,7 +215,7 @@ abstract class SymbolTable extends macros.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  private val phStack: collection.mutable.ArrayStack[Phase] = new collection.mutable.ArrayStack()
+  private val phStack: collection.mutable.Stack[Phase] = new collection.mutable.Stack()
   private[this] var ph: Phase = NoPhase
   private[this] var per = NoPeriod
 
@@ -226,7 +226,7 @@ abstract class SymbolTable extends macros.Universe
 
   def atPhaseStackMessage = atPhaseStack match {
     case Nil    => ""
-    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+    case ps     => ps.reverseIterator.map("->" + _).mkString("(", " ", ")")
   }
 
   final def phase_=(p: Phase): Unit = {
@@ -393,7 +393,7 @@ abstract class SymbolTable extends macros.Universe
   }
 
   object perRunCaches {
-    import scala.collection.generic.Clearable
+    import scala.collection.mutable.Clearable
 
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.

@@ -58,7 +58,7 @@ trait Placeholders { self: Quasiquotes =>
   object holeMap {
     private val underlying = mutable.LinkedHashMap.empty[String, Hole]
     private val accessed   = mutable.Set.empty[String]
-    def unused: Set[Name] = (underlying.keys.toSet -- accessed).map(TermName(_))
+    def unused: Set[Name] = (underlying.keys.toSet diff accessed).map(TermName(_))
     def contains(key: Name): Boolean = underlying.contains(key.toString)
     def apply(key: Name): Hole = {
       val skey = key.toString

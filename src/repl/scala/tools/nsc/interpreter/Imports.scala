@@ -132,13 +132,13 @@ trait Imports {
               case ReqAndHandler(_, _: ImportHandler) => referencedNames            // for "import a.b", add "a" to names to be resolved
               case _ => Nil
             }
-            val newWanted = wanted ++ augment -- definedNames.toSet -- importedNames.toSet
+            val newWanted = wanted ++ augment diff definedNames.toSet diff importedNames.toSet
             rh :: select(rest, newWanted)
         }
       }
 
       /** Flatten the handlers out and pair each with the original request */
-      select(allReqAndHandlers reverseMap { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
+      select(allReqAndHandlers.reverseIterator.map { case (r, h) => ReqAndHandler(r, h) }.toList, wanted).reverse
     }
 
     // add code for a new object to hold some imports

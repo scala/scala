@@ -286,7 +286,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       debuglog("degenerate: " + target + " stv tparams: " + stvTypeParams + " stv info: " + stvResult)
 
-      (stvTypeParams -- stvResult).nonEmpty
+      (stvTypeParams diff stvResult).nonEmpty
     }
   }
 
@@ -1031,7 +1031,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def needsSpecialOverride(overriding: Symbol): (Symbol, TypeEnv) = {
       def checkOverriddenTParams(overridden: Symbol): Unit = {
         foreach2(overridden.info.typeParams, overriding.info.typeParams) { (baseTvar, derivedTvar) =>
-          val missing = concreteTypes(baseTvar).toSet -- concreteTypes(derivedTvar).toSet
+          val missing = concreteTypes(baseTvar).toSet diff concreteTypes(derivedTvar).toSet
           if (missing.nonEmpty) {
             reporter.error(derivedTvar.pos,
               "Type parameter has to be specialized at least for the same types as in the overridden method. Missing "

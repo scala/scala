@@ -85,7 +85,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           methSym setInfoAndEnter MethodType(params, MethodClass.tpe)
 
           val methDef = typedPos(DefDef(methSym, forBody(methSym, params.head)))
-          newStaticMembers append transform(methDef)
+          newStaticMembers += transform(methDef)
           methSym
         }
 

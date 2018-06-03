@@ -3,7 +3,7 @@ package scala.reflect.internal.util
 import java.lang.ref.WeakReference
 import java.util.{Collection => JCollection, Map => JMap}
 
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 
 object JavaClearable {
   def forCollection[T <: JCollection[_]](data: T): JavaClearable[T] = new JavaClearableCollection(new WeakReference(data))

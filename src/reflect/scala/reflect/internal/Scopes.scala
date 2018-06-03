@@ -9,7 +9,7 @@ package internal
 
 import scala.annotation.tailrec
 import scala.collection.AbstractIterable
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
