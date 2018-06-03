@@ -5,11 +5,12 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.language.higherKinds
 
 
 /** Base trait for immutable set collections */
-trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
+trait Set[+A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[A]] {
   override def iterableFactory: IterableFactory[IterableCC] = Set
 }
 
@@ -18,9 +19,8 @@ trait Set[A] extends Iterable[A] with collection.Set[A] with SetOps[A, Set, Set[
   * @define coll immutable set
   * @define Coll `immutable.Set`
   */
-trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] with CC[A]]
+trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] with CC[A]]
   extends collection.SetOps[A, CC, C] {
-
   /** Creates a new set with an additional element, unless the element is
     *  already present.
     *
@@ -28,11 +28,11 @@ trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] w
     *  @return a new set that contains all elements of this set and that also
     *          contains `elem`.
     */
-  def incl(elem: A): C
+  def incl(elem: A @uV): C
 
   /** Alias for `incl` */
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  override /*final*/ def + (elem: A): C = incl(elem) // like in collection.Set but not deprecated
+  override /*final*/ def + (elem: A @uV): C = incl(elem) // like in collection.Set but not deprecated
 
   /** Creates a new set with a given element removed from this set.
     *
@@ -40,12 +40,12 @@ trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] w
     *  @return a new set that contains all elements of this set but that does not
     *          contain `elem`.
     */
-  def excl(elem: A): C
+  def excl(elem: A @uV): C
 
   /** Alias for `excl` */
-  /* @`inline` final */ override def - (elem: A): C = excl(elem)
+  /* @`inline` final */ override def - (elem: A @uV): C = excl(elem)
 
-  override def concat(that: collection.Iterable[A]): C = {
+  override def concat(that: collection.Iterable[A @uV]): C = {
     var result: C = coll
     val it = that.iterator
     while (it.hasNext) result = result + it.next()
@@ -224,4 +224,4 @@ object Set extends IterableFactory[Set] {
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
-abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]
+abstract class AbstractSet[+A] extends scala.collection.AbstractSet[A] with Set[A]

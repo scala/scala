@@ -27,7 +27,7 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] 
 }
 
 trait SortedSetOps[A, +CC[X] <: SortedSetOps[X, CC, _] with SortedSet[X], +C <: SortedSetOps[A, CC, C] with CC[A]]
-  extends SetOps[A, Set, C]
+  extends InvariantSetOps[A, CC, C]
      with SortedOps[A, C] {
 
   /**

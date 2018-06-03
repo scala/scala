@@ -160,7 +160,7 @@ private[collection] trait Wrappers {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
-              ms remove e
+              ms.remove(e.asInstanceOf[a])
               prev = None
             case _ =>
               throw new UnsupportedOperationException("remove")

@@ -179,7 +179,7 @@ trait AsJavaConverters {
    */
   def setAsJavaSet[A](s: Set[A]): ju.Set[A] = s match {
     case null                 => null
-    case JSetWrapper(wrapped) => wrapped
+    case JSetWrapper(wrapped) => wrapped.asInstanceOf[ju.Set[A]]
     case _                    => new SetWrapper(s)
   }
 

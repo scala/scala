@@ -72,7 +72,7 @@ object Matching {
     def f(xs: Iterable[B]) = xs match {
       /* nowarn */ case xs: List[A] => xs.head
       /* nowarn */ case xs: Seq[B]  => xs.head
-      /*   warn */ case xs: Set[A]  => xs.head
+      /* nowarn */ case xs: Set[A]  => xs.head
     }
     def f2[T <: B](xs: Iterable[T]) = xs match {
       /* nowarn */ case xs: List[B with T] => xs.head

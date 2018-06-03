@@ -21,7 +21,7 @@ import java.lang.System.arraycopy
   */
 final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int, val cachedSize: Int)
   extends AbstractSet[A]
-    with SetOps[A, ChampHashSet, ChampHashSet[A]]
+    with InvariantSetOps[A, ChampHashSet, ChampHashSet[A]]
     with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]] {
 
   override def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet

@@ -19,7 +19,7 @@ object Test {
     case _                    => 0
   }
   def f3(x: Any) = x match {
-    case xs: Set[Any] => xs.head // unchecked
+    case xs: Set[Any] => xs.head // okay
     case _            => 0
   }
   def f4(x: Any) = x match {
