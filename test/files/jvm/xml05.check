@@ -1,5 +1,0 @@
-
-scala> <city name="San Jos&eacute;"/>
-res0: scala.xml.Elem = <city name="San Jos&eacute;"/>
-
-scala> :quit

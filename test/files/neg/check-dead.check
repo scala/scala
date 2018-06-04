@@ -1,13 +1,13 @@
-check-dead.scala:7: warning: dead code following this construct
+check-dead.scala:8: warning: dead code following this construct
   def z1 = y1(throw new Exception)  // should warn
               ^
-check-dead.scala:10: warning: dead code following this construct
+check-dead.scala:11: warning: dead code following this construct
   def z2 = y2(throw new Exception)  // should warn
               ^
-check-dead.scala:29: warning: dead code following this construct
+check-dead.scala:30: warning: dead code following this construct
     throw new Exception // should warn
     ^
-check-dead.scala:33: warning: dead code following this construct
+check-dead.scala:34: warning: dead code following this construct
     throw new Exception // should warn
     ^
 error: No warnings can be incurred under -Xfatal-warnings.
