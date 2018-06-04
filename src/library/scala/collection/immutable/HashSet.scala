@@ -56,14 +56,14 @@ sealed abstract class HashSet[A]
     case _ => super.concat(that)
   }
 
-  override def intersect(that: collection.Set[A]): HashSet[A] = that match {
+  override def intersect[A1 >: A](that: collection.Set[A1]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size min that.size))
       nullToEmpty(intersect0(that, 0, buffer, 0))
     case _ => super.intersect(that)
   }
 
-  override def diff(that: collection.Set[A]): HashSet[A] = that match {
+  override def diff[A1 >: A](that: collection.Set[A1]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size))
       nullToEmpty(diff0(that, 0, buffer, 0))

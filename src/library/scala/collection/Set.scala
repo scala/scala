@@ -135,10 +135,10 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return  a new set consisting of all elements that are both in this
     *  set and in the given set `that`.
     */
-  def intersect(that: Set[A @uV]): C = this.filter(that)
+  def intersect[A1 >: A](that: Set[A1]): C = this.filter(that)
 
   /** Alias for `intersect` */
-  @`inline` final def & (that: Set[A @uV]): C = intersect(that)
+  @`inline` final def & [A1 >: A](that: Set[A1]): C = intersect(that)
 
 
   /** Computes the difference of this set and another set.
@@ -147,13 +147,13 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return     a set containing those elements of this
     *              set that are not also contained in the given set `that`.
     */
-  def diff(that: Set[A @uV]): C = this.filterNot(that)
+  def diff[A1 >: A](that: Set[A1]): C = this.filterNot(that)
 
   /** Alias for `diff` */
-  @`inline` final def &~ (that: Set[A @uV]): C = this diff that
+  @`inline` final def &~ [A1 >: A](that: Set[A1]): C = this diff that
 
   @deprecated("Use &~ or diff instead of --", "2.13.0")
-  @`inline` final def -- (that: Set[A @uV]): C = diff(that)
+  @`inline` final def -- [A1 >: A](that: Set[A1]): C = diff(that)
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A @uV): C = diff(Set(elem))
