@@ -13,9 +13,9 @@ retrieved 37 members
 def +(other: String): String
 def ->[B](y: B): (test.Compat.type, B)
 def ensuring(cond: Boolean): test.Compat.type
-def ensuring(cond: Boolean,msg: => Any): test.Compat.type
+def ensuring(cond: Boolean, msg: => Any): test.Compat.type
 def ensuring(cond: test.Compat.type => Boolean): test.Compat.type
-def ensuring(cond: test.Compat.type => Boolean,msg: => Any): test.Compat.type
+def ensuring(cond: test.Compat.type => Boolean, msg: => Any): test.Compat.type
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -33,7 +33,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 final private[this] val CONST_STRING: String("constant")
 lazy val foo: Int
 private[package test] def pkgPrivateM: String

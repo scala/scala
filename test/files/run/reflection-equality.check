@@ -22,7 +22,7 @@ scala> val ts: Type = cs.info
 ts: reflect.runtime.universe.Type =
 AnyRef {
   def <init>(): X
-  def methodIntIntInt(x: Int,y: Int): Int
+  def methodIntIntInt(x: Int, y: Int): Int
 }
 
 scala> val ms: MethodSymbol = ts.decl(TermName("methodIntIntInt")).asMethod

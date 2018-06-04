@@ -7,9 +7,9 @@ retrieved 30 members
 def +(other: String): String
 def ->[B](y: B): (Foo, B)
 def ensuring(cond: Boolean): Foo
-def ensuring(cond: Boolean,msg: => Any): Foo
+def ensuring(cond: Boolean, msg: => Any): Foo
 def ensuring(cond: Foo => Boolean): Foo
-def ensuring(cond: Foo => Boolean,msg: => Any): Foo
+def ensuring(cond: Foo => Boolean, msg: => Any): Foo
 def equals(x$1: Any): Boolean
 def foo: Foo
 def formatted(fmtstr: String): String
@@ -28,7 +28,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 protected[package lang] def clone(): Object
 protected[package lang] def finalize(): Unit
 ================================================================================

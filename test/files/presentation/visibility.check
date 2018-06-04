@@ -8,9 +8,9 @@ retrieved 35 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
-def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
-def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -30,7 +30,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 private def secretPrivate(): Unit
 protected def secretProtected(): Unit
 protected[package accessibility] def secretProtectedInPackage(): Unit
@@ -45,9 +45,9 @@ retrieved 35 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
-def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
-def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -67,7 +67,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 private def secretPrivate(): Unit
 private[this] def secretPrivateThis(): Unit
 protected def secretProtected(): Unit
@@ -83,9 +83,9 @@ retrieved 34 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.AccessibilityChecks, B)
 def ensuring(cond: Boolean): accessibility.AccessibilityChecks
-def ensuring(cond: Boolean,msg: => Any): accessibility.AccessibilityChecks
+def ensuring(cond: Boolean, msg: => Any): accessibility.AccessibilityChecks
 def ensuring(cond: accessibility.AccessibilityChecks => Boolean): accessibility.AccessibilityChecks
-def ensuring(cond: accessibility.AccessibilityChecks => Boolean,msg: => Any): accessibility.AccessibilityChecks
+def ensuring(cond: accessibility.AccessibilityChecks => Boolean, msg: => Any): accessibility.AccessibilityChecks
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -106,7 +106,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 protected def secretProtected(): Unit
 protected[package accessibility] def secretProtectedInPackage(): Unit
 protected[package lang] def clone(): Object
@@ -125,9 +125,9 @@ retrieved 35 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
-def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
-def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -147,7 +147,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 protected[package accessibility] def secretProtectedInPackage(): Unit
 ================================================================================
 
@@ -164,9 +164,9 @@ retrieved 35 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
-def ensuring(cond: Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
-def ensuring(cond: accessibility.Foo => Boolean,msg: => Any): accessibility.Foo
+def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -186,5 +186,5 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 ================================================================================

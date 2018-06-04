@@ -10,9 +10,9 @@ retrieved 32 members
 def +(other: String): String
 def ->[B](y: B): (Pong, B)
 def ensuring(cond: Boolean): Pong
-def ensuring(cond: Boolean,msg: => Any): Pong
+def ensuring(cond: Boolean, msg: => Any): Pong
 def ensuring(cond: Pong => Boolean): Pong
-def ensuring(cond: Pong => Boolean,msg: => Any): Pong
+def ensuring(cond: Pong => Boolean, msg: => Any): Pong
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -30,7 +30,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def toString(): String
 private[this] val name: String
 ================================================================================
@@ -44,9 +44,9 @@ retrieved 33 members
 def +(other: String): String
 def ->[B](y: B): (Ping, B)
 def ensuring(cond: Boolean): Ping
-def ensuring(cond: Boolean,msg: => Any): Ping
+def ensuring(cond: Boolean, msg: => Any): Ping
 def ensuring(cond: Ping => Boolean): Ping
-def ensuring(cond: Ping => Boolean,msg: => Any): Ping
+def ensuring(cond: Ping => Boolean, msg: => Any): Ping
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -66,7 +66,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def toString(): String
 private[this] val pong: Pong
 ================================================================================
