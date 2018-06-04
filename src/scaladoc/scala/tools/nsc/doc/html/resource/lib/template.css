@@ -847,6 +847,19 @@ div.fullcomment dl.paramcmts > dd {
   font-family: "Open Sans";
 }
 
+#memberfilter > .input > input::-webkit-input-placeholder {
+  color: #fff;
+  opacity: 0.6;
+}
+#memberfilter > .input > input:-ms-input-placeholder {
+  color: #fff;
+  opacity: 0.6;
+}
+#memberfilter > .input > input::placeholder  {
+  color: #fff;
+  opacity: 0.6;
+}
+
 #memberfilter > .clear {
   display: none;
   position: absolute;
