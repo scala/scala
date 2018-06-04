@@ -285,9 +285,12 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   }
 
   /** Adds a new key/value pair to this map and returns the map. */
-  def addOne(key: K, value: V): this.type = { update(key, value); this }
+  def +=(key: K, value: V): this.type = { update(key, value); this }
 
-  def addOne(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
+  /** Adds a new key/value pair to this map and returns the map. */
+  @inline final def addOne(key: K, value: V): this.type = { update(key, value); this }
+
+  @inline override final def addOne(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
 
   def subtractOne(key: K): this.type = {
     val i = seekEntry(hashOf(key), key)

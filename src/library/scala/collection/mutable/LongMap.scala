@@ -342,7 +342,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   /** Adds a new key/value pair to this map and returns the map. */
   def +=(key: Long, value: V): this.type = { update(key, value); this }
 
-  override def addOne(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
+  /** Adds a new key/value pair to this map and returns the map. */
+  @inline final def addOne(key: Long, value: V): this.type = { update(key, value); this }
+
+  @inline override final def addOne(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
 
   def subtractOne(key: Long): this.type = {
     if (key == -key) {
