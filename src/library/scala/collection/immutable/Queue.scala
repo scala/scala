@@ -122,7 +122,18 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *
     *  @param  iter        an iterable object
     */
-  def enqueue[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
+  @deprecated("Use `enqueueAll` instead of `enqueue` to enqueue a collection of elements", "2.13.0")
+  @`inline` final def enqueue[B >: A](iter: scala.collection.Iterable[B]) = enqueueAll(iter)
+
+  /** Creates a new queue with all elements provided by an `Iterable` object
+    *  added at the end of the old queue.
+    *
+    *  The elements are appended in the order they are given out by the
+    *  iterator.
+    *
+    *  @param  iter        an iterable object
+    */
+  def enqueueAll[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
 
   /** Returns a tuple with the first element in the queue,
     *  and a new queue with this element removed.
