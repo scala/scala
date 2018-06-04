@@ -57,7 +57,7 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return     `true` if this set is a subset of `that`, i.e. if
     *              every element of this set is also an element of `that`.
     */
-  def subsetOf(that: Set[A @uV]): Boolean = this.forall(that)
+  def subsetOf[A1 >: A](that: Set[A1]): Boolean = this.forall(that)
 
   /** An iterator over all subsets of this set of the given size.
     *  If the requested size is impossible, an empty iterator is returned.

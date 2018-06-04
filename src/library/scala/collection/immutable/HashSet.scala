@@ -40,7 +40,7 @@ sealed abstract class HashSet[A]
 
   def excl[A1 >: A](elem: A1): HashSet[A] = nullToEmpty(removed0(elem.asInstanceOf[A], computeHash(elem), 0))
 
-  override def subsetOf(that: collection.Set[A]): Boolean = that match {
+  override def subsetOf[A1 >: A](that: collection.Set[A1]): Boolean = that match {
     case that:HashSet[A] =>
       // call the specialized implementation with a level of 0 since both this and that are top-level hash sets
       subsetOf0(that, 0)
