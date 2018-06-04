@@ -40,10 +40,10 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return a new set that contains all elements of this set but that does not
     *          contain `elem`.
     */
-  def excl(elem: A @uV): C
+  def excl[A1 >: A](elem: A1): C
 
   /** Alias for `excl` */
-  /* @`inline` final */ override def - (elem: A @uV): C = excl(elem)
+  /* @`inline` final */ override def - [A1 >: A](elem: A1): C = excl(elem)
 
   override def concat[B >: A](that: collection.Iterable[B]): CC[B] = {
     var result: CC[B] = coll
@@ -87,7 +87,7 @@ object Set extends IterableFactory[Set] {
     override def size: Int = 0
     def contains[A1 >: Any](elem: A1): Boolean = false
     override def incl[B >: Any](elem: B): Set[B] = new Set1(elem)
-    def excl(elem: Any): Set[Any] = this
+    def excl[B >: Any](elem: B): Set[Any] = this
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any => U): Unit = ()
   }
@@ -100,7 +100,7 @@ object Set extends IterableFactory[Set] {
     override def incl[B >: A](elem: B): Set[B] =
       if (contains(elem)) this
       else new Set2(elem1, elem)
-    def excl(elem: A): Set[A] =
+    def excl[B >: A](elem: B): Set[A] =
       if (elem == elem1) Set.empty
       else this
     def iterator: Iterator[A] = Iterator.single(elem1)
@@ -122,7 +122,7 @@ object Set extends IterableFactory[Set] {
     override def incl[B >: A](elem: B): Set[B] =
       if (contains(elem)) this
       else new Set3(elem1, elem2, elem)
-    def excl(elem: A): Set[A] =
+    def excl[B >: A](elem: B): Set[A] =
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
@@ -154,7 +154,7 @@ object Set extends IterableFactory[Set] {
     override def incl[B >: A](elem: B): Set[B] =
       if (contains(elem.asInstanceOf[A])) this
       else new Set4(elem1, elem2, elem3, elem)
-    def excl(elem: A): Set[A] =
+    def excl[B >: A](elem: B): Set[A] =
       if (elem == elem1) new Set2(elem2, elem3)
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
@@ -188,7 +188,7 @@ object Set extends IterableFactory[Set] {
     override def incl[B >: A](elem: B): Set[B] =
       if (contains(elem.asInstanceOf[A])) this
       else (if (useBaseline) HashSet.empty[B] else ChampHashSet.empty[B]) + elem1 + elem2 + elem3 + elem4 + elem
-    def excl(elem: A): Set[A] =
+    def excl[B >: A](elem: B): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)
       else if (elem == elem3) new Set3(elem1, elem2, elem4)

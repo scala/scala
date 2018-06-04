@@ -123,9 +123,9 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def excl(elem: A): TreeSet[A] =
-    if (!RB.contains(tree, elem)) this
-    else newSet(RB.delete(tree, elem))
+  def excl[A1 >: A](elem: A1): TreeSet[A] =
+    if (!RB.contains(tree, elem.asInstanceOf[A])) this
+    else newSet(RB.delete(tree, elem.asInstanceOf[A]))
 }
 
 /**

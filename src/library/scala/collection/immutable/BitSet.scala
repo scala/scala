@@ -46,6 +46,10 @@ sealed abstract class BitSet
       updateWord(idx, word(idx) & ~(1L << elem))
     } else this
   }
+  def excl[A1 >: Int](elem: A1): BitSet = elem match {
+    case elem: Int => excl(elem)
+    case _ => this
+  }
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
     */

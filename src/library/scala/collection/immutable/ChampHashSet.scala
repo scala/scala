@@ -48,10 +48,10 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     else this
   }
 
-  def excl(element: A): ChampHashSet[A] = {
+  def excl[B >: A](element: B): ChampHashSet[A] = {
     val effect = SetEffect[A]()
     val elementHash = computeHash(element)
-    val newRootNode = rootNode.removed(element, elementHash, 0, effect)
+    val newRootNode = rootNode.removed(element.asInstanceOf[A], elementHash, 0, effect)
 
     if (effect.isModified)
       ChampHashSet(newRootNode, cachedJavaHashCode - elementHash, cachedSize - 1)

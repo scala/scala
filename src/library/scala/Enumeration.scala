@@ -283,6 +283,10 @@ abstract class Enumeration (initial: Int) extends Serializable {
     }
     def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
     def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
+    def excl [A1 >: Value](value: A1) = value match {
+      case value: Value => excl(value)
+      case _ => this
+    }
     def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
     override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
     override def className = thisenum + ".ValueSet"

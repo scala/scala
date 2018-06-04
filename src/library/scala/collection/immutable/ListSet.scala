@@ -41,7 +41,7 @@ sealed class ListSet[A]
   def contains[A1 >: A](elem: A1): Boolean = false
 
   def incl(elem: A): ListSet[A] = new Node(elem)
-  def excl(elem: A): ListSet[A] = this
+  def excl[A1 >: A](elem: A1): ListSet[A] = this
 
   def iterator: scala.collection.Iterator[A] = {
     var curr: ListSet[A] = this
@@ -78,7 +78,7 @@ sealed class ListSet[A]
 
     override def incl(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def excl(e: A): ListSet[A] = removeInternal(e, this, Nil)
+    override def excl[A1 >: A](e: A1): ListSet[A] = removeInternal(e.asInstanceOf[A], this, Nil)
 
     @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
       if (cur.isEmpty) acc.last

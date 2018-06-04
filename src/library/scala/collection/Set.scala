@@ -156,10 +156,10 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
   @`inline` final def -- [A1 >: A](that: Set[A1]): C = diff(that)
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
-  def - (elem: A @uV): C = diff(Set(elem))
+  def - [A1 >: A](elem: A1): C = diff(Set(elem))
 
   @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
-  def - (elem1: A @uV, elem2: A @uV, elems: (A @uV)*): C = diff(elems.toSet + elem1 + elem2)
+  def - [A1 >: A](elem1: A1, elem2: A1, elems: A1*): C = diff(elems.toSet + elem1 + elem2)
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *

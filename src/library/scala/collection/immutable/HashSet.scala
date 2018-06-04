@@ -38,7 +38,7 @@ sealed abstract class HashSet[A]
 
   def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
-  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+  def excl[A1 >: A](elem: A1): HashSet[A] = nullToEmpty(removed0(elem.asInstanceOf[A], computeHash(elem), 0))
 
   override def subsetOf(that: collection.Set[A]): Boolean = that match {
     case that:HashSet[A] =>
