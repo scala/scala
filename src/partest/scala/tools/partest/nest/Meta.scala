@@ -3,10 +3,9 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
-import nsc.io.File
+import scala.tools.nsc.io.File
 import Interpolation._
 
 /** Meta-options for command line tools.  We could have all kinds

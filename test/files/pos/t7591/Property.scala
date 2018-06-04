@@ -3,10 +3,9 @@
  * @author  Paul Phillips
  */
 
-package scala.tools
-package cmd
-
-import nsc.io._
+import scala.tools.cmd.toArgs
+import scala.tools.nsc.io._
+import scala.tools.partest.nest.{ Reference, returning, toOpt }
 import java.util.Properties
 import java.io.FileInputStream
 
