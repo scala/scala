@@ -41,7 +41,7 @@ final class HashSet[A]
 
   def clear(): Unit = table.clearTable()
 
-  def contains(elem: A): Boolean = table.containsElem(elem)
+  def contains[A1 >: A](elem: A1): Boolean = table.containsElem(elem.asInstanceOf[A])
 
   def get(elem: A): Option[A] = table.findEntry(elem)
 

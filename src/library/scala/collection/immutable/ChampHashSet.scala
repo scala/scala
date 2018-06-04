@@ -36,7 +36,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
-  def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
+  def contains[A1 >: A](element: A1): Boolean = rootNode.contains(element.asInstanceOf[A], computeHash(element), 0)
 
   def incl(element: A): ChampHashSet[A] = {
     val effect = SetEffect[A]()

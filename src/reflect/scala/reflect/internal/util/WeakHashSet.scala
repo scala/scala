@@ -148,7 +148,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     tableLoop(0)
   }
 
-  def contains(elem: A): Boolean = findEntry(elem) ne null
+  def contains[A1 >: A](elem: A1): Boolean = findEntry(elem.asInstanceOf[A]) ne null
 
   // from scala.reflect.internal.Set, find an element or null if it isn't contained
   def findEntry(elem: A): A = elem match {

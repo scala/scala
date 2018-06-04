@@ -38,7 +38,7 @@ sealed class ListSet[A]
   override def size: Int = 0
   override def isEmpty: Boolean = true
 
-  def contains(elem: A): Boolean = false
+  def contains[A1 >: A](elem: A1): Boolean = false
 
   def incl(elem: A): ListSet[A] = new Node(elem)
   def excl(elem: A): ListSet[A] = this
@@ -71,7 +71,7 @@ sealed class ListSet[A]
 
     override def isEmpty: Boolean = false
 
-    override def contains(e: A) = containsInternal(this, e)
+    override def contains[A1 >: A](e: A1) = containsInternal(this, e.asInstanceOf[A])
 
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))

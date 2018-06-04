@@ -40,7 +40,7 @@ trait Set[+A]
 trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] with CC[A]]
   extends IterableOps[A, CC, C] {
 
-  def contains(elem: A @uV): Boolean
+  def contains[A1 >: A](elem: A1): Boolean
 
   /** Tests if some element is contained in this set.
     *
@@ -49,7 +49,7 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return  `true` if `elem` is contained in this set, `false` otherwise.
     */
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /*@`inline` final*/ def apply(elem: A @uV): Boolean = this.contains(elem)
+  /*@`inline` final*/ def apply[A1 >: A](elem: A1): Boolean = this.contains(elem)
 
   /** Tests whether this set is a subset of another set.
     *
@@ -174,16 +174,13 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.Iterable[A @uV]): C = fromSpecificIterable(new View.Concat(toIterable, that))
+  def concat[B >: A](that: collection.Iterable[B]): CC[B]
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
-  def + (elem: A @uV): C = fromSpecificIterable(new View.Appended(toIterable, elem))
+  def + [B >: A](elem: B): CC[B] = fromIterable(new View.Appended(toIterable, elem))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  def + (elem1: A @uV, elem2: A @uV, elems: (A @uV)*): C = fromSpecificIterable(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
-
-  /** Alias for `concat` */
-  @`inline` final def ++ (that: collection.Iterable[A @uV]): C = concat(that)
+  def + [B >: A](elem1: B, elem2: B, elems: B*): CC[B] = fromIterable(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   /** Computes the union between of set and another set.
     *
@@ -191,10 +188,10 @@ trait SetOps[+A, +CC[+X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C]
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  @`inline` final def union(that: collection.Iterable[A @uV]): C = concat(that)
+  @`inline` final def union[B >: A](that: collection.Iterable[B]): CC[B] = concat(that)
 
   /** Alias for `union` */
-  @`inline` final def | (that: collection.Iterable[A @uV]): C = concat(that)
+  @`inline` final def | [B >: A](that: collection.Iterable[B]): CC[B] = concat(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.

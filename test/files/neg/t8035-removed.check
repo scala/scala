@@ -1,5 +1,5 @@
 t8035-removed.scala:2: error: Adaptation of argument list by inserting () has been removed.
-        signature: SetOps.apply(elem: A @scala.annotation.unchecked.uncheckedVariance): Boolean
+        signature: SetOps.apply[A1 >: A](elem: A1): Boolean
   given arguments: <none>
   List(1,2,3).toSet()
                    ^

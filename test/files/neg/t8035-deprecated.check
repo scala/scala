@@ -1,5 +1,5 @@
 t8035-deprecated.scala:2: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
-        signature: SetOps.apply(elem: A @scala.annotation.unchecked.uncheckedVariance): Boolean
+        signature: SetOps.apply[A1 >: A](elem: A1): Boolean
   given arguments: <none>
  after adaptation: SetOps((): Unit)
   List(1,2,3).toSet()

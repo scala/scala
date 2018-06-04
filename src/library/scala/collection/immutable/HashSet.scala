@@ -34,7 +34,7 @@ sealed abstract class HashSet[A]
 
   override def iterableFactory = HashSet
 
-  def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
+  def contains[A1 >: A](elem: A1): Boolean = get0(elem.asInstanceOf[A], computeHash(elem), 0)
 
   def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 

@@ -104,7 +104,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param  elem    the element to check for membership.
     *  @return true, iff `elem` is contained in this set.
     */
-  def contains(elem: A): Boolean = RB.contains(tree, elem)
+  // FIXME: unsafe cast
+  def contains[A1 >: A](elem: A1): Boolean = RB.contains(tree, elem.asInstanceOf[A])
 
   override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
 
