@@ -527,7 +527,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
         val subConsts =
           enumerateSubtypes(staticTp, grouped = false)
           .headOption.map { tps =>
-          tps.toSet[Type].map{ tp =>
+          tps.toSet.map{ tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
