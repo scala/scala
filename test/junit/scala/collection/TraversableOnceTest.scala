@@ -92,4 +92,12 @@ class TraversableOnceTest {
     assert(Seq(1).minByOption(identity) == Some(1), "minByOption on a Non Empty Iterable has value")
   }
 
+  @Test
+  def testMinMaxCorrectness(): Unit = {
+    import Ordering.Double.IeeeOrdering
+    val seq = Seq(5.0, 3.0, Double.NaN, 4.0)
+    assert(seq.min.isNaN)
+    assert(seq.max.isNaN)
+  }
+
 }

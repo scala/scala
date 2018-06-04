@@ -724,7 +724,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def min[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.min")
-    reduceLeft((x, y) => if (ord.lteq(x, y)) x else y)
+    reduceLeft(ord.min)
   }
 
   /** Finds the smallest element.
@@ -761,7 +761,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def max[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.max")
-    reduceLeft((x, y) => if (ord.gteq(x, y)) x else y)
+    reduceLeft(ord.max)
   }
 
   /** Finds the largest element.

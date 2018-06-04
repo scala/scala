@@ -101,10 +101,10 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   override def equiv(x: T, y: T): Boolean = compare(x, y) == 0
 
   /** Return `x` if `x` >= `y`, otherwise `y`. */
-  def max(x: T, y: T): T = if (gteq(x, y)) x else y
+  def max[U <: T](x: U, y: U): U = if (gteq(x, y)) x else y
 
   /** Return `x` if `x` <= `y`, otherwise `y`. */
-  def min(x: T, y: T): T = if (lteq(x, y)) x else y
+  def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
 
   /** Return the opposite ordering of this one. */
   override def reverse: Ordering[T] = new Ordering[T] {
@@ -115,8 +115,8 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
     override def lt(x: T, y: T) = outer.lt(y, x)
     override def gt(x: T, y: T) = outer.gt(y, x)
     override def equiv(x: T, y: T) = outer.equiv(y, x)
-    override def max(x: T, y: T) = outer.min(x, y)
-    override def min(x: T, y: T) = outer.max(x, y)
+    override def max[U <: T](x: U, y: U) = outer.min(x, y)
+    override def min[U <: T](x: U, y: U) = outer.max(x, y)
   }
 
   /** Given f, a function from U into T, creates an Ordering[U] whose compare
@@ -363,8 +363,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def lt(x: Float, y: Float): Boolean = x < y
       override def gt(x: Float, y: Float): Boolean = x > y
       override def equiv(x: Float, y: Float): Boolean = x == y
-      override def max(x: Float, y: Float): Float = math.max(x, y)
-      override def min(x: Float, y: Float): Float = math.min(x, y)
+      override def max[U <: Float](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
+      override def min[U <: Float](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
@@ -423,8 +423,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def lt(x: Double, y: Double): Boolean = x < y
       override def gt(x: Double, y: Double): Boolean = x > y
       override def equiv(x: Double, y: Double): Boolean = x == y
-      override def max(x: Double, y: Double): Double = math.max(x, y)
-      override def min(x: Double, y: Double): Double = math.min(x, y)
+      override def max[U <: Double](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
+      override def min[U <: Double](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
