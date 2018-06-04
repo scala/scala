@@ -154,6 +154,39 @@ class DeterminismTest {
     test(List(List(macroCode), code))
   }
 
+
+  @Test def testRefinementTypeOverride(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |class Global
+          |trait Analyzer extends StdAttachments {
+          |  val global: Global
+          |}
+          |trait Context {
+          |  val universe: Global
+          |}
+          |
+          |trait StdAttachments {
+          |  self: Analyzer =>
+          |
+          |  type UnaffiliatedMacroContext = Context
+          |  type MacroContext = UnaffiliatedMacroContext { val universe: self.global.type }
+          |}
+          |
+      """.stripMargin),
+      source("b.scala",
+        """
+          |class Macros {
+          |    self: Analyzer =>
+          |  def foo = List.apply[MacroContext]()
+          |}
+          |
+        """.stripMargin)
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
   private def test(groups: List[List[SourceFile]]): Unit = {
     val referenceOutput = Files.createTempDirectory("reference")
