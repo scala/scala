@@ -188,7 +188,7 @@ trait Collections {
 
   // @inline
   final def findOrElse[A](xs: IterableOnce[A])(p: A => Boolean)(orElse: => A): A = {
-    xs find p getOrElse orElse
+    xs.iterator find p getOrElse orElse
   }
 
   final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {

@@ -3734,7 +3734,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val phase = phaseOf(validFrom)
       s"$phase: ${exitingPhase(phase)(info.toString)}"
     }
-    override def toString = toList reverseMap (_.phaseString) mkString ", "
+    override def toString = toList.reverseIterator map (_.phaseString) mkString ", "
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
 

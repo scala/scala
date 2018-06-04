@@ -221,7 +221,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     val orderedLocals = scala.collection.mutable.ListBuffer[Symbol]()
     def registerLocal(sym: Symbol): Unit = {
       if (sym != null && sym != NoSymbol) {
-        if (debug && !(locals contains sym)) orderedLocals append sym
+        if (debug && !(locals contains sym)) orderedLocals += sym
         locals addEntry sym
       }
     }

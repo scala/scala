@@ -8,6 +8,7 @@ package ast.parser
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.collection.BufferedIterator
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader

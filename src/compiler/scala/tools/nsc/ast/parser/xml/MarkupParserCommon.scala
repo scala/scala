@@ -8,6 +8,8 @@
 
 package scala.tools.nsc.ast.parser.xml
 
+import scala.collection.BufferedIterator
+
 /** This is not a public trait - it contains common code shared
  *  between the library level XML parser and the compiler's.
  *  All members should be accessed through those.
