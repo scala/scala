@@ -521,7 +521,7 @@ object Array {
  *  `update(Int, T)`.
  *
  *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
- *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
+ *  to [[scala.collection.ArrayOps]] (shown on line 4 of the example above) and a conversion
  *  to [[scala.collection.mutable.ArraySeq]] (a subtype of [[scala.collection.Seq]]).
  *  Both types make available many of the standard operations found in the Scala collections API.
  *  The conversion to `ArrayOps` is temporary, as all operations defined on `ArrayOps` return an `Array`,
