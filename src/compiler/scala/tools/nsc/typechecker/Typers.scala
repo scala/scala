@@ -690,12 +690,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val context1 = context.makeSilent(reportAmbiguousErrors, newtree)
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
-          context1.namedApplyBlockInfo = context.namedApplyBlockInfo
           val typer1 = newTyper(context1)
           val result = op(typer1)
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
-          context.namedApplyBlockInfo = context1.namedApplyBlockInfo
 
           // If we have a successful result, emit any warnings it created.
           if (!context1.reporter.hasErrors)
@@ -3298,11 +3296,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    /** Is `tree` a block created by a named application?
-     */
-    def isNamedApplyBlock(tree: Tree) =
-      context.namedApplyBlockInfo exists (_._1 == tree)
-
     def callToCompanionConstr(context: Context, calledFun: Symbol) = {
       calledFun.isConstructor && {
         val methCtx = context.enclMethod
@@ -3534,7 +3527,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               } else if (!allArgsArePositional(argPos) && !sameLength(formals, params))
                 // !allArgsArePositional indicates that named arguments are used to re-order arguments
                 duplErrorTree(MultipleVarargError(tree))
-              else if (allArgsArePositional(argPos) && !isNamedApplyBlock(fun)) {
+              else if (allArgsArePositional(argPos) && !NamedApplyBlock.unapply(fun).isDefined) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
                 checkNotMacro()
@@ -3573,13 +3566,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val fun1 = transformNamedApplication(Typer.this, mode, pt)(fun, x => x)
               if (fun1.isErroneous) duplErrTree
               else {
-                assert(isNamedApplyBlock(fun1), fun1)
-                val NamedApplyInfo(qual, targs, previousArgss, _) = context.namedApplyBlockInfo.get._2
+                val NamedApplyBlock(NamedApplyInfo(qual, targs, previousArgss, _)) = fun1
                 val blockIsEmpty = fun1 match {
                   case Block(Nil, _) =>
                     // if the block does not have any ValDef we can remove it. Note that the call to
                     // "transformNamedApplication" is always needed in order to obtain targs/previousArgss
-                    context.namedApplyBlockInfo = None
+                    fun1.attachments.remove[NamedApplyInfo]
                     true
                   case _ => false
                 }
@@ -3595,7 +3587,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   checkNotMacro()
-                  context.diagUsedDefaults = true
+                  context.set(ContextMode.DiagUsedDefaults)
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
@@ -3607,7 +3599,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (!sameLength(formals, args) ||   // wrong nb of arguments
               (args exists isNamedArg) ||     // uses a named argument
-              isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
+              NamedApplyBlock.unapply(fun).isDefined) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
             if (isApplyDynamicNamed(fun) && isDynamicRewrite(fun)) typedNamedApply(tree, fun, args, mode, pt)
             else tryNamesDefaults

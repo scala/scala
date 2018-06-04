@@ -222,9 +222,6 @@ trait Contexts { self: Analyzer =>
       */
     var enclMethod: Context = _
 
-    /** Variance relative to enclosing class */
-    var variance: Variance = Variance.Invariant
-
     private var _undetparams: List[Symbol] = List()
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
@@ -247,8 +244,6 @@ trait Contexts { self: Analyzer =>
       openImplicits.nonEmpty && openImplicits.exists(x => !x.isView)
     }
 
-    /* For a named application block (`Tree`) the corresponding `NamedApplyInfo`. */
-    var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
 
     def inSuperInit_=(value: Boolean)         = this(SuperInit) = value
@@ -277,10 +272,6 @@ trait Contexts { self: Analyzer =>
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
-
-    /** To enrich error messages involving default arguments.
-        When extending the notion, group diagnostics in an object. */
-    var diagUsedDefaults: Boolean = false
 
     /** Saved type bounds for type parameters which are narrowed in a GADT. */
     var savedTypeBounds: List[(Symbol, Type)] = List()
@@ -489,8 +480,6 @@ trait Contexts { self: Analyzer =>
         new Context(tree, owner, scope, unit, this, reporter)
 
       // Fields that are directly propagated
-      c.variance           = variance
-      c.diagUsedDefaults   = diagUsedDefaults
       c.openImplicits      = openImplicits
       c.contextMode        = contextMode // note: ConstructorSuffix, a bit within `mode`, is conditionally overwritten below.
 
@@ -1382,7 +1371,7 @@ trait Contexts { self: Analyzer =>
 
     protected def addDiagString(msg: String)(implicit context: Context): String = {
       val diagUsedDefaultsMsg = "Error occurred in an application involving default arguments."
-      if (context.diagUsedDefaults && !(msg endsWith diagUsedDefaultsMsg)) msg + "\n" + diagUsedDefaultsMsg
+      if (context.contextMode.inAny(ContextMode.DiagUsedDefaults) && !(msg endsWith diagUsedDefaultsMsg)) msg + "\n" + diagUsedDefaultsMsg
       else msg
     }
 
@@ -1621,6 +1610,9 @@ object ContextMode {
   /** Should a dead code warning be issued for a Nothing-typed argument to the current application. */
   final val SuppressDeadArgWarning: ContextMode   = 1 << 17
 
+  /** Were default arguments used? */
+  final val DiagUsedDefaults: ContextMode         = 1 << 18
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1645,6 +1637,7 @@ object ContextMode {
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
     TypeConstructorAllowed -> "TypeConstructorAllowed",
+    DiagUsedDefaults       -> "DiagUsedDefaults",
     SuppressDeadArgWarning -> "SuppressDeadArgWarning"
   )
 }
