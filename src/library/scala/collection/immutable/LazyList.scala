@@ -862,10 +862,7 @@ object Stream extends LazyListFactory[Stream] {
   // `Stream` memoizes its elements
   def fromIterator[A](it: Iterator[A]): Stream[A] =
     if (it.hasNext) {
-      // Be sure that `it.next()` is called even when the `head`
-      // of our constructed lazy list is not evaluated (e.g. when one calls `drop`).
-      lazy val evaluatedElem = it.next()
-      new Stream.Cons(evaluatedElem, { evaluatedElem; fromIterator(it) })
+      new Stream.Cons(it.next(), fromIterator(it))
     } else Stream.Empty
 
   def empty[A]: Stream[A] = Empty
