@@ -1438,6 +1438,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       units foreach addUnit
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
+      checkGoldenUnits(units)
       globalPhase = fromPhase
 
       val timePhases = statistics.areStatisticsLocallyEnabled
@@ -1519,6 +1520,16 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
+    }
+
+    // special dispensations for golden units
+    def checkGoldenUnits(units: List[CompilationUnit]): Unit = {
+      units match {
+        case u :: Nil if u.source.file.path.endsWith("xsbt/Compat.scala") =>
+          val ss = settings
+          ss.language.enable(ss.languageFeatures.postfixOps)
+        case _ =>
+      }
     }
 
     /** Compile list of abstract files. */
