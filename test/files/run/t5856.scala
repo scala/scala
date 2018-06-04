@@ -7,4 +7,5 @@ object Test extends App {
   assert(s"$this.##" == "Test.##")
   assert(s"$this.toString" == "Test.toString")
   assert(s"$this=THIS" == "Test=THIS")
+  assert(raw"$"" == "\"")
 }
