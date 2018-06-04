@@ -147,7 +147,7 @@ trait SetOps[A, +CC[X] <: SetOps[X, CC, _] with Set[X], +C <: SetOps[A, CC, C] w
     *  @return     a set containing those elements of this
     *              set that are not also contained in the given set `that`.
     */
-  def diff(that: Set[A]): C
+  def diff(that: Set[A]): C = this.filterNot(that)
 
   /** Alias for `diff` */
   @`inline` final def &~ (that: Set[A]): C = this diff that
