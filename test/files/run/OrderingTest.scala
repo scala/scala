@@ -1,3 +1,5 @@
+import scala.math.Ordering.Double.TotalOrdering
+
 object Test extends App {
   def test[T](t1 : T, t2 : T)(implicit ord : Ordering[T]) = {
     val cmp = ord.compare(t1, t2);
