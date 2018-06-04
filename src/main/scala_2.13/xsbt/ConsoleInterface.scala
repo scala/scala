@@ -10,7 +10,6 @@ package xsbt
 import xsbti.Logger
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.interpreter.shell.{ ILoop, ShellConfig, ReplReporterImpl }
-import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
 class ConsoleInterface {

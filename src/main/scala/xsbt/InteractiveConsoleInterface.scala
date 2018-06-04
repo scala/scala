@@ -40,9 +40,7 @@ class InteractiveConsoleInterface(
   val poutWriter: PrintWriter = new PrintWriter(outWriter)
 
   val interpreter: IMain =
-    new IMain(compilerSettings, replReporter(compilerSettings, new PrintWriter(outWriter))) {
-      def lastReq: Request = prevRequestList.last
-    }
+    new IMain(compilerSettings, replReporter(compilerSettings, new PrintWriter(outWriter)))
 
   def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
     clearBuffer()
