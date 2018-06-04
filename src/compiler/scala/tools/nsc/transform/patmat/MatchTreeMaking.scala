@@ -41,6 +41,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] =
       None
 
+    // Exposed separately from emitTypeSwitch, so that we can do the analysis for simple cases where we skip emitTypeSwitch
+    def unreachableTypeSwitchCase(cases: List[CaseDef]): Option[CaseDef] =
+      None
+
     abstract class TreeMaker {
       def pos: Position
 
