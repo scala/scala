@@ -639,7 +639,7 @@ object Predef extends LowPriorityImplicits {
    *  @tparam To a type which is proved equal to `From`
    *
    *  @example An in-place variant of [[scala.collection.mutable.ArrayBuffer#transpose]] {{{
-   *            implicit class BufOps[A](buf: ArrayBuffer[A]) extends AnyVal {
+   *            implicit class BufOps[A](private val buf: ArrayBuffer[A]) extends AnyVal {
    *              def inPlaceTranspose[E]()(implicit ev: A =:= ArrayBuffer[E]) = ???
    *              // Because ArrayBuffer is invariant, we can't make do with just a A <:< ArrayBuffer[E]
    *              // Getting buffers *out* from buf would work, but adding them back *in* wouldn't.
