@@ -3689,7 +3689,7 @@ trait Types
    */
   abstract class LazyType extends Type {
     override def isComplete: Boolean = false
-    override def complete(sym: Symbol)
+    override def complete(sym: Symbol): Unit
     override def safeToString = "<?>"
     override def kind = "LazyType"
   }

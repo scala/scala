@@ -32,7 +32,7 @@ abstract class ClassfileWriters {
     /**
      * Write a classfile
      */
-    def write(name: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths)
+    def write(name: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit
 
     /**
      * Close the writer. Behavior is undefined after a call to `close`.

@@ -139,7 +139,7 @@ trait Printers { self: Universe =>
 
   /** @group Printers */
   protected trait TreePrinter {
-    def print(args: Any*)
+    def print(args: Any*): Unit
     protected var printTypes = false
     protected var printIds = false
     protected var printOwners = false

@@ -1432,7 +1432,7 @@ trait Namers extends MethodSynthesis {
     /**
      * For every default argument, insert a method symbol computing that default
      */
-    def enterDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef]) {
+    def enterDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef]): Unit = {
       val methOwner  = meth.owner
       val search = DefaultGetterNamerSearch(context, meth, initCompanionModule = false)
       var posCounter = 1
@@ -1593,7 +1593,7 @@ trait Namers extends MethodSynthesis {
       else new DefaultMethodInOwningScope(c, meth)
     }
     private abstract class DefaultGetterNamerSearch {
-      def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree)
+      def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit
 
       def createAndEnter(f: Symbol => Symbol): Unit
     }
