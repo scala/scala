@@ -45,6 +45,7 @@
   <aside class="left"><nav id="toc"></nav></aside>
 
   <main id="content">
+{% include version-notice.yml %}
 {{ content }}
   </main>
 

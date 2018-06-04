@@ -1,0 +1,3 @@
+{% if site.thisScalaVersion != site.latestScalaVersion %}
+<div class="version-notice">This is the specification of a previous version of Scala. See the <a href="{{ site.baseurl}}/../{{ site.latestScalaVersion }}/">Scala {{ site.latestScalaVersion }} spec</a>.</div>
+{% endif %}

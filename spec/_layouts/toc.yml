@@ -24,6 +24,7 @@
   <div id="header-sub">Version {{ site.thisScalaVersion }}</div>
 </header>
 <main>
+{% include version-notice.yml %}
 {{ content }}
 </main>
 </body>
