@@ -51,8 +51,12 @@ class ConsoleInterface {
         } else
           super.createInterpreter(interpreterSettings)
 
-        for ((id, value) <- bindNames zip bindValues)
-          intp.beQuietDuring(intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value))
+        for ((id, value) <- bindNames zip bindValues) {
+          intp.beQuietDuring {
+            intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
+            ()
+          }
+        }
 
         if (!initialCommands.isEmpty)
           intp.interpret(initialCommands)
@@ -68,6 +72,7 @@ class ConsoleInterface {
     }
 
     loop.run(compilerSettings)
+    ()
   }
 }
 
