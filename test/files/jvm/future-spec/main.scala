@@ -65,7 +65,7 @@ trait MinimalScalaTest extends Output with Features {
 
   implicit def objectops(obj: Any) = new {
 
-    def mustBe(other: Any) = assert(obj == other, obj + " is not " + other)
+    def mustBe(other: Any) = assert(obj == other, s"$obj is not $other")
     def mustEqual(other: Any) = mustBe(other)
 
   }

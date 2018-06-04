@@ -491,7 +491,7 @@ trait StdNames {
       if (isConstructorName(name))
         DEFAULT_GETTER_INIT_STRING + pos
       else
-        name + DEFAULT_GETTER_STRING + pos
+        name.toString + DEFAULT_GETTER_STRING + pos
     )
     // Nominally, name from name$default$N, CONSTRUCTOR for <init>
     def defaultGetterToMethod(name: Name): TermName = (
@@ -654,6 +654,7 @@ trait StdNames {
     val accessor: NameType             = "accessor"
     val add_ : NameType                = "add"
     val annotation: NameType           = "annotation"
+    val any2stringadd: NameType        = "any2stringadd"
     val anyHash: NameType              = "anyHash"
     val anyValClass: NameType          = "anyValClass"
     val apply: NameType                = "apply"

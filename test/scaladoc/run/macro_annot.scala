@@ -11,7 +11,7 @@ object Test extends ScaladocModelTest {
     val docf = newDocFactory
 
     // first compile the macro
-    new docf.compiler.Run() compile List(new java.io.File(resourcePath + "/" + "simulacrum_1.scala").getPath)
+    new docf.compiler.Run() compile List(new java.io.File(resourcePath.toString + "/" + "simulacrum_1.scala").getPath)
     docf.makeUniverse(Right(code))
   }
 

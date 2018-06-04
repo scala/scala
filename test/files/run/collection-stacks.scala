@@ -8,7 +8,7 @@ object Test extends App {
   }
 
   def check[T](expected: T, got: T): Unit = {
-    println(got + ": " + (expected == got))
+    println(s"$got: ${expected == got}")
   }
 
   // check #957

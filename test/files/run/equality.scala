@@ -15,19 +15,19 @@ object Test
   def main(args: Array[String]): Unit = {
     var xs = makeFromInt(5)
     for (x <- xs ; y <- xs) {
-      assert(x == y, x + " == " + y)
+      assert(x == y, s"$x == $y")
       assert(hash(x) == hash(y), "hash(%s) == hash(%s)".format(x, y))
     }
 
     xs = makeFromInt(-5)
     for (x <- xs ; y <- xs) {
-      assert(x == y, x + " == " + y)
+      assert(x == y, s"$x == $y")
       assert(hash(x) == hash(y), "hash(%s) == hash(%s)".format(x, y))
     }
 
     xs = makeFromDouble(500.0)
     for (x <- xs ; y <- xs) {
-      assert(x == y, x + " == " + y)
+      assert(x == y, s"$x == $y")
       assert(hash(x) == hash(y), "hash(%s) == hash(%s)".format(x, y))
     }
 

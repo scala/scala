@@ -15,6 +15,7 @@ import scala.collection.{ mutable, immutable, ArrayOps }
 import scala.collection.immutable.{ ArraySeq, WrappedString }
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
+import scala.annotation.meta.companionMethod
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -366,6 +367,7 @@ object Predef extends LowPriorityImplicits {
 
   // scala/bug#8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
   /** @group implicit-classes-any */
+  @(deprecated @companionMethod)("Implicit injection of + is deprecated. Convert to String to call +", "2.13.0")
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
   }

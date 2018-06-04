@@ -202,13 +202,13 @@ class FutureTests extends MinimalScalaTest {
         a <- future0.mapTo[Int]  // returns 5
         b <- async(a)            // returns "10"
         c <- async(7)            // returns "14"
-      } yield b + "-" + c
+      } yield s"$b-$c"
 
       val future2 = for {
         a <- future0.mapTo[Int]
         b <- (Future { (a * 2).toString }).mapTo[Int]
         c <- Future { (7 * 2).toString }
-      } yield b + "-" + c
+      } yield s"$b-$c"
 
       Await.result(future1, defaultTimeout) mustBe ("10-14")
       assert(checkType(future1, manifest[String]))
@@ -227,13 +227,13 @@ class FutureTests extends MinimalScalaTest {
         Res(a: Int) <- async(Req("Hello"))
         Res(b: String) <- async(Req(a))
         Res(c: String) <- async(Req(7))
-      } yield b + "-" + c
+      } yield s"$b-$c"
 
       val future2 = for {
         Res(a: Int) <- async(Req("Hello"))
         Res(b: Int) <- async(Req(a))
         Res(c: Int) <- async(Req(7))
-      } yield b + "-" + c
+      } yield s"$b-$c"
 
       Await.result(future1, defaultTimeout) mustBe ("10-14")
       intercept[NoSuchElementException] { Await.result(future2, defaultTimeout) }
