@@ -25,7 +25,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lineStream
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lazyLines
     * }}}
     *
     * We describe below the general concepts and architecture of the package,
@@ -92,7 +92,7 @@ package scala.sys {
     *
     *   - Return status of the process (`!` methods)
     *   - Output of the process as a `String` (`!!` methods)
-    *   - Continuous output of the process as a `Stream[String]` (`lineStream` methods)
+    *   - Continuous output of the process as a `LazyList[String]` (`lazyLines` methods)
     *   - The `Process` representing it (`run` methods)
     *
     * Some simple examples of these methods:
@@ -106,10 +106,10 @@ package scala.sys {
     * val dirContents = "ls".!!
     *
     * // This "fire-and-forgets" the method, which can be lazily read through
-    * // a Stream[String]
-    * def sourceFilesAt(baseDir: String): Stream[String] = {
+    * // a LazyList[String]
+    * def sourceFilesAt(baseDir: String): LazyList[String] = {
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   cmd.lineStream
+    *   cmd.lazyLines
     * }
     * }}}
     *
@@ -163,12 +163,12 @@ package scala.sys {
     * }
     *
     * // This "fire-and-forgets" the method, which can be lazily read through
-    * // a Stream[String], and accumulates all errors on a StringBuffer
-    * def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
+    * // a LazyList[String], and accumulates all errors on a StringBuffer
+    * def sourceFilesAt(baseDir: String): (LazyList[String], StringBuffer) = {
     *   val buffer = new StringBuffer()
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   val lineStream = cmd lineStream_! ProcessLogger(buffer append _)
-    *   (lineStream, buffer)
+    *   val lazyLines = cmd lazyLines_! ProcessLogger(buffer append _)
+    *   (lazyLines, buffer)
     * }
     * }}}
     *
