@@ -246,13 +246,13 @@ final private[scala] object StringParsers {
       //but not just .
       val startChar = format.charAt(startIndex)
       if(startChar == '.') {
-         val noSignificant = skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex + 1, endIndex)
-          if(noSignificant == endIndex) (noSignificant != startIndex + 1) //not just "."
-          else {
-            val e = format.charAt(noSignificant)
-            if (e == 'e' || e == 'E') expOK(noSignificant + 1, endIndex)
-            else false
-          }
+        val noSignificant = skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex + 1, endIndex)
+        if(noSignificant == startIndex + 1) false //not just "." or ".Exxx"
+        else {
+          val e = format.charAt(noSignificant)
+          if (e == 'e' || e == 'E') expOK(noSignificant + 1, endIndex)
+          else false
+        }
       }
       else if (startChar >= '0' && startChar <= '9'){
          //one set of digits, then optionally a period, then optionally another set of digits, then optionally an exponent

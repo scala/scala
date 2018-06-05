@@ -92,21 +92,21 @@ object FloatFormatTest extends Properties("FloatFormat") {
     case (ll, rr) => ll == rr
   }
 
-  property("plausible string are same")= forAll(genPlausibleFloatString) {
+  property("for all strings (plausible examples) str.toDoubleOption == Try(str.toDouble).toOption") = forAll(genPlausibleFloatString) {
     str => deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
-  property("possible strings are same") = forAll(genPossibleFloatString) { 
+  property("for all strings (possible examples) str.toDoubleOption == Try(str.toDouble).toOption") = forAll(genPossibleFloatString) { 
     str => deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
-  property("arbitrary strings are same") = forAll{ (str: String) =>
+  property("for all strings (random strings) str.toDoubleOption == Try(str.toDouble).toOption") = forAll{ (str: String) =>
     deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
-  property("double.toString checks") = forAll{ (d: Double) => checkFloatFormat(d.toString)}
+  property("double.toString is a valid float format") = forAll{ (d: Double) => checkFloatFormat(d.toString)}
 
-  property("nan and infinity check like toDouble") = forAll(genNanInf){ (str: String) =>
+  property("nan and infinity toDouble == toDoubleOption.get") = forAll(genNanInf){ (str: String) =>
     deq(str.toDoubleOption, Try(str.toDouble).toOption)
   }
 
