@@ -64,3 +64,42 @@ object SI10194 {
   (null: Y[Int]).map(x => x.toString) // compiled
   (null: Z[Int]).map(x => x.toString) // didn't compile
 }
+
+// Perform eta-expansion of methods passed as functions to overloaded functions
+trait A { def map[T](f: Int => T): Unit = () }
+object B extends A {
+  def noover(f: SAM[Int, Any]): Unit = ()
+  def map[T: scala.reflect.ClassTag](f: Int => T): Unit = ()
+  def f(x: Int) = x
+  noover(f)
+  noover(identity)
+  map(f) // same param type, monomorphic method
+  map(identity) // same param type, polymorphic method
+
+  // must not lub to an incompatible function type
+  object t { def f(x: Int => Int): Int = 0; def f(y: String => Int): String = "1" }
+  def fun(x: Int) = x
+  def fun2[T] = (x: T) => 42
+  t.f(fun) // different param type, monomorphic method
+  //t.f(fun2) // different param type, polymorphic method - not possible
+}
+
+// The same for SAM types
+trait SAM[-T, +R] { def apply(x: T): R }
+trait A2 { def map[T](f: SAM[Int, T]): Unit = () }
+object B2 extends A2 {
+  def noover(f: SAM[Int, Any]): Unit = ()
+  def map[T: scala.reflect.ClassTag](f: SAM[Int, T]): Unit = ()
+  def f(x: Int) = x
+  noover(f)
+  noover(identity)
+  map(f) // same param type, monomorphic method
+  //map(identity) // same param type, polymorphic method - not possible for SAMs
+
+  // must not lub to an incompatible function type
+  object t { def f(x: SAM[Int, Int]): Int = 0; def f(y: SAM[String, Int]): String = "1" }
+  def fun(x: Int) = x
+  def fun2[T] = (x: T) => 42
+  t.f(fun) // different param type, monomorphic method
+  //t.f(fun2) // different param type, polymorphic method - not possible
+}
