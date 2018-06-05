@@ -623,7 +623,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
         trees match {
           case Nil => trees
           case init :+ last => last match {
-            case Select(Ident(sc), name) if traitsToRemove.contains(name) && sc == nme.scala_ =>
+            case Select(Select(Ident(nme.scala_), nme.PACKAGE), name) if traitsToRemove.contains(name) =>
+              removeDefaultTraitsFromList(init, traitsToRemove)
+            case Select(Ident(nme.scala_), name) if traitsToRemove.contains(name) =>
               removeDefaultTraitsFromList(init, traitsToRemove)
             case _ => trees
           }
@@ -848,7 +850,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           val printedParents =
             currentParent map {
               case _: CompoundTypeTree => parents
-              case ClassDef(mods, name, _, _) if mods.isCase => removeDefaultTypesFromList(parents)()(List(tpnme.Product, tpnme.Serializable))
+              case ClassDef(mods, name, _, _) if mods.isCase => removeDefaultTypesFromList(parents)()(defaultTraitsForCase)
               case _ => removeDefaultClassesFromList(parents)
             } getOrElse (parents)
 
