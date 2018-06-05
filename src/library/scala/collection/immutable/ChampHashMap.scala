@@ -38,6 +38,8 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   def iterator: Iterator[(K, V)] = new MapKeyValueTupleIterator[K, V](rootNode)
 
+  override def keysIterator: Iterator[K] = new MapKeyIterator[K, V](rootNode)
+  override def valuesIterator: Iterator[V] = new MapValueIterator[K, V](rootNode)
   protected[immutable] def reverseIterator: Iterator[(K, V)] = new MapKeyValueTupleReverseIterator[K, V](rootNode)
 
   override final def contains(key: K): Boolean = rootNode.containsKey(key, computeHash(key), 0)
@@ -126,6 +128,10 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
   def payloadArity: Int
 
+  def getKey(index: Int): K
+
+  def getValue(index: Int): V
+
   def getPayload(index: Int): (K, V)
 
   def sizePredicate: Int
@@ -156,6 +162,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     predicate1 && predicate2 && predicate3
   }
+
+  def getKey(index: Int): K = content(TupleLength * index).asInstanceOf[K]
+  def getValue(index: Int): V = content(TupleLength * index + 1).asInstanceOf[V]
 
   def getPayload(index: Int) = Tuple2(
     content(TupleLength * index).asInstanceOf[K],
@@ -540,6 +549,9 @@ private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vect
 
   def payloadArity: Int = content.size
 
+  def getKey(index: Int): K = getPayload(index)._1
+  def getValue(index: Int): V = getPayload(index)._2
+
   def getPayload(index: Int): (K, V) = content(index)
 
   def sizePredicate: Int = SizeMoreThanOne
@@ -572,6 +584,35 @@ private final case class MapEffect[K, +V]() {
   def hasReplacedValue = { replacedValue }
   def setReplacedValue = { replacedValue = true ; modified = true }
 
+}
+
+private final class MapKeyIterator[K, V](rootNode: MapNode[K, V])
+  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[K] {
+
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    val payload = currentValueNode.getKey(currentValueCursor)
+    currentValueCursor += 1
+
+    payload
+  }
+
+}
+
+private final class MapValueIterator[K, V](rootNode: MapNode[K, V])
+  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[V] {
+
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    val payload = currentValueNode.getValue(currentValueCursor)
+    currentValueCursor += 1
+
+    payload
+  }
 }
 
 private final class MapKeyValueTupleIterator[K, V](rootNode: MapNode[K, V])
