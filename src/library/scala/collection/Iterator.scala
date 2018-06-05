@@ -5,6 +5,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.runtime.Statics
 
 /** Iterators are data structures that allow to iterate over a sequence
   * of elements. They have a `hasNext` method for checking
@@ -477,7 +478,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = new AbstractIterator[B] {
     // Manually buffer to avoid extra layer of wrapping with buffered
-    private[this] var hd: A = _
+    private[this] var hd: B = _
 
     // Little state machine to keep track of where we are
     // Seek = 0; Found = 1; Empty = -1
@@ -486,16 +487,21 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private[this] var status = 0/*Seek*/
 
     def hasNext = {
+      val marker = Statics.pfMarker
       while (status == 0/*Seek*/) {
         if (self.hasNext) {
-          hd = self.next()
-          if (pf.isDefinedAt(hd)) status = 1/*Found*/
+          val x = self.next()
+          val v = pf.applyOrElse(x, ((x: A) => marker).asInstanceOf[A => B])
+          if (marker ne v.asInstanceOf[AnyRef]) {
+            hd = v
+            status = 1/*Found*/
+          }
         }
         else status = -1/*Empty*/
       }
       status == 1/*Found*/
     }
-    def next() = if (hasNext) { status = 0/*Seek*/; pf(hd) } else Iterator.empty.next()
+    def next() = if (hasNext) { status = 0/*Seek*/; hd } else Iterator.empty.next()
   }
 
   /**

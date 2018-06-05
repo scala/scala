@@ -479,7 +479,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   override def ++ [V1 >: T](that: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(that)
 
   def collect[V2](pf: PartialFunction[(Long, T), (Long, V2)]): LongMap[V2] =
-    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+    strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[T](LongMap), this)
 }

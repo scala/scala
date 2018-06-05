@@ -219,6 +219,12 @@ object View extends IterableFactory[View] {
     def iterator = underlying.iterator.flatMap(f)
   }
 
+  /** A view that collects elements of the underlying collection. */
+  @SerialVersionUID(3L)
+  class Collect[+A, B](underlying: SomeIterableOps[A], pf: PartialFunction[A, B]) extends AbstractView[B] {
+    def iterator = underlying.iterator.collect(pf)
+  }
+
   /** A view that concatenates elements of the prefix collection or iterator with the elements
    *  of the suffix collection or iterator.
    */

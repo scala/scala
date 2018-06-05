@@ -3,6 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
+import scala.runtime.Statics
 
 /**
   * Trait that overrides iterable operations to take advantage of strict builders.
@@ -136,12 +137,12 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @return The resulting collection
     */
   @inline protected[this] final def strictOptimizedCollect[B, C2](b: mutable.Builder[B, C2], pf: PartialFunction[A, B]): C2 = {
+    val marker = Statics.pfMarker
     val it = iterator
     while (it.hasNext) {
       val elem = it.next()
-      if (pf.isDefinedAt(elem)) {
-        b += pf.apply(elem)
-      }
+      val v = pf.applyOrElse(elem, ((x: A) => marker).asInstanceOf[Function[A, B]])
+      if (marker ne v.asInstanceOf[AnyRef]) b += v
     }
     b.result()
   }
