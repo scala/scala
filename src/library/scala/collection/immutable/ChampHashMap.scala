@@ -179,8 +179,8 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val payload = this.getPayload(index)
-      return if (key == payload._1) Option(payload._2) else Option.empty
+      val payload = this.getKey(index)
+      return if (key == payload) Option(this.getValue(index)) else Option.empty
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -197,7 +197,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      return key == this.getPayload(index)._1
+      return key == this.getKey(index)
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -231,12 +231,12 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val (key0, value0) = this.getPayload(index)
-
+      val key0 = this.getKey(index)
       if (key0 == key) {
         effect.setReplacedValue
         return copyAndSetValue(bitpos, value)
       } else {
+        val value0 = this.getValue(index)
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, computeHash(key0), key, value, keyHash, shift + BitPartitionSize)
         effect.setModified
         return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
@@ -265,7 +265,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val (key0, _) = this.getPayload(index)
+      val key0 = this.getKey(index)
 
       if (key0 == key) {
         effect.setModified
@@ -276,9 +276,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(keyHash, 0))
           if (index == 0)
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, { val (k, v) = getPayload(1) ; Array(k, v) })
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)))
           else
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, { val (k, v) = getPayload(0) ; Array(k, v) })
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)))
         }
         else return copyAndRemoveValue(bitpos)
       } else return this
@@ -434,7 +434,8 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     val src = this.content
     val dst = new Array[Any](src.length - 1 + TupleLength)
 
-    val (key, value) = node.getPayload(0)
+    val key = node.getKey(0)
+    val value = node.getValue(0)
 
     // copy 'src' and remove 1 element(s) at position 'idxOld' and
     // insert 2 element(s) at position 'idxNew'
