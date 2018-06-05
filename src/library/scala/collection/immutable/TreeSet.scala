@@ -40,6 +40,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   override def size: Int = RB.count(tree)
 
+  override def isEmpty = size == 0
+
   override def head: A = RB.smallest(tree).key
 
   override def last: A = RB.greatest(tree).key
