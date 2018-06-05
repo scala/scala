@@ -163,7 +163,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   }
 }
 
-import scala.tools.nsc.interactive.RangePositions
+import scala.reflect.internal.Positions
 final class ZincCompilerRangePos(settings: Settings, dreporter: DelegatingReporter, output: Output)
     extends ZincCompiler(settings, dreporter, output)
-    with RangePositions
+    with Positions

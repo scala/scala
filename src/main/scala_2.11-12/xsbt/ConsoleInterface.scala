@@ -8,7 +8,7 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.interpreter.{ ILoop, IMain, InteractiveReader }
+import scala.tools.nsc.interpreter.{ ILoop, IMain, InteractiveReader, NamedParam }
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
@@ -49,12 +49,11 @@ class ConsoleInterface {
             override protected def newCompiler(settings: Settings, reporter: Reporter) =
               super.newCompiler(compilerSettings, reporter)
           }
-          intp.setContextClassLoader()
         } else
           super.createInterpreter()
 
         for ((id, value) <- bindNames zip bindValues)
-          intp.beQuietDuring(intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value))
+          intp.quietBind(NamedParam.clazz(id, value))
 
         if (!initialCommands.isEmpty)
           intp.interpret(initialCommands)

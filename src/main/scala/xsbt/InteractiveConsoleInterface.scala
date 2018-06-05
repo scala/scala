@@ -14,6 +14,7 @@ import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
 import xsbti.Logger
 
+import Compat._
 import InteractiveConsoleHelper._
 
 class InteractiveConsoleInterface(
@@ -38,9 +39,10 @@ class InteractiveConsoleInterface(
   val outWriter: StringWriter = new StringWriter
   val poutWriter: PrintWriter = new PrintWriter(outWriter)
 
-  val interpreter: IMain = new IMain(compilerSettings, new PrintWriter(outWriter)) {
-    def lastReq: Request = prevRequestList.last
-  }
+  val interpreter: IMain =
+    new IMain(compilerSettings, replReporter(compilerSettings, new PrintWriter(outWriter))) {
+      def lastReq: Request = prevRequestList.last
+    }
 
   def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
     clearBuffer()

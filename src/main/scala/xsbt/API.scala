@@ -48,8 +48,17 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers {
       val classApis = traverser.allNonLocalClasses
       val mainClasses = traverser.mainClasses
 
-      classApis.foreach(callback.api(sourceFile, _))
-      mainClasses.foreach(callback.mainClass(sourceFile, _))
+      // Use of iterators make this code easier to profile
+
+      val classApisIt = classApis.iterator
+      while (classApisIt.hasNext) {
+        callback.api(sourceFile, classApisIt.next())
+      }
+
+      val mainClassesIt = mainClasses.iterator
+      while (mainClassesIt.hasNext) {
+        callback.mainClass(sourceFile, mainClassesIt.next())
+      }
     }
   }
 

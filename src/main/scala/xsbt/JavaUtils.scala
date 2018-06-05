@@ -11,7 +11,7 @@ private[xsbt] object JavaUtils {
   implicit class JavaForEach[T](val iterable: java.lang.Iterable[T]) extends AnyVal {
 
     @inline
-    def foreach(op: T => Unit): Unit = {
+    def foreach[U](op: T => U): Unit = {
       val iterator = iterable.iterator()
       while (iterator.hasNext) op(iterator.next())
     }
@@ -20,7 +20,7 @@ private[xsbt] object JavaUtils {
   implicit class JavaMapForEach[K, V](val map: java.util.Map[K, V]) extends AnyVal {
 
     @inline
-    def foreach(op: (K, V) => Unit): Unit = {
+    def foreach[U](op: (K, V) => U): Unit = {
       val iterator = map.keySet().iterator()
       while (iterator.hasNext) {
         val key = iterator.next()

@@ -11,6 +11,7 @@ import java.io.File
 import java.util.Optional
 
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
+// Left for compatibility
 import Compat._
 
 private object DelegatingReporter {
@@ -78,7 +79,7 @@ private object DelegatingReporter {
       val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
       val pointerSpace = lineContent.toList.take(pointer).map {
         case '\t' => '\t'
-        case x    => ' '
+        case _    => ' '
       }
       new PositionImpl(Option(sourcePath),
                        Option(sourceFile),

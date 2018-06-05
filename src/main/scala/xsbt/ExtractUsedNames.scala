@@ -12,7 +12,7 @@ import java.util.{ HashSet => JavaSet }
 import java.util.EnumSet
 
 import xsbti.UseScope
-
+// Left for compatibility
 import Compat._
 
 /**
