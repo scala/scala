@@ -662,15 +662,17 @@ object LazyList extends LazyListFactory[LazyList] {
     def unapply[A](xs: LazyList[A]): Option[(A, LazyList[A])] = #::.unapply(xs)
   }
 
-  implicit final class Deferrer[A](l: => LazyList[A]) {
+  implicit def toDeferrer[A](l: => LazyList[A]): Deferrer[A] = new Deferrer[A](() => l)
+
+  final class Deferrer[A] private[LazyList] (private val l: () => LazyList[A]) extends AnyVal {
     /** Construct a LazyList consisting of a given first element followed by elements
       *  from another LazyList.
       */
-    def #:: [B >: A](elem: => B): LazyList[B] = newCons(elem, l)
+    def #:: [B >: A](elem: => B): LazyList[B] = newCons(elem, l())
     /** Construct a LazyList consisting of the concatenation of the given LazyList and
       *  another LazyList.
       */
-    def #:::[B >: A](prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l
+    def #:::[B >: A](prefix: LazyList[B]): LazyList[B] = prefix lazyAppendedAll l()
   }
 
   object #:: {
@@ -831,15 +833,17 @@ object Stream extends LazyListFactory[Stream] {
     def unapply[A](xs: Stream[A]): Option[(A, Stream[A])] = #::.unapply(xs)
   }
 
-  implicit final class Deferrer[A](l: => Stream[A]) {
+  implicit def toDeferrer[A](l: => Stream[A]): Deferrer[A] = new Deferrer[A](() => l)
+
+  final class Deferrer[A] private[Stream] (private val l: () => Stream[A]) extends AnyVal {
     /** Construct a Stream consisting of a given first element followed by elements
       *  from another Stream.
       */
-    def #:: [B >: A](elem: => B): Stream[B] = newCons(elem, l)
+    def #:: [B >: A](elem: => B): Stream[B] = newCons(elem, l())
     /** Construct a Stream consisting of the concatenation of the given Stream and
       *  another Stream.
       */
-    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix lazyAppendedAll l
+    def #:::[B >: A](prefix: Stream[B]): Stream[B] = prefix lazyAppendedAll l()
   }
 
   object #:: {
