@@ -839,7 +839,7 @@ object Stream extends LazyListFactory[Stream] {
     /** Construct a Stream consisting of a given first element followed by elements
       *  from another Stream.
       */
-    def #:: [B >: A](elem: => B): Stream[B] = newCons(elem, l())
+    def #:: [B >: A](elem: B): Stream[B] = new Cons(elem, l())
     /** Construct a Stream consisting of the concatenation of the given Stream and
       *  another Stream.
       */
