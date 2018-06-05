@@ -32,7 +32,10 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator: Iterator[A] = new SetIterator[A](rootNode)
+  def iterator: Iterator[A] = {
+    if (isEmpty) Iterator.empty
+    else new SetIterator[A](rootNode)
+  }
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 

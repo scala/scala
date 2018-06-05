@@ -36,11 +36,23 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator: Iterator[(K, V)] = new MapKeyValueTupleIterator[K, V](rootNode)
+  def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyValueTupleIterator[K, V](rootNode)
+  }
 
-  override def keysIterator: Iterator[K] = new MapKeyIterator[K, V](rootNode)
-  override def valuesIterator: Iterator[V] = new MapValueIterator[K, V](rootNode)
-  protected[immutable] def reverseIterator: Iterator[(K, V)] = new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyIterator[K, V](rootNode)
+  }
+  override def valuesIterator: Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else new MapValueIterator[K, V](rootNode)
+  }
+  protected[immutable] def reverseIterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  }
 
   override final def contains(key: K): Boolean = rootNode.containsKey(key, computeHash(key), 0)
 
