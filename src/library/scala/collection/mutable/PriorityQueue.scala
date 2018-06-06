@@ -29,7 +29,7 @@ import scala.math.Ordering
   *  @example {{{
   *  val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
   *  println(pq)                  // elements probably not in order
-  *  println(pq.clone.dequeueAll) // prints Vector(7, 5, 3, 2, 1)
+  *  println(pq.clone.dequeueAll) // prints ArrayBuffer(7, 5, 3, 2, 1)
   *  }}}
   *
   *  @tparam A    type of the elements in this priority queue.
