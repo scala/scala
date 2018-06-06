@@ -97,15 +97,35 @@ sealed abstract class ArraySeq[+A]
         fromIterable(new View.Zip(toIterable, that))
     }
 
-  override def take(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).take(n)).asInstanceOf[ArraySeq[A]]
+  override def take(n: Int): ArraySeq[A] =
+    if (unsafeArray.length <= n)
+      this
+    else
+      ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).take(n)).asInstanceOf[ArraySeq[A]]
 
-  override def takeRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).takeRight(n)).asInstanceOf[ArraySeq[A]]
+  override def takeRight(n: Int): ArraySeq[A] =
+    if (unsafeArray.length <= n)
+      this
+    else
+      ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).takeRight(n)).asInstanceOf[ArraySeq[A]]
 
-  override def drop(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).drop(n)).asInstanceOf[ArraySeq[A]]
+  override def drop(n: Int): ArraySeq[A] =
+    if (n <= 0)
+      this
+    else
+      ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).drop(n)).asInstanceOf[ArraySeq[A]]
 
-  override def dropRight(n: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).dropRight(n)).asInstanceOf[ArraySeq[A]]
+  override def dropRight(n: Int): ArraySeq[A] =
+    if (n <= 0)
+      this
+    else
+      ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).dropRight(n)).asInstanceOf[ArraySeq[A]]
 
-  override def slice(from: Int, until: Int): ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until)).asInstanceOf[ArraySeq[A]]
+  override def slice(from: Int, until: Int): ArraySeq[A] =
+    if (from <= 0 && unsafeArray.length <= until)
+      this
+    else
+      ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until)).asInstanceOf[ArraySeq[A]]
 
   override def tail: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).tail).asInstanceOf[ArraySeq[A]]
 
