@@ -58,7 +58,7 @@ import convert._
  *    vs: java.util.List[String] = [hi, bye]
  *
  *    scala> val ss = asScalaIterator(vs.iterator)
- *    ss: Iterator[String] = non-empty iterator
+ *    ss: Iterator[String] = <iterator>
  *
  *    scala> .toList
  *    res0: List[String] = List(hi, bye)
