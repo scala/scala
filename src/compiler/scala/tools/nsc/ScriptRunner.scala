@@ -74,6 +74,10 @@ class ScriptRunner extends HasCompileSocket {
     }
   }
 
+  private def shutdownDaemon() = {
+    new StandardCompileClient().process(Array("-shutdown"))
+  }
+
   protected def newGlobal(settings: Settings, reporter: Reporter) =
     Global(settings, reporter)
 
@@ -101,6 +105,8 @@ class ScriptRunner extends HasCompileSocket {
       settings.outdir.value = compiledPath.path
 
       if (!settings.useCompDaemon) {
+        if (settings.nc) shutdownDaemon()
+
         /* Setting settings.script.value informs the compiler this is not a
          * self contained compilation unit.
          */

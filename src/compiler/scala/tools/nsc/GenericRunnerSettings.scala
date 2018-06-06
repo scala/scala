@@ -16,8 +16,9 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
       "-howtorun",
       "how",
       "how to run the specified code",
-      List("object", "script", "jar", "repl", "guess"),
+      List("object", "script", "jar", "repl", "fsc", "guess"),
       "guess")
+    .withPostSetHook { s: ChoiceSetting => if (s.value == "fsc") { _useCompDaemon = true ; s.value = "script" } }
 
   val loadfiles =
     MultiStringSetting(
@@ -45,9 +46,10 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val nc = BooleanSetting(
       "-nc",
-      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon" withPostSetHook((x: BooleanSetting) => {_useCompDaemon = !x.value })
+      "do not use the fsc compilation daemon and shut it down if it is running").withAbbreviation("-nocompdaemon")
+      //.withDeprecationMessage("scripts use cold compilation by default; use -howtorun:fsc to start the compilation daemon")
+      .withPostSetHook { x: BooleanSetting => _useCompDaemon = !x }
 
-
-  private[this] var _useCompDaemon = true
+  private[this] var _useCompDaemon = false
   def useCompDaemon: Boolean = _useCompDaemon
 }
