@@ -70,6 +70,18 @@ class ArrayOpsTest {
   }
 
   @Test
+  def startsWith: Unit = {
+    val l0 = Nil
+    val l1 = 1 :: Nil
+    val a0 = Array[Int]()
+    val a1 = Array[Int](1)
+    assertEquals(l0.startsWith(l0, 0), a0.startsWith(a0, 0))
+    assertEquals(l0.startsWith(l0, 1), a0.startsWith(a0, 1))
+    assertEquals(l0.startsWith(l1, 0), a0.startsWith(a1, 0))
+    assertEquals(l0.startsWith(l1, 1), a0.startsWith(a1, 1))
+  }
+
+  @Test
   def patch(): Unit = {
     val a1 = Array.empty[Int]
     val v1 = a1.toVector
