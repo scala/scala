@@ -172,7 +172,7 @@ import scala.language.higherKinds
   *  }
   *  }}}
   *
-  *  @tparam A    the type of the elements contained in this stream.
+  *  @tparam A    the type of the elements contained in this lazy list.
   *
   *  @author Martin Odersky, Matthias Zenger
   *  @since   2.8
@@ -649,7 +649,7 @@ object LazyList extends LazyListFactory[LazyList] {
     protected def headDefined: Boolean = hdEvaluated
   }
 
-  /** An alternative way of building and matching Streams using LazyList.cons(hd, tl).
+  /** An alternative way of building and matching lazy lists using LazyList.cons(hd, tl).
     */
   object cons {
     /** A lazy list consisting of a given first element and remaining elements
@@ -767,8 +767,8 @@ object Stream extends LazyListFactory[Stream] {
   //@SerialVersionUID(3L) //TODO Putting an annotation on Stream.empty causes a cyclic dependency in unpickling
   object Empty extends Stream[Nothing] {
     override def isEmpty: Boolean = true
-    override def head: Nothing = throw new NoSuchElementException("head of empty lazy list")
-    override def tail: Stream[Nothing] = throw new UnsupportedOperationException("tail of empty lazy list")
+    override def head: Nothing = throw new NoSuchElementException("head of empty stream")
+    override def tail: Stream[Nothing] = throw new UnsupportedOperationException("tail of empty stream")
     /** Forces evaluation of the whole `Stream` and returns it.
       *
       * @note Often we use `Stream`s to represent an infinite set or series.  If
@@ -823,13 +823,13 @@ object Stream extends LazyListFactory[Stream] {
   /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
     */
   object cons {
-    /** A lazy list consisting of a given first element and remaining elements
-      *  @param hd   The first element of the result lazy list
-      *  @param tl   The remaining elements of the result lazy list
+    /** A stream consisting of a given first element and remaining elements
+      *  @param hd   The first element of the result stream
+      *  @param tl   The remaining elements of the result stream
       */
     def apply[A](hd: A, tl: => Stream[A]): Stream[A] = new Cons(hd, tl)
 
-    /** Maps a lazy list to its head and tail */
+    /** Maps a stream to its head and tail */
     def unapply[A](xs: Stream[A]): Option[(A, Stream[A])] = #::.unapply(xs)
   }
 
