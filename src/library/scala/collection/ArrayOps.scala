@@ -104,7 +104,7 @@ object ArrayOps {
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), xs)
   }
 
-  private class ArrayIterator[A](private[this] val xs: Array[A]) extends Iterator[A] {
+  private class ArrayIterator[A](private[this] val xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < xs.length
     def next(): A = try {
@@ -114,7 +114,7 @@ object ArrayOps {
     } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
   }
 
-  private class ReverseIterator[A](private[this] val xs: Array[A]) extends Iterator[A] {
+  private class ReverseIterator[A](private[this] val xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
     def next(): A = try {
@@ -124,7 +124,7 @@ object ArrayOps {
     } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
   }
 
-  private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends Iterator[Array[A]] {
+  private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends AbstractIterator[Array[A]] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < xs.length
     def next(): Array[A] = {

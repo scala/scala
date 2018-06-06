@@ -100,7 +100,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *
     *  @author Eastsun
     */
-  private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends Iterator[C] {
+  private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends AbstractIterator[C] {
     private[this] val idxs = Array.range(0, len+1)
     private[this] var _hasNext = true
     idxs(len) = elms.size
