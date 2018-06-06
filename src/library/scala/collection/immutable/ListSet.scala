@@ -30,7 +30,7 @@ import scala.annotation.tailrec
   */
 sealed class ListSet[A]
   extends AbstractSet[A]
-    with SetOps[A, ListSet, ListSet[A]]
+    with InvariantSetOps[A, ListSet, ListSet[A]]
     with StrictOptimizedIterableOps[A, ListSet, ListSet[A]] {
 
   override def className: String = "ListSet"
@@ -38,10 +38,10 @@ sealed class ListSet[A]
   override def size: Int = 0
   override def isEmpty: Boolean = true
 
-  def contains(elem: A): Boolean = false
+  def contains[A1 >: A](elem: A1): Boolean = false
 
   def incl(elem: A): ListSet[A] = new Node(elem)
-  def excl(elem: A): ListSet[A] = this
+  def excl[A1 >: A](elem: A1): ListSet[A] = this
 
   def iterator: scala.collection.Iterator[A] = {
     var curr: ListSet[A] = this
@@ -71,14 +71,14 @@ sealed class ListSet[A]
 
     override def isEmpty: Boolean = false
 
-    override def contains(e: A) = containsInternal(this, e)
+    override def contains[A1 >: A](e: A1) = containsInternal(this, e.asInstanceOf[A])
 
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))
 
     override def incl(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def excl(e: A): ListSet[A] = removeInternal(e, this, Nil)
+    override def excl[A1 >: A](e: A1): ListSet[A] = removeInternal(e.asInstanceOf[A], this, Nil)
 
     @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
       if (cur.isEmpty) acc.last

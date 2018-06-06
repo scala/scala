@@ -94,6 +94,11 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
+  def contains[A1 >: Int](elem: A1): Boolean =
+    elem match {
+      case elem: Int => contains(elem)
+      case _ => false
+    }
 
   def iterator: Iterator[Int] = iteratorFrom(0)
 

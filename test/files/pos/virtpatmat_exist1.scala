@@ -10,7 +10,7 @@ class HS[A]
     with StrictOptimizedIterableOps[A, HS, HS[A]]
     with Serializable {
   def get(elem: A): Option[A] = ???
-  def contains(elem: A): Boolean = ???
+  def contains[A1 >: A](elem: A1): Boolean = ???
   def addOne(elem: A): HS.this.type = ???
   def clear(): Unit = ???
   def iterator: Iterator[A] = ???

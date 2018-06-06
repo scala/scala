@@ -166,7 +166,7 @@ abstract class Erasure extends InfoTransform
    * This is important on Android because there is otherwise an interface explosion.
    */
   def minimizeParents(cls: Symbol, parents: List[Type]): List[Type] = if (parents.isEmpty) parents else {
-    val requiredDirect: Symbol => Boolean = requiredDirectInterfaces.getOrElse(cls, Set.empty)
+    val requiredDirect: Symbol => Boolean = requiredDirectInterfaces.getOrElse(cls, Set.empty).contains
     var rest   = parents.tail
     var leaves = collection.mutable.ListBuffer.empty[Type] += parents.head
     while (rest.nonEmpty) {

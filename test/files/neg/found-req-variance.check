@@ -161,13 +161,6 @@ Note: Int <: AnyVal (and Misc.MyData <: Misc.Data[Int]), but class Data is invar
 You may wish to define A as +A instead. (SLS 4.5)
   def f1 = Set[Data[AnyVal]]() + new MyData
                                  ^
-found-req-variance.scala:100: error: type mismatch;
- found   : Set[String]
- required: Set[CharSequence]
-Note: String <: CharSequence, but trait Set is invariant in type A.
-You may wish to investigate a wildcard type such as `_ <: CharSequence`. (SLS 3.2.10)
-    foo(s)
-        ^
 found-req-variance.scala:104: error: type mismatch;
  found   : Misc.Trippy[String,String,String]
  required: Misc.Trippy[Object,Object,Object]
@@ -182,4 +175,4 @@ Note: AnyRef >: String, but trait Map is invariant in type A.
 You may wish to investigate a wildcard type such as `_ >: String`. (SLS 3.2.10)
   def g2 = Set[Map[String, String]]() + Map[AnyRef, String]()
                                                            ^
-28 errors found
+27 errors found

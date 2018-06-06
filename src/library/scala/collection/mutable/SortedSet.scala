@@ -19,7 +19,7 @@ trait SortedSet[A]
   * @define coll mutable sorted set
   * @define Coll `mutable.Sortedset`
   */
-trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
+trait SortedSetOps[A, +CC[X] <: SortedSetOps[X, CC, _] with SortedSet[X], +C <: SortedSetOps[A, CC, C] with CC[A]]
   extends SetOps[A, Set, C]
     with collection.SortedSetOps[A, CC, C]
 

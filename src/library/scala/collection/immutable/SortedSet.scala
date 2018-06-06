@@ -17,8 +17,8 @@ trait SortedSet[A]
   * @define coll immutable sorted set
   * @define Coll `immutable.SortedSet`
   */
-trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
-  extends SetOps[A, Set, C]
+trait SortedSetOps[A, +CC[X] <: SortedSetOps[X, CC, _] with SortedSet[X], +C <: SortedSetOps[A, CC, C] with CC[A]]
+  extends InvariantSetOps[A, CC, C]
      with collection.SortedSetOps[A, CC, C]
 
 /**

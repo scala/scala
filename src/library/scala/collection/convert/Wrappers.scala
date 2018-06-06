@@ -160,7 +160,7 @@ private[collection] trait Wrappers {
         case Some(e) =>
           underlying match {
             case ms: mutable.Set[a] =>
-              ms remove e
+              ms.remove(e.asInstanceOf[a])
               prev = None
             case _ =>
               throw new UnsupportedOperationException("remove")
@@ -191,7 +191,7 @@ private[collection] trait Wrappers {
 
     def iterator = underlying.iterator.asScala
 
-    def contains(elem: A): Boolean = underlying.contains(elem)
+    def contains[A1 >: A](elem: A1): Boolean = underlying.contains(elem)
 
     def addOne(elem: A): this.type = { underlying add elem; this }
     def subtractOne(elem: A): this.type = { underlying remove elem; this }

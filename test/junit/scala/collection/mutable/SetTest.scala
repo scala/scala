@@ -18,7 +18,7 @@ class SetTest {
 
     override def empty = new MySet(self.empty)
     def iterator = self.iterator
-    def contains(elem: String) = self.contains(elem)
+    def contains[A1 >: String](elem: A1) = self.contains(elem)
     def get(elem: String): Option[String] = self.get(elem)
     def clear(): Unit = self.clear()
   }

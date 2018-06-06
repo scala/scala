@@ -50,7 +50,7 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
         new map.ImmutableKeySortedSet
       }
       def incl(elem: K): SortedSet[K] = fromSpecificIterable(this).incl(elem)
-      def excl(elem: K): SortedSet[K] = fromSpecificIterable(this).excl(elem)
+      def excl[K1 >: K](elem: K1): SortedSet[K] = fromSpecificIterable(this).excl(elem.asInstanceOf[K])
     }
 
     // We override these methods to fix their return type (which would be `Map` otherwise)

@@ -268,7 +268,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
     extends immutable.AbstractSet[Value]
       with immutable.SortedSet[Value]
-      with immutable.SetOps[Value, immutable.Set, ValueSet]
+      with immutable.SortedSetOps[Value, immutable.SortedSet, ValueSet]
       with StrictOptimizedIterableOps[Value, immutable.Set, ValueSet]
       with Serializable {
 
@@ -277,9 +277,16 @@ abstract class Enumeration (initial: Int) extends Serializable {
       new ValueSet(nnIds.rangeImpl(from.map(_.id - bottomId), until.map(_.id - bottomId)))
 
     override def empty = ValueSet.empty
-    def contains(v: Value) = nnIds contains (v.id - bottomId)
+    def contains [A1 >: Value](v: A1) = v match {
+      case v: Value => nnIds contains (v.id - bottomId)
+      case _ => false
+    }
     def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
     def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
+    def excl [A1 >: Value](value: A1) = value match {
+      case value: Value => excl(value)
+      case _ => this
+    }
     def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
     override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
     override def className = thisenum + ".ValueSet"

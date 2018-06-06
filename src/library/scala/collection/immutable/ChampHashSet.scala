@@ -21,7 +21,7 @@ import java.lang.System.arraycopy
   */
 final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int, val cachedSize: Int)
   extends AbstractSet[A]
-    with SetOps[A, ChampHashSet, ChampHashSet[A]]
+    with InvariantSetOps[A, ChampHashSet, ChampHashSet[A]]
     with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]] {
 
   override def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet
@@ -36,7 +36,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
-  def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
+  def contains[A1 >: A](element: A1): Boolean = rootNode.contains(element.asInstanceOf[A], computeHash(element), 0)
 
   def incl(element: A): ChampHashSet[A] = {
     val effect = SetEffect[A]()
@@ -48,10 +48,10 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     else this
   }
 
-  def excl(element: A): ChampHashSet[A] = {
+  def excl[B >: A](element: B): ChampHashSet[A] = {
     val effect = SetEffect[A]()
     val elementHash = computeHash(element)
-    val newRootNode = rootNode.removed(element, elementHash, 0, effect)
+    val newRootNode = rootNode.removed(element.asInstanceOf[A], elementHash, 0, effect)
 
     if (effect.isModified)
       ChampHashSet(newRootNode, cachedJavaHashCode - elementHash, cachedSize - 1)

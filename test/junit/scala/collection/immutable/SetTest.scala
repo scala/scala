@@ -12,7 +12,7 @@ class SetTest {
     val any2stringadd = "Disabled string conversions so as not to get confused!"
     
     def any[A](set: Set[A]): Set[Any] = {
-      val anyset = set.toSet[Any]
+      val anyset: Set[Any] = set
       assert((anyset + "fish") contains "fish")
       anyset
     }
@@ -20,7 +20,7 @@ class SetTest {
     // Make sure default immutable Set does not rebuild itself on widening with toSet
     // Need to cover 0, 1, 2, 3, 4 elements as special cases
     var si = Set.empty[Int]
-    assert(si eq si.toSet[Any])
+    assert(si eq si)
     for (i <- 1 to 5) {
       val s1 = Set(Array.range(1, i+1): _*)
       val s2 = si + i

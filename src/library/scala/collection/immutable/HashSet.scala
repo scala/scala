@@ -25,7 +25,7 @@ import scala.annotation.tailrec
   */
 sealed abstract class HashSet[A]
   extends AbstractSet[A]
-    with SetOps[A, HashSet, HashSet[A]]
+    with InvariantSetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
   import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
@@ -34,13 +34,13 @@ sealed abstract class HashSet[A]
 
   override def iterableFactory = HashSet
 
-  def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
+  def contains[A1 >: A](elem: A1): Boolean = get0(elem.asInstanceOf[A], computeHash(elem), 0)
 
   def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
-  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+  def excl[A1 >: A](elem: A1): HashSet[A] = nullToEmpty(removed0(elem.asInstanceOf[A], computeHash(elem), 0))
 
-  override def subsetOf(that: collection.Set[A]): Boolean = that match {
+  override def subsetOf[A1 >: A](that: collection.Set[A1]): Boolean = that match {
     case that:HashSet[A] =>
       // call the specialized implementation with a level of 0 since both this and that are top-level hash sets
       subsetOf0(that, 0)
@@ -56,14 +56,14 @@ sealed abstract class HashSet[A]
     case _ => super.concat(that)
   }
 
-  override def intersect(that: collection.Set[A]): HashSet[A] = that match {
+  override def intersect[A1 >: A](that: collection.Set[A1]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size min that.size))
       nullToEmpty(intersect0(that, 0, buffer, 0))
     case _ => super.intersect(that)
   }
 
-  override def diff(that: collection.Set[A]): HashSet[A] = that match {
+  override def diff[A1 >: A](that: collection.Set[A1]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size))
       nullToEmpty(diff0(that, 0, buffer, 0))
