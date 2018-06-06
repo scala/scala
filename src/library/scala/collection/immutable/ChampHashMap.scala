@@ -132,8 +132,6 @@ private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K,
   def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.get(key, hash, shift).isDefined
 
-  def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean
-
   def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int): MapNodeSource[K, V1]
 
   def removed[V1 >: V](key: K, hash: Int, shift: Int): MapNode[K, V1]
@@ -223,24 +221,6 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
       return this.getNode(index).containsKey(key, keyHash, shift + BitPartitionSize)
-    }
-
-    false
-  }
-
-  override def contains[V1 >: V](key: K, value: V1, keyHash: Int, shift: Int): Boolean = {
-    val mask = maskFrom(keyHash, shift)
-    val bitpos = bitposFrom(mask)
-
-    if ((dataMap & bitpos) != 0) {
-      val index = indexFrom(dataMap, mask, bitpos)
-      // TODO test drive the change from == to eq here.
-      key == this.getKey(index) && (value.asInstanceOf[AnyRef] eq this.getValue(index).asInstanceOf[AnyRef])
-    }
-
-    if ((nodeMap & bitpos) != 0) {
-      val index = indexFrom(nodeMap, mask, bitpos)
-      return this.getNode(index).contains(key, value, keyHash, shift + BitPartitionSize)
     }
 
     false
@@ -539,7 +519,7 @@ private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K,
   override def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.exists(key == _._1)
 
-  override def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean =
+  def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.exists(payload => key == payload._1 && (value.asInstanceOf[AnyRef] eq payload._2.asInstanceOf[AnyRef]))
 
   def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int): MapNodeSource[K, V1] =
