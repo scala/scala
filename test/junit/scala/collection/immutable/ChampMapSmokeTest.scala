@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
+import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
 import org.junit.{Assert, Test}
 
 object ChampMapSmokeTest {
@@ -219,4 +219,23 @@ class ChampMapSmokeTest {
     Assert.assertSame(s1, map.updated(key, s1).apply(key))
   }
 
+  @Test def replacedValueIdentical(): Unit = {
+    case class A(a: Int)
+    val map = emptyMap[Any, Any]
+    val a = A(1)
+    val map1 = map.updated(1, a)
+    val map2 = map1.updated(1, a)
+    assertSame(map1, map2)
+  }
+
+  @Test def replacedValueIdenticalCollision(): Unit = {
+    val k0 = new C(0)
+    val k1 = new C(4)
+    assertEquals(k0.hashCode, k1.hashCode)
+    val map = emptyMap[Any, Any].updated(k0, 0)
+    val v1 = "v1"
+    val map1 = map.updated(k1, v1)
+    val map2 = map1.updated(k1, v1)
+    assertSame(map1, map2)
+  }
 }

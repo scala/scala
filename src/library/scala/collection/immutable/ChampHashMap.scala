@@ -254,7 +254,13 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
       val index = indexFrom(dataMap, mask, bitpos)
       val key0 = this.getKey(index)
       if (key0 == key) {
-        return copyAndSetValue(bitpos, value)
+        val value0 = this.getValue(index)
+        return (
+          if (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef])
+            // TODO should we also check that `key0 eq key` in addition to being ==
+            this
+          else copyAndSetValue(bitpos, value)
+        )
       } else {
         val value0 = this.getValue(index)
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, computeHash(key0), key, value, keyHash, shift + BitPartitionSize)
