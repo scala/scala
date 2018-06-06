@@ -242,6 +242,7 @@ class StringParsersTest {
     "-0x0.000000000000090000000000000000001p-1022",
     "-0x0.00000000000009fffffffffffffffffffffffffffffffffp-1022",
     "-0x0.0000000000000fffffffffffffffffffffffffffffffffffp-1022",
+    ".4",
     ".E4",
     "1.1E4",
     "1.E4",

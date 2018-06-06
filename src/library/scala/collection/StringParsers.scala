@@ -16,7 +16,6 @@ final private[scala] object StringParsers {
   private final val longOverflowBoundary = -922337203685477580L
   private final val longOverflowDigit = 9
 
-  
   @inline
   private[this] final def decValue(ch: Char): Int = java.lang.Character.digit(ch, 10)
 
@@ -37,6 +36,9 @@ final private[scala] object StringParsers {
       }
     rec(1, agg)
   }
+
+  @inline
+  private[this] final def isDigit(c: Char): Boolean = c >= '0' && c <= '9'
 
   //bool
   @inline
@@ -240,19 +242,20 @@ final private[scala] object StringParsers {
       //but not just .
       val startChar = format.charAt(startIndex)
       if (startChar == '.') {
-        val noSignificant = skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex + 1, endIndex)
-        (noSignificant != startIndex + 1) &&  { //not just "." or ".Exxx"
+        val noSignificant = skipIndexWhile(isDigit, startIndex + 1, endIndex)
+        // a digit is required followed by optional exp
+        (noSignificant > startIndex + 1) && (noSignificant >= endIndex || {
           val e = format.charAt(noSignificant)
           (e == 'e' || e == 'E') && expOK(noSignificant + 1, endIndex)
-        }
+        })
       }
-      else if (startChar >= '0' && startChar <= '9'){
+      else if (isDigit(startChar)) {
          //one set of digits, then optionally a period, then optionally another set of digits, then optionally an exponent
-        val noInt = skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex, endIndex)
+        val noInt = skipIndexWhile(isDigit, startIndex, endIndex)
         (noInt == endIndex) || { //just the digits
           val afterIntChar = format.charAt(noInt)
           if (afterIntChar == '.') {
-            val noSignificant = skipIndexWhile(ch => ch >= '0' && ch <= '9', noInt + 1, endIndex)
+            val noSignificant = skipIndexWhile(isDigit, noInt + 1, endIndex)
             (noSignificant >= endIndex) || { //no exponent
               val e = format.charAt(noSignificant)
               (e == 'e' || e == 'E') && expOK(noSignificant + 1, endIndex)
