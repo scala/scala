@@ -166,11 +166,7 @@ final private[scala] object StringParsers {
     //some utilities for working with index bounds into the original string
     @inline
     def forAllBetween(start: Int, end: Int, pred: Char => Boolean): Boolean = {
-      def rec(i: Int): Boolean = {
-        if (i >= end) true
-        else if (pred(format.charAt(i))) rec(i + 1)
-        else false
-      }
+      def rec(i: Int): Boolean = i >= end || pred(format.charAt(i)) && rec(i + 1)
       rec(start)
     }
 
@@ -211,11 +207,11 @@ final private[scala] object StringParsers {
 
       def postfixOK(startIndex: Int, endIndex: Int): Boolean =
         (startIndex < endIndex) && {
-          (forAllBetween(startIndex, endIndex, ch => ch >= '0' && ch <= '9')) || {
+          (forAllBetween(startIndex, endIndex, isDigit)) || {
             val startchar = format.charAt(startIndex)
             (startchar == '+' || startchar == '-') &&
             (endIndex - startIndex > 1) &&
-            forAllBetween(startIndex + 1, endIndex, ch => ch >= '0' && ch <= '9')
+            forAllBetween(startIndex + 1, endIndex, isDigit)
           }
         }
       // prefix [pP] postfix
@@ -226,13 +222,15 @@ final private[scala] object StringParsers {
     def isDecFloatLiteral(startIndex: Int, endIndex: Int): Boolean = {
       //invariant: endIndex > startIndex
 
+      def isExp(c: Char): Boolean = c == 'e' || c == 'E'
+
       def expOK(startIndex: Int, endIndex: Int): Boolean =
         (startIndex < endIndex) && {
           val startChar = format.charAt(startIndex)
           if (startChar == '+' || startChar == '-')
             (endIndex > (startIndex + 1)) &&
-            skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex + 1, endIndex) == endIndex
-          else skipIndexWhile(ch => ch >= '0' && ch <= '9', startIndex, endIndex) == endIndex
+            skipIndexWhile(isDigit, startIndex + 1, endIndex) == endIndex
+          else skipIndexWhile(isDigit, startIndex, endIndex) == endIndex
         }
 
       //significant can be one of
@@ -244,29 +242,24 @@ final private[scala] object StringParsers {
       if (startChar == '.') {
         val noSignificant = skipIndexWhile(isDigit, startIndex + 1, endIndex)
         // a digit is required followed by optional exp
-        (noSignificant > startIndex + 1) && (noSignificant >= endIndex || {
-          val e = format.charAt(noSignificant)
-          (e == 'e' || e == 'E') && expOK(noSignificant + 1, endIndex)
-        })
+        (noSignificant > startIndex + 1) && (noSignificant >= endIndex ||
+          isExp(format.charAt(noSignificant)) && expOK(noSignificant + 1, endIndex)
+        )
       }
       else if (isDigit(startChar)) {
-         //one set of digits, then optionally a period, then optionally another set of digits, then optionally an exponent
+        // one set of digits, then optionally a period, then optionally another set of digits, then optionally an exponent
         val noInt = skipIndexWhile(isDigit, startIndex, endIndex)
-        (noInt == endIndex) || { //just the digits
-          val afterIntChar = format.charAt(noInt)
-          if (afterIntChar == '.') {
+        // just the digits
+        (noInt == endIndex) || {
+          if (format.charAt(noInt) == '.') {
             val noSignificant = skipIndexWhile(isDigit, noInt + 1, endIndex)
-            (noSignificant >= endIndex) || { //no exponent
-              val e = format.charAt(noSignificant)
-              (e == 'e' || e == 'E') && expOK(noSignificant + 1, endIndex)
-            }
-          }
-          else if (afterIntChar == 'e' || afterIntChar == 'E') expOK(noInt + 1, endIndex)
-          else false
+            (noSignificant >= endIndex) || //no exponent
+              isExp(format.charAt(noSignificant)) && expOK(noSignificant + 1, endIndex)
+          } else
+              isExp(format.charAt(noInt)) && expOK(noInt + 1, endIndex)
         }
       }
       else false
- 
     }
 
     //count 0x00 to 0x20 as "whitespace", and nothing else
