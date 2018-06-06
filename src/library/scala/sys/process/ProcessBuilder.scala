@@ -29,8 +29,8 @@ import ProcessBuilder._
   * // Executes "ls" and sends output to stdout
   * "ls".!
   *
-  * // Execute "ls" and assign a `Stream[String]` of its output to "contents".
-  * val contents = Process("ls").lineStream
+  * // Execute "ls" and assign a `LazyList[String]` of its output to "contents".
+  * val contents = Process("ls").lazyLines
   *
   * // Here we use a `Seq` to make the parameter whitespace-safe
   * def contentsOf(dir: String): String = Seq("ls", dir).!!
@@ -80,29 +80,29 @@ import ProcessBuilder._
   *     of the last one in the chain of execution.
   *   - `!!`: blocks until all external commands exit, and returns a `String`
   *     with the output generated.
-  *   - `lineStream`: returns immediately like `run`, and the output being generated
-  *     is provided through a `Stream[String]`. Getting the next element of that
-  *     `Stream` may block until it becomes available. This method will throw an
+  *   - `lazyLines`: returns immediately like `run`, and the output being generated
+  *     is provided through a `LazyList[String]`. Getting the next element of that
+  *     `LazyList` may block until it becomes available. This method will throw an
   *     exception if the return code is different than zero -- if this is not
-  *     desired, use the `lineStream_!` method.
+  *     desired, use the `lazyLines_!` method.
   *
   * ==Handling Input and Output==
   *
   * If not specified, the input of the external commands executed with `run` or
   * `!` will not be tied to anything, and the output will be redirected to the
-  * stdout and stderr of the Scala process. For the methods `!!` and `lineStream`, no
+  * stdout and stderr of the Scala process. For the methods `!!` and `lazyLines`, no
   * input will be provided, and the output will be directed according to the
   * semantics of these methods.
   *
   * Some methods will cause stdin to be used as input. Output can be controlled
-  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lineStream` will only
+  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lazyLines` will only
   * redirect error output when passed a `ProcessLogger`. If one desires full
   * control over input and output, then a [[scala.sys.process.ProcessIO]] can be
   * used with `run`.
   *
-  * For example, we could silence the error output from `lineStream_!` like this:
+  * For example, we could silence the error output from `lazyLines_!` like this:
   * {{{
-  * val etcFiles = "find /etc" lineStream_! ProcessLogger(line => ())
+  * val etcFiles = "find /etc" lazyLines_! ProcessLogger(line => ())
   * }}}
   *
   * ==Extended Example==
