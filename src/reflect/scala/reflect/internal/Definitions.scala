@@ -372,7 +372,12 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TypeConstraintClass   = requiredClass[scala.annotation.TypeConstraint]
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, AnyTpe :: Nil, ABSTRACT | TRAIT | FINAL) markAllCompleted
-    lazy val SerializableClass     = requiredClass[scala.Serializable]
+
+    // In the future (#6729) scala.Serializable will be a type alias to
+    // java.io.Serializable. To be able to bootstrap this change, we need a
+    // STARR that does not crash when this change is made.
+    lazy val SerializableClass     = getClassIfDefined("scala.Serializable").orElse(JavaSerializableClass)
+
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
     lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
