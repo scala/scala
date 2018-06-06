@@ -197,8 +197,8 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val payload = this.getKey(index)
-      return if (key == payload) Option(this.getValue(index)) else Option.empty
+      val key0 = this.getKey(index)
+      return if (key == key0) Some(this.getValue(index)) else None
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -206,7 +206,7 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
       return this.getNode(index).get(key, keyHash, shift + BitPartitionSize)
     }
 
-    Option.empty
+    None
   }
 
   override def containsKey(key: K, keyHash: Int, shift: Int): Boolean = {
@@ -514,7 +514,7 @@ private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K,
   require(content.size >= 2)
 
   def get(key: K, hash: Int, shift: Int): Option[V] =
-    if (this.hash == hash) content.find(key == _._1).map(_._2) else Option.empty
+    if (this.hash == hash) content.find(key == _._1).map(_._2) else None
 
   override def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.exists(key == _._1)

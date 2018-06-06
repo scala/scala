@@ -238,4 +238,17 @@ class ChampMapSmokeTest {
     val map2 = map1.updated(k1, v1)
     assertSame(map1, map2)
   }
+
+  @Test def nullValue(): Unit = {
+    val map = emptyMap[Any, Any]
+    assertEquals(Some(null), map.updated("", null).get(""))
+  }
+
+  @Test def nullValueCollision(): Unit = {
+    val k0 = new C(0)
+    val k1 = new C(4)
+    assertEquals(k0.hashCode, k1.hashCode)
+    val map = emptyMap[Any, Any].updated(k0, 0).updated(k1, null)
+    assertEquals(Some(null), map.get(k1))
+  }
 }
