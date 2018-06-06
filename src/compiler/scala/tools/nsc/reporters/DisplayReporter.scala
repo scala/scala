@@ -10,6 +10,7 @@ package reporters
 import java.io.{BufferedReader, PrintWriter}
 import scala.reflect.internal.{Reporter => InternalReporter, ForwardingReporter}
 import scala.reflect.internal.util.{Position, StringOps}
+import scala.tools.util.SystemExit
 
 import Position.formatMessage
 import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trimTrailing}
@@ -61,7 +62,7 @@ trait PrintReporter extends InternalReporter {
       reader.read match {
         case 'a' | 'A' =>
           new Throwable().printStackTrace(writer)
-          System.exit(1)
+          throw SystemExit(1)
         case 's' | 'S' =>
           new Throwable().printStackTrace(writer)
           writer.println()
