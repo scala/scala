@@ -1300,7 +1300,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def startsWith[B >: A](that: Array[B], offset: Int): Boolean = {
     val thatl = that.length
-    if(thatl > xs.length-offset) false
+    if(thatl > xs.length-offset) thatl == 0
     else {
       var i = 0
       while(i < thatl) {
