@@ -81,4 +81,9 @@ class ArrayOpsTest {
     assertEquals(v2.patch(0, a2, 8), a2.patch(0, v2, 8).toSeq)
     assertEquals(v1.patch(-1, a2, 1), a1.patch(-1, v2, 1).toSeq)
   }
+
+  @Test
+  def slice: Unit = {
+    assertArrayEquals(Array[Int](), Array[Int](1).slice(1052471512, -1496048404))
+  }
 }

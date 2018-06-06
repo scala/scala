@@ -237,8 +237,8 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def slice(from: Int, until: Int): Array[A] = {
     val lo = max(from, 0)
-    val hi = min(until, xs.length)
-    val len = hi - lo
+    val hi = min(max(until, 0), xs.length)
+    val len = max(hi - lo, 0)
     if(len > 0) {
       ((xs: Array[_]) match {
         case x: Array[AnyRef]     => java.util.Arrays.copyOfRange(x, lo, hi)
