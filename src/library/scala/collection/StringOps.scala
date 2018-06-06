@@ -16,7 +16,7 @@ object StringOps {
   private final val CR = 0x0D
   private final val SU = 0x1A
 
-  private class StringIterator(private[this] val s: String) extends Iterator[Char] {
+  private class StringIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < s.length
     def next(): Char = try {
@@ -26,7 +26,7 @@ object StringOps {
     } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
   }
 
-  private class ReverseIterator(private[this] val s: String) extends Iterator[Char] {
+  private class ReverseIterator(private[this] val s: String) extends AbstractIterator[Char] {
     private[this] var pos = s.length-1
     def hasNext: Boolean = pos >= 0
     def next(): Char = try {
@@ -36,7 +36,7 @@ object StringOps {
     } catch { case _: IndexOutOfBoundsException => Iterator.empty.next() }
   }
 
-  private class GroupedIterator(s: String, groupSize: Int) extends Iterator[String] {
+  private class GroupedIterator(s: String, groupSize: Int) extends AbstractIterator[String] {
     private[this] var pos = 0
     def hasNext: Boolean = pos < s.length
     def next(): String = {
