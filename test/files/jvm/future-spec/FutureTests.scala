@@ -4,7 +4,7 @@ import scala.concurrent.duration.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
-
+import scala.reflect.classTag
 
 
 class FutureTests extends MinimalScalaTest {
@@ -211,7 +211,7 @@ class FutureTests extends MinimalScalaTest {
       } yield s"$b-$c"
 
       Await.result(future1, defaultTimeout) mustBe ("10-14")
-      assert(checkType(future1, manifest[String]))
+      assert(checkType(future1, classTag[String]))
       intercept[ClassCastException] { Await.result(future2, defaultTimeout) }
     }
 

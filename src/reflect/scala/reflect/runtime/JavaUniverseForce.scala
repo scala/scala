@@ -26,11 +26,11 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     TypeTag.Null.tpe
 
     this.settings
-    this.internal
     this.treeInfo
     this.rootMirror
     this.traceSymbols
     this.perRunCaches
+    this.internal
     this.compat
     this.treeBuild
     this.FreshNameExtractor
@@ -302,11 +302,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ReflectApiPackage
     definitions.ReflectRuntimePackage
     definitions.UniverseClass
-    definitions.PartialManifestModule
-    definitions.FullManifestClass
-    definitions.FullManifestModule
-    definitions.OptManifestClass
-    definitions.NoManifest
     definitions.TreesClass
     definitions.ExprsClass
     definitions.ClassTagModule

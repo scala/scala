@@ -6,6 +6,8 @@ import org.junit.Assert.{assertEquals, _}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.reflect.ClassTag
+
 // with the Ant JUnit runner, it's necessary to @Ignore the abstract
 // classes here, or JUnit tries to instantiate them.  the annotations
 // can be removed when this is merged forward (TODO 2.12.x)
@@ -223,13 +225,13 @@ abstract class IndexedTest[T, E] {
     }
   }
 
-  protected def intercept[EX <: Exception : Manifest](fn: => Any): Unit = {
+  protected def intercept[EX <: Exception : ClassTag](fn: => Any): Unit = {
     try {
       val res = fn
       fail(s"expected exception was not thrown: $res")
     } catch {
       case failed: AssertionError => throw failed
-      case e: Exception if manifest[EX].runtimeClass.isAssignableFrom(e.getClass) =>
+      case e: Exception if implicitly[ClassTag[EX]].runtimeClass.isAssignableFrom(e.getClass) =>
     }
   }
 

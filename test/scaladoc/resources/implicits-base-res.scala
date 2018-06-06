@@ -3,6 +3,8 @@
  */
 package scala.test.scaladoc.implicits.base
 
+import scala.reflect.ClassTag
+
 class Foo[T]
 class Bar[T]
 trait MyNumeric[R]
@@ -13,13 +15,13 @@ trait MyNumeric[R]
  * {{{
  * def convToGtColonDoubleA(x: Double)    // enrichA3: with a constraint that T <: Double
  * def convToIntA(x: Int)                 // enrichA2: with a constraint that T = Int
- * def convToManifestA(x: T)              // enrichA7: with 2 constraints: T: Manifest and T <: Double
+ * def convToClassTagA(x: T)              // enrichA7: with 2 constraints: T: ClassTag and T <: Double
  * def convToMyNumericA(x: T)             // enrichA6: with a constraint that there is x: MyNumeric[T] implicit in scope
  * def convToNumericA(x: T)               // enrichA1: with a constraint that there is x: Numeric[T] implicit in scope
  * def convToEnrichedA(x: Bar[Foo[T]])    // enrichA5: no constraints, SHADOWED
  * def convToEnrichedA(x: S)              // enrichA4: with 3 constraints: T = Foo[Bar[S]], S: Foo and S: Bar, SHADOWED
  * def convToEnrichedA(x: T)              // enrichA0: with no constraints, SHADOWED
- * def convToTraversableOps(x: T)         // enrichA7: with 2 constraints: T: Manifest and T <: Double
+ * def convToTraversableOps(x: T)         // enrichA7: with 2 constraints: T: ClassTag and T <: Double
  *                                        // should not be abstract!
  * }}}
  */
@@ -41,7 +43,7 @@ object A {
   implicit def enrichA5[Z](a: A[Z]): EnrichedA[Bar[Foo[Z]]] = sys.error("not implemented")
   implicit def enrichA6[Z: MyNumeric](a: A[Z]) = new MyNumericA[Z](a)
   // TODO: Add H <: Double and see why it crashes for C and D -- context bounds, need to check!
-  implicit def enrichA7[H <: Double : Manifest](a: A[H]) = new ManifestA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
+  implicit def enrichA7[H <: Double : ClassTag](a: A[H]) = new ClassTagA[H](a) with MyTraversableOps[H] { def convToTraversableOps(x: H): H = sys.error("no") }
 }
 
 
@@ -50,7 +52,7 @@ object A {
  *  - the following inherited methods should appear:
  * {{{
  * def convToGtColonDoubleA(x: Double)      // enrichA3: no constraints
- * def convToManifestA(x: Double)           // enrichA7: no constraints
+ * def convToClassTagA(x: Double)           // enrichA7: no constraints
  * def convToMyNumericA(x: Double)          // enrichA6: (if showAll is set) with a constraint that there is x: MyNumeric[Double] implicit in scope
  * def convToNumericA(x: Double)            // enrichA1: no constraints
  * def convToEnrichedA(x: Bar[Foo[Double]]) // enrichA5: no constraints, SHADOWED
@@ -133,12 +135,12 @@ class MyNumericA[U: MyNumeric](a: A[U]) {
   def convToMyNumericA(x: U): U = sys.error("dunno")
 }
 
-/** ManifestA class <br/>
+/** ClassTagA class <br/>
  *  - tests the manifest recognition
  *  - A, B, C, D should be implicitly converted to this */
-class ManifestA[W: Manifest](a: A[W]) {
-  /** The convToManifestA: W documentation... */
-  def convToManifestA(x: W): W = sys.error("dunno")
+class ClassTagA[W: ClassTag](a: A[W]) {
+  /** The convToClassTagA: W documentation... */
+  def convToClassTagA(x: W): W = sys.error("dunno")
 }
 
 // [Eugene to Vlad] how do I test typetags here?

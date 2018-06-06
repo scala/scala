@@ -63,34 +63,6 @@ trait Internals { self: Universe =>
     // scala/bug#6241: move importers to a mirror
     def createImporter(from0: Universe): Importer { val from: from0.type }
 
-    /**
-     * Convert a [[scala.reflect.api.TypeTags#TypeTag]] to a [[scala.reflect.Manifest]].
-     *
-     * Compiler usually generates these conversions automatically, when a type tag for a type `T` is in scope,
-     * and an implicit of type `Manifest[T]` is requested, but this method can also be called manually.
-     * For example:
-     * {{{
-     * typeTagToManifest(scala.reflect.runtime.currentMirror, implicitly[TypeTag[String]])
-     * }}}
-     * @group TagInterop
-     */
-    def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
-      throw new UnsupportedOperationException("This universe does not support tag -> manifest conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
-
-    /**
-     * Convert a [[scala.reflect.Manifest]] to a [[scala.reflect.api.TypeTags#TypeTag]].
-     *
-     * Compiler usually generates these conversions automatically, when a manifest for a type `T` is in scope,
-     * and an implicit of type `TypeTag[T]` is requested, but this method can also be called manually.
-     * For example:
-     * {{{
-     * manifestToTypeTag(scala.reflect.runtime.currentMirror, implicitly[Manifest[String]])
-     * }}}
-     * @group TagInterop
-     */
-    def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
-      throw new UnsupportedOperationException("This universe does not support manifest -> tag conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
-
     /** Create a new scope with the given initial elements.
      */
     def newScopeWith(elems: Symbol*): Scope
@@ -1076,16 +1048,6 @@ trait Internals { self: Universe =>
   trait CompatApi {
     /** @see [[CompatToken]] */
     implicit val token = new CompatToken
-
-    /** @see [[InternalApi.typeTagToManifest]] */
-    @deprecated("use `internal.typeTagToManifest` instead", "2.11.0")
-    def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
-      internal.typeTagToManifest(mirror, tag)
-
-    /** @see [[InternalApi.manifestToTypeTag]] */
-    @deprecated("use `internal.manifestToTypeTag` instead", "2.11.0")
-    def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
-      internal.manifestToTypeTag(mirror, manifest)
 
     /** @see [[InternalApi.newScopeWith]] */
     @deprecated("use `internal.newScopeWith` instead", "2.11.0")

@@ -2,9 +2,10 @@ package bakery
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
+import scala.reflect.runtime.universe.TypeTag
 
 trait FailureCake {
-  implicit def liftAnyFails[T: Manifest]: Any = ???
+  implicit def liftAnyFails[T: TypeTag]: Any = ???
 
   // This works
   // implicit def liftAny[T]: Any = ???

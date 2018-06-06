@@ -492,12 +492,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UniverseClass    = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
          def UniverseInternal = getMemberValue(UniverseClass, nme.internal)
 
-    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
-    lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
-    lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
-    lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
-    lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
-
     lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
 
     lazy val ExprsClass            = getClassIfDefined("scala.reflect.api.Exprs") // defined in scala-reflect.jar, so we need to be careful
@@ -1547,8 +1541,6 @@ trait Definitions extends api.StandardDefinitions {
 
       object ExprClassOf { def unapply(tp: Type): Option[Type] = elementExtractOption(ExprClass, tp) }
 
-      lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
-      lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
       private lazy val PolymorphicSignatureClass = MethodHandleClass.companionModule.info.decl(TypeName("PolymorphicSignature"))
 
       def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {

@@ -20,7 +20,6 @@ object Test extends App {
   val tparams: List[Symbol] = ???
   val tpe: Type = ???
   val tpes: List[Type] = ???
-  val manifest: Manifest[Int] = ???
   val tag: TypeTag[Int] = ???
   val mirror: Mirror = ???
   val decls: Scope = ???
@@ -93,7 +92,6 @@ object Test extends App {
   locally(sym.isLocal: Boolean)
   locally(sym.isOverride: Boolean)
   locally(tsym.isSkolem: Boolean)
-  locally(manifestToTypeTag(mirror, manifest): scala.reflect.api.Universe#TypeTag[Int])
   locally(treeBuild.mkAttributedIdent(sym): RefTree)
   locally(treeBuild.mkAttributedQualifier(tpe): Tree)
   locally(treeBuild.mkAttributedQualifier(tpe, sym): Tree)
@@ -142,7 +140,6 @@ object Test extends App {
   locally((tree.symbol = sym): Unit)
   locally((tree.tpe = tpe): Unit)
   locally(typeRef(tpe, sym, tpes): Type)
-  locally(typeTagToManifest(mirror, tag): Manifest[Int])
   locally(sym.updateAttachment(42): Symbol)
   locally(tree.updateAttachment(42): Tree)
   locally(FreeTermSymbolTag: ClassTag[FreeTermSymbol])

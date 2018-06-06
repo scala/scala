@@ -2,6 +2,7 @@ package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.tools.reflect.{ToolBox, ToolBoxError}
+import scala.reflect.ClassTag
 import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.setSymbol
 
@@ -59,8 +60,8 @@ trait Helpers {
     def ≈(other: Modifiers) = (mods.flags == other.flags) && (mods.privateWithin ≈ other.privateWithin) && (mods.annotations ≈ other.annotations)
   }
 
-  def assertThrows[T <: AnyRef](f: => Any)(implicit manifest: Manifest[T]): Unit = {
-    val clazz = manifest.runtimeClass.asInstanceOf[Class[T]]
+  def assertThrows[T <: AnyRef](f: => Any)(implicit classtag: ClassTag[T]): Unit = {
+    val clazz = classtag.runtimeClass.asInstanceOf[Class[T]]
     val thrown =
       try {
         f

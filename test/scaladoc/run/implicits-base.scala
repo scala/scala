@@ -69,13 +69,13 @@ object Test extends ScaladocModelTest {
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "T")
 
-    // def convToManifestA: T              // enrichA7: with 2 constraints: T: Manifest and T <: Double
-    // def convToTraversableOps: T         // enrichA7: with 2 constraints: T: Manifest and T <: Double
+    // def convToClassTagA: T              // enrichA7: with 2 constraints: T: ClassTag and T <: Double
+    // def convToTraversableOps: T         // enrichA7: with 2 constraints: T: ClassTag and T <: Double
                                            // should not be abstract!
     conv = A._conversion(A.qualifiedName + ".enrichA7")
     assert(conv.members.length == 2)
     assert(conv.constraints.length == 2)
-    assert(conv._member("convToManifestA").resultType.name == "T")
+    assert(conv._member("convToClassTagA").resultType.name == "T")
     assert(conv._member("convToTraversableOps").resultType.name == "T")
     assert(conv._member("convToTraversableOps").flags.toString.indexOf("abstract") == -1)
 
@@ -119,13 +119,13 @@ object Test extends ScaladocModelTest {
     assert(conv.constraints.length == 1)
     assert(conv._member("convToMyNumericA").resultType.name == "Double")
 
-    // def convToManifestA: Double         // enrichA7: no constraints
+    // def convToClassTagA: Double         // enrichA7: no constraints
     // def convToTraversableOps: Double    // enrichA7: no constraints
     //                                     // should not be abstract!
     conv = B._conversion(A.qualifiedName + ".enrichA7")
     assert(conv.members.length == 2)
     assert(conv.constraints.length == 0)
-    assert(conv._member("convToManifestA").resultType.name == "Double")
+    assert(conv._member("convToClassTagA").resultType.name == "Double")
     assert(conv._member("convToTraversableOps").resultType.name == "Double")
     assert(conv._member("convToTraversableOps").flags.toString.indexOf("abstract") == -1)
 

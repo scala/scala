@@ -1,4 +1,0 @@
-interop_typetags_arenot_classmanifests.scala:6: error: No ClassManifest available for T.
-    println(implicitly[ClassManifest[T]])
-                      ^
-one error found

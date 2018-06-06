@@ -5,6 +5,7 @@ import scala.collection._
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
+import scala.reflect.{classTag, ClassTag}
 
 
 object Test {
@@ -70,18 +71,18 @@ trait MinimalScalaTest extends Output with Features {
 
   }
 
-  def intercept[T <: Throwable: Manifest](body: =>Any): T = {
+  def intercept[T <: Throwable: ClassTag](body: =>Any): T = {
     try {
       body
-      throw new Exception("Exception of type %s was not thrown".format(manifest[T]))
+      throw new Exception("Exception of type %s was not thrown".format(classTag[T]))
     } catch {
       case t: Throwable =>
-        if (manifest[T].runtimeClass != t.getClass) throw t
+        if (classTag[T].runtimeClass != t.getClass) throw t
         else t.asInstanceOf[T]
     }
   }
 
-  def checkType[T: Manifest, S](in: Future[T], refmanifest: Manifest[S]): Boolean = manifest[T] == refmanifest
+  def checkType[T: ClassTag, S](in: Future[T], refclassTag: ClassTag[S]): Boolean = classTag[T] == refclassTag
 }
 
 
