@@ -16,6 +16,7 @@ public final class LambdaDeserializerTest {
     public void serializationPrivate() {
         F1<Boolean, String> f1 = lambdaHost.lambdaBackedByPrivateImplMethod();
         Assert.assertEquals(f1.apply(true), reconstitute(f1).apply(true));
+        Assert.assertTrue(false);
     }
 
     @Test
