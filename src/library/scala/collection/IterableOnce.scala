@@ -262,7 +262,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *      def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
     *
     *      // lettersOf will return a Set[Char], not a Seq
-    *      def lettersOf(words: Seq[String]) = words.toSet flatMap (word => word.toSeq)
+    *      def lettersOf(words: Seq[String]) = words.toSet flatMap ((word: String) => word.toSeq)
     *
     *      // xs will be an Iterable[Int]
     *      val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)
