@@ -32,4 +32,11 @@ class AnyRefMapTest {
     assertTrue(AnyRefMap(sameHashCode -> 1) contains sameHashCode)
     assertTrue(sameHashCode.hashCode == badHashCode)  // Make sure test works
   }
+
+  @Test
+  def t10876: Unit = {
+    val m = collection.mutable.AnyRefMap("fish" -> 3)
+    val m2 = m + (("birds", 2))
+    assertEquals(Map("fish" -> 3, "birds" -> 2), (m2: collection.mutable.AnyRefMap[String, Int]))
+  }
 }
