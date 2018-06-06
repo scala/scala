@@ -117,6 +117,7 @@ lazy val instanceSettings = Seq[Setting[_]](
 
 
 lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
+  resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/",
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
@@ -333,7 +334,11 @@ def regexFileFilter(s: String): FileFilter = new FileFilter {
 }
 
 // This project provides the STARR scalaInstance for bootstrapping
-lazy val bootstrap = project in file("target/bootstrap")
+lazy val bootstrap = project.in(file("target/bootstrap"))
+  .settings(
+    resolvers += "pr" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots/"
+  )
+
 
 lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)

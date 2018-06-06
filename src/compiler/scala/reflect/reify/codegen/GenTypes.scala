@@ -83,14 +83,7 @@ trait GenTypes {
           case failure if failure.isEmpty =>
             if (reifyDebug) println("implicit search was fruitless")
             if (reifyDebug) println("trying to splice as manifest")
-            val splicedAsManifest = spliceAsManifest(tpe)
-            if (splicedAsManifest.isEmpty) {
-              if (reifyDebug) println("no manifest in scope")
-              EmptyTree
-            } else {
-              if (reifyDebug) println("successfully spliced as manifest: " + splicedAsManifest)
-              splicedAsManifest
-            }
+            EmptyTree
           case success =>
             if (reifyDebug) println("implicit search has produced a result: " + success)
             state.reificationIsConcrete &= concrete || success.tpe <:< TypeTagClass.toTypeConstructor
@@ -101,31 +94,6 @@ trait GenTypes {
     }
 
     EmptyTree
-  }
-
-  private def spliceAsManifest(tpe: Type): Tree = {
-    def isSynthetic(manifest: Tree) = manifest exists (sub => sub.symbol != null && (sub.symbol == FullManifestModule || sub.symbol.owner == FullManifestModule))
-    def searchForManifest(typer: analyzer.Typer): Tree =
-      analyzer.inferImplicitByTypeSilent(
-        appliedType(FullManifestClass.toTypeConstructor, List(tpe)),
-        typer.context,
-        defaultErrorPosition) match {
-          case success if !success.tree.isEmpty && !isSynthetic(success.tree) =>
-            val manifestInScope = success.tree
-            // todo. write a test for this
-            if (ReflectRuntimeUniverse == NoSymbol) CannotConvertManifestToTagWithoutScalaReflect(tpe, manifestInScope)
-            val cm = typer.typed(Ident(ReflectRuntimeCurrentMirror))
-            val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
-            val tagTree = gen.mkMethodCall(Select(internal, nme.manifestToTypeTag), List(tpe), List(cm, manifestInScope))
-            Select(Apply(Select(tagTree, nme.in), List(Ident(nme.MIRROR_SHORT))), nme.tpe)
-          case _ =>
-            EmptyTree
-        }
-    val result = typer.silent(silentTyper => silentTyper.context.withMacrosDisabled(searchForManifest(silentTyper)))
-    result match {
-      case analyzer.SilentResultValue(result) => result
-      case analyzer.SilentTypeError(_) => EmptyTree
-    }
   }
 
   /** Reify a semi-concrete type member.

@@ -278,7 +278,6 @@ object Test2_immutable {
 
 @deprecated("Suppress warnings", since="2.11")
 object Test3_mutable {
-  import scala.reflect.ClassManifest
   import scala.collection.mutable.{
     ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet,
     HashMap, HashSet, LinkedHashMap, LinkedHashSet, ListBuffer,
@@ -295,11 +294,11 @@ object Test3_mutable {
 
     // ArrayBuilder
     val abu1 = ArrayBuilder.make[Long]
-    val _abu1: ArrayBuilder[ClassManifest[Long]] = read(write(abu1))
+    val _abu1: ArrayBuilder[Long] = read(write(abu1))
     check(abu1, _abu1)
 
     val abu2 = ArrayBuilder.make[Float]
-    val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
+    val _abu2: ArrayBuilder[Float] = read(write(abu2))
     check(abu2, _abu2)
 
     // ArraySeq

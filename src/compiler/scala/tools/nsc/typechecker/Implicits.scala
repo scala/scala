@@ -43,7 +43,7 @@ trait Implicits {
   def inferImplicitView(from: Type, to: Type, tree: Tree, context: Context, reportAmbiguous: Boolean, saveAmbiguousDivergent: Boolean) =
     inferImplicit(tree, Function1(from, to), reportAmbiguous, isView = true, context, saveAmbiguousDivergent, tree.pos)
 
-  // used for manifests, typetags, checking language features, scaladoc
+  // used for typetags, checking language features, scaladoc
   def inferImplicitByType(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
     inferImplicit(EmptyTree, pt, reportAmbiguous = true, isView = false, context, saveAmbiguousDivergent = true, pos)
 
@@ -1308,123 +1308,6 @@ trait Implicits {
       else SearchFailure
     }
 
-    /** Creates a tree that calls the relevant factory method in object
-      * scala.reflect.Manifest for type 'tp'. An EmptyTree is returned if
-      * no manifest is found. todo: make this instantiate take type params as well?
-      */
-    private def manifestOfType(tp: Type, flavor: Symbol): SearchResult = {
-      val full = flavor == FullManifestClass
-      val opt = flavor == OptManifestClass
-
-      /* Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
-      def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
-        if (args contains EmptyTree) EmptyTree
-        else typedPos(tree.pos.focus) {
-          val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
-          if (settings.debug) println("generated manifest: "+mani) // DEBUG
-          mani
-        }
-
-      /* Creates a tree representing one of the singleton manifests.*/
-      def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
-        Select(gen.mkAttributedRef(FullManifestModule), name)
-      }
-
-      /* Re-wraps a type in a manifest before calling inferImplicit on the result */
-      def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicitFor(appliedType(manifestClass, tp), tree, context).tree
-
-      def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
-      def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {
-        implicit def wrapResult(tree: Tree): SearchResult =
-          if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to), Nil)
-
-        val tp1 = tp0.dealias
-        tp1 match {
-          case ThisType(_) | SingleType(_, _) =>
-            // can't generate a reference to a value that's abstracted over by an existential
-            if (containsExistential(tp1)) EmptyTree
-            else manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp1))
-          case ConstantType(value) =>
-            manifestOfType(tp1.deconst, FullManifestClass)
-          case TypeRef(pre, sym, args) =>
-            if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
-              findSingletonManifest(sym.name.toString)
-            } else if (sym == ObjectClass || sym == AnyRefClass) {
-              findSingletonManifest("Object")
-            } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
-              EmptyTree
-            } else if (sym == ArrayClass && args.length == 1) {
-              manifestFactoryCall("arrayType", args.head, findManifest(args.head))
-            } else if (sym.isClass) {
-              val classarg0 = gen.mkClassOf(tp1)
-              val classarg = tp.dealias match {
-                case _: ExistentialType => gen.mkCast(classarg0, ClassType(tp))
-                case _                  => classarg0
-              }
-              val suffix = classarg :: (args map findSubManifest)
-              manifestFactoryCall(
-                "classType", tp,
-                (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
-                 else findSubManifest(pre) :: suffix): _*)
-            } else if (sym.isExistentiallyBound && full) {
-              manifestFactoryCall("wildcardType", tp,
-                                  findManifest(tp.bounds.lo), findManifest(tp.bounds.hi))
-            }
-            // looking for a manifest of a type parameter that hasn't been inferred by now,
-            // can't do much, but let's not fail
-            else if (undetParams contains sym) {
-              // #3859: need to include the mapping from sym -> NothingTpe in the SearchResult
-              mot(NothingTpe, sym :: from, NothingTpe :: to)
-            } else {
-              // a manifest should have been found by normal searchImplicit
-              EmptyTree
-            }
-          case RefinedType(parents, decls) => // !!! not yet: if !full || decls.isEmpty =>
-            // refinement is not generated yet
-            if (hasLength(parents, 1)) findManifest(parents.head)
-            else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
-            else mot(erasure.intersectionDominator(parents), from, to)
-          case ExistentialType(tparams, result) =>
-            mot(tp1.skolemizeExistential, from, to)
-          case _ =>
-            EmptyTree
-          }
-      }
-
-      if (full) {
-        val tagInScope = resolveTypeTag(pos, NoType, tp, concrete = true, allowMaterialization = false)
-        if (tagInScope.isEmpty) mot(tp, Nil, Nil)
-        else {
-          if (ReflectRuntimeUniverse == NoSymbol) {
-            // TODO: write a test for this (the next error message is already checked by neg/interop_typetags_without_classtags_arenot_manifests.scala)
-            // TODO: this was using context.error, and implicit search always runs in silent mode, thus it was actually throwing a TypeError
-            // with the new strategy-based reporting, a BufferingReporter buffers instead of throwing
-            // it would be good to rework this logic to fit into the regular context.error mechanism
-            throw new TypeError(pos,
-              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-                  |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
-                  |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
-          }
-          if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
-            throw new TypeError(pos,
-              sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
-                  |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
-                  |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
-          }
-          val cm = typed(Ident(ReflectRuntimeCurrentMirror))
-          val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
-          val interop = gen.mkMethodCall(Select(internal, nme.typeTagToManifest), List(tp), List(cm, tagInScope))
-          wrapResult(interop)
-        }
-      } else {
-        mot(tp, Nil, Nil) match {
-          case SearchFailure if opt => wrapResult(gen.mkAttributedRef(NoManifest))
-          case result               => result
-        }
-      }
-    }
-
     /** Creates a tree that will produce a ValueOf instance for the requested type.
       * An EmptyTree is returned if materialization fails.
       */
@@ -1444,7 +1327,7 @@ trait Implicits {
     def wrapResult(tree: Tree): SearchResult =
       if (tree == EmptyTree) SearchFailure else new SearchResult(atPos(pos.focus)(tree), EmptyTreeTypeSubstituter, Nil)
 
-    /** Materializes implicits of predefined types (currently, manifests and tags).
+    /** Materializes implicits of predefined types (currently tags and ValueOf).
      *  Will be replaced by implicit macros once we fix them.
      */
     private def materializeImplicit(pt: Type): SearchResult =
@@ -1453,17 +1336,9 @@ trait Implicits {
           materializeImplicit(pt.dealias.bounds.lo) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.bounds.lo == pt)
         case pt @ TypeRef(pre, sym, arg :: Nil) =>
           sym match {
-            case sym if ManifestSymbols(sym) => manifestOfType(arg, sym)
             case sym if TagSymbols(sym) => tagOfType(pre, arg, sym)
             case ValueOfClass => valueOfType(arg)
-            // as of late ClassManifest is an alias of ClassTag
-            // hence we need to take extra care when performing dealiasing
-            // because it might destroy the flavor of the manifest requested by the user
-            // when the user wants ClassManifest[T], we should invoke `manifestOfType` not `tagOfType`
-            // hence we don't do `pt.dealias` as we did before, but rather do `pt.betaReduce`
-            // unlike `dealias`, `betaReduce` performs at most one step of dealiasing
-            // while dealias pops all aliases in a single invocation
-            case sym if sym.isAliasType => materializeImplicit(pt.betaReduce)
+            case sym if sym.isAliasType => materializeImplicit(pt.dealias)
             case _ => SearchFailure
           }
         case _ =>
@@ -1477,9 +1352,6 @@ trait Implicits {
      *  todo. the following lines should be deleted after we migrate delegate tag materialization to implicit macros
      *  If that fails, and `pt` is an instance of a ClassTag, try to construct a class tag.
      *  If that fails, and `pt` is an instance of a TypeTag, try to construct a type tag.
-     *  If that fails, and `pt` is an instance of a ClassManifest, try to construct a class manifest.
-     *  If that fails, and `pt` is an instance of a Manifest, try to construct a manifest.
-     *  If that fails, and `pt` is an instance of a OptManifest, try to construct a class manifest and return NoManifest if construction fails.
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
@@ -1598,10 +1470,7 @@ trait Implicits {
     def unapply(sym: Symbol): Option[(Message)] = f(sym) match {
       case Some(m) => Some(new Message(sym, m, annotationName))
       case None if sym.isAliasType =>
-        // perform exactly one step of dealiasing
-        // this is necessary because ClassManifests are now aliased to ClassTags
-        // but we don't want to intimidate users by showing unrelated error messages
-        unapply(sym.info.resultType.betaReduce.typeSymbolDirect)
+        unapply(sym.info.resultType.dealias.typeSymbolDirect)
       case _ => None
     }
 

@@ -1,3 +1,5 @@
+import scala.reflect.ClassTag
+
 trait Base {
   type Rep[T]
 }
@@ -13,7 +15,7 @@ trait Expressions {
 
   // additional members for managing encountered definitions
   def findOrCreateDefinition[T](rhs: Def[T]): Sym[T]
-  implicit def toExp[T:Manifest](d: Def[T]): Exp[T] = findOrCreateDefinition(d)
+  implicit def toExp[T:ClassTag](d: Def[T]): Exp[T] = findOrCreateDefinition(d)
 }
 
 trait BaseExp extends Base with Expressions {
@@ -33,7 +35,7 @@ trait NumericOpsExp extends BaseExp {
   def plus[T: Numeric](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x,y)
 
   // Possible solutions:
-// def plus[T: Numeric: Manifest](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x, y)
-// def plus[T](x: Rep[T], y: Rep[T])(implicit num: Numeric[T], man: Manifest[T]): Rep[T] = Plus(x,y)
+// def plus[T: Numeric: ClassTag](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x, y)
+// def plus[T](x: Rep[T], y: Rep[T])(implicit num: Numeric[T], man: ClassTag[T]): Rep[T] = Plus(x,y)
 
 }

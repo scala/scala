@@ -7,6 +7,7 @@ import scala.concurrent.duration.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
+import scala.reflect.ClassTag
 
 
 class PromiseTests extends MinimalScalaTest {
@@ -210,7 +211,7 @@ class PromiseTests extends MinimalScalaTest {
 
   }
 
-  def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) => Unit) => Unit): Unit = {
+  def futureWithException[E <: Throwable: ClassTag](f: ((Future[Any], String) => Unit) => Unit): Unit = {
 
     "be completed" in {
       f((future, _) => future.isCompleted mustBe (true))

@@ -33,7 +33,5 @@ class ClassTagTest {
     a1(0) = ()
     val a2 = ct.wrap.newArray(1)
     a2(0) = a1
-    val a3 = ct.newArray2(1)
-    a3(0) = a1
   }
 }

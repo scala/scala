@@ -33,7 +33,7 @@ import java.lang.{ Class => jClass }
  *
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
-trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
+trait ClassTag[T] extends Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
 
@@ -42,11 +42,14 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    */
   def runtimeClass: jClass[_]
 
+  protected def arrayClass[T](tp: jClass[_]): jClass[Array[T]] =
+    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[jClass[Array[T]]]
+
   /** Produces a `ClassTag` that knows how to instantiate an `Array[Array[T]]` */
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
   /** Produces a new array with element type `T` and length `len` */
-  override def newArray(len: Int): Array[T]
+  def newArray(len: Int): Array[T]
 
   /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
    *
@@ -72,29 +75,178 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   }
 }
 
+@SerialVersionUID(1L)
+abstract class SingletonClassTag[T](override val toString: String,
+  val runtimeClass: jClass[_]) extends ClassTag[T] {
+  override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+  @transient
+  override val hashCode = System.identityHashCode(this)
+}
+
 /**
  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
  */
 object ClassTag {
+  @SerialVersionUID(1L)
+  private class ByteClassTag extends SingletonClassTag[scala.Byte]("Byte", java.lang.Byte.TYPE) {
+    override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
+    override def unapply(x: Any): Option[Byte] = {
+      x match {
+        case d: Byte => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Byte
+  }
+  val Byte: ClassTag[Byte] = new ByteClassTag
+
+  @SerialVersionUID(1L)
+  private class ShortClassTag extends SingletonClassTag[scala.Short]("Short", java.lang.Short.TYPE) {
+    override def newArray(len: Int): Array[Short] = new Array[Short](len)
+    override def unapply(x: Any): Option[Short] = {
+      x match {
+        case d: Short => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Short
+  }
+  val Short: ClassTag[Short] = new ShortClassTag
+
+  @SerialVersionUID(1L)
+  private class CharClassTag extends SingletonClassTag[scala.Char]("Char", java.lang.Character.TYPE) {
+    override def newArray(len: Int): Array[Char] = new Array[Char](len)
+    override def unapply(x: Any): Option[Char] = {
+      x match {
+        case d: Char => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Char
+  }
+  val Char: ClassTag[Char] = new CharClassTag
+
+  @SerialVersionUID(1L)
+  private class IntClassTag extends SingletonClassTag[scala.Int]("Int", java.lang.Integer.TYPE) {
+    override def newArray(len: Int): Array[Int] = new Array[Int](len)
+    override def unapply(x: Any): Option[Int] = {
+      x match {
+        case d: Int => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Int
+  }
+  val Int: ClassTag[Int] = new IntClassTag
+
+  @SerialVersionUID(1L)
+  private class LongClassTag extends SingletonClassTag[scala.Long]("Long", java.lang.Long.TYPE) {
+    override def newArray(len: Int): Array[Long] = new Array[Long](len)
+    override def unapply(x: Any): Option[Long] = {
+      x match {
+        case d: Long => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Long
+  }
+  val Long: ClassTag[Long] = new LongClassTag
+
+  @SerialVersionUID(1L)
+  private class FloatClassTag extends SingletonClassTag[scala.Float]("Float", java.lang.Float.TYPE) {
+    override def newArray(len: Int): Array[Float] = new Array[Float](len)
+    override def unapply(x: Any): Option[Float] = {
+      x match {
+        case d: Float => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Float
+  }
+  val Float: ClassTag[Float] = new FloatClassTag
+
+  @SerialVersionUID(1L)
+  private class DoubleClassTag extends SingletonClassTag[scala.Double]("Double", java.lang.Double.TYPE) {
+    override def newArray(len: Int): Array[Double] = new Array[Double](len)
+    override def unapply(x: Any): Option[Double] = {
+      x match {
+        case d: Double => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Double
+  }
+  val Double: ClassTag[Double] = new DoubleClassTag
+
+  @SerialVersionUID(1L)
+  private class BooleanClassTag extends SingletonClassTag[scala.Boolean]("Boolean", java.lang.Boolean.TYPE) {
+    override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
+    override def unapply(x: Any): Option[Boolean] = {
+      x match {
+        case d: Boolean => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Boolean
+  }
+  val Boolean: ClassTag[Boolean] = new BooleanClassTag
+
+  @SerialVersionUID(1L)
+  private class UnitClassTag extends SingletonClassTag[scala.Unit]("Unit", java.lang.Void.TYPE) {
+    override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
+    override protected def arrayClass[T](tp: Class[_]): Class[Array[T]] =
+      if (tp eq runtimeClass) classOf[Array[scala.runtime.BoxedUnit]].asInstanceOf[Class[Array[T]]]
+      else super.arrayClass(tp)
+    override def unapply(x: Any): Option[Unit] = {
+      x match {
+        case d: Unit => Some(d)
+        case _ => None
+      }
+    }
+    private def readResolve(): Any = ClassTag.Unit
+  }
+  val Unit: ClassTag[Unit] = new UnitClassTag
+
   private[this] val ObjectTYPE = classOf[java.lang.Object]
   private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
   private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
-  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
-  val Short   : ClassTag[scala.Short]      = Manifest.Short
-  val Char    : ClassTag[scala.Char]       = Manifest.Char
-  val Int     : ClassTag[scala.Int]        = Manifest.Int
-  val Long    : ClassTag[scala.Long]       = Manifest.Long
-  val Float   : ClassTag[scala.Float]      = Manifest.Float
-  val Double  : ClassTag[scala.Double]     = Manifest.Double
-  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
-  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
-  val Any     : ClassTag[scala.Any]        = Manifest.Any
-  val Object  : ClassTag[java.lang.Object] = Manifest.Object
-  val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
-  val AnyRef  : ClassTag[scala.AnyRef]     = Manifest.AnyRef
-  val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
-  val Null    : ClassTag[scala.Null]       = Manifest.Null
+  @SerialVersionUID(1L)
+  private class AnyClassTag extends SingletonClassTag[scala.Any]("Any", ObjectTYPE) {
+    override def newArray(len: Int) = new Array[scala.Any](len)
+    private def readResolve(): Any = ClassTag.Any
+  }
+  val Any: ClassTag[scala.Any] = new AnyClassTag
+
+  @SerialVersionUID(1L)
+  private class ObjectClassTag extends SingletonClassTag[java.lang.Object]("Object", ObjectTYPE) {
+    override def newArray(len: Int) = new Array[java.lang.Object](len)
+    private def readResolve(): Any = ClassTag.Object
+  }
+  val Object: ClassTag[java.lang.Object] = new ObjectClassTag
+
+  val AnyRef: ClassTag[scala.AnyRef] = Object.asInstanceOf[ClassTag[scala.AnyRef]]
+
+  @SerialVersionUID(1L)
+  private class AnyValClassTag extends SingletonClassTag[scala.AnyVal]("AnyVal", ObjectTYPE) {
+    override def newArray(len: Int) = new Array[scala.AnyVal](len)
+    private def readResolve(): Any = ClassTag.AnyVal
+  }
+  val AnyVal: ClassTag[scala.AnyVal] = new AnyValClassTag
+
+  @SerialVersionUID(1L)
+  private class NullClassTag extends SingletonClassTag[scala.Null]("Null", NullTYPE) {
+    override def newArray(len: Int) = new Array[scala.Null](len)
+    private def readResolve(): Any = ClassTag.Null
+  }
+  val Null: ClassTag[scala.Null] = new NullClassTag
+
+  @SerialVersionUID(1L)
+  private class NothingClassTag extends SingletonClassTag[scala.Nothing]("Nothing", NothingTYPE) {
+    override def newArray(len: Int) = new Array[scala.Nothing](len)
+    private def readResolve(): Any = ClassTag.Nothing
+  }
+  val Nothing: ClassTag[scala.Nothing] = new NothingClassTag
 
   @SerialVersionUID(1L)
   private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {

@@ -2,6 +2,7 @@ package test
 
 import java.io.DataOutput
 import java.io.DataInput
+import scala.reflect.ClassTag
 
 /** Interface for writing outputs from a DoFn. */
 trait Emitter[A] {
@@ -11,9 +12,9 @@ trait Emitter[A] {
 /** A wrapper for a 'map' function tagged for a specific output channel. */
 abstract class TaggedMapper[A, K, V]
     (val tags: Set[Int])
-    (implicit val mA: Manifest[A], val wtA: WireFormat[A],
-              val mK: Manifest[K], val wtK: WireFormat[K], val ordK: Ordering[K],
-              val mV: Manifest[V], val wtV: WireFormat[V])
+    (implicit val mA: ClassTag[A], val wtA: WireFormat[A],
+              val mK: ClassTag[K], val wtK: WireFormat[K], val ordK: Ordering[K],
+              val mV: ClassTag[V], val wtV: WireFormat[V])
   extends Serializable {
 }
 
