@@ -16,7 +16,7 @@ import scala.collection.mutable.Builder
   *  the `Int`-based `scala.Range` should be more performant.
   *
   *  {{{
-  *     val r1 = new Range(0, 100, 1)
+  *     val r1 = Range(0, 100, 1)
   *     val veryBig = Int.MaxValue.toLong + 1
   *     val r2 = Range.Long(veryBig, veryBig + 100, 1)
   *     assert(r1 sameElements r2.map(_ - veryBig))
