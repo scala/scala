@@ -132,7 +132,7 @@ import scala.language.higherKinds
   *    def loop(v: Int): LazyList[Int] = v #:: loop(v + 1)
   *    loop(0)
   *  }
-  *  val it2 = stream2.iterator
+  *  val it2 = lazylist2.iterator
   *  loop("Iterator2: ", it2.next(), it2)
   *
   *  // And, of course, we don't actually need a LazyList at all for such a simple
