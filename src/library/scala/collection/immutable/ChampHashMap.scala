@@ -443,11 +443,10 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     val idxOld = this.content.length - 1 - nodeIndex(bitpos)
     val idxNew = TupleLength * dataIndex(bitpos)
 
-    val src = this.content
-    val dst = new Array[Any](src.length - 1 + TupleLength)
-
     val key = node.getKey(0)
     val value = node.getValue(0)
+    val src = this.content
+    val dst = new Array[Any](src.length - 1 + TupleLength)
 
     // copy 'src' and remove 1 element(s) at position 'idxOld' and
     // insert 2 element(s) at position 'idxNew'
