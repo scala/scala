@@ -216,6 +216,8 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 }
 
 object ScriptRunner {
+  import scala.reflect.internal.util.ScalaClassLoader
+
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 
@@ -226,6 +228,12 @@ object ScriptRunner {
   }
 
   def apply(settings: GenericRunnerSettings): ScriptRunner =
-    if (settings.useCompDaemon) new ResidentScriptRunner(settings)
-    else new DefaultScriptRunner(settings)
+    settings.Yscriptrunner.value match {
+      case "default"  => new DefaultScriptRunner(settings)
+      case "resident" => new ResidentScriptRunner(settings)
+      case "shutdown" => new DaemonKiller(settings)
+      case custom =>
+        val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
+        loader.create[ScriptRunner](custom, settings.errorFn)(settings)
+    }
 }
