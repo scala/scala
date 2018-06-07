@@ -300,7 +300,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     else iterableFactory.empty).asInstanceOf[C]
   }
 
-  /** A FilterMonadic which allows GC of the head of stream during processing */
+  /** A `collection.WithFilter` which allows GC of the head of stream during processing */
   @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override final def withFilter(p: A => Boolean): collection.WithFilter[A, CC] =
     iterableFactory.withFilter(coll, p)
