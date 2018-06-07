@@ -1,11 +1,11 @@
 package scala.collection.immutable
 
-import scala.collection.Iterator
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{Test, Ignore}
+import org.junit.Test
 import org.junit.Assert._
 
+import scala.collection.Iterator
 import scala.ref.WeakReference
 import scala.util.Try
 
