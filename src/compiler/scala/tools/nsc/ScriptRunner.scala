@@ -38,32 +38,43 @@ import util.Exceptional.rootCause
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-class ScriptRunner extends HasCompileSocket {
-  lazy val compileSocket = CompileSocket
+trait ScriptRunner {
+  /** Run a script file by name, with the given arguments.
+   *  @return optionally an error, None for success
+   */
+  def runScript(script: String, scriptArgs: List[String]): Option[Throwable]
 
-  /** Default name to use for the wrapped script */
-  val defaultScriptMain = "Main"
+  /** Run the script text as supplied, with the given arguments.
+   *  @return optionally an error, None for success
+   */
+  def runScriptText(script: String, scriptArgs: List[String]): Option[Throwable]
+}
 
-  /** Pick a main object name from the specified settings */
-  def scriptMain(settings: Settings) = settings.script.value match {
-    case "" => defaultScriptMain
-    case x  => x
+class DefaultScriptRunner(settings: GenericRunnerSettings) extends AbstractScriptRunner(settings) {
+  protected def doCompile(scriptFile: String) = {
+    // Setting settings.script.value informs the compiler this is not a self-contained compilation unit.
+    settings.script.value = mainClass
+    val reporter = new ConsoleReporter(settings)
+    val compiler = newGlobal(settings, reporter)
+    val run      = new compiler.Run
+    run.compile(List(scriptFile))
+    !reporter.hasErrors
   }
 
-  /** Choose a jar filename to hold the compiled version of a script. */
-  private def jarFileFor(scriptFile: String)= File(
-    if (scriptFile endsWith ".jar") scriptFile
-    else scriptFile.stripSuffix(".scala") + ".jar"
-  )
+  protected def newGlobal(settings: Settings, reporter: Reporter) = Global(settings, reporter)
+}
+
+class ResidentScriptRunner(settings: GenericRunnerSettings) extends AbstractScriptRunner(settings) with HasCompileSocket {
+  lazy val compileSocket = CompileSocket
 
   /** Compile a script using the fsc compilation daemon.
    */
-  private def compileWithDaemon(settings: GenericRunnerSettings, scriptFileIn: String) = {
-    val scriptFile       = Path(scriptFileIn).toAbsolute.path
+  protected def doCompile(scriptFile: String) = {
+    val scriptPath       = Path(scriptFile).toAbsolute.path
     val compSettingNames = new Settings(msg => throw new RuntimeException(msg)).visibleSettings.toList map (_.name)
     val compSettings     = settings.visibleSettings.toList filter (compSettingNames contains _.name)
     val coreCompArgs     = compSettings flatMap (_.unparse)
-    val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
+    val compArgs         = coreCompArgs ++ List("-Xscript", mainClass, scriptPath)
 
     // TODO: untangle this mess of top-level objects with their own little view of the mutable world of settings
     compileSocket.verbose = settings.verbose.value
@@ -73,64 +84,62 @@ class ScriptRunner extends HasCompileSocket {
       case _          => false
     }
   }
+}
 
-  private def shutdownDaemon() = {
-    new StandardCompileClient().process(Array("-shutdown"))
-  }
+final class DaemonKiller(settings: GenericRunnerSettings) extends ScriptRunner {
+  def runScript(script: String, scriptArgs: List[String]) = shutdownDaemon()
 
-  protected def newGlobal(settings: Settings, reporter: Reporter) =
-    Global(settings, reporter)
+  def runScriptText(script: String, scriptArgs: List[String]) = shutdownDaemon()
+
+  private def shutdownDaemon() =
+    try {
+      new StandardCompileClient().process(Array("-shutdown"))
+      None
+    } catch {
+      case t: Throwable => Some(t)
+    }
+}
+
+abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends ScriptRunner {
+
+  /** Do compile the given script file, returning true for success. */
+  protected def doCompile(scriptFile: String): Boolean
+
+  protected final def mainClass = ScriptRunner.scriptMain(settings)
 
   /** Compile a script and then run the specified closure with
    *  a classpath for the compiled script.
    *
    *  @return true if compilation and the handler succeeds, false otherwise.
    */
-  private def withCompiledScript(
-    settings: GenericRunnerSettings,
-    scriptFile: String)
-    (handler: String => Boolean): Boolean =
-  {
-    def mainClass = scriptMain(settings)
+  private def withCompiledScript(scriptFile: String)(handler: String => Boolean): Boolean = {
 
     /* Compiles the script file, and returns the directory with the compiled
      * class files, if the compilation succeeded.
      */
     def compile: Option[Directory] = {
-      val compiledPath = Directory makeTemp "scalascript"
+      val compiledPath = Directory.makeTemp("scalascript")
 
       // delete the directory after the user code has finished
       Runtime.getRuntime.addShutdownHook(new Thread(() => compiledPath.deleteRecursively()))
 
       settings.outdir.value = compiledPath.path
 
-      if (!settings.useCompDaemon) {
-        if (settings.nc) shutdownDaemon()
-
-        /* Setting settings.script.value informs the compiler this is not a
-         * self contained compilation unit.
-         */
-        settings.script.value = mainClass
-        val reporter = new ConsoleReporter(settings)
-        val compiler = newGlobal(settings, reporter)
-
-        new compiler.Run compile List(scriptFile)
-        if (reporter.hasErrors) None else Some(compiledPath)
-      }
-      else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
-      else None
+      if (doCompile(scriptFile)) Some(compiledPath) else None
     }
 
-    def hasClassToRun(d: Directory): Boolean = {
-      val cp = DirectoryClassPath(d.jfile)
-      cp.findClass(mainClass).isDefined
-    }
+    def hasClassToRun(d: Directory): Boolean = DirectoryClassPath(d.jfile).findClass(mainClass).isDefined
 
     /* The script runner calls System.exit to communicate a return value, but this must
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {
       if (settings.save) {
+        /** Choose a jar filename to hold the compiled version of a script. */
+        def jarFileFor(scriptFile: String) = File(
+          if (scriptFile endsWith ".jar") scriptFile
+          else scriptFile.stripSuffix(".scala") + ".jar"
+        )
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
@@ -170,62 +179,53 @@ class ScriptRunner extends HasCompileSocket {
    *
    * @return true if execution succeeded, false otherwise
    */
-  private def runCompiled(
-    settings: GenericRunnerSettings,
-    compiledLocation: String,
-    scriptArgs: List[String]): Boolean =
-  {
+  private def runCompiled(compiledLocation: String, scriptArgs: List[String]): Boolean = {
     val cp = File(compiledLocation).toURL +: settings.classpathURLs
-    ObjectRunner.runAndCatch(cp, scriptMain(settings), scriptArgs) match {
+    ObjectRunner.runAndCatch(cp, mainClass, scriptArgs) match {
       case Left(ex) => ex.printStackTrace() ; false
       case _        => true
     }
   }
 
-  /** Run a script file with the specified arguments and compilation settings.
-   *
-   *  @return true if compilation and execution succeeded, false otherwise.
-   */
-  def runScript(settings: GenericRunnerSettings, scriptFile: String, scriptArgs: List[String]): Boolean = {
-    def checkedScript = {
-      val f = File(scriptFile)
-      if (!f.exists) throw new IOException(s"no such file: $scriptFile")
-      if (!f.canRead) throw new IOException(s"can't read: $scriptFile")
-      if (f.isDirectory) throw new IOException(s"can't compile a directory: $scriptFile")
-      if (!settings.nc && !f.isFile) throw new IOException(s"compile server requires a regular file: $scriptFile")
-      scriptFile
+  final def runScript(scriptFile: String, scriptArgs: List[String]): Option[Throwable] = {
+    val f = File(scriptFile)
+    if (!f.exists) Some(new IOException(s"no such file: $scriptFile"))
+    else if (!f.canRead) Some(new IOException(s"can't read: $scriptFile"))
+    else if (f.isDirectory) Some(new IOException(s"can't compile a directory: $scriptFile"))
+    else if (!settings.nc && !f.isFile) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
+    else {
+      withCompiledScript(scriptFile) { runCompiled(_, scriptArgs) }
+      None
     }
-    withCompiledScript(settings, checkedScript) { runCompiled(settings, _, scriptArgs) }
   }
 
-  /** Calls runScript and catches the enumerated exceptions, routing
-   *  them to Left(ex) if thrown.
-   */
-  def runScriptAndCatch(
-    settings: GenericRunnerSettings,
-    scriptFile: String,
-    scriptArgs: List[String]): Either[Throwable, Boolean] =
-  {
-    try Right(runScript(settings, scriptFile, scriptArgs))
-    catch { case e: Throwable => Left(rootCause(e)) }
-  }
-
-  /** Run a command
-   *
-   * @return true if compilation and execution succeeded, false otherwise.
-   */
-  def runCommand(
-    settings: GenericRunnerSettings,
-    command: String,
-    scriptArgs: List[String]): Boolean =
-  {
+  final def runScriptText(command: String, scriptArgs: List[String]): Option[Throwable] = {
     val scriptFile = File.makeTemp("scalacmd", ".scala")
     // save the command to the file
     scriptFile writeAll command
 
-    try withCompiledScript(settings, scriptFile.path) { runCompiled(settings, _, scriptArgs) }
+    try {
+      withCompiledScript(scriptFile.path) { runCompiled(_, scriptArgs) }
+      None
+    }
+    catch {
+      case t: Throwable => Some(t)
+    }
     finally scriptFile.delete()  // in case there was a compilation error
   }
 }
 
-object ScriptRunner extends ScriptRunner { }
+object ScriptRunner {
+  /** Default name to use for the wrapped script */
+  val defaultScriptMain = "Main"
+
+  /** Pick a main object name from the specified settings */
+  def scriptMain(settings: Settings) = settings.script.value match {
+    case "" => defaultScriptMain
+    case x  => x
+  }
+
+  def apply(settings: GenericRunnerSettings): ScriptRunner =
+    if (settings.useCompDaemon) new ResidentScriptRunner(settings)
+    else new DefaultScriptRunner(settings)
+}

@@ -62,9 +62,9 @@ class MainGenericRunner {
         case AsObject =>
           ObjectRunner.runAndCatch(settings.classpathURLs, thingToRun, command.arguments)
         case AsScript if isE =>
-          Right(ScriptRunner.runCommand(settings, combinedCode, thingToRun +: command.arguments))
+          Right(!ScriptRunner(settings).runScriptText(combinedCode, thingToRun +: command.arguments).isDefined)
         case AsScript =>
-          ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
+          ScriptRunner(settings).runScript(thingToRun, command.arguments).fold[Either[Throwable, Boolean]](Right(true))(Left(_))
         case AsJar    =>
           JarRunner.runJar(settings, thingToRun, command.arguments)
         case Error =>
