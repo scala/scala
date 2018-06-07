@@ -69,19 +69,30 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
     }
 
-    import scala.tools.nsc.io.Jar
-    import scala.reflect.io.{AbstractFile, Path}
-    val locations = classpath.map(u => Path(AbstractFile.getURL(u).file))
     val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
-    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) {
-      if (disableCache) macroLogVerbose("macro classloader: caching is disabled by the user.")
-      else {
-        val offenders = locations.filterNot(!Jar.isJarOrZip(_))
-        macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${offenders.mkString(",")}.")
-      }
+    if (disableCache) newLoader()
+    else {
+      import scala.tools.nsc.io.Jar
+      import scala.reflect.io.{AbstractFile, Path}
 
-      newLoader()
-    } else macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
+      val urlsAndFiles = classpath.map(u => u -> AbstractFile.getURL(u))
+      val hasNullURL = urlsAndFiles.filter(_._2 eq null)
+      if (hasNullURL.nonEmpty) {
+        // TODO if the only null is jrt:// we can still cache
+        // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
+        macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
+        newLoader()
+      } else {
+        val locations = urlsAndFiles.map(t => Path(t._2.file))
+        val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
+        if (nonJarZips.nonEmpty) {
+          macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
+          newLoader()
+        } else {
+          macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
+        }
+      }
+    }
   }
 
   /** `MacroImplBinding` and its companion module are responsible for
