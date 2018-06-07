@@ -28,6 +28,7 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optPack         = "pack"         / "pick compiler/reflect/library in build/pack, and run all tests"                 --?
   val optGrep         = "grep"         / "run all tests whose source file contains the expression given to grep"          --|
   val optUpdateCheck  = "update-check" / "instead of failing tests with output change, update checkfile (use with care!)" --?
+  val optNoExec       = "no-exec"      / "instead of running tests, stop after dry-run compilation"                       --?
   val optBuildPath    = "buildpath"    / "set (relative) path to build jars (ex.: --buildpath build/pack)"                --|
   val optClassPath    = "classpath"    / "set (absolute) path to build classes"                                           --|
   val optSourcePath   = "srcpath"      / "set (relative) path to test source files (ex.: --srcpath pending)"              --|

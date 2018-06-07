@@ -161,6 +161,7 @@ abstract class AbstractRunner {
       }
       val expectedFailureMessage = if (expectedFailures == 0) "" else s" (expecting $expectedFailures to fail)"
       echo(s"Selected $totalTests tests drawn from $testContributors$expectedFailureMessage\n")
+      if (config.optNoExec) echoMixed("Under --no-exec, tests will be compiled but not run! Runnable tests will be marked skipped!")
 
       val (_, millis) = timed {
         for ((kind, paths) <- grouped) {

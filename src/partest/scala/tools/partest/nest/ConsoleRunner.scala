@@ -12,6 +12,7 @@ class ConsoleRunner(val config: RunnerSpec.Config) extends AbstractRunner {
     fileManager = new FileManager(ClassPath split PathResolver.Environment.javaUserClassPath map (Path(_))), // the script sets up our classpath for us via ant
     updateCheck = config.optUpdateCheck,
     failed = config.optFailed,
+    noexec = config.optNoExec,
     nestUI = nestUI)
 }
 

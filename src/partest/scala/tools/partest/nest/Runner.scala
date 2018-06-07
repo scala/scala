@@ -24,7 +24,7 @@ import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
 import scala.util.{Failure, Success, Try}
 import ClassPath.join
-import TestState.{Crash, Fail, Pass, Uninitialized, Updated}
+import TestState.{Crash, Fail, Pass, Skip, Uninitialized, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.control.ControlThrowable
@@ -107,6 +107,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
 
   def genPass()                   = Pass(testFile)
   def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail.toArray)
+  def genSkip(reason: String)     = Skip(testFile, reason)
   def genTimeout()                = Fail(testFile, "timed out", _transcript.fail.toArray)
   def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail.toArray)
   def genUpdated()                = Updated(testFile)
@@ -215,7 +216,6 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
       shared
     }
   }
-
 
   /** Runs command redirecting standard out and
    *  error out to output file.
@@ -688,11 +688,12 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   }
 
   private def runRunTest(): Unit = {
-    val argsFile  = testFile changeExtension "javaopts"
+    val argsFile = testFile changeExtension "javaopts"
     val javaopts = readOptionsFile(argsFile)
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile)
-    runTestCommon(exec() && diffIsOk)
+    def noexec() = suiteRunner.noexec && { setLastState(genSkip("no-exec: tests compiled but not run")) ; true }
+    runTestCommon(noexec() || exec() && diffIsOk)
   }
 
   private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
@@ -761,6 +762,7 @@ class SuiteRunner(
   val fileManager: FileManager,
   val updateCheck: Boolean,
   val failed: Boolean,
+  val noexec: Boolean,
   val nestUI: NestUI,
   val javaCmdPath: String = PartestDefaults.javaCmd,
   val javacCmdPath: String = PartestDefaults.javacCmd,
