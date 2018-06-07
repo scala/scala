@@ -104,12 +104,15 @@ case class StringContext(parts: String*) {
    *
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
    *
-   *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
+   *  ''Note:'' Even when using the raw interpolator, Scala will process unicode escapes.
    *  For example:
    *  {{{
    *    scala> raw"\u005cu0023"
    *    res0: String = #
    *  }}}
+   *
+   *  Processing unicode escapes in raw interpolations is deprecated and will be removed
+   *  in a future version of scala.
    *
    *  @param `args` The arguments to be inserted into the resulting string.
    *  @throws IllegalArgumentException
@@ -118,7 +121,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def raw(args: Any*): String = standardInterpolator(identity, args)
+  def raw(args: Any*): String = standardInterpolator(processUnicodeEscapes, args)
 
   def standardInterpolator(process: String => String, args: Seq[Any]): String = {
     checkLengths(args)
@@ -185,9 +188,92 @@ object StringContext {
       val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
       if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of $ok at"
     } index $index in "$str". Use \\\\ for literal \\."""
-  )
+  )//"""" //remove quotes
 
-  /** Expands standard Scala escape sequences in a string.
+
+  private[this] final def muee(str: String, index: Int): String = {
+    require(index >= 0 && index < str.length)
+    val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
+    val msg = if (index == str.length - 1) "at terminal" else s"'\${str(index + 1)}' not a valid hex digit at"
+    def q(str: String) = "\""  + str + "\""
+    s"malformed unicode escape $msg index $index in ${q(str)}"
+  }
+
+  class MalformedUnicodeEscapeException(str: String, val index: Int) extends IllegalArgumentException(muee(str, index))
+
+  def processUnicodeEscapes(str: String): String = {
+    val len = str.length
+    // replace escapes with given first escape
+    def replace(first: Int): String = {
+      val b = new JLSBuilder(str.length)
+
+      def processUEscape(afterFirstU: Int): (Char, Int) = {
+        def uDigitAt(index: Int): Int = {
+          if(index >= str.length) -1
+          else {
+            val ch = str(index)
+            if(ch >= '0' && ch <= '9') ch - '0'
+            else if(ch >= 'a' && ch <= 'f') 10 + ch - 'a'
+            else if(ch >= 'A' && ch <= 'F') 10 + ch - 'A'
+            else -1
+          }
+        }
+
+        var numberIndex = afterFirstU
+        var codepoint = 0
+
+        def error = throw new MalformedUnicodeEscapeException(str, numberIndex)
+
+        while(numberIndex < str.length && str(numberIndex) == 'u') numberIndex += 1
+
+        var digit = uDigitAt(numberIndex)
+        if(digit >= 0){
+          codepoint = 0x1000 * digit
+          numberIndex += 1
+          digit = uDigitAt(numberIndex)
+          if(digit >= 0) {
+            codepoint += 0x100 * digit
+            numberIndex += 1
+            digit = uDigitAt(numberIndex)
+            if(digit >= 0) {
+              codepoint += 0x10 * digit
+              numberIndex += 1
+              digit = uDigitAt(numberIndex)
+              if(digit >= 0) {
+                codepoint += digit
+                numberIndex += 1
+                (codepoint.asInstanceOf[Char], numberIndex - afterFirstU + 1)
+              } else error
+            } else error
+          } else error
+        } else error
+      }
+
+      @tailrec def loop(i: Int, nextBackslash: Int): String = {
+        if (nextBackslash >= 0) {
+          if (nextBackslash > i) b.append(str, i, nextBackslash)
+          val idx = nextBackslash + 1
+          if (idx >= len) throw new InvalidEscapeException(str, nextBackslash)
+          val (c, consumed) = str(idx) match {
+            case 'u'  => processUEscape(idx + 1)
+            case _    => throw new InvalidEscapeException(str, nextBackslash)
+          }
+          b append c
+          loop(idx + consumed, str.indexOf("\\u", idx + consumed))
+        } else {
+          if (i < len) b.append(str, i, len)
+          b.toString
+        }
+      }
+      loop(0, first)
+    }
+    str indexOf "\\u" match {
+      case -1 => str
+      case  i => replace(i)
+    }
+  }
+
+    /** Expands standard Scala escape sequences in a string.
    *  Escape sequences are:
    *   control: `\b`, `\t`, `\n`, `\f`, `\r`
    *   escape:  `\\`, `\"`, `\'`
@@ -196,34 +282,81 @@ object StringContext {
    *  @param  str  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */
-  def treatEscapes(str: String): String = treatEscapes0(str, strict = false)
+  def treatEscapes(str: String): String = processEscapes(str)
 
-  /** Treats escapes, but disallows octal escape sequences. */
-  def processEscapes(str: String): String = treatEscapes0(str, strict = true)
-
-  private def treatEscapes0(str: String, strict: Boolean): String = {
+  /** Expands standard Scala escape sequences in a string.
+   *  Escape sequences are:
+   *   control: `\b`, `\t`, `\n`, `\f`, `\r`
+   *   escape:  `\\`, `\"`, `\'`
+   *   unicode: `\ u(u*)hexdigit{4}`
+   *
+   *  @param  str  A string that may contain escape sequences
+   *  @return The string with all escape sequences expanded.
+   */
+  def processEscapes(str: String): String = {
     val len = str.length
     // replace escapes with given first escape
     def replace(first: Int): String = {
-      val b = new JLSBuilder
+      val b = new JLSBuilder(str.length)
       // append replacement starting at index `i`, with `next` backslash
-      @tailrec def loop(i: Int, next: Int): String = {
-        if (next >= 0) {
+
+      def processUEscape(afterFirstU: Int): (Char, Int) = {
+        def uDigitAt(index: Int): Int = {
+          if(index >= str.length) -1
+          else {
+            val ch = str(index)
+            if(ch >= '0' && ch <= '9') ch - '0'
+            else if(ch >= 'a' && ch <= 'f') 10 + ch - 'a'
+            else if(ch >= 'A' && ch <= 'F') 10 + ch - 'A'
+            else -1
+          }
+        }
+
+        var numberIndex = afterFirstU
+        def error = throw new MalformedUnicodeEscapeException(str, numberIndex)
+        var codepoint = 0
+        while(numberIndex < str.length && str(numberIndex) == 'u') numberIndex += 1
+
+        var digit = uDigitAt(numberIndex)
+        if(digit >= 0){
+          codepoint = 0x1000 * digit
+          numberIndex += 1
+          digit = uDigitAt(numberIndex)
+          if(digit >= 0) {
+            codepoint += 0x100 * digit
+            numberIndex += 1
+            digit = uDigitAt(numberIndex)
+            if(digit >= 0) {
+              codepoint += 0x10 * digit
+              numberIndex += 1
+              digit = uDigitAt(numberIndex)
+              if(digit >= 0) {
+                codepoint += digit
+                numberIndex += 1
+                (codepoint.asInstanceOf[Char], numberIndex - afterFirstU + 1)
+              } else error
+            } else error
+          } else error
+        } else error
+      }
+
+      @tailrec def loop(i: Int, nextBackslash: Int): String = {
+        if (nextBackslash >= 0) {
           //require(str(next) == '\\')
-          if (next > i) b.append(str, i, next)
-          var idx = next + 1
-          if (idx >= len) throw new InvalidEscapeException(str, next)
-          val c = str(idx) match {
-            case 'b'  => '\b'
-            case 't'  => '\t'
-            case 'n'  => '\n'
-            case 'f'  => '\f'
-            case 'r'  => '\r'
-            case '"'  => '"'
-            case '\'' => '\''
-            case '\\' => '\\'
+          if (nextBackslash > i) b.append(str, i, nextBackslash)
+          var idx: Int = nextBackslash + 1
+          if (idx >= len) throw new InvalidEscapeException(str, nextBackslash)
+          val (c, consumed: Int) = str(idx) match {
+            case 'b'  => ('\b', 1)
+            case 't'  => ('\t', 1)
+            case 'n'  => ('\n', 1)
+            case 'f'  => ('\f', 1)
+            case 'r'  => ('\r', 1)
+            case '"'  => ('"', 1)
+            case '\'' => ('\'', 1)
+            case '\\' => ('\\', 1)
+            case 'u'  => processUEscape(idx + 1)
             case o if '0' <= o && o <= '7' =>
-              if (strict) throw new InvalidEscapeException(str, next)
               val leadch = str(idx)
               var oct = leadch - '0'
               idx += 1
@@ -236,12 +369,11 @@ object StringContext {
                 }
               }
               idx -= 1   // retreat
-              oct.toChar
-            case _    => throw new InvalidEscapeException(str, next)
+              oct.toChar            
+            case _    => throw new InvalidEscapeException(str, nextBackslash)
           }
-          idx += 1       // advance
           b append c
-          loop(idx, str.indexOf('\\', idx))
+          loop(idx + consumed, str.indexOf('\\', idx + consumed))
         } else {
           if (i < len) b.append(str, i, len)
           b.toString

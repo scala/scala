@@ -6,12 +6,13 @@
 
 object Test {
 
+  
   /* I add a couple of Unicode identifier tests here "temporarily" */
 
-  def \u03b1\u03c1\u03b5\u03c4\u03b7 = "alpha rho epsilon tau eta"
+  def `\u03b1\u03c1\u03b5\u03c4\u03b7` = "alpha rho epsilon tau eta"
 
   case class GGG(i: Int) {
-    def \u03b1\u03b1(that: GGG) = i + that.i
+    def `\u03b1\u03b1`(that: GGG) = i + that.i
   }
 
   def check_success[A](name: String, closure: => A, expected: A) {
@@ -115,7 +116,7 @@ object Test {
 
     check_success("\"\".length()", "\u001a".length(), 1)
 
-    val ggg = GGG(1) \u03b1\u03b1 GGG(2)
+    val ggg = GGG(1) `\u03b1\u03b1` GGG(2)
     check_success("ggg == 3", ggg, 3)
 
   }

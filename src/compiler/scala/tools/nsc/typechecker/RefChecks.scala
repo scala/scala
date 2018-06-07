@@ -1548,21 +1548,21 @@ abstract class RefChecks extends Transform {
                 lits.forall(lit => treeInfo.isLiteralString(lit)) &&
                 lits.length == (args.length + 1) =>
               val isRaw = sym == rd.StringContext_raw
-              if (isRaw) Some((lits, args))
-              else {
-                try {
-                  val treated = lits.mapConserve { lit =>
-                    val stringVal = lit.asInstanceOf[Literal].value.stringValue
-                    treeCopy.Literal(lit, Constant(StringContext.processEscapes(stringVal)))
+              val escape = if(isRaw) StringContext.processUnicodeEscapes _ else StringContext.processEscapes _
+              try {
+                  val treated = lits.mapConserve { lit => {
+                      val stringVal = lit.asInstanceOf[Literal].value.stringValue
+                      val escapedString = escape(stringVal)
+                      if(isRaw && escapedString != stringVal) reporter.warning(sym.pos, "Unicode escapes in raw interpolators are deprecated since scala 2.13.0")
+                      treeCopy.Literal(lit, Constant(escape(stringVal)))
+                    }
                   }
                   Some((treated, args))
                 } catch {
-                  case _: StringContext.InvalidEscapeException =>
-                    None
+                  case _: StringContext.MalformedUnicodeEscapeException => None
+                  case _: StringContext.InvalidEscapeException =>  None
                 }
-              }
             case _ => None
-
           }
         } else None
       }

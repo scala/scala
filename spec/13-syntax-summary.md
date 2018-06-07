@@ -30,6 +30,7 @@ delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’
 opchar           ::= // printableChar not matched by (whiteSpace | upper | lower |
                      // letter | digit | paren | delim | opchar | Unicode_Sm | Unicode_So)
 printableChar    ::= // all characters in [\u0020, \u007F] inclusive
+escapeSeq        ::= UnicodeEscape | charEscapeSeq
 charEscapeSeq    ::= ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
 
 op               ::=  opchar {opchar}
