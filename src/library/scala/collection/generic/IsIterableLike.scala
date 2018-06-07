@@ -28,12 +28,12 @@ import scala.reflect.ClassTag
  * `String`.
  *
  * {{{
- *    import scala.collection.Iterable
+ *    import scala.collection.{Iterable, IterableOps}
  *    import scala.collection.generic.IsIterableLike
  *
- *    class ExtensionMethods[A, Repr](coll: IterableLike[A, Repr]) {
+ *    class ExtensionMethods[A, Repr](coll: IterableOps[A, Iterable, Repr]) {
  *      def mapReduce[B](mapper: A => B)(reducer: (B, B) => B): B = {
- *        val iter = coll.toIterator
+ *        val iter = coll.iterator
  *        var res = mapper(iter.next())
  *        while (iter.hasNext)
  *          res = reducer(res, mapper(iter.next()))
