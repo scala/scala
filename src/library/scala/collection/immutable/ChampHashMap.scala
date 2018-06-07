@@ -36,35 +36,48 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator: Iterator[(K, V)] = new MapKeyValueTupleIterator[K, V](rootNode)
+  def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyValueTupleIterator[K, V](rootNode)
+  }
 
-  protected[immutable] def reverseIterator: Iterator[(K, V)] = new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyIterator[K, V](rootNode)
+  }
+  override def valuesIterator: Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else new MapValueIterator[K, V](rootNode)
+  }
+  protected[immutable] def reverseIterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  }
 
   override final def contains(key: K): Boolean = rootNode.containsKey(key, computeHash(key), 0)
 
   def get(key: K): Option[V] = rootNode.get(key, computeHash(key), 0)
 
   def updated[V1 >: V](key: K, value: V1): ChampHashMap[K, V1] = {
-    val effect = MapEffect[K, V1]()
     val keyHash = computeHash(key)
-    val newRootNode = rootNode.updated(key, value, keyHash, 0, effect)
+    val newRootNodeSource = rootNode.updated(key, value, keyHash, 0)
 
-    if (effect.isModified) {
-      if (effect.hasReplacedValue) {
-        ChampHashMap(newRootNode, cachedJavaKeySetHashCode, cachedSize)
-      } else {
-        ChampHashMap(newRootNode, cachedJavaKeySetHashCode + keyHash, cachedSize + 1)
+    if (newRootNodeSource ne rootNode) {
+      newRootNodeSource match {
+        case r: Replaced[K, V] =>
+          ChampHashMap(newRootNodeSource.get, cachedJavaKeySetHashCode, cachedSize)
+        case _ =>
+          ChampHashMap(newRootNodeSource.get, cachedJavaKeySetHashCode + keyHash, cachedSize + 1)
       }
     }
     else this
   }
 
   def remove(key: K): ChampHashMap[K, V] = {
-    val effect = MapEffect[K, V]()
     val keyHash = computeHash(key)
-    val newRootNode = rootNode.removed(key, keyHash, 0, effect)
+    val newRootNode = rootNode.removed(key, keyHash, 0)
 
-    if (effect.isModified)
+    if (newRootNode ne rootNode)
       ChampHashMap(newRootNode, cachedJavaKeySetHashCode - keyHash, cachedSize - 1)
     else this
   }
@@ -102,19 +115,26 @@ private[immutable] object MapNode {
 
 }
 
-private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] {
+private[immutable] abstract class MapNodeSource[K, +V] {
+  def get: MapNode[K, V]
+}
+
+private final class Replaced[K, V](node: MapNode[K, V @uV]) extends MapNodeSource[K, V]{
+  var value = node
+  def get = value
+}
+
+private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K, V] with Node[MapNode[K, V @uV]] {
+  final def get: MapNode[K, V] = this
 
   def get(key: K, hash: Int, shift: Int): Option[V]
 
   def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.get(key, hash, shift).isDefined
 
-  def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean =
-    this.get(key, hash, shift).contains(value)
+  def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int): MapNodeSource[K, V1]
 
-  def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int, effect: MapEffect[K, V1]): MapNode[K, V1]
-
-  def removed[V1 >: V](key: K, hash: Int, shift: Int, effect: MapEffect[K, Any]): MapNode[K, V1]
+  def removed[V1 >: V](key: K, hash: Int, shift: Int): MapNode[K, V1]
 
   def hasNodes: Boolean
 
@@ -126,6 +146,10 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
   def payloadArity: Int
 
+  def getKey(index: Int): K
+
+  def getValue(index: Int): V
+
   def getPayload(index: Int): (K, V)
 
   def sizePredicate: Int
@@ -134,7 +158,7 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
 }
 
-private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
+private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
 
   import Node._
   import MapNode._
@@ -157,6 +181,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     predicate1 && predicate2 && predicate3
   }
 
+  def getKey(index: Int): K = content(TupleLength * index).asInstanceOf[K]
+  def getValue(index: Int): V = content(TupleLength * index + 1).asInstanceOf[V]
+
   def getPayload(index: Int) = Tuple2(
     content(TupleLength * index).asInstanceOf[K],
     content(TupleLength * index + 1).asInstanceOf[V])
@@ -170,8 +197,8 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val payload = this.getPayload(index)
-      return if (key == payload._1) Option(payload._2) else Option.empty
+      val key0 = this.getKey(index)
+      return if (key == key0) Some(this.getValue(index)) else None
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -179,7 +206,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
       return this.getNode(index).get(key, keyHash, shift + BitPartitionSize)
     }
 
-    Option.empty
+    None
   }
 
   override def containsKey(key: K, keyHash: Int, shift: Int): Boolean = {
@@ -188,7 +215,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      return key == this.getPayload(index)._1
+      return key == this.getKey(index)
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -199,67 +226,52 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     false
   }
 
-  override def contains[V1 >: V](key: K, value: V1, keyHash: Int, shift: Int): Boolean = {
+  def updated[V1 >: V](key: K, value: V1, keyHash: Int, shift: Int): MapNodeSource[K, V1] = {
     val mask = maskFrom(keyHash, shift)
     val bitpos = bitposFrom(mask)
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      return (key, value) == this.getPayload(index)
-    }
-
-    if ((nodeMap & bitpos) != 0) {
-      val index = indexFrom(nodeMap, mask, bitpos)
-      return this.getNode(index).contains(key, value, keyHash, shift + BitPartitionSize)
-    }
-
-    false
-  }
-
-  def updated[V1 >: V](key: K, value: V1, keyHash: Int, shift: Int, effect: MapEffect[K, V1]): MapNode[K, V1] = {
-    val mask = maskFrom(keyHash, shift)
-    val bitpos = bitposFrom(mask)
-
-    if ((dataMap & bitpos) != 0) {
-      val index = indexFrom(dataMap, mask, bitpos)
-      val (key0, value0) = this.getPayload(index)
-
+      val key0 = this.getKey(index)
       if (key0 == key) {
-        effect.setReplacedValue
-        return copyAndSetValue(bitpos, value)
+        val value0 = this.getValue(index)
+        return (
+          if (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef])
+            // TODO should we also check that `key0 eq key` in addition to being ==
+            this
+          else copyAndSetValue(bitpos, value)
+        )
       } else {
+        val value0 = this.getValue(index)
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, computeHash(key0), key, value, keyHash, shift + BitPartitionSize)
-        effect.setModified
         return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
       }
     }
 
     if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
-      val subNode = this.getNode(index)
+      val subNodeSource = this.getNode(index)
 
-      val subNodeNew = subNode.updated(key, value, keyHash, shift + BitPartitionSize, effect)
-      if (!effect.isModified) {
+      val subNodeNew = subNodeSource.updated(key, value, keyHash, shift + BitPartitionSize)
+      if (subNodeNew eq subNodeSource) {
         return this
       } else {
         return copyAndSetNode(bitpos, subNodeNew)
       }
     }
 
-    effect.setModified
     copyAndInsertValue(bitpos, key, value)
   }
 
-  def removed[V1 >: V](key: K, keyHash: Int, shift: Int, effect: MapEffect[K, Any]): MapNode[K, V1] = {
+  def removed[V1 >: V](key: K, keyHash: Int, shift: Int): MapNode[K, V1] = {
     val mask = maskFrom(keyHash, shift)
     val bitpos = bitposFrom(mask)
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val (key0, _) = this.getPayload(index)
+      val key0 = this.getKey(index)
 
       if (key0 == key) {
-        effect.setModified
         if (this.payloadArity == 2 && this.nodeArity == 0) {
           /*
            * Create new node with remaining pair. The new node will a) either become the new root
@@ -267,9 +279,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(keyHash, 0))
           if (index == 0)
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, { val (k, v) = getPayload(1) ; Array(k, v) })
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)))
           else
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, { val (k, v) = getPayload(0) ; Array(k, v) })
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)))
         }
         else return copyAndRemoveValue(bitpos)
       } else return this
@@ -279,10 +291,10 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.removed(key, keyHash, shift + BitPartitionSize, effect)
+      val subNodeNew = subNode.removed(key, keyHash, shift + BitPartitionSize)
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
-      if (!effect.isModified) return this
+      if (subNodeNew eq subNode) return this
       subNodeNew.sizePredicate match {
         case SizeOne =>
           if (this.payloadArity == 0 && this.nodeArity == 1) { // escalate (singleton or empty) result
@@ -294,7 +306,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
         case SizeMoreThanOne =>
           // modify current node (set replacement node)
-          return copyAndSetNode(bitpos, subNodeNew)
+          val newNodeSource = copyAndSetNode(bitpos, subNodeNew)
+          assert(!newNodeSource.isInstanceOf[Replaced[_, _]])
+          return newNodeSource.get
       }
     }
 
@@ -348,7 +362,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
   def nodeIndex(bitpos: Int) = bitCount(nodeMap & (bitpos - 1))
 
-  def copyAndSetValue[V1 >: V](bitpos: Int, newValue: V1) = {
+  def copyAndSetValue[V1 >: V](bitpos: Int, newValue: V1): Replaced[K, V1] = {
     val idx = TupleLength * dataIndex(bitpos) + 1
 
     val src = this.content
@@ -357,10 +371,10 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
     dst(idx) = newValue
-    new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+    new Replaced(new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst))
   }
 
-  def copyAndSetNode[V1 >: V](bitpos: Int, newNode: MapNode[K, V1]) = {
+  def copyAndSetNode[V1 >: V](bitpos: Int, newNode: MapNodeSource[K, V1]): MapNodeSource[K, V1] = {
     val idx = this.content.length - 1 - this.nodeIndex(bitpos)
 
     val src = this.content
@@ -368,11 +382,18 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
-    dst(idx) = newNode
-    new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+    newNode match {
+      case r: Replaced[K, V1] =>
+        dst(idx) = r.get
+        r.value = new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+        r
+      case mn: MapNode[K, V1] =>
+        dst(idx) = mn.get
+        new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+    }
   }
 
-  def copyAndInsertValue[V1 >: V](bitpos: Int, key: K, value: V1) = {
+  def copyAndInsertValue[V1 >: V](bitpos: Int, key: K, value: V1): BitmapIndexedMapNode[K, V1] = {
     val idx = TupleLength * dataIndex(bitpos)
 
     val src = this.content
@@ -387,7 +408,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap, dst)
   }
 
-  def copyAndRemoveValue(bitpos: Int) = {
+  def copyAndRemoveValue(bitpos: Int): BitmapIndexedMapNode[K, V] = {
     val idx = TupleLength * dataIndex(bitpos)
 
     val src = this.content
@@ -400,7 +421,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     new BitmapIndexedMapNode[K, V](dataMap ^ bitpos, nodeMap, dst)
   }
 
-  def copyAndMigrateFromInlineToNode[V1 >: V](bitpos: Int, node: MapNode[K, V1]) = {
+  def copyAndMigrateFromInlineToNode[V1 >: V](bitpos: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
     val idxOld = TupleLength * dataIndex(bitpos)
     val idxNew = this.content.length - TupleLength - nodeIndex(bitpos)
 
@@ -418,14 +439,14 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     new BitmapIndexedMapNode[K, V1](dataMap ^ bitpos, nodeMap | bitpos, dst)
   }
 
-  def copyAndMigrateFromNodeToInline[V1 >: V](bitpos: Int, node: MapNode[K, V1]) = {
+  def copyAndMigrateFromNodeToInline[V1 >: V](bitpos: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
     val idxOld = this.content.length - 1 - nodeIndex(bitpos)
     val idxNew = TupleLength * dataIndex(bitpos)
 
+    val key = node.getKey(0)
+    val value = node.getValue(0)
     val src = this.content
     val dst = new Array[Any](src.length - 1 + TupleLength)
-
-    val (key, value) = node.getPayload(0)
 
     // copy 'src' and remove 1 element(s) at position 'idxOld' and
     // insert 2 element(s) at position 'idxNew'
@@ -484,7 +505,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
 }
 
-private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
+private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
 
   import Node._
   import MapNode._
@@ -492,34 +513,30 @@ private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vect
   require(content.size >= 2)
 
   def get(key: K, hash: Int, shift: Int): Option[V] =
-    if (this.hash == hash) content.find(key == _._1).map(_._2) else Option.empty
+    if (this.hash == hash) content.find(key == _._1).map(_._2) else None
 
   override def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.exists(key == _._1)
 
-  override def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean =
-    this.hash == hash && content.find(payload => key == payload._1 && value == payload._2).isDefined
+  def contains[V1 >: V](key: K, value: V1, hash: Int, shift: Int): Boolean =
+    this.hash == hash && content.exists(payload => key == payload._1 && (value.asInstanceOf[AnyRef] eq payload._2.asInstanceOf[AnyRef]))
 
-  def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int, effect: MapEffect[K, V1]): MapNode[K, V1] =
+  def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int): MapNodeSource[K, V1] =
     if (this.contains(key, value, hash, shift)) {
       this
     } else if (this.containsKey(key, hash, shift)) {
       val index = content.indexWhere(key == _._1)
       val (beforeTuple, fromTuple) = content.splitAt(index)
       val updatedContent = beforeTuple.appended(Tuple2(key, value)).appendedAll(fromTuple.drop(1))
-
-      effect.setReplacedValue
-      new HashCollisionMapNode[K, V1](hash, updatedContent)
+      new Replaced(new HashCollisionMapNode[K, V1](hash, updatedContent))
     } else {
-      effect.setModified
       new HashCollisionMapNode[K, V1](hash, content.appended(Tuple2(key, value)))
     }
 
-  def removed[V1 >: V](key: K, hash: Int, shift: Int, effect: MapEffect[K, Any]): MapNode[K, V1] =
+  def removed[V1 >: V](key: K, hash: Int, shift: Int): MapNode[K, V1] =
     if (!this.containsKey(key, hash, shift)) {
       this
     } else {
-      effect.setModified
       val updatedContent = content.filterNot(keyValuePair => keyValuePair._1 == key)
       // assert(updatedContent.size == content.size - 1)
 
@@ -539,6 +556,9 @@ private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vect
   def hasPayload: Boolean = true
 
   def payloadArity: Int = content.size
+
+  def getKey(index: Int): K = getPayload(index)._1
+  def getValue(index: Int): V = getPayload(index)._2
 
   def getPayload(index: Int): (K, V) = content(index)
 
@@ -561,17 +581,33 @@ private final class HashCollisionMapNode[K, +V](val hash: Int, val content: Vect
 
 }
 
-private final case class MapEffect[K, +V]() {
+private final class MapKeyIterator[K, V](rootNode: MapNode[K, V])
+  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[K] {
 
-  private[this] var modified: Boolean = false
-  private[this] var replacedValue: Boolean = false
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
 
-  def isModified =  { modified }
-  def setModified = { modified = true }
+    val key = currentValueNode.getKey(currentValueCursor)
+    currentValueCursor += 1
 
-  def hasReplacedValue = { replacedValue }
-  def setReplacedValue = { replacedValue = true ; modified = true }
+    key
+  }
 
+}
+
+private final class MapValueIterator[K, V](rootNode: MapNode[K, V])
+  extends ChampBaseIterator[MapNode[K, V]](rootNode) with Iterator[V] {
+
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    val value = currentValueNode.getValue(currentValueCursor)
+    currentValueCursor += 1
+
+    value
+  }
 }
 
 private final class MapKeyValueTupleIterator[K, V](rootNode: MapNode[K, V])

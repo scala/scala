@@ -6,6 +6,7 @@ import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
 import scala.collection.convert.{DecorateAsJava, DecorateAsScala}
+import scala.collection.immutable.ChampMapSmokeTest.{emptyMap, mkTuple}
 
 object ChampSetSmokeTest {
 
@@ -220,5 +221,44 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
     val xs: Set[CustomHashInt] = setOf(hash98304_obj1, hash8_obj3, hash98304_obj2) - hash98304_obj2
     val ys: Set[CustomHashInt] = setOf(hash98304_obj1, hash8_obj3)
     assertEquals(xs, ys)
+  }
+
+  object O1 { override def hashCode = 1 ; override def toString = "O1"}
+  class C(val i: Int) { override def hashCode = i % 4 ; override def toString = s"C($i)" }
+  val cs = Array.tabulate(4096)(new C(_))
+
+  private def assertSameEqHash(expected: ChampHashSet[Any], actual: ChampHashSet[Any]) = {
+    assertEquals(List.from(actual).size, actual.size)
+    assertEquals(expected.size, actual.size)
+    assertEquals(expected.cachedJavaHashCode, actual.cachedJavaHashCode)
+    assertEquals(expected.hashCode(), actual.hashCode())
+  }
+
+  @Test def testCachedSizeAndHashCode(): Unit = {
+    val emptySet = ChampHashSet.empty[Any]
+    var set: ChampHashSet[Any] = emptySet + O1
+    assertEquals(1, set.size)
+    set = set + O1
+    assertSameEqHash(emptySet + O1, set)
+  }
+
+  @Test def testCachedSizeAndHashCodeCollision(): Unit = {
+    val emptySet = ChampHashSet.empty[Any]
+    var set: ChampHashSet[Any] = emptySet
+    for (c <- cs)
+      set = set + c
+    var set1 = set
+    for (c <- cs) {
+      set1 = set1 + c
+      assertEquals(set.cachedJavaHashCode, set1.cachedJavaHashCode)
+      if (c.i % 41 == 0)
+        assertEquals(set, set1)
+    }
+    assertEquals(set, set1)
+    assertSameEqHash(set1, set)
+
+    var set2 = set + mkTuple(O1, "O1_V2")
+    set2 = set2 +  mkTuple(O1, "O1_V2")
+    assertSameEqHash(set1 + mkTuple(O1, "O1_V2"), set2)
   }
 }

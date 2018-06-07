@@ -32,28 +32,29 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   override def isEmpty: Boolean = cachedSize == 0
 
-  def iterator: Iterator[A] = new SetIterator[A](rootNode)
+  def iterator: Iterator[A] = {
+    if (isEmpty) Iterator.empty
+    else new SetIterator[A](rootNode)
+  }
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
   def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
 
   def incl(element: A): ChampHashSet[A] = {
-    val effect = SetEffect[A]()
     val elementHash = computeHash(element)
-    val newRootNode = rootNode.updated(element, elementHash, 0, effect)
+    val newRootNode = rootNode.updated(element, elementHash, 0)
 
-    if (effect.isModified)
+    if (newRootNode ne rootNode)
       ChampHashSet(newRootNode, cachedJavaHashCode + elementHash, cachedSize + 1)
     else this
   }
 
   def excl(element: A): ChampHashSet[A] = {
-    val effect = SetEffect[A]()
     val elementHash = computeHash(element)
-    val newRootNode = rootNode.removed(element, elementHash, 0, effect)
+    val newRootNode = rootNode.removed(element, elementHash, 0)
 
-    if (effect.isModified)
+    if (rootNode ne newRootNode)
       ChampHashSet(newRootNode, cachedJavaHashCode - elementHash, cachedSize - 1)
     else this
   }
@@ -100,9 +101,9 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
   def contains(element: A, hash: Int, shift: Int): Boolean
 
-  def updated(element: A, hash: Int, shift: Int, effect: SetEffect[A]): SetNode[A]
+  def updated(element: A, hash: Int, shift: Int): SetNode[A]
 
-  def removed(element: A, hash: Int, shift: Int, effect: SetEffect[A]): SetNode[A]
+  def removed(element: A, hash: Int, shift: Int): SetNode[A]
 
   def hasNodes: Boolean
 
@@ -170,7 +171,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     false
   }
 
-  def updated(element: A, elementHash: Int, shift: Int, effect: SetEffect[A]): SetNode[A] = {
+  def updated(element: A, elementHash: Int, shift: Int): SetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -182,7 +183,6 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
         return this
       } else {
         val subNodeNew = mergeTwoKeyValPairs(element0, computeHash(element0), element, elementHash, shift + BitPartitionSize)
-        effect.setModified
         return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
       }
     }
@@ -191,19 +191,18 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.updated(element, elementHash, shift + BitPartitionSize, effect)
-      if (!effect.isModified) {
+      val subNodeNew = subNode.updated(element, elementHash, shift + BitPartitionSize)
+      if (subNode eq subNodeNew) {
         return this
       } else {
         return copyAndSetNode(bitpos, subNodeNew)
       }
     }
 
-    effect.setModified
     copyAndInsertValue(bitpos, element)
   }
 
-  def removed(element: A, elementHash: Int, shift: Int, effect: SetEffect[A]): SetNode[A] = {
+  def removed(element: A, elementHash: Int, shift: Int): SetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -212,7 +211,6 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val element0 = this.getPayload(index)
 
       if (element0 == element) {
-        effect.setModified
         if (this.payloadArity == 2 && this.nodeArity == 0) {
           /*
            * Create new node with remaining pair. The new node will a) either become the new root
@@ -232,10 +230,10 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.removed(element, elementHash, shift + BitPartitionSize, effect)
+      val subNodeNew = subNode.removed(element, elementHash, shift + BitPartitionSize)
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
-      if (!effect.isModified) return this
+      if (subNodeNew eq subNode) return this
       subNodeNew.sizePredicate match {
         case SizeOne =>
           if (this.payloadArity == 0 && this.nodeArity == 1) { // escalate (singleton or empty) result
@@ -475,11 +473,10 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
   def contains(element: A, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.contains(element)
 
-  def updated(element: A, hash: Int, shift: Int, effect: SetEffect[A]): SetNode[A] =
+  def updated(element: A, hash: Int, shift: Int): SetNode[A] =
     if (this.contains(element, hash, shift)) {
       this
     } else {
-      effect.setModified
       new HashCollisionSetNode[A](hash, content.appended(element))
     }
 
@@ -490,11 +487,10 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
     * singleton element and a hash-prefix for trie level 0. This node will be then a) either become
     * the new root, or b) unwrapped and inlined deeper in the trie.
     */
-  def removed(element: A, hash: Int, shift: Int, effect: SetEffect[A]): SetNode[A] =
+  def removed(element: A, hash: Int, shift: Int): SetNode[A] =
     if (!this.contains(element, hash, shift)) {
       this
     } else {
-      effect.setModified
       val updatedContent = content.filterNot(element0 => element0 == element)
       // assert(updatedContent.size == content.size - 1)
 
@@ -540,15 +536,6 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
 
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
-
-}
-
-private final case class SetEffect[A]() {
-
-  private[this] var modified: Boolean = false
-
-  def isModified =  { modified }
-  def setModified = { modified = true }
 
 }
 

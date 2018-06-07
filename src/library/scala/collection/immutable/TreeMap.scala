@@ -83,6 +83,8 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def size: Int = RB.count(tree)
 
+  override def isEmpty = size == 0
+
   override def firstKey: K = RB.smallest(tree).key
 
   override def lastKey: K = RB.greatest(tree).key

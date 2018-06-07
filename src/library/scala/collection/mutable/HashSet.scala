@@ -25,7 +25,6 @@ final class HashSet[A]
 
   // Used by scala-java8-compat (private[mutable] erases to public, so Java code can access it)
   private[mutable] def getTable: FlatHashTable[A] = table
-
   override def iterator: Iterator[A] = table.iterator
 
   override def iterableFactory: IterableFactory[HashSet] = HashSet
@@ -44,6 +43,12 @@ final class HashSet[A]
   def contains(elem: A): Boolean = table.containsElem(elem)
 
   def get(elem: A): Option[A] = table.findEntry(elem)
+
+  override def knownSize: Int = table.size
+
+  override def size: Int = table.size
+
+  override def isEmpty: Boolean = size == 0
 
   override def foreach[U](f: A => U): Unit = {
     var i = 0

@@ -88,6 +88,7 @@ object Set extends IterableFactory[Set] {
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] {
     override def size: Int = 0
+    override def isEmpty = true
     def contains(elem: Any): Boolean = false
     def incl(elem: Any): Set[Any] = new Set1(elem)
     def excl(elem: Any): Set[Any] = this
@@ -99,6 +100,7 @@ object Set extends IterableFactory[Set] {
   /** An optimized representation for immutable sets of size 1 */
   final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 1
+    override def isEmpty = false
     def contains(elem: A): Boolean = elem == elem1
     def incl(elem: A): Set[A] =
       if (contains(elem)) this
@@ -121,6 +123,7 @@ object Set extends IterableFactory[Set] {
   /** An optimized representation for immutable sets of size 2 */
   final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 2
+    override def isEmpty = false
     def contains(elem: A): Boolean = elem == elem1 || elem == elem2
     def incl(elem: A): Set[A] =
       if (contains(elem)) this
@@ -152,6 +155,7 @@ object Set extends IterableFactory[Set] {
   /** An optimized representation for immutable sets of size 3 */
   final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 3
+    override def isEmpty = false
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3
     def incl(elem: A): Set[A] =
@@ -186,6 +190,7 @@ object Set extends IterableFactory[Set] {
   /** An optimized representation for immutable sets of size 4 */
   final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
     override def size: Int = 4
+    override def isEmpty = false
     def contains(elem: A): Boolean =
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def incl(elem: A): Set[A] =

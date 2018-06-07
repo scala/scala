@@ -1,7 +1,7 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
-import org.junit.Test
+import org.junit.Assert.{assertEquals, assertFalse, assertSame, assertTrue}
+import org.junit.{Assert, Test}
 
 object ChampMapSmokeTest {
 
@@ -111,6 +111,7 @@ class ChampMapSmokeTest {
     assertEquals(2, res3.size)
     assertTrue(res3.contains(v1h1))
     assertTrue(res3.contains(v32769a))
+    println(scala.runtime.ScalaRunTime.getClass.getProtectionDomain.getCodeSource)
     val expected = mapOf(mkTuple(v1h1), mkTuple(v32769a))
     assertEquals(expected, res3)
   }
@@ -169,4 +170,85 @@ class ChampMapSmokeTest {
     assertEquals(emptyMap, res)
   }
 
+  object O1 { override def hashCode = 1 ; override def toString = "O1"}
+  class C(val i: Int) { override def hashCode = i % 4 ; override def toString = s"C($i)" }
+  val cs = Array.tabulate(4096)(new C(_))
+
+  private def assertSameEqHash(expected: ChampHashMap[Any, Any], actual: ChampHashMap[Any, Any]) = {
+    assertEquals(List.from(actual).size, actual.size)
+    assertEquals(expected.size, actual.size)
+    assertEquals(expected.cachedJavaKeySetHashCode, actual.cachedJavaKeySetHashCode)
+    assertEquals(expected.hashCode(), actual.hashCode())
+  }
+
+  private def value(i: Int) = new String("" + i)
+
+  @Test def testCachedSizeAndHashCode(): Unit = {
+    var map: ChampHashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V1")
+    assertEquals(1, map.size)
+    map = map + mkTuple(O1, "O1_V2")
+    assertSameEqHash(emptyMap + mkTuple(O1, "O1_V2"), map)
+  }
+
+  @Test def testCachedSizeAndHashCodeCollision(): Unit = {
+    var map: ChampHashMap[Any, Any] = emptyMap
+    for (c <- cs)
+      map = map.updated(c, value(c.i))
+    var map1 = map
+    for (c <- cs) {
+      map1 = map1.updated(c, value(c.i))
+      assertEquals(map.cachedJavaKeySetHashCode, map1.cachedJavaKeySetHashCode)
+      if (c.i % 41 == 0)
+        assertEquals(map, map1)
+    }
+    assertEquals(map, map1)
+    assertSameEqHash(map1, map)
+
+    var map2 = map + mkTuple(O1, "O1_V2")
+    map2 = map2 +  mkTuple(O1, "O1_V2")
+    assertSameEqHash(map1 + mkTuple(O1, "O1_V2"), map2)
+  }
+
+  @Test def replacedValue(): Unit = {
+    val s1, s2 = new String("s") // equals, but distinct references,
+    val key = "k"
+    var map = emptyMap[Any, Any].updated(key, s1).updated(key, s2)
+    Assert.assertSame(s2, map.apply(key))
+    class collision() { override def hashCode = key.hashCode}
+    for (i <- (0 to 1024)) map = map.updated(new collision(), "")
+    Assert.assertSame(s1, map.updated(key, s1).apply(key))
+  }
+
+  @Test def replacedValueIdentical(): Unit = {
+    case class A(a: Int)
+    val map = emptyMap[Any, Any]
+    val a = A(1)
+    val map1 = map.updated(1, a)
+    val map2 = map1.updated(1, a)
+    assertSame(map1, map2)
+  }
+
+  @Test def replacedValueIdenticalCollision(): Unit = {
+    val k0 = new C(0)
+    val k1 = new C(4)
+    assertEquals(k0.hashCode, k1.hashCode)
+    val map = emptyMap[Any, Any].updated(k0, 0)
+    val v1 = "v1"
+    val map1 = map.updated(k1, v1)
+    val map2 = map1.updated(k1, v1)
+    assertSame(map1, map2)
+  }
+
+  @Test def nullValue(): Unit = {
+    val map = emptyMap[Any, Any]
+    assertEquals(Some(null), map.updated("", null).get(""))
+  }
+
+  @Test def nullValueCollision(): Unit = {
+    val k0 = new C(0)
+    val k1 = new C(4)
+    assertEquals(k0.hashCode, k1.hashCode)
+    val map = emptyMap[Any, Any].updated(k0, 0).updated(k1, null)
+    assertEquals(Some(null), map.get(k1))
+  }
 }

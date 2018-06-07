@@ -48,6 +48,8 @@ private[mutable] final class FlatHashTable[A] extends FlatHashTable.HashUtils[A]
    */
   def initialSize: Int = 32
 
+  def size: Int = tableSize
+
   private def initialCapacity = capacity(initialSize)
 
   protected def randomSeed = seedGenerator.get.nextInt()
