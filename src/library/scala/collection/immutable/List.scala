@@ -526,11 +526,13 @@ sealed abstract class List[+A]
   override def equals(o: scala.Any): Boolean = {
     @tailrec def listEq(a: List[_], b: List[_]): Boolean =
       (a eq b) || {
-        if (a.nonEmpty && b.nonEmpty && a.head == b.head) {
+        val aEmpty = a.isEmpty
+        val bEmpty = b.isEmpty
+        if (!(aEmpty || bEmpty) && a.head == b.head) {
           listEq(a.tail, b.tail)
         }
         else {
-          a.isEmpty && b.isEmpty
+          aEmpty && bEmpty
         }
       }
 
