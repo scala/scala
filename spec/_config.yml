@@ -1,4 +1,6 @@
 baseurl: /files/archive/spec/2.12
+latestScalaVersion: 2.12
+thisScalaVersion: 2.12
 safe: true
 lsi: false
 highlighter: false
