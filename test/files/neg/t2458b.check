@@ -1,0 +1,6 @@
+test.scala:5: error: reference to CC is ambiguous;
+it is both defined in package qq and imported subsequently by
+import q._
+  class C extends CC   // ambiguous though same underlying
+                  ^
+one error found
