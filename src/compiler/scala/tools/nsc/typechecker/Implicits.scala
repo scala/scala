@@ -401,7 +401,7 @@ trait Implicits {
 
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
-    def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
+    @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
       if (settings.XlogImplicits)
         reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
       SearchFailure
@@ -678,7 +678,7 @@ trait Implicits {
       val itree1 = if (isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
       typingLog("considering", typeDebug.ptTree(itree1))
 
-      def fail(reason: String): SearchResult = failure(itree0, reason)
+      @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
       def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
         val itree2 = if (!isView) fallback else pt match {
@@ -739,7 +739,7 @@ trait Implicits {
             info.sym.fullLocationString, itree2.symbol.fullLocationString))
         else {
           val tvars = undetParams map freshVar
-          def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
+          val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
           if (matchesPt(itree3.tpe, ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
