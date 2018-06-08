@@ -79,31 +79,63 @@ trait Contexts { self: Analyzer =>
 
   var lastAccessCheckDetails: String = ""
 
-  /** List of symbols to import from in a root context.  Typically that
-   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.  Exceptions:
+  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+
+  val excludedRootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+
+  // register an import for the narrow purpose of excluding root imports of predef modules
+  def registerImport(ctx: Context, imp: Import): Unit = {
+    val sym = imp.expr.symbol
+    if (!sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
+      var current = excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
+      current = sym :: current
+      excludedRootImportsCached += ctx.unit -> current
+    }
+  }
+
+  /** List of symbols to import from in a root context.  By default, that
+   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.
    *
-   *  - if option `-Yno-imports` is given, nothing is imported
-   *  - if the unit is java defined, only `java.lang` is imported
-   *  - if option `-Yno-predef` is given, if the unit body has an import of Predef
+   *  - if option `-Yimports` is supplied, then that specifies the preamble imports
+   *  - if the unit body has an import of Predef
    *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
+   *    Similarly for any module among the preamble imports.
+   *  - if the unit is java defined, only `java.lang` is imported
+   *
+   *  The root imports for a unit are cached.
    */
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
     assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
-    if (settings.noimports) Nil
-    else if (unit.isJava) RootImports.javaList
-    else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) {
-      // scala/bug#8258 Needed for the presentation compiler using -sourcepath, otherwise cycles can occur. See the commit
-      //         message for this ticket for an example.
-      debuglog("Omitted import of Predef._ for " + unit)
-      RootImports.javaAndScalaList
+    if (unit.isJava) RootImports.javaList
+    else rootImportsCached.get(unit).getOrElse {
+      val calculated = defaultRootImports
+      rootImportsCached += unit -> calculated
+      calculated
     }
+  }
+
+  private def defaultRootImports: List[Symbol] = {
+    import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
+
+    if (settings.imports.isSetByUser)
+      settings.imports.value.map {
+        case "java.lang"    => JavaLangPackage
+        case "scala"        => ScalaPackage
+        case "scala.Predef" => PredefModule
+        case s              =>
+          getModuleIfDefined(s) orElse
+          getPackageObjectIfDefined(s) orElse
+          getPackageIfDefined(s) orElse {
+            error(s"bad preamble import $s")
+            NoSymbol
+          }
+      }
     else RootImports.completeList
   }
 
-
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym)))
+    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym), unit = unit))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -974,7 +1006,7 @@ trait Contexts { self: Analyzer =>
       for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
 
-    private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
+    private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = if (isExcludedRootImport(imp)) List() else {
       val qual = imp.qual
 
       val pre = qual.tpe
@@ -1137,7 +1169,11 @@ trait Contexts { self: Analyzer =>
      *  if any such symbol is accessible from this context.
      */
     private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
-      imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
+      if (isExcludedRootImport(imp)) NoSymbol
+      else imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
+
+    private def isExcludedRootImport(imp: ImportInfo): Boolean =
+      imp.isRootImport && excludedRootImportsCached.get(unit).map(_.contains(imp.qual.symbol)).getOrElse(false)
 
     private def requiresQualifier(s: Symbol): Boolean = (
          s.owner.isClass

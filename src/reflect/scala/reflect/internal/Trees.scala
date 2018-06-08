@@ -1309,6 +1309,7 @@ trait Trees extends api.Trees {
     case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
     case _                                                  => false
   }
+
   /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
    */
   def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
