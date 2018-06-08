@@ -13,7 +13,7 @@ class StringParsersTest {
   def doubleOK(str: String): Unit = assertTrue(
     s"str.toDouble <> str.toDoubleOption for $str",
     (str.toDoubleOption, Try(str.toDouble).toOption) match {
-      case (Some(d1), Some(d2)) if d1.isNaN && d2.isNaN => true
+      case (Some(d1), Some(d2)) => d1.isNaN && d2.isNaN || d1 == d2
       case (o1, o2) => o1 == o2
     })
 
@@ -242,10 +242,16 @@ class StringParsersTest {
     "-0x0.000000000000090000000000000000001p-1022",
     "-0x0.00000000000009fffffffffffffffffffffffffffffffffp-1022",
     "-0x0.0000000000000fffffffffffffffffffffffffffffffffffp-1022",
+    "",
+    ".",
+    ".4",
     ".E4",
+    ".E",
+    ".x",
+    ".1E4",
+    "4.",
     "1.1E4",
     "1.E4",
-    ".1E4",
     "1E4",
     "E4",
     "0.0",
