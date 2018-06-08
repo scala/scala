@@ -497,11 +497,16 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UniverseClass    = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
          def UniverseInternal = getMemberValue(UniverseClass, nme.internal)
 
-    lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
-    lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
-    lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
-    lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
-    lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
+    // In the future, the *Manifest* classes will be removed. To be able to
+    // bootstrap this change, we need a STARR that does not crash when this
+    // change is made, so we do not use requiredClass/requiredModule for loading
+    // them.
+    // See also PartialManifestClass below.
+    lazy val PartialManifestModule = getModuleIfDefined("scala.reflect.ClassManifestFactory")
+    lazy val FullManifestClass     = getClassIfDefined("scala.reflect.Manifest")
+    lazy val FullManifestModule    = getModuleIfDefined("scala.reflect.ManifestFactory")
+    lazy val OptManifestClass      = getClassIfDefined("scala.reflect.OptManifest")
+    lazy val NoManifest            = getModuleIfDefined("scala.reflect.NoManifest")
 
     lazy val TreesClass            = getClassIfDefined("scala.reflect.api.Trees") // defined in scala-reflect.jar, so we need to be careful
 
@@ -1552,8 +1557,9 @@ trait Definitions extends api.StandardDefinitions {
 
       object ExprClassOf { def unapply(tp: Type): Option[Type] = elementExtractOption(ExprClass, tp) }
 
-      lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
-      lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+      // See comment above PartialManifestModule above.
+      lazy val PartialManifestClass  = getMemberIfDefined(ReflectPackage, tpnme.ClassManifest)
+      lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass).filter(_ != NoSymbol)
       private lazy val PolymorphicSignatureClass = MethodHandleClass.companionModule.info.decl(TypeName("PolymorphicSignature"))
 
       def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
