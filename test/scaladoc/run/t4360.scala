@@ -38,11 +38,11 @@ object Test extends ScaladocModelTest {
       assert(method.valueParams(0)(0).resultType.name == name,
              method.valueParams(0)(0).resultType.name + " == " + name + " (in " + method.qualifiedName + ")")
       assert(method.valueParams(0)(0).resultType.refEntity.size == refs,
-             method.valueParams(0)(0).resultType.refEntity.size + " == " + refs + " (in " + method.qualifiedName + ")")
+             method.valueParams(0)(0).resultType.refEntity.size.toString + " == " + refs + " (in " + method.qualifiedName + ")")
     }
 
     val A = base._package("pack1")._package("c")._class("A")
     assert(A.linearizationTypes(0).name == "pack1.A",   A.linearizationTypes(0).name + " == pack1.A")
-    assert(A.linearizationTypes(0).refEntity.size == 1, A.linearizationTypes(0).refEntity.size + " == 1")
+    assert(A.linearizationTypes(0).refEntity.size == 1, A.linearizationTypes(0).refEntity.size.toString + " == 1")
   }
 }

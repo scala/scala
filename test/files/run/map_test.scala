@@ -30,7 +30,7 @@ object Test extends App {
     i = 0
     while(i < 4712) {
       if (map.isDefinedAt(i))
-        print(i + "->" + map(i) + " ");
+        print(s"$i->${map(i)} ")
       i += 1
     }
     println("")

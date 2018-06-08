@@ -13,7 +13,7 @@ object Test {
     for (i <- it) {
       // sum of the groups == sum of the original
       val thisSum = ((it grouped i) map (_.sum)).to(LazyList).sum
-      assert(thisSum == itSum, thisSum + " != " + itSum)
+      assert(thisSum == itSum, s"$thisSum != $itSum" )
     }
 
     // grouped
