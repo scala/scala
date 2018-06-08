@@ -62,7 +62,10 @@ trait PatternMatching extends Transform
         // setType origTp intended for CPS -- TODO: is it necessary?
         val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
-          localTyper.typed(translated) setType origTp
+          // Keep 2.12 behaviour of using wildcard expected type, recomputing the LUB, then throwing it away for the continuations plugins
+          // but for the rest of us pass in top as the expected type to avoid waste.
+          val pt = if (origTp <:< definitions.AnyTpe) definitions.AnyTpe else WildcardType
+          localTyper.typed(translated, definitions.AnyTpe) setType origTp
         } catch {
           case x: (Types#TypeError) =>
             // TODO: this should never happen; error should've been reported during type checking
