@@ -1007,6 +1007,24 @@ trait Contexts { self: Analyzer =>
       )
     }
 
+    /** Does the import just import the defined symbol?
+     *
+     *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
+     *  `S` is both made available in `p` and imported, an ambiguity.
+     *  (The import is not used and is extraneous, but normally a definition
+     *  in `p` would shadow and result in maybe a warning, not an error.)
+     *
+     *  Don't attempt to interfere with correctness everywhere.
+     *  `object X { def f = ??? ; def g = { import X.f ; f } }`
+     *
+     *  This method doesn't use the ImportInfo, `imp1`.
+     */
+    private def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
+      val res = impSym == defSym
+      if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
+      res
+    }
+
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
@@ -1171,6 +1189,9 @@ trait Contexts { self: Analyzer =>
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
+          impSym = NoSymbol
+        // Try to reconcile them before giving up, at least if the def is not visible
+        else if (foreignDefined && reconcileAmbiguousImportAndDef(name, impSym, defSym))
           impSym = NoSymbol
         // Otherwise they are irreconcilably ambiguous
         else
