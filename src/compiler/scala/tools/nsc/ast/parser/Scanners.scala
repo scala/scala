@@ -212,7 +212,7 @@ trait Scanners extends ScannersCommon {
 
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Token = IDENTIFIER): Unit = {
-      name = newTermName(cbuf.toString)
+      name = newTermName(cbuf.toArray)
       cbuf.clear()
       token = idtoken
       if (idtoken == IDENTIFIER) {

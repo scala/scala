@@ -760,7 +760,7 @@ trait Definitions extends api.StandardDefinitions {
       case TypeRef(_, NothingClass | SingletonClass, _) => true
       case TypeRef(_, sym, _) if sym.isAbstractType     => tp.bounds.hi.typeSymbol isSubClass SingletonClass
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
-      case TypeRef(_, _, _) if tp ne tp.dealias         => isStable(tp.dealias)
+      case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
       case TypeVar(origin, _)                           => isStable(origin)
       case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
       case _: SimpleTypeProxy                           => isStable(tp.underlying)
