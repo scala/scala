@@ -357,6 +357,47 @@ object Predef extends LowPriorityImplicits {
   }
 
   /** @group implicit-classes-any */
+  implicit final class Requiring[A](private val self: A) extends AnyVal {
+    /**
+      * Tests an expression, throwing an `IllegalArgumentException` if false.
+      * This method is similar to `assert`, but blames the caller of the method
+      * for violating the condition.
+      *
+      * @param requirement  the expression to test
+      */
+    def requiring(requirement: Boolean): A = { require(requirement); self }
+
+    /**
+      * Tests an expression, throwing an `IllegalArgumentException` if false.
+      * This method is similar to `assert`, but blames the caller of the method
+      * for violating the condition.
+      *
+      * @param requirement  the expression to test
+      * @param message      a String to include in the failure message
+      */
+    def requiring(requirement: Boolean, message: ⇒ Any): A = { require(requirement, message); self }
+
+    /**
+      * Tests an expression, throwing an `IllegalArgumentException` if false.
+      * This method is similar to `assert`, but blames the caller of the method
+      * for violating the condition.
+      *
+      * @param requirement  the expression to test
+      */
+    def requiring(requirement: A ⇒ Boolean): A = { require(requirement(self)); self }
+
+    /**
+      * Tests an expression, throwing an `IllegalArgumentException` if false.
+      * This method is similar to `assert`, but blames the caller of the method
+      * for violating the condition.
+      *
+      * @param requirement  the expression to test
+      * @param message      a String to include in the failure message
+      */
+    def requiring(requirement: A ⇒ Boolean, message: ⇒ Any): A = { require(requirement(self), message); self }
+  }
+
+  /** @group implicit-classes-any */
   implicit final class StringFormat[A](private val self: A) extends AnyVal {
     /** Returns string formatted according to given `format` string.
      *  Format strings are as for `String.format`
