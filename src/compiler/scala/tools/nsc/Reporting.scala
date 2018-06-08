@@ -97,6 +97,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       val explain = (
         if (reportedFeature contains featureTrait) "" else
         s"""|
+            |----
             |This can be achieved by adding the import clause 'import $fqname'
             |or by setting the compiler option -language:$featureName.
             |See the Scaladoc for value $fqname for a discussion

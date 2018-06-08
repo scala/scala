@@ -7,8 +7,9 @@ package scala.tools.partest
 
 import scala.tools.nsc._
 import settings.ScalaVersion
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
-import reporters.{Reporter, ConsoleReporter}
+import reporters.ConsoleReporter
 import scala.tools.cmd.CommandLineParser
 
 /** A class for testing code which is embedded as a string.

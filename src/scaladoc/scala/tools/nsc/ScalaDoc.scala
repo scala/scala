@@ -44,7 +44,7 @@ class ScalaDoc {
           if (docSettings.debug.value) ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }
-      finally reporter.printSummary()
+      finally reporter.finish()
 
     !reporter.reallyHasErrors
   }
@@ -57,6 +57,8 @@ class ScalaDoc {
  */
 class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
   import scala.collection.mutable.LinkedHashMap
+
+  object Direct extends Severity(3)("DIRECT")
 
   // need to do sometimes lie so that the Global instance doesn't
   // trash all the symbols just because there was an error
@@ -72,9 +74,11 @@ class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
 
   def printDelayedMessages(): Unit = delayedMessages.values.foreach(_.apply())
 
-  override def printSummary(): Unit = {
+  def printMessage(msg: String): Unit = display(NoPosition, msg, Direct)
+
+  override def finish(): Unit = {
     printDelayedMessages()
-    super.printSummary()
+    super.finish()
   }
 }
 

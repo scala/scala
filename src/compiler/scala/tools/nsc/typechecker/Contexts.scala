@@ -9,7 +9,7 @@ package typechecker
 import scala.collection.{ immutable, mutable }
 import scala.annotation.tailrec
 import scala.reflect.internal.util.shortClassOfInstance
-import scala.tools.nsc.reporters.Reporter
+import scala.reflect.internal.Reporter
 
 /**
  *  @author  Martin Odersky

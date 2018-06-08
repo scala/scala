@@ -159,7 +159,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
           throw ex
       }
     }
-    reporter.printSummary()
+    reporter.finish()
     if (isMemoryFullEnough()) {
       info("Nulling out compiler due to memory utilization.")
       clearCompiler()
