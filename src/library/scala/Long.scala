@@ -42,7 +42,7 @@ final abstract class Long private extends AnyVal {
   /** Returns the negation of this value. */
   def unary_- : Long
 
-  def +(x: String): String
+  @deprecated("Adding a number and a String is deprecated. Convert the number to a String with `toString` first to call +", "2.13.0") def +(x: String): String
 
   /**
   * Returns this value bit-shifted left by the specified number of bits,

@@ -54,7 +54,7 @@ object Test {
     )
     (haystacks zip needles) foreach {
       case (hay, nee) =>
-        println(hay.indexOfSlice(nee,2) + " " + hay.lastIndexOfSlice(nee,13))
+        println(s"${hay.indexOfSlice(nee,2)} ${hay.lastIndexOfSlice(nee,13)}")
     }
   }
 }

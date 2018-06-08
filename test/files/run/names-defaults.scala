@@ -119,7 +119,7 @@ object Test extends App {
 
 
   // vararg
-  def test5(a: Int, b: Int)(c: Int, d: String*) = a +", "+ d.toList
+  def test5(a: Int, b: Int)(c: Int, d: String*) = s"$a, ${d.toList}"
   println(test5(b = 1, a = 2)(3, "4", "4", "4"))
   println(test5(b = 1, a = 2)(c = 29))
 
@@ -406,13 +406,13 @@ object Test extends App {
   println(f8177(a = 1, 1))
 
   // DEFINITIONS
-  def test1(a: Int, b: String) = println(a +": "+ b)
-  def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
+  def test1(a: Int, b: String) = println(s"$a: $b")
+  def test2(u: Int, v: Int)(k: String, l: Int) = println(l.toString +": "+ k +", "+ (u + v))
 
-  def test3[T1, T2](a: Int, b: T1)(c: String, d: T2) = println(a +": "+ c +", "+ b +", "+ d)
+  def test3[T1, T2](a: Int, b: T1)(c: String, d: T2) = println(a.toString +": "+ c +", "+ b +", "+ d)
 
   def test4(a: Int) = {
-    def inner(b: Int = a, c: String) = println(b +": "+ c)
+    def inner(b: Int = a, c: String) = println(b.toString +": "+ c)
     inner(c = "/")
   }
   def test5(argName: Unit) = println("test5")
@@ -425,13 +425,13 @@ object Test extends App {
 
 
 class Base {
-  def test1[T1, T2](a: Int = 100, b: T1)(c: T2, d: String = a +": "+ b)(e: T2 = c, f: Int) =
-    println(a +": "+ d +", "+ b +", "+ c +", "+ e +", "+ f)
+  def test1[T1, T2](a: Int = 100, b: T1)(c: T2, d: String = a.toString +": "+ b)(e: T2 = c, f: Int) =
+    println(a.toString +": "+ d +", "+ b +", "+ c +", "+ e +", "+ f)
 }
 
 class Sub1 extends Base {
   override def test1[U1, U2](b: Int, a: U1)(m: U2, r: String = "overridden")(o: U2, f: Int = 555) =
-    println(b +": "+ r +", "+ a +", "+ m +", "+ o +", "+ f)
+    println(b.toString +": "+ r +", "+ a +", "+ m +", "+ o +", "+ f)
 }
 
 

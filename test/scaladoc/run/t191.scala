@@ -85,6 +85,6 @@ object Test extends ScaladocModelTest {
     }
 
     assert(countLinks(test.comment.get, isExpectedExternalLink) == 8,
-           countLinks(test.comment.get, isExpectedExternalLink) + " == 8")
+            "${countLinks(test.comment.get, isExpectedExternalLink)} == 8")
   }
 }

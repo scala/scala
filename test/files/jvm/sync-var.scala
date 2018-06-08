@@ -44,7 +44,7 @@ summers foreach { _.join() }
 
 val got = sum.get
 val expected = (n + 1) * n / 2
-println(got + " " + expected + " " + (got == expected))
+println(got.toString + " " + expected + " " + (got == expected))
 
 producers foreach { _.join() }
 

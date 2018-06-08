@@ -15,7 +15,7 @@ object M0 {
       r.denom * s.denom);
 
   def makeString(r: Rational) =
-    r.numer + "/" + r.denom;
+    s"${r.numer}/${r.denom}"
 
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
@@ -40,7 +40,7 @@ object M1 {
       new Rational(
         numer * r.numer,
         denom * r.denom);
-    override def toString() = numer + "/" + denom;
+    override def toString() = s"$numer/$denom"
   }
 
   val x = new Rational(1, 3);
@@ -77,7 +77,7 @@ object M2 {
       new Rational(
         numer * r.denom,
         denom * r.numer);
-    override def toString() = numer + "/" + denom;
+    override def toString() = s"$numer/$denom"
   }
 
   val x = new Rational(1, 3);
@@ -100,7 +100,7 @@ object M3 {
     def less(that: Rational) =
       this.numer * that.denom < that.numer * this.denom;
     def max(that: Rational) = if (this.less(that)) that else this;
-    override def toString() = numer + "/" + denom;
+    override def toString() = s"$numer/$denom"
   }
 
   val x = new Rational(66, 42);
@@ -136,7 +136,7 @@ object M4 {
       new Rational(
         numer * r.denom,
         denom * r.numer);
-    override def toString() = numer + "/" + denom;
+    override def toString() = s"$numer/$denom"
   }
 
   val x = new Rational(1, 2);
