@@ -54,6 +54,10 @@ trait Map[K, +V]
   def - (key: K): Map[K, V]
   @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
   def - (key1: K, key2: K, keys: K*): Map[K, V]
+
+  override protected[this] def stringPrefix: String = "Map"
+
+  override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
 }
 
 /** Base Map implementation type
@@ -277,8 +281,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
-
-  override def toString(): String = super[IterableOps].toString()
 
   override def mkString(start: String, sep: String, end: String): String =
     iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)

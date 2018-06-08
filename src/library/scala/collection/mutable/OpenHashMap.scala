@@ -278,5 +278,5 @@ class OpenHashMap[Key, Value](initialSize : Int)
     this
   }
 
-  override def className = "OpenHashMap"
+  override protected[this] def stringPrefix = "OpenHashMap"
 }

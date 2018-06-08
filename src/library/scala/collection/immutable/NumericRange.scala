@@ -271,6 +271,8 @@ sealed class NumericRange[T](
   }
 
   override protected[this] def writeReplace(): AnyRef = this
+
+  override protected[this] def className = "NumericRange"
 }
 
 /** A companion object for numeric ranges.

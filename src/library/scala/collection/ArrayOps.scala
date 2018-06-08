@@ -39,7 +39,7 @@ object ArrayOps {
   private class ArrayView[A](xs: Array[A]) extends IndexedSeqView[A] {
     def length = xs.length
     def apply(n: Int) = xs(n)
-    override def className = "ArrayView"
+    override protected[this] def className = "ArrayView"
   }
 
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */

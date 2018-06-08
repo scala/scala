@@ -30,6 +30,10 @@ trait Set[A]
   override def iterableFactory: IterableFactory[IterableCC] = Set
 
   def empty: IterableCC[A] = iterableFactory.empty
+
+  override protected[this] def stringPrefix: String = "Set"
+
+  override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
 }
 
 /** Base trait for set operations
@@ -127,8 +131,6 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
       result
     }
   }
-
-  override def toString(): String = super[IterableOps].toString() // Because `Function1` overrides `toString` too
 
   /** Computes the intersection between this set and another set.
     *

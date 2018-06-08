@@ -225,6 +225,8 @@ sealed abstract class LazyList[+A] extends AbstractSeq[A] with LinearSeq[A] with
 
   override protected[this] def writeReplace(): AnyRef =
     if(headDefined && tailDefined) new LazyListOps.SerializationProxy[A, LazyList](this) else this
+
+  override protected[this] def className = "LazyList"
 }
 
 sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with LazyListOps[X, CC, CC[X]], +C <: CC[A] with LazyListOps[A, CC, C]]
@@ -254,8 +256,6 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     */
   def lazyAppendedAll[B >: A](suffix: => collection.IterableOnce[B]): CC[B] =
     if (isEmpty) iterableFactory.from(suffix) else cons[B](head, tail.lazyAppendedAll(suffix))
-
-  override def className = "LazyList"
 
   override def equals(that: Any): Boolean =
     if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
@@ -453,6 +453,8 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   // override here to ensure disambiguation between the overloaded methods works correctly
   override def mkString(sep: String): String = super.mkString(sep)
   override def mkString: String = super.mkString
+
+  protected[this] def className: String
 
   /**
     * @return a string representation of this collection. Undefined elements are
@@ -712,7 +714,7 @@ object LazyList extends LazyListFactory[LazyList] {
 sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with LazyListOps[A, Stream, Stream[A]] {
   override def iterableFactory: LazyListFactory[Stream] = Stream
 
-  override def className: String = "Stream"
+  override protected[this] def className: String = "Stream"
 
   protected def cons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 

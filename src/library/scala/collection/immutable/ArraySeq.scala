@@ -111,7 +111,7 @@ sealed abstract class ArraySeq[+A]
 
   override def reverse: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).reverse).asInstanceOf[ArraySeq[A]]
 
-  override def className = "ArraySeq"
+  override protected[this] def className = "ArraySeq"
 
   override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
 

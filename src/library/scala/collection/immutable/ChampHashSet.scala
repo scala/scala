@@ -83,6 +83,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
       case _ => super.equals(that)
     }
 
+  override protected[this] def className = "ChampHashSet"
 }
 
 private[immutable] final object SetNode {

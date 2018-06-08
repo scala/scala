@@ -1409,5 +1409,5 @@ case class StringView(s: String) extends AbstractIndexedSeqView[Char] {
   def length = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
-  override def className = "StringView"
+  override protected[this] def className = "StringView"
 }

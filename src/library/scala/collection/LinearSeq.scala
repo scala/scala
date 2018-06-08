@@ -8,7 +8,9 @@ import scala.language.higherKinds
   *  `tail` operations.
   *  Known subclasses: List, LazyList
   */
-trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
+trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]] {
+  override protected[this] def stringPrefix: String = "LinearSeq"
+}
 
 @SerialVersionUID(3L)
 object LinearSeq extends SeqFactory.Delegate[LinearSeq](immutable.List)

@@ -30,7 +30,7 @@ sealed abstract class HashSet[A]
 
   import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
 
-  override def className: String = "HashSet"
+  override protected[this] def className: String = "HashSet"
 
   override def iterableFactory = HashSet
 

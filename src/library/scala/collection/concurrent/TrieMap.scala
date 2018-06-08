@@ -971,7 +971,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     if (nonReadOnly) readOnlySnapshot().size
     else cachedSize()
 
-  override def className = "TrieMap"
+  override protected[this] def className = "TrieMap"
 
 }
 

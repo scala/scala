@@ -222,7 +222,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 
   override def clone(): UnrolledBuffer[T] = new UnrolledBuffer[T] ++= this
 
-  override def className = "UnrolledBuffer"
+  override protected[this] def className = "UnrolledBuffer"
 }
 
 

@@ -46,6 +46,43 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
     * to be preserved or a more efficient implementation is available. Override to return `this` in order to
     * use self-serialization instead of a proxy. */
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(iterableFactory.iterableFactory, this)
+
+  /** Defines the prefix of this object's `toString` representation.
+    *
+    * It is recommended to return the name of the concrete collection type, but
+    * not implementation subclasses. For example, for `ListMap` this method should
+    * return `"ListMap"`, not `"Map"` (the supertype) or `"Node"` (an implementation
+    * subclass).
+    *
+    * The default implementation returns "Iterable". It is overridden for the basic
+    * collection kinds "Seq", "IndexedSeq", "LinearSeq", "Buffer", "Set", "Map",
+    * "SortedSet", "SortedMap" and "View".
+    *
+    *  @return  a string representation which starts the result of `toString`
+    *           applied to this $coll. By default the string prefix is the
+    *           simple name of the collection class $coll.
+    */
+  protected[this] def className: String = stringPrefix
+
+  /** Forwarder to `className` for use in `scala.runtime.ScalaRunTime`.
+    *
+    * This allows the proper visibility for `className` to be
+    * published, but provides the exclusive access needed by
+    * `scala.runtime.ScalaRunTime.stringOf` (and a few tests in
+    * the test suite).
+    */
+  private[scala] final def collectionClassName: String = className
+
+  @deprecatedOverriding("Override className instead", "2.13.0")
+  protected[this] def stringPrefix: String = "Iterable"
+
+  /** Converts this $coll to a string.
+    *
+    *  @return   a string representation of this collection. By default this
+    *            string consists of the `className` of this $coll, followed
+    *            by all elements separated by commas and enclosed in parentheses.
+    */
+  override def toString = mkString(className + "(", ", ", ")")
 }
 
 /** Base trait for Iterable operations
@@ -186,105 +223,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /** A view over a slice of the elements of this collection. */
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
   @`inline` final def view(from: Int, until: Int): View[A] = view.slice(from, until)
-
-  /** Defines the prefix of this object's `toString` representation.
-    *
-    * It is recommended to return the name of the concrete collection type, but
-    * not implementation subclasses. For example, for `ListMap` this method should
-    * return `"ListMap"`, not `"Map"` (the supertype) or `"Node"` (an implementation
-    * subclass).
-    *
-    * It is recommended to overwrite this method even if the default implementation
-    * returns the correct name, to avoid the implementation using reflection.
-    *
-    *  @return  a string representation which starts the result of `toString`
-    *           applied to this $coll. By default the string prefix is the
-    *           simple name of the collection class $coll.
-    */
-  @`inline` protected[this] def className: String = stringPrefix
-
-  /** Forwarder to `className` for use in `scala.runtime.ScalaRunTime`.
-    * 
-    * This allows the proper visibility for `className` to be
-    * published, but provides the exclusive access needed by
-    * `scala.runtime.ScalaRunTime.stringOf` (and a few tests in
-    * the test suite).
-    */
-  private[scala] final def collectionClassName: String = className
-
-  @deprecatedOverriding("Override className instead", "2.13.0")
-  protected[this] def stringPrefix: String = {
-    /* This method is written in a style that avoids calling `String.split()`
-     * as well as methods of java.lang.Character that require the Unicode
-     * database information. This is mostly important for Scala.js, so that
-     * using the collection library does automatically bring java.util.regex.*
-     * and the Unicode database in the generated code.
-     *
-     * This algorithm has the additional benefit that it won't allocate
-     * anything except the result String in the common case, where the class
-     * is not an inner class (i.e., when the result contains no '.').
-     */
-    val fqn = toIterable.getClass.getName
-    var pos: Int = fqn.length - 1
-
-    // Skip trailing $'s
-    while (pos != -1 && fqn.charAt(pos) == '$') {
-      pos -= 1
-    }
-    if (pos == -1 || fqn.charAt(pos) == '.') {
-      return ""
-    }
-
-    var result: String = ""
-    while (true) {
-      // Invariant: if we enter the loop, there is a non-empty part
-
-      // Look for the beginning of the part, remembering where was the last non-digit
-      val partEnd = pos + 1
-      while (pos != -1 && fqn.charAt(pos) <= '9' && fqn.charAt(pos) >= '0') {
-        pos -= 1
-      }
-      val lastNonDigit = pos
-      while (pos != -1 && fqn.charAt(pos) != '$' && fqn.charAt(pos) != '.') {
-        pos -= 1
-      }
-      val partStart = pos + 1
-
-      // A non-last part which contains only digits marks a method-local part -> drop the prefix
-      if (pos == lastNonDigit && partEnd != fqn.length) {
-        return result
-      }
-
-      // Skip to the next part, and determine whether we are the end
-      while (pos != -1 && fqn.charAt(pos) == '$') {
-        pos -= 1
-      }
-      val atEnd = pos == -1 || fqn.charAt(pos) == '.'
-
-      // Handle the actual content of the part (we ignore parts that are likely synthetic)
-      def isPartLikelySynthetic = {
-        val firstChar = fqn.charAt(partStart)
-        (firstChar > 'Z' && firstChar < 0x7f) || (firstChar < 'A')
-      }
-      if (atEnd || !isPartLikelySynthetic) {
-        val part = fqn.substring(partStart, partEnd)
-        result = if (result.isEmpty) part else part + '.' + result
-        if (atEnd)
-          return result
-      }
-    }
-
-    // dead code
-    result
-  }
-
-  /** Converts this $coll to a string.
-    *
-    *  @return   a string representation of this collection. By default this
-    *            string consists of the `className` of this $coll, followed
-    *            by all elements separated by commas and enclosed in parentheses.
-    */
-  override def toString = mkString(className + "(", ", ", ")")
 
   //TODO Can there be a useful lazy implementation of this method? Otherwise mark it as being always strict
   /** Transposes this $coll of iterable collections into

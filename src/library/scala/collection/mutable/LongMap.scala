@@ -527,6 +527,8 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[V](LongMap), this)
+
+  override protected[this] def className = "LongMap"
 }
 
 object LongMap {

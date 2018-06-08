@@ -24,8 +24,6 @@ sealed abstract class BitSet
     with collection.BitSetOps[BitSet]
     with StrictOptimizedIterableOps[Int, Set, BitSet] {
 
-  override def className: String = "BitSet"
-
   def bitSetFactory = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)

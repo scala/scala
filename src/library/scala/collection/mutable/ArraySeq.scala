@@ -63,7 +63,7 @@ abstract class ArraySeq[T]
       super.toArray[U]
   }
 
-  override def className = "ArraySeq"
+  override protected[this] def stringPrefix = "ArraySeq"
 
   /** Clones this object, including the underlying Array. */
   override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]

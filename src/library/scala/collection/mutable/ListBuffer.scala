@@ -277,7 +277,7 @@ class ListBuffer[A]
     this
   }
 
-  override def className = "ListBuffer"
+  override protected[this] def stringPrefix = "ListBuffer"
 
 }
 

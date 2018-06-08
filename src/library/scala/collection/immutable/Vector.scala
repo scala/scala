@@ -560,6 +560,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   override def toVector: Vector[A] = this
+
+  override protected[this] def className = "Vector"
 }
 
 class VectorIterator[+A](_startIndex: Int, endIndex: Int)

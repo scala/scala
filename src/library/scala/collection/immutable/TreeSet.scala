@@ -125,6 +125,8 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
   def excl(elem: A): TreeSet[A] =
     if (!RB.contains(tree, elem)) this
     else newSet(RB.delete(tree, elem))
+
+  override protected[this] def className = "TreeSet"
 }
 
 /**

@@ -1,5 +1,5 @@
-Map.Map2(a -> Some(1), b -> None)
-Map.Map1(a -> 1)
+Map(a -> Some(1), b -> None)
+Map(a -> 1)
 a
 undefined
 a
