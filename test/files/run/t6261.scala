@@ -1,6 +1,6 @@
-import scala.collection.immutable._
-
 object Test extends App {
+
+  import scala.collection.immutable._
 
   def test1(): Unit = {
     // test that a HashTrieMap with one leaf element is not created!

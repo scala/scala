@@ -11,7 +11,7 @@ package sys
 package process
 
 import processInternal._
-import ProcessBuilder._
+import ProcessBuilder.{Sink, Source}
 
 /** Represents a sequence of one or more external processes that can be
   * executed. A `ProcessBuilder` can be a single external process, or a
