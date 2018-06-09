@@ -1116,12 +1116,6 @@ trait Contexts { self: Analyzer =>
       def mt1 = t1 memberType imp1Symbol
       def mt2 = t2 memberType imp2Symbol
 
-      def characterize = List(
-        s"types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}",
-        s"member type 1: $mt1",
-        s"member type 2: $mt2"
-      ).mkString("\n  ")
-
       if (!ambiguous || !imp2Symbol.exists) Some(imp1)
       else if (!imp1Symbol.exists) Some(imp2)
       else (
@@ -1141,7 +1135,10 @@ trait Contexts { self: Analyzer =>
           Some(imp1)
         }
         else {
-          log(s"Import is genuinely ambiguous:\n  " + characterize)
+          log(s"""Import is genuinely ambiguous:
+                 |  types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}
+                 |  member type 1: $mt1
+                 |  member type 2: $mt2""".stripMargin)
           None
         }
       )
@@ -1212,11 +1209,10 @@ trait Contexts { self: Analyzer =>
           case _                                => LookupSucceeded(qual, sym)
         }
       )
-      def finishDefSym(sym: Symbol, pre0: Type): NameLookup =
-        if (requiresQualifier(sym))
-          finish(gen.mkAttributedQualifier(pre0), sym)
-        else
-          finish(EmptyTree, sym)
+      def finishDefSym(sym: Symbol, pre0: Type): NameLookup = {
+        val qual = if (requiresQualifier(sym)) gen.mkAttributedQualifier(pre0) else EmptyTree
+        finish(qual, sym)
+      }
 
       def lookupInPrefix(name: Name)    = {
         val sym = pre.member(name).filter(qualifies)
