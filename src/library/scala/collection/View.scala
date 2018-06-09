@@ -160,7 +160,7 @@ object View extends IterableFactory[View] {
     override def isEmpty: Boolean = underlying.isEmpty
   }
 
-  /** A view that partitions an underlying collection into two views */
+  /** A class that partitions an underlying collection into two views */
   @SerialVersionUID(3L)
   class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) extends Serializable {
 
@@ -181,6 +181,71 @@ object View extends IterableFactory[View] {
     def iterator = partition.underlying.iterator.filter(x => partition.p(x) == cond)
     override def knownSize: Int = if (partition.underlying.knownSize == 0) 0 else super.knownSize
     override def isEmpty: Boolean = iterator.isEmpty
+  }
+
+  /** A class that splits an underlying collection into two views */
+  @SerialVersionUID(3L)
+  class PartitionWith[A, A1, A2](val underlying: SomeIterableOps[A], val f: A => Either[A1, A2]) extends Serializable {
+
+    /** The view consisting of all elements of the underlying collection
+      *  that map to `Left`.
+      */
+    val left: View[A1] = new LeftPartitionedWith(this, f)
+
+
+    /** The view consisting of all elements of the underlying collection
+      *  that map to `Right`.
+      */
+    val right: View[A2] = new RightPartitionedWith(this, f)
+
+  }
+
+  @SerialVersionUID(3L)
+  class LeftPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A1] {
+    def iterator = new AbstractIterator[A1] {
+      private val self = partitionWith.underlying.iterator
+      private var hd: A1 = _
+      private var hdDefined: Boolean = false
+      def hasNext = hdDefined || {
+        def findNext(): Boolean =
+          if (self.hasNext) {
+            f(self.next()) match {
+              case Left(a1) => hd = a1; hdDefined = true; true
+              case Right(_) => findNext()
+            }
+          } else false
+        findNext()
+      }
+      def next() =
+        if (hasNext) {
+          hdDefined = false
+          hd
+        } else Iterator.empty.next()
+    }
+  }
+
+  @SerialVersionUID(3L)
+  class RightPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A2] {
+      def iterator = new AbstractIterator[A2] {
+        private val self = partitionWith.underlying.iterator
+        private var hd: A2 = _
+        private var hdDefined: Boolean = false
+        def hasNext = hdDefined || {
+          def findNext(): Boolean =
+            if (self.hasNext) {
+              f(self.next()) match {
+                case Left(_) => findNext()
+                case Right(a2) => hd = a2; hdDefined = true; true
+              }
+            } else false
+          findNext()
+        }
+        def next() =
+          if (hasNext) {
+            hdDefined = false
+            hd
+          } else Iterator.empty.next()
+      }
   }
 
   /** A view that drops leading elements of the underlying collection. */

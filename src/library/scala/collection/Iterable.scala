@@ -648,6 +648,31 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def collect[B](pf: PartialFunction[A, B]): CC[B] =
     fromIterable(new View.Collect(this, pf))
 
+  /** A pair of ${coll}s, first, consisting of the values that are produced by `f` applied to this $coll elements contained in [[scala.util.Left]] and, second,
+    *  all the values contained in [[scala.util.Right]].
+    *
+    *  Example:
+    *  {{{
+    *    val xs = $Coll(1, "one", 2, "two", 3, "three") partitionWith {
+    *     case i: Int => Left(i)
+    *     case s: String => Right(s)
+    *    }
+    *    // xs == ($Coll(1, 2, 3),
+    *    //        $Coll(one, two, three))
+    *  }}}
+    *
+    *  @tparam A1         element type of the first resulting collection
+    *  @tparam A2         element type of the second resulting collection
+    *  @param f          split function that map the element of the $coll into an [[scala.util.Either]][A1, A2]
+    *
+    *  @return           a pair of ${coll}s, first, consisting of the values that are produced by `f` applied to this $coll
+    *               elements contained in [[scala.util.Left]] and, second, all the values contained in [[scala.util.Right]].
+    */
+  def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
+    val mp = new View.PartitionWith(this, f)
+    (fromIterable(mp.left), fromIterable(mp.right))
+  }
+
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.

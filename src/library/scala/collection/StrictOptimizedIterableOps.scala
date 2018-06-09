@@ -224,4 +224,17 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
+  // Optimized, push-based version of `partitionWith`
+  override def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
+    val l = iterableFactory.newBuilder[A1]
+    val r = iterableFactory.newBuilder[A2]
+    foreach { x =>
+      f(x) match {
+        case Left(x1) => l += x1
+        case Right(x2) => r += x2
+      }
+    }
+    (l.result(), r.result())
+  }
+
 }
