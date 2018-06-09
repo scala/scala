@@ -66,6 +66,15 @@ stringElement    ::=  charNoDoubleQuoteOrNewline
                  |  charEscapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
+processedStringLiteral 
+                 ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+                 |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+escape           ::= ‘\$\$’ 
+                 | ‘\$’ letter { letter | digit } 
+                 | ‘\$’ BlockExpr
+alphaid          ::= upper idrest
+                 |  varid
+
 symbolLiteral    ::=  ‘'’ plainid
 
 comment          ::=  ‘/*’ “any sequence of characters; nested comments are allowed” ‘*/’
@@ -149,6 +158,7 @@ grammar:
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
   SimpleExpr1       ::=  Literal
+                      |  processedStringLiteral
                       |  Path
                       |  ‘_’
                       |  ‘(’ [Exprs] ‘)’
@@ -189,6 +199,7 @@ grammar:
   SimplePattern     ::=  ‘_’
                       |  varid
                       |  Literal
+                      |  processedStringLiteral
                       |  StableId
                       |  StableId ‘(’ [Patterns] ‘)’
                       |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’

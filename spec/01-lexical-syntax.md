@@ -498,6 +498,65 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 > [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 > `StringLike`, the method is applicable to all strings.
 
+#### Processed Strings
+
+```ebnf
+processedStringLiteral ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+                         |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+escape                 ::= ‘\$\$’ 
+                         | ‘\$’ letter { letter | digit } 
+                         | ‘\$’ BlockExpr
+alphaid                ::= upper idrest
+                         |  varid
+
+```
+
+Processed strings consist of an identifier starting with a letter immediately 
+followed by a string literal. There may be no whitespace characters or comments 
+between the leading identifier and the opening quote ‘”’ of the string. 
+The string literal in a processed string can be standard (single quote) 
+or multi-line (triple quote).
+
+Inside a processed literal none of the usual escape characters are interpreted 
+(except for unicode escapes) no matter whether the string literal is normal 
+(enclosed in single quotes) or multi-line (enclosed in triple quotes). 
+Instead, there is are two new forms of dollar sign escape. 
+The most general form encloses an expression in \${ and }, i.e. \${expr}. 
+The expression enclosed in the braces that follow the leading $ character is of 
+syntactical category BlockExpr. Hence, it can contain multiple statements, 
+and newlines are significant. 
+
+The simpler form consists of a ‘\$’-sign followed by an identifier starting with 
+a letter and followed only by letters, digits, and underscore characters, 
+e.g \$id. The simpler form is expanded by putting braces around the identifier, 
+e.g \$id is equivalent to \${id}. In the following, unless we explicitly state otherwise, 
+we assume that this expansion has already been performed.
+
+A processed string literal of either of the forms
+```
+id"text0\${ expr1 }text1 … \${ exprn }textn"
+id"""text0\${ expr1 }text1 … \${ exprn }textn"""
+```
+where each texti is a possibly empty string not containing dollar sign escapes, is equivalent to:
+```
+StringContext("""text0""", …, """textn""").id(expr1, …, exprn)
+```
+
+One could write an extension
+````scala
+implicit class StringInterpolation(s: StringContext) = {
+    object id {
+       def apply(exprs: Any*) = ???
+    }
+}
+```
+or
+```scala
+implicit class StringInterpolation(val sc: StringContext) {
+  def id(args: Any*) = ???
+}
+```
+
 ### Escape Sequences
 
 The following escape sequences are recognized in character and string literals.
