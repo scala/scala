@@ -75,7 +75,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 
   @deprecated("Use Map.from(it) instead of it.toMap on IterableOnce", "2.13.0")
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
-    immutable.Map.from(it.asInstanceOf[IterableOnce[(K, V)]])
+    immutable.Map.from(ev.substituteCo(it))
 
   @deprecated("toIterator has been renamed to iterator", "2.13.0")
   @`inline` def toIterator: Iterator[A] = it.iterator
@@ -124,13 +124,13 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 
   @deprecated("Use .iterator.map instead of .map on IterableOnce or consider requiring an Iterable", "2.13.0")
   def map[B](f: A => B): IterableOnce[B] = it match {
-    case it: Iterable[A] => it.asInstanceOf[Iterable[A]].map(f)
+    case it: Iterable[A] => it.map(f)
     case _ => it.iterator.map(f)
   }
 
   @deprecated("Use .iterator.flatMap instead of .flatMap on IterableOnce or consider requiring an Iterable", "2.13.0")
   def flatMap[B](f: A => IterableOnce[B]): IterableOnce[B] = it match {
-    case it: Iterable[A] => it.asInstanceOf[Iterable[A]].flatMap(f)
+    case it: Iterable[A] => it.flatMap(f)
     case _ => it.iterator.flatMap(f)
   }
 
@@ -1052,7 +1052,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def toVector: immutable.Vector[A] = immutable.Vector.from(this)
 
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
-    immutable.Map.from(this.asInstanceOf[IterableOnce[(K, V)]])
+    immutable.Map.from(ev.substituteCo(this))
 
   def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(this)
 
