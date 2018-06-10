@@ -878,7 +878,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       assert(moduleClass.companionClass == NoSymbol, moduleClass)
 
       val bType = mirrorClassClassBType(moduleClass)
-      val mirrorClass = new asm.tree.ClassNode
+      val mirrorClass = new ClassNode1
       mirrorClass.visit(
         backendUtils.classfileVersion.get,
         bType.info.get.flags,

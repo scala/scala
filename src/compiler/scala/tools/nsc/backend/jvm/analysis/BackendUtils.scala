@@ -587,18 +587,18 @@ object BackendUtils {
   def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
 
   private val LABEL_REACHABLE_STATUS = 0x1000000
-  private def isLabelFlagSet(l: Label, f: Int): Boolean = (l.flags & f) != 0
+  private def isLabelFlagSet(l: LabelNode1, f: Int): Boolean = (l.flags & f) != 0
 
-  private def setLabelFlag(l: Label, f: Int): Unit = {
+  private def setLabelFlag(l: LabelNode1, f: Int): Unit = {
     l.flags |= f
   }
 
-  private def clearLabelFlag(l: Label, f: Int): Unit = {
+  private def clearLabelFlag(l: LabelNode1, f: Int): Unit = {
     l.flags &= ~f
   }
-  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.getLabel, LABEL_REACHABLE_STATUS)
-  def setLabelReachable(label: LabelNode) = setLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
-  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
+  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]

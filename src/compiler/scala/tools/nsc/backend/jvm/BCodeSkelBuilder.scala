@@ -105,7 +105,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       thisBType         = classBTypeFromSymbol(claszSymbol)
       initModuleInClinit = isCZStaticModule && canAssignModuleInClinit(cd, claszSymbol)
 
-      cnode = new asm.tree.ClassNode()
+      cnode = new ClassNode1()
 
       initJClass(cnode)
 
