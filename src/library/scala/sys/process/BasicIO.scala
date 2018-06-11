@@ -82,7 +82,7 @@ object BasicIO {
   def apply(withIn: Boolean, output: String => Unit, log: Option[ProcessLogger]) =
     new ProcessIO(input(withIn), processFully(output), getErr(log))
 
-  /** Creates a `ProcessIO` that appends its output to a `StringBuffer`. It can
+  /** Creates a `ProcessIO` that appends its output to an `Appendable`. It can
     * attach the process input to stdin, and it will either send the error
     * stream to stderr, or to a `ProcessLogger`.
     *
@@ -96,13 +96,13 @@ object BasicIO {
     * }}}
     *
     * @param withIn True if the process input should be attached to stdin.
-    * @param buffer A `StringBuffer` which will receive the process normal
+    * @param buffer An `Appendable` which will receive the process normal
     *               output.
     * @param log    An optional `ProcessLogger` to which the output should be
     *               sent. If `None`, output will be sent to stderr.
     * @return A `ProcessIO` with the characteristics above.
     */
-  def apply(withIn: Boolean, buffer: StringBuffer, log: Option[ProcessLogger]) =
+  def apply(withIn: Boolean, buffer: Appendable, log: Option[ProcessLogger]) =
     new ProcessIO(input(withIn), processFully(buffer), getErr(log))
 
   /** Creates a `ProcessIO` from a `ProcessLogger` . It can attach the
