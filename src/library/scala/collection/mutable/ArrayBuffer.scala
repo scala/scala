@@ -156,7 +156,7 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
       throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
-  override def className = "ArrayBuffer"
+  override protected[this] def stringPrefix = "ArrayBuffer"
 
   override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
 
@@ -196,10 +196,10 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 
-class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
+final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
   @throws[ArrayIndexOutOfBoundsException]
   def apply(n: Int) = array(n).asInstanceOf[A]
-  override def className = "ArrayBufferView"
+  override protected[this] def className = "ArrayBufferView"
 }
 
 /** An object used internally by collections backed by an extensible Array[AnyRef] */

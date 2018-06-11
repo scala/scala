@@ -118,6 +118,8 @@ class LinkedHashSet[A]
     table = newHashTable
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[A], null))
   }
+
+  override protected[this] def stringPrefix = "LinkedHashSet"
 }
 
 /** $factoryInfo

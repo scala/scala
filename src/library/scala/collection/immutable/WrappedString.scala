@@ -37,6 +37,8 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   override def length = self.length
   override def toString = self
   override def view: StringView = new StringView(self)
+
+  override protected[this] def className = "WrappedString"
 }
 
 /** A companion object for wrapped strings.

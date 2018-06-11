@@ -102,6 +102,8 @@ final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V],
       case _ => super.equals(that)
     }
 
+
+  override protected[this] def className = "ChampHashMap"
 }
 
 private[immutable] object MapNode {

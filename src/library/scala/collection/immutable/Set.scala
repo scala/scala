@@ -117,7 +117,6 @@ object Set extends IterableFactory[Set] {
       else None
     override def head: A = elem1
     override def tail: Set[A] = Set.empty
-    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 2 */
@@ -149,7 +148,6 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set1(elem2)
-    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 3 */
@@ -184,7 +182,6 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set2(elem2, elem3)
-    override def className: String = "Set"
   }
 
   /** An optimized representation for immutable sets of size 4 */
@@ -221,7 +218,6 @@ object Set extends IterableFactory[Set] {
     }
     override def head: A = elem1
     override def tail: Set[A] = new Set3(elem2, elem3, elem4)
-    override def className: String = "Set"
   }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).

@@ -23,6 +23,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override protected def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
   override protected def newSpecificBuilder: Builder[Int, BitSetC] = bitSetFactory.newBuilder
   override def empty: BitSetC = bitSetFactory.empty
+  override protected[this] def stringPrefix = "BitSet"
 }
 
 @SerialVersionUID(3L)

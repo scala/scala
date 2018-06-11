@@ -82,7 +82,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def maxBefore(key: K): Option[(K, V)] = RB.maxBefore(tree, key)
 
-  override def className: String = "TreeMap"
+  override protected[this] def className: String = "TreeMap"
 
 
   /**

@@ -122,6 +122,8 @@ trait Buffer[A]
     while (length < len) +=(elem)
     this
   }
+
+  override protected[this] def stringPrefix = "Buffer"
 }
 
 trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {

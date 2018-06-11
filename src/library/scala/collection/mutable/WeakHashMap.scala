@@ -33,6 +33,7 @@ class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
     with JMapWrapperLike[A, B, WeakHashMap, WeakHashMap[A, B]] {
   override def empty = new WeakHashMap[A, B]
   override def mapFactory: MapFactory[WeakHashMap] = WeakHashMap
+  override protected[this] def stringPrefix = "WeakHashMap"
 }
 
 /** $factoryInfo

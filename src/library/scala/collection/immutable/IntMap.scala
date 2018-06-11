@@ -258,7 +258,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil =>
   }
 
-  override def className = "IntMap"
+  override protected[this] def className = "IntMap"
 
   override def isEmpty = this == IntMap.Nil
 

@@ -90,7 +90,7 @@ sealed abstract class HashMap[K, +V]
     nullToEmpty(filter0(pred, negate = true, 0, buffer, 0))
   }
 
-  override def className: String = "HashMap"
+  override protected[this] def className: String = "HashMap"
 
 }
 

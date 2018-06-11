@@ -250,7 +250,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override def className = "LongMap"
+  override protected[this] def className = "LongMap"
 
   override def isEmpty = this == LongMap.Nil
 

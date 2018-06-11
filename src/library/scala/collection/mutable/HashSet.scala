@@ -71,6 +71,8 @@ final class HashSet[A]
     table = new FlatHashTable[A]
     table.init(in, x => ())
   }
+
+  override protected[this] def stringPrefix = "HashSet"
 }
 
 /**
