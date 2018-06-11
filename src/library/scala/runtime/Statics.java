@@ -60,8 +60,10 @@ public final class Statics {
   }
 
   public static int floatHash(float fv) {
+    // https://docs.oracle.com/javase/specs/jls/se8/html/jls-5.html#jls-5.1.3
+    // when fv is too large, it becomes Integer.MAX_VALUE
     int iv = (int)fv;
-    if (iv == fv)
+    if (iv == fv && iv != Integer.MAX_VALUE)
       return iv;
 
     long lv = (long)fv;
