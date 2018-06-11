@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.tree.MethodNode
+import org.objectweb.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._

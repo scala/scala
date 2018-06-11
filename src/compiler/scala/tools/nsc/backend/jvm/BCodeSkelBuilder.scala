@@ -10,7 +10,7 @@ package jvm
 
 import scala.collection.{immutable, mutable}
 import scala.tools.nsc.symtab._
-import scala.tools.asm
+import org.objectweb.asm
 import GenBCode._
 import BackendReporting._
 

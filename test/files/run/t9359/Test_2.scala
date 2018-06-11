@@ -1,5 +1,5 @@
 import scala.tools.partest.BytecodeTest
-import scala.tools.asm
+import org.objectweb.asm
 import asm.tree.{ClassNode, InnerClassNode}
 import asm.{Opcodes => Flags}
 import scala.collection.JavaConverters._

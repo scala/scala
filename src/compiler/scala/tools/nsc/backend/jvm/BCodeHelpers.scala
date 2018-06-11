@@ -7,10 +7,10 @@ package scala
 package tools.nsc
 package backend.jvm
 
-import scala.tools.asm
+import org.objectweb.asm
 import BackendReporting._
 import scala.reflect.internal.Flags
-import scala.tools.asm.{ByteVector, ClassWriter}
+import org.objectweb.asm.{ByteVector, ClassWriter}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
 
@@ -668,7 +668,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
-          import scala.tools.asm.util.CheckClassAdapter
+          import org.objectweb.asm.util.CheckClassAdapter
           if (sym.isMethod)    { CheckClassAdapter checkMethodSignature sig } // requires asm-util.jar
           else if (sym.isTerm) { CheckClassAdapter checkFieldSignature  sig }
           else                 { CheckClassAdapter checkClassSignature  sig }

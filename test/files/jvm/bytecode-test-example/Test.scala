@@ -2,7 +2,7 @@ import scala.tools.partest.BytecodeTest
 
 import scala.tools.nsc.util.JavaClassPath
 import java.io.InputStream
-import scala.tools.asm
+import org.objectweb.asm
 import asm.ClassReader
 import asm.tree.{ClassNode, InsnList}
 import scala.collection.JavaConverters._

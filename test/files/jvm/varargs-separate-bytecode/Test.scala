@@ -1,6 +1,6 @@
 import scala.collection.JavaConverters._
-import scala.tools.asm
-import scala.tools.asm.Opcodes
+import org.objectweb.asm
+import org.objectweb.asm.Opcodes
 import scala.tools.partest.BytecodeTest
 
 object Test extends BytecodeTest {

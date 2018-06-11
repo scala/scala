@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.Opcodes._
+import org.objectweb.asm.Opcodes._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 

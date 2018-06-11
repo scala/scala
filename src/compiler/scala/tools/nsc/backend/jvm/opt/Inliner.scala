@@ -10,9 +10,9 @@ package opt
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.tools.asm
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
+import org.objectweb.asm
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.tree._
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._

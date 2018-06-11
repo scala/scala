@@ -861,7 +861,7 @@ abstract class ClassfileParser {
 
         case tpnme.MethodParametersATTR =>
           def readParamNames(): Unit = {
-            import scala.tools.asm.Opcodes.ACC_SYNTHETIC
+            import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
             val paramCount = u1
             var i = 0
             if (removedOuterParameter && i < paramCount) {

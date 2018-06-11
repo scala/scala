@@ -5,9 +5,9 @@ package analysis
 import java.util
 
 import scala.annotation.switch
-import scala.tools.asm.tree.analysis._
-import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
-import scala.tools.asm.{Opcodes, Type}
+import org.objectweb.asm.tree.analysis._
+import org.objectweb.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
+import org.objectweb.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 

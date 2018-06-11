@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm.{Handle, Opcodes}
+import org.objectweb.asm.{Handle, Opcodes}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 abstract class CoreBTypes extends PerRunInit {

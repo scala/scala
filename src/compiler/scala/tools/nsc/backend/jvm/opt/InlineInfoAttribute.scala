@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.tools.asm._
+import org.objectweb.asm._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting.UnknownScalaInlineInfoVersion
 

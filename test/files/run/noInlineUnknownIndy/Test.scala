@@ -1,8 +1,8 @@
 import java.io.File
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.tree.{ClassNode, InvokeDynamicInsnNode}
-import scala.tools.asm.{Handle, Opcodes}
+import org.objectweb.asm.tree.{ClassNode, InvokeDynamicInsnNode}
+import org.objectweb.asm.{Handle, Opcodes}
 import scala.tools.partest.BytecodeTest.modifyClassFile
 import scala.tools.partest._
 

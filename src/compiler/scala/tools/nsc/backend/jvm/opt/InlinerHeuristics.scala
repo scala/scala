@@ -11,8 +11,8 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
 import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
@@ -264,7 +264,7 @@ abstract class InlinerHeuristics extends PerRunInit {
 
   val allClasses = javaUtilFunctionClasses ::: otherClasses
 
-  load.ivy("org.ow2.asm" % "asm" % "5.0.4")
+  load.ivy("org.objectweb.asm" % "asm" % "5.0.4")
   val classesAndSamNameDesc = allClasses.map(c => {
     val cls = Class.forName(c)
     val internalName = org.objectweb.asm.Type.getDescriptor(cls).drop(1).dropRight(1) // drop L and ;

@@ -43,10 +43,12 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 val junitDep          = "junit"                          % "junit"                            % "4.11"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.5"
-val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
+val asmTreeDep        = "org.ow2.asm"                    % "asm"                              % versionProps("asm.version")
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
+def asmDep(m: String) = "org.ow2.asm"                    % m                                  % versionProps("asm.version")
+val asmDeps = List("asm", "asm-tree", "asm-analysis", "asm-commons", "asm-util").map(asmDep)
 
 val partestDependencies =  Seq(
   "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
@@ -413,7 +415,7 @@ lazy val compiler = configureAsSubproject(project)
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
-    libraryDependencies += asmDep,
+    libraryDependencies ++= asmDeps,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= Seq(jlineDep),
@@ -424,7 +426,6 @@ lazy val compiler = configureAsSubproject(project)
     // (with strings) to deal with mutual recursion
     products in Compile in packageBin :=
       (products in Compile in packageBin).value ++
-        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(asmDep)).get.data) ++
         (products in Compile in packageBin in LocalProject("interactive")).value ++
         (products in Compile in packageBin in LocalProject("scaladoc")).value ++
         (products in Compile in packageBin in LocalProject("repl")).value ++
@@ -655,7 +656,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
   .settings(generatePropertiesFileSettings)
   .settings(disableDocs)
   .settings(
-    libraryDependencies += asmDep,
+    libraryDependencies ++= asmDeps,
     publishLocal := {},
     publish := {},
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
@@ -677,7 +678,7 @@ lazy val test = project
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
   .settings(
-    libraryDependencies ++= Seq(asmDep),
+    libraryDependencies ++= asmDeps,
     libraryDependencies ++= partestDependencies,
     // no main sources
     sources in Compile := Seq.empty,

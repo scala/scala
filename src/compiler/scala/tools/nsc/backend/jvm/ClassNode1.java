@@ -1,9 +1,9 @@
 package scala.tools.nsc.backend.jvm;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.tree.ClassNode;
-import scala.tools.asm.tree.MethodNode;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 public class ClassNode1 extends ClassNode {
     public ClassNode1() {

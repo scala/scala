@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
-import scala.tools.asm.tree._
+import org.objectweb.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testing.BytecodeTesting

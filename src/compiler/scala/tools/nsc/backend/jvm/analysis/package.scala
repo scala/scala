@@ -78,7 +78,7 @@ package scala.tools.nsc.backend.jvm
  *   import scala.tools.nsc.backend.jvm._
  *   import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   import scala.collection.convert.decorateAsScala._
- *   import scala.tools.asm.tree.analysis._
+ *   import org.objectweb.asm.tree.analysis._
  *
  *   val cn = AsmUtils.readClass("/Users/luc/scala/scala/sandbox/A.class")
  *   val m = cn.methods.iterator.asScala.find(_.name == "f").head
@@ -359,7 +359,7 @@ object Test {
     // analysis runs 3.5x faster. Most likely because the call to Interpreter.merge inside
     // Frame.merge is no longer megamorphic.
 
-    import scala.tools.asm.tree.analysis._
+    import org.objectweb.asm.tree.analysis._
     val ba = new Analyzer(new BasicInterpreter)
     ba.analyze(cn.name, m) // warm up
 

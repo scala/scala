@@ -9,11 +9,11 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.tools.asm
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, Label, Type}
+import org.objectweb.asm
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis._
+import org.objectweb.asm.{Handle, Label, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -160,7 +160,7 @@ abstract class BackendUtils extends PerRunInit {
     val groups: Array[Array[Handle]] = implMethodsArray.grouped(targetMethodGroupLimit).toArray
     val numGroups = groups.length
 
-    import scala.tools.asm.Label
+    import org.objectweb.asm.Label
     val initialLabels = Array.fill(numGroups - 1)(new Label())
     val terminalLabel = new Label
     def nextLabel(i: Int) = if (i == numGroups - 2) terminalLabel else initialLabels(i + 1)

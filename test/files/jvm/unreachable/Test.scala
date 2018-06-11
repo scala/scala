@@ -1,5 +1,5 @@
 import scala.tools.partest.BytecodeTest
-import scala.tools.asm
+import org.objectweb.asm
 import asm.tree.InsnList
 import scala.collection.JavaConverters._
 

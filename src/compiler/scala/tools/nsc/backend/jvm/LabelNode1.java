@@ -1,7 +1,7 @@
 package scala.tools.nsc.backend.jvm;
 
-import scala.tools.asm.Label;
-import scala.tools.asm.tree.LabelNode;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.tree.LabelNode;
 
 public class LabelNode1 extends LabelNode {
     public LabelNode1() {

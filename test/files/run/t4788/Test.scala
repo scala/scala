@@ -1,7 +1,7 @@
 import java.io.PrintWriter;
 
 import scala.tools.partest.BytecodeTest
-import scala.tools.asm.util._
+import org.objectweb.asm.util._
 import scala.tools.nsc.util.stringFromWriter
 
 object Test extends BytecodeTest {

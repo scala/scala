@@ -1,7 +1,7 @@
 package scala.tools.partest
 
 import scala.collection.JavaConverters._
-import scala.tools.asm
+import org.objectweb.asm
 import asm._
 import asm.tree._
 import java.lang.reflect.Modifier

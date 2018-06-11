@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.reflect.NameTransformer
-import scala.tools.asm.Opcodes
+import org.objectweb.asm.Opcodes
 import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])

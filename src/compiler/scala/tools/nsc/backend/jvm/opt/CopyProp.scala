@@ -10,10 +10,10 @@ package opt
 import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.Type
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.BasicInterpreter
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis.BasicInterpreter
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._

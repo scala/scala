@@ -2,10 +2,10 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import scala.tools.asm.Type
-import scala.tools.asm.tree.analysis.{BasicValue, BasicInterpreter}
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree.analysis.{BasicValue, BasicInterpreter}
 
-abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
+abstract class TypeFlowInterpreter extends BasicInterpreter(org.objectweb.asm.Opcodes.ASM7_EXPERIMENTAL) {
   override def newValue(tp: Type) = {
     if (tp == null) super.newValue(tp)
     else if (isRef(tp)) new BasicValue(tp)

@@ -4,8 +4,8 @@ import org.junit.Assert._
 import org.junit.Test
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.Handle
-import scala.tools.asm.tree.InvokeDynamicInsnNode
+import org.objectweb.asm.Handle
+import org.objectweb.asm.tree.InvokeDynamicInsnNode
 import scala.tools.testing.BytecodeTesting
 
 class IndyLambdaTest extends BytecodeTesting {

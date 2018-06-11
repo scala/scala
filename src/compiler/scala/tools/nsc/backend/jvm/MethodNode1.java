@@ -1,9 +1,9 @@
 package scala.tools.nsc.backend.jvm;
 
-import scala.tools.asm.Label;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.tree.LabelNode;
-import scala.tools.asm.tree.MethodNode;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodNode;
 
 public class MethodNode1 extends MethodNode {
     public MethodNode1(int api, int access, String name, String descriptor, String signature, String[] exceptions) {

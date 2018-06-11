@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
-import scala.tools.asm.ClassWriter
-import scala.tools.asm.tree.ClassNode
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 

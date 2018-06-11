@@ -1,7 +1,7 @@
 package scala.tools.partest
 
 import scala.collection.JavaConverters._
-import scala.tools.asm
+import org.objectweb.asm
 import asm.{tree => t}
 
 /** Makes using ASM from ByteCodeTests more convenient.
@@ -58,7 +58,7 @@ object ASMConverters {
   }
 
   def opcodeToString(op: Int, default: Any = "?"): String = {
-    import scala.tools.asm.util.Printer.OPCODES
+    import org.objectweb.asm.util.Printer.OPCODES
     if (OPCODES.isDefinedAt(op)) OPCODES(op) else default.toString
   }
 

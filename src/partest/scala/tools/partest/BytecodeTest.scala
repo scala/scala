@@ -1,8 +1,8 @@
 package scala.tools.partest
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.{ClassReader, ClassWriter}
-import scala.tools.asm.tree._
+import org.objectweb.asm.{ClassReader, ClassWriter}
+import org.objectweb.asm.tree._
 import java.io.{InputStream, File => JFile}
 
 import AsmNode._
