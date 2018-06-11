@@ -1,8 +1,8 @@
 package scala.collection
 
 import org.junit.Test
-import scala.collection.mutable.{ArrayBuffer, Builder, Growable}
 
+import scala.collection.mutable.{ArrayBuffer, Builder, Growable}
 import scala.math.Ordering
 
 class BuildFromTest {
@@ -152,10 +152,18 @@ class BuildFromTest {
   implicitly[BuildFrom[BitSet, Int, BitSet]]
   implicitly[BuildFrom[immutable.BitSet, Int, immutable.BitSet]]
   implicitly[BuildFrom[mutable.BitSet, Int, mutable.BitSet]]
+  implicitly[BuildFrom[immutable.IntMap[_], (Int, String), immutable.IntMap[String]]]
+  implicitly[BuildFrom[mutable.LongMap[_], (Long, String), mutable.LongMap[String]]]
+  implicitly[BuildFrom[immutable.LongMap[_], (Long, String), immutable.LongMap[String]]]
+  implicitly[BuildFrom[mutable.AnyRefMap[_ <: AnyRef, _], (String, String), mutable.AnyRefMap[String, String]]]
 
   // Check that collection companions can implicitly be converted to a `BuildFrom` instance
   Iterable: BuildFrom[_, Int, Iterable[Int]]
   Map: BuildFrom[_, (Int, String), Map[Int, String]]
   SortedSet: BuildFrom[_, Int, SortedSet[Int]]
   SortedMap: BuildFrom[_, (Int, String), SortedMap[Int, String]]
+  immutable.IntMap: BuildFrom[_, (Int, String), immutable.IntMap[String]]
+  immutable.LongMap: BuildFrom[_, (Long, String), immutable.LongMap[String]]
+  mutable.LongMap: BuildFrom[_, (Long, String), mutable.LongMap[String]]
+  mutable.AnyRefMap: BuildFrom[_, (String, String), mutable.AnyRefMap[String, String]]
 }

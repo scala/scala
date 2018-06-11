@@ -95,6 +95,9 @@ object LongMap {
     def newBuilder(from: Any) = LongMap.newBuilder[AnyRef]
   }
 
+  implicit def iterableFactory[V]: Factory[(Long, V), LongMap[V]] = toFactory(this)
+  implicit def buildFromLongMap[V]: BuildFrom[LongMap[_], (Long, V), LongMap[V]] = toBuildFrom(this)
+
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:
   private[this] def writeObject(out: ObjectOutputStream): Unit = ()
