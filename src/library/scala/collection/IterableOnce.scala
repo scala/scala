@@ -73,7 +73,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use Vector.from(it) instead of it.toVector on IterableOnce", "2.13.0")
   @`inline` def toVector: immutable.Vector[A] = immutable.Vector.from(it)
 
-  @deprecated("Use Map.from(it) instead of it.toVector on IterableOnce", "2.13.0")
+  @deprecated("Use Map.from(it) instead of it.toMap on IterableOnce", "2.13.0")
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
     immutable.Map.from(it.asInstanceOf[IterableOnce[(K, V)]])
 
