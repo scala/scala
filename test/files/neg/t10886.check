@@ -1,0 +1,15 @@
+t10886.scala:9: error: reassignment to val
+  y = 1
+    ^
+t10886.scala:10: error: value ~~_= is not a member of object Test.A
+  !! = 2
+  ^
+t10886.scala:11: error: value += is not a member of Int
+  Expression does not convert to assignment because receiver is not assignable.
+  y += 3
+    ^
+t10886.scala:12: error: value -= is not a member of Int
+  Expression does not convert to assignment because receiver is not assignable.
+  !! -= 4
+     ^
+four errors found

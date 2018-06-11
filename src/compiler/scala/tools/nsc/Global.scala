@@ -391,10 +391,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
-      val isCanceled = reporter.cancelled
       // run the typer only if in `createJavadoc` mode
       val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
-      isCanceled || unit.isJava && this.id > maxJavaPhase
+      if (Thread.interrupted()) reporter.cancelled = true
+      reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
     final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
@@ -1447,6 +1447,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
         val profileBefore=profiler.beforePhase(phase)
         try globalPhase.run()
+        catch { case _: InterruptedException => reporter.cancelled = true }
         finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
@@ -1526,7 +1527,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         profiler.afterPhase(Global.InitPhase, snap)
         compileSources(sources)
       }
-      catch { case ex: IOException => globalError(ex.getMessage()) }
+      catch {
+        case ex: InterruptedException => reporter.cancelled = true
+        case ex: IOException => globalError(ex.getMessage())
+      }
     }
 
     /** Compile list of files given by their names */

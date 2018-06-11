@@ -4446,8 +4446,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         if (treeInfo.mayBeVarGetter(varsym)) {
           lhs1 match {
-            case treeInfo.Applied(Select(qual, name), _, _) =>
-              val sel = Select(qual, name.setterName) setPos lhs.pos
+            case treeInfo.Applied(Select(qual, _), _, _) =>
+              val sel = Select(qual, varsym.name.setterName) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
               return typed(app, mode, pt)
 
@@ -4886,7 +4886,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Select(qualqual, vname) =>
             gen.evalOnce(qualqual, context.owner, fresh) { qq =>
               val qq1 = qq()
-              mkAssign(Select(qq1, vname) setPos qual.pos)
+              mkAssign(Select(qq1, qual.symbol) setPos qual.pos)
             }
 
           case Apply(fn, extra) if qual.isInstanceOf[ApplyToImplicitArgs] =>

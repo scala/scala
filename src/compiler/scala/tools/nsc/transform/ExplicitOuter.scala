@@ -160,7 +160,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val paramsWithOuter =
         if (sym.isClassConstructor && isInner(sym.owner)) // 1
-          sym.newValueParameter(nme.OUTER_ARG, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
+          sym.newValueParameter(nme.OUTER_ARG, sym.pos, ARTIFACT).setInfo(sym.owner.outerClass.thisType) :: params
         else params
 
       if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)
@@ -408,7 +408,7 @@ abstract class ExplicitOuter extends InfoTransform
                   reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
                 }
                 val outerParam =
-                  sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
+                  sym.newValueParameter(nme.OUTER, sym.pos, ARTIFACT) setInfo clazz.outerClass.thisType
                 ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
               } else vparamss
             super.transform(copyDefDef(tree)(vparamss = vparamss1))
