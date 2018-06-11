@@ -678,7 +678,7 @@ div#definition > h4#signature > span.modifier_kind > i.unfold-arrow,
 }
 
 .cmt code {
-  font-weight: bold;
+  font-family: "Source Code Pro", "Monaco", "Ubuntu Mono Regular", "Lucida Console", monospace;
 }
 
 .cmt a {
@@ -857,6 +857,19 @@ div.fullcomment dl.paramcmts > dd {
   padding: 0.5em;
   background: rgba(255, 255, 255, 0.2);
   font-family: "Open Sans";
+}
+
+#memberfilter > .input > input::-webkit-input-placeholder {
+  color: #fff;
+  opacity: 0.6;
+}
+#memberfilter > .input > input:-ms-input-placeholder {
+  color: #fff;
+  opacity: 0.6;
+}
+#memberfilter > .input > input::placeholder  {
+  color: #fff;
+  opacity: 0.6;
 }
 
 #memberfilter > .clear {
