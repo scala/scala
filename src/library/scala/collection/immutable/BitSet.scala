@@ -22,7 +22,8 @@ sealed abstract class BitSet
     with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSetOps[BitSet]
-    with StrictOptimizedIterableOps[Int, Set, BitSet] {
+    with StrictOptimizedIterableOps[Int, Set, BitSet]
+    with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet] {
 
   def bitSetFactory = BitSet
 
@@ -49,17 +50,17 @@ sealed abstract class BitSet
     */
   protected def updateWord(idx: Int, w: Long): BitSet
 
-  override def map(f: Int => Int): BitSet = super[BitSet].map(f)
+  override def map(f: Int => Int): BitSet = strictOptimizedMap(newSpecificBuilder, f)
   override def map[B](f: Int => B)(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
-    super[SortedSetOps].map(f)
+    super[StrictOptimizedSortedSetOps].map(f)
 
-  override def flatMap(f: Int => IterableOnce[Int]): BitSet = super[BitSet].flatMap(f)
+  override def flatMap(f: Int => IterableOnce[Int]): BitSet = strictOptimizedFlatMap(newSpecificBuilder, f)
   override def flatMap[B](f: Int => IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
-    super[SortedSetOps].flatMap(f)
+    super[StrictOptimizedSortedSetOps].flatMap(f)
 
-  override def collect(pf: PartialFunction[Int, Int]): BitSet = super[BitSet].collect(pf)
+  override def collect(pf: PartialFunction[Int, Int]): BitSet = strictOptimizedCollect(newSpecificBuilder, pf)
   override def collect[B](pf: scala.PartialFunction[Int, B])(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
-    super[SortedSetOps].collect(pf)
+    super[StrictOptimizedSortedSetOps].collect(pf)
 
   // necessary for disambiguation
   override def zip[B](that: scala.Iterable[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =

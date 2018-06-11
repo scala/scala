@@ -29,7 +29,8 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   extends AbstractMap[K, V]
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
+    with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
