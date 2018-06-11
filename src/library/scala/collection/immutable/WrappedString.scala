@@ -39,6 +39,13 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   override def view: StringView = new StringView(self)
 
   override protected[this] def className = "WrappedString"
+
+  override def equals(other: Any): Boolean = other match {
+    case that: WrappedString =>
+      this.self == that.self
+    case _ =>
+      super.equals(other)
+  }
 }
 
 /** A companion object for wrapped strings.
