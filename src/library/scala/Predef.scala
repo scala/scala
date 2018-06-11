@@ -342,6 +342,49 @@ object Predef extends LowPriorityImplicits {
 
   // implicit classes -----------------------------------------------------
 
+  /** Adds `tap` method to every type.
+   *  `tap` applies `f` to the value for its side effects, and returns the original value.
+   *
+   *    {{{
+   *    val xs = List(1, 2, 3)
+   *               .tap(ys => println("debug " + ys.toString))
+   *    // xs == List(1, 2, 3)
+   *    }}}
+   *
+   *  @group implicit-classes-any */
+  implicit final class AnyTap[A](private val self: A) extends AnyVal {
+
+    /** Applies `f` to the value for its side effects, and returns the original value.
+     *
+     *  @param f      the function to apply to the value.
+     *  @tparam U     the result type of the function `f`.
+     *  @return       the original value `self`.
+     */
+    def tap[U](f: A => U): A = { f(self); self }
+  }
+
+  /** Adds `pipe` method to every type.
+   *  `pipe` converts the value by applying the function `f`.
+   *
+   *    {{{
+   *    val s = List(1, 2, 3)
+   *              .pipe(xs => xs.mkString(","))
+   *    // s == "1,2,3"
+   *    }}}
+   *
+   *  @group implicit-classes-any */
+  implicit final class AnyPipe[A](private val self: A) extends AnyVal {
+
+    /** Converts the value by applying the function `f`.
+     *
+     *  @param f      the function to apply to the value.
+     *  @tparam B     the result type of the function `f`.
+     *  @return       a new value resulting from applying the given function
+     *                `f` to this value.
+     */
+    def pipe[B](f: A => B): B = f(self)
+  }
+
   /** @group implicit-classes-any */
   implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
