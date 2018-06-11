@@ -29,7 +29,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
   override def slice(from: Int, until: Int): WrappedString = {
     val start = if (from < 0) 0 else from
     if (until <= start || start >= self.length)
-      return new WrappedString("")
+      return WrappedString.empty
 
     val end = if (until > length) length else until
     new WrappedString(self.substring(start, end))
