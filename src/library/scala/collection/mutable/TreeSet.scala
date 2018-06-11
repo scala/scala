@@ -62,7 +62,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = new TreeSetProjection(from, until)
 
-  override def className: String = "TreeSet"
+  override protected[this] def className: String = "TreeSet"
 
   override def size: Int = RB.size(tree)
 

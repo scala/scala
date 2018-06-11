@@ -18,9 +18,9 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
   override def iterableFactory = View
 
-  override def toString = "View(?)"
+  override def toString = stringPrefix + "(?)"
 
-  override def className = "View"
+  override protected[this] def stringPrefix = "View"
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
   @`inline` def force: IndexedSeq[A] = toIndexedSeq

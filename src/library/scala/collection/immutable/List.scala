@@ -382,7 +382,7 @@ sealed abstract class List[+A]
     None
   }
 
-  override def className = "List"
+  override protected[this] def className = "List"
 
   /** Builds a new list by applying a function to all elements of this list.
     *  Like `xs map f`, but returns `xs` unchanged if function

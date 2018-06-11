@@ -37,8 +37,9 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
           log(s"No mirror class for module with linked class: ${sym.fullName}")
       }
     } catch {
+      case ex: InterruptedException => throw ex
       case ex: Throwable =>
-        ex.printStackTrace()
+        if (settings.debug) ex.printStackTrace()
         error(s"Error while emitting ${unit.source}\n${ex.getMessage}")
     }
 

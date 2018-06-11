@@ -170,5 +170,7 @@ class LinkedHashMap[K, V]
     table = newHashTable
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
+
+  override protected[this] def stringPrefix = "LinkedHashMap"
 }
 

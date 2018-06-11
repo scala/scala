@@ -139,6 +139,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def span(p: ((K, V)) => Boolean): (TreeMap[K, V], TreeMap[K, V]) = splitAt(countWhile(p))
 
+  override protected[this] def className = "TreeMap"
 }
 
 /** $factoryInfo

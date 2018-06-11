@@ -187,4 +187,11 @@ class ConsoleReporterTest {
     testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(filter.error(_, "Testing display for maxerrs to pass"))
     testHelper(msg = "")(filter.error(_, "Testing display for maxerrs to fail"))
   }
+
+  @Test
+  def filteredInfoTest(): Unit = {
+    val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
+    // test obsolete API, make sure it doesn't throw
+    reporter.info(NoPosition, "goodbye, cruel world", force = false)
+  }
 }

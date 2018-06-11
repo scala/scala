@@ -335,6 +335,8 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   }
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(PriorityQueue.evidenceIterableFactory[A], this)
+
+  override protected[this] def className = "PriorityQueue"
 }
 
 

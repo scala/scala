@@ -7,7 +7,7 @@
   <link rel="shortcut icon" type="image/png" href="public/favicon.ico">
 
   <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
-  <title>{{ page.title }}</title>
+  <title>{{ page.title }} | Scala {{ site.thisScalaVersion }}</title>
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen-toc.css">
@@ -19,11 +19,12 @@
   <div id="header-main">
   <img id="scala-logo" src="public/images/scala-spiral-white.png" />
   <span id="title">Scala Language Specification</span>
-  <a id="github" href="https://github.com/scala/scala/tree/2.13.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
+  <a id="github" href="https://github.com/scala/scala/tree/{{ site.thisScalaVersion }}.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
   </div>
-  <div id="header-sub">Version 2.13</div>
+  <div id="header-sub">Version {{ site.thisScalaVersion }}</div>
 </header>
 <main>
+{% include version-notice.yml %}
 {{ content }}
 </main>
 </body>

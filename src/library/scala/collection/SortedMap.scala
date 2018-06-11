@@ -30,6 +30,8 @@ trait SortedMap[K, +V]
   override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(sortedMapFactory.sortedMapFactory[K, V], this)
+
+  override protected[this] def stringPrefix: String = "SortedMap"
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
@@ -181,7 +183,6 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
   override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   // TODO Also override mapValues
-
 }
 
 object SortedMapOps {

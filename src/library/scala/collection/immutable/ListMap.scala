@@ -72,7 +72,7 @@ sealed class ListMap[K, +V]
   protected def value: V = throw new NoSuchElementException("value of empty map")
   protected def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
 
-  override def className = "ListMap"
+  override protected[this] def className = "ListMap"
 
   /**
     * Represents an entry in the `ListMap`.

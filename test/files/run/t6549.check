@@ -3,7 +3,7 @@ scala> case class `X"`(var xxx: Any)
 defined class X$u0022
 
 scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
-m: scala.collection.immutable.Map[Any,X"] = Map.Map2("" -> X"("), 's -> X"("))
+m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))
 
 scala> m("")
 res0: X" = X"(")
