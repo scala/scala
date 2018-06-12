@@ -1,6 +1,8 @@
 package scala
 package util
 
+import scala.language.experimental.macros
+
 trait ChainingSyntax {
   implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }
@@ -20,10 +22,7 @@ final class ChainingOps[A](val self: A) extends AnyVal {
    *  @tparam U     the result type of the function `f`.
    *  @return       the original value `self`.
    */
-  def tap[U](f: A => U): self.type = {
-    f(self)
-    self
-  }
+  def tap[U](f: A => U): A = macro ???
 
   /** Converts the value by applying the function `f`.
    *
@@ -38,5 +37,5 @@ final class ChainingOps[A](val self: A) extends AnyVal {
    *  @return       a new value resulting from applying the given function
    *                `f` to this value.
    */
-  def pipe[B](f: A => B): B = f(self)
+  def pipe[B](f: A => B): B = macro ???
 }

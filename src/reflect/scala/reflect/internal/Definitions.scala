@@ -539,6 +539,8 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val ValueOfClass                 = getClassIfDefined("scala.ValueOf")
 
+    lazy val ChainingOpsClass             = getClassIfDefined("scala.util.ChainingOps")
+
     // scala/bug#8392 a reflection universe on classpath may not have
     // quasiquotes, if e.g. crosstyping with -Xsource on
     lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) getMemberIfDefined(ApiUniverseClass, tpnme.Quasiquote) else NoSymbol
@@ -1467,6 +1469,9 @@ trait Definitions extends api.StandardDefinitions {
       lazy val StringContext_s = getMemberMethod(StringContextClass, nme.s)
       lazy val StringContext_raw = getMemberMethod(StringContextClass, nme.raw_)
       lazy val StringContext_apply = getMemberMethod(StringContextModule, nme.apply)
+
+      lazy val ChainingOps_tap  = getMemberMethod(ChainingOpsClass, nme.tap)
+      lazy val ChainingOps_pipe = getMemberMethod(ChainingOpsClass, nme.pipe)
 
       lazy val ArrowAssocClass = getMemberClass(PredefModule, TypeName("ArrowAssoc")) // scala/bug#5731
       def isArrowAssoc(sym: Symbol) = sym.owner == ArrowAssocClass
