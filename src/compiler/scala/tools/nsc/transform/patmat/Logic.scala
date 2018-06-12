@@ -173,13 +173,55 @@ trait Logic extends Debugging  {
      */
     def simplify(f: Prop): Prop = {
 
-      // limit size to avoid blow up
-      def hasImpureAtom(ops: Seq[Prop]): Boolean = ops.size < 10 &&
-        ops.combinations(2).exists {
-          case Seq(a, Not(b)) if a == b => true
-          case Seq(Not(a), b) if a == b => true
-          case _                        => false
+      def hasImpureAtom(ops0: collection.Iterable[Prop]): Boolean = {
+        // HOT method, imperative rewrite of:
+        // ops.combinations(2).exists {
+        //   case Seq(a, Not(b)) if a == b => true
+        //   case Seq(Not(a), b) if a == b => true
+        //   case _                        => false
+        // }
+
+        def checkPair(a: Prop, b: Prop): Boolean = {
+          b match {
+            case Not(b) if a == b => true
+            case _ =>
+              a match {
+                case Not(a) if a == b => true
+                case _ => false
+              }
+          }
         }
+        val size = ops0.size
+        if (size > 10) false // limit size to avoid blow up
+        else if (size < 2) false // no combinations
+        else if (size == 2) { // Specialized versions for size 2+3
+          val it = ops0.iterator
+          val result = checkPair(it.next(), it.next())
+          assert(!it.hasNext)
+          result
+        } else if (size == 3) {
+          val it = ops0.iterator
+          val a = it.next()
+          val b = it.next()
+          val c = it.next()
+          assert(!it.hasNext)
+          checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
+        } else {
+          val ops = new Array[Prop](size)
+          ops0.copyToArray(ops)
+          var i = 0
+          val len = ops.length
+          while (i < len - 1) {
+            var j = i + 1
+            while (j < len) {
+              if (checkPair(ops(i), ops(j))) return true
+              j += 1
+            }
+            i += 1
+          }
+          false
+        }
+      }
 
       // push negation inside formula
       def negationNormalFormNot(p: Prop): Prop = p match {
@@ -204,39 +246,50 @@ trait Logic extends Debugging  {
       def simplifyProp(p: Prop): Prop = p match {
         case And(fv)     =>
           // recurse for nested And (pulls all Ands up)
-          val ops = fv.map(simplifyProp) - True // ignore `True`
-
           // build up Set in order to remove duplicates
-          val opsFlattened = ops.flatMap {
-            case And(fv) => fv
-            case f       => Set(f)
-          }.toSeq
+          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
+          for (prop <- fv) {
+            val simplified = simplifyProp(prop)
+            if (simplified != True) { // ignore `True`
+              simplified match {
+                case And(fv) => fv.foreach(opsFlattenedBuilder += _)
+                case f => opsFlattenedBuilder += f
+              }
+            }
+          }
+          val opsFlattened = opsFlattenedBuilder.result()
 
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(False)) {
+          if (opsFlattened.contains(False) || hasImpureAtom(opsFlattened)) {
             False
           } else {
-            opsFlattened match {
-              case Seq()  => True
-              case Seq(f) => f
-              case ops    => And(ops: _*)
+            opsFlattened.size match {
+              case 0 => True
+              case 1 => opsFlattened.head
+              case _ => new And(opsFlattened)
             }
           }
         case Or(fv)      =>
           // recurse for nested Or (pulls all Ors up)
-          val ops = fv.map(simplifyProp) - False // ignore `False`
+          // build up Set in order to remove duplicates
+          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
+          for (prop <- fv) {
+            val simplified = simplifyProp(prop)
+            if (simplified != False) { // ignore `False`
+              simplified match {
+                case Or(fv) => fv.foreach(opsFlattenedBuilder += _)
+                case f => opsFlattenedBuilder += f
+              }
+            }
+          }
+          val opsFlattened = opsFlattenedBuilder.result()
 
-          val opsFlattened = ops.flatMap {
-            case Or(fv) => fv
-            case f      => Set(f)
-          }.toSeq
-
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(True)) {
+          if (opsFlattened.contains(True) || hasImpureAtom(opsFlattened)) {
             True
           } else {
-            opsFlattened match {
-              case Seq()  => False
-              case Seq(f) => f
-              case ops    => Or(ops: _*)
+            opsFlattened.size match {
+              case 0 => False
+              case 1 => opsFlattened.head
+              case _ => new Or(opsFlattened)
             }
           }
         case Not(Not(a)) =>

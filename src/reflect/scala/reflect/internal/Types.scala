@@ -410,7 +410,7 @@ trait Types
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (parents.nonEmpty) parents.head else ObjectTpe
+    def firstParent = if (!parents.isEmpty) parents.head else ObjectTpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -2497,20 +2497,61 @@ trait Types
 
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
-      if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams(params))
+      if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams)
       toBoolean(trivial)
     }
 
     private def isTrivialResult =
       resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
 
-    private def areTrivialParams(ps: List[Symbol]): Boolean = ps match {
-      case p :: rest =>
-        p.tpe.isTrivial && !typesContain(paramTypes, p) && !(resultType contains p) &&
-        areTrivialParams(rest)
-      case _ =>
-        true
-    }
+    private def areTrivialParams: Boolean =
+      if (params.isEmpty) true else {
+        val len = params.length
+        val paramsTpes: Array[Type] = new Array[Type](len)
+
+        // returns the result of ```params.forall(_.tpe.isTrivial))```
+        // along the way, it loads each param' tpe into array
+        def forallIsTrivial: Boolean = {
+          var res = true
+          var pps = params
+          var ix = 0
+          while(res && ix < len){
+            paramsTpes(ix) = pps.head.tpe
+            res = paramsTpes(ix).isTrivial
+            pps = pps.tail
+            ix += 1
+          }
+          res
+        }
+
+        def typeContains(pcc: ContainsCollector, tp: Type): Boolean = {
+          pcc.result = false
+          pcc.collect(tp)
+        }
+
+        // Imperative rewrite of paramsTpes.exists( typeContains(pcc, _) )
+        def anyTypeContains(pcc: ContainsCollector): Boolean = {
+          var existsContains = false
+          var tpeIx = 0
+          while(tpeIx < len && !existsContains){
+            existsContains = typeContains(pcc, paramsTpes(tpeIx) )
+            tpeIx += 1
+          }
+          existsContains
+        }
+
+        @tailrec
+        def forallParamsNoTypeContains(params: List[Symbol]): Boolean =
+          params match {
+            case Nil => true
+            case pp :: pps =>
+              val pcc = new ContainsCollector(pp)
+              !typeContains(pcc, resultType) && ! anyTypeContains(pcc) &&
+              forallParamsNoTypeContains(pps)
+          }
+
+        forallIsTrivial && forallParamsNoTypeContains(params)
+      }
 
     def isImplicit = (params ne Nil) && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
@@ -3909,7 +3950,7 @@ trait Types
   def typeParamsToExistentials(clazz: Symbol): List[Symbol] =
     typeParamsToExistentials(clazz, clazz.typeParams)
 
-  def isRawIfWithoutArgs(sym: Symbol) = sym.isClass && sym.typeParams.nonEmpty && sym.isJavaDefined
+  def isRawIfWithoutArgs(sym: Symbol) = sym.isClass && !sym.typeParams.isEmpty && sym.isJavaDefined
   /** Is type tp a ''raw type''? */
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
@@ -4779,11 +4820,6 @@ trait Types
       case _          => acc
     }
     loop(tps, Depth.Zero)
-  }
-
-  @tailrec private def typesContain(tps: List[Type], sym: Symbol): Boolean = tps match {
-    case tp :: rest => (tp contains sym) || typesContain(rest, sym)
-    case _ => false
   }
 
   @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {

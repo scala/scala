@@ -170,12 +170,17 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           def ref(sym: Symbol) =
             if (potentiallyStoredBinders(sym)) usedBinders += sym
           // compute intersection of all symbols in the tree `in` and all potentially stored subpat binders
-          in.foreach {
-            case tt: TypeTree =>
-              tt.tpe foreach { // scala/bug#7459 e.g. case Prod(t) => new t.u.Foo
+          val typeTraverser = new TypeTraverser {
+            def traverse(tp: Type) = {
+              tp match {
                 case SingleType(_, sym) => ref(sym)
                 case _ =>
               }
+              mapOver(tp)
+            }
+          }
+          in.foreach {
+            case tt: TypeTree => typeTraverser.apply(tt.tpe)
             case t => ref(t.symbol)
           }
 

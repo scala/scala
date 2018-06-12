@@ -395,10 +395,10 @@ trait Definitions extends api.StandardDefinitions {
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
 
     def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
-    def isJavaVarArgs(params: Seq[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
-    def isScalaVarArgs(params: Seq[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
-    def isVarArgsList(params: Seq[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
-    def isVarArgTypes(formals: Seq[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
+    def isJavaVarArgs(params: Seq[Symbol])  = !params.isEmpty && isJavaRepeatedParamType(params.last.tpe)
+    def isScalaVarArgs(params: Seq[Symbol]) = !params.isEmpty && isScalaRepeatedParamType(params.last.tpe)
+    def isVarArgsList(params: Seq[Symbol])  = !params.isEmpty && isRepeatedParamType(params.last.tpe)
+    def isVarArgTypes(formals: Seq[Type])   = !formals.isEmpty && isRepeatedParamType(formals.last)
 
     def firstParamType(tpe: Type): Type = tpe.paramTypes match {
       case p :: _ => p
@@ -577,6 +577,8 @@ trait Definitions extends api.StandardDefinitions {
     object VarArityClass
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+    // A unit test checks these are kept in synch with the library.
+    val MaxTupleAritySpecialized, MaxProductAritySpecialized, MaxFunctionAritySpecialized = 2
 
     lazy val ProductClass          = new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
     lazy val TupleClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)
@@ -758,7 +760,7 @@ trait Definitions extends api.StandardDefinitions {
       case TypeRef(_, NothingClass | SingletonClass, _) => true
       case TypeRef(_, sym, _) if sym.isAbstractType     => tp.bounds.hi.typeSymbol isSubClass SingletonClass
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
-      case TypeRef(_, _, _) if tp ne tp.dealias         => isStable(tp.dealias)
+      case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
       case TypeVar(origin, _)                           => isStable(origin)
       case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
       case _: SimpleTypeProxy                           => isStable(tp.underlying)

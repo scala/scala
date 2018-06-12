@@ -118,7 +118,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if sym.isSealed =>
 
-          val tpApprox = typer.infer.approximateAbstracts(tp)
+          val tpApprox = analyzer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
 
           def filterChildren(children: List[Symbol]): List[Type] = {
@@ -130,7 +130,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
               val memberType = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
               val subTp = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
-              val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
+              val subTpApprox = analyzer.approximateAbstracts(subTp) // TODO: needed?
               // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
@@ -310,19 +310,27 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         def updateSubstitution(subst: Substitution): Unit = {
           // find part of substitution that replaces bound symbols by new symbols, and reverse that part
           // so that we don't introduce new aliases for existing symbols, thus keeping the set of bound symbols minimal
-          val (boundSubst, unboundSubst) = (subst.from zip subst.to) partition {
-            case (f, t) =>
-              t.isInstanceOf[Ident] && t.symbol.exists && pointsToBound(f)
-          }
-          val (boundFrom, boundTo) = boundSubst.unzip
-          val (unboundFrom, unboundTo) = unboundSubst.unzip
 
+          // HOT Method for allocation, hence the imperative style here
+          val substSize = subst.from.length
+          val boundFrom = new mutable.ListBuffer[Tree]()
+          val boundTo = new mutable.ListBuffer[Symbol]
+          val unboundFrom = new mutable.ArrayBuffer[Symbol](substSize)
+          val unboundTo = new mutable.ListBuffer[Tree]
+          foreach2(subst.from, subst.to) {
+            case (f, t: Ident) if t.symbol.exists && pointsToBound(f) =>
+              boundFrom += CODE.REF(f)
+              boundTo += t.symbol
+            case (f, t) =>
+              unboundFrom += f
+              unboundTo += normalize(t)
+          }
           // reverse substitution that would otherwise replace a variable we already encountered by a new variable
           // NOTE: this forgets the more precise type we have for these later variables, but that's probably okay
-          normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
+          normalize >>= Substitution(boundTo.toList, boundFrom.toList)
           // debug.patmat ("normalize subst: "+ normalize)
 
-          val okSubst = Substitution(unboundFrom, unboundTo map (normalize(_))) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
+          val okSubst = Substitution(unboundFrom.toList, unboundTo.toList) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
           pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
           // debug.patmat("pointsToBound: "+ pointsToBound)
 
