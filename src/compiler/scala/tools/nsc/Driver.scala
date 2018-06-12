@@ -1,9 +1,8 @@
 package scala
 package tools.nsc
 
-import scala.tools.nsc.reporters.DisplayReporter
-import Properties.{ versionMsg, residentPromptString }
-import scala.reflect.internal.Reporter
+import Properties.{versionMsg, residentPromptString}
+import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.FakePos
 
 abstract class Driver {
@@ -40,13 +39,13 @@ abstract class Driver {
 
   def process(args: Array[String]): Boolean = {
     val ss   = new Settings(scalacError)
-    reporter = DisplayReporter(ss)    // for reporting early config errors, before compiler is constructed
+    reporter = Reporter(ss)
     command  = new CompilerCommand(args.toList, ss)
     settings = command.settings
 
     if (processSettingsHook()) {
       val compiler = newCompiler()
-      reporter     = compiler.reporter    // adopt the configured reporter
+      reporter     = compiler.reporter    // adopt the compiler's reporter, which may be custom
       try {
         if (reporter.hasErrors)
           reporter.flush()

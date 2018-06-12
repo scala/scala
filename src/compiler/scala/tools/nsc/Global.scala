@@ -17,7 +17,7 @@ import util.{ClassPath, returning}
 import reporters.{Reporter => LegacyReporter}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Reporter => InternalReporter}
-import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
+import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile, StatisticsStatics}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
@@ -90,7 +90,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
-    this(settings, Global.reporter(settings))
+    this(settings, LegacyReporter(settings))
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -1659,15 +1659,8 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 object Global {
   def apply(settings: Settings, reporter: LegacyReporter): Global = new Global(settings, reporter)
 
-  def apply(settings: Settings): Global = new Global(settings, reporter(settings))
+  def apply(settings: Settings): Global = new Global(settings, LegacyReporter(settings))
 
-  private def reporter(settings: Settings): LegacyReporter = {
-    //val loader = ScalaClassLoader(getClass.getClassLoader)  // apply does not make delegate
-    val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
-    val res = loader.create[InternalReporter](settings.reporter.value, settings.errorFn)(settings)
-    if (res.isInstanceOf[LegacyReporter]) res.asInstanceOf[LegacyReporter]
-    else res: LegacyReporter  // adaptable
-  }
   private object InitPhase extends Phase(null) {
     def name = "<init phase>"
     override def keepsTypeParams = false

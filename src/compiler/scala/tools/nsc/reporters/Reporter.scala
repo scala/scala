@@ -7,7 +7,7 @@ package scala.tools.nsc
 package reporters
 
 import scala.reflect.internal.{ForwardingReporter, Reporter => InternalReporter}
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{Position, ScalaClassLoader}
 
 /** Report information, warnings and errors.
  *
@@ -78,4 +78,15 @@ object Reporter {
         new LimitingReporter(settings, reporter)
       case _ => reporter
     }
+
+  /** The usual way to create the configured reporter.
+   *  Errors are reported through `settings.errorFn` and also by throwing an exception.
+   */
+  def apply(settings: Settings): Reporter = {
+    //val loader = ScalaClassLoader(getClass.getClassLoader)  // apply does not make delegate
+    val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
+    val res = loader.create[InternalReporter](settings.reporter.value, settings.errorFn)(settings)
+    if (res.isInstanceOf[Reporter]) res.asInstanceOf[Reporter]
+    else res: Reporter  // adaptable
+  }
 }
