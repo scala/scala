@@ -419,33 +419,6 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     copy
   }
 
-  private def preClean(depth: Int) = {
-    this.depth = depth
-    (depth - 1) match {
-      case 0 =>
-        display1 = null
-        display2 = null
-        display3 = null
-        display4 = null
-        display5 = null
-      case 1 =>
-        display2 = null
-        display3 = null
-        display4 = null
-        display5 = null
-      case 2 =>
-        display3 = null
-        display4 = null
-        display5 = null
-      case 3 =>
-        display4 = null
-        display5 = null
-      case 4 =>
-        display5 = null
-      case 5 =>
-    }
-  }
-
   // requires structure is at index cutIndex and writable at level 0
   private def cleanLeftEdge(cutIndex: Int) = {
     if        (cutIndex < (1 <<  5)) {
@@ -652,13 +625,8 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   }
 
   def clear(): Unit = {
+    preClean(1)
     display0 = new Array[AnyRef](32)
-    display1 = null
-    display2 = null
-    display3 = null
-    display4 = null
-    display5 = null
-    depth = 1
     blockIndex = 0
     lo = 0
   }
@@ -673,7 +641,35 @@ private[immutable] trait VectorPointer[T] {
     private[immutable] var display4: Array[AnyRef] = _
     private[immutable] var display5: Array[AnyRef] = _
 
-    // used
+    protected def preClean(depth: Int): Unit = {
+      this.depth = depth
+      (depth - 1) match {
+        case 0 =>
+          display1 = null
+          display2 = null
+          display3 = null
+          display4 = null
+          display5 = null
+        case 1 =>
+          display2 = null
+          display3 = null
+          display4 = null
+          display5 = null
+        case 2 =>
+          display3 = null
+          display4 = null
+          display5 = null
+        case 3 =>
+          display4 = null
+          display5 = null
+        case 4 =>
+          display5 = null
+        case 5 =>
+      }
+    }
+
+
+  // used
     private[immutable] final def initFrom[U](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
 
     private[immutable] final def initFrom[U](that: VectorPointer[U], depth: Int) = {
