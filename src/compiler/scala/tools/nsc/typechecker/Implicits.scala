@@ -993,11 +993,11 @@ trait Implicits {
        *   - if it matches, forget about all others it improves upon
        */
 
-      // the pt for views can have embedded unification type variables or BoundedWildcardTypes which
-      // can't be solved for. Rather than attempt to patch things up later we just skip those cases
-      // altogether.
+      // the pt for views can have embedded unification type variables, BoundedWildcardTypes or 
+      // Nothings which can't be solved for. Rather than attempt to patch things up later we
+      // just skip those cases altogether.
       lazy val wildPtIsInstantiable =
-        !isView || !wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case _ => false }
+        !isView || !wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
 
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
