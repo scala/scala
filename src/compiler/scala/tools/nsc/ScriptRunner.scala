@@ -3,14 +3,14 @@
  * @author  Martin Odersky
  */
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 
 import io.{AbstractFile, Directory, File, Path}
-import java.io.IOException
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
+import scala.util.control.NonFatal
 import util.Exceptional.rootCause
+import java.io.IOException
 
 /** An object that runs Scala code in script files.
  *
@@ -96,7 +96,7 @@ final class DaemonKiller(settings: GenericRunnerSettings) extends ScriptRunner {
       new StandardCompileClient().process(Array("-shutdown"))
       None
     } catch {
-      case t: Throwable => Some(t)
+      case NonFatal(t) => Some(t)
     }
 }
 
@@ -130,60 +130,62 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 
     def hasClassToRun(d: Directory): Boolean = DirectoryClassPath(d.jfile).findClass(mainClass).isDefined
 
+    def withLatestJar(): Boolean = {
+      /** Choose a jar filename to hold the compiled version of a script. */
+      def jarFileFor(scriptFile: String) = File(
+        if (scriptFile endsWith ".jar") scriptFile
+        else scriptFile.stripSuffix(".scala") + ".jar"
+      )
+      val jarFile = jarFileFor(scriptFile)
+      def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
+
+      def recompile() = {
+        jarFile.delete()
+
+        compile match {
+          case Some(compiledPath) =>
+            if (!hasClassToRun(compiledPath)) {
+              // it compiled ok, but there is nothing to run;
+              // running an empty script should succeed
+              true
+            } else {
+              try io.Jar.create(jarFile, compiledPath, mainClass)
+              catch { case NonFatal(_) => jarFile.delete() }
+
+              if (jarOK) {
+                compiledPath.deleteRecursively()
+                handler(jarFile.toAbsolute.path)
+              }
+              // jar failed; run directly from the class files
+              else handler(compiledPath.path)
+            }
+          case _  => false
+        }
+      }
+
+      if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
+      else recompile()                            // jar old - recompile the script.
+    }
+
     /* The script runner calls System.exit to communicate a return value, but this must
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     util.waitingForThreads {
-      if (settings.save) {
-        /** Choose a jar filename to hold the compiled version of a script. */
-        def jarFileFor(scriptFile: String) = File(
-          if (scriptFile endsWith ".jar") scriptFile
-          else scriptFile.stripSuffix(".scala") + ".jar"
-        )
-        val jarFile = jarFileFor(scriptFile)
-        def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
-
-        def recompile() = {
-          jarFile.delete()
-
-          compile match {
-            case Some(compiledPath) =>
-              if (!hasClassToRun(compiledPath)) {
-                // it compiled ok, but there is nothing to run;
-                // running an empty script should succeed
-                true
-              } else {
-                try io.Jar.create(jarFile, compiledPath, mainClass)
-                catch { case _: Exception => jarFile.delete() }
-
-                if (jarOK) {
-                  compiledPath.deleteRecursively()
-                  handler(jarFile.toAbsolute.path)
-                }
-                // jar failed; run directly from the class files
-                else handler(compiledPath.path)
-              }
-            case _  => false
-          }
-        }
-
-        if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
-        else recompile()                            // jar old - recompile the script.
-      }
-      // don't use a cache jar at all--just use the class files, if they exist
-      else compile exists (cp => !hasClassToRun(cp) || handler(cp.path))
+      // either update the jar or don't use a cache jar at all, just use the class files, if they exist
+      if (settings.save) withLatestJar()
+      else compile.exists(cp => !hasClassToRun(cp) || handler(cp.path))
     }
   }
 
-  /** Run a script after it has been compiled
+  /** Run a script after it has been compiled. Prints any exceptions.
    *
    * @return true if execution succeeded, false otherwise
    */
   private def runCompiled(compiledLocation: String, scriptArgs: List[String]): Boolean = {
     val cp = File(compiledLocation).toURL +: settings.classpathURLs
     ObjectRunner.runAndCatch(cp, mainClass, scriptArgs) match {
-      case Left(ex) => ex.printStackTrace() ; false
-      case _        => true
+      case Some(e) => e.printStackTrace() ; false
+      case _       => true
     }
   }
 
@@ -209,7 +211,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
       None
     }
     catch {
-      case t: Throwable => Some(t)
+      case NonFatal(e) => Some(e)
     }
     finally scriptFile.delete()  // in case there was a compilation error
   }

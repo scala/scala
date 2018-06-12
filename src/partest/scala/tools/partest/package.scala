@@ -35,7 +35,7 @@ package object partest {
     Thread.setDefaultUncaughtExceptionHandler(
       new Thread.UncaughtExceptionHandler {
         def uncaughtException(thread: Thread, t: Throwable): Unit = {
-          val t1 = Exceptional unwrap t
+          val t1 = Exceptional.rootCause(t)
           System.err.println(s"Uncaught exception on thread $thread: $t1")
           t1.printStackTrace()
         }
