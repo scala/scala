@@ -68,8 +68,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     res
   }
 
-  def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
+  def diff(that: IterableOnce[A]): C = {
+    val result = clone()
+    that.foreach(result -= _)
+    result
+  }
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     val toAdd = Set[A]()

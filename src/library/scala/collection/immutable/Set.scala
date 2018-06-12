@@ -52,8 +52,8 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     result
   }
 
-  def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
+  def diff(that: IterableOnce[A]): C =
+    that.foldLeft(coll)(_ - _)
 }
 
 /**

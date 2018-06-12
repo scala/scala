@@ -78,4 +78,23 @@ class SetTest {
     val mapseta = any(mapset)
     assert(mapset eq mapseta)
   }
+
+  @Test
+  def testDiff(): Unit = {
+    val s0 = Set(1, 2, 3).diff(List(1, 2))
+    assertEquals(Set(3), s0)
+
+    val s1 = Set(1, 2, 3).diff(List(1, 2, 3))
+    assertEquals(Set(), s1)
+
+    val s2 = Set(1, 2, 3).diff(List(1, 2, 2, 3, 4))
+    assertEquals(Set(), s2)
+
+    val s3 = Map(1 -> 2, 2 -> 3).keySet.diff(List(1))
+    assertEquals(Set(2), s3)
+
+    val s4 = SortedMap(3 -> 4, 1 -> 2, 2 -> 3).keySet.diff(List(1))
+    assertEquals(2, s4.firstKey)
+    assertEquals(3, s4.lastKey)
+  }
 }
