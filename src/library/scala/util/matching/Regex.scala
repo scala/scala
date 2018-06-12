@@ -279,10 +279,8 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @param  s     The string to match
    *  @return       The matches
    */
-  def unapplySeq(s: CharSequence): Option[List[String]] = s match {
-    case null => None
-    case _    =>
-      val m = pattern matcher s
+  def unapplySeq(s: CharSequence): Option[List[String]] = {
+    val m = pattern matcher s
       if (runMatcher(m)) Some(List.tabulate(m.groupCount) { i => m.group(i + 1) })
       else None
   }
@@ -336,7 +334,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  and the result of that match is used.
    */
   def unapplySeq(m: Match): Option[List[String]] =
-    if (m == null || m.matched == null) None
+    if (m.matched == null) None
     else if (m.matcher.pattern == this.pattern) Regex.extractGroupsFromMatch(m)
     else unapplySeq(m.matched)
 

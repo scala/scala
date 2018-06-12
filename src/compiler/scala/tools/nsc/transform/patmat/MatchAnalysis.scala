@@ -344,6 +344,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
             case ProductExtractorTreeMaker(testedBinder, None)        => uniqueNonNullProp(binderToUniqueTree(testedBinder))
             case SubstOnlyTreeMaker(_, _)                             => True
+            case NonNullTestTreeMaker(prevBinder, _, _)               => uniqueNonNullProp(binderToUniqueTree(prevBinder))
             case GuardTreeMaker(guard) =>
               guard.tpe match {
                 case ConstantTrue  => True

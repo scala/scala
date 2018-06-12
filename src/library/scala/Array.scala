@@ -498,11 +498,7 @@ object Array {
    *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    if (x == null) None else Some(ArraySeq.unsafeWrapArray[T](x))
-    // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
-    // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
-    // Is ArraySeq safe here? In 2.12 we used to call .toIndexedSeq which copied the array
-    // instead of wrapping it in a ArraySeq but it appears unnecessary.
+    Some(ArraySeq.unsafeWrapArray[T](x))
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation

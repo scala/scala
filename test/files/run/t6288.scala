@@ -28,7 +28,13 @@ object Test extends DirectTest {
       |    case Case4() => ()
       |  }
       |}
+      |object Case6 {
+      |  def unapply(z: Int): Option[Int] = Some(-1)
       |
+      |  0 match {
+      |    case Case6(nr) => ()
+      |  }
+      |}
       |""".stripMargin.trim
 
   override def show(): Unit = {
