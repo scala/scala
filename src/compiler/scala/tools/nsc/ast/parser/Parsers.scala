@@ -938,7 +938,7 @@ self =>
      *  called: either in a pattern context or not.  Formerly, this was
      *  threaded through numerous methods as boolean isPattern.
      */
-    trait PatternContextSensitive {
+    sealed trait PatternContextSensitive {
       /** {{{
        *  ArgType       ::=  Type
        *  }}}
@@ -1886,7 +1886,7 @@ self =>
      *  @param isSequenceOK is a sequence pattern _* allowed?
      *  @param isXML are we in an XML pattern?
      */
-    class SeqContextSensitive(val isSequenceOK: Boolean, val isXML: Boolean) extends PatternContextSensitive {
+    final class SeqContextSensitive(val isSequenceOK: Boolean, val isXML: Boolean) extends PatternContextSensitive {
       final def functionArgType(): Tree = argType()
       final def argType(): Tree = {
         val start = in.offset
