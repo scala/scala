@@ -55,17 +55,6 @@ case class StringContext(parts: String*) {
 
   import StringContext._
 
-  /** Checks that the length of the given argument `args` is one less than the number
-   *  of `parts` supplied to the enclosing `StringContext`.
-   *  @param `args` The arguments to be checked.
-   *  @throws IllegalArgumentException  if this is not the case.
-   */
-  def checkLengths(args: scala.collection.Seq[Any]): Unit =
-    if (parts.length != args.length + 1)
-      throw new IllegalArgumentException("wrong number of arguments ("+ args.length
-        +") for interpolated string with "+ parts.length +" parts")
-
-
   /** The simple string interpolator.
    *
    *  It inserts its arguments between corresponding parts of the string context.
@@ -94,7 +83,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def s(args: Any*): String = standardInterpolator(processEscapes, args)
+  def s(args: Any*): String = standardInterpolator(processEscapes, args, parts)
 
   /** The raw string interpolator.
    *
@@ -118,19 +107,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def raw(args: Any*): String = standardInterpolator(identity, args)
-
-  def standardInterpolator(process: String => String, args: scala.collection.Seq[Any]): String = {
-    checkLengths(args)
-    val pi = parts.iterator
-    val ai = args.iterator
-    val bldr = new JLSBuilder(process(pi.next()))
-    while (ai.hasNext) {
-      bldr append ai.next
-      bldr append process(pi.next())
-    }
-    bldr.toString
-  }
+  def raw(args: Any*): String = standardInterpolator(identity, args, parts)
 
   /** The formatted string interpolator.
    *
@@ -244,4 +221,27 @@ object StringContext {
       case  i => replace(i)
     }
   }
+
+  private def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
+    checkLengths(args, parts)
+    val pi = parts.iterator
+    val ai = args.iterator
+    val bldr = new JLSBuilder(process(pi.next()))
+    while (ai.hasNext) {
+      bldr append ai.next
+      bldr append process(pi.next())
+    }
+    bldr.toString
+  }
+
+  /** Checks that the length of the given argument `args` is one less than the number
+   *  of `parts` supplied to the `StringContext`.
+   *
+   *  @throws IllegalArgumentException  if this is not the case.
+   */
+  private def checkLengths(args: scala.collection.Seq[Any], parts: Seq[String]): Unit =
+    if (parts.length != args.length + 1)
+      throw new IllegalArgumentException("wrong number of arguments ("+ args.length
+        +") for interpolated string with "+ parts.length +" parts")
+
 }
