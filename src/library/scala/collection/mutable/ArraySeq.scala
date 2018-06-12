@@ -77,6 +77,13 @@ abstract class ArraySeq[T]
   }
 
   override protected[this] def writeReplace(): AnyRef = this
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ArraySeq[_] if this.array.length != that.array.length =>
+      false
+    case _ =>
+      super.equals(other)
+  }
 }
 
 /** A companion object used to create instances of `ArraySeq`.
