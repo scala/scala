@@ -653,6 +653,11 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
 
   def clear(): Unit = {
     display0 = new Array[AnyRef](32)
+    display1 = null
+    display2 = null
+    display3 = null
+    display4 = null
+    display5 = null
     depth = 1
     blockIndex = 0
     lo = 0
