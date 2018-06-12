@@ -513,16 +513,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   @`inline` final def ++ [B >: A](xs: => IterableOnce[B]): Iterator[B] = concat(xs)
 
-  def take(n: Int): Iterator[A] = new AbstractIterator[A] {
-    private[this] var i = 0
-    def hasNext = self.hasNext && i < n
-    def next() =
-      if (hasNext) {
-        i += 1
-        self.next()
-      }
-      else Iterator.empty.next()
-  }
+  def take(n: Int): Iterator[A] = sliceIterator(0, n max 0)
 
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     private[this] var hd: A = _
