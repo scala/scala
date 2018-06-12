@@ -86,7 +86,7 @@ package util {
 ```
 
 The compiler supplies imports in a preamble to every source file. This preamble
-typically has the form:
+conceptually has the following form, where braces indicate nested scopes:
 
 ```scala
 import java.lang._
@@ -118,6 +118,25 @@ object Z {
   @T def f: Int = { f ; 42 }                  // error, f is not tail recursive
 }
 ```
+
+Similarly, imported aliases of names introduced by package statements are
+allowed, even though the names are strictly ambiguous:
+
+```scala
+// c.scala
+package p { class C }
+
+// xy.scala
+import p._
+package p { class X extends C }
+package q { class Y extends C }
+```
+
+The reference to `C` in the definition of `X` is strictly ambiguous
+because `C` is available by virtue of the package clause in
+a different file, and can't shadow the imported name. But because
+the references are the same, the definition is taken as though it
+did shadow the import.
 
 ###### Example
 
