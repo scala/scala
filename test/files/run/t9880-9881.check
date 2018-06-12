@@ -13,7 +13,7 @@ import scala.reflect.runtime.{universe=>ru}
 scala> import ru.TypeTag
 import ru.TypeTag
 
-scala>
+scala> 
 
 scala> // show the imports
 
@@ -26,7 +26,7 @@ scala> :imports
  6) import scala.reflect.runtime.{universe=>ru} (...)
  7) import ru.TypeTag              (...)
 
-scala>
+scala> 
 
 scala> // should be able to define this class with the imports above
 
