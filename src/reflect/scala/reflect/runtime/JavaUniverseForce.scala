@@ -323,6 +323,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StringContextClass
     definitions.StringContextModule
     definitions.ValueOfClass
+    definitions.ChainingOpsClass
     definitions.QuasiquoteClass
     definitions.QuasiquoteClass_api
     definitions.QuasiquoteClass_api_apply
