@@ -102,5 +102,9 @@ class FactoriesTest {
   implicitly[Factory[Int, BitSet]]
   implicitly[Factory[Int, mutable.BitSet]]
   implicitly[Factory[Int, immutable.BitSet]]
+  implicitly[Factory[(Int, Boolean), immutable.IntMap[Boolean]]]
+  implicitly[Factory[(Long, Boolean), immutable.LongMap[Boolean]]]
+  implicitly[Factory[(Long, Boolean), mutable.LongMap[Boolean]]]
+  implicitly[Factory[(String, Boolean), mutable.AnyRefMap[String, Boolean]]]
 
 }
