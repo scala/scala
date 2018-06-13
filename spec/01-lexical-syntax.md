@@ -526,8 +526,8 @@ The most general form encloses an expression in \${ and }, i.e. \${expr}.
 The expression enclosed in the braces that follow the leading \$ character is of 
 syntactical category BlockExpr. Hence, it can contain multiple statements, 
 and newlines are significant. Single ‘\$’-signs are not permitted in isolation 
-in a interpolated string. A single ‘\$’-sign can still be obtained by doubling the `\$’ 
-character: “\$\$”.
+in a interpolated string. A single ‘\$’-sign can still be obtained by doubling the ‘\$’ 
+character: ‘\$\$’.
 
 The simpler form consists of a ‘\$’-sign followed by an identifier starting with 
 a letter and followed only by letters, digits, and underscore characters, 
@@ -542,16 +542,8 @@ implicit conversion of the built-in scala.StringContext.
 
 One could write an extension
 ```scala
-implicit class StringInterpolation(val sc: StringContext) {
+implicit class StringInterpolation(s: StringContext) {
   def id(args: Any*) = ???
-}
-```
-or
-````scala
-implicit class StringInterpolation(s: StringContext) = {
-    object id {
-       def apply(exprs: Any*) = ???
-    }
 }
 ```
 
