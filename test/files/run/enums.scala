@@ -96,7 +96,8 @@ object Test5 {
     println(s2.toBitMask.map(_.toBinaryString).toList)
     println(D1.ValueSet.fromBitMask(s1.toBitMask))
     println(D2.ValueSet.fromBitMask(s2.toBitMask))
-    println(WeekDays.values.range(WeekDays.Tue, WeekDays.Sat))
+    val r: WeekDays.ValueSet = WeekDays.values.range(WeekDays.Tue, WeekDays.Sat)
+    println(r)
   }
 }
 
