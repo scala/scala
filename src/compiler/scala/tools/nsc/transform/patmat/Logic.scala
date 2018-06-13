@@ -224,10 +224,20 @@ trait Logic extends Debugging  {
         }
       }
 
+      def mapConserve[A <: AnyRef](s: Set[A])(f: A => A): Set[A] = {
+        var changed = false
+        val s1 = s.map {a =>
+          val a1 = f(a)
+          if (a1 ne a) changed = true
+          a1
+        }
+        if (changed) s1 else s
+      }
+
       // push negation inside formula
       def negationNormalFormNot(p: Prop): Prop = p match {
-        case And(ops) => Or(ops.map(negationNormalFormNot)) // De Morgan
-        case Or(ops)  => And(ops.map(negationNormalFormNot)) // De Morgan
+        case And(ops) => Or(mapConserve(ops)(negationNormalFormNot)) // De Morgan
+        case Or(ops)  => And(mapConserve(ops)(negationNormalFormNot)) // De Morgan
         case Not(p)   => negationNormalForm(p)
         case True     => False
         case False    => True
@@ -235,8 +245,12 @@ trait Logic extends Debugging  {
       }
 
       def negationNormalForm(p: Prop): Prop = p match {
-        case And(ops)     => And(ops.map(negationNormalForm))
-        case Or(ops)      => Or(ops.map(negationNormalForm))
+        case And(ops)     =>
+          val ops1 = mapConserve(ops)(negationNormalForm)
+          if (ops1 eq ops) p else And(ops1)
+        case Or(ops)      =>
+          val ops1 = mapConserve(ops)(negationNormalForm)
+          if (ops1 eq ops) p else Or(ops1)
         case Not(negated) => negationNormalFormNot(negated)
         case True
              | False
@@ -320,20 +334,20 @@ trait Logic extends Debugging  {
       def applySymbol(x: Sym): Unit = {}
     }
 
-    def gatherVariables(p: Prop): Set[Var] = {
+    def gatherVariables(p: Prop): collection.Set[Var] = {
       val vars = new mutable.HashSet[Var]()
       (new PropTraverser {
         override def applyVar(v: Var) = vars += v
       })(p)
-      vars.toSet
+      vars
     }
 
-    def gatherSymbols(p: Prop): Set[Sym] = {
+    def gatherSymbols(p: Prop): collection.Set[Sym] = {
       val syms = new mutable.HashSet[Sym]()
       (new PropTraverser {
         override def applySymbol(s: Sym) = syms += s
       })(p)
-      syms.toSet
+      syms
     }
 
     trait PropMap {
