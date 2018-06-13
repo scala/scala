@@ -289,4 +289,12 @@ class ArrayBufferTest {
 
     assertEquals(0, buffer.size)
   }
+
+  @Test
+  def testSortInPlace: Unit = {
+    val buffer = ArrayBuffer(3, 2, 1)
+    buffer.sortInPlace()
+
+    assertEquals(ArrayBuffer(1, 2, 3), buffer)
+  }
 }

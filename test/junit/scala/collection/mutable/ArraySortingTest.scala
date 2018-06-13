@@ -3,6 +3,7 @@ package scala.collection.mutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
 /* Tests various maps by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
@@ -25,5 +26,13 @@ class ArraySortingTest {
     scala.util.Sorting.quickSort(cant)(CanOrder)
     assert( test(6) == 1 )
     assert( (test,cant).zipped.forall(_ == _.i) )
+  }
+
+  @Test
+  def testSortInPlace: Unit = {
+    val arr = Array(3, 2, 1)
+    arr.sortInPlace()
+
+    assertEquals(ArraySeq(1, 2, 3), ArraySeq.make(arr))
   }
 }
