@@ -66,6 +66,15 @@ stringElement    ::=  charNoDoubleQuoteOrNewline
                  |  charEscapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
+interpolatedString 
+                 ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+                 |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+escape           ::= ‘\$\$’ 
+                 | ‘\$’ id 
+                 | ‘\$’ BlockExpr
+alphaid          ::= upper idrest
+                 |  varid
+
 symbolLiteral    ::=  ‘'’ plainid
 
 comment          ::=  ‘/*’ “any sequence of characters; nested comments are allowed” ‘*/’
@@ -86,6 +95,7 @@ grammar:
                       |  booleanLiteral
                       |  characterLiteral
                       |  stringLiteral
+                      |  interpolatedString
                       |  symbolLiteral
                       |  ‘null’
 

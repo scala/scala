@@ -317,6 +317,7 @@ Literal  ::=  [‘-’] integerLiteral
            |  booleanLiteral
            |  characterLiteral
            |  stringLiteral
+           |  interpolatedString
            |  symbolLiteral
            |  ‘null’
 ```
@@ -497,6 +498,54 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 > Because there is a predefined
 > [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 > `StringLike`, the method is applicable to all strings.
+
+#### Interpolated string
+
+```ebnf
+interpolatedString ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+                         |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+escape                 ::= ‘\$\$’ 
+                         | ‘\$’ id
+                         | ‘\$’ BlockExpr
+alphaid                ::= upper idrest
+                         |  varid
+
+```
+
+Interpolated string consist of an identifier starting with a letter immediately 
+followed by a string literal. There may be no whitespace characters or comments 
+between the leading identifier and the opening quote ‘”’ of the string. 
+The string literal in a interpolated string can be standard (single quote) 
+or multi-line (triple quote).
+
+Inside a interpolated string none of the usual escape characters are interpreted 
+(except for unicode escapes) no matter whether the string literal is normal 
+(enclosed in single quotes) or multi-line (enclosed in triple quotes). 
+Instead, there is are two new forms of dollar sign escape. 
+The most general form encloses an expression in \${ and }, i.e. \${expr}. 
+The expression enclosed in the braces that follow the leading \$ character is of 
+syntactical category BlockExpr. Hence, it can contain multiple statements, 
+and newlines are significant. Single ‘\$’-signs are not permitted in isolation 
+in a interpolated string. A single ‘\$’-sign can still be obtained by doubling the ‘\$’ 
+character: ‘\$\$’.
+
+The simpler form consists of a ‘\$’-sign followed by an identifier starting with 
+a letter and followed only by letters, digits, and underscore characters, 
+e.g \$id. The simpler form is expanded by putting braces around the identifier, 
+e.g \$id is equivalent to \${id}. In the following, unless we explicitly state otherwise, 
+we assume that this expansion has already been performed.
+
+The expanded expression is type checked normally. Usually, StringContext will resolve to 
+the default implementation in the scala package, 
+but it could also be user-defined. Note that new interpolators can also be added through 
+implicit conversion of the built-in scala.StringContext.
+
+One could write an extension
+```scala
+implicit class StringInterpolation(s: StringContext) {
+  def id(args: Any*) = ???
+}
+```
 
 ### Escape Sequences
 
