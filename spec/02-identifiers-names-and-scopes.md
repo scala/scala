@@ -18,11 +18,13 @@ Bindings of different kinds have a precedence defined on them:
 
 1. Definitions and declarations that are local, inherited, or made
    available by a package clause and also defined in the same compilation unit
-   as the reference, have highest precedence.
+   as the reference to them, have highest precedence.
 1. Explicit imports have next highest precedence.
-1. Wildcard imports  have next highest precedence.
+1. Wildcard imports have next highest precedence.
 1. Definitions made available by a package clause, but not also defined in the
-   same compilation unit as the reference, have lowest precedence.
+   same compilation unit as the reference to them, as well as imports which
+   are supplied by the compiler but not explicitly written in source code,
+   have lowest precedence.
 
 There are two different name spaces, one for [types](03-types.html#types)
 and one for [terms](06-expressions.html#expressions). The same name may designate a
@@ -83,6 +85,25 @@ package util {
 }
 ```
 
+The compiler supplies imports in a preamble to every source file. This preamble
+conceptually has the following form, where braces indicate nested scopes:
+
+```scala
+import java.lang._
+{
+  import scala._
+  {
+    import Predef._
+    { /* source */ }
+  }
+}
+```
+
+These imports are taken as lowest precedence, so that they are always shadowed
+by user code, which may contain competing imports and definitions.
+They also increase the nesting depth as shown, so that later imports
+shadow earlier ones.
+
 As a convenience, multiple bindings of a type identifier to the same
 underlying type is permitted. This is possible when import clauses introduce
 a binding of a member type alias with the same binding precedence, typically
@@ -97,6 +118,25 @@ object Z {
   @T def f: Int = { f ; 42 }                  // error, f is not tail recursive
 }
 ```
+
+Similarly, imported aliases of names introduced by package statements are
+allowed, even though the names are strictly ambiguous:
+
+```scala
+// c.scala
+package p { class C }
+
+// xy.scala
+import p._
+package p { class X extends C }
+package q { class Y extends C }
+```
+
+The reference to `C` in the definition of `X` is strictly ambiguous
+because `C` is available by virtue of the package clause in
+a different file, and can't shadow the imported name. But because
+the references are the same, the definition is taken as though it
+did shadow the import.
 
 ###### Example
 

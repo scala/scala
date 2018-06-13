@@ -1,6 +1,6 @@
-import scala.collection.immutable._
-
 object Test extends App {
+
+  import scala.collection.immutable._
 
   // finds an int x such that improved(x) differs in the first bit to improved(0),
   // which is the worst case for the HashTrieSet

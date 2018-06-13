@@ -1005,6 +1005,24 @@ trait Contexts { self: Analyzer =>
       )
     }
 
+    /** Does the import just import the defined symbol?
+     *
+     *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
+     *  `S` is both made available in `p` and imported, an ambiguity.
+     *  (The import is not used and is extraneous, but normally a definition
+     *  in `p` would shadow and result in maybe a warning, not an error.)
+     *
+     *  Don't attempt to interfere with correctness everywhere.
+     *  `object X { def f = ??? ; def g = { import X.f ; f } }`
+     *
+     *  This method doesn't use the ImportInfo, `imp1`.
+     */
+    private def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
+      val res = impSym == defSym
+      if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
+      res
+    }
+
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
@@ -1054,12 +1072,6 @@ trait Contexts { self: Analyzer =>
         else
           finish(EmptyTree, sym)
 
-      def isPackageOwnedInDifferentUnit(s: Symbol) = (
-        s.isDefinedInPackage && (
-             !currentRun.compiles(s)
-          || unit.exists && s.sourceFile != unit.source.file
-        )
-      )
       def lookupInPrefix(name: Name)    = {
         val sym = pre.member(name).filter(qualifies)
         def isNonPackageNoModuleClass(sym: Symbol) =
@@ -1141,36 +1153,47 @@ trait Contexts { self: Analyzer =>
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
-      // Java: A single-type-import declaration d in a compilation unit c of package p
-      // that imports a type named n shadows, throughout c, the declarations of:
-      //
-      //  1) any top level type named n declared in another compilation unit of p
-      //
-      // A type-import-on-demand declaration never causes any other declaration to be shadowed.
-      //
-      // Scala: Bindings of different kinds have a precedence defined on them:
-      //
-      //  1) Definitions and declarations that are local, inherited, or made available by a
-      //     package clause in the same compilation unit where the definition occurs have
-      //     highest precedence.
-      //  2) Explicit imports have next highest precedence.
-      def depthOk(imp: ImportInfo) = (
-           imp.depth > symbolDepth
-        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+      /* Java: A single-type-import declaration d in a compilation unit c of package p
+       * that imports a type named n shadows, throughout c, the declarations of:
+       *
+       *  1) any top level type named n declared in another compilation unit of p
+       *
+       * A type-import-on-demand declaration never causes any other declaration to be shadowed.
+       *
+       * Scala: Bindings of different kinds have a defined precedence order:
+       *
+       *  1) Definitions and declarations that are local, inherited, or made available by
+       *     a package clause and also defined in the same compilation unit as the reference, have highest precedence.
+       *  2) Explicit imports have next highest precedence.
+       *  3) Wildcard imports have next highest precedence.
+       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
+       *     as the reference, have lowest precedence. Also "root" imports added implicitly.
+       */
+      def foreignDefined = defSym.exists && isPackageOwnedInDifferentUnit(defSym)  // SI-2458
+      // can an import at this depth possibly shadow the definition found in scope if any?
+      def importCanShadowAtDepth(imp: ImportInfo) = imp.depth > symbolDepth || (
+        if (unit.isJava) imp.depth == symbolDepth && imp.isExplicitImport(name)
+        else foreignDefined
       )
 
-      while (!impSym.exists && importCursor.imp1Exists && depthOk(importCursor.imp1)) {
+      while (!impSym.exists && importCursor.imp1Exists && importCanShadowAtDepth(importCursor.imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
           importCursor.advanceImp1Imp2()
       }
 
       if (defSym.exists && impSym.exists) {
-        // imported symbols take precedence over package-owned symbols in different compilation units.
-        if (isPackageOwnedInDifferentUnit(defSym))
+        // 4) root imported symbols have same (lowest) precedence as package-owned symbols in different compilation units.
+        if (imp1.depth < symbolDepth && imp1.isRootImport && foreignDefined)
+          impSym = NoSymbol
+        // 4) imported symbols have higher precedence than package-owned symbols in different compilation units.
+        else if (imp1.depth >= symbolDepth && foreignDefined)
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
+          impSym = NoSymbol
+        // Try to reconcile them before giving up, at least if the def is not visible
+        else if (foreignDefined && reconcileAmbiguousImportAndDef(name, impSym, defSym))
           impSym = NoSymbol
         // Otherwise they are irreconcilably ambiguous
         else
@@ -1248,12 +1271,18 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-  } //class Context
+    def isPackageOwnedInDifferentUnit(s: Symbol): Boolean =
+      if (s.isOverloaded) s.alternatives.exists(isPackageOwnedInDifferentUnit)
+      else (s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file)
+      )
+  }
 
   /** A `Context` focussed on an `Import` tree */
   trait ImportContext extends Context {
     private val impInfo: ImportInfo = {
-      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
+      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
@@ -1441,7 +1470,7 @@ trait Contexts { self: Analyzer =>
     protected def handleError(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
   }
 
-  class ImportInfo(val tree: Import, val depth: Int) {
+  class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
     def pos = tree.pos
     def posOf(sel: ImportSelector) =
       if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos
