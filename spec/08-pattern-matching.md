@@ -20,7 +20,6 @@ chapter: 8
   SimplePattern   ::=  ‘_’
                     |  varid
                     |  Literal
-                    |  processedStringLiteral
                     |  StableId
                     |  StableId ‘(’ [Patterns] ‘)’
                     |  StableId ‘(’ [Patterns ‘,’] [id ‘@’] ‘_’ ‘*’ ‘)’
@@ -105,14 +104,14 @@ A _literal pattern_ $L$ matches any value that is equal (in terms of
 `==`) to the literal $L$. The type of $L$ must conform to the
 expected type of the pattern.
 
-### Processed string patterns
+### Interpolated string patterns
 
 ```ebnf
-  SimplePattern   ::=  processedStringLiteral
+  Literal  ::=  interpolatedString
 ```
 
-The expansion of processed string literals in patterns is the same as 
-in expressions. If it occurs in a pattern, a processed string literal 
+The expansion of interpolated string literals in patterns is the same as 
+in expressions. If it occurs in a pattern, a interpolated string literal 
 of either of the forms
 ```
 id "text0{ pat1 }text1 … { patn }textn"
@@ -120,8 +119,10 @@ id """text0{ pat1 }text1 … { patn }textn"""
 ```
 is equivalent to:
 ```
-scala.StringContext("""text0""", …, """textn""").id(pat1, …, patn)
+StringContext("""text0""", …, """textn""").id(pat1, …, patn)
 ```
+You could define your own StringContext to shadow the default one that's 
+in the scala package.
 
 This expansion is well-typed if the member id evaluates to an extractor 
 object. If the extractor object has apply as well as unapply or 

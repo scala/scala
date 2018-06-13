@@ -66,11 +66,11 @@ stringElement    ::=  charNoDoubleQuoteOrNewline
                  |  charEscapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
-processedStringLiteral 
+interpolatedString 
                  ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
                  |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
 escape           ::= ‘\$\$’ 
-                 | ‘\$’ letter { letter | digit } 
+                 | ‘\$’ id 
                  | ‘\$’ BlockExpr
 alphaid          ::= upper idrest
                  |  varid
@@ -95,6 +95,7 @@ grammar:
                       |  booleanLiteral
                       |  characterLiteral
                       |  stringLiteral
+                      |  interpolatedString
                       |  symbolLiteral
                       |  ‘null’
 
@@ -158,7 +159,6 @@ grammar:
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
   SimpleExpr1       ::=  Literal
-                      |  processedStringLiteral
                       |  Path
                       |  ‘_’
                       |  ‘(’ [Exprs] ‘)’
@@ -199,7 +199,6 @@ grammar:
   SimplePattern     ::=  ‘_’
                       |  varid
                       |  Literal
-                      |  processedStringLiteral
                       |  StableId
                       |  StableId ‘(’ [Patterns] ‘)’
                       |  StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ ‘*’ ‘)’

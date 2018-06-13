@@ -29,7 +29,6 @@ SimpleExpr   ::=  ‘new’ (ClassTemplate | TemplateBody)
                |  BlockExpr
                |  SimpleExpr1 [‘_’]
 SimpleExpr1  ::=  Literal
-               |  processedStringLiteral
                |  Path
                |  ‘_’
                |  ‘(’ [Exprs] ‘)’
