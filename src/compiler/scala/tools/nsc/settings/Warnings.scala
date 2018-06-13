@@ -95,7 +95,6 @@ trait Warnings {
     val DelayedInitSelect      = LintWarning("delayedinit-select",        "Selecting member of DelayedInit.")
     val ByNameRightAssociative = LintWarning("by-name-right-associative", "By-name parameter of right associative operator.")
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
-    val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
@@ -119,7 +118,6 @@ trait Warnings {
   def warnDelayedInit            = lint contains DelayedInitSelect
   def warnByNameRightAssociative = lint contains ByNameRightAssociative
   def warnPackageObjectClasses   = lint contains PackageObjectClasses
-  def warnUnsoundMatch           = lint contains UnsoundMatch
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
