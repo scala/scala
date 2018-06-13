@@ -1,5 +1,3 @@
-method any2stringadd is not a valid implicit value because:
--Xsource:2.14 removes scala.Predef.any2stringadd
 implicit-any2stringadd.scala:2: error: value + is not a member of Boolean
   true + "what"
        ^
