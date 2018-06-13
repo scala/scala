@@ -753,7 +753,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
     def checkExistentialsFeature(pos: Position, tpe: Type, prefix: String) = tpe match {
-      case extp: ExistentialType if !extp.isRepresentableWithWildcards =>
+      case extp: ExistentialType if !extp.isRepresentableWithWildcards && !tpe.isError =>
         checkFeature(pos, currentRun.runDefinitions.ExistentialsFeature, prefix+" "+tpe)
       case _ =>
     }
