@@ -773,6 +773,9 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
 def partestOnly(in: String): Def.Initialize[Task[Unit]] =
   (testOnly in IntegrationTest in testP).toTask(" -- " + in)
 
+def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
+  partestOnly(in).result map (_ -> s"partest $in")
+
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
   .settings(disablePublishing)
@@ -823,12 +826,12 @@ lazy val root: Project = (project in file("."))
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-        partestOnly("run").result map (_ -> "partest run"),
-        partestOnly("pos neg jvm").result map (_ -> "partest pos neg jvm"),
-        partestOnly("res scalap specialized").result map (_ -> "partest res scalap specialized"),
-        partestOnly("instrumented presentation").result map (_ -> "partest instrumented presentation"),
-        partestOnly("--srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
-        partestOnly("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot").result map (_ -> "partest --srcpath macro-annot"),
+        partestDesc("run"),
+        partestDesc("pos neg jvm"),
+        partestDesc("res scalap specialized"),
+        partestDesc("instrumented presentation"),
+        partestDesc("--srcpath scaladoc"),
+        partestDesc("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
