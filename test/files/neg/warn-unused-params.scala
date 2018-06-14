@@ -71,3 +71,14 @@ class Main {
 trait Unimplementation {
   def f(u: Int): Int = ???        // no warn for param in unimplementation
 }
+
+trait DumbStuff {
+  def f(implicit dummy: DummyImplicit) = 42
+  def g(dummy: DummyImplicit) = 42
+}
+trait Proofs {
+  def f[A, B](implicit ev: A =:= B) = 42
+  def g[A, B](implicit ev: A <:< B) = 42
+  def f2[A, B](ev: A =:= B) = 42
+  def g2[A, B](ev: A <:< B) = 42
+}

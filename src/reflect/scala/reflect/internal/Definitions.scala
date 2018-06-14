@@ -1468,6 +1468,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val StringContext_raw = getMemberMethod(StringContextClass, nme.raw_)
       lazy val StringContext_apply = getMemberMethod(StringContextModule, nme.apply)
 
+      lazy val Predef_=:= = getMemberClass(PredefModule, nme.=:=)
+      lazy val Predef_<:< = getMemberClass(PredefModule, nme.<:<)
+      lazy val Predef_Dummy = getMemberClass(PredefModule, nme.DummyImplicit)
+
       lazy val ArrowAssocClass = getMemberClass(PredefModule, TypeName("ArrowAssoc")) // scala/bug#5731
       def isArrowAssoc(sym: Symbol) = sym.owner == ArrowAssocClass
 
