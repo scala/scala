@@ -45,9 +45,7 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
 
   val nc = BooleanSetting(
       "-nc",
-      "do not use the fsc compilation daemon") withAbbreviation "-nocompdaemon" withPostSetHook((x: BooleanSetting) => {_useCompDaemon = !x.value })
-
-
-  private[this] var _useCompDaemon = true
-  def useCompDaemon: Boolean = _useCompDaemon
+      "do not use the legacy fsc compilation daemon").withAbbreviation("-nocompdaemon")
+      .withDeprecationMessage("scripts use cold compilation by default; use -Yscriptrunner for custom behavior")
+      .withPostSetHook { x: BooleanSetting => Yscriptrunner.value = if (x) "default" else "resident" }
 }

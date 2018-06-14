@@ -224,6 +224,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
   @deprecated("Unused setting will be removed", since="2.13")
   val Yreplsync       = new BooleanSetting    ("-Yrepl-sync", "Legacy setting for sbt compatibility, unused.").internalOnly()
+  val Yscriptrunner   = StringSetting     ("-Yscriptrunner", "classname", "Specify a scala.tools.nsc.ScriptRunner (default, resident, shutdown, or a class name).", "default")
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
   val YcachePluginClassLoader  = CachePolicy.setting("plugin", "compiler plugins")
   val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
