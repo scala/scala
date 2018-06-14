@@ -292,9 +292,9 @@ class definition.
 ```scala
 package scala
 abstract sealed class Boolean extends AnyVal {
-  def && (p: => Boolean): Boolean = // boolean and
+  def && (p: Boolean): Boolean = // boolean and
     if (this) p else false
-  def || (p: => Boolean): Boolean = // boolean or
+  def || (p: Boolean): Boolean = // boolean or
     if (this) true else p
   def &  (x: Boolean): Boolean =    // boolean strict and
     if (this) x else false
@@ -307,6 +307,13 @@ abstract sealed class Boolean extends AnyVal {
   def unary_!: Boolean =            // boolean negation
     if (this) false else true
 }
+```
+
+Note that `&&` and `||` use 'short-circuit' evaluation and behave as if they were declared as
+
+```
+def &&(x: => Boolean): Boolean
+def ||(x: => Boolean): Boolean
 ```
 
 The class also implements operations `equals`, `hashCode`,
