@@ -977,16 +977,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return      the string builder `b` to which elements were appended.
     */
   def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
-    var first = true
     b.append(start)
-    for (x <- this) {
-      if (first) {
-        b.append(x)
-        first = false
-      }
-      else {
+    val it = iterator
+    if (it.hasNext) {
+      b.append(it.next)
+      while (it.hasNext) {
         b.append(sep)
-        b.append(x)
+        b.append(it.next)
       }
     }
     b.append(end)
