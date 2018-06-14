@@ -34,7 +34,7 @@ object languageFeature {
   sealed trait higherKinds
   object higherKinds extends higherKinds
 
-  @meta.languageFeature("#, which cannot be expressed by wildcards, ", enableRequired = false)
+  @meta.languageFeature("#, which cannot be expressed by wildcards,", enableRequired = false)
   sealed trait existentials
   object existentials extends existentials
 

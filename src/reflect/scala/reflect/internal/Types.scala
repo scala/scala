@@ -2925,7 +2925,7 @@ trait Types
           !(qset contains sym) &&
           !isQuantified(pre)
         case _ => false
-    }
+      }
     }
 
     override def safeToString: String = {
