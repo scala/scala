@@ -2080,18 +2080,18 @@ self =>
       }
     }
     /** The implementation of the context sensitive methods for parsing outside of patterns. */
-    val outPattern = new PatternContextSensitive {
+    final val outPattern = new PatternContextSensitive {
       def argType(): Tree = typ()
       def functionArgType(): Tree = paramType(useStartAsPosition = true)
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */
-    val seqOK = new SeqContextSensitive(isSequenceOK = true, isXML = false)
+    final val seqOK = new SeqContextSensitive(isSequenceOK = true, isXML = false)
 
     /** The implementation for parsing inside of patterns at points where sequences are disallowed. */
-    val noSeq = new SeqContextSensitive(isSequenceOK = false, isXML = false)
+    final val noSeq = new SeqContextSensitive(isSequenceOK = false, isXML = false)
 
     /** For use from xml pattern, where sequence is allowed and encouraged. */
-    val xmlSeqOK = new SeqContextSensitive(isSequenceOK = true, isXML = true)
+    final val xmlSeqOK = new SeqContextSensitive(isSequenceOK = true, isXML = true)
 
     /** These are default entry points into the pattern context sensitive methods:
      *  they are all initiated from non-pattern context.
