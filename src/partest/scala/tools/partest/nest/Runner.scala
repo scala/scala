@@ -57,7 +57,7 @@ trait TestInfo {
 }
 
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestUI) extends TestInfo {
+class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: NestUI) extends TestInfo {
   private val stopwatch = new Stopwatch()
 
   import suiteRunner.{fileManager => fm, _}
@@ -71,7 +71,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
   def isEnumeratedTest = false
 
   private var _lastState: TestState = null
-  private val _transcript = new TestTranscript
+  private val _transcript = new TestTranscript(nestUI.color)
 
   def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
   def setLastState(s: TestState)  = _lastState = s
@@ -440,7 +440,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     // if diff is not empty, is update needed?
     val updating: Option[Boolean] = (
       if (diff == "") None
-      else Some(updateCheck)
+      else Some(config.optUpdateCheck)
     )
     pushTranscript(s"diff $checkFile $logFile")
     nextTestAction(updating) {
@@ -692,7 +692,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner, val nestUI: NestU
     val javaopts = readOptionsFile(argsFile)
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile)
-    def noexec() = suiteRunner.noexec && { setLastState(genSkip("no-exec: tests compiled but not run")) ; true }
+    def noexec() = suiteRunner.config.optNoExec && { setLastState(genSkip("no-exec: tests compiled but not run")) ; true }
     runTestCommon(noexec() || exec() && diffIsOk)
   }
 
@@ -758,11 +758,9 @@ object Properties extends scala.util.PropertiesTrait {
 
 /** Used by SBT- and ConsoleRunner for running a set of tests. */
 class SuiteRunner(
+  val config: RunnerSpec.Config,
   val testSourcePath: String, // relative path, like "files", or "pending"
   val fileManager: FileManager,
-  val updateCheck: Boolean,
-  val failed: Boolean,
-  val noexec: Boolean,
   val nestUI: NestUI,
   val javaCmdPath: String = PartestDefaults.javaCmd,
   val javacCmdPath: String = PartestDefaults.javacCmd,
@@ -770,116 +768,6 @@ class SuiteRunner(
   val javaOpts: String = PartestDefaults.javaOpts,
   val scalacOpts: String = PartestDefaults.scalacOpts) {
 
-  import PartestDefaults.{ numThreads, waitTime }
-
-  setUncaughtHandler
-
-  // TODO: make this immutable
-  PathSettings.testSourcePath = testSourcePath
-
-  val durations = collection.concurrent.TrieMap[File, Long]()
-
-  def banner = {
-    val baseDir = fileManager.compilerUnderTest.parent.toString
-    def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
-    val vmBin  = javaHome + fileSeparator + "bin"
-    val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
-
-  s"""|Partest version:     ${Properties.versionNumberString}
-      |Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
-      |Scala version is:    $versionMsg
-      |Scalac options are:  ${(scalacExtraArgs ++ scalacOpts.split(' ')).mkString(" ")}
-      |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
-      |Java binaries in:    $vmBin
-      |Java runtime is:     $vmName
-      |Java options are:    $javaOpts
-      |baseDir:             $baseDir
-      |sourceDir:           ${PathSettings.srcDir}
-    """.stripMargin
-    // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
-    // |Java Classpath:             ${sys.props("java.class.path")}
-  }
-
-  def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
-    durations(testFile) = durationMs
-    result
-  }
-
-  def runTest(testFile: File): TestState = {
-    val start = System.nanoTime()
-    val runner = new Runner(testFile, this, nestUI)
-    var stopwatchDuration: Option[Long] = None
-
-    // when option "--failed" is provided execute test only if log
-    // is present (which means it failed before)
-    val state =
-      if (failed && !runner.logFile.canRead)
-        runner.genPass()
-      else {
-        val (state, durationMs) =
-          try runner.run()
-          catch {
-            case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
-          }
-        stopwatchDuration = Some(durationMs)
-        nestUI.reportTest(state, runner, durationMs)
-        runner.cleanup()
-        state
-      }
-    val end = System.nanoTime()
-    val durationMs = stopwatchDuration.getOrElse(TimeUnit.NANOSECONDS.toMillis(end - start))
-    onFinishTest(testFile, state, durationMs)
-  }
-
-  def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
-    nestUI.resetTestNumber(kindFiles.size)
-
-    val pool              = Executors newFixedThreadPool numThreads
-    val futures           = kindFiles map (f => pool submit callable(runTest(f.getAbsoluteFile)))
-
-    pool.shutdown()
-    Try (pool.awaitTermination(waitTime) {
-      throw TimeoutException(waitTime)
-    }) match {
-      case Success(_) => futures map (_.get)
-      case Failure(e) =>
-        e match {
-          case TimeoutException(d)      =>
-            nestUI.warning("Thread pool timeout elapsed before all tests were complete!")
-          case ie: InterruptedException =>
-            nestUI.warning("Thread pool was interrupted")
-            ie.printStackTrace()
-        }
-        pool.shutdownNow()     // little point in continuing
-        // try to get as many completions as possible, in case someone cares
-        val results = for (f <- futures) yield {
-          try {
-            Some(f.get(0, NANOSECONDS))
-          } catch {
-            case _: Throwable => None
-          }
-        }
-        results.flatten
-    }
-  }
-
-  class TestTranscript {
-    private val buf = ListBuffer[String]()
-
-    def add(action: String): this.type = { buf += action ; this }
-    def append(text: String): Unit = { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
-
-    // Colorize prompts according to pass/fail
-    def fail: List[String] = {
-      import nestUI.color._
-      def pass(s: String) = bold(green("% ")) + s
-      def fail(s: String) = bold(red("% ")) + s
-      buf.toList match {
-        case Nil  => Nil
-        case xs   => (xs.init map pass) :+ fail(xs.last)
-      }
-    }
-  }
 }
 
 case class TimeoutException(duration: Duration) extends RuntimeException
@@ -930,6 +818,24 @@ object Output {
     finally {
       newstream.flush()
       redirVar.value = saved
+    }
+  }
+}
+
+class TestTranscript(color: Colors) {
+  private val buf = ListBuffer[String]()
+
+  def add(action: String): this.type = { buf += action ; this }
+  def append(text: String): Unit = { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
+
+  // Colorize prompts according to pass/fail
+  def fail: List[String] = {
+    import color._
+    def pass(s: String) = bold(green("% ")) + s
+    def fail(s: String) = bold(red("% ")) + s
+    buf.toList match {
+      case Nil  => Nil
+      case xs   => (xs.init map pass) :+ fail(xs.last)
     }
   }
 }

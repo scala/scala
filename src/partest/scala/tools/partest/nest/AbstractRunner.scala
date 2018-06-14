@@ -8,14 +8,21 @@ package partest
 package nest
 
 import utils.Properties._
-import scala.tools.nsc.Properties.{ versionMsg, propOrFalse, setProp }
+import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import TestKinds._
 import scala.reflect.internal.util.Collections.distinctBy
+import scala.util.{ Try, Success, Failure }
+import scala.concurrent.duration.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
 abstract class AbstractRunner {
 
   val config: RunnerSpec.Config
+  val fileManager: FileManager
+  protected val testSourcePath: String
 
   lazy val nestUI: NestUI = new NestUI(
     verbose = config.optVerbose,
@@ -26,7 +33,11 @@ abstract class AbstractRunner {
     colorEnabled = colorEnabled
   )
 
-  val suiteRunner: SuiteRunner
+  val javaCmdPath: String            = PartestDefaults.javaCmd
+  val javacCmdPath: String           = PartestDefaults.javacCmd
+  val scalacExtraArgs: Seq[String]   = Seq.empty
+  val javaOpts: String               = PartestDefaults.javaOpts
+  val scalacOpts: String             = PartestDefaults.scalacOpts
 
   protected val printSummary         = true
   protected val partestCmd           = "test/partest"
@@ -102,6 +113,11 @@ abstract class AbstractRunner {
 
   /** Run the tests and return the success status */
   def run(): Boolean = {
+    setUncaughtHandler
+
+    // TODO: make this immutable
+    PathSettings.testSourcePath = testSourcePath
+
     if (config.optVersion) echo(versionMsg)
     else if (config.optHelp) nestUI.usage()
     else {
@@ -116,7 +132,7 @@ abstract class AbstractRunner {
       config.optTimeout foreach (x => setProp("partest.timeout", x))
 
       if (!nestUI.terse)
-        nestUI.echo(suiteRunner.banner)
+        nestUI.echo(banner)
 
       val grepExpr = config.optGrep getOrElse ""
 
@@ -168,7 +184,7 @@ abstract class AbstractRunner {
           val num = paths.size
           val ss = if (num == 1) "" else "s"
           comment(s"starting $num test$ss in $kind")
-          val results = suiteRunner.runTestsForFiles(paths map (_.jfile.getAbsoluteFile), kind)
+          val results = runTestsForFiles(paths map (_.jfile.getAbsoluteFile), kind)
           val (passed, failed) = results partition (_.isOk)
 
           passedTests ++= passed
@@ -183,5 +199,88 @@ abstract class AbstractRunner {
       issueSummaryReport()
     }
     isSuccess
+  }
+
+  def banner = {
+    val baseDir = fileManager.compilerUnderTest.parent.toString
+    def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
+    val vmBin  = javaHome + fileSeparator + "bin"
+    val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
+
+    s"""|Partest version:     ${Properties.versionNumberString}
+        |Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
+        |Scala version is:    $versionMsg
+        |Scalac options are:  ${(scalacExtraArgs ++ scalacOpts.split(' ')).mkString(" ")}
+        |Compilation Path:    ${relativize(FileManager.joinPaths(fileManager.testClassPath))}
+        |Java binaries in:    $vmBin
+        |Java runtime is:     $vmName
+        |Java options are:    $javaOpts
+        |baseDir:             $baseDir
+        |sourceDir:           ${PathSettings.srcDir}
+    """.stripMargin
+    // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
+    // |Java Classpath:             ${sys.props("java.class.path")}
+  }
+
+  def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
+    result
+  }
+
+  def runTest(testFile: File): TestState = {
+    val start = System.nanoTime()
+    val runner = new Runner(testFile, this, nestUI)
+    var stopwatchDuration: Option[Long] = None
+
+    // when option "--failed" is provided execute test only if log
+    // is present (which means it failed before)
+    val state =
+    if (config.optFailed && !runner.logFile.canRead)
+      runner.genPass()
+    else {
+      val (state, durationMs) =
+        try runner.run()
+        catch {
+          case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
+        }
+      stopwatchDuration = Some(durationMs)
+      nestUI.reportTest(state, runner, durationMs)
+      runner.cleanup()
+      state
+    }
+    val end = System.nanoTime()
+    val durationMs = stopwatchDuration.getOrElse(TimeUnit.NANOSECONDS.toMillis(end - start))
+    onFinishTest(testFile, state, durationMs)
+  }
+
+  def runTestsForFiles(kindFiles: Array[File], kind: String): Array[TestState] = {
+    nestUI.resetTestNumber(kindFiles.size)
+
+    val pool              = Executors newFixedThreadPool PartestDefaults.numThreads
+    val futures           = kindFiles map (f => pool submit callable(runTest(f.getAbsoluteFile)))
+
+    pool.shutdown()
+    Try (pool.awaitTermination(PartestDefaults.waitTime) {
+      throw TimeoutException(PartestDefaults.waitTime)
+    }) match {
+      case Success(_) => futures map (_.get)
+      case Failure(e) =>
+        e match {
+          case TimeoutException(d)      =>
+            nestUI.warning("Thread pool timeout elapsed before all tests were complete!")
+          case ie: InterruptedException =>
+            nestUI.warning("Thread pool was interrupted")
+            ie.printStackTrace()
+        }
+        pool.shutdownNow()     // little point in continuing
+      // try to get as many completions as possible, in case someone cares
+      val results = for (f <- futures) yield {
+        try {
+          Some(f.get(0, NANOSECONDS))
+        } catch {
+          case _: Throwable => None
+        }
+      }
+        results.flatten
+    }
   }
 }

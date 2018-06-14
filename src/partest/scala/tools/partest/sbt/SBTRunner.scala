@@ -42,46 +42,37 @@ class SBTRunner(val config: RunnerSpec.Config,
     }
   }
 
-  val javaOpts = {
+  override val javaOpts = {
     val l = defs.collect { case ("partest.java_opts", v) => v }
     if(l.isEmpty) PartestDefaults.javaOpts
     else l.mkString(" ")
   }
 
-  val scalacOpts = {
+  override val scalacOpts = {
     val l = defs.collect { case ("partest.scalac_opts", v) => v }
     if(l.isEmpty) PartestDefaults.javaOpts
     else l.mkString(" ")
   }
 
-  private val testSrcPath: String = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath
+  override val javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd
+  override val javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd
+  override val scalacExtraArgs = scalacArgs.toIndexedSeq
 
-  val suiteRunner = new SuiteRunner(
-    testSourcePath = testSrcPath,
-    new FileManager(testClassLoader = testClassLoader),
-    updateCheck = config.optUpdateCheck,
-    failed = config.optFailed,
-    noexec = config.optNoExec,
-    nestUI = nestUI,
-    javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
-    javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
-    scalacExtraArgs = scalacArgs.toIndexedSeq,
-    javaOpts = javaOpts,
-    scalacOpts = scalacOpts) { self =>
+  val testSourcePath: String = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath
+  val fileManager = new FileManager(testClassLoader = testClassLoader)
 
-      override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
-        self.synchronized {
-          eventHandler.handle(new Event {
-            def fullyQualifiedName: String = scala.tools.partest.nest.PathSettings.testRoot.name + "/" + testSrcPath
-            def fingerprint: Fingerprint = partestFingerprint
-            def selector: Selector = new TestSelector(testFile.testIdent)
-            val (status, throwable) = makeStatus(result)
-            def duration: Long = durationMs
-          })
-        }
-        result
-      }
+  override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
+    synchronized {
+      eventHandler.handle(new Event {
+        def fullyQualifiedName: String = scala.tools.partest.nest.PathSettings.testRoot.name + "/" + testSourcePath
+        def fingerprint: Fingerprint = partestFingerprint
+        def selector: Selector = new TestSelector(testFile.testIdent)
+        val (status, throwable) = makeStatus(result)
+        def duration: Long = durationMs
+      })
     }
+    result
+  }
 
   def makeStatus(t: TestState): (Status, OptionalThrowable) = t match {
     case Uninitialized(_) => (Status.Pending, new OptionalThrowable)
