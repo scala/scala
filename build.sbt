@@ -770,6 +770,9 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
   )
   .dependsOn(library, reflect, compiler, scalap)
 
+def partestOnly(in: String): Def.Initialize[Task[Unit]] =
+  (testOnly in IntegrationTest in testP).toTask(" -- " + in)
+
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
   .settings(disablePublishing)
@@ -799,18 +802,18 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := (testOnly in IntegrationTest in testP).toTask(" -- run").value,
-    testPosPres := (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").value,
+    testRun := partestOnly("run").value,
+    testPosPres := partestOnly("pos presentation").value,
 
     testRest := Def.sequential(
       mimaReportBinaryIssues in library,
       mimaReportBinaryIssues in reflect,
       Keys.test in Test in junit,
       Keys.test in Test in scalacheck,
-      (testOnly in IntegrationTest in testP).toTask(" -- neg jvm"),
-      (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized"),
-      (testOnly in IntegrationTest in testP).toTask(" -- instrumented"),
-      (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc"),
+      partestOnly("neg jvm"),
+      partestOnly("res scalap specialized"),
+      partestOnly("instrumented"),
+      partestOnly("--srcpath scaladoc"),
       Keys.test in Test in osgiTestFelix,
       Keys.test in Test in osgiTestEclipse
     ).value,
@@ -820,12 +823,12 @@ lazy val root: Project = (project in file("."))
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-        (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
-        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
-        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
-        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
-        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
-        (testOnly in IntegrationTest in testP).toTask(" -- -Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot").result map (_ -> "partest --srcpath macro-annot"),
+        partestOnly("run").result map (_ -> "partest run"),
+        partestOnly("pos neg jvm").result map (_ -> "partest pos neg jvm"),
+        partestOnly("res scalap specialized").result map (_ -> "partest res scalap specialized"),
+        partestOnly("instrumented presentation").result map (_ -> "partest instrumented presentation"),
+        partestOnly("--srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
+        partestOnly("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot").result map (_ -> "partest --srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
