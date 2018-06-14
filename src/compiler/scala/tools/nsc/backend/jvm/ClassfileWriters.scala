@@ -2,7 +2,7 @@ package scala.tools.nsc.backend.jvm
 
 import java.io.{BufferedOutputStream, DataOutputStream, FileOutputStream, IOException}
 import java.nio.ByteBuffer
-import java.nio.channels.{ClosedByInterruptException, FileChannel}
+import java.nio.channels.{ClosedByInterruptException, Channels, FileChannel}
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
@@ -32,7 +32,7 @@ abstract class ClassfileWriters {
     /**
      * Write a classfile
      */
-    def write(name: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit
+    def write(name: InternalName, bytes: ByteBuffer, paths: CompilationUnitPaths): Unit
 
     /**
      * Close the writer. Behavior is undefined after a call to `close`.
@@ -76,14 +76,8 @@ abstract class ClassfileWriters {
           else new MultiClassWriter(distinctOutputs.iterator.map { output: AbstractFile => output -> singleWriter(output) }.toMap)
       }
 
-      val withAdditionalFormats = if (settings.Ygenasmp.valueSetByUser.isEmpty && settings.Ydumpclasses.valueSetByUser.isEmpty) basicClassWriter else {
-        val asmp = settings.Ygenasmp.valueSetByUser map { dir: String => new AsmClassWriter(getDirectory(dir)) }
-        val dump = settings.Ydumpclasses.valueSetByUser map { dir: String => new DumpClassWriter(getDirectory(dir)) }
-        new AllClassWriter(basicClassWriter, asmp, dump)
-      }
-
       val enableStats = statistics.enabled && settings.YaddBackendThreads.value == 1
-      if (enableStats) new WithStatsWriter(withAdditionalFormats) else withAdditionalFormats
+      if (enableStats) new WithStatsWriter(basicClassWriter) else basicClassWriter
     }
 
     /**
@@ -109,7 +103,7 @@ abstract class ClassfileWriters {
 
       lazy val crc = new CRC32
 
-      override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = this.synchronized {
+      override def write(className: InternalName, bytes: ByteBuffer, paths: CompilationUnitPaths): Unit = this.synchronized {
         val path = className + ".class"
         val entry = new ZipEntry(path)
         if (storeOnly) {
@@ -119,14 +113,18 @@ abstract class ClassfileWriters {
           // need to pre-compute them here. The compressed size is taken from size.
           // https://stackoverflow.com/questions/1206970/how-to-create-uncompressed-zip-archive-in-java/5868403
           // With compression method `DEFLATED` JarOutputStream computes and sets the values.
-          entry.setSize(bytes.length)
+          entry.setSize(bytes.remaining())
           crc.reset()
           crc.update(bytes)
           entry.setCrc(crc.getValue)
         }
         jarWriter.putNextEntry(entry)
-        try jarWriter.write(bytes, 0, bytes.length)
-        finally jarWriter.flush()
+        import java.nio.channels.Channels
+        val channel = Channels.newChannel(jarWriter)
+        try channel.write(bytes)
+        finally {
+          jarWriter.flush()
+        }
       }
 
       override def close(): Unit = this.synchronized(jarWriter.close())
@@ -159,7 +157,7 @@ abstract class ClassfileWriters {
 
       protected def getPath(className: InternalName, paths: CompilationUnitPaths) = paths.outputPath.resolve(className + ".class")
 
-      protected def formatData(rawBytes: Array[Byte]) = rawBytes
+      protected def formatData(rawBytes: ByteBuffer) = rawBytes
 
       protected def qualifier: String = ""
 
@@ -171,7 +169,7 @@ abstract class ClassfileWriters {
       private val fastOpenOptions = util.EnumSet.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
       private val fallbackOpenOptions = util.EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
 
-      override def write(className: InternalName, rawBytes: Array[Byte], paths: CompilationUnitPaths): Unit = try {
+      override def write(className: InternalName, rawBytes: ByteBuffer, paths: CompilationUnitPaths): Unit = try {
         val path = getPath(className, paths)
         val bytes = formatData(rawBytes)
         ensureDirForPath(paths.outputPath, path)
@@ -183,7 +181,7 @@ abstract class ClassfileWriters {
         } else FileChannel.open(path, fallbackOpenOptions)
 
         try {
-          os.write(ByteBuffer.wrap(bytes), 0L)
+          os.write(rawBytes, 0L)
         } catch {
           case ex: ClosedByInterruptException =>
             try {
@@ -207,20 +205,6 @@ abstract class ClassfileWriters {
       override def close(): Unit = ()
     }
 
-    private final class AsmClassWriter(asmOutputPath: Path) extends DirClassWriter {
-      override protected def getPath(className: InternalName, paths: CompilationUnitPaths) = asmOutputPath.resolve(className + ".asmp")
-
-      override protected def formatData(rawBytes: Array[Byte]) = AsmUtils.textify(AsmUtils.readClass(rawBytes)).getBytes(StandardCharsets.UTF_8)
-
-      override protected def qualifier: String = " [for asmp]"
-    }
-
-    private final class DumpClassWriter(dumpOutputPath: Path) extends DirClassWriter {
-      override protected def getPath(className: InternalName, paths: CompilationUnitPaths) = dumpOutputPath.resolve(className + ".class")
-
-      override protected def qualifier: String = " [for dump]"
-    }
-
     private final class VirtualClassWriter extends UnderlyingClassfileWriter {
       private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
         def ensureDirectory(dir: AbstractFile): AbstractFile =
@@ -233,13 +217,14 @@ abstract class ClassfileWriters {
         ensureDirectory(dir) fileNamed pathParts.last + suffix
       }
 
-      private def writeBytes(outFile: AbstractFile, bytes: Array[Byte]): Unit = {
+      private def writeBytes(outFile: AbstractFile, bytes: ByteBuffer): Unit = {
         val out = new DataOutputStream(outFile.bufferedOutput)
-        try out.write(bytes, 0, bytes.length)
-        finally out.close()
+        val channel = Channels.newChannel(out)
+        try channel.write(bytes)
+        finally channel.close()
       }
 
-      override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = {
+      override def write(className: InternalName, bytes: ByteBuffer, paths: CompilationUnitPaths): Unit = {
         val outFile = getFile(paths.outputDir, className, ".class")
         writeBytes(outFile, bytes)
       }
@@ -252,30 +237,17 @@ abstract class ClassfileWriters {
         throw new Exception(s"Cannot determine output directory for ${paths.sourceFile} with output ${paths.outputDir}. Configured outputs are ${underlying.keySet}")
       })
 
-      override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = {
+      override def write(className: InternalName, bytes: ByteBuffer, paths: CompilationUnitPaths): Unit = {
         getUnderlying(paths).write(className, bytes, paths)
       }
 
       override def close(): Unit = underlying.values.foreach(_.close())
     }
 
-    private final class AllClassWriter(basic: ClassfileWriter, asmp: Option[UnderlyingClassfileWriter], dump: Option[UnderlyingClassfileWriter]) extends ClassfileWriter {
-      override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = {
-        basic.write(className, bytes, paths)
-        asmp.foreach(_.write(className, bytes, paths))
-        dump.foreach(_.write(className, bytes, paths))
-      }
-
-      override def close(): Unit = {
-        basic.close()
-        asmp.foreach(_.close())
-        dump.foreach(_.close())
-      }
-    }
 
     private final class WithStatsWriter(underlying: ClassfileWriter)
       extends ClassfileWriter {
-      override def write(className: InternalName, bytes: Array[Byte], paths: CompilationUnitPaths): Unit = {
+      override def write(className: InternalName, bytes: ByteBuffer, paths: CompilationUnitPaths): Unit = {
         val statistics = frontendAccess.unsafeStatistics
         val snap = statistics.startTimer(statistics.bcodeWriteTimer)
         underlying.write(className, bytes, paths)

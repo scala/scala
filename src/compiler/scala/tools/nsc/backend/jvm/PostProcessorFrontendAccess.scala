@@ -41,6 +41,8 @@ sealed abstract class PostProcessorFrontendAccess {
   def recordPerRunJavaMapCache[T <: JMap[_,_]](cache: T): T
 
   def recordPerRunJavaCache[T <: JCollection[_]](cache: T): T
+
+  def close(): Unit
 }
 
 object PostProcessorFrontendAccess {
@@ -204,7 +206,7 @@ object PostProcessorFrontendAccess {
       val optTrace: Option[String] = s.YoptTrace.valueSetByUser
     }
 
-    private lazy val localReporter = perRunLazy(this)(new ThreadLocal[BackendReporting])
+    lazy val localReporter = perRunLazy(this)(new ThreadLocal[BackendReporting])
 
     override def withThreadLocalReporter[T](reporter: BackendReporting)(fn: => T): T = {
       val threadLocal = localReporter.get
@@ -212,6 +214,10 @@ object PostProcessorFrontendAccess {
       threadLocal.set(reporter)
       try fn finally
         if (old eq null) threadLocal.remove() else threadLocal.set(old)
+    }
+
+    def close(): Unit = {
+      localReporter.get.remove()
     }
 
     override def backendReporting: BackendReporting = {
