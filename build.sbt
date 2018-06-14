@@ -799,23 +799,21 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := { val v = (testOnly in IntegrationTest in testP).toTask(" -- run").result.value },
+    testRun := (testOnly in IntegrationTest in testP).toTask(" -- run").value,
+    testPosPres := (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").value,
 
-    testPosPres := { val v = (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value },
-
-    testRest := {
-      val v = ScriptCommands.sequence[Result[Unit]](List(
-          (mimaReportBinaryIssues in library).result,
-          (mimaReportBinaryIssues in reflect).result,
-          (Keys.test in Test in junit).result,
-          (Keys.test in Test in scalacheck).result,
-          (testOnly in IntegrationTest in testP).toTask(" -- neg jvm").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- instrumented").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
-          (Keys.test in Test in osgiTestFelix).result,
-          (Keys.test in Test in osgiTestEclipse).result)).value
-    },
+    testRest := Def.sequential(
+      mimaReportBinaryIssues in library,
+      mimaReportBinaryIssues in reflect,
+      Keys.test in Test in junit,
+      Keys.test in Test in scalacheck,
+      (testOnly in IntegrationTest in testP).toTask(" -- neg jvm"),
+      (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized"),
+      (testOnly in IntegrationTest in testP).toTask(" -- instrumented"),
+      (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc"),
+      Keys.test in Test in osgiTestFelix,
+      Keys.test in Test in osgiTestEclipse
+    ).value,
 
     // all of testRun, testPosPres, testRest and more
     testAll := {
