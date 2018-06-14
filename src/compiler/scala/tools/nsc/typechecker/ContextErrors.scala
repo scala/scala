@@ -428,8 +428,8 @@ trait ContextErrors {
         issueNormalTypeError(tree, "_* may only come last")
 
       //typedFunction
-      def MaxFunctionArityError(fun: Tree, numParams: Int) = {
-        issueNormalTypeError(fun, s"functions may not have more than ${definitions.MaxFunctionArity} parameters, but ${numParams} given")
+      def MaxFunctionArityError(fun: Tree, why: String) = {
+        issueNormalTypeError(fun, s"functions may not have more than ${definitions.MaxFunctionArity} parameters$why")
         setError(fun)
       }
 
