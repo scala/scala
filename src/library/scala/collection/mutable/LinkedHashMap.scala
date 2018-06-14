@@ -95,6 +95,11 @@ class LinkedHashMap[K, V]
     else { val v = e.value; e.value = value; Some(v) }
   }
 
+  override def update(key: K, value: V): Unit = {
+    val e = table.findOrAddEntry(key, value)
+    if (e ne null) e.value = value
+  }
+
   override def remove(key: K): Option[V] = {
     val e = table.removeEntry(key)
     if (e eq null) None

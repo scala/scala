@@ -142,6 +142,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     if (firstDeletedIndex == -1) index else firstDeletedIndex
   }
 
+  // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
   override def update(key: Key, value: Value): Unit = put(key, value)
 
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
