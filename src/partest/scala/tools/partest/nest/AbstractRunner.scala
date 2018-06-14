@@ -28,8 +28,6 @@ abstract class AbstractRunner {
     verbose = config.optVerbose,
     debug = config.optDebug || propOrFalse("partest.debug"),
     terse = config.optTerse,
-    diffOnFail = config.optShowDiff,
-    logOnFail = config.optShowLog,
     colorEnabled = colorEnabled
   )
 
@@ -50,6 +48,8 @@ abstract class AbstractRunner {
   private[this] var summarizing      = false
   private[this] var elapsedMillis    = 0L
   private[this] var expectedFailures = 0
+  private[this] var onlyIndividualTests = false
+
 
   import nestUI._
   import nestUI.color._
@@ -170,6 +170,7 @@ abstract class AbstractRunner {
       val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical) sortBy (_.toString) toArray
       val grouped = (allTests groupBy kindOf).toArray sortBy (x => standardKinds indexOf x._1)
 
+      onlyIndividualTests = individualTests.nonEmpty && rerunTests.isEmpty && kindsTests.isEmpty && greppedTests.isEmpty
       totalTests = allTests.size
       expectedFailures = propOrNone("partest.errors") match {
         case Some(num)  => num.toInt
@@ -243,7 +244,7 @@ abstract class AbstractRunner {
           case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
         }
       stopwatchDuration = Some(durationMs)
-      nestUI.reportTest(state, runner, durationMs)
+      nestUI.reportTest(state, runner, durationMs, diffOnFail = config.optShowDiff || onlyIndividualTests , logOnFail = config.optShowLog || onlyIndividualTests)
       runner.cleanup()
       state
     }

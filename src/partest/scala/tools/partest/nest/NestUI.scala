@@ -24,7 +24,6 @@ class Colors(enabled: Boolean) {
 }
 
 class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse: Boolean = false,
-             val diffOnFail: Boolean = false, val logOnFail: Boolean = false,
              val colorEnabled: Boolean = sys.props contains "partest.colors") {
   private[this] val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
   @volatile private[this] var testNumberFmt = "%3d"
@@ -67,7 +66,7 @@ class NestUI(val verbose: Boolean = false, val debug: Boolean = false, val terse
     f"$word $testNumber - $testIdent%-40s$reasonString$durationString"
   }
 
-  def reportTest(state: TestState, info: TestInfo, durationMs: Long): Unit = {
+  def reportTest(state: TestState, info: TestInfo, durationMs: Long, diffOnFail: Boolean, logOnFail: Boolean): Unit = {
     if (terse && state.isOk) {
       if (dotCount >= DotWidth) {
         outline("\n.")
