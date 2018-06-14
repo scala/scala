@@ -753,21 +753,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
 /** Loads `library.properties` from the jar. */
 object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "partest"
-  protected def pickJarBasedOn  = classOf[SuiteRunner]
-}
-
-/** Used by SBT- and ConsoleRunner for running a set of tests. */
-class SuiteRunner(
-  val config: RunnerSpec.Config,
-  val testSourcePath: String, // relative path, like "files", or "pending"
-  val fileManager: FileManager,
-  val nestUI: NestUI,
-  val javaCmdPath: String = PartestDefaults.javaCmd,
-  val javacCmdPath: String = PartestDefaults.javacCmd,
-  val scalacExtraArgs: Seq[String] = Seq.empty,
-  val javaOpts: String = PartestDefaults.javaOpts,
-  val scalacOpts: String = PartestDefaults.scalacOpts) {
-
+  protected def pickJarBasedOn  = classOf[AbstractRunner]
 }
 
 case class TimeoutException(duration: Duration) extends RuntimeException

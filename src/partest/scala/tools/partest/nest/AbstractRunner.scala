@@ -18,13 +18,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-abstract class AbstractRunner {
+class AbstractRunner(val config: RunnerSpec.Config, protected final val testSourcePath: String, val fileManager: FileManager) {
 
-  val config: RunnerSpec.Config
-  val fileManager: FileManager
-  protected val testSourcePath: String
-
-  lazy val nestUI: NestUI = new NestUI(
+  // lazy because colorEnabled is overridden in SBTRunner
+  // TODO: integrate NestUI into AbstractRunner
+  private lazy val nestUI: NestUI = new NestUI(
     verbose = config.optVerbose,
     debug = config.optDebug || propOrFalse("partest.debug"),
     terse = config.optTerse,

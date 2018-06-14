@@ -14,12 +14,16 @@ import _root_.sbt.testing._
 
 import scala.tools.partest.TestState._
 import scala.tools.partest._
-import scala.tools.partest.nest.{AbstractRunner, FileManager, RunnerSpec, SuiteRunner}
+import scala.tools.partest.nest.{AbstractRunner, FileManager, RunnerSpec}
 
-class SBTRunner(val config: RunnerSpec.Config,
+class SBTRunner(config: RunnerSpec.Config,
                 partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
                 srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File,
-                scalacArgs: Array[String], args: Array[String]) extends AbstractRunner {
+                scalacArgs: Array[String], args: Array[String]) extends AbstractRunner(
+  config,
+  config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
+  new FileManager(testClassLoader = testClassLoader)
+) {
 
   // no summary, SBT will do that for us
   override protected val printSummary = false
@@ -57,9 +61,6 @@ class SBTRunner(val config: RunnerSpec.Config,
   override val javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd
   override val javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd
   override val scalacExtraArgs = scalacArgs.toIndexedSeq
-
-  val testSourcePath: String = config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath
-  val fileManager = new FileManager(testClassLoader = testClassLoader)
 
   override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
     synchronized {
