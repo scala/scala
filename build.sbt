@@ -808,20 +808,7 @@ lazy val root: Project = (project in file("."))
     testRun := partestOnly("run").value,
     testPosPres := partestOnly("pos presentation").value,
 
-    testRest := Def.sequential(
-      mimaReportBinaryIssues in library,
-      mimaReportBinaryIssues in reflect,
-      Keys.test in Test in junit,
-      Keys.test in Test in scalacheck,
-      partestOnly("neg jvm"),
-      partestOnly("res scalap specialized"),
-      partestOnly("instrumented"),
-      partestOnly("--srcpath scaladoc"),
-      Keys.test in Test in osgiTestFelix,
-      Keys.test in Test in osgiTestEclipse
-    ).value,
-
-    // all of testRun, testPosPres, testRest and more
+    // all of testRun, testPosPres and more
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
@@ -958,7 +945,6 @@ lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
 
 lazy val testRun = taskKey[Unit]("Run compute intensive test tasks sequentially")
 lazy val testPosPres = taskKey[Unit]("Run compilation test (pos + presentation) sequentially")
-lazy val testRest = taskKey[Unit]("Run the remaining test tasks sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
