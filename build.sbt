@@ -805,10 +805,6 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := partestOnly("run").value,
-    testPosPres := partestOnly("pos presentation").value,
-
-    // all of testRun, testPosPres and more
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
@@ -942,9 +938,6 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
-
-lazy val testRun = taskKey[Unit]("Run compute intensive test tasks sequentially")
-lazy val testPosPres = taskKey[Unit]("Run compilation test (pos + presentation) sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
