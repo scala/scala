@@ -770,6 +770,12 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
   )
   .dependsOn(library, reflect, compiler, scalap)
 
+def partestOnly(in: String): Def.Initialize[Task[Unit]] =
+  (testOnly in IntegrationTest in testP).toTask(" -- " + in)
+
+def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
+  partestOnly(in).result map (_ -> s"partest $in")
+
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
   .settings(disablePublishing)
@@ -799,35 +805,20 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := { val v = (testOnly in IntegrationTest in testP).toTask(" -- run").result.value },
+    testRun := partestOnly("run").value,
+    testPosPres := partestOnly("pos presentation").value,
 
-    testPosPres := { val v = (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value },
-
-    testRest := {
-      val v = ScriptCommands.sequence[Result[Unit]](List(
-          (mimaReportBinaryIssues in library).result,
-          (mimaReportBinaryIssues in reflect).result,
-          (Keys.test in Test in junit).result,
-          (Keys.test in Test in scalacheck).result,
-          (testOnly in IntegrationTest in testP).toTask(" -- neg jvm").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- instrumented").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
-          (Keys.test in Test in osgiTestFelix).result,
-          (Keys.test in Test in osgiTestEclipse).result)).value
-    },
-
-    // all of testRun, testPosPres, testRest and more
+    // all of testRun, testPosPres and more
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
-        (testOnly in IntegrationTest in testP).toTask(" -- run").result map (_ -> "partest run"),
-        (testOnly in IntegrationTest in testP).toTask(" -- pos neg jvm").result map (_ -> "partest pos neg jvm"),
-        (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
-        (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
-        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
-        (testOnly in IntegrationTest in testP).toTask(" -- -Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot").result map (_ -> "partest --srcpath macro-annot"),
+        partestDesc("run"),
+        partestDesc("pos neg jvm"),
+        partestDesc("res scalap specialized"),
+        partestDesc("instrumented presentation"),
+        partestDesc("--srcpath scaladoc"),
+        partestDesc("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
@@ -954,7 +945,6 @@ lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
 
 lazy val testRun = taskKey[Unit]("Run compute intensive test tasks sequentially")
 lazy val testPosPres = taskKey[Unit]("Run compilation test (pos + presentation) sequentially")
-lazy val testRest = taskKey[Unit]("Run the remaining test tasks sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
