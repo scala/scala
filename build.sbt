@@ -805,6 +805,8 @@ lazy val root: Project = (project in file("."))
       state
     },
 
+    testJDeps := TestJDeps.testJDepsImpl.value,
+
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
@@ -819,6 +821,7 @@ lazy val root: Project = (project in file("."))
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
         (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
+        testJDeps.result map (_ -> "testJDeps"),
         (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
@@ -938,6 +941,8 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
+
+val testJDeps = taskKey[Unit]("Run jdeps to check dependencies")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
