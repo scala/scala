@@ -246,6 +246,13 @@ class StreamTest {
       value = next
       next
     }.take(3).toList
-    assertEquals(value, 2)
+    assertEquals(2, value)
+    value = -1
+    Stream.iterate(0){ a =>
+      val next = a + 1
+      value = next
+      next
+    }.iterator.take(3).toList
+    assertEquals(2, value)
   }
 }
