@@ -245,7 +245,6 @@ sealed abstract class List[+A]
       h
     }
   }
-
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
     if (this eq Nil) Nil else {
       var rest = this
@@ -571,6 +570,7 @@ case object Nil extends List[Nothing] {
   override def last: Nothing = throw new NoSuchElementException("last of empty list")
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
   override def knownSize: Int = 0
+  override def iterator: Iterator[Nothing] = Iterator.empty
 }
 
 /**
