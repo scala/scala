@@ -1665,7 +1665,7 @@ trait Implicits {
 
       val argTypes1 = if (prefix == NoType) paramTypeRefs else paramTypeRefs.map(t => t.asSeenFrom(prefix, fun.symbol.owner))
       val argTypes2 = fun match {
-        case TypeApply(_, targs) => argTypes1.map(_.instantiateTypeParams(fun.symbol.info.typeParams, targs.map(_.tpe)))
+        case treeInfo.Applied(_, targs, _) => argTypes1.map(_.instantiateTypeParams(fun.symbol.info.typeParams, targs.map(_.tpe)))
         case _ => argTypes1
       }
 

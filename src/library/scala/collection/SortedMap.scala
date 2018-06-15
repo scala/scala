@@ -1,8 +1,8 @@
 package scala
 package collection
 
+import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
-import scala.collection.mutable.Builder
 import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
@@ -144,7 +144,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *  @return       a new $coll resulting from applying the given function
     *                `f` to each element of this $coll and collecting the results.
     */
-  def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit ordering: Ordering[K2]): CC[K2, V2] =
+  def map[K2, V2](f: ((K, V)) => (K2, V2))(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
     sortedMapFactory.from(new View.Map[(K, V), (K2, V2)](toIterable, f))
 
   /** Builds a new sorted map by applying a function to all elements of this $coll
@@ -154,7 +154,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *  @return       a new $coll resulting from applying the given collection-valued function
     *                `f` to each element of this $coll and concatenating the results.
     */
-  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] =
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
     sortedMapFactory.from(new View.FlatMap(toIterable, f))
 
   /** Builds a new sorted map by applying a partial function to all elements of this $coll
@@ -165,7 +165,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                `pf` to each element on which it is defined and collecting the results.
     *                The order of the elements is preserved.
     */
-  def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit ordering: Ordering[K2]): CC[K2, V2] =
+  def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
     flatMap { kv =>
       if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
       else View.Empty
@@ -186,6 +186,8 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 }
 
 object SortedMapOps {
+  private final val ordMsg = "No implicit Ordering[${K2}] found to build a SortedMap[${K2}, ${V2}]. You may want to upcast to a Map[${K}, ${V}] first by calling `unsorted`."
+
   /** Specializes `MapWithFilter` for sorted Map collections
     *
     * @define coll sorted map collection
