@@ -143,15 +143,15 @@ trait ContextErrors {
     def errMsg = {
       val paramName = param.name
       val paramTp = param.tpe
-      def evOrParam = (
+      def evOrParam =
         if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX)
           "evidence parameter of type"
         else
-          s"parameter $paramName:")
-      paramTp.typeSymbolDirect match {
-        case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
-        case _ => s"could not find implicit value for $evOrParam $paramTp"
-      }
+          s"parameter $paramName:"
+
+      ImplicitNotFoundMsg.unapply(param).map(_.formatParameterMessage(tree))
+        .orElse(ImplicitNotFoundMsg.unapply(paramTp.typeSymbolDirect).map(_.formatDefSiteMessage(paramTp)))
+        .getOrElse(s"could not find implicit value for $evOrParam $paramTp")
     }
     issueNormalTypeError(tree, errMsg)
   }
@@ -1385,8 +1385,8 @@ trait ContextErrors {
 
         context0.issueAmbiguousError(AmbiguousImplicitTypeError(tree,
           (info1.sym, info2.sym) match {
-            case (ImplicitAmbiguousMsg(msg), _) => msg.format(treeTypeArgs(tree1))
-            case (_, ImplicitAmbiguousMsg(msg)) => msg.format(treeTypeArgs(tree2))
+            case (ImplicitAmbiguousMsg(msg), _) => msg.formatDefSiteMessage(treeTypeArgs(tree1))
+            case (_, ImplicitAmbiguousMsg(msg)) => msg.formatDefSiteMessage(treeTypeArgs(tree2))
             case (_, _) if isView => viewMsg
             case (_, _) => s"ambiguous implicit values:\n${coreMsg}match expected type $pt"
           }

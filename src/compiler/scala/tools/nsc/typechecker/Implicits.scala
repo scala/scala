@@ -1595,7 +1595,7 @@ trait Implicits {
   }
 
   class ImplicitAnnotationMsg(f: Symbol => Option[String], clazz: Symbol, annotationName: String) {
-    def unapply(sym: Symbol): Option[(Message)] = f(sym) match {
+    def unapply(sym: Symbol): Option[Message] = f(sym) match {
       case Some(m) => Some(new Message(sym, m, annotationName))
       case None if sym.isAliasType =>
         // perform exactly one step of dealiasing
@@ -1628,25 +1628,75 @@ trait Implicits {
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
       })
 
-    private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
+    def referencedTypeParams: List[String] = Intersobralator.findAllMatchIn(msg).map(_.group(1)).distinct.toList
+
+    private def symTypeParamNames: List[String] = sym.typeParams.map(_.decodedName)
+
+    def lookupTypeParam(name: String): Symbol = {
+      val n = newTypeName(name)
+      var r: Symbol = NoSymbol
+      var o = sym.owner
+      while (r == NoSymbol && o != NoSymbol) {
+        o.typeParams.find(_.name == n) match {
+          case Some(p) => r = p
+          case _ =>
+            do { o = o.owner } while (!(o.isClass || o.isMethod || o == NoSymbol))
+        }
+      }
+      r
+    }
+
     private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
 
-    def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
+    def formatDefSiteMessage(paramTp: Type): String =
+      formatDefSiteMessage(typeArgsAtSym(paramTp) map (_.toString))
 
-    def format(typeArgs: List[String]): String =
-      interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
+    def formatDefSiteMessage(typeArgs: List[String]): String =
+      interpolate(msg, Map(symTypeParamNames zip typeArgs: _*))
+
+    def formatParameterMessage(fun: Tree): String = {
+      val paramNames = referencedTypeParams
+      val paramSyms = paramNames.map(lookupTypeParam).filterNot(_ == NoSymbol)
+      val paramTypeRefs = paramSyms.map(_.typeConstructor.etaExpand) // make polytypes for type constructors -- we'll abbreviate them below
+      val prefix = fun match {
+        case treeInfo.Applied(Select(qual, _), _, _) => qual.tpe
+        case _ => NoType
+      }
+
+      val argTypes1 = if (prefix == NoType) paramTypeRefs else paramTypeRefs.map(t => t.asSeenFrom(prefix, fun.symbol.owner))
+      val argTypes2 = fun match {
+        case TypeApply(_, targs) => argTypes1.map(_.instantiateTypeParams(fun.symbol.info.typeParams, targs.map(_.tpe)))
+        case _ => argTypes1
+      }
+
+      val argTypes = argTypes2.map{
+        case PolyType(tps, tr@TypeRef(_, _, tprefs)) =>
+          if (tps.corresponds(tprefs)((p, r) => p == r.typeSymbol)) tr.typeConstructor.toString
+          else {
+            val freshTpars = tps.mapConserve { case p if p.name == tpnme.WILDCARD => p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p))) case p => p }
+            freshTpars.map(_.name).mkString("[", ", ", "] -> ") + tr.instantiateTypeParams(tps, freshTpars.map(_.typeConstructor)).toString
+          }
+
+        case tp => tp.toString
+      }
+      interpolate(msg, Map(paramNames zip argTypes: _*))
+    }
 
     def validate: Option[String] = {
-      val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSeq.distinct
-      val decls = typeParamNames.toSeq.distinct
+      val refs  = referencedTypeParams
+      val isMessageOnParameter = sym.isParameter
+      val decls =
+        if (isMessageOnParameter) referencedTypeParams.filterNot(p => lookupTypeParam(p) == NoSymbol)
+        else symTypeParamNames.distinct
 
-      (refs.diff(decls)) match {
+      refs.diff(decls) match {
         case s if s.isEmpty => None
         case unboundNames   =>
           val singular = unboundNames.size == 1
           val ess      = if (singular) "" else "s"
           val bee      = if (singular) "is" else "are"
-          Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not defined by $sym.")
+          val where    = if (isMessageOnParameter) s"in scope" else s"defined by $sym"
+          Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not $where.")
       }
     }
   }
