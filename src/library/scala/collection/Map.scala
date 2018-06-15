@@ -196,6 +196,17 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     def next() = iter.next()._2
   }
 
+  /** Apply `f` to each key/value pair for its side effects
+   *  Note: [U] parameter needed to help scalac's type inference.
+   */
+  def foreachKeyValue[U](f: (K, V) => U): Unit = {
+    val it = iterator
+    while (it.hasNext) {
+      val next = it.next()
+      f(next._1, next._2)
+    }
+  }
+
   /** Filters this map by retaining only keys satisfying a predicate.
     *  @param  p   the predicate used to test keys
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies

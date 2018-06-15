@@ -439,6 +439,20 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
+  override def foreachKeyValue[U](f: (Long,V) => U): Unit = {
+    if ((extraKeys & 1) == 1) f(0L, zeroValue.asInstanceOf[V])
+    if ((extraKeys & 2) == 2) f(Long.MinValue, minValue.asInstanceOf[V])
+    var i,j = 0
+    while (i < _keys.length & j < _size) {
+      val k = _keys(i)
+      if (k != -k) {
+        j += 1
+        f(k, _values(i).asInstanceOf[V])
+      }
+      i += 1
+    }
+  }
+
   override def clone(): LongMap[V] = {
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = java.util.Arrays.copyOf(_values,  _values.length)

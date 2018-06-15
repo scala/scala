@@ -456,6 +456,18 @@ private[collection] object RedBlackTree {
     if(r ne null) g(r)
   }
 
+  def foreachKeyValue[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
+    def g(node: Node[A, B]): Unit = {
+      val l = node.left
+      if(l ne null) g(l)
+      f(node.key, node.value)
+      val r = node.right
+      if(r ne null) g(r)
+    }
+    val r = tree.root
+    if(r ne null) g(r)
+  }
+
   def transform[A, B](tree: Tree[A, B], f: (A, B) => B): Unit = transformNode(tree.root, f)
 
   private[this] def transformNode[A, B, U](node: Node[A, B], f: (A, B) => B): Unit =

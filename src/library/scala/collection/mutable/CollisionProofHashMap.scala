@@ -364,6 +364,19 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
+  override def foreachKeyValue[U](f: (K, V) => U): Unit = {
+    val len = table.length
+    var i = 0
+    while(i < len) {
+      val n = table(i)
+      if(n ne null) n match {
+        case n: LLNode => n.foreachKeyValue(f)
+        case n: RBNode => n.foreachKeyValue(f)
+      }
+      i += 1
+    }
+  }
+
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new CollisionProofHashMap.DeserializationFactory[K, V](table.length, loadFactor, ordering), this)
 
   override protected[this] def stringPrefix = "CollisionProofHashMap"
@@ -736,6 +749,12 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
       if(right ne null) right.foreach(f)
     }
 
+    def foreachKeyValue[U](f: (K, V) => U): Unit = {
+      if(left ne null) left.foreachKeyValue(f)
+      f(key, value)
+      if(right ne null) right.foreachKeyValue(f)
+    }
+
     def foreachNode[U](f: RBNode[K, V] => U): Unit = {
       if(left ne null) left.foreachNode(f)
       f(this)
@@ -797,6 +816,11 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
     @tailrec def foreach[U](f: ((K, V)) => U): Unit = {
       f((key, value))
       if(next ne null) next.foreach(f)
+    }
+
+    @tailrec def foreachKeyValue[U](f: (K, V) => U): Unit = {
+      f(key, value)
+      if(next ne null) next.foreachKeyValue(f)
     }
 
     @tailrec def foreachNode[U](f: LLNode[K, V] => U): Unit = {
