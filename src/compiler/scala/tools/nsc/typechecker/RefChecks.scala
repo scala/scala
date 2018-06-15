@@ -1337,16 +1337,6 @@ abstract class RefChecks extends Transform {
       member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
 
-    private def checkByNameRightAssociativeDef(tree: DefDef): Unit = {
-      tree match {
-        case DefDef(_, name, _, params :: _, _, _) =>
-          if (settings.warnByNameRightAssociative && !nme.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
-            reporter.warning(tree.pos,
-              "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see scala/bug#1980.")
-        case _ =>
-      }
-    }
-
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then
       * deprecation is meaningless.
@@ -1677,20 +1667,16 @@ abstract class RefChecks extends Transform {
                 checkAccessibilityOfReferencedTypes(tree)
             }
             tree match {
-              case dd: DefDef =>
-                checkByNameRightAssociativeDef(dd)
-
-                if (sym hasAnnotation NativeAttr) {
-                  if (sym.owner.isTrait) {
-                    reporter.error(tree.pos, "A trait cannot define a native method.")
-                    tree
-                  } else if (dd.rhs == EmptyTree) {
-                    // pretend it had a stub implementation
-                    sym resetFlag DEFERRED
-                    deriveDefDef(dd)(_ => typed(gen.mkThrowNewRuntimeException("native method stub")))
-                  } else tree
-                } else tree
-
+              case dd: DefDef if sym.hasAnnotation(NativeAttr) =>
+                if (sym.owner.isTrait) {
+                  reporter.error(tree.pos, "A trait cannot define a native method.")
+                  tree
+                } else if (dd.rhs == EmptyTree) {
+                  // pretend it had a stub implementation
+                  sym resetFlag DEFERRED
+                  deriveDefDef(dd)(_ => typed(gen.mkThrowNewRuntimeException("native method stub")))
+                } else
+                  tree
               case _ => tree
             }
 
