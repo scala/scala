@@ -1657,18 +1657,28 @@ trait Implicits {
     def formatParameterMessage(fun: Tree): String = {
       val paramNames = referencedTypeParams
       val paramSyms = paramNames.map(lookupTypeParam).filterNot(_ == NoSymbol)
-      val paramTypeRefs = paramSyms.map(sym => typeRef(NoPrefix, sym, sym.typeParams.map(_ => WildcardType)))
+      val paramTypeRefs = paramSyms.map(_.typeConstructor.etaExpand) // make polytypes for type constructors -- we'll abbreviate them below
       val prefix = fun match {
-        case TypeApply(Select(qual, _), _) => qual.tpe
-        case Select(qual, _) => qual.tpe
+        case treeInfo.Applied(Select(qual, _), _, _) => qual.tpe
         case _ => NoType
       }
+
       val argTypes1 = if (prefix == NoType) paramTypeRefs else paramTypeRefs.map(t => t.asSeenFrom(prefix, fun.symbol.owner))
       val argTypes2 = fun match {
         case TypeApply(_, targs) => argTypes1.map(_.instantiateTypeParams(fun.symbol.info.typeParams, targs.map(_.tpe)))
         case _ => argTypes1
       }
-      val argTypes = argTypes2.map(_.toString)
+
+      val argTypes = argTypes2.map{
+        case PolyType(tps, tr@TypeRef(_, _, tprefs)) =>
+          if (tps.corresponds(tprefs)((p, r) => p == r.typeSymbol)) tr.typeConstructor.toString
+          else {
+            val freshTpars = tps.mapConserve { case p if p.name == tpnme.WILDCARD => p.cloneSymbol.setName(newTypeName("?T" + tps.indexOf(p))) case p => p }
+            freshTpars.map(_.name).mkString("[", ", ", "] -> ") + tr.instantiateTypeParams(tps, freshTpars.map(_.typeConstructor)).toString
+          }
+
+        case tp => tp.toString
+      }
       interpolate(msg, Map(paramNames zip argTypes: _*))
     }
 
