@@ -199,6 +199,8 @@ object Map extends MapFactory[Map] {
     override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
       if (key == key1) value1 else default
     def iterator = Iterator.single((key1, value1))
+    override def keysIterator: Iterator[K] = Iterator.single(key1)
+    override def valuesIterator: Iterator[V] = Iterator.single(value1)
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
@@ -225,7 +227,30 @@ object Map extends MapFactory[Map] {
       if (key == key1) value1
       else if (key == key2) value2
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map2Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map2Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map2Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map2Iterator[A] extends AbstractIterator[A] {
+      var i = 0
+      override def hasNext: Boolean = i < 2
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
@@ -258,7 +283,31 @@ object Map extends MapFactory[Map] {
       else if (key == key2) value2
       else if (key == key3) value3
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map3Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map3Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map3Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map3Iterator[A] extends AbstractIterator[A] {
+      var i = 0
+      override def hasNext: Boolean = i < 3
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case 2 => nextResult(key3, value3)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
@@ -296,7 +345,32 @@ object Map extends MapFactory[Map] {
       else if (key == key3) value3
       else if (key == key4) value4
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: (key4, value4) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map4Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map4Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map4Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map4Iterator[A] extends AbstractIterator[A] {
+      var i = 0
+      override def hasNext: Boolean = i < 4
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case 2 => nextResult(key3, value3)
+          case 3 => nextResult(key4, value4)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)

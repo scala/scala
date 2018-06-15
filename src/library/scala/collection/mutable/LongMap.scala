@@ -403,6 +403,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
+  // TODO override these for efficiency. See immutable.LongMap for how to organize the code.
+  override def keysIterator: Iterator[Long] = super.keysIterator
+  override def valuesIterator: Iterator[V] = super.valuesIterator
+
   override def foreach[U](f: ((Long,V)) => U): Unit = {
     if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
     if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))

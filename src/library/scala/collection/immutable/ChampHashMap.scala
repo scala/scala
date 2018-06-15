@@ -49,6 +49,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     if (isEmpty) Iterator.empty
     else new MapValueIterator[K, V](rootNode)
   }
+
   protected[immutable] def reverseIterator: Iterator[(K, V)] = {
     if (isEmpty) Iterator.empty
     else new MapKeyValueTupleReverseIterator[K, V](rootNode)
