@@ -721,7 +721,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         enterMember(om)
       }
 
-      for (m <- normMembers ; if needsSpecialization(outerEnv ++ env, m) && satisfiable(fullEnv)) {
+      for (m <- normMembers ; if needsSpecialization(fullEnv, m) && satisfiable(fullEnv)) {
         if (!m.isDeferred)
           addConcreteSpecMethod(m)
         // specialized members have to be overridable.
