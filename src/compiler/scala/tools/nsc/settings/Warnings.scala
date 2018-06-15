@@ -93,7 +93,6 @@ trait Warnings {
     val PolyImplicitOverload   = LintWarning("poly-implicit-overload",    "Parameterized overloaded implicit methods are not visible as view bounds.")
     val OptionImplicit         = LintWarning("option-implicit",           "Option.apply used implicit view.")
     val DelayedInitSelect      = LintWarning("delayedinit-select",        "Selecting member of DelayedInit.")
-    val ByNameRightAssociative = LintWarning("by-name-right-associative", "By-name parameter of right associative operator.")
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
@@ -116,7 +115,6 @@ trait Warnings {
   def warnPolyImplicitOverload   = lint contains PolyImplicitOverload
   def warnOptionImplicit         = lint contains OptionImplicit
   def warnDelayedInit            = lint contains DelayedInitSelect
-  def warnByNameRightAssociative = lint contains ByNameRightAssociative
   def warnPackageObjectClasses   = lint contains PackageObjectClasses
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
