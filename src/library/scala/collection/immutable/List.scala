@@ -346,8 +346,8 @@ sealed abstract class List[+A]
   override final def lengthCompare(len: Int): Int = {
     @tailrec def loop(i: Int, xs: List[A]): Int = {
       if (i == len)
-        if (xs.isEmpty) 0 else 1
-      else if (xs.isEmpty)
+        if (xs eq Nil) 0 else 1
+      else if (xs eq Nil)
         -1
       else
         loop(i + 1, xs.tail)

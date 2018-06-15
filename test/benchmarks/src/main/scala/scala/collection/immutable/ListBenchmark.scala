@@ -33,7 +33,7 @@ class ListBenchmark {
     replacement = Content(size * 2 + 1)
   }
 
-/*  @Benchmark def filter_includeAll: Any = {
+  @Benchmark def filter_includeAll: Any = {
     values.filter(v => true)
   }
 
@@ -66,15 +66,15 @@ class ListBenchmark {
   }
   @Benchmark def mapConserve_modifyMid: Any = {
     values.mapConserve(x => if (x == mid) replacement else x)
-  }*/
+  }
 
-/*  @Benchmark def call_length : Any = {
+  @Benchmark def call_length : Any = {
     values.length
-  }*/
+  }
 
-/*  @Benchmark def call_lengthCompare : Any = {
+  @Benchmark def call_lengthCompare : Any = {
     values.lengthCompare(mid.value)
-  }*/
+  }
 
   @Benchmark def call_dropWhile : Any = {
     values.dropWhile(_ => true)
