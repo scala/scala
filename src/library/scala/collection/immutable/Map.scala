@@ -148,6 +148,8 @@ object Map extends MapFactory[Map] {
 
     def iterator: Iterator[(K, V)] = underlying.iterator
 
+    override def isEmpty: Boolean = underlying.isEmpty
+
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
     def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
@@ -168,6 +170,7 @@ object Map extends MapFactory[Map] {
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): Map[K, V] =
     it match {
+      case it: Iterable[_] if it.isEmpty => empty[K, V]
       case m: Map[K, V] => m
       case _ => (newBuilder[K, V] ++= it).result()
     }
@@ -180,6 +183,7 @@ object Map extends MapFactory[Map] {
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
     override def knownSize: Int = 0
+    override def isEmpty: Boolean = true
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
@@ -192,6 +196,7 @@ object Map extends MapFactory[Map] {
   final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 1
     override def knownSize: Int = 1
+    override def isEmpty: Boolean = false
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
@@ -214,6 +219,7 @@ object Map extends MapFactory[Map] {
   final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 2
     override def knownSize: Int = 2
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -267,6 +273,7 @@ object Map extends MapFactory[Map] {
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 3
     override def knownSize: Int = 3
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -326,6 +333,7 @@ object Map extends MapFactory[Map] {
   final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 4
     override def knownSize: Int = 4
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2

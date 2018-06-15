@@ -83,6 +83,8 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   override def size: Int = _size + (extraKeys+1)/2
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = size == 0
   override def empty: LongMap[V] = new LongMap()
 
   private def imbalanced: Boolean =

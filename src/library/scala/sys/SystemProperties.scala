@@ -38,6 +38,7 @@ extends mutable.AbstractMap[String, String] {
     names map (k => (k, ps getProperty k)) filter (_._2 ne null)
   } getOrElse Iterator.empty
 
+  override def isEmpty: Boolean = iterator.isEmpty
   def names: Iterator[String] = wrapAccess (
     System.getProperties().stringPropertyNames().asScala.iterator
   ) getOrElse Iterator.empty

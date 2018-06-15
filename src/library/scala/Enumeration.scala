@@ -279,6 +279,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
       new ValueSet(nnIds.rangeImpl(from.map(_.id - bottomId), until.map(_.id - bottomId)))
 
     override def empty = ValueSet.empty
+    override def knownSize: Int = nnIds.size
+    override def isEmpty: Boolean = nnIds.isEmpty
     def contains(v: Value) = nnIds contains (v.id - bottomId)
     def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
     def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))

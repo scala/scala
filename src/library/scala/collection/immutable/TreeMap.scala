@@ -82,6 +82,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 
   override def size: Int = RB.count(tree)
+  override def knownSize: Int = size
 
   override def isEmpty = size == 0
 

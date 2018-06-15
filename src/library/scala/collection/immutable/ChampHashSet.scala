@@ -590,6 +590,7 @@ object ChampHashSet extends IterableFactory[ChampHashSet] {
 
   def from[A](source: collection.IterableOnce[A]): ChampHashSet[A] =
     source match {
+      case _ if source.knownSize == 0 => empty[A]
       case hs: ChampHashSet[A] => hs
       case _ => (newBuilder[A] ++= source).result()
     }

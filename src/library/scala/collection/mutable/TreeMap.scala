@@ -82,7 +82,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 
   override def size: Int = RB.size(tree)
-
+  override def knownSize: Int = size
   override def isEmpty: Boolean = RB.isEmpty(tree)
 
   override def contains(key: K): Boolean = RB.contains(tree, key)
@@ -151,7 +151,8 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     override def keysIteratorFrom(start: K) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
     override def iteratorFrom(start: K) = RB.iterator(tree, pickLowerBound(Some(start)), until)
     override def valuesIteratorFrom(start: K) = RB.valuesIterator(tree, pickLowerBound(Some(start)), until)
-    override def size = iterator.length
+    override def size = if (RB.size(tree) == 0) 0 else iterator.length
+    override def knownSize: Int = if (RB.size(tree) == 0) 0 else -1
     override def isEmpty = RB.size(tree) == 0 || !iterator.hasNext
     override def contains(key: K) = isInsideViewBounds(key) && RB.contains(tree, key)
 

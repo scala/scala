@@ -65,7 +65,7 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   override protected[this] def className: String = "TreeSet"
 
   override def size: Int = RB.size(tree)
-
+  override def knownSize: Int = size
   override def isEmpty: Boolean = RB.isEmpty(tree)
 
   override def head: A = RB.minKey(tree).get
@@ -129,8 +129,9 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     override def iterator = RB.keysIterator(tree, from, until)
     override def iteratorFrom(start: A) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
 
-    override def size = iterator.length
-    override def isEmpty = !iterator.hasNext
+    override def size = if (RB.size(tree) == 0) 0 else iterator.length
+    override def knownSize: Int = if (RB.size(tree) == 0) 0 else -1
+    override def isEmpty = RB.size(tree) == 0 || !iterator.hasNext
 
     override def head = headOption.get
     override def headOption = {

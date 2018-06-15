@@ -90,8 +90,9 @@ class OpenHashMap[Key, Value](initialSize : Int)
   private[this] var modCount = 0
 
   override def size = _size
+  override def knownSize: Int = size
   private[this] def size_=(s : Int): Unit = _size = s
-
+  override def isEmpty: Boolean = _size == 0
   /** Returns a mangled hash code of the provided key. */
   protected def hashOf(key: Key) = {
     var h = key.##

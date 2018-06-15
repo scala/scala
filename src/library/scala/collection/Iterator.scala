@@ -92,6 +92,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   @throws[NoSuchElementException]
   def next(): A
   def iterator = this
+  override def isEmpty: Boolean = !hasNext
 
   /** Wraps the value of `next()` in an option.
     *

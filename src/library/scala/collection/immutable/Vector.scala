@@ -6,6 +6,8 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable.List.empty
+import scala.collection.immutable.Set.empty
 
 /** $factoryInfo
   * @define Coll `Vector`
@@ -18,6 +20,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
+      case _ if it.knownSize == 0 => empty[E]
       case v: Vector[E] => v
       case _            => (newBuilder ++= it).result()
     }
