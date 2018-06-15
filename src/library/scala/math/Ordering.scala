@@ -447,6 +447,11 @@ object Ordering extends LowPriorityOrderingImplicits {
   }
   implicit object String extends StringOrdering
 
+  trait SymbolOrdering extends Ordering[Symbol] {
+    def compare(x: Symbol, y: Symbol): Int = x.name.compareTo(y.name)
+  }
+  implicit object Symbol extends SymbolOrdering
+
   trait OptionOrdering[T] extends Ordering[Option[T]] {
     def optionOrdering: Ordering[T]
     def compare(x: Option[T], y: Option[T]) = (x, y) match {

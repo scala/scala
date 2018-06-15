@@ -200,4 +200,10 @@ class OrderingTest {
     checkFloats(floats: _*)
     checkDoubles(doubles: _*)
   }
+
+  /* Test for scala/bug#8664 */
+  @Test
+  def testSymbolOrdering(): Unit = {
+    assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
+  }
 }
