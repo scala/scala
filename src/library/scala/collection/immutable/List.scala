@@ -382,6 +382,18 @@ sealed abstract class List[+A]
     None
   }
 
+  override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = {
+    var i = this
+    var j = that
+    while (!(i.isEmpty || j.isEmpty)) {
+      if (!p(i.head, j.head))
+        return false
+      i = i.tail
+      j = j.tail
+    }
+    i.isEmpty && j.isEmpty
+  }
+
   override protected[this] def className = "List"
 
   /** Builds a new list by applying a function to all elements of this list.
