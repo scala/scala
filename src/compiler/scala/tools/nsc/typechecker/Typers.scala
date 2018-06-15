@@ -2947,7 +2947,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _                                       => (vparams map (if (pt == ErrorType) (_ => ErrorType) else (_ => NoType)), WildcardType)
         }
 
-      if (!FunctionSymbol.exists) MaxFunctionArityError(fun)
+      if (!FunctionSymbol.exists) MaxFunctionArityError(fun, s", but ${numVparams} given")
       else if (argpts.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argpts)
       else {
         val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
@@ -4630,12 +4630,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         */
       def typedEta(methodValue: Tree): Tree = methodValue.tpe match {
         case tp@(MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
-          val etaPt =
-            if (pt ne WildcardType) pt
-            else functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
+          if (tp.params.lengthCompare(definitions.MaxFunctionArity) > 0) MaxFunctionArityError(methodValue, s"; method ${methodValue.symbol.name} cannot be eta-expanded because it takes ${tp.params.length} arguments")
+          else {
+            val etaPt =
+              if (pt ne WildcardType) pt
+              else functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
 
-          // We know syntactically methodValue can't refer to a constructor because you can't write `this _` for that (right???)
-          typedEtaExpansion(methodValue, mode, etaPt)
+            // We know syntactically methodValue can't refer to a constructor because you can't write `this _` for that (right???)
+            typedEtaExpansion(methodValue, mode, etaPt)
+          }
 
         case TypeRef(_, ByNameParamClass, _) |  NullaryMethodType(_) => // (2)
           val pos = methodValue.pos
