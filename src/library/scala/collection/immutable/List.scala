@@ -182,7 +182,7 @@ sealed abstract class List[+A]
     val b = new ListBuffer[A]
     var i = 0
     var these = this
-    while (!these.isEmpty && i < n) {
+    while ( (these ne Nil ) && i < n) {
       i += 1
       b += these.head
       these = these.tail
@@ -275,7 +275,7 @@ sealed abstract class List[+A]
   @inline final override def takeWhile(p: A => Boolean): List[A] = {
     val b = new ListBuffer[A]
     var these = this
-    while (!these.isEmpty && p(these.head)) {
+    while ( (these ne Nil) && p(these.head)) {
       b += these.head
       these = these.tail
     }
@@ -285,7 +285,7 @@ sealed abstract class List[+A]
   @inline final override def dropWhile(p: A => Boolean): List[A] = {
     @tailrec
     def loop(xs: List[A]): List[A] =
-      if (xs.isEmpty || !p(xs.head)) xs
+      if ((xs eq Nil) || !p(xs.head)) xs
       else loop(xs.tail)
 
     loop(this)
@@ -294,7 +294,7 @@ sealed abstract class List[+A]
   @inline final override def span(p: A => Boolean): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var these = this
-    while (!these.isEmpty && p(these.head)) {
+    while ( (these ne Nil) && p(these.head)) {
       b += these.head
       these = these.tail
     }
@@ -305,7 +305,7 @@ sealed abstract class List[+A]
   // solely so it can be finalized and thus inlinable.
   @inline final override def foreach[U](f: A => U): Unit = {
     var these = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       f(these.head)
       these = these.tail
     }
@@ -314,7 +314,7 @@ sealed abstract class List[+A]
   final override def reverse: List[A] = {
     var result: List[A] = Nil
     var these = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       result = these.head :: result
       these = these.tail
     }
@@ -324,7 +324,7 @@ sealed abstract class List[+A]
   final override def foldRight[B](z: B)(op: (A, B) => B): B = {
     var acc = z
     var these: List[A] = reverse
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       acc = op(these.head, acc)
       these = these.tail
     }
@@ -358,7 +358,7 @@ sealed abstract class List[+A]
 
   override final def forall(p: A => Boolean): Boolean = {
     var these: List[A] = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       if (!p(these.head)) return false
       these = these.tail
     }
@@ -367,7 +367,7 @@ sealed abstract class List[+A]
 
   override final def exists(p: A => Boolean): Boolean = {
     var these: List[A] = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       if (p(these.head)) return true
       these = these.tail
     }
@@ -376,7 +376,7 @@ sealed abstract class List[+A]
 
   override final def contains[A1 >: A](elem: A1): Boolean = {
     var these: List[A] = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       if (these.head == elem) return true
       these = these.tail
     }
@@ -385,7 +385,7 @@ sealed abstract class List[+A]
 
   override final def find(p: A => Boolean): Option[A] = {
     var these: List[A] = this
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       if (p(these.head)) return Some(these.head)
       these = these.tail
     }
