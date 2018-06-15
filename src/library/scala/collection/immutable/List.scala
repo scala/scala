@@ -336,7 +336,7 @@ sealed abstract class List[+A]
   override final def length: Int = {
     var these = this
     var len = 0
-    while (!these.isEmpty) {
+    while (these ne Nil) {
       len += 1
       these = these.tail
     }
