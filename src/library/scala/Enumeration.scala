@@ -8,8 +8,10 @@
 
 package scala
 
-import scala.collection.{ mutable, immutable, StrictOptimizedIterableOps, SpecificIterableFactory, View }
-import java.lang.reflect.{ Method => JMethod, Field => JField }
+import scala.collection.{SpecificIterableFactory, StrictOptimizedIterableOps, View, immutable, mutable}
+import java.lang.reflect.{Field => JField, Method => JMethod}
+
+import scala.annotation.implicitNotFound
 import scala.reflect.NameTransformer._
 import scala.util.matching.Regex
 
@@ -294,8 +296,14 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
 
     // necessary for disambiguation:
-    override def map[B : Ordering](f: Value => B): SortedIterableCC[B] = super[SortedSet].map[B](f)
-    override def flatMap[B : Ordering](f: Value => IterableOnce[B]): SortedIterableCC[B] = super[SortedSet].flatMap[B](f)
+    override def map[B](f: Value => B)(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
+      super[SortedSet].map[B](f)
+    override def flatMap[B](f: Value => IterableOnce[B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
+      super[SortedSet].flatMap[B](f)
+    override def zip[B](that: Iterable[B])(implicit @implicitNotFound(ValueSet.zipOrdMsg) ev: Ordering[(Value, B)]): SortedIterableCC[(Value, B)] =
+      super[SortedSet].zip[B](that)
+    override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
+      super[SortedSet].collect[B](pf)
 
     override protected[this] def writeReplace(): AnyRef = this
   }
@@ -303,6 +311,9 @@ abstract class Enumeration (initial: Int) extends Serializable {
   /** A factory object for value sets */
   @SerialVersionUID(3L)
   object ValueSet extends SpecificIterableFactory[Value, ValueSet] {
+    private final val ordMsg = "No implicit Ordering[${B}] found to build a SortedSet[${B}]. You may want to upcast to a Set[Value] first by calling `unsorted`."
+    private final val zipOrdMsg = "No implicit Ordering[${B}] found to build a SortedSet[(Value, ${B})]. You may want to upcast to a Set[Value] first by calling `unsorted`."
+
     /** The empty value set */
     val empty = new ValueSet(immutable.BitSet.empty)
     /** A value set containing all the values for the zero-adjusted ids

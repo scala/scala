@@ -6,6 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import BitSetOps.{LogWL, updateArray}
 import mutable.{Builder, GrowableBuilder}
+import scala.annotation.implicitNotFound
 
 
 /** A class for immutable bitsets.
@@ -50,13 +51,20 @@ sealed abstract class BitSet
   protected def updateWord(idx: Int, w: Long): BitSet
 
   override def map(f: Int => Int): BitSet = super[BitSet].map(f)
-  override def map[B : Ordering](f: Int => B): SortedSet[B] = super[SortedSetOps].map(f)
+  override def map[B](f: Int => B)(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
+    super[SortedSetOps].map(f)
 
   override def flatMap(f: Int => IterableOnce[Int]): BitSet = super[BitSet].flatMap(f)
-  override def flatMap[B : Ordering](f: Int => IterableOnce[B]): SortedSet[B] = super[SortedSetOps].flatMap(f)
+  override def flatMap[B](f: Int => IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
+    super[SortedSetOps].flatMap(f)
 
   override def collect(pf: PartialFunction[Int, Int]): BitSet = super[BitSet].collect(pf)
-  override def collect[B: Ordering](pf: scala.PartialFunction[Int, B]): SortedSet[B] = super[SortedSetOps].collect(pf)
+  override def collect[B](pf: scala.PartialFunction[Int, B])(implicit @implicitNotFound(collection.BitSet.ordMsg) ev: Ordering[B]): SortedSet[B] =
+    super[SortedSetOps].collect(pf)
+
+  // necessary for disambiguation
+  override def zip[B](that: scala.Iterable[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
+    super.zip(that)
 
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
