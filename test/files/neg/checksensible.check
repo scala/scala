@@ -1,16 +1,16 @@
-checksensible.scala:45: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+checksensible.scala:45: warning: adaptation of an empty argument list by appending () is deprecated: this is unlikely to be what you want
         signature: Any.==(x$1: Any): Boolean
   given arguments: <none>
  after adaptation: Any.==((): Unit)
   () == ()
      ^
-checksensible.scala:48: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+checksensible.scala:48: warning: adaptation of an empty argument list by appending () is deprecated: this is unlikely to be what you want
         signature: Object.!=(x$1: Any): Boolean
   given arguments: <none>
  after adaptation: Object.!=((): Unit)
   scala.runtime.BoxedUnit.UNIT != ()
                                ^
-checksensible.scala:49: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+checksensible.scala:49: warning: adaptation of an empty argument list by appending () is deprecated: this is unlikely to be what you want
         signature: Any.!=(x$1: Any): Boolean
   given arguments: <none>
  after adaptation: Any.!=((): Unit)

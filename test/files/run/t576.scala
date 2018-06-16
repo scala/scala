@@ -1,3 +1,5 @@
+/* -Xsource:3.0 */
+
 import scala.language.reflectiveCalls
 
 class A {
@@ -35,7 +37,10 @@ object Test {
 
     assert(x1 == x1)
     assert(x1 != x2)
-    assert(x1 != ())
+
+    // This is a workaround for x1 != (())
+    val unit = ()
+    assert(x1 != unit)
     assert(x2 != x1)
 
     assert(x3 == x3)

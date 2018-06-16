@@ -98,6 +98,8 @@ trait ScalaSettings extends AbsScalaSettings
   def isScala213: Boolean = source.value >= version213
   private[this] val version214 = ScalaVersion("2.14.0")
   def isScala214: Boolean = source.value >= version214
+  private[this] val version3_0 = ScalaVersion("3.0.0")
+  def isScala3: Boolean = source.value >= version3_0
 
   /**
    * -X "Advanced" settings
