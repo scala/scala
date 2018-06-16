@@ -314,6 +314,11 @@ trait StdNames {
     override type NameType = TermName
 
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
+    // create a name with leading dollar, avoiding the appearance that interpolation of a value (possibly named "value") was intended
+    private class NameContext(s: String) {
+      def n(args: Any*): TermName = { require(args.isEmpty) ; createNameType("$" + s) }
+    }
+    private def StringContext(parts: String*) = { require(parts.size == 1) ; new NameContext(parts.head) }
 
     /** Base strings from which synthetic names are derived. */
     val BITMAP_PREFIX                  = "bitmap$"
@@ -353,7 +358,7 @@ trait StdNames {
     val MIRROR_UNTYPED: NameType           = "$m$untyped"
     val REIFY_FREE_PREFIX: NameType        = "free$"
     val REIFY_FREE_THIS_SUFFIX: NameType   = "$this"
-    val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
+    val REIFY_FREE_VALUE_SUFFIX: NameType  = n"value"      // looks like missing interpolator due to `value` in scopre
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
     val QUASIQUOTE_EARLY_DEF: NameType     = "$quasiquote$early$def$"
@@ -672,7 +677,7 @@ trait StdNames {
     val asModule: NameType             = "asModule"
     val asType: NameType               = "asType"
     val asInstanceOf_ : NameType       = "asInstanceOf"
-    val asInstanceOf_Ob : NameType     = "$asInstanceOf"
+    val asInstanceOf_Ob : NameType     = n"asInstanceOf"   // looks like missing interpolator due to Any member in scope
     val box: NameType                  = "box"
     val bytes: NameType                = "bytes"
     val c: NameType                    = "c"
@@ -680,7 +685,7 @@ trait StdNames {
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = "clone"
     val collection: NameType           = "collection"
-    val conforms: NameType             = "$conforms" // dollar prefix to avoid accidental shadowing
+    val conforms: NameType             = n"conforms"       // $ prefix to avoid shadowing Predef.conforms
     val copy: NameType                 = "copy"
     val create: NameType               = "create"
     val currentMirror: NameType        = "currentMirror"
@@ -725,7 +730,7 @@ trait StdNames {
     val isDefinedAt: NameType          = "isDefinedAt"
     val isEmpty: NameType              = "isEmpty"
     val isInstanceOf_ : NameType       = "isInstanceOf"
-    val isInstanceOf_Ob : NameType     = "$isInstanceOf"
+    val isInstanceOf_Ob : NameType     = n"isInstanceOf"   // looks like missing interpolator due to Any member in scope
     val java: NameType                 = "java"
     val key: NameType                  = "key"
     val lang: NameType                 = "lang"
