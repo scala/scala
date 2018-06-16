@@ -144,7 +144,7 @@ object View extends IterableFactory[View] {
 
   /** A view that partitions an underlying collection into two views */
   @SerialVersionUID(3L)
-  class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) {
+  class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) extends Serializable {
 
     /** The view consisting of all elements of the underlying collection
      *  that satisfy `p`.
@@ -288,13 +288,13 @@ object View extends IterableFactory[View] {
   }
 
   @SerialVersionUID(3L)
-  class Unzip[A, A1, A2](underlying: SomeIterableOps[A])(implicit asPair: A => (A1, A2)) {
+  class Unzip[A, A1, A2](underlying: SomeIterableOps[A])(implicit asPair: A => (A1, A2)) extends Serializable {
     val first: View[A1] = new View.Map[A, A1](underlying, asPair(_)._1)
     val second: View[A2] = new View.Map[A, A2](underlying, asPair(_)._2)
   }
 
   @SerialVersionUID(3L)
-  class Unzip3[A, A1, A2, A3](underlying: SomeIterableOps[A])(implicit asTriple: A => (A1, A2, A3)) {
+  class Unzip3[A, A1, A2, A3](underlying: SomeIterableOps[A])(implicit asTriple: A => (A1, A2, A3)) extends Serializable {
     val first: View[A1] = new View.Map[A, A1](underlying, asTriple(_)._1)
     val second: View[A2] = new View.Map[A, A2](underlying, asTriple(_)._2)
     val third: View[A3] = new View.Map[A, A3](underlying, asTriple(_)._3)
