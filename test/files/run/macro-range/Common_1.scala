@@ -40,7 +40,7 @@ abstract class Utils {
   }
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
+    val rhs = If(cond, Block(List(body), continu), Literal(Constant(())))
     LabelDef(lname, Nil, rhs)
   }
   def makeBinop(left: Tree, op: String, right: Tree): Tree =

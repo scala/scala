@@ -72,23 +72,29 @@ trait Adaptations {
           || t.symbol.name == nme.NE
         )
       }
-
-      if (args.isEmpty) {
-        if (settings.isScala300) {
-          context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
-          false // drop adaptation
-        } else {
-          val msg = "Adaptation of argument list by inserting () is deprecated: " + (
-          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
-          else "this is unlikely to be what you want.")
-          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg), "2.11.0")
-          true // keep adaptation
-        }
-      } else {
-        if (settings.warnAdaptedArgs)
-          context.warning(t.pos, adaptWarningMessage(s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want."))
+      @inline def msg(what: String): String = s"adaptation of an empty argument list by appending () is $what"
+      @inline def noAdaptation = {
+        context.error(t.pos, adaptWarningMessage(msg("unsupported"), showAdaptation = false))
+        false // drop adaptation
+      }
+      @inline def deprecatedAdaptation = {
+        val text = s"${msg("deprecated")}: ${
+          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
+          else "this is unlikely to be what you want"
+        }"
+        context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(text), "2.11.0")
         true // keep adaptation
       }
+      @inline def warnAdaptation = {
+        if (settings.warnAdaptedArgs) context.warning(t.pos, adaptWarningMessage(
+          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"
+        ))
+        true // keep adaptation
+      }
+      if (args.isEmpty) {
+        if (settings.isScala300) noAdaptation else deprecatedAdaptation
+      } else
+        warnAdaptation
     }
   }
 }
