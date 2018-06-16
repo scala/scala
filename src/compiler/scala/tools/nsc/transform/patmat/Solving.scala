@@ -10,9 +10,7 @@ import java.util
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.{Position, StatisticsStatics}
-import scala.util.hashing.MurmurHash3
 
 // a literal is a (possibly negated) variable
 case class Lit(val v: Int) {
@@ -394,7 +392,6 @@ trait Solving extends Logic {
 
   // simple solver using DPLL
   trait Solver extends CNF {
-    import scala.collection.mutable.ArrayBuffer
 
     def cnfString(f: Array[Clause]): String = {
       val lits: Array[List[String]] = f map (_.map(_.toString).toList)

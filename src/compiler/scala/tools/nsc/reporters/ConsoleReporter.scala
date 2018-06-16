@@ -8,10 +8,7 @@ package tools.nsc
 package reporters
 
 import java.io.{BufferedReader, PrintWriter}
-import scala.reflect.internal.util.{Position, StringOps}
-import Position.formatMessage
-import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trimTrailing}
-import scala.tools.util.SystemExit
+import scala.reflect.internal.util.Position
 
 /** This class implements a Reporter that displays messages on a text console.
  */

@@ -1478,12 +1478,10 @@ trait Namers extends MethodSynthesis {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
-      def rtparams = rtparams0.map(_.duplicate)
+      def rtparams  = rtparams0.map(_.duplicate)
       def rvparamss = rvparamss0.map(_.map(_.duplicate))
-      val search = DefaultGetterNamerSearch(context, meth, initCompanionModule = true)
-      val methOwner  = meth.owner
-      val isConstr   = meth.isConstructor
-      val overrides  = overridden != NoSymbol && !overridden.isOverloaded
+      val search    = DefaultGetterNamerSearch(context, meth, initCompanionModule = true)
+      val overrides = overridden != NoSymbol && !overridden.isOverloaded
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
         // match empty and missing parameter list
@@ -1875,19 +1873,6 @@ trait Namers extends MethodSynthesis {
       case _ =>
         tpe
     }
-
-    class LogTransitions[S](onEnter: S => String, onExit: S => String) {
-      val enabled = settings.debug.value
-      @inline final def apply[T](entity: S)(body: => T): T = {
-        if (enabled) log(onEnter(entity))
-        try body
-        finally if (enabled) log(onExit(entity))
-      }
-    }
-    private val logDefinition = new LogTransitions[Symbol](
-      sym => "[define] >> " + sym.flagString + " " + sym.fullLocationString,
-      sym => "[define] << " + sym
-    )
 
     /** Convert Java generic array type T[] to (T with Object)[]
      *  (this is necessary because such arrays have a representation which is incompatible

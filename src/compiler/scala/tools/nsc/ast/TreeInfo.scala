@@ -112,7 +112,7 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo with MacroAnnoti
     def unapply(tree: Apply) = tree match {
       case Apply(Select(New(tpt), name), arg :: Nil) if tpt.tpe != null && tpt.tpe.typeSymbol == definitions.ArrayClass =>
         tpt.tpe match {
-          case erasure.GenericArray(level, componentType) => Some(level, componentType, arg)
+          case erasure.GenericArray(level, componentType) => Some((level, componentType, arg))
           case _ => None
         }
       case _ => None

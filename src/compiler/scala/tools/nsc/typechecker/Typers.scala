@@ -13,13 +13,12 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
-import scala.reflect.macros.whitebox
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -5119,7 +5118,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedTypeSelectionQualifier(tree: Tree, pt: Type = AnyRefTpe) =
+      def typedTypeSelectionQualifier(tree: Tree, pt: Type) =
         context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
 
       def typedSelectOrSuperCall(tree: Select) = tree match {
@@ -5560,7 +5559,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
-        val refTyped = typedTypeSelectionQualifier(tree.ref, WildcardType )
+        val refTyped = typedTypeSelectionQualifier(tree.ref, WildcardType)
 
         if (refTyped.isErrorTyped) setError(tree)
         else {

@@ -45,8 +45,6 @@ object ArrayOps {
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
   class WithFilter[A](p: A => Boolean, xs: Array[A]) {
 
-    private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
-
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
       */
@@ -360,7 +358,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** A pair of, first, all elements that satisfy predicate `p` and, second, all elements that do not. */
   def partition(p: A => Boolean): (Array[A], Array[A]) = {
-    var res1, res2 = ArrayBuilder.make[A]
+    val res1, res2 = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -372,8 +370,8 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** Returns a new array with the elements in reversed order. */
   def reverse: Array[A] = {
-    var len = xs.length
-    var res = new Array[A](len)
+    val len = xs.length
+    val res = new Array[A](len)
     var i = 0
     while(i < len) {
       res(len-i-1) = xs(i)
@@ -396,7 +394,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return   a new array consisting of all elements of this array that satisfy the given predicate `p`.
     */
   def filter(p: A => Boolean): Array[A] = {
-    var res = ArrayBuilder.make[A]
+    val res = ArrayBuilder.make[A]
     var i = 0
     while(i < xs.length) {
       val x = xs(i)
@@ -565,7 +563,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                 that satisfies `p`, or `None` if none exists.
     */
   def find(f: A => Boolean): Option[A] = {
-    var idx = indexWhere(f)
+    val idx = indexWhere(f)
     if(idx == -1) None else Some(xs(idx))
   }
 
@@ -648,7 +646,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def scanLeft[ B : ClassTag ](z: B)(op: (B, A) => B): Array[B] = {
     var v = z
     var i = 0
-    var res = new Array[B](xs.length + 1)
+    val res = new Array[B](xs.length + 1)
     while(i < xs.length) {
       res(i) = v
       v = op(v, xs(i))
@@ -687,7 +685,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def scanRight[ B : ClassTag ](z: B)(op: (A, B) => B): Array[B] = {
     var v = z
     var i = xs.length - 1
-    var res = new Array[B](xs.length + 1)
+    val res = new Array[B](xs.length + 1)
     res(xs.length) = z
     while(i >= 0) {
       v = op(xs(i), v)
@@ -785,7 +783,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `f` to each element of this array and collecting the results.
     */
   def map[B : ClassTag](f: A => B): Array[B] = {
-    var res = new Array[B](xs.length)
+    val res = new Array[B](xs.length)
     var i = 0
     while (i < xs.length) {
       res(i) = f(xs(i))
@@ -1129,7 +1127,6 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     else {
       def mkRowBuilder() = ArrayBuilder.make[B](ClassTag[B](aClass.getComponentType))
       val bs = new ArrayOps(asArray(xs(0))).map((x: B) => mkRowBuilder())
-      var j = 0
       for (xs <- this) {
         var i = 0
         for (x <- new ArrayOps(asArray(xs))) {

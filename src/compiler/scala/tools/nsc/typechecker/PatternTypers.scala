@@ -44,8 +44,6 @@ trait PatternTypers {
     import TyperErrorGen._
     import infer._
 
-    private def unit = context.unit
-
     // If the tree's symbol's type does not define an extractor, maybe the tree's type does.
     // this is the case when we encounter an arbitrary tree as the target of an unapply call
     // (rather than something that looks like a constructor call.) (for now, this only happens
@@ -53,7 +51,6 @@ trait PatternTypers {
     // more common place)
     private def hasUnapplyMember(tpe: Type): Boolean   = reallyExists(unapplyMember(tpe))
     private def hasUnapplyMember(sym: Symbol): Boolean = hasUnapplyMember(sym.tpe_*)
-    private def hasUnapplyMember(fun: Tree): Boolean   = hasUnapplyMember(fun.symbol) || hasUnapplyMember(fun.tpe)
 
     // ad-hoc overloading resolution to deal with unapplies and case class constructors
     // If some but not all alternatives survive filtering the tree's symbol with `p`,

@@ -51,7 +51,6 @@ private[util] trait StackTracing extends Any {
       }
       val prefix = frames takeWhile p
       val margin = "  " * indents
-      val indent = margin + "  "
       sb += s"${margin}${r}${header(e)}"
       prefix foreach (f => sb += s"${margin}  at $f")
       if (frames.size < trace.size) sb += s"${margin}  ... ${trace.size - frames.size} more"

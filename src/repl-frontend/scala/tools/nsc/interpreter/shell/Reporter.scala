@@ -4,7 +4,7 @@ import java.io.PrintWriter
 
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
-import scala.tools.nsc.interpreter.{Naming, Repl, ReplReporter, ReplRequest}
+import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.AbstractReporter
 
 
@@ -170,7 +170,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
       val isSynthetic = posIn.source.file.name == "<synthetic>"
 
       // for errors in synthetic code, don't remove wrapping so we can see what's really going on
-      def printLineContent = printMessage(indentation + posIn.lineContent)
+      def printLineContent() = printMessage(indentation + posIn.lineContent)
       if (isSynthetic) withoutUnwrapping(printLineContent) else printLineContent
 
       printMessage(indentation + posIn.lineCaret)

@@ -1002,7 +1002,6 @@ trait MacroAnnotionTreeInfo { self: TreeInfo =>
   def getAnnotationZippers(tree: Tree): List[AnnotationZipper] = {
     def loop[T <: Tree](tree: T, deep: Boolean): List[AnnotationZipper] = tree match {
       case SyntacticClassDef(mods, name, tparams, constrMods, vparamss, earlyDefs, parents, selfdef, body) =>
-        val cdef = tree.asInstanceOf[ClassDef]
         val czippers = mods.annotations.map(ann => {
           val mods1 = mods.mapAnnotations(_ diff List(ann))
           val annottee = PatchedSyntacticClassDef(mods1, name, tparams, constrMods, vparamss, earlyDefs, parents, selfdef, body)

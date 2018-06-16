@@ -21,8 +21,6 @@ import scala.reflect.internal.Reporter
 trait EntityPage extends HtmlPage {
   import HtmlTags._
 
-  import ScalaDoc.SummaryReporter
-
   def universe: doc.Universe
   def generator: DiagramGenerator
   def tpl: DocTemplateEntity

@@ -16,7 +16,7 @@ import scala.reflect.api.{Universe => ApiUniverse}
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>
 
-  import rootMirror.{getModuleByName, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageObject, getPackageIfDefined, getPackageObjectIfDefined, requiredClass, requiredModule}
+  import rootMirror.{getModuleByName, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageIfDefined, getPackageObjectIfDefined, requiredClass, requiredModule}
 
   object definitions extends DefinitionsClass
 

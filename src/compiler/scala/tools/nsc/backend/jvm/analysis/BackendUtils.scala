@@ -13,7 +13,7 @@ import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, Label, LabelAccess, Type}
+import scala.tools.asm.{Handle, LabelAccess, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -147,7 +147,6 @@ abstract class BackendUtils extends PerRunInit {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
     val implMethodsArray = implMethods.toArray
 
@@ -189,7 +188,7 @@ abstract class BackendUtils extends PerRunInit {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    var inlinedTargetHandles = mutable.ListBuffer[Handle]()
+    val inlinedTargetHandles = mutable.ListBuffer[Handle]()
     for (ins <- methodNode.instructions.iterator.asScala) {
       ins match {
         case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => indy.bsmArgs match {

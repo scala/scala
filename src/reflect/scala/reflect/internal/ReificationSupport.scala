@@ -324,8 +324,8 @@ trait ReificationSupport { self: SymbolTable =>
         require(vd.rhs.isEmpty, "self types must have empty right hand side")
         copyValDef(vd)(mods = (vd.mods | PRIVATE) & (~DEFERRED))
       case _ =>
-        throw new IllegalArgumentException(s"$tree is not a valid representation of self type, " +
-                                           """consider reformatting into q"val $self: $T" shape""")
+        throw new IllegalArgumentException(
+          s"""$tree is not a valid representation of self type, consider reformatting into q"val $$self: $$T" shape""")
     }
 
     object SyntacticClassDef extends SyntacticClassDefExtractor {

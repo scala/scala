@@ -10,9 +10,9 @@ package scala
 
 import scala.language.{ higherKinds, implicitConversions }
 
-import scala.collection.{ StringOps, StringView }
+import scala.collection.StringOps
 import scala.collection.{ mutable, immutable, ArrayOps }
-import scala.collection.immutable.{ ArraySeq, WrappedString }
+import scala.collection.immutable.WrappedString
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.annotation.meta.companionMethod

@@ -11,7 +11,7 @@ package runtime
 
 
 import scala.collection.{BuildFrom, IterableOps}
-import scala.language.{ higherKinds, implicitConversions }
+import scala.language.implicitConversions
 
 /** See comment on ZippedIterable2
  *  @define Coll `ZippedIterable3`

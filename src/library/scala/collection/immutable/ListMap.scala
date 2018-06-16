@@ -14,7 +14,6 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import collection.{Iterator, MapFactory}
 import scala.annotation.tailrec
-import java.lang.Integer
 
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 

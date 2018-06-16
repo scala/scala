@@ -301,7 +301,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           val ignoredSubPatBinders: Set[Symbol]
          ) extends FunTreeMaker with PreserveSubPatBinders {
 
-      import CODE._
       val nextBinder = prevBinder // just passing through
 
       // mutable binders must be stored to avoid unsoundness or seeing mutation of fields after matching (scala/bug#5158, scala/bug#6070)

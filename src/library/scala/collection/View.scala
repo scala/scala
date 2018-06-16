@@ -3,7 +3,7 @@ package scala.collection
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, Builder}
-import scala.collection.immutable.{ArraySeq, LazyList}
+import scala.collection.immutable.LazyList
 
 
 /** Views are collections whose transformation operations are non strict: the resulting elements

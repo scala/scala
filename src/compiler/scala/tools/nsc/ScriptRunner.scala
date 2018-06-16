@@ -5,11 +5,10 @@
 
 package scala.tools.nsc
 
-import io.{AbstractFile, Directory, File, Path}
+import io.{Directory, File, Path}
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import scala.util.control.NonFatal
-import util.Exceptional.rootCause
 import java.io.IOException
 
 /** An object that runs Scala code in script files.

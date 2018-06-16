@@ -11,7 +11,6 @@ package math
 
 import java.util.Comparator
 
-import scala.annotation.implicitAmbiguous
 import scala.language.{higherKinds, implicitConversions}
 
 /** Ordering is a trait whose instances each represent a strategy for sorting

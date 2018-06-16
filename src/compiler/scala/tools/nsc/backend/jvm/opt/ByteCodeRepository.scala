@@ -7,8 +7,6 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import java.util.concurrent.atomic.AtomicLong
-
 import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
 import scala.tools.asm

@@ -1,7 +1,7 @@
 package scala.tools.nsc.classpath
 
 import scala.tools.nsc.util.ClassRepresentation
-import scala.reflect.io.{AbstractFile, Path, PlainFile, VirtualDirectory}
+import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import FileUtils._
 import java.net.URL
 

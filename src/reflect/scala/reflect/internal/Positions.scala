@@ -2,7 +2,6 @@ package scala
 package reflect
 package internal
 
-import scala.collection.mutable
 import util._
 import scala.collection.mutable.ListBuffer
 

@@ -56,7 +56,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
-  private class ResizableArrayAccess[A] extends ArrayBuffer[A] {
+  private class ResizableArrayAccess[A0] extends ArrayBuffer[A0] {
     def p_size0 = size0
     def p_size0_=(s: Int) = size0 = s
     def p_array = array

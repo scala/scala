@@ -11,7 +11,7 @@ package runtime
 
 
 import scala.collection.{BuildFrom, IterableOps}
-import scala.language.{ higherKinds, implicitConversions }
+import scala.language.implicitConversions
 
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only

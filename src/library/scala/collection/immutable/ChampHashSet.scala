@@ -131,8 +131,9 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
   import Node._
   import SetNode._
 
-  // assert(checkInvariantContentIsWellTyped())
-  // assert(checkInvariantSubNodesAreCompacted())
+  /*
+  assert(checkInvariantContentIsWellTyped())
+  assert(checkInvariantSubNodesAreCompacted())
 
   private final def checkInvariantSubNodesAreCompacted(): Boolean =
     new SetIterator[A](this).size - payloadArity >= 2 * nodeArity
@@ -148,6 +149,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 
     predicate1 && predicate2 && predicate3
   }
+  */
 
   def getPayload(index: Int) =
     content(TupleLength * index).asInstanceOf[A]
@@ -253,7 +255,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     this
   }
 
-  def mergeTwoKeyValPairs[A](key0: A, keyHash0: Int, key1: A, keyHash1: Int, shift: Int): SetNode[A] = {
+  def mergeTwoKeyValPairs(key0: A, keyHash0: Int, key1: A, keyHash1: Int, shift: Int): SetNode[A] = {
     // assert(key0 != key1)
 
     if (shift >= HashCodeLength) {
@@ -467,7 +469,6 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A]) extends SetNode[A] {
 
   import Node._
-  import SetNode._
 
   require(content.size >= 2)
 

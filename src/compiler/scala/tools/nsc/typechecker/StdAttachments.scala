@@ -213,7 +213,7 @@ trait MacroAnnotationAttachments {
   self: Analyzer =>
 
   import global._
-  import scala.collection.{immutable, mutable}
+  import scala.collection.mutable
 
   case object WeakSymbolAttachment
   def markWeak(sym: Symbol) = if (sym != null && sym != NoSymbol) sym.updateAttachment(WeakSymbolAttachment) else sym

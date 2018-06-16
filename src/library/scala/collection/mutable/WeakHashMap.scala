@@ -10,7 +10,6 @@ package scala
 package collection
 package mutable
 
-import generic._
 import convert.Wrappers._
 
 /** A hash map with references to entries which are weakly reachable. Entries are

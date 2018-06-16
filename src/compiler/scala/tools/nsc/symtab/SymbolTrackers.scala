@@ -182,9 +182,7 @@ trait SymbolTrackers {
             val xs = if (back.isEmpty) front else front :+ "..."
             xs mkString " -> "
         }
-        val treeStrings = symMap(sym) map { t =>
-          "%10s: %s".format(t.shortClass, t)
-        }
+        val treeStrings = symMap(sym).map(t => s"${t.shortClass}%10s: $t")
 
         ownerString :: treeStrings mkString "\n"
       }

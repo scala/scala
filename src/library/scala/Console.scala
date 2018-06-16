@@ -9,7 +9,7 @@
 package scala
 
 import java.io.{ BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader }
-import scala.io.{ AnsiColor, StdIn }
+import scala.io.AnsiColor
 import scala.util.DynamicVariable
 
 /** Implements functionality for printing Scala values on the terminal. For reading values

@@ -409,7 +409,6 @@ final class StringOps(private val s: String) extends AnyVal {
     val len = s.length
     @`inline` def slc(off: Int, length: Int): WrappedString =
       new WrappedString(s.substring(off, off+length))
-    val ws = new WrappedString(s)
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = other.knownSize
     if(k >= 0) b.sizeHint(len + k - replaced)
@@ -1248,7 +1247,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** A pair of, first, all chars that satisfy predicate `p` and, second, all chars that do not. */
   def partition(p: Char => Boolean): (String, String) = {
-    var res1, res2 = new StringBuilder
+    val res1, res2 = new StringBuilder
     var i = 0
     val len = s.length
     while(i < len) {

@@ -1,10 +1,8 @@
 package scala
 package collection.immutable
 
-import collection.{AbstractIterator, Iterator, SeqFactory}
+import collection.{AbstractIterator, Iterator}
 import java.lang.String
-
-import scala.collection.mutable.Builder
 
 /** The `Range` class represents integer values in range
   *  ''[start;end)'' with non-zero step value `step`.

@@ -11,7 +11,6 @@ import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
-import scala.reflect.internal.TypesStats
 import scala.reflect.internal.util.StatisticsStatics
 
 /** This class ...
@@ -247,12 +246,6 @@ abstract class SymbolLoaders {
       else if (root.isClass && !root.isModuleClass)
         root.rawInfo.load(root)
     }
-  }
-
-  private def phaseBeforeRefchecks: Phase = {
-    var resPhase = phase
-    while (resPhase.refChecked) resPhase = resPhase.prev
-    resPhase
   }
 
   /**

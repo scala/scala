@@ -2,7 +2,7 @@
 
 package scala.tools.nsc.interpreter
 
-import java.io.{PrintStream, PrintWriter, StringWriter}
+import java.io.{PrintWriter, StringWriter}
 import java.net.URL
 
 import PartialFunction.cond
@@ -13,10 +13,10 @@ import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPha
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, SourceFile}
-import scala.tools.nsc.{ConsoleWriter, Global, NewLinePrintWriter, Settings}
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.{Reporter, StoreReporter}
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.util.PathResolver
@@ -434,21 +434,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     */
   override def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
-
-
-  private def safePos(t: Tree, alt: Int): Int =
-    try t.pos.start
-    catch { case _: UnsupportedOperationException => alt }
-
-  // Given an expression like 10 * 10 * 10 we receive the parent tree positioned
-  // at a '*'.  So look at each subtree and find the earliest of all positions.
-  private def earliestPosition(tree: Tree): Int = {
-    var pos = Int.MaxValue
-    tree foreach { t =>
-      pos = math.min(pos, safePos(t, Int.MaxValue))
-    }
-    pos
-  }
 
   override def requestDefining(name: String): Option[Request] = {
     val sym = symbolOfIdent(name)
