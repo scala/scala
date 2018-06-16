@@ -10,19 +10,19 @@ S.scala:3: warning: Adaptation of argument list by inserting () is deprecated: l
  after adaptation: new J((): Unit)
   val x2 = new J()
            ^
-S.scala:4: warning: Adapting argument list by creating a 5-tuple: this may not be what you want.
+S.scala:4: warning: adapted the argument list to the expected 5-tuple: add additional parens instead
         signature: J(x: Any): J
   given arguments: 1, 2, 3, 4, 5
  after adaptation: new J((1, 2, 3, 4, 5): (Int, Int, Int, Int, Int))
   val x3 = new J(1, 2, 3, 4, 5)
            ^
-S.scala:6: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
+S.scala:6: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Some.apply[A](value: A): Some[A]
   given arguments: 1, 2, 3
  after adaptation: Some((1, 2, 3): (Int, Int, Int))
   val y1 = Some(1, 2, 3)
                ^
-S.scala:7: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
+S.scala:7: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Some(value: A): Some[A]
   given arguments: 1, 2, 3
  after adaptation: new Some((1, 2, 3): (Int, Int, Int))
@@ -40,7 +40,7 @@ S.scala:10: warning: Adaptation of argument list by inserting () is deprecated: 
  after adaptation: new J2((): Unit)
   val z2 = new J2()
            ^
-S.scala:14: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
+S.scala:14: warning: adapted the argument list to the expected 3-tuple: add additional parens instead
         signature: Test.anyId(a: Any): Any
   given arguments: 1, 2, 3
  after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int))
