@@ -155,7 +155,9 @@ trait StdNames {
     final val TypeTag : NameType      = "TypeTag"
     final val Expr: NameType          = "Expr"
     final val String: NameType        = "String"
-    final val StringContext: NameType = "StringContext"
+
+    // some names whose name we utilize
+    final val StringContextName: NameType = "StringContext"
 
     // fictions we use as both types and terms
     final val ERROR: NameType    = "<error>"

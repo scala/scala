@@ -5518,7 +5518,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
         def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
-          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
+          case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => true
           case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
           case _                                                            => isMacroExpansion
         }
