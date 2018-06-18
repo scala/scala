@@ -929,8 +929,19 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
     */
-  def mkString(start: String, sep: String, end: String): String =
-    addString(new StringBuilder(), start, sep, end).toString
+  def mkString(start: String, sep: String, end: String): String = {
+    val it = iterator
+    if (!it.hasNext) {
+      if (start.length == 0) end
+      else start + end
+    } else {
+      val first = String.valueOf(it.next)
+      if (!it.hasNext) {
+        if (start.length + end.length == 0) first
+        else start + first + end
+      } else it.addString((new StringBuilder(start)).append(first), sep, sep, end).toString
+    }
+  }
 
   /** Displays all elements of this $coll in a string using a separator string.
     *
@@ -941,14 +952,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
     */
-  def mkString(sep: String): String = {
-    val it = iterator
-    if (it.hasNext) {
-      val first = String.valueOf(it.next)
-      if (it.hasNext) it.addString(new StringBuilder(first), sep, sep, "").toString
-      else first
-    } else ""
-  }  
+  def mkString(sep: String): String = mkString("", "", "")
 
   /** Displays all elements of this $coll in a string.
     *
