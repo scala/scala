@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
+import scala.collection.mutable
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.NestedClassesCollector
@@ -18,7 +19,10 @@ class Collector extends NestedClassesCollector[String] {
 
 @RunWith(classOf[JUnit4])
 class NestedClassesCollectorTest {
-  val c = new Collector
+  val c = new Collector {
+    override def visitInternalName(internalName: String, offset: Int, length: Int): Unit =
+      innerClasses += internalName.substring(offset, length)
+  }
   def inners: List[String] = {
     val res = c.innerClasses.toList.sorted
     c.innerClasses.clear()
@@ -29,7 +33,7 @@ class NestedClassesCollectorTest {
   def referenceTypeSignatures(): Unit = {
     def ref(sig: String, expect: List[String]) = {
       c.visitFieldSignature(sig)
-      assertEquals(inners, expect)
+      assertEquals(expect, inners)
     }
 
     // TypeVariableSignature
@@ -57,7 +61,7 @@ class NestedClassesCollectorTest {
   def classSignatures(): Unit = {
     def cls(sig: String, expect: List[String]) = {
       c.visitClassSignature(sig)
-      assertEquals(inners, expect)
+      assertEquals(expect, inners)
     }
 
     cls("LA;", List("A"))
