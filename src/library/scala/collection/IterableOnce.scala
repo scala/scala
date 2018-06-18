@@ -941,7 +941,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
     */
-  def mkString(sep: String): String = mkString("", sep, "")
+  def mkString(sep: String): String = {
+    val it = iterator
+    if (it.hasNext) {
+      val first = String.valueOf(it.next)
+      if (it.hasNext) it.addString(new StringBuilder(first), sep, sep, "").toString
+      else first
+    } else ""
+  }  
 
   /** Displays all elements of this $coll in a string.
     *
