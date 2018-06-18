@@ -952,7 +952,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
     */
-  def mkString(sep: String): String = mkString("", "", "")
+  def mkString(sep: String): String = mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
     *
