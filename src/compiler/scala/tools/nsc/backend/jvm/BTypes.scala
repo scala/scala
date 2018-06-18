@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.collection.generic.Clearable
 import scala.collection.{concurrent, mutable}
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -36,12 +37,15 @@ abstract class BTypes {
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
   def cachedClassBType(internalName: InternalName): Option[ClassBType] =
-    classBTypeCache.get(internalName)
+    Option(cachedClassBTypeOrNull(internalName))
+
+  def cachedClassBTypeOrNull(internalName: InternalName): ClassBType =
+    classBTypeCache.map.get(internalName)
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
   // Note usage should be private to this file, except for tests
-  val classBTypeCache: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
+  val classBTypeCache: ClearableJConcurrentHashMap[InternalName, ClassBType] = recordPerRunCache(new ClearableJConcurrentHashMap[InternalName, ClassBType])
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -811,12 +815,12 @@ abstract class BTypes {
       // synchronized s required to ensure proper initialisation if info.
       // see comment on def info
       newRes.synchronized {
-        classBTypeCache.putIfAbsent(internalName, newRes) match {
-          case None =>
+        classBTypeCache.map.putIfAbsent(internalName, newRes) match {
+          case null =>
             newRes._info = init(newRes)
             newRes.checkInfoConsistency()
             newRes
-          case Some(old) =>
+          case old =>
             old
         }
       }
@@ -1115,8 +1119,8 @@ object BTypes {
   // when inlining, local variable names of the callee are prefixed with the name of the callee method
   val InlinedLocalVariablePrefixMaxLength = 128
 }
-object FlatConcurrentHashMap {
-  import collection.JavaConverters._
-  def empty[K,V]: concurrent.Map[K,V] =
-    new java.util.concurrent.ConcurrentHashMap[K,V].asScala
+
+final class ClearableJConcurrentHashMap[K, V] extends scala.collection.mutable.Clearable {
+  val map = new java.util.concurrent.ConcurrentHashMap[K,V]
+  override def clear(): Unit = map.clear()
 }
