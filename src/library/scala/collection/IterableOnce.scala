@@ -734,7 +734,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return   an option value containing the smallest element of this $coll
     *            with respect to the ordering `ord`.
     *
-    *  @usecase def min: A
+    *  @usecase def minOption: Option[A]
     *    @inheritdoc
     *
     *    @return   an option value containing the smallest element of this $coll.
@@ -771,7 +771,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return   an option value containing the largest element of this $coll with
     *            respect to the ordering `ord`.
     *
-    *  @usecase def max: A
+    *  @usecase def maxOption: Option[A]
     *    @inheritdoc
     *
     *    @return   an option value containing the largest element of this $coll.
@@ -824,7 +824,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return   an option value containing the first element of this $coll with the
     *            largest value measured by function f with respect to the ordering `cmp`.
     *
-    *  @usecase def maxBy[B](f: A => B): A
+    *  @usecase def maxByOption[B](f: A => B): Option[A]
     *    @inheritdoc
     *
     *    @return   an option value containing the first element of this $coll with
@@ -879,7 +879,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *            with the smallest value measured by function f
     *            with respect to the ordering `cmp`.
     *
-    *  @usecase def minBy[B](f: A => B): A
+    *  @usecase def minByOption[B](f: A => B): Option[A]
     *    @inheritdoc
     *
     *    @return  an option value containing the first element of this $coll with
