@@ -684,8 +684,8 @@ object LazyList extends LazyListFactory[LazyList] {
   }
 
   def from[A](coll: collection.IterableOnce[A]): LazyList[A] = coll match {
-    case _ if coll.knownSize == 0 => empty[A]
     case coll: LazyList[A] => coll
+    case _ if coll.knownSize == 0 => empty[A]
     case _ => fromIterator(coll.iterator)
   }
 

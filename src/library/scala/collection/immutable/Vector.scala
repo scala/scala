@@ -20,9 +20,9 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
+      case v: Vector[E]           => v
       case _ if it.knownSize == 0 => empty[E]
-      case v: Vector[E] => v
-      case _            => (newBuilder ++= it).result()
+      case _                      => (newBuilder ++= it).result()
     }
 
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]

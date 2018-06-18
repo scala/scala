@@ -177,8 +177,8 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
   def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
 
   def from[A](source: IterableOnce[A]): Queue[A] = source match {
-    case _ if source.knownSize == 0 => empty[A]
     case q: Queue[A] => q
+    case _ if source.knownSize == 0 => empty[A]
     case _ => new Queue[A](Nil, ListBuffer.from(source).toList)
   }
 

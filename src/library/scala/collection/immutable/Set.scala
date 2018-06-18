@@ -86,12 +86,12 @@ object Set extends IterableFactory[Set] {
 
   def from[E](it: collection.IterableOnce[E]): Set[E] =
     it match {
-      case _ if it.knownSize == 0 => empty[E]
       // We want `SortedSet` (and subclasses, such as `BitSet`) to
       // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E] => (newBuilder[E] ++= it).result()
-      case s: Set[E]       => s
-      case _               => (newBuilder[E] ++= it).result()
+      case _: SortedSet[E]         => (newBuilder[E] ++= it).result()
+      case _ if it.knownSize == 0  => empty[E]
+      case s: Set[E]               => s
+      case _                       => (newBuilder[E] ++= it).result()
     }
 
   def newBuilder[A]: Builder[A, Set[A]] =

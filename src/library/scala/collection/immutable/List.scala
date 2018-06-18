@@ -582,8 +582,8 @@ case object Nil extends List[Nothing] {
 object List extends StrictOptimizedSeqFactory[List] {
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
-    case _ if coll.knownSize == 0 => empty[B]
     case coll: List[B] => coll
+    case _ if coll.knownSize == 0 => empty[B]
     case _ => ListBuffer.from(coll).toList
   }
 

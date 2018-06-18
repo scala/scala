@@ -111,8 +111,8 @@ object ListSet extends IterableFactory[ListSet] {
 
   def from[E](it: scala.collection.IterableOnce[E]): ListSet[E] =
     it match {
-      case _ if it.knownSize == 0 => empty[E]
       case ls: ListSet[E] => ls
+      case _ if it.knownSize == 0 => empty[E]
       case _ => (newBuilder[E] ++= it).result()
     }
 
