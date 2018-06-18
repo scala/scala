@@ -610,6 +610,7 @@ object LazyList extends LazyListFactory[LazyList] {
     override def tail: LazyList[Nothing] = throw new UnsupportedOperationException("tail of empty lazy list")
     def force: this.type = this
     override def knownSize: Int = 0
+    override def iterator: Iterator[Nothing] = Iterator.empty
     protected def tailDefined: Boolean = false
     protected def headDefined: Boolean = false
   }
@@ -789,6 +790,7 @@ object Stream extends LazyListFactory[Stream] {
       */
     def force: this.type = this
     override def knownSize: Int = 0
+    override def iterator: Iterator[Nothing] = Iterator.empty
     protected def headDefined: Boolean = false
     protected def tailDefined: Boolean = false
   }
