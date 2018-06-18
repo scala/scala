@@ -1211,15 +1211,18 @@ abstract class ClassfileParser {
       val numAnnots = u2
       var i = 0
       var bytes: Array[Byte] = null
-      while (i < numAnnots && bytes == null) pool.getType(u2) match {
-        case SigTpe =>
-          checkScalaSigAnnotArg()
-          bytes = parseScalaSigBytes()
-        case LongSigTpe =>
-          checkScalaSigAnnotArg()
-          bytes = parseScalaLongSigBytes()
-        case _ =>
-          skipAnnotArgs()
+      while (i < numAnnots && bytes == null) {
+        pool.getType(u2) match {
+          case SigTpe =>
+            checkScalaSigAnnotArg()
+            bytes = parseScalaSigBytes()
+          case LongSigTpe =>
+            checkScalaSigAnnotArg()
+            bytes = parseScalaLongSigBytes()
+          case t =>
+            skipAnnotArgs()
+        }
+        i += 1
       }
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
