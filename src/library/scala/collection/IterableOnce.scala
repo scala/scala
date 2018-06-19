@@ -27,7 +27,7 @@ import scala.collection.mutable.StringBuilder
   *    Note: will not terminate for infinite-sized collections.
   *
   * @define willForceEvaluation
-  *    Note: When applied to a view or a lazy collection it will always force the elements.
+  *    Note: Even when applied to a view or a lazy collection it will always force the elements.
   *
   * @define coll collection
   */

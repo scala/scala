@@ -101,6 +101,8 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
     *  ListSet(1,2,3).subsets => {{1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
     *
+    *  $willForceEvaluation
+    *
     *  @author Eastsun
     */
   private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends AbstractIterator[C] {
