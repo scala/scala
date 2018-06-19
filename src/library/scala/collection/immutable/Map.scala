@@ -89,6 +89,35 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
+  /** Creates a new map obtained by updating the existing one with a new or updated binding
+    * resulting from the application of `f`.
+    *
+    *  - if the value given by `key` is None, `f` can create a new binding for `key` by returning `Some(value)`
+    *  - if the existing value given by `key` is `Some(value)`, `f` can:
+    *     - update the existing binding with a new value, if `f` returns `Some(value)`
+    *     - remove the existing binding, if `f` returns `None`
+    *  @param    key the key
+    *  @param    f the partial function that will be applied to an existing binding or that will create a new one.
+    *  @tparam   V1 the type of the value resulting from the update.
+    *  @return   A new map with the updated key/value mapping, or the new one provided by a mapping ie
+    *
+    *  @usecase  def updatedWith[V1 >: V](key: K)(f: PartialFunction[Option[V], Option[V1): Map[K, V1]
+    *    @inheritdoc
+    */
+  def updatedWith[V1 >: V](key: K)(f: PartialFunction[Option[V], Option[V1]]): CC[K, V1] = {
+    val pf = f.lift
+    val previousValue: Option[V] = coll.get(key)
+    pf(previousValue) match {
+      case None => coll
+      case Some(result: Option[V1]) => {
+        result match {
+          case None => (coll - key).coll
+          case Some(v) => coll + (key -> v)
+        }
+      }
+    }
+  }
+
   /**
     * Alias for `updated`
     *
