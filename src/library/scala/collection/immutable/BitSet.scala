@@ -5,9 +5,8 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import BitSetOps.{LogWL, updateArray}
-import mutable.{Builder, GrowableBuilder}
+import mutable.Builder
 import scala.annotation.implicitNotFound
-
 
 /** A class for immutable bitsets.
   *  $bitsetinfo

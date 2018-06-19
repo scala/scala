@@ -10,7 +10,7 @@ package scala.concurrent
 
 import scala.language.higherKinds
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}

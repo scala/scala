@@ -1,10 +1,8 @@
 package scala.collection.immutable
 
-import scala.collection.{AbstractIterator, SeqFactory, IterableFactory, IterableOnce, Iterator, StrictOptimizedIterableOps}
+import scala.collection.{AbstractIterator, Iterator}
 
 import java.lang.String
-
-import scala.collection.mutable.Builder
 
 /** `NumericRange` is a more generic version of the
   *  `Range` class which works with arbitrary types.

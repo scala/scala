@@ -13,7 +13,7 @@ import scala.reflect.internal.util.{Position, StringOps}
 import scala.tools.util.SystemExit
 
 import Position.formatMessage
-import StringOps.{countElementsAsString => countAs, trimAllTrailingSpace => trimTrailing}
+import StringOps.{trimAllTrailingSpace => trimTrailing}
 
 /** Facility for outputting messages, with optional user intervention. */
 trait PrintReporter extends InternalReporter {

@@ -17,11 +17,11 @@ package scala.concurrent
  *  @author  Martin Odersky
  */
 class Channel[A] {
-  class LinkedList[A] {
+  private class LinkedList {
     var elem: A = _
-    var next: LinkedList[A] = null
+    var next: LinkedList = null
   }
-  private[this] var written = new LinkedList[A] // FIFO queue, realized through
+  private[this] var written = new LinkedList    // FIFO queue, realized through
   private[this] var lastWritten = written       // aliasing of a linked list
   private[this] var nreaders = 0
 
@@ -32,7 +32,7 @@ class Channel[A] {
    */
   def write(x: A) = synchronized {
     lastWritten.elem = x
-    lastWritten.next = new LinkedList[A]
+    lastWritten.next = new LinkedList
     lastWritten = lastWritten.next
     if (nreaders > 0) notify()
   }

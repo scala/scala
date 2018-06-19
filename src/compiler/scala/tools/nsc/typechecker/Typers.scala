@@ -13,13 +13,12 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
-import scala.reflect.macros.whitebox
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -5119,7 +5118,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      def typedTypeSelectionQualifier(tree: Tree, pt: Type = AnyRefTpe) =
+      def typedTypeSelectionQualifier(tree: Tree, pt: Type) =
         context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
 
       def typedSelectOrSuperCall(tree: Select) = tree match {
@@ -5518,7 +5517,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
         def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
-          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
+          case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => true
           case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
           case _                                                            => isMacroExpansion
         }
@@ -5560,7 +5559,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
-        val refTyped = typedTypeSelectionQualifier(tree.ref, WildcardType )
+        val refTyped = typedTypeSelectionQualifier(tree.ref, WildcardType)
 
         if (refTyped.isErrorTyped) setError(tree)
         else {

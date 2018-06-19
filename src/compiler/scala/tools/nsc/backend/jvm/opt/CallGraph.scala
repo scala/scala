@@ -296,7 +296,6 @@ abstract class CallGraph {
       // callee, we only check there for the methodInlineInfo, we should find it there.
       calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
         case Some(methodInlineInfo) =>
-          val isAbstract = BytecodeUtils.isAbstractMethod(calleeMethodNode)
 
           val receiverType = classBTypeFromParsedClassfile(call.owner)
           // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:

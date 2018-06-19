@@ -9,7 +9,6 @@
 package scala.collection
 
 import scala.language.implicitConversions
-import scala.math.Ordering
 import scala.collection.generic.IsSeqLike
 
 object Searching {

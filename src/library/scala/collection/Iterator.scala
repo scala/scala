@@ -1,9 +1,8 @@
 package scala.collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
-import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder, StringBuilder}
+import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 

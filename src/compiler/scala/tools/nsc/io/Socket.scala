@@ -37,7 +37,7 @@ class Socket(jsocket: JSocket) extends Streamable.Bytes with Closeable {
   def close()        = jsocket.close()
 
   def printWriter()                         = new PrintWriter(outputStream(), true)
-  def bufferedReader(implicit codec: Codec) = new BufferedReader(new InputStreamReader(inputStream()))
+  def bufferedReader(implicit codec: Codec) = new BufferedReader(new InputStreamReader(inputStream(), codec.decoder))
   def bufferedOutput(size: Int)             = new BufferedOutputStream(outputStream(), size)
 
   /** Creates an InputStream and applies the closure, automatically closing it on completion.

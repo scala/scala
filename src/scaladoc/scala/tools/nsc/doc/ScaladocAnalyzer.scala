@@ -8,7 +8,6 @@ package doc
 
 import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import typechecker.Analyzer
-import scala.reflect.internal.Chars._
 import scala.reflect.internal.util.{ BatchSourceFile, Position }
 import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo }
 
@@ -19,7 +18,6 @@ trait ScaladocAnalyzer extends Analyzer {
   override def newTyper(context: Context): ScaladocTyper = new Typer(context) with ScaladocTyper
 
   trait ScaladocTyper extends Typer {
-    private def unit = context.unit
 
     override def canAdaptConstantTypeToLiteral = false
 

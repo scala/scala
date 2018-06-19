@@ -15,9 +15,8 @@ import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
-import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
+import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.io.NoAbstractFile
-import scala.reflect.internal.util.Collections._
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.util.control.NonFatal
@@ -1209,7 +1208,7 @@ abstract class ClassfileParser {
       assert(runtimeAnnotStart != -1, s"No RuntimeVisibleAnnotations in classfile with ScalaSignature attribute: $clazz")
       in.bp = runtimeAnnotStart
       val numAnnots = u2
-      var i = 0
+      val i = 0
       var bytes: Array[Byte] = null
       while (i < numAnnots && bytes == null) {
         pool.getType(u2) match {

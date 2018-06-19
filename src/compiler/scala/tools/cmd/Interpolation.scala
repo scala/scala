@@ -33,15 +33,15 @@ trait Interpolation {
 object Interpolation {
   /** A simple template for generating bash completion functions.
    */
-  lazy val bashTemplate = """
+  lazy val bashTemplate = s"""
     |_@@PROGRAM@@()
     |{
     |  local cur opts base
     |  COMPREPLY=()
-    |  cur="${COMP_WORDS[COMP_CWORD]}"
+    |  cur="$${COMP_WORDS[COMP_CWORD]}"
     |  opts="@@ALLOPTIONS@@"
     |
-    |  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    |  COMPREPLY=($$(compgen -W "$${opts}" -- $${cur}))
     |  _filedir
     |  return 0
     |} && complete -F _@@PROGRAM@@ @@PROGRAM@@

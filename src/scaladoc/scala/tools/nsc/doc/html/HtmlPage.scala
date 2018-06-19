@@ -235,7 +235,7 @@ abstract class HtmlPage extends Page { thisPage =>
         case None => NoElems
       })
 
-  private def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
+  private def memberToUrl(template: Entity, isSelf: Boolean /*= true*/): String = {
     val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
       case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)
       case dte: DocTemplateEntity => (None, dte)

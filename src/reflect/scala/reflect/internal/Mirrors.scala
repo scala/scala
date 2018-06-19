@@ -89,13 +89,11 @@ trait Mirrors extends api.Mirrors {
 
     /************************ loaders of class symbols ************************/
 
-    private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
-      var result = sym
-      result match {
+    private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol =
+      sym match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
       }
-    }
 
     def getClassByName(fullname: Name): ClassSymbol =
       ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toTypeName))

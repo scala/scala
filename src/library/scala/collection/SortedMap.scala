@@ -45,7 +45,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
     * therefore not recommended.
     */
-  protected type SortedMapCC[K, V] = CC[K, V] @uncheckedVariance
+  protected type SortedMapCC[KCC, VCC] = CC[KCC, VCC] @uncheckedVariance
 
   def sortedMapFactory: SortedMapFactory[SortedMapCC]
 

@@ -265,9 +265,6 @@ abstract class RefChecks extends Transform {
      */
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false): Unit = {
       val self = clazz.thisType
-      def classBoundAsSeen(tp: Type) = {
-        tp.typeSymbol.classBound.asSeenFrom(self, tp.typeSymbol.owner)
-      }
 
       case class MixinOverrideError(member: Symbol, msg: String)
 

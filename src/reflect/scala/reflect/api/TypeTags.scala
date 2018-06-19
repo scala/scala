@@ -300,6 +300,7 @@ trait TypeTags { self: Universe =>
   /* @group TypeTags */
   // This class only exists to silence MIMA complaining about a binary incompatibility.
   // Only the top-level class (api.PredefTypeCreator) should be used.
+  @deprecated("This class only exists to silence MIMA complaining about a binary incompatibility.", since="forever")
   private class PredefTypeCreator[T](copyIn: Universe => Universe#TypeTag[T]) extends TypeCreator {
     def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type = {
       copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe

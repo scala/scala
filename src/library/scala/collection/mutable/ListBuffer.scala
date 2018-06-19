@@ -1,9 +1,7 @@
 package scala.collection
 package mutable
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import scala.Int._
 import scala.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
@@ -37,7 +35,7 @@ class ListBuffer[A]
   private[this] var aliased = false
   private[this] var len = 0
 
-  private type Predecessor[A] = ::[A] /*| Null*/
+  private type Predecessor[A0] = ::[A0] /*| Null*/
 
   def iterator = first.iterator
 

@@ -1,7 +1,6 @@
 package scala
 package collection
 
-import collection.mutable.Builder
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.language.{higherKinds, implicitConversions}
@@ -86,7 +85,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
     * therefore not recommended.
     */
-  protected type MapCC[K, V] = CC[K, V] @uncheckedVariance
+  protected type MapCC[KCC, VCC] = CC[KCC, VCC] @uncheckedVariance
 
   /** Similar to `fromIterable`, but returns a Map collection type.
     * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.

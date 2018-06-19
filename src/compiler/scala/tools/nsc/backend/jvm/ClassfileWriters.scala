@@ -10,7 +10,7 @@ import java.util
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.{CRC32, Deflater, ZipEntry, ZipOutputStream}
 
-import scala.reflect.internal.util.{NoPosition, Statistics}
+import scala.reflect.internal.util.NoPosition
 import scala.tools.nsc.Global
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.AbstractFile

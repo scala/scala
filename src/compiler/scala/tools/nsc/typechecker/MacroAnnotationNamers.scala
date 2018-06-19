@@ -3,8 +3,6 @@ package scala.tools.nsc.typechecker
 // imported from scalamacros/paradise
 trait MacroAnnotationNamers { self: Analyzer =>
   import global._
-  import analyzer._
-  import definitions._
   import scala.reflect.internal.Flags._
   import scala.reflect.internal.Mode._
 

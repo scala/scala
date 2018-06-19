@@ -3,8 +3,8 @@ package collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import collection.{IterableFactory, Iterator, MapFactory, StrictOptimizedIterableOps}
-import collection.Hashing.{computeHash, keepBits}
+import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
+import collection.Hashing.computeHash
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import java.lang.Integer.bitCount
 import java.lang.System.arraycopy
@@ -165,8 +165,9 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
   import Node._
   import MapNode._
 
-  // assert(checkInvariantContentIsWellTyped())
-  // assert(checkInvariantSubNodesAreCompacted())
+  /*
+  assert(checkInvariantContentIsWellTyped())
+  assert(checkInvariantSubNodesAreCompacted())
 
   private final def checkInvariantSubNodesAreCompacted(): Boolean =
     new MapKeyValueTupleIterator[K, V](this).size - payloadArity >= 2 * nodeArity
@@ -182,6 +183,7 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
 
     predicate1 && predicate2 && predicate3
   }
+  */
 
   def getKey(index: Int): K = content(TupleLength * index).asInstanceOf[K]
   def getValue(index: Int): V = content(TupleLength * index + 1).asInstanceOf[V]
@@ -510,7 +512,6 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
 private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
 
   import Node._
-  import MapNode._
 
   require(content.size >= 2)
 

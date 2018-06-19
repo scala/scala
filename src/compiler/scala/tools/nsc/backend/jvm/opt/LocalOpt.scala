@@ -779,7 +779,6 @@ object LocalOptImpls {
    * Apply various simplifications to branching instructions.
    */
   def simplifyJumps(method: MethodNode): Boolean = {
-    var changed = false
 
     val allHandlers = method.tryCatchBlocks.asScala.toSet
 

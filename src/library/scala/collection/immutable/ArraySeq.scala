@@ -4,7 +4,7 @@ package collection.immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder}
-import scala.collection.{ArrayOps, ClassTagSeqFactory, IterableOnce, Iterator, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
+import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag

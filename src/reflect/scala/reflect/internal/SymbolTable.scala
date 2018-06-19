@@ -12,7 +12,6 @@ import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
 
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 
 abstract class SymbolTable extends macros.Universe

@@ -8,7 +8,6 @@ import collection.Hashing.{computeHash, keepBits}
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import java.lang.{Integer, String, System}
 
-import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /** This class implements immutable maps using a hash trie.

@@ -3,7 +3,7 @@ package scala.tools.nsc.doc.html
 import java.io.Writer
 import javax.xml.stream.XMLStreamWriter
 
-import scala.collection.{Iterator, Map}
+import scala.collection.Iterator
 
 // a lightweight replacement for scala-xml
 object HtmlTags {

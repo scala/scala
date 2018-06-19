@@ -3,9 +3,7 @@ package collection
 
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
-import scala.reflect.ClassTag
-import java.io.{ObjectInputStream, ObjectOutputStream}
+import scala.collection.mutable.Builder
 import java.lang.{String, UnsupportedOperationException}
 
 import scala.collection.generic.DefaultSerializationProxy

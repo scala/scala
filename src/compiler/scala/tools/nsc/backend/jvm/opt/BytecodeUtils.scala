@@ -9,7 +9,6 @@ package opt
 
 import scala.annotation.{tailrec, switch}
 
-import scala.collection.mutable
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._

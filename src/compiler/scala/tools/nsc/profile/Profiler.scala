@@ -147,17 +147,17 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     import java.lang.{Integer => jInt}
     val reportNs = System.nanoTime()
     val data = notification.getUserData
-    val seq = notification.getSequenceNumber
-    val message = notification.getMessage
+    //val seq = notification.getSequenceNumber
+    //val message = notification.getMessage
     val tpe = notification.getType
-    val time= notification.getTimeStamp
+    //val time= notification.getTimeStamp
     data match {
       case cd: CompositeData if tpe == "com.sun.management.gc.notification" =>
         val name = cd.get("gcName").toString
         val action = cd.get("gcAction").toString
         val cause = cd.get("gcCause").toString
         val info = cd.get("gcInfo").asInstanceOf[CompositeData]
-        val duration = info.get("duration").asInstanceOf[jLong].longValue()
+        //val duration = info.get("duration").asInstanceOf[jLong].longValue()
         val startTime = info.get("startTime").asInstanceOf[jLong].longValue()
         val endTime = info.get("endTime").asInstanceOf[jLong].longValue()
         val threads = info.get("GcThreadCount").asInstanceOf[jInt].longValue()

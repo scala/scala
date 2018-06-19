@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import scala.PartialFunction.{cond => when}
 import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
-import scala.language.{existentials, implicitConversions}
+import scala.language.implicitConversions
 import scala.util.Properties.jdkHome
 import scala.reflect.classTag
 import scala.reflect.internal.util.ScalaClassLoader._
@@ -944,10 +944,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   /** Actions to cram in parallel while collecting first user input at prompt.
     * Run with output muted both from ILoop and from the intp reporter.
     */
-  private def interpretPreamble = {
+  private def interpretPreamble() = {
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
-    intp.quietBind(intp.namedParam[Repl]("$intp", intp)(tagOfRepl, classTag[Repl]))
+    intp.quietBind(intp.namedParam[Repl](s"$$intp", intp)(tagOfRepl, classTag[Repl]))
 
     // Auto-run code via some setting.
     (config.replAutorunCode.option

@@ -5,7 +5,6 @@
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.{Position, RangePosition, StringOps}
-import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{Settings, interactive}

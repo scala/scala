@@ -4,8 +4,6 @@ import java.lang.String
 
 import scala.collection.IterableOnce
 
-import scala.math.Ordering
-
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>
 

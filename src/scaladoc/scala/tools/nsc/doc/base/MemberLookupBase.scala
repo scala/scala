@@ -60,14 +60,6 @@ trait MemberLookupBase {
       case Nil =>
         // (3) Look at external links
         syms.flatMap { case (sym, owner) =>
-          // reconstruct the original link
-          def linkName(sym: Symbol) = {
-            def nameString(s: Symbol) = s.nameString + (if ((s.isModule || s.isModuleClass) && !s.hasPackageFlag) "$" else "")
-            val packageSuffix = if (sym.hasPackageFlag) ".package" else ""
-
-            sym.ownerChain.reverse.filterNot(isRoot(_)).map(nameString(_)).mkString(".") + packageSuffix
-          }
-
           if (sym.isClass || sym.isModule || sym.isTrait || sym.hasPackageFlag)
             findExternalLink(sym, "")
           else if (owner.isClass || owner.isModule || owner.isTrait || owner.hasPackageFlag)

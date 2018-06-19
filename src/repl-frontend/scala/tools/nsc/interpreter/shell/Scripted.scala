@@ -3,7 +3,6 @@
  */
 package scala.tools.nsc.interpreter.shell
 
-import scala.language.dynamics
 import scala.beans.BeanProperty
 import javax.script._
 import java.io.{Closeable, OutputStream, PrintWriter, Reader}
@@ -24,7 +23,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   def createBindings: Bindings = new SimpleBindings
 
   // dynamic context bound under this name
-  final val ctx = "$ctx"
+  final val ctx = s"$$ctx"
 
   // the underlying interpreter, tweaked to handle dynamic bindings
   val intp: ScriptedRepl = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
@@ -289,7 +288,7 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
   override def write(b: Int): Unit = {
     byteBuffer.put(b.toByte)
     byteBuffer.flip()
-    val result = decoder.decode(byteBuffer, charBuffer, /*eoi=*/ false)
+    decoder.decode(byteBuffer, charBuffer, /*eoi=*/ false)
     if (byteBuffer.remaining == 0) byteBuffer.clear()
     if (charBuffer.position() > 0) {
       charBuffer.flip()

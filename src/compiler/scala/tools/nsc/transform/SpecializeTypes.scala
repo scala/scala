@@ -9,7 +9,6 @@ package transform
 
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{immutable, mutable}
-import scala.annotation.tailrec
 
 /** Specialize code on types.
  *

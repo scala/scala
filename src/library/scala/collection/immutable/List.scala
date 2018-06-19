@@ -6,7 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
-import mutable.{Builder, ListBuffer, ReusableBuilder}
+import mutable.{Builder, ListBuffer}
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -192,7 +192,7 @@ sealed abstract class List[+A]
   override def updated[B >: A](index: Int, elem: B): List[B] = {
     var i = 0
     var current = this
-    var prefix = ListBuffer.empty[B]
+    val prefix = ListBuffer.empty[B]
     while (i < index && current.nonEmpty) {
       i += 1
       prefix += current.head
@@ -400,7 +400,7 @@ sealed abstract class List[+A]
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
     // If any successful optimization attempts or other changes are made, please rehash them there too.
     //@tailrec
-    def loop(mappedHead: List[B] = Nil, mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] = {
+    def loop(mappedHead: List[B], mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] = {
       if (pending.isEmpty) {
         if (mappedHead eq null) unchanged
         else {

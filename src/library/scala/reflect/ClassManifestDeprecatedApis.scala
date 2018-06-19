@@ -87,8 +87,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     case _                   => false
   }
 
-  protected def arrayClass[T](tp: jClass[_]): jClass[Array[T]] =
-    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[jClass[Array[T]]]
+  protected def arrayClass[A](tp: jClass[_]): jClass[Array[A]] =
+    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[jClass[Array[A]]]
 
   @deprecated("use wrap instead", "2.10.0")
   def arrayManifest: ClassManifest[Array[T]] =
