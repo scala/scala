@@ -19,7 +19,6 @@ trait Buffer[A]
     */
   def prepend(elem: A): this.type
 
-  @deprecated("Use .addOne or += instead of .append", "2.13.0")
   @`inline` final def append(elem: A): this.type = addOne(elem)
 
   /** Alias for `prepend` */
