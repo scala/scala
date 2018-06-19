@@ -449,7 +449,7 @@ private[collection] trait Wrappers {
 
     def iterator = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
 
-    def clear() = iterator.foreach(entry => underlying.remove(entry._1))
+    override def clear() = iterator.foreach(entry => underlying.remove(entry._1))
 
     override def mapFactory = mutable.HashMap
   }

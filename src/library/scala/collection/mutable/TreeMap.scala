@@ -46,7 +46,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def subtractOne(elem: K): this.type = { RB.delete(tree, elem); this }
 
-  def clear(): Unit = RB.clear(tree)
+  override def clear(): Unit = RB.clear(tree)
 
   def get(key: K): Option[V] = RB.get(tree, key)
 

@@ -122,6 +122,8 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     r
   }
 
+  def clear(): Unit = { keysIterator foreach -= }
+
   override def clone(): C = empty ++= toIterable
 
   def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
@@ -188,7 +190,7 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
-    def clear(): Unit = underlying.clear()
+    override def clear(): Unit = underlying.clear()
 
     def get(key: K): Option[V] = underlying.get(key)
 

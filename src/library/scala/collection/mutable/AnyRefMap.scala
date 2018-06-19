@@ -426,9 +426,6 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     this
   }
 
-  //TODO Replace this default implementation that used to be in MapLike
-  def clear(): Unit = keysIterator foreach -=
-
   // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
   def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2)): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.Map(toIterable, f))
