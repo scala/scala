@@ -43,37 +43,37 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
     case _ => it.iterator.foreach(f)
   }
 
-  @deprecated("Use it.iterator.to(factory) instead of factory.from(it) for IterableOnce", "2.13.0")
+  @deprecated("Use .iterator.to", "2.13.0")
   def to[C1](factory: Factory[A, C1]): C1 = factory.fromSpecific(it)
 
-  @deprecated("Use it.to(ArrayBuffer) instead of ArrayBuffer.from(it)", "2.13.0")
+  @deprecated("Use .iterator.to(ArrayBuffer)", "2.13.0")
   def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(it)
 
-  @deprecated("Use it.to(ArrayBuffer) instead of ArrayBuffer.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toArray", "2.13.0")
   def toArray[B >: A: ClassTag]: Array[B] = it match {
     case it: Iterable[B] => it.toArray[B]
     case _ => mutable.ArrayBuffer.from(it).toArray
   }
 
-  @deprecated("Use it.to(List) instead of List.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toList", "2.13.0")
   def toList: immutable.List[A] = immutable.List.from(it)
 
-  @deprecated("Use it.to(Set) instead of Set.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toSet", "2.13.0")
   @`inline` def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
 
-  @deprecated("Use it.to(Iterable) instead of Iterable.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toIterable", "2.13.0")
   @`inline` final def toIterable: Iterable[A] = Iterable.from(it)
 
-  @deprecated("Use it.to(Seq) instead of Seq.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toSeq", "2.13.0")
   @`inline` def toSeq: immutable.Seq[A] = immutable.Seq.from(it)
 
-  @deprecated("Use it.to(Stream) instead of Stream.from(it)", "2.13.0")
+  @deprecated("Use .iterator.toStream", "2.13.0")
   @`inline` def toStream: immutable.Stream[A] = immutable.Stream.from(it)
 
-  @deprecated("Use it.to(Vector) instead of Vector.from(it) on IterableOnce", "2.13.0")
+  @deprecated("Use .iterator.toVector", "2.13.0")
   @`inline` def toVector: immutable.Vector[A] = immutable.Vector.from(it)
 
-  @deprecated("Use it.to(Map) instead of Map.from(it) on IterableOnce", "2.13.0")
+  @deprecated("Use .iterator.toMap", "2.13.0")
   def toMap[K, V](implicit ev: A <:< (K, V)): immutable.Map[K, V] =
     immutable.Map.from(it.asInstanceOf[IterableOnce[(K, V)]])
 
