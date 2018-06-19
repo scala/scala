@@ -68,6 +68,18 @@ trait Buffer[A]
   @throws[IndexOutOfBoundsException]
   @throws[IllegalArgumentException]
   def remove(idx: Int, count: Int): Unit
+  
+  /** Removes a single element from this buffer, at its first occurrence.
+    *  If the buffer does not contain that element, it is unchanged.
+    *
+    *  @param x  the element to remove.
+    *  @return   the buffer itself
+    */
+  def subtractOne (x: A): this.type = {
+    val i = indexOf(x)
+    if (i != -1) remove(i)
+    this
+  }
 
   /** Removes the first ''n'' elements of this buffer.
     *
