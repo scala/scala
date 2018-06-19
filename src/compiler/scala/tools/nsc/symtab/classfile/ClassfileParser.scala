@@ -1208,7 +1208,7 @@ abstract class ClassfileParser {
       assert(runtimeAnnotStart != -1, s"No RuntimeVisibleAnnotations in classfile with ScalaSignature attribute: $clazz")
       in.bp = runtimeAnnotStart
       val numAnnots = u2
-      val i = 0
+      var i = 0
       var bytes: Array[Byte] = null
       while (i < numAnnots && bytes == null) {
         pool.getType(u2) match {
