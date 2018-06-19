@@ -1170,7 +1170,7 @@ trait Contexts { self: Analyzer =>
       else imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
-      imp.isRootImport && excludedRootImportsCached.get(unit).map(_.contains(imp.qual.symbol)).getOrElse(false)
+      imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
 
     private def requiresQualifier(s: Symbol): Boolean = (
          s.owner.isClass
