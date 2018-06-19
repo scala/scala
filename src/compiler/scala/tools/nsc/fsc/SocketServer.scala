@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala
-package tools.util
+package scala.tools.nsc.fsc
 
+import scala.tools.util.SystemExit
 import java.io.{BufferedReader, PrintStream, PrintWriter}
 import java.net.{ServerSocket, SocketException, SocketTimeoutException}
-
-import scala.tools.nsc.io.Socket
 
 trait CompileOutputCommon {
   def verbose: Boolean
@@ -95,7 +93,7 @@ abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
           timeout()
           return
         case _ =>
-          warn("Accept on port %d failed")
+          warn(s"Accept on port $port failed")
       }
       if (!shutdown)
         loop()

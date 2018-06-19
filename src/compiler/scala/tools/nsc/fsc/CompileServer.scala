@@ -4,14 +4,15 @@
  */
 
 package scala.tools.nsc
+package fsc
 
 import java.io.PrintStream
 
 import scala.reflect.internal.util.FakePos
+import scala.reflect.internal.FatalError
 import scala.tools.nsc.io.Directory
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
-import scala.tools.nsc.settings.FscSettings
-import scala.tools.util.SocketServer
+import scala.util.Properties
 
 /**
  *  The server part of the fsc offline compiler.  It awaits compilation
@@ -35,12 +36,6 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
 
   private val runtime = Runtime.getRuntime()
   import runtime.{freeMemory, maxMemory, totalMemory}
-
-  /** Create a new compiler instance */
-  def newGlobal(settings: Settings, reporter: Reporter) =
-    new Global(settings, reporter) {
-      override def inform(pos: Position, msg: String) = out.println(msg)
-    }
 
   override def timeout(): Unit = {
     if (!compileSocket.portFile(port).exists)
@@ -68,7 +63,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   def unequalSettings(s1: Settings, s2: Settings): Set[Settings#Setting] = {
     val ignoreSettings = Set("-d", "-encoding", "-currentDir")
     def trim (s: Settings): Set[Settings#Setting] = (
-      s.userSetSettings.toSet[Settings#Setting] filterNot (ss => ignoreSettings exists (ss respondsTo _))
+      s.userSetSettings.toSet[Settings#Setting] filterNot (ss => ignoreSettings.exists(ss respondsTo _))
     )
     val ss1 = trim(s1)
     val ss2 = trim(s2)
@@ -132,6 +127,8 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
       }
       unequal.isEmpty
     }
+    /** Create a new compiler instance */
+    def newGlobal(settings: Settings, reporter: Reporter) = Global(settings, reporter)
 
     if (command.shouldStopWithInfo)
       reporter.echo(command.getInfoMessage(newGlobal(newSettings, reporter)))
@@ -159,6 +156,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
           throw ex
       }
     }
+    reporter.flush()
     reporter.finish()
     if (isMemoryFullEnough()) {
       info("Nulling out compiler due to memory utilization.")
@@ -167,7 +165,6 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   }
 }
 
-
 object CompileServer {
   /** A directory holding redirected output */
   //private lazy val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
@@ -175,8 +172,7 @@ object CompileServer {
   private def createRedirect(dir: Directory, filename: String) =
     new PrintStream((dir / filename).createFile().bufferedOutput())
 
-  def main(args: Array[String]) =
-    execute(() => (), args)
+  def main(args: Array[String]) = execute(() => (), args)
 
   /**
     * The server's main loop.
@@ -194,9 +190,9 @@ object CompileServer {
 
     val i = args.indexOf("-p")
     if (i >= 0 && args.length > i + 1) {
-    	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
-		port = args(i + 1).toInt
-    	}
+      scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
+        port = args(i + 1).toInt
+      }
     }
 
     // Create instance rather than extend to pass a port parameter.

@@ -170,6 +170,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-sourcepath", (baseDirectory in ThisBuild).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
   ),
+  //maxErrors := 10,
   incOptions := (incOptions in LocalProject("root")).value,
   homepage := Some(url("http://www.scala-lang.org")),
   startYear := Some(2002),

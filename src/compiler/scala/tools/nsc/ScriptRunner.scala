@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import io.{Directory, File, Path}
+import scala.reflect.io.{Directory, File, Path}
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import scala.util.control.NonFatal
@@ -61,42 +61,6 @@ class DefaultScriptRunner(settings: GenericRunnerSettings) extends AbstractScrip
   }
 
   protected def newGlobal(settings: Settings, reporter: Reporter) = Global(settings, reporter)
-}
-
-class ResidentScriptRunner(settings: GenericRunnerSettings) extends AbstractScriptRunner(settings) with HasCompileSocket {
-  lazy val compileSocket = CompileSocket
-
-  /** Compile a script using the fsc compilation daemon.
-   */
-  protected def doCompile(scriptFile: String) = {
-    val scriptPath       = Path(scriptFile).toAbsolute.path
-    val compSettingNames = new Settings(msg => throw new RuntimeException(msg)).visibleSettings.toList map (_.name)
-    val compSettings     = settings.visibleSettings.toList filter (compSettingNames contains _.name)
-    val coreCompArgs     = compSettings flatMap (_.unparse)
-    val compArgs         = coreCompArgs ++ List("-Xscript", mainClass, scriptPath)
-
-    // TODO: untangle this mess of top-level objects with their own little view of the mutable world of settings
-    compileSocket.verbose = settings.verbose.value
-
-    compileSocket getOrCreateSocket "" match {
-      case Some(sock) => compileOnServer(sock, compArgs)
-      case _          => false
-    }
-  }
-}
-
-final class DaemonKiller(settings: GenericRunnerSettings) extends ScriptRunner {
-  def runScript(script: String, scriptArgs: List[String]) = shutdownDaemon()
-
-  def runScriptText(script: String, scriptArgs: List[String]) = shutdownDaemon()
-
-  private def shutdownDaemon() =
-    try {
-      new StandardCompileClient().process(Array("-shutdown"))
-      None
-    } catch {
-      case NonFatal(t) => Some(t)
-    }
 }
 
 abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends ScriptRunner {
@@ -231,8 +195,8 @@ object ScriptRunner {
   def apply(settings: GenericRunnerSettings): ScriptRunner =
     settings.Yscriptrunner.value match {
       case "default"  => new DefaultScriptRunner(settings)
-      case "resident" => new ResidentScriptRunner(settings)
-      case "shutdown" => new DaemonKiller(settings)
+      case "resident" => new fsc.ResidentScriptRunner(settings)
+      case "shutdown" => new fsc.DaemonKiller(settings)
       case custom =>
         val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
         loader.create[ScriptRunner](custom, settings.errorFn)(settings)

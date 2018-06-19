@@ -3,11 +3,11 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala.tools.nsc.fsc
 
-import settings.FscSettings
-import io.Directory
-import Properties.isWin
+import scala.tools.nsc.CompilerCommand
+import scala.reflect.io.Directory
+import scala.util.Properties.isWin
 
 /** A compiler command for the offline compiler.
  *
