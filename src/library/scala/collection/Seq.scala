@@ -771,6 +771,18 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
     fromIterable(new View.Patched(this, from, other, replaced))
 
+
+  /**
+    * A copy of this $coll with `elem` replaced by `replacement`
+    * @param   elem     the element belonging to the collection that needs to be replaced
+    * @param   replacement the replacing element
+    * @tparam  B        the element type of the returned $coll.
+    * @return a new $coll which is a copy of this $coll with the `elem` replaced by `replacement`.
+    */
+  def replaced[B >: A](elem: B, replacement: B): CC[B] =
+    map(a => if (a == elem) replacement else a)
+
+
   /** A copy of this $coll with one single replaced element.
     *  @param  index  the position of the replacement
     *  @param  elem   the replacing element

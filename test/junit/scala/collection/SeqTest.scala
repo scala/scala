@@ -76,4 +76,15 @@ class SeqTest {
     val s2 = Seq(4, 5, 6)
     assertEquals(s1.concat(s2), s1.union(s2))
   }
+
+  @Test
+  def replaced(): Unit = {
+    //check if the order is maintained in case of Seq
+    assertEquals(Seq(1, 2, 3, 4).replaced(2, -2), Seq(1, -2, 3, 4))
+    assertEquals(Seq(1, 2, 3, 2).replaced(2, -2), Seq(1, -2, 3, -2))
+    assertEquals(Seq("a", "b", "c").replaced("d", "e"), Seq("a", "b", "c"))
+    assertEquals(Seq("a", "b", "c").replaced("a", "e"), Seq("e", "b", "c"))
+    assertEquals(Seq.fill(100)(100).replaced(100, -1), Seq.fill(100)(-1))
+    assertEquals(Seq[Int]().replaced(1, 1), Seq[Int]())
+  }
 }
