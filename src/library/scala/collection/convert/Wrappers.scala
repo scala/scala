@@ -139,7 +139,7 @@ private[collection] trait Wrappers {
       this
     }
     override def iterableFactory = mutable.ArrayBuffer
-    def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
+    override def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
   }
 
   @SerialVersionUID(3L)

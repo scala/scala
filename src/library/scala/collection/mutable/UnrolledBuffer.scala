@@ -188,7 +188,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
       sz += headptr.insertAll(idx, elems, this)
     } else throw new IndexOutOfBoundsException(idx.toString)
 
-  def subtractOne(elem: T): this.type = {
+  override def subtractOne(elem: T): this.type = {
     headptr.subtractOne(elem, this)
     this
   }

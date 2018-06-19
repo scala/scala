@@ -95,7 +95,7 @@ class ListBuffer[A]
     this
   }
 
-  def subtractOne(elem: A): this.type = {
+  override def subtractOne(elem: A): this.type = {
     ensureUnaliased()
     if (isEmpty) {}
     else if (first.head == elem) {

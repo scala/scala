@@ -253,7 +253,7 @@ class ArrayDeque[A] protected (
     elem
   }
 
-  def subtractOne(elem: A): this.type = {
+  override def subtractOne(elem: A): this.type = {
     val idx = indexOf(elem)
     if (idx >= 0) remove(idx, 1) //TODO: SeqOps should be fluent API
     this

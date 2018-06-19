@@ -84,12 +84,6 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     this
   }
 
-  def subtractOne(elem: A): this.type = {
-    val i = indexOf(elem)
-    if (i != -1) remove(i)
-    this
-  }
-
   // Overridden to use array copying for efficiency where possible.
   override def addAll(elems: IterableOnce[A]): this.type = {
     elems match {
