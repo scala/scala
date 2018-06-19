@@ -51,7 +51,7 @@ class HashMap[K, V]
     this
   }
 
-  def clear(): Unit = table.clearTable()
+  override def clear(): Unit = table.clearTable()
 
   def subtractOne(key: K): this.type = { table.removeEntry(key); this }
 

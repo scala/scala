@@ -34,7 +34,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
 
   def this() = this(LongMap.exceptionDefault, 16, true)
 
-  def clear(): Unit = { keysIterator foreach -= } // TODO optimize
+  // TODO: override clear() with an optimization more tailored for effciency.
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, V)]): LongMap[V] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder

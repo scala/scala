@@ -17,7 +17,6 @@ class SparseArray[@specialized(Int) T:ClassTag] extends collection.mutable.Map[I
   }
 
   def addOne(elem: (Int, T)): SparseArray.this.type = ???
-  def clear(): Unit = ???
   def iterator: Iterator[(Int, T)] = ???
   def subtractOne(elem: Int): SparseArray.this.type = ???
 

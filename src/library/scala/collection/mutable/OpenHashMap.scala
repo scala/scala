@@ -214,8 +214,6 @@ class OpenHashMap[Key, Value](initialSize : Int)
     None
   }
 
-  def clear(): Unit = keysIterator.foreach(-=)
-
   /** An iterator over the elements of this map. Use of this iterator follows
     *  the same contract for concurrent modification as the foreach method.
     *
