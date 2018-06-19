@@ -1208,6 +1208,7 @@ intellij := {
     val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(java.io.File.pathSeparator).toSeq.map(new File(_)))
     // `sbt projects` lists all modules in the build
     buildModule :: List(
+      moduleDeps(bench).value,
       moduleDeps(compilerP).value,
       // moduleDeps(dist).value,                // No sources, therefore no module in IntelliJ
       moduleDeps(interactive).value,
