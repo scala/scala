@@ -288,13 +288,31 @@ self =>
   }
 
   def sameElements[B >: A](that: GenIterable[B]): Boolean = {
-    val these = this.iterator
-    val those = that.iterator
-    while (these.hasNext && those.hasNext)
-      if (these.next != those.next)
-        return false
+    that match {
+      case thatVector: Vector[_] if this.isInstanceOf[Vector[_]] =>
+        val thisVector = this.asInstanceOf[Vector[_]]
+        (thisVector eq thatVector) || {
+          var equal = thisVector.length == thatVector.length
+          if (equal) {
+            val length = thatVector.length
+            var index = 0
+            while (index < length && equal) {
+              equal = thisVector(index) == thatVector(index)
+              index += 1
+            }
+          }
+          equal
+        }
 
-    !these.hasNext && !those.hasNext
+      case _ =>
+        val these = this.iterator
+        val those = that.iterator
+        while (these.hasNext && those.hasNext)
+          if (these.next != those.next)
+            return false
+
+        !these.hasNext && !those.hasNext
+    }
   }
 
   override /*TraversableLike*/ def toStream: Stream[A] = iterator.toStream
