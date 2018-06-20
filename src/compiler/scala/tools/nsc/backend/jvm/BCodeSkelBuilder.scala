@@ -90,7 +90,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       isCZRemote        = isRemote(claszSymbol)
       thisBType         = classBTypeFromSymbol(claszSymbol)
 
-      cnode = new asm.tree.ClassNode()
+      cnode = new ClassNode1()
 
       initJClass(cnode)
 

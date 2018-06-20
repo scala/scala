@@ -5,7 +5,7 @@ package analysis
 import scala.tools.asm.Type
 import scala.tools.asm.tree.analysis.{BasicValue, BasicInterpreter}
 
-abstract class TypeFlowInterpreter extends BasicInterpreter {
+abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
   override def newValue(tp: Type) = {
     if (tp == null) super.newValue(tp)
     else if (isRef(tp)) new BasicValue(tp)

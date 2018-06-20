@@ -66,7 +66,7 @@ object AsmUtils {
   }
 
   def classFromBytes(bytes: Array[Byte]): ClassNode = {
-    val node = new ClassNode()
+    val node = new ClassNode1()
     new ClassReader(bytes).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
 
     node

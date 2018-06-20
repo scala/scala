@@ -312,7 +312,7 @@ object BytecodeUtils {
    */
   def newLabelNode: LabelNode = {
     val label = new Label
-    val labelNode = new LabelNode(label)
+    val labelNode = new LabelNode1(label)
     label.info = labelNode
     labelNode
   }
