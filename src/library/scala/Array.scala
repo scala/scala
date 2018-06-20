@@ -14,7 +14,7 @@ import mutable.ArrayBuilder
 import immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime
+import scala.runtime.{BoxedUnit, ScalaRunTime}
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
 
 /** Utility methods for operating on arrays.
@@ -122,7 +122,9 @@ object Array {
     * @see `java.util.Arrays#copyOf`
     */
   def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
-    case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
+    case x: Array[AnyRef]     =>
+      if (x.getClass.getComponentType == classOf[BoxedUnit]) newUnitArray(newLength).asInstanceOf[Array[A]]
+      else java.util.Arrays.copyOf(x, newLength)
     case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Double]     => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Long]       => java.util.Arrays.copyOf(x, newLength)
@@ -131,10 +133,6 @@ object Array {
     case x: Array[Byte]       => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Short]      => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Boolean]    => java.util.Arrays.copyOf(x, newLength)
-    case x: Array[Unit]       =>
-      val dest = new Array[Unit](newLength)
-      Array.copy(original, 0, dest, 0, original.length)
-      dest
   }).asInstanceOf[Array[A]]
 
   /** Copy one array to another, truncating or padding with default values (if
@@ -151,18 +149,28 @@ object Array {
     * @see `java.util.Arrays#copyOf`
     */
   def copyAs[A](original: Array[_], newLength: Int)(implicit ct: ClassTag[A]): Array[A] = {
-    val destClass = ct.runtimeClass.asInstanceOf[Class[A]]
-    if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
-      if(destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
-      else {
-        val destArrayClass = java.lang.reflect.Array.newInstance(destClass, 0).getClass.asInstanceOf[Class[Array[AnyRef]]]
-        java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destArrayClass).asInstanceOf[Array[A]]
+    val runtimeClass = ct.runtimeClass
+    if (runtimeClass == Void.TYPE) newUnitArray(newLength).asInstanceOf[Array[A]]
+    else {
+      val destClass = runtimeClass.asInstanceOf[Class[A]]
+      if (destClass.isAssignableFrom(original.getClass.getComponentType)) {
+        if (destClass.isPrimitive) copyOf[A](original.asInstanceOf[Array[A]], newLength)
+        else {
+          val destArrayClass = java.lang.reflect.Array.newInstance(destClass, 0).getClass.asInstanceOf[Class[Array[AnyRef]]]
+          java.util.Arrays.copyOf(original.asInstanceOf[Array[AnyRef]], newLength, destArrayClass).asInstanceOf[Array[A]]
+        }
+      } else {
+        val dest = new Array[A](newLength)
+        Array.copy(original, 0, dest, 0, original.length)
+        dest
       }
-    } else {
-      val dest = new Array[A](newLength)
-      Array.copy(original, 0, dest, 0, original.length)
-      dest
     }
+  }
+
+  private def newUnitArray(len: Int): Array[Unit] = {
+    val result = new Array[Unit](len)
+    java.util.Arrays.fill(result.asInstanceOf[Array[AnyRef]], ())
+    result
   }
 
   /** Returns an array of length 0 */
