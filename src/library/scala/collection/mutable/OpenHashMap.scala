@@ -267,8 +267,13 @@ class OpenHashMap[Key, Value](initialSize : Int)
     table.foreach(entry => if (entry != null && entry.value != None) f(entry))
   }
 
-  override def filterInPlace(f : ((Key, Value)) => Boolean): this.type = {
-    foreachUndeletedEntry(entry => if (!f((entry.key, entry.value.get))) deleteSlot(entry))
+  override def mapValuesInPlace(f : (Key, Value) => Value): this.type = {
+    foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)))
+    this
+  }
+
+  override def filterInPlace(f : (Key, Value) => Boolean): this.type = {
+    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) deleteSlot(entry))
     this
   }
 
