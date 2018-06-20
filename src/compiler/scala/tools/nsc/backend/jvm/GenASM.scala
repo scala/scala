@@ -512,9 +512,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
     }
 
     def createJAttribute(name: String, b: Array[Byte], offset: Int, len: Int): asm.Attribute = {
-      val dest = new Array[Byte](len)
-      System.arraycopy(b, offset, dest, 0, len)
-      new asm.CustomAttr(name, dest)
+      new asm.Attribute(name) {
+        override def write(classWriter: asm.ClassWriter, code: Array[Byte], codeLength: Int, maxStack: Int, maxLocals: Int): asm.ByteVector = {
+          val byteVector = new asm.ByteVector(len)
+          byteVector.putByteArray(b, offset, len)
+          byteVector
+        }
+      }
     }
 
     // -----------------------------------------------------------------------------------------

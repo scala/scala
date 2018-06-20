@@ -97,7 +97,7 @@ abstract class BTypes {
   /**
    * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
    * is constructed by parsing the corresponding classfile.
-   * 
+   *
    * Some JVM operations use either a full descriptor or only an internal name. Example:
    *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
    *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
@@ -964,6 +964,8 @@ abstract class BTypes {
             // finds the first common one.
             // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
             //  - https://issues.scala-lang.org/browse/SI-3872
+            // @jz Wouldn't it be better to walk the superclass chain of both types in reverse (starting from Object), and
+            //     finding the last common link? That would be O(N), whereas this looks O(N^2)
             firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
         }
 

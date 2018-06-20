@@ -104,7 +104,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       val classBType = classBTypeFromSymbol(claszSymbol)
 
-      cnode = new asm.tree.ClassNode()
+      cnode = new ClassNode1()
 
       initJClass(cnode)
 

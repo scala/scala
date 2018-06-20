@@ -5,11 +5,14 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.tools.asm.tree.{InsnList, AbstractInsnNode, ClassNode, MethodNode}
-import java.io.{StringWriter, PrintWriter}
-import scala.tools.asm.util.{CheckClassAdapter, TraceClassVisitor, TraceMethodVisitor, Textifier}
-import scala.tools.asm.{ClassWriter, Attribute, ClassReader}
+import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, FieldNode, InsnList, MethodNode}
+import java.io.{PrintWriter, StringWriter}
+import java.util.Comparator
+
+import scala.tools.asm.util.{CheckClassAdapter, Textifier, TraceClassVisitor, TraceMethodVisitor}
+import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
 import scala.collection.convert.decorateAsScala._
+import scala.collection.convert.decorateAsJava._
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
@@ -53,6 +56,52 @@ object AsmUtils {
     val node = new ClassNode()
     new ClassReader(bytes).accept(node, Array[Attribute](InlineInfoAttributePrototype), 0)
     node
+  }
+
+  def readClass(filename: String): ClassNode = readClass(classBytes(filename))
+
+  def classBytes(file: String): Array[Byte] = {
+    val f = new java.io.RandomAccessFile(file, "r")
+    val bytes = new Array[Byte](f.length.toInt)
+    f.read(bytes)
+    bytes
+  }
+
+  def classFromBytes(bytes: Array[Byte]): ClassNode = {
+    val node = new ClassNode1()
+    new ClassReader(bytes).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+
+    node
+  }
+
+//  def main(args: Array[String]): Unit = println(textify(sortedClassRead(classBytes(args.head))))
+
+  def sortClassMembers(node: ClassNode): node.type = {
+    node.fields.sort(new Comparator[FieldNode] {
+      override def compare(o1: FieldNode, o2: FieldNode): Int = o1.name compareTo o2.name
+    })
+    node.methods.sort(new Comparator[MethodNode] {
+      override def compare(o1: MethodNode, o2: MethodNode): Int = o1.name compareTo o2.name
+    })
+    node
+  }
+
+  // drop ScalaSig annotation and class attributes
+  def zapScalaClassAttrs(node: ClassNode): node.type = {
+    if (node.visibleAnnotations != null)
+      node.visibleAnnotations = node.visibleAnnotations.asScala.filterNot(a => a == null || a.desc.contains("Lscala/reflect/ScalaSignature")).asJava
+
+    node.attrs = null
+    node
+  }
+
+  def main(args: Array[String]): Unit = args.par.foreach { classFileName =>
+    val node = zapScalaClassAttrs(sortClassMembers(classFromBytes(classBytes(classFileName))))
+
+    val pw = new PrintWriter(classFileName + ".asm")
+    val trace = new TraceClassVisitor(pw)
+    node.accept(trace)
+    pw.close()
   }
 
   /**
