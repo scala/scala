@@ -124,13 +124,13 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 
   @deprecated("Use .iterator.map instead of .map on IterableOnce or consider requiring an Iterable", "2.13.0")
   def map[B](f: A => B): IterableOnce[B] = it match {
-    case it: Iterable[A] => it.asInstanceOf[Iterable[A]].map(f)
+    case it: Iterable[A] => it.map(f)
     case _ => it.iterator.map(f)
   }
 
   @deprecated("Use .iterator.flatMap instead of .flatMap on IterableOnce or consider requiring an Iterable", "2.13.0")
   def flatMap[B](f: A => IterableOnce[B]): IterableOnce[B] = it match {
-    case it: Iterable[A] => it.asInstanceOf[Iterable[A]].flatMap(f)
+    case it: Iterable[A] => it.flatMap(f)
     case _ => it.iterator.flatMap(f)
   }
 
