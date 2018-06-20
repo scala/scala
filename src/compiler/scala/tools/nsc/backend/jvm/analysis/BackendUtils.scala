@@ -327,11 +327,8 @@ abstract class BackendUtils extends PerRunInit {
       bTypesFromClassfile.classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
 
     def getClassIfNested(internalName: InternalName): Option[ClassBType] = {
-      if (internalName.indexOf('$') < 0) None
-      else {
-        val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
-        if (c.isNestedClass.get) Some(c) else None
-      }
+      val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
+      if (c.isNestedClass.get) Some(c) else None
     }
 
     def raiseError(msg: String, sig: String, e: Option[Throwable]): Unit = {
@@ -655,8 +652,13 @@ object BackendUtils {
       }
     }
 
-    def visitInternalName(internalName: InternalName): Unit = if (internalName != null) {
-      for (c <- getClassIfNested(internalName))
+    private def containsChar(s: String, offset: Int, length: Int, char: Char): Boolean = {
+      val ix = s.indexOf(char, offset)
+      !(ix == -1 || ix >= offset + length)
+    }
+
+    def visitInternalName(internalName: String, offset: Int, length: Int): Unit = if (internalName != null && containsChar(internalName, offset, length, '$')) {
+      for (c <- getClassIfNested(internalName.substring(offset, length)))
         innerClasses += c
     }
 
@@ -666,7 +668,7 @@ object BackendUtils {
     def visitInternalNameOrArrayReference(ref: String): Unit = if (ref != null) {
       val bracket = ref.lastIndexOf('[')
       if (bracket == -1) visitInternalName(ref)
-      else if (ref.charAt(bracket + 1) == 'L') visitInternalName(ref.substring(bracket + 2, ref.length - 1))
+      else if (ref.charAt(bracket + 1) == 'L') visitInternalName(ref, bracket + 2, ref.length - 1)
     }
 
     // we are only interested in the class references in the descriptor, so we can skip over
@@ -678,14 +680,14 @@ object BackendUtils {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
             while (desc.charAt(i) != ';') i += 1
-            visitInternalName(desc.substring(start, i))
+            visitInternalName(desc, start, i)
           }
           // skips over '[', ')', primitives
           i += 1
         }
 
       case 'L' =>
-        visitInternalName(desc.substring(1, desc.length - 1))
+        visitInternalName(desc, 1, desc.length - 1)
 
       case '[' =>
         visitInternalNameOrArrayReference(desc)
@@ -717,7 +719,8 @@ object BackendUtils {
   }
 
   abstract class GenericSignatureVisitor {
-    def visitInternalName(internalName: InternalName): Unit
+    final def visitInternalName(internalName: String): Unit = visitInternalName(internalName, 0, if (internalName eq null) 0 else internalName.length)
+    def visitInternalName(internalName: String, offset: Int, length: Int): Unit
 
     def raiseError(msg: String, sig: String, e: Option[Throwable] = None): Unit
 
