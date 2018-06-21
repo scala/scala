@@ -139,6 +139,13 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     */
   def intersect(that: Set[A]): C = this.filter(that)
 
+  /** Test if there is any intersection between 2 Sets
+    *
+    *  @param   that  the set to test against.
+    *  @return `true` if this set contains any element of `that` set.
+    */
+  def intersects(that: Set[A]): Boolean = this.exists(that.contains)
+
   /** Alias for `intersect` */
   @`inline` final def & (that: Set[A]): C = intersect(that)
 
