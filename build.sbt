@@ -551,15 +551,24 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
     libraryDependencies += testInterfaceDep
   )
 
+// The scala version used by the benchmark suites, leave undefined to use the ambient version.")
+def benchmarkScalaVersion = System.getProperty("benchmark.scala.version", "")
+
 lazy val bench = project.in(file("test") / "benchmarks")
-  .dependsOn(library, compiler)
-  .settings(instanceSettings)
+  .dependsOn((if (benchmarkScalaVersion == "") Seq[sbt.ClasspathDep[sbt.ProjectReference]](library, compiler) else Nil): _*)
+  .settings(if (benchmarkScalaVersion == "") instanceSettings else Seq(scalaVersion := benchmarkScalaVersion, crossPaths := false))
   .settings(disableDocs)
   .settings(disablePublishing)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "test-benchmarks",
+    autoScalaLibrary := false,
+    crossPaths := true, // needed to enable per-scala-version source directories (https://github.com/sbt/sbt/pull/1799)
     libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.6",
+    libraryDependencies ++= {
+      if (benchmarkScalaVersion == "") Nil
+      else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
+    },
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:**")
   )
 
@@ -1049,6 +1058,7 @@ intellij := {
     val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(java.io.File.pathSeparator).toSeq.map(new File(_)))
     // `sbt projects` lists all modules in the build
     buildModule :: List(
+      moduleDeps(bench).value,
       moduleDeps(compilerP).value,
       moduleDeps(interactive).value,
       moduleDeps(junit).value,
