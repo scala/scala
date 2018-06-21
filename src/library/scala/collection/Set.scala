@@ -144,7 +144,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param   that  the set to test against.
     *  @return `true` if this set contains any element of `that` set.
     */
-  def intersects(that: Set[A]): Boolean = this.exists(that.contains)
+  def intersects(that: Set[A]): Boolean = this.exists(that)
 
   /** Alias for `intersect` */
   @`inline` final def & (that: Set[A]): C = intersect(that)
