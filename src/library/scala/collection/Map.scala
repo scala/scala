@@ -35,7 +35,7 @@ trait Map[K, +V]
       (that canEqual this) &&
       (this.size == that.size) && {
         try {
-          this forall { case (k, v) => that.get(k).contains(v) }
+          this forall { case (k, v) => that.getOrElse(k, Map.DefaultSentinel) == v }
         } catch {
           case _: ClassCastException => false
         }
@@ -327,6 +327,8 @@ object MapOps {
 @SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](immutable.Map) {
   implicit def toLazyZipOps[K, V, CC[X, Y] <: Iterable[(X, Y)]](that: CC[K, V]): LazyZipOps[(K, V), CC[K, V]] = new LazyZipOps(that)
+
+  private val DefaultSentinel: AnyRef = new AnyRef
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */

@@ -30,7 +30,7 @@ trait Seq[+A]
 
   override def equals(o: scala.Any): Boolean =
     o match {
-      case it: Seq[A] => (it canEqual this) && sameElements(it)
+      case it: Seq[A] => (this eq it) || (it canEqual this) && sameElements(it)
       case _ => false
     }
 
@@ -707,8 +707,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
-  def sameElements[B >: A](that: IterableOnce[B]): Boolean =
-    iterator.sameElements(that)
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
+    val thisKnownSize = knownSize
+    val knownSizeDifference = thisKnownSize != -1 && {
+      val thatKnownSize = that.knownSize
+      thatKnownSize != -1 && thisKnownSize != thatKnownSize
+    }
+    !knownSizeDifference && iterator.sameElements(that)
+  }
 
   /** Tests whether every element of this $coll relates to the
     * corresponding element of another sequence by satisfying a test predicate.
