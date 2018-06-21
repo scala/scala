@@ -410,7 +410,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     )
 
     def masters    = {
-      val files = List(new File(parentFile, "filters"), new File(PathSettings.srcDir.path, "filters"))
+      val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
       files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
     }
     val filters    = toolArgs("filter", split = false) ++ masters
@@ -594,7 +594,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
   }
 
   def extraClasspath = kind match {
-    case "specialized"  => List(PathSettings.srcSpecLib.fold(sys.error, identity))
+    case "specialized"  => List(suiteRunner.pathSettings.srcSpecLib.fold(sys.error, identity))
     case _              => Nil
   }
   def extraJavaOptions = kind match {

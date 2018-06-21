@@ -65,7 +65,7 @@ class SBTRunner(config: RunnerSpec.Config,
   override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
     synchronized {
       eventHandler.handle(new Event {
-        def fullyQualifiedName: String = scala.tools.partest.nest.PathSettings.testRoot.name + "/" + testSourcePath
+        def fullyQualifiedName: String = pathSettings.testRoot.name + "/" + testSourcePath
         def fingerprint: Fingerprint = partestFingerprint
         def selector: Selector = new TestSelector(testFile.testIdent)
         val (status, throwable) = makeStatus(result)

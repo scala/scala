@@ -10,7 +10,6 @@ package nest
 import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
-import TestKinds._
 import scala.reflect.internal.util.Collections.distinctBy
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
@@ -40,6 +39,11 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   private[this] var elapsedMillis    = 0L
   private[this] var expectedFailures = 0
   private[this] var onlyIndividualTests = false
+
+  val pathSettings = new PathSettings(testSourcePath)
+
+  private[this] val testKinds = new TestKinds(pathSettings)
+  import testKinds._
 
   val log = new ConsoleLog(sys.props contains "partest.colors")
   import log._
@@ -167,9 +171,6 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
   def run(): Boolean = {
     setUncaughtHandler
 
-    // TODO: make this immutable
-    PathSettings.testSourcePath = testSourcePath
-
     if (config.optVersion) echo(versionMsg)
     else if (config.optHelp) usage()
     else {
@@ -199,7 +200,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
       }
 
       val isRerun = config.optFailed
-      val rerunTests = if (isRerun) TestKinds.failedTests else Nil
+      val rerunTests = if (isRerun) testKinds.failedTests else Nil
       def miscTests = individualTests ++ greppedTests ++ rerunTests
 
       val givenKinds = standardKinds filter config.parsed.isSet
@@ -256,7 +257,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
   def banner = {
     val baseDir = fileManager.compilerUnderTest.parent.toString
-    def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(PathSettings.srcDir.toString, "$sourceDir")
+    def relativize(path: String) = path.replace(baseDir, s"$$baseDir").replace(pathSettings.srcDir.toString, "$sourceDir")
     val vmBin  = javaHome + fileSeparator + "bin"
     val vmName = "%s (build %s, %s)".format(javaVmName, javaVmVersion, javaVmInfo)
 
@@ -269,7 +270,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         |Java runtime is:     $vmName
         |Java options are:    $javaOpts
         |baseDir:             $baseDir
-        |sourceDir:           ${PathSettings.srcDir}
+        |sourceDir:           ${pathSettings.srcDir}
     """.stripMargin
     // |Available processors:       ${Runtime.getRuntime().availableProcessors()}
     // |Java Classpath:             ${sys.props("java.class.path")}
