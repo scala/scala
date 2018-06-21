@@ -78,6 +78,9 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
 
+  override def intersects(that: collection.Set[A]): Boolean =
+    if(this.size > that.size) that.intersects(this)
+    else super.intersects(that)
 
   /**
     * A ranged projection of a [[TreeSet]]. Mutations on this set affect the original set and vice versa.
