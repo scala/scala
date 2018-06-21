@@ -155,7 +155,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return
     */
   def append(s: StringBuilder): StringBuilder = {
-    sb append s
+    sb append s.sb
     this
   }
 
