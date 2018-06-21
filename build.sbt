@@ -1069,7 +1069,8 @@ intellij := {
       moduleDeps(reflect).value,
       moduleDeps(repl).value,
       moduleDeps(replFrontend).value,
-      moduleDeps(scalacheck, config = Test).value,
+      moduleDeps(scalacheckLib).value.copy(_1 = "scalacheck-src"),
+      moduleDeps(scalacheck, config = Test).value.copy(_1 = "scalacheck-test"),
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
       moduleDeps(testP).value)
