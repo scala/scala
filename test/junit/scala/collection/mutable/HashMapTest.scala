@@ -93,4 +93,13 @@ class HashMapTest {
     val fmip = hm.flatMapInPlace(_ => empty)
     assert(fmip.size == 0)
   }
+
+  @Test
+  def customGet(): Unit = {
+    val gotItAll = new mutable.HashMap[String, String] {
+      override def get(key: String): Option[String] = Some(key)
+    }
+    assertEquals("a", gotItAll.getOrElse("a", "b"))
+    assertEquals("a", gotItAll.getOrElseUpdate("a", "b"))
+  }
 }

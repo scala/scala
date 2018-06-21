@@ -75,23 +75,39 @@ class HashMap[K, V]
   }
 
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
-    val hash = table.elemHashCode(key)
-    val i = table.index(hash)
-    val firstEntry = table.findEntry0(key, i)
-    if (firstEntry != null) firstEntry.value
-    else {
-      val table0 = table.table
-      val default = defaultValue
-      // Avoid recomputing index if the `defaultValue()` hasn't triggered
-      // a table resize.
-      val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
-      val e = table.createNewEntry(key, default)
-      // Repeat search
-      // because evaluation of `default` can bring entry with `key`
-      val secondEntry = table.findEntry0(key, newEntryIndex)
-      if (secondEntry == null) table.addEntry0(e, newEntryIndex)
-      else secondEntry.value = default
-      default
+    if (getClass != classOf[HashMap[_, _]]) {
+      // subclasses of HashMap might customise `get` ...
+      super.getOrElseUpdate(key, defaultValue)
+    } else {
+      val hash = table.elemHashCode(key)
+      val i = table.index(hash)
+      val firstEntry = table.findEntry0(key, i)
+      if (firstEntry != null) firstEntry.value
+      else {
+        val table0 = table.table
+        val default = defaultValue
+        // Avoid recomputing index if the `defaultValue()` hasn't triggered
+        // a table resize.
+        val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
+        val e = table.createNewEntry(key, default)
+        // Repeat search
+        // because evaluation of `default` can bring entry with `key`
+        val secondEntry = table.findEntry0(key, newEntryIndex)
+        if (secondEntry == null) table.addEntry0(e, newEntryIndex)
+        else secondEntry.value = default
+        default
+      }
+    }
+  }
+
+  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
+    if (getClass != classOf[HashMap[_, _]]) {
+      // subclasses of HashMap might customise `get` ...
+      super.getOrElse(key, default)
+    } else {
+      // .. but in the common case, we can avoid the Option boxing.
+      val e = table.findEntry(key)
+      if (e eq null) default else e.value
     }
   }
 
