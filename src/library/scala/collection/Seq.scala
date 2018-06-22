@@ -671,16 +671,36 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def lengthCompare(len: Int): Int = {
     if (len < 0) 1
     else {
-      var i = 0
-      val it = iterator
-      while (it.hasNext) {
-        if (i == len) return if (it.hasNext) 1 else 0
-        it.next()
-        i += 1
+      val known = knownSize
+      if (known >= 0) Integer.compare(known, len)
+      else {
+        var i = 0
+        val it = iterator
+        while (it.hasNext) {
+          if (i == len) return if (it.hasNext) 1 else 0
+          it.next()
+          i += 1
+        }
+        i - len
       }
-      i - len
     }
   }
+
+  /** Returns a value class containing operations for comparing the length of this $coll to a test value.
+    *
+    * These operations are implemented in terms of [[lengthCompare(Int) `lengthCompare(Int)`]], and
+    * allow the following more readable usages:
+    *
+    * {{{
+    * this.lengthIs < len     // this.lengthCompare(len) < 0
+    * this.lengthIs <= len    // this.lengthCompare(len) <= 0
+    * this.lengthIs == len    // this.lengthCompare(len) == 0
+    * this.lengthIs != len    // this.lengthCompare(len) != 0
+    * this.lengthIs >= len    // this.lengthCompare(len) >= 0
+    * this.lengthIs > len     // this.lengthCompare(len) > 0
+    * }}}
+    */
+  @inline final def lengthIs: SeqOps.LengthCompareOps = new SeqOps.LengthCompareOps(this)
 
   override def isEmpty: Boolean = lengthCompare(0) == 0
 
@@ -844,6 +864,26 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 }
 
 object SeqOps {
+  /** Operations for comparing the length of a collection to a test value.
+    *
+    * These operations are implemented in terms of
+    * [[scala.collection.SeqOps.lengthCompare(Int) `lengthCompare(Int)`]].
+    */
+  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, AnyConstr, _]) extends AnyVal {
+    /** Tests if the length of the collection is less than some value. */
+    @inline def <(len: Int): Boolean = seq.lengthCompare(len) < 0
+    /** Tests if the length of the collection is less than or equal to some value. */
+    @inline def <=(len: Int): Boolean = seq.lengthCompare(len) <= 0
+    /** Tests if the length of the collection is equal to some value. */
+    @inline def ==(len: Int): Boolean = seq.lengthCompare(len) == 0
+    /** Tests if the length of the collection is not equal to some value. */
+    @inline def !=(len: Int): Boolean = seq.lengthCompare(len) != 0
+    /** Tests if the length of the collection is greater than or equal to some value. */
+    @inline def >=(len: Int): Boolean = seq.lengthCompare(len) >= 0
+    /** Tests if the length of the collection is greater than some value. */
+    @inline def >(len: Int): Boolean = seq.lengthCompare(len) > 0
+  }
+
   // KMP search utilities
 
  /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.

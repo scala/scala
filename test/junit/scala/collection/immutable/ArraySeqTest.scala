@@ -53,8 +53,15 @@ class ArraySeqTest {
 
   @Test
   def t10851(): Unit = {
-    val s1 = collection.immutable.ArraySeq.untagged(1,2,3)
+    val s1 = ArraySeq.untagged(1,2,3)
     assertTrue(s1.unsafeArray.getClass == classOf[Array[AnyRef]])
+  }
+
+  @Test
+  def safeToArray(): Unit = {
+    val a = ArraySeq(1,2,3)
+    a.toArray.update(0, 100)
+    assertEquals(a, List(1,2,3))
   }
 
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
