@@ -271,7 +271,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     this
   }
 
-  override def filterInPlace(f : ((Key, Value)) => Boolean): this.type = {
+  def filterInPlace(f : ((Key, Value)) => Boolean): this.type = {
     foreachUndeletedEntry(entry => if (!f((entry.key, entry.value.get))) deleteSlot(entry))
     this
   }
