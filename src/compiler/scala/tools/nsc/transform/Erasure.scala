@@ -472,7 +472,7 @@ abstract class Erasure extends InfoTransform
     def computeAndEnter(): Unit = {
       while (opc.hasNext) {
         if (enteringExplicitOuter(!opc.low.isDeferred))
-          checkPair(opc. currentPair)
+          checkPair(opc.currentPair)
 
         opc.next()
       }

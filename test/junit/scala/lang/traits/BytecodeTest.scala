@@ -25,6 +25,21 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   @Test
+  def t10853(): Unit = {
+    val code =
+      """trait F[T1, R] { def apply(funArg: T1): R }
+        |
+        |trait SetOps[A, +C] extends F[A, Boolean] { final def apply(setEl: A): Boolean = false }
+        |
+        |class AbstractSet[A] extends SetOps[A, AbstractSet[A]]
+        |class AbstractSet2[A] extends AbstractSet[A] with SetOps[A, AbstractSet2[A]]
+      """.stripMargin
+    val cs = compileClasses(code)
+    val c = cs.find(_.name == "AbstractSet2").get
+    assertEquals(c.methods.asScala.map(_.name).toList, List("<init>")) // no bridge for apply (there's already one in AbstractSet)
+  }
+
+  @Test
   def traitMethodForwarders(): Unit = {
     val code =
       """trait T1 { def f = 1 }
