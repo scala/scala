@@ -76,4 +76,18 @@ class SeqTest {
     val s2 = Seq(4, 5, 6)
     assertEquals(s1.concat(s2), s1.union(s2))
   }
+
+  @Test
+  def testLengthIs(): Unit = {
+    val s = Seq(1, 2, 3)
+    assert(s.lengthIs <= 3)
+    assert(s.lengthIs == 3)
+    assert(s.lengthIs >= 3)
+    assert(s.lengthIs <= 4)
+    assert(s.lengthIs < 4)
+    assert(s.lengthIs != 4)
+    assert(s.lengthIs >= 2)
+    assert(s.lengthIs > 2)
+    assert(s.lengthIs != 2)
+  }
 }
