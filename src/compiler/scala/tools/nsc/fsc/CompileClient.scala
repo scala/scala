@@ -3,11 +3,9 @@
  * @author  Martin Odersky
  */
 
-package scala
-package tools.nsc
+package scala.tools.nsc.fsc
 
-import settings.FscSettings
-import scala.tools.util.CompileOutputCommon
+import scala.util.Properties
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
@@ -41,18 +39,16 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
     info(fscArgs.mkString("[Transformed arguments: ", " ", "]"))
     info(vmArgs.mkString("[VM arguments: ", " ", "]"))
 
-    val socket =
-      if (settings.server.value == "") compileSocket.getOrCreateSocket(vmArgs mkString " ", !shutdown, settings.port.value)
-      else compileSocket.getSocket(settings.server.value)
+    val socket = Option(settings.server.value).filter(_.nonEmpty)
+                 .map(compileSocket.getSocket)
+                 .getOrElse(
+      compileSocket.getOrCreateSocket(vmArgs.mkString(" "), !shutdown, settings.port.value)
+    )
 
     socket match {
-      case Some(sock) => compileOnServer(sock, fscArgs)
-      case _          =>
-        echo(
-          if (shutdown) "[No compilation server running.]"
-          else "Compilation failed."
-        )
-        shutdown
+      case Some(sock)    => compileOnServer(sock, fscArgs)
+      case _ if shutdown => echo("[No compilation server running.]") ; true
+      case _             => echo("Compilation failed.") ; false
     }
   }
 }
@@ -63,4 +59,3 @@ object CompileClient extends StandardCompileClient {
     System.exit(if (ok) 0 else 1)
   }
 }
-

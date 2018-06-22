@@ -3,7 +3,7 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala.tools.nsc.fsc
 
 import java.math.BigInteger
 import java.security.SecureRandom
@@ -12,9 +12,9 @@ import scala.io.Codec
 import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.tools.nsc.Properties.scalacDir
-import scala.tools.nsc.io.{File, Socket}
-import scala.tools.util.CompileOutputCommon
+import scala.tools.nsc.io.File
 import scala.util.control.NonFatal
+import scala.util.Properties
 
 trait HasCompileSocket {
   def compileSocket: CompileSocket
@@ -66,7 +66,7 @@ class CompileSocket extends CompileOutputCommon {
   }
 
   /** The class name of the scala compile server */
-  protected val serverClass     = "scala.tools.nsc.CompileServer"
+  protected val serverClass     = CompileServer.getClass.getName.init
   protected def serverClassArgs = (if (verbose) List("-v") else Nil) ::: (if (fixPort > 0) List("-p", fixPort.toString) else Nil)
 
   /* A directory holding port identification files */
@@ -84,7 +84,7 @@ class CompileSocket extends CompileOutputCommon {
     val cmd = serverCommand((vmArgs split " ").toSeq)
     info(s"[Executing command: ${cmd.mkString(" ")}]")
 
-    new java.lang.ProcessBuilder(cmd.toArray: _*).inheritIO().start()
+    new java.lang.ProcessBuilder(cmd.toArray: _*).start()
   }
 
   /** The port identification file */
@@ -92,12 +92,11 @@ class CompileSocket extends CompileOutputCommon {
 
   /** Poll for a server port number; return -1 if none exists yet */
   private def pollPort(): Int = if (fixPort > 0) {
-  	if (portsDir.list.toList.exists(_.name == fixPort.toString)) fixPort else -1
+    if (portsDir.list.toList.exists(_.name == fixPort.toString)) fixPort else -1
   } else portsDir.list.toList match {
     case Nil      => -1
     case x :: xs  => try x.name.toInt catch {
-    	case e: Exception => x.delete()
-    	throw e
+      case e: Exception => x.delete() ; throw e
     }
   }
 
@@ -219,9 +218,6 @@ class CompileSocket extends CompileOutputCommon {
     catch chmodFailHandler(s"Failed to change permissions on $dir. The compilation daemon requires a secure directory; use -nc to disable the daemon.")
     dir
   }
-
 }
 
-
-object CompileSocket extends CompileSocket {
-}
+object CompileSocket extends CompileSocket
