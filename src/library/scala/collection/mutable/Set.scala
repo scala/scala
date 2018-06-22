@@ -62,6 +62,19 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
+  /** Retains only those elements for which the predicate
+    *  `p` returns `true`.
+    *
+    * @param p  The test predicate
+    */
+  final def retain(p: A => Boolean): this.type = {
+    val toRemove = Set[A]()
+    for (elem <- this)
+      if (!p(elem)) toRemove += elem
+    for (elem <- toRemove)
+      coll -= elem
+    this
+  }
 
   override def clone(): C = empty ++= toIterable
 
