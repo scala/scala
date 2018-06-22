@@ -182,6 +182,36 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     coll.fromBitMaskNoCopy(a)
   }
 
+  override def concat(other: collection.Iterable[Int]): C = other match {
+    case otherBitset: BitSet =>
+      val len = coll.nwords max otherBitset.nwords
+      val words = new Array[Long](len)
+      for (idx <- 0 until len)
+        words(idx) = this.word(idx) | otherBitset.word(idx)
+      fromBitMaskNoCopy(words)
+    case _ => super.concat(other)
+  }
+
+  override def intersect(other: Set[Int]): C = other match {
+    case otherBitset: BitSet =>
+      val len = coll.nwords min otherBitset.nwords
+      val words = new Array[Long](len)
+      for (idx <- 0 until len)
+        words(idx) = this.word(idx) & otherBitset.word(idx)
+      fromBitMaskNoCopy(words)
+    case _ => super.intersect(other)
+  }
+
+  abstract override def diff(other: Set[Int]): C = other match {
+    case otherBitset: BitSet =>
+      val len = coll.nwords
+      val words = new Array[Long](len)
+      for (idx <- 0 until len)
+        words(idx) = this.word(idx) & ~otherBitset.word(idx)
+      fromBitMaskNoCopy(words)
+    case _ => super.diff(other)
+  }
+
   /** Computes the symmetric difference of this bitset and another bitset by performing
     *  a bitwise "exclusive-or".
     *

@@ -84,4 +84,35 @@ class BitSetTest {
     assert(im.collect{case i if i%2 == 1 => i}.isInstanceOf[collection.immutable.BitSet])
     assert(im.collect{case i if i%2 == 1 => i} == collection.immutable.BitSet(1, 3))
   }
+
+  @Test def concat(): Unit = {
+    val a = BitSet(1, 2, 3)
+    val b = BitSet(2, 4, 6)
+    assert(a.concat(b) == BitSet(1, 2, 3, 4, 6))
+    assert(a.union(b) == BitSet(1, 2, 3, 4, 6))
+    assert(a.concat(BitSet()) == BitSet(1, 2, 3))
+    assert(BitSet().concat(a) == BitSet(1, 2, 3))
+    assert(BitSet().concat(BitSet()) == BitSet())
+  }
+
+  @Test def intersect(): Unit = {
+    val a = BitSet(1, 2, 3)
+    val b = BitSet(2, 4, 6)
+    assert(a.intersect(b) == BitSet(2))
+    assert(a.intersect(BitSet(4, 6)) == BitSet())
+    assert(a.intersect(BitSet()) == BitSet())
+    assert(BitSet().intersect(a) == BitSet())
+    assert(BitSet().intersect(BitSet()) == BitSet())
+  }
+
+  @Test def diff(): Unit = {
+    val a = BitSet(1, 2, 3)
+    val b = BitSet(2, 4, 6)
+    assert(a.diff(b) == BitSet(1, 3))
+    assert(b.diff(a) == BitSet(4, 6))
+    assert(a.diff(BitSet(4, 6)) == BitSet(1, 2, 3))
+    assert(a.diff(BitSet()) == BitSet(1, 2, 3))
+    assert(BitSet().diff(a) == BitSet())
+    assert(BitSet().diff(BitSet()) == BitSet())
+  }
 }
