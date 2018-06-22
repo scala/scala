@@ -84,7 +84,7 @@ class CompileSocket extends CompileOutputCommon {
     val cmd = serverCommand((vmArgs split " ").toSeq)
     info(s"[Executing command: ${cmd.mkString(" ")}]")
 
-    new java.lang.ProcessBuilder(cmd.toArray: _*).inheritIO().start()
+    new java.lang.ProcessBuilder(cmd.toArray: _*).start()
   }
 
   /** The port identification file */
