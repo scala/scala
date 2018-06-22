@@ -18,6 +18,13 @@ class ArraySeqTest {
     val s3 = ArraySeq.make(Array(1): Array[Any]).asInstanceOf[ArraySeq[Int]]
     assertTrue(s3.array.getClass == classOf[Array[AnyRef]])
   }
+
+  @Test
+  def safeToArray(): Unit = {
+    val a = ArraySeq(1,2,3)
+    a.toArray.update(0, 100)
+    assertEquals(a, List(1,2,3))
+  }
 }
 
 /*

@@ -55,14 +55,6 @@ abstract class ArraySeq[T]
     * or subtype of the element type. */
   def array: Array[_]
 
-  override def toArray[U >: T : ClassTag]: Array[U] = {
-    val thatElementClass = implicitly[ClassTag[U]].runtimeClass
-    if (array.getClass.getComponentType eq thatElementClass)
-      array.asInstanceOf[Array[U]]
-    else
-      super.toArray[U]
-  }
-
   override protected[this] def stringPrefix = "ArraySeq"
 
   /** Clones this object, including the underlying Array. */
