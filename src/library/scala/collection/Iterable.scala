@@ -133,6 +133,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def toIterable: Iterable[A]
 
+  /** Converts this $coll to an unspecified Iterable.  Will return
+    *  the same collection if this instance is already Iterable.
+    *  @return An Iterable containing all elements of this $coll.
+    */
+  @deprecated("Use toIterable instead", "2.13.0")
+  final def toTraversable: Traversable[A] = toIterable
+
   /**
     * @return This collection as a `C`.
     */
