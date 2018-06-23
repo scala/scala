@@ -177,8 +177,18 @@ class ChampMapSmokeTest {
   private def assertSameEqHash(expected: ChampHashMap[Any, Any], actual: ChampHashMap[Any, Any]) = {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
-    assertEquals(expected.cachedJavaKeySetHashCode, actual.cachedJavaKeySetHashCode)
+    assertEquals(cachedJavaKeySetHashCode(expected), cachedJavaKeySetHashCode(actual))
     assertEquals(expected.hashCode(), actual.hashCode())
+  }
+
+  lazy val (mirror, field) = {
+    import scala.reflect.runtime.{universe=>ru}
+    val mirror = ru.runtimeMirror(classOf[ChampHashMap[_,_]].getClassLoader)
+    val field = ru.typeOf[ChampHashMap[_,_]].decl(ru.TermName("cachedJavaKeySetHashCode")).asTerm
+    (mirror, field)
+  }
+  def cachedJavaKeySetHashCode(map:  ChampHashMap[Any, Any]) = {
+    mirror.reflect(map).reflectField(field).get
   }
 
   private def value(i: Int) = new String("" + i)
@@ -197,7 +207,7 @@ class ChampMapSmokeTest {
     var map1 = map
     for (c <- cs) {
       map1 = map1.updated(c, value(c.i))
-      assertEquals(map.cachedJavaKeySetHashCode, map1.cachedJavaKeySetHashCode)
+      assertEquals(cachedJavaKeySetHashCode(map), cachedJavaKeySetHashCode(map1))
       if (c.i % 41 == 0)
         assertEquals(map, map1)
     }
