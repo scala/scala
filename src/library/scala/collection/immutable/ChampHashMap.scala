@@ -23,7 +23,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   *  @define coll immutable champ hash map
   */
 
-final class ChampHashMap[K, +V] private[immutable] (val rootNode: MapNode[K, V], val cachedJavaKeySetHashCode: Int, val cachedSize: Int)
+final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNode[K, V], private val cachedJavaKeySetHashCode: Int, private val cachedSize: Int)
   extends AbstractMap[K, V]
     with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]] {
