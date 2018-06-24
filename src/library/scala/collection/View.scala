@@ -119,6 +119,14 @@ object View extends IterableFactory[View] {
     override def knownSize: Int = 0 max len
   }
 
+  /** A view that uses a function `f` to produce elements of type `A` and update
+    * an internal state `S`.
+    */
+  @SerialVersionUID(3L)
+  class Unfold[A, S](initial: S)(f: S => Option[(A, S)]) extends AbstractView[A] {
+    def iterator: Iterator[A] = Iterator.unfold(initial)(f)
+  }
+
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
   type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
   

@@ -39,6 +39,13 @@ class FactoriesTest {
     assertTrue(iterable.forall(expectedValues.contains))
   }
 
+  def unfold(factory: IterableFactory[Iterable]): Unit = {
+    val iterable = factory.unfold(0)(i => if (i >= 10) None else Some((i, i + 1)))
+    val expectedValues = immutable.Range(0, 10)
+    assertEquals(expectedValues.size, iterable.size)
+    assertTrue(iterable.forall(expectedValues.contains))
+  }
+
   def range(factory: IterableFactory[Iterable]): Unit = {
     val iterable = factory.range(0, 10)
     val expectedValues = immutable.Range(0, 10)
@@ -91,6 +98,7 @@ class FactoriesTest {
 
     iterableFactories.foreach(apply)
     iterableFactories.foreach(iterate)
+    iterableFactories.foreach(unfold)
     iterableFactories.foreach(range)
 
     seqFactories.foreach(fill)

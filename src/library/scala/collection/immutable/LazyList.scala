@@ -565,22 +565,6 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
     */
   def continually[A](elem: => A): CC[A] = newCons(elem, continually(elem))
 
-  /**
-    * @return a LazyList by using a function `f` producing elements of
-    *         type `A` and updating an internal state `S`.
-    * @param init State initial value
-    * @param f    Computes the next element (or returns `None` to signal
-    *             the end of the collection)
-    * @tparam A   Type of the elements
-    * @tparam S   Type of the internal state
-    */
-  def unfold[A, S](init: S)(f: S => Option[(A, S)]): CC[A] = {
-    def loop(s: S): CC[A] = {
-      f(s).fold(empty[A])(as => newCons(as._1, loop(as._2)))
-    }
-    loop(init)
-  }
-
   def newBuilder[A]: Builder[A, CC[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
 
   private[immutable] def filteredTail[A](lazyList: CC[A] @uncheckedVariance, p: A => Boolean, isFlipped: Boolean) = {
