@@ -544,7 +544,7 @@ sealed abstract class List[+A]
 
 }
 
-case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
+final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
