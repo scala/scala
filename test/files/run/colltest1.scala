@@ -235,10 +235,8 @@ object Test extends App {
   setTest(immutable.HashSet())
 
   mapTest(Map())
-  mutableMapTest(mutable.Map())
   mapTest(immutable.Map())
   mapTest(immutable.TreeMap())
-  mutableMapTest(mutable.HashMap())
   mutableMapTest(mutable.LinkedHashMap())
   mapTest(immutable.HashMap())
 }
