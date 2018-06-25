@@ -51,4 +51,16 @@ class SetTest {
     val fmip = set.flatMapInPlace(_ => empty)
     assert(fmip.size == 0)
   }
+
+  @Test
+  def testDiff(): Unit = {
+    val s0 = Set(1, 2, 3).diff(List(1, 2))
+    assertEquals(Set(3), s0)
+
+    val s1 = Set(1, 2, 3).diff(List(1, 2, 3))
+    assertEquals(Set(), s1)
+
+    val s2 = Set(1, 2, 3).diff(List(1, 2, 2, 3, 4))
+    assertEquals(Set(), s2)
+  }
 }

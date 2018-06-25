@@ -144,24 +144,25 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   /** Alias for `intersect` */
   @`inline` final def & (that: Set[A]): C = intersect(that)
 
-  /** Computes the difference of this set and another set.
+  /** Creates a new $coll from this $coll by removing all elements of another
+    *  collection.
     *
-    *  @param that the set of elements to exclude.
-    *  @return     a set containing those elements of this
-    *              set that are not also contained in the given set `that`.
+    *  @param that the collection containing the removed elements.
+    *  @return     a new $coll that contains all elements of the current
+    *              $coll except the ones from `that`.
     */
-  def diff(that: Set[A]): C
+  def diff(that: IterableOnce[A]): C
 
   /** Alias for `diff` */
-  @`inline` final def &~ (that: Set[A]): C = this diff that
+  @`inline` final def -- (that: IterableOnce[A]): C = diff(that)
 
-  @deprecated("Use &~ or diff instead of --", "2.13.0")
-  @`inline` final def -- (that: Set[A]): C = diff(that)
+  @deprecated("Use -- or diff instead of &~", "2.13.0")
+  @`inline` final def &~ (that: Set[A]): C = diff(that)
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A): C = diff(Set(elem))
 
-  @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
+  @deprecated("Use -- with an explicit collection argument instead of - with varargs", "2.13.0")
   def - (elem1: A, elem2: A, elems: A*): C = diff(elems.toSet + elem1 + elem2)
 
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.

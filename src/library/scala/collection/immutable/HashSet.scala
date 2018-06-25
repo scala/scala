@@ -63,7 +63,7 @@ sealed abstract class HashSet[A]
     case _ => super.intersect(that)
   }
 
-  override def diff(that: collection.Set[A]): HashSet[A] = that match {
+  override def diff(that: IterableOnce[A]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size))
       nullToEmpty(diff0(that, 0, buffer, 0))
