@@ -51,6 +51,8 @@ sealed abstract class NullnessValue(final val isSize2: Boolean) extends Value {
   }
 
   final override def equals(other: Any) = this eq other.asInstanceOf[Object]
+
+  def invert: NullnessValue = if (this == NullValue) NotNullValue else if (this == NotNullValue) NullValue else this
 }
 
 object NullValue     extends NullnessValue(isSize2 = false) { override def toString = "Null"     }
@@ -134,14 +136,57 @@ final class NullnessInterpreter(knownNonNullInvocation: MethodInsnNode => Boolea
 }
 
 class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessValue](nLocals, nStack) {
+  /**
+   * Hack to support branch-dependent values after a null check (if (x == null) ... else ...).
+   * Short pseudo-code of the analyzer:
+   *
+   * analyze()
+   *   while (numInstructionsToProcess > 0) {
+   *     currentFrame = oldFrame.clone().execute(insnNode, interpreter)
+   *     if (insnNode instanceof JumpInsnNode) {
+   *       merge(insnIndex + 1, currentFrame, subroutine)
+   *       merge(jumpInsnIndex, currentFrame, subroutine)
+   *
+   * merge(int insnIndex, Frame frame)
+   *   oldFrame = frames[insnIndex]
+   *   if (oldFrame == null) frames[insnIndex] = newFrame(frame)
+   *   else oldFrame.merge(frame, interpreter)
+   *
+   * The `currentFrame` is a temporary frame with the status after executing the instruction.
+   * It is then either passed to `frame.merge` or to `new Frame` as parameter.
+   *
+   * Both of these methods are overwritten in NullnessFrame to invoke `postBranch()`. On the first
+   * invocation it sets the state of `currentFrame` for the first branch, then for the second branch.
+   * So `currentFrame` can have a different state for each branch.
+   */
+  private var postBranch: () => Unit = null
+
+  override def init(src: Frame[_ <: NullnessValue]): Frame[NullnessValue] = {
+    postBranch = null
+    super.init(src)
+  }
+
   // Auxiliary constructor required for implementing `NullnessAnalyzer.newFrame`
   def this(src: Frame[_ <: NullnessValue]) {
     this(src.getLocals, src.getMaxStackSize)
+    val s = src.asInstanceOf[NullnessFrame]
+    if (s.postBranch != null) s.postBranch()
     init(src)
+  }
+
+  override def merge(other: Frame[_ <: NullnessValue], interpreter: Interpreter[NullnessValue]): Boolean = {
+    val o = other.asInstanceOf[NullnessFrame]
+    if (o.postBranch != null) o.postBranch()
+    super.merge(other, interpreter)
   }
 
   override def execute(insn: AbstractInsnNode, interpreter: Interpreter[NullnessValue]): Unit = {
     import Opcodes._
+
+    val ifNullAliases: AliasSet = insn.getOpcode match {
+      case IFNULL | IFNONNULL => aliasesOf(this.stackTop)
+      case _ => null
+    }
 
     // get the alias set the object that is known to be not-null after this operation.
     // alias sets are mutable / mutated, so after super.execute, this set contains the remaining
@@ -191,11 +236,24 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
 
     super.execute(insn, interpreter)
 
-    if (nullCheckedAliases != null) {
-      val it = nullCheckedAliases.iterator
+    def setNullness(s: AliasSet, v: NullnessValue) = {
+      val it = s.iterator
       while (it.hasNext)
-        this.setValue(it.next(), NotNullValue)
+        this.setValue(it.next(), v)
     }
+
+    if (ifNullAliases != null) {
+      val v = if (insn.getOpcode == IFNULL) NotNullValue else NullValue
+      postBranch = () => {
+        setNullness(ifNullAliases, v)
+        postBranch = () => {
+          setNullness(ifNullAliases, v.invert)
+          postBranch = null
+        }
+      }
+    }
+
+    if (nullCheckedAliases != null) setNullness(nullCheckedAliases, NotNullValue)
   }
 }
 

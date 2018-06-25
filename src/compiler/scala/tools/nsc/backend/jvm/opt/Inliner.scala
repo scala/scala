@@ -165,7 +165,7 @@ abstract class Inliner {
    * Returns the callsites that can be inlined. Ensures that the returned inline request graph does
    * not contain cycles.
    *
-   * The resulting list is sorted such that the leaves of the inline request graph are on the left.
+   * The resulting list is sorted such that the leaves of the inline request tree are on the left.
    * Once these leaves are inlined, the successive elements will be leaves, etc.
    */
   private def collectAndOrderInlineRequests: List[InlineRequest] = {
