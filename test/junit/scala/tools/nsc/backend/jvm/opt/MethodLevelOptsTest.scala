@@ -290,6 +290,28 @@ class MethodLevelOptsTest extends BytecodeTesting {
   }
 
   @Test
+  def branchSensitiveNullness(): Unit = {
+    val code =
+      """class C {
+        |  def t1(x: Object) = {
+        |    if (x != null)
+        |      if (x == null) println() // eliminated
+        |    0
+        |  }
+        |
+        |  def t2(x: String) = {
+        |    x.trim
+        |    if (x == null) println() // eliminated
+        |    0
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "t1"), List(ICONST_0, IRETURN))
+    assertSameSummary(getMethod(c, "t2"), List(ALOAD, "trim", POP, ICONST_0, IRETURN))
+  }
+
+  @Test
   def t5313(): Unit = {
     val code =
       """class C {

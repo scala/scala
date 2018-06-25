@@ -221,4 +221,21 @@ class NullnessAnalyzerTest extends BytecodeTesting {
       (trim, 3, NotNullValue)  // receiver at `trim`
     )) testNullness(a, m, insn, index, nullness)
   }
+
+  @Test
+  def branching(): Unit = {
+    val code =
+      """def f(o: Object) = {
+        |  if (o == null) throw null
+        |  o.toString
+        |}
+      """.stripMargin
+    val m = compileAsmMethod(code)
+    val a = newNullnessAnalyzer(m)
+    for ((insn, index, nullness) <- List(
+      ("IFNULL", 1, UnknownValue1),
+      ("ACONST_NULL", 1, NullValue),
+      ("INVOKEVIRTUAL java/lang/Object.toString", 1, NotNullValue) // after branch: known not null
+    )) testNullness(a, m, insn, index, nullness)
+  }
 }
