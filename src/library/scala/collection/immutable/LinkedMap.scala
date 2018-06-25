@@ -8,17 +8,24 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /**
   * A generic trait for ordered immutable maps. Concrete classes have to provide
-  * functionality for the abstract methods in `LinkedMap`:
+  * functionality for the abstract methods in `LinkedMap`.
   *
-  * @tparam A
-  * @tparam B
+  * Note that when checking for equality [[LinkedMap]] does not take into account
+  * ordering.
+  *
+  * @tparam K      the type of the keys contained in this linked map.
+  * @tparam V      the type of the values associated with the keys in this linked map.
+  *
+  * @author Matthew de Detrich
+  * @version 2.13
+  * @since 2.13
+  * @define coll immutable linked map
+  * @define Coll `immutable.LinkedMap`
   */
 
 trait LinkedMap[K, +V]
-  extends Map[K, V]
-    with Iterable[(K, V)]
+  extends AbstractMap[K, V]
     with MapOps[K, V, LinkedMap, LinkedMap[K, V]]
-    with Equals
 
 object LinkedMap extends MapFactory[LinkedMap] {
   def empty[K, V]: LinkedMap[K, V] = EmptyLinkedMap.asInstanceOf[LinkedMap[K, V]]
@@ -30,9 +37,7 @@ object LinkedMap extends MapFactory[LinkedMap] {
     }
 
   def newBuilder[K, V]: Builder[(K, V), LinkedMap[K, V]] =
-    new ImmutableBuilder[(K, V), LinkedMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+    new MapFactory.Delegate[LinkedMap](VectorMap).newBuilder
 
   @SerialVersionUID(3L)
   private object EmptyLinkedMap extends LinkedMap[Any, Nothing] {

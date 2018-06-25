@@ -23,8 +23,8 @@ import scala.collection.immutable.Map.useBaseline
   * @define Coll `immutable.VectorMap`
   */
 final class VectorMap[K, +V] private[immutable] (
-    val fields: Vector[K],
-    val underlying: Map[K, (Int, V)])
+    private val fields: Vector[K],
+    private val underlying: Map[K, (Int, V)])
     extends AbstractMap[K, V]
     with LinkedMap[K, V]
     with MapOps[K, V, VectorMap, VectorMap[K, V]]
@@ -32,15 +32,15 @@ final class VectorMap[K, +V] private[immutable] (
 
   override protected[this] def className: String = "VectorMap"
 
-  override def updated[V1 >: V](key: K, value: V1): VectorMap[K, V1] = {
-    if (underlying.get(key).isDefined) {
-      val oldKey = underlying(key)._1
-      new VectorMap(fields,
-                    underlying.updated(key, (oldKey, value.asInstanceOf[V])))
-    } else {
-      new VectorMap(
-        fields :+ key,
-        underlying.updated(key, (fields.length + 1, value.asInstanceOf[V])))
+  def updated[V1 >: V](key: K, value: V1): VectorMap[K, V1] = {
+    underlying.get(key) match {
+      case Some(oldIndexWithValue) =>
+        new VectorMap(fields,
+          underlying.updated(key, (oldIndexWithValue._1, value)))
+      case None =>
+        new VectorMap(
+          fields :+ key,
+          underlying.updated(key, (fields.length + 1, value)))
     }
   }
 
@@ -49,7 +49,7 @@ final class VectorMap[K, +V] private[immutable] (
 
   override def withDefaultValue[V1 >: V](d: V1): Map.WithDefault[K, V1] = new Map.WithDefault[K, V1](this, _ => d)
 
-  override def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
+  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
     private val fieldsIterator = fields.iterator
 
     override def hasNext: Boolean = fieldsIterator.hasNext
@@ -60,12 +60,12 @@ final class VectorMap[K, +V] private[immutable] (
     }
   }
 
-  override def get(key: K): Option[V] = underlying.get(key) match {
+  def get(key: K): Option[V] = underlying.get(key) match {
     case Some(v) => Some(v._2)
     case None => None
   }
 
-  override def remove(key: K): VectorMap[K, V] = {
+  def remove(key: K): VectorMap[K, V] = {
     underlying.get(key) match {
       case Some((index, _)) =>
         new VectorMap(fields.patch(index, Nil, 1), underlying - key)
@@ -99,22 +99,17 @@ final class VectorMap[K, +V] private[immutable] (
   }
 
   override def tail: VectorMap[K, V] = {
-    val tail = fields.last
-
-    new VectorMap(fields.slice(1, fields.size), underlying.remove(tail))
+    new VectorMap(fields.tail, underlying.remove(fields.last))
   }
 
   override def init: VectorMap[K, V] = {
-    val head = fields.head
-
-    new VectorMap(fields.slice(1, fields.size - 0), underlying.remove(head))
+    new VectorMap(fields.init, underlying.remove(fields.head))
   }
 
   // Only care about content, not ordering for equality
   override def equals(that: Any): Boolean =
     that match {
-      case vmap: VectorMap[K, V] =>
-        underlying == vmap.underlying
+      case vmap: VectorMap[_, _] => underlying == vmap.underlying
       case _ => super.equals(that)
     }
 
