@@ -806,6 +806,19 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
 
+  /** Produces a new $coll where all occurrences of some element are replaced by
+    * a different element.
+    *
+    * @param elem        the element to replace
+    * @param replacement the replacement element
+    * @tparam B          the element type of the returned $coll.
+    * @return            a new $coll consisting of all elements of this $coll
+    *                    except that all occurrences of `elem` are replaced by
+    *                    `replacement`
+    */
+  def replaced[B >: A](elem: B, replacement: B): CC[B] =
+    map(a => if (a == elem) replacement else a)
+
   private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- sq) occ(y) += 1
