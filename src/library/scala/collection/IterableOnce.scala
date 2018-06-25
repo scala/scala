@@ -26,6 +26,9 @@ import scala.collection.mutable.StringBuilder
   *
   *    Note: will not terminate for infinite-sized collections.
   *
+  * @define willForceEvaluation
+  *    Note: Even when applied to a view or a lazy collection it will always force the elements.
+  *
   * @define coll collection
   */
 trait IterableOnce[+A] extends Any {

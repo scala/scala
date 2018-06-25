@@ -254,6 +254,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *    //         Vector(3, 6))
     *    }}}
     *
+    *  $willForceEvaluation
+    *
     *  @tparam B the type of the elements of each iterable collection.
     *  @param  asIterable an implicit conversion which asserts that the
     *          element type of this $coll is an `Iterable`.
@@ -328,7 +330,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   def take(n: Int): C = fromSpecificIterable(new View.Take(this, n))
 
-  /** A collection containing the last `n` elements of this collection. */
+  /** A collection containing the last `n` elements of this collection.
+    * $willForceEvaluation
+    */
   def takeRight(n: Int): C = {
     val b = newSpecificBuilder
     b.sizeHintBounded(n, toIterable)
@@ -350,6 +354,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /** The rest of the collection without its `n` last elements. For
     *  linear, immutable collections this should avoid making a copy.
+    *  $willForceEvaluation
     */
   def dropRight(n: Int): C = {
     val b = newSpecificBuilder
@@ -418,7 +423,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
     *
-    *  Note: When applied to a view or a lazy collection it will always force the elements.
+    *  $willForceEvaluation
     *
     *  @param f     the discriminator function.
     *  @tparam K    the type of keys returned by the discriminator function.
@@ -460,6 +465,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *   def namesByAge(users: Seq[User]): Map[Int, Seq[String]] =
     *     users.groupMap(_.age)(_.name)
     * }}}
+    *
+    * $willForceEvaluation
     *
     * @param key the discriminator function
     * @param f the element transformation function

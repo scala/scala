@@ -447,6 +447,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  identical, only one will be chosen.  Which of the three will be taken is an
     *  implementation detail that is not defined.
     *
+    *  $willForceEvaluation
+    *
     *  @return   An Iterator which traverses the possible n-element combinations of this $coll.
     *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
     */
@@ -578,6 +580,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  `ord.compare`) appear in the same order in the sorted sequence as in the original.
     *
     *  @see [[scala.math.Ordering]]
+    *
+    *  $willForceEvaluation
     *
     *  @param  ord the ordering to be used to compare elements.
     *  @return     a $coll consisting of the elements of this $coll
@@ -738,6 +742,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     *  $willNotTerminateInf
+    *  $willForceEvaluation
     */
   def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
@@ -760,6 +765,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     *  $mayNotTerminateInf
+    *  $willForceEvaluation
     */
   def intersect(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
