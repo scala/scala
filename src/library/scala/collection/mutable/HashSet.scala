@@ -38,6 +38,10 @@ final class HashSet[A]
     this
   }
 
+  override def add(elem: A): Boolean = table.addElem(elem)
+
+  override def remove(elem: A): Boolean = table.removeElem(elem)
+
   def clear(): Unit = table.clearTable()
 
   def contains(elem: A): Boolean = table.containsElem(elem)

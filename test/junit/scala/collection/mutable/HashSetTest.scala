@@ -55,4 +55,17 @@ class HashSetTest {
     assert(hs.size == 1)
     assert(hs.contains(1))
   }
+
+  @Test
+  def addRemove(): Unit = {
+    val hs = HashSet[Int]()
+    hs += 1
+    assertFalse(hs.add(1))
+    assertFalse(hs.add(1))
+    assertTrue(hs.add(2))
+    assertFalse(hs.remove(3))
+    assertTrue(hs.remove(2))
+    assertTrue(hs.remove(1))
+    assertFalse(hs.remove(1))
+  }
 }
