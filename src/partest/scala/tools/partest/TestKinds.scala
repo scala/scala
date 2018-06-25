@@ -1,9 +1,8 @@
 package scala.tools
 package partest
+import nest.PathSettings
 
-import nest.PathSettings.srcDir
-
-object TestKinds {
+class TestKinds(pathSettings: PathSettings) {
   val standardKinds = ("pos neg run jvm res scalap specialized instrumented presentation" split "\\s+").toList
 
   def denotesTestFile(p: Path) = p.isFile && p.hasExtension("scala", "res", "xml")
@@ -18,7 +17,7 @@ object TestKinds {
   def logOf(p: Path) = p.parent / s"${p.stripExtension}-${kindOf(p)}.log"
 
   // true if a test path matches the --grep expression.
-  private def pathMatchesExpr(path: Path, expr: String) = {
+  private[this] def pathMatchesExpr(path: Path, expr: String) = {
     // Matches the expression if any source file contains the expr,
     // or if the checkfile contains it, or if the filename contains
     // it (the last is case-insensitive.)
@@ -36,7 +35,7 @@ object TestKinds {
     (candidates exists matches)
   }
 
-  def testsFor(kind: String): List[Path] = (srcDir / kind toDirectory).list.toList filter denotesTestPath
+  def testsFor(kind: String): List[Path] = (pathSettings.srcDir / kind toDirectory).list.toList filter denotesTestPath
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))
   def standardTests: List[Path]          = standardKinds flatMap testsFor
   def failedTests: List[Path]            = standardTests filter (p => logOf(p).isFile)
