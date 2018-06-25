@@ -25,7 +25,7 @@ java.lang.Exception
 
 scala> null.asInstanceOf
 java.lang.NullPointerException
-  at .$print$lzycompute(<synthetic>:9)
+  at .$print$lzycompute(<synthetic>:8)
   ... ??? elided
 
 scala> :quit
