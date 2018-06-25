@@ -194,10 +194,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  @`inline` final def union(that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def union(that: Set[A]): C = concat(that)
 
   /** Alias for `union` */
-  @`inline` final def | (that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def | (that: Set[A]): C = concat(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.
