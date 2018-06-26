@@ -74,7 +74,21 @@ import scala.annotation.unchecked.uncheckedVariance
   *  @define coll iterator
   */
 trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
+
+  /** Check if there is a next element available.
+    *
+    * @return `true` if there is a next element, `false` otherwise
+    * @note   Reuse: $preservesIterator
+    */
   def hasNext: Boolean
+
+  /** Return the next element and advance the iterator.
+    *
+    * @throws NoSuchElementException if there is no next element.
+    * @return the next element.
+    * @note   Reuse: Advances the iterator, which may exhaust the elements. It is valid to
+    *         make additional calls on the iterator.
+    */
   @throws[NoSuchElementException]
   def next(): A
   def iterator = this
