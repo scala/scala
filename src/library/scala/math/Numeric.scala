@@ -173,7 +173,6 @@ object Numeric {
     def minus(x: BigDecimal, y: BigDecimal): BigDecimal = x - y
     def times(x: BigDecimal, y: BigDecimal): BigDecimal = x * y
     def negate(x: BigDecimal): BigDecimal = -x
-    def invToBigDecimal(x: BigDecimal): BigDecimal = BigDecimal(1 / x)
     def fromInt(x: Int): BigDecimal = BigDecimal(x)
     def parseString(str: String): Option[BigDecimal] = Try(BigDecimal(str)).toOption
     def toInt(x: BigDecimal): Int = x.intValue
@@ -202,7 +201,6 @@ trait Numeric[T] extends Ordering[T] {
   def times(x: T, y: T): T
   def negate(x: T): T
   def inv(x: T): Double
-  def invToBigDecimal(x: T): BigDecimal
   def fromInt(x: Int): T
   def parseString(str: String): Option[T]
   def toInt(x: T): Int
