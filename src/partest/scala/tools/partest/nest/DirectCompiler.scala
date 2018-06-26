@@ -74,14 +74,17 @@ class DirectCompiler(val runner: Runner) {
   }
 
   def compile(opts0: List[String], sources: List[File]): TestState = {
-    import runner.{ sources => _, _ }
+    import runner.{sources => _, _}, testInfo._
 
     // adding codelib.jar to the classpath
     // codelib provides the possibility to override standard reify
     // this shields the massive amount of reification tests from changes in the API
-    val codeLib = runner.suiteRunner.pathSettings.srcCodeLib.fold[List[Path]](x => Nil, lib => List[Path](lib))
+    val codeLib = suiteRunner.pathSettings.srcCodeLib.fold[List[Path]](x => Nil, lib => List[Path](lib))
     // add the instrumented library version to classpath -- must come first
-    val specializedOverride: List[Path] = if (kind == "specialized") List(runner.suiteRunner.pathSettings.srcSpecLib.fold(sys.error, identity)) else Nil
+    val specializedOverride: List[Path] =
+      if (kind == "specialized")
+        List(suiteRunner.pathSettings.srcSpecLib.fold(sys.error, identity))
+      else Nil
 
     val classPath: List[Path] = specializedOverride ++ codeLib ++ fileManager.testClassPath ++ List[Path](outDir)
 
@@ -108,8 +111,7 @@ class DirectCompiler(val runner: Runner) {
       if (command.files.nonEmpty) reportError(command.files.mkString("flags file may only contain compiler options, found: ", space, ""))
     }
 
-    def ids = sources.map(_.testIdent) mkString space
-    suiteRunner.verbose(s"% scalac $ids")
+    suiteRunner.verbose(s"% scalac ${ sources.map(_.testIdent).mkString(space) }")
 
     def execCompile() =
       if (command.shouldStopWithInfo) {

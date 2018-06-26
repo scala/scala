@@ -289,13 +289,14 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
   def runTest(testFile: File): TestState = {
     val start = System.nanoTime()
-    val runner = new Runner(testFile, this)
+    val info = TestInfo(testFile)
+    val runner = new Runner(info, this)
     var stopwatchDuration: Option[Long] = None
 
     // when option "--failed" is provided execute test only if log
     // is present (which means it failed before)
     val state =
-    if (config.optFailed && !runner.logFile.canRead)
+    if (config.optFailed && !info.logFile.canRead)
       runner.genPass()
     else {
       val (state, durationMs) =
@@ -304,8 +305,8 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
         }
       stopwatchDuration = Some(durationMs)
-      val more = reportTest(state, runner, durationMs, diffOnFail = config.optShowDiff || onlyIndividualTests , logOnFail = config.optShowLog || onlyIndividualTests)
-      runner.cleanup()
+      val more = reportTest(state, info, durationMs, diffOnFail = config.optShowDiff || onlyIndividualTests , logOnFail = config.optShowLog || onlyIndividualTests)
+      runner.cleanup(state)
       if (more.isEmpty) state
       else {
         state match {

@@ -18,6 +18,8 @@ sealed abstract class TestState {
 
   def shortStatus    = if (isOk) "ok" else "!!"
 
+  final def andAlso(next: => TestState): TestState = if (isOk) next else this
+
   override def toString = status
 }
 
@@ -54,6 +56,7 @@ object TestState {
   case class Crash(testFile: java.io.File, caught: Throwable, transcript: Array[String]) extends TestState {
     def what = "crash"
     def reason = s"caught $caught_s - ${caught.getMessage}"
+    override def shortStatus = "?!"
 
     private def caught_s = (caught.getClass.getName split '.').last
     override def transcriptString = nljoin(super.transcriptString, caught_s)
