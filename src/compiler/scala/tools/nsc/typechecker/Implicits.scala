@@ -1190,21 +1190,20 @@ trait Implicits {
                 getParts(pre)
               }
             }
-          case ThisType(_) =>
-            getParts(tp.widen)
-          case _: SingletonType =>
-            getParts(tp.widen)
-          case HasMethodMatching(_, argtpes, restpe) =>
-            for (tp <- argtpes) getParts(tp)
-            getParts(restpe)
-          case RefinedType(ps, _) =>
-            for (p <- ps) getParts(p)
-          case AnnotatedType(_, t) =>
-            getParts(t)
-          case ExistentialType(_, t) =>
-            getParts(t)
-          case PolyType(_, t) =>
-            getParts(t)
+
+          case PolyType(_, t) => getParts(t)
+          case rt: RefinedType =>
+            rt match {
+              case HasMethodMatching(_, argtpes, restpe) =>
+                for (tp <- argtpes) getParts(tp)
+                getParts(restpe)
+              case RefinedType(ps, _) =>
+                for (p <- ps) getParts(p)
+            }
+          case _: SingletonType => getParts(tp.widen)
+          // With SingletonType ruled out, remaining cases are: ExistentialType, AnnotatedType
+          case tp if tp.underlying ne tp =>
+            getParts(tp.underlying)
           case _ =>
         }
       }
