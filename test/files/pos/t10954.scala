@@ -1,6 +1,6 @@
 object scalaz {
   trait Parallel
-  trait @@[A, T] { type Self = A ; type Tag = T }
+  type @@[A, T] = { type Self = A ; type Tag = T }
 }
 import scalaz._
 
