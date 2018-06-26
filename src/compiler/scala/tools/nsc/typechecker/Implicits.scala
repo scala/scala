@@ -1174,15 +1174,15 @@ trait Implicits {
               else
                 getClassParts(tp)
               args foreach getParts
-            } else if (sym.isAliasType) {
-              getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
-            } else if (sym.isAbstractType) {
+            } else {
+              if (sym.isAliasType) getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
               // SLS 2.12, section 7.2:
-
               //  - if `T` is an abstract type, the parts of its upper bound;
-              getParts(tp.bounds.hi)
+              else if (sym.isAbstractType) getParts(tp.bounds.hi)
 
-              if(settings.isScala213) {
+              // Args/prefix contribute parts regardless of kind of symbol
+              // (the spec is a bit unclear, but it does recurse on `S` for the cases `S[T1, ..., Tn]` and `S#T`)
+              if (settings.isScala213) {
                 //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
                 args foreach getParts
 
@@ -1190,21 +1190,20 @@ trait Implicits {
                 getParts(pre)
               }
             }
-          case ThisType(_) =>
-            getParts(tp.widen)
-          case _: SingletonType =>
-            getParts(tp.widen)
-          case HasMethodMatching(_, argtpes, restpe) =>
-            for (tp <- argtpes) getParts(tp)
-            getParts(restpe)
-          case RefinedType(ps, _) =>
-            for (p <- ps) getParts(p)
-          case AnnotatedType(_, t) =>
-            getParts(t)
-          case ExistentialType(_, t) =>
-            getParts(t)
-          case PolyType(_, t) =>
-            getParts(t)
+
+          case PolyType(_, t) => getParts(t)
+          case rt: RefinedType =>
+            rt match {
+              case HasMethodMatching(_, argtpes, restpe) =>
+                for (tp <- argtpes) getParts(tp)
+                getParts(restpe)
+              case RefinedType(ps, _) =>
+                for (p <- ps) getParts(p)
+            }
+          case _: SingletonType => getParts(tp.widen)
+          // With SingletonType ruled out, remaining cases are: ExistentialType, AnnotatedType
+          case tp if tp.underlying ne tp =>
+            getParts(tp.underlying)
           case _ =>
         }
       }
