@@ -1282,11 +1282,7 @@ abstract class Erasure extends InfoTransform
             val erased = erasure(typeValue.typeSymbol) applyInArray typeValue
 
             treeCopy.Literal(cleanLiteral, Constant(erased))
-          } else if (ct.isSymbol)
-            atPos(tree.pos) {
-              gen.mkMethodCall(definitions.Symbol_apply, List(Literal(Constant(ct.scalaSymbolValue.name))))
-            }
-          else cleanLiteral
+          } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)

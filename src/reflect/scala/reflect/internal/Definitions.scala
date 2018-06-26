@@ -276,7 +276,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
-    lazy val SymbolTpe       = SymbolClass.tpe
 
     lazy val ConstantTrue  = ConstantType(Constant(true))
     lazy val ConstantFalse = ConstantType(Constant(false))

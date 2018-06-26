@@ -299,7 +299,6 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant): Unit = {
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == SSymbolTag) putEntry(newTermName(c.scalaSymbolValue.name))
         else if (c.tag == ClazzTag) putType(c.typeValue)
         else if (c.tag == EnumTag) putSymbol(c.symbolValue)
       }
@@ -490,7 +489,6 @@ abstract class Pickler extends SubComponent {
         case FloatTag   => writeLong(floatToIntBits(c.floatValue).toLong)
         case DoubleTag  => writeLong(doubleToLongBits(c.doubleValue))
         case StringTag  => writeRef(newTermName(c.stringValue))
-        case SSymbolTag => writeRef(newTermName(c.scalaSymbolValue.name))
         case ClazzTag   => writeRef(c.typeValue)
         case EnumTag    => writeRef(c.symbolValue)
         case tag        => if (ByteTag <= tag && tag <= LongTag) writeLong(c.longValue)

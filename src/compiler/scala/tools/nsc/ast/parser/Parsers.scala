@@ -1300,6 +1300,8 @@ self =>
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
       if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
+      else if (in.token == SYMBOLLIT)
+        Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else finish(in.token match {
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt
@@ -1307,7 +1309,6 @@ self =>
         case FLOATLIT               => in.floatVal(isNegated)
         case DOUBLELIT              => in.doubleVal(isNegated)
         case STRINGLIT | STRINGPART => in.strVal.intern()
-        case SYMBOLLIT              => Symbol(in.strVal.intern())
         case TRUE                   => true
         case FALSE                  => false
         case NULL                   => null
