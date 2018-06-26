@@ -183,6 +183,7 @@ object Numeric {
 
   trait BigDecimalIsFractional extends BigDecimalIsConflicted with Fractional[BigDecimal] {
     def div(x: BigDecimal, y: BigDecimal): BigDecimal = x / y
+    def inv(x: BigDecimal): Double = (1 / x).toDouble
   }
   trait BigDecimalAsIfIntegral extends BigDecimalIsConflicted with Integral[BigDecimal] {
     def quot(x: BigDecimal, y: BigDecimal): BigDecimal = x quot y
