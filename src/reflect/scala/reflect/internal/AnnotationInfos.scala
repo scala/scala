@@ -338,6 +338,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None
 
+    def transformArgs(f: List[Tree] => List[Tree]): AnnotationInfo =
+      new CompleteAnnotationInfo(atp, f(args), assocs)
+
     override def hashCode = atp.## + args.## + assocs.##
     override def equals(other: Any) = other match {
       case x: AnnotationInfo  => (atp == x.atp) && (args == x.args) && (assocs == x.assocs)

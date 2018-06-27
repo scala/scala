@@ -19,8 +19,6 @@ object O5 {
   final val n = 2;
   @SerialVersionUID(0)  class C1;
   @SerialVersionUID(n)  class C2;
-  @SerialVersionUID(0) @SerialVersionUID(n)  class C3;
-  @SerialVersionUID(0) @SerialVersionUID(n)  class C4;
 }
 
 abstract class A1 {
