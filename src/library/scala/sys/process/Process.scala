@@ -64,8 +64,7 @@ trait ProcessCreation {
     *
     * @example {{{ apply("cat", files) }}}
     */
-  def apply(command: String, arguments: scala.collection.Seq[String]): ProcessBuilder = apply(Seq(command) ++: arguments, None)
-  //TODO there should be a way to avoid wrapping `command` in `Seq`
+  def apply(command: String, arguments: scala.collection.Seq[String]): ProcessBuilder = apply(command +: arguments, None)
 
   /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
     * environment variables.
@@ -143,7 +142,7 @@ trait ProcessCreation {
   /** Creates a sequence of [[scala.sys.process.ProcessBuilder.Source]] from a sequence of
     * something else for which there's an implicit conversion to `Source`.
     */
-  def applySeq[T](builders: scala.collection.Seq[T])(implicit convert: T => Source): Seq[Source] = builders.map(convert)
+  def applySeq[T](builders: scala.collection.Seq[T])(implicit convert: T => Source): scala.collection.Seq[Source] = builders.map(convert)
 
   /** Creates a [[scala.sys.process.ProcessBuilder]] from one or more
     * [[scala.sys.process.ProcessBuilder.Source]], which can then be
@@ -188,7 +187,7 @@ trait ProcessImplicits {
   /** Return a sequence of [[scala.sys.process.ProcessBuilder.Source]] from a sequence
     * of values for which an implicit conversion to `Source` is available.
     */
-  implicit def buildersToProcess[T](builders: scala.collection.Seq[T])(implicit convert: T => Source): Seq[Source] = applySeq(builders)
+  implicit def buildersToProcess[T](builders: scala.collection.Seq[T])(implicit convert: T => Source): scala.collection.Seq[Source] = applySeq(builders)
 
   /** Implicitly convert a `java.lang.ProcessBuilder` into a Scala one. */
   implicit def builderToProcess(builder: JProcessBuilder): ProcessBuilder = apply(builder)
