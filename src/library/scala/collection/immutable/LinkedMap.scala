@@ -36,8 +36,7 @@ object LinkedMap extends MapFactory[LinkedMap] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), LinkedMap[K, V]] =
-    new MapFactory.Delegate[LinkedMap](VectorMap).newBuilder
+  def newBuilder[K, V]: Builder[(K, V), LinkedMap[K, V]] = VectorMap.newBuilder
 
   @SerialVersionUID(3L)
   private object EmptyLinkedMap extends LinkedMap[Any, Nothing] {
