@@ -98,7 +98,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     intp.reporter.withoutTruncating { intp.reporter.printMessage(msg) }
   }
 
-
   import scala.tools.nsc.interpreter.ReplStrings.{words, string2codeQuoted}
 
   def welcome = enversion(welcomeString)
@@ -108,8 +107,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     replinfo(s"[info] started at ${new java.util.Date}")
     if (!welcome.isEmpty) echo(welcome)
   }
-
-
 
   def history = in.history
 

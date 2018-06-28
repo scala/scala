@@ -85,7 +85,13 @@ trait ShellConfig {
 
   // Prompt for continued input, will be right-adjusted to width of the primary prompt
   val continueString = Prop[String]("scala.repl.continue").option getOrElse "| "
-  val welcomeString  = Prop[String]("scala.repl.welcome").option getOrElse shellWelcomeString
+
+  // What to display at REPL startup.
+  val welcomeString  = Prop[String]("scala.repl.welcome").option match {
+    case Some("banner") => shellBannerString
+    case Some(text)     => text
+    case _              => shellWelcomeString
+  }
 
   val pasteDelimiter = Prop[String]("scala.repl.here")
 
