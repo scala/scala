@@ -10,15 +10,14 @@ package analysis
 import java.util
 
 import scala.annotation.switch
+import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.tools.asm.{Type, MethodVisitor}
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-
-import opt.BytecodeUtils._
-
-import scala.collection.JavaConverters._
+import scala.tools.asm.{MethodVisitor, Type}
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
  * This class provides additional queries over ASM's built-in `SourceValue` analysis.
@@ -60,11 +59,7 @@ import scala.collection.JavaConverters._
  * function (merging producer sets) is more complex than merging simple basic values.
  * See also the doc comment in the package object `analysis`.
  */
-trait ProdConsAnalyzerImpl {
-  val methodNode: MethodNode
-
-  def frameAt(insn: AbstractInsnNode): Frame[SourceValue]
-
+class ProdConsAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new InitialProducerSourceInterpreter)) {
   /**
    * Returns the potential producer instructions of a (local or stack) value in the frame of `insn`.
    * This method simply returns the producer information computed by the SourceValue analysis.

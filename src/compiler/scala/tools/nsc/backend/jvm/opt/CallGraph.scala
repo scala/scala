@@ -126,7 +126,7 @@ abstract class CallGraph {
 
       val analyzer = {
         if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, methodNode)))
+          Some(new NullnessAnalyzer(methodNode, definingClass.internalName, backendUtils.isNonNullMethodInvocation))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
           Some(new AsmAnalyzer(methodNode, definingClass.internalName))
         } else None
@@ -135,9 +135,9 @@ abstract class CallGraph {
       // if the method is too large to run an analyzer, it is not added to the call graph
       if (analyzer.nonEmpty) {
         val Some(a) = analyzer
-        def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a.analyzer match {
+        def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a match {
           case nullnessAnalyzer: NullnessAnalyzer =>
-            val frame = nullnessAnalyzer.frameAt(call, methodNode)
+            val frame = nullnessAnalyzer.frameAt(call)
             frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
           case _ => false
         }

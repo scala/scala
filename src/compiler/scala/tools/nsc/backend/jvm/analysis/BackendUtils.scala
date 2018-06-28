@@ -3,16 +3,14 @@ package backend.jvm
 package analysis
 
 import java.lang.invoke.LambdaMetafactory
-
-import scala.annotation.{switch, tailrec}
-import scala.collection.mutable
-import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.{switch, tailrec}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
 import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
@@ -77,44 +75,6 @@ abstract class BackendUtils extends PerRunInit {
     asm.ClassWriter.COMPUTE_MAXS |
       (if (emitStackMapFrame.get) asm.ClassWriter.COMPUTE_FRAMES else 0)
   )
-
-  /**
-   * A wrapper to make ASM's Analyzer a bit easier to use.
-   */
-  class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V] = new Analyzer(new BasicInterpreter)) {
-    computeMaxLocalsMaxStack(methodNode)
-    try {
-      analyzer.analyze(classInternalName, methodNode)
-    } catch {
-      case ae: AnalyzerException =>
-        throw new AnalyzerException(null, "While processing " + classInternalName + "." + methodNode.name, ae)
-    }
-    def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
-  }
-
-  /**
-   * See the doc comment on package object `analysis` for a discussion on performance.
-   */
-  object AsmAnalyzer {
-    // jvm limit is 65535 for both number of instructions and number of locals
-
-    private def size(method: MethodNode) = method.instructions.size.toLong * method.maxLocals * method.maxLocals
-
-    // with the limits below, analysis should not take more than one second
-
-    private val nullnessSizeLimit    = 5000l * 600l  * 600l    // 5000 insns, 600 locals
-    private val basicValueSizeLimit  = 9000l * 1000l * 1000l
-    private val sourceValueSizeLimit = 8000l * 950l  * 950l
-
-    def sizeOKForAliasing(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
-    def sizeOKForNullness(method: MethodNode): Boolean = size(method) < nullnessSizeLimit
-    def sizeOKForBasicValue(method: MethodNode): Boolean = size(method) < basicValueSizeLimit
-    def sizeOKForSourceValue(method: MethodNode): Boolean = size(method) < sourceValueSizeLimit
-  }
-
-  class ProdConsAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new InitialProducerSourceInterpreter)) with ProdConsAnalyzerImpl
-
-  class NonLubbingTypeFlowAnalyzer(val methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter))
 
   /*
    * Add:
@@ -181,7 +141,7 @@ abstract class BackendUtils extends PerRunInit {
   /**
    * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
    * the `labelMap`. Returns the new instruction list and a map from old to new instructions, and
-   * a list of lambda implementation methods references by invokedynamic[LambdaMetafactory] for a
+   * a list of lambda implementation methods referenced by invokedynamic[LambdaMetafactory] for a
    * serializable SAM types.
    */
   def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
@@ -379,7 +339,7 @@ abstract class BackendUtils extends PerRunInit {
     methods.synchronized (action(methods))
   }
 
-      /**
+  /**
    * add methods
    * @return the added methods. Note the order is undefined
    */
@@ -409,6 +369,56 @@ abstract class BackendUtils extends PerRunInit {
         _ --= handle
       }
   }
+}
+
+object BackendUtils {
+  /**
+   * A pseudo-flag, added MethodNodes whose maxLocals / maxStack are computed. This allows invoking
+   * `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual computation
+   * only when necessary.
+   *
+   * The largest JVM flag (as of JDK 8) is ACC_MANDATED (0x8000), however the asm framework uses
+   * the same trick and defines some pseudo flags
+   *   - ACC_DEPRECATED = 0x20000
+   *   - ACC_SYNTHETIC_ATTRIBUTE = 0x40000
+   *   - ACC_CONSTRUCTOR = 0x80000
+   *
+   * I haven't seen the value picked here in use anywhere. We make sure to remove the flag when
+   * it's no longer needed.
+   */
+  private val ACC_MAXS_COMPUTED = 0x1000000
+  def isMaxsComputed(method: MethodNode) = (method.access & ACC_MAXS_COMPUTED) != 0
+  def setMaxsComputed(method: MethodNode) = method.access |= ACC_MAXS_COMPUTED
+  def clearMaxsComputed(method: MethodNode) = method.access &= ~ACC_MAXS_COMPUTED
+
+  /**
+   * A pseudo-flag indicating if a MethodNode's unreachable code has been eliminated.
+   *
+   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
+   * Transformations that use an analyzer (including inlining) therefore require unreachable code
+   * to be eliminated.
+   *
+   * This flag allows running dead code elimination whenever an analyzer is used. If the method
+   * is already optimized, DCE can return early.
+   */
+  private val ACC_DCE_DONE = 0x2000000
+  def isDceDone(method: MethodNode) = (method.access & ACC_DCE_DONE) != 0
+  def setDceDone(method: MethodNode) = method.access |= ACC_DCE_DONE
+  def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
+
+  private val LABEL_REACHABLE_STATUS = 0x1000000
+  private def isLabelFlagSet(l: LabelNode1, f: Int): Boolean = (l.flags & f) != 0
+
+  private def setLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags |= f
+  }
+
+  private def clearLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags &= ~f
+  }
+  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
@@ -549,56 +559,6 @@ abstract class BackendUtils extends PerRunInit {
       setMaxsComputed(method)
     }
   }
-}
-
-object BackendUtils {
-  /**
-   * A pseudo-flag, added MethodNodes whose maxLocals / maxStack are computed. This allows invoking
-   * `computeMaxLocalsMaxStack` whenever running an analyzer but performing the actual computation
-   * only when necessary.
-   *
-   * The largest JVM flag (as of JDK 8) is ACC_MANDATED (0x8000), however the asm framework uses
-   * the same trick and defines some pseudo flags
-   *   - ACC_DEPRECATED = 0x20000
-   *   - ACC_SYNTHETIC_ATTRIBUTE = 0x40000
-   *   - ACC_CONSTRUCTOR = 0x80000
-   *
-   * I haven't seen the value picked here in use anywhere. We make sure to remove the flag when
-   * it's no longer needed.
-   */
-  private val ACC_MAXS_COMPUTED = 0x1000000
-  def isMaxsComputed(method: MethodNode) = (method.access & ACC_MAXS_COMPUTED) != 0
-  def setMaxsComputed(method: MethodNode) = method.access |= ACC_MAXS_COMPUTED
-  def clearMaxsComputed(method: MethodNode) = method.access &= ~ACC_MAXS_COMPUTED
-
-  /**
-   * A pseudo-flag indicating if a MethodNode's unreachable code has been eliminated.
-   *
-   * The ASM Analyzer class does not compute any frame information for unreachable instructions.
-   * Transformations that use an analyzer (including inlining) therefore require unreachable code
-   * to be eliminated.
-   *
-   * This flag allows running dead code elimination whenever an analyzer is used. If the method
-   * is already optimized, DCE can return early.
-   */
-  private val ACC_DCE_DONE = 0x2000000
-  def isDceDone(method: MethodNode) = (method.access & ACC_DCE_DONE) != 0
-  def setDceDone(method: MethodNode) = method.access |= ACC_DCE_DONE
-  def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
-
-  private val LABEL_REACHABLE_STATUS = 0x1000000
-  private def isLabelFlagSet(l: LabelNode1, f: Int): Boolean = (l.flags & f) != 0
-
-  private def setLabelFlag(l: LabelNode1, f: Int): Unit = {
-    l.flags |= f
-  }
-
-  private def clearLabelFlag(l: LabelNode1, f: Int): Unit = {
-    l.flags &= ~f
-  }
-  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
-  def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
-  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]

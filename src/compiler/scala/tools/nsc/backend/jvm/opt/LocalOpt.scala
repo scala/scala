@@ -359,8 +359,8 @@ abstract class LocalOpt {
     }
 
     val (nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
-      // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
-      // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
+      // we run DCE even if `isDceDone(method)`: the DCE here is more thorough than
+      // `minimalRemoveUnreachableCode` that run before inlining.
       val r = removalRound(
         requestNullness = true,
         requestDCE = true,
@@ -410,7 +410,7 @@ abstract class LocalOpt {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      lazy val nullnessAnalyzer = new AsmAnalyzer(method, ownerClassName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, method))
+      lazy val nullnessAnalyzer = new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation)
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
