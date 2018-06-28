@@ -20,7 +20,6 @@ import scala.collection.mutable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.BasicInterpreter
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -42,7 +41,8 @@ abstract class CopyProp {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
-      lazy val aliasAnalysis = new AsmAnalyzer(method, owner, new AliasingAnalyzer(new BasicInterpreter))
+      // TODO: nullness works here too!!!
+      lazy val aliasAnalysis = analyzerCache.get[BasicAliasingAnalyzer](method)(new BasicAliasingAnalyzer(method, owner))
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
       //
@@ -85,6 +85,7 @@ abstract class CopyProp {
         case _ =>
       }
 
+      if (changed) analyzerCache.invalidate(method)
       changed
     }
   }
@@ -99,7 +100,7 @@ abstract class CopyProp {
    */
   def eliminateStaleStores(method: MethodNode, owner: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForSourceValue(method) && {
-      lazy val prodCons = new ProdConsAnalyzer(method, owner)
+      lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
       // insns to delete: IINC that have no consumer
@@ -167,7 +168,9 @@ abstract class CopyProp {
         }
       }
 
-      toDelete.nonEmpty || storesToDrop.nonEmpty || toNullOut.nonEmpty
+      val changed = toDelete.nonEmpty || storesToDrop.nonEmpty || toNullOut.nonEmpty
+      if (changed) analyzerCache.invalidate(method)
+      changed
     }
   }
 
@@ -199,7 +202,7 @@ abstract class CopyProp {
       // an instruction to insert after some instruction
       val toInsertAfter = mutable.Map.empty[AbstractInsnNode, AbstractInsnNode]
 
-      lazy val prodCons = new ProdConsAnalyzer(method, owner)
+      lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
 
       /**
        * Returns the producers for the stack value `inputSlot` consumed by `cons`, if the consumer
@@ -465,6 +468,7 @@ abstract class CopyProp {
         changed = true
         method.instructions.remove(insn)
       }
+      if (changed) analyzerCache.invalidate(method)
       changed
     }
   }
@@ -633,7 +637,9 @@ abstract class CopyProp {
       method.instructions.remove(removePair.other)
     }
 
-    removePairs.nonEmpty
+    val changed = removePairs.nonEmpty
+    if (changed) analyzerCache.invalidate(method)
+    changed
   }
 }
 

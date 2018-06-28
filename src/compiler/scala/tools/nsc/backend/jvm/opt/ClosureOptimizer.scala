@@ -110,15 +110,18 @@ abstract class ClosureOptimizer {
         if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
           case Some(closureInits) =>
             // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-            lazy val prodCons = new ProdConsAnalyzer(method, ownerClass)
+            lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, ownerClass))
 
+            var added = false
             for (init <- closureInits.valuesIterator) closureCallsites(init, prodCons) foreach {
               case Left(warning) =>
                 backendReporting.inlinerWarning(warning.pos, warning.toString)
 
               case Right((invocation, stackHeight)) =>
                 addRewrite(init, invocation, stackHeight)
+                added = true
             }
+            if (added) analyzerCache.invalidate(method)
 
           case _ =>
         }

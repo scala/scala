@@ -326,12 +326,14 @@ abstract class LocalOpt {
 
       // STALE HANDLERS
       val removeHandlersResult = if (runDCE) removeEmptyExceptionHandlers(method) else RemoveHandlersResult.NoneRemoved
+      if (removeHandlersResult.handlerRemoved) analyzerCache.invalidate(method)
       traceIfChanged("staleHandlers")
 
       // SIMPLIFY JUMPS
       // almost all of the above optimizations enable simplifying more jumps, so we just run it in every iteration
       val runSimplifyJumps = compilerSettings.optSimplifyJumps
       val jumpsChanged = runSimplifyJumps && simplifyJumps(method)
+      if (jumpsChanged) analyzerCache.invalidate(method)
       traceIfChanged("simplifyJumps")
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
@@ -417,7 +419,9 @@ abstract class LocalOpt {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      lazy val nullnessAnalyzer = new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation)
+      lazy val nullnessAnalyzer =
+        analyzerCache.get[NullnessAnalyzer](method)(
+          new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation))
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
@@ -495,7 +499,9 @@ abstract class LocalOpt {
         removeFromCallGraph(oldOp)
       }
 
-      toReplace.nonEmpty
+      val changed = toReplace.nonEmpty
+      if (changed) analyzerCache.invalidate(method)
+      changed
     }
   }
 
@@ -506,7 +512,7 @@ abstract class LocalOpt {
    * or not. This can be queried using `BackendUtils.isLabelReachable`.
    */
   def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): Boolean = {
-    val a = new AsmAnalyzer(method, ownerClassName)
+    val a = analyzerCache.getAny(method, ownerClassName)
     val frames = a.analyzer.getFrames
 
     var i = 0
@@ -549,6 +555,7 @@ abstract class LocalOpt {
     }
     method.maxLocals = maxLocals
     method.maxStack  = maxStack
+    if (changed) analyzerCache.invalidate(method)
     changed
   }
 
@@ -570,6 +577,7 @@ abstract class LocalOpt {
         (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
       }
 
+      // not using analyzerCache since this is the only place where NonLubbingTypeFlowAnalyzer is used (for now)
       lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(method, owner)
 
       // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
@@ -588,7 +596,9 @@ abstract class LocalOpt {
       }
 
       toRemove foreach method.instructions.remove
-      toRemove.nonEmpty
+      val changed = toRemove.nonEmpty
+      if (changed) analyzerCache.invalidate(method)
+      changed
     }
   }
 }
