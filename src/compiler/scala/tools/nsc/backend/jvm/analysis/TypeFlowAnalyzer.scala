@@ -15,7 +15,9 @@ package backend.jvm
 package analysis
 
 import scala.tools.asm.Type
-import scala.tools.asm.tree.analysis.{BasicValue, BasicInterpreter}
+import scala.tools.asm.tree.MethodNode
+import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue}
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 
 abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
   override def newValue(tp: Type) = {
@@ -46,3 +48,5 @@ abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opco
 class NonLubbingTypeFlowInterpreter extends TypeFlowInterpreter {
   def refLub(a: BasicValue, b: BasicValue): BasicValue = BasicValue.REFERENCE_VALUE // java/lang/Object
 }
+
+class NonLubbingTypeFlowAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter))

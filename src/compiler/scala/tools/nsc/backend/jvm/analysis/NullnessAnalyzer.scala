@@ -20,6 +20,7 @@ import scala.annotation.switch
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.asm.{Opcodes, Type}
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -269,11 +270,8 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   }
 }
 
-/**
- * This class is required to override the `newFrame` methods, which makes makes sure the analyzer
- * uses NullnessFrames.
- */
-class NullnessAnalyzer(knownNonNullInvocation: MethodInsnNode => Boolean, method: MethodNode) extends Analyzer[NullnessValue](new NullnessInterpreter(knownNonNullInvocation, method)) {
+class NullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName, knownNonNullInvocation: MethodInsnNode => Boolean) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer[NullnessValue](new NullnessInterpreter(knownNonNullInvocation, methodNode)) {
+  // override the `newFrame` methods to make sure the analyzer uses NullnessFrames.
   override def newFrame(nLocals: Int, nStack: Int): NullnessFrame = new NullnessFrame(nLocals, nStack)
   override def newFrame(src: Frame[_ <: NullnessValue]): NullnessFrame = new NullnessFrame(src)
-}
+})
