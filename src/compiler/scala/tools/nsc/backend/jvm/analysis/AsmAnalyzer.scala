@@ -10,7 +10,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 /**
  * A wrapper to make ASM's Analyzer a bit easier to use.
  */
-class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V] = new Analyzer(new BasicInterpreter)) {
+abstract class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: InternalName, val analyzer: Analyzer[V]) {
   computeMaxLocalsMaxStack(methodNode)
   try {
     analyzer.analyze(classInternalName, methodNode)
@@ -20,6 +20,10 @@ class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName: Interna
   }
   def frameAt(instruction: AbstractInsnNode): Frame[V] = analyzer.frameAt(instruction, methodNode)
 }
+
+class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer[BasicValue](methodNode, classInternalName, new Analyzer(new BasicInterpreter))
+
+class BasicAliasingAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer[BasicValue](methodNode, classInternalName, new AliasingAnalyzer(new BasicInterpreter))
 
 /**
  * See the doc comment on package object `analysis` for a discussion on performance.

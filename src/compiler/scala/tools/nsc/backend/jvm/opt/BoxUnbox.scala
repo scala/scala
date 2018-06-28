@@ -180,7 +180,7 @@ abstract class BoxUnbox {
 
       val knownHandled = mutable.Set.empty[AbstractInsnNode]
 
-      lazy val prodCons = new ProdConsAnalyzer(method, owner)
+      lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
 
       var nextLocal = method.maxLocals
       def getLocal(size: Int) = {
@@ -420,7 +420,9 @@ abstract class BoxUnbox {
 
       method.maxLocals = nextLocal
       method.maxStack += maxStackGrowth
-      toInsertBefore.nonEmpty || toReplace.nonEmpty || toDelete.nonEmpty
+      val changed = toInsertBefore.nonEmpty || toReplace.nonEmpty || toDelete.nonEmpty
+      if (changed) analyzerCache.invalidate(method)
+      changed
     }
   }
 

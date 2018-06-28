@@ -16,7 +16,7 @@ import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.{AsmAnalyzer, BackendUtils}
+import scala.tools.nsc.backend.jvm.analysis.{BackendUtils, BasicAnalyzer}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class Inliner {
@@ -480,7 +480,7 @@ abstract class Inliner {
     // of the values on the stack.
     // We don't need to worry about the method being too large for running an analysis. Callsites of
     // large methods are not added to the call graph.
-    val analyzer = new AsmAnalyzer(callee, calleeDeclarationClass.internalName)
+    val analyzer = analyzerCache.getAny(callee, calleeDeclarationClass.internalName)
 
     for (originalReturn <- callee.instructions.iterator.asScala if isReturn(originalReturn)) {
       val frame = analyzer.frameAt(originalReturn)
@@ -593,6 +593,7 @@ abstract class Inliner {
 
     // Inlining a method body can render some code unreachable, see example above in this method.
     BackendUtils.clearDceDone(callsiteMethod)
+    analyzerCache.invalidate(callsiteMethod)
   }
 
   /**

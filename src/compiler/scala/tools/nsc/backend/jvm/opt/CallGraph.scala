@@ -25,7 +25,6 @@ abstract class CallGraph {
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._
-  import backendUtils._
   import frontendAccess.{compilerSettings, recordPerRunCache}
 
   /**
@@ -126,9 +125,11 @@ abstract class CallGraph {
 
       val analyzer = {
         if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(new NullnessAnalyzer(methodNode, definingClass.internalName, backendUtils.isNonNullMethodInvocation))
+          Some(
+            backendUtils.analyzerCache.get[NullnessAnalyzer](methodNode)(
+              new NullnessAnalyzer(methodNode, definingClass.internalName, backendUtils.isNonNullMethodInvocation)))
         } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName))
+          Some(backendUtils.analyzerCache.getAny(methodNode, definingClass.internalName))
         } else None
       }
 
@@ -146,7 +147,7 @@ abstract class CallGraph {
         var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
         // lazy so it is only computed if actually used by computeArgInfos
-        lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
+        lazy val prodCons = backendUtils.analyzerCache.get[ProdConsAnalyzer](methodNode)(new ProdConsAnalyzer(methodNode, definingClass.internalName))
 
         methodNode.instructions.iterator.asScala foreach {
           case call: MethodInsnNode if a.frameAt(call) != null => // skips over unreachable code

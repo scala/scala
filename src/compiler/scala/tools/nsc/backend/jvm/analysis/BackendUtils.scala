@@ -3,14 +3,17 @@ package backend.jvm
 package analysis
 
 import java.lang.invoke.LambdaMetafactory
+import java.lang.ref.SoftReference
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.reflect.ClassTag
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
+import scala.tools.asm.tree.analysis.Value
 import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
@@ -44,8 +47,53 @@ abstract class BackendUtils extends PerRunInit {
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
    */
-  private val indyLambdaImplMethods: ConcurrentHashMap[InternalName, mutable.LinkedHashSet[asm.Handle]] = recordPerRunJavaMapCache{
-    new ConcurrentHashMap[InternalName, mutable.LinkedHashSet[asm.Handle]]
+  private val indyLambdaImplMethods: ConcurrentHashMap[InternalName, mutable.LinkedHashSet[asm.Handle]] =
+    recordPerRunJavaMapCache(new ConcurrentHashMap)
+
+  object analyzerCache {
+    // TODO: remove keys where the soft references are empty
+    private val cache: ConcurrentHashMap[MethodNode, SoftReference[mutable.Set[AsmAnalyzer[_]]]] =
+      recordPerRunJavaMapCache(new ConcurrentHashMap)
+
+    private def getImpl[A <: AsmAnalyzer[_]](methodNode: MethodNode, filter: AsmAnalyzer[_] => Boolean, constr: => A): A = {
+      var as: mutable.Set[AsmAnalyzer[_]] = null
+      cache.compute(methodNode, (_, ref) => {
+        if (ref == null) {
+          as = mutable.Set.empty // keep a live reference to the set
+          new SoftReference(as)
+        } else {
+          as = ref.get()
+          if (as == null) {
+            as = mutable.Set.empty
+            new SoftReference(as)
+          } else ref
+        }
+      })
+      as.synchronized {
+        as.find(filter) match {
+          case Some(a) =>
+            println(s"Re-using $a for ${methodNode.name}")
+            a.asInstanceOf[A]
+          case _ =>
+            val a = constr
+            as += a
+            a
+        }
+      }
+    }
+
+    def get[A <: AsmAnalyzer[_] : ClassTag](methodNode: MethodNode)(constr: => A): A = {
+      val c = implicitly[ClassTag[A]].runtimeClass
+      getImpl[A](methodNode, _.getClass == c, constr)
+    }
+
+    def getAny(methodNode: MethodNode, classInternalName: InternalName): AsmAnalyzer[_ <: Value] = {
+      getImpl(methodNode, _ => true, new BasicAnalyzer(methodNode, classInternalName))
+    }
+
+    def invalidate(methodNode: MethodNode): Unit = {
+      cache.remove(methodNode)
+    }
   }
 
   // unused objects created by these constructors are eliminated by pushPop
@@ -334,7 +382,7 @@ abstract class BackendUtils extends PerRunInit {
     }
 
   def onIndyLambdaImplMethod[T](hostClass: InternalName) (action: mutable.LinkedHashSet[asm.Handle] => T): T ={
-    val methods = indyLambdaImplMethods.computeIfAbsent(hostClass, (_) => mutable.LinkedHashSet[asm.Handle]())
+    val methods = indyLambdaImplMethods.computeIfAbsent(hostClass, _ => mutable.LinkedHashSet[asm.Handle]())
 
     methods.synchronized (action(methods))
   }
