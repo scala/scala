@@ -55,19 +55,6 @@ val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionPr
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
 val antDep            = "org.apache.ant"         % "ant"             % "1.9.4"
 
-val partestDependencies =  Seq(
-  "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
-  "enums"       -> "981392dbd1f727b152cd1c908c5fce60ad9d07f7",
-  "genericNest" -> "b1ec8a095cec4902b3609d74d274c04365c59c04",
-  "jsoup-1.3.1" -> "346d3dff4088839d6b4d163efa2892124039d216",
-  "macro210"    -> "3794ec22d9b27f2b179bd34e9b46db771b934ec3",
-  "methvsfield" -> "be8454d5e7751b063ade201c225dcedefd252775",
-  "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
-).map(bootstrapDep("test/files/lib")) ++ Seq(
-  bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test",
-  bootstrapDep("test/files/speclib")("instrumented" -> "1b11ac773055c1e942c6b5eb4aabdf02292a7194") % "test"
-)
-
 /** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
   * can be used to compare the output of the sbt and Ant builds during the transition period. Any
   * real publishing should be done with sbt's standard `publish` task. */
@@ -641,6 +628,48 @@ lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-
     unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
 
+// An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
+lazy val specLib = project.in(file("test") / "instrumented")
+  .dependsOn(library, reflect, compiler)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    sourceGenerators in Compile += Def.task {
+      import scala.collection.JavaConverters._
+      val srcBase = (sourceDirectories in Compile in library).value.head / "scala/runtime"
+      val targetBase = (sourceManaged in Compile).value / "scala/runtime"
+      def patch(srcFile: String, patchFile: String): File = try {
+        val patchLines: List[String] = IO.readLines(baseDirectory.value / patchFile)
+        val origLines: List[String] = IO.readLines(srcBase / srcFile)
+        import difflib.DiffUtils
+        val p = DiffUtils.parseUnifiedDiff(patchLines.asJava)
+        val r = DiffUtils.patch(origLines.asJava, p)
+        val target = targetBase / srcFile
+        val patched = r.asScala.toList
+        IO.writeLines(target, patched)
+        if (patched == origLines) {
+          println(p)
+          println(patchLines.mkString("\n"))
+          println(origLines.mkString("\n"))
+          throw new RuntimeException("Patch did not apply any changes! " + baseDirectory.value / patchFile + " / " + (srcBase / srcFile))
+        }
+
+        target
+      } catch { case ex: Exception =>
+        streams.value.log.error(s"Error patching $srcFile: $ex")
+        throw ex
+      }
+      IO.createDirectory(targetBase)
+      Seq(
+        patch("BoxesRunTime.java", "boxes.patch"),
+        patch("ScalaRunTime.scala", "srt.patch")
+      )
+    }.taskValue
+  )
+
+
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
   .settings(clearSourceAndResourceDirectories)
@@ -760,7 +789,6 @@ lazy val test = project
   .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
-    libraryDependencies ++= partestDependencies,
     // no main sources
     sources in Compile := Seq.empty,
     // test sources are compiled in partest run, not here
@@ -773,12 +801,14 @@ lazy val test = project
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
-    testOptions in IntegrationTest += Tests.Setup { () =>
+    testOptions in IntegrationTest += {
       val cp = (dependencyClasspath in Test).value
       val baseDir = (baseDirectory in ThisBuild).value
-      // Copy code.jar and instrumented.jar (resolved in the otherwise unused scope "test") to the location where partest expects them
-      copyBootstrapJar(cp, baseDir, "test/files/codelib", "code")
-      copyBootstrapJar(cp, baseDir, "test/files/speclib", "instrumented")
+      val instrumentedJar = (packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2
+      Tests.Setup { () =>
+        // Copy instrumented.jar (from specLib)to the location where partest expects it.
+        IO.copyFile(instrumentedJar, baseDir / "test/files/speclib/instrumented.jar")
+      }
     },
     definedTests in IntegrationTest += new sbt.TestDefinition(
       "partest",

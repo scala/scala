@@ -1,10 +1,22 @@
-8a9,10
-> /* INSTRUMENTED VERSION */
-> 
-68a71,72
->   var arrayApplyCount = 0
-> 
-70a75
->     arrayApplyCount += 1
-87a93
->     arrayApplyCount += 1
+--- /Users/jz/code/scala/src/library/scala/runtime/ScalaRunTime.scala	2019-03-27 11:05:28.000000000 +1000
++++ /Users/jz/code/scala/target/specLib/src_managed/main/scala/runtime/ScalaRunTime.scala	2019-03-27 11:38:17.000000000 +1000
+@@ -28,2 +28,4 @@
+  */
++/* INSTRUMENTED VERSION */
++
+ object ScalaRunTime {
+@@ -56,2 +58,3 @@
+   def array_apply(xs: AnyRef, idx: Int): Any = {
++    arrayApplyCount += 1
+     xs match {
+@@ -70,2 +73,3 @@
+   }
++  var arrayApplyCount = 0
+
+@@ -73,2 +77,3 @@
+   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
++    arrayUpdateCount += 1
+     xs match {
+@@ -87,2 +92,3 @@
+   }
++  var arrayUpdateCount = 0

@@ -69,57 +69,57 @@ public class Main {
 }
 */
 object Test4 {
-  import test.SourceAnnotation // defined in SourceAnnotation.java
-  @SourceAnnotation(value = "http://scala-lang.org",
+  import test.SourceAnnotation_1
+  @SourceAnnotation_1(value = "http://scala-lang.org",
                     mails = Array("scala@lists.epfl.ch", "scala-lounge@lists.epfl.ch"))
   class Foo1
-  @SourceAnnotation(value = "http://bloodsuckers.com",
+  @SourceAnnotation_1(value = "http://bloodsuckers.com",
                     mails = Array("you@bloodsuckers.com"))
   class Foo2
-  @SourceAnnotation("http://bloodsuckers.com")
+  @SourceAnnotation_1("http://bloodsuckers.com")
   class Foo3
   class Foo4 {
-    @SourceAnnotation("file:///dev/null")
+    @SourceAnnotation_1("file:///dev/null")
     val x = 1
   }
   class Foo5 {
-    @SourceAnnotation("file:///dev/zero")
+    @SourceAnnotation_1("file:///dev/zero")
     def bar: Int = 0
   }
-  class Foo6 @SourceAnnotation("primary constructor") (s: String) {
+  class Foo6 @SourceAnnotation_1("primary constructor") (s: String) {
     // to guarantee that primary constructor annotations
     // are not applied to secondary constructors
     def this() = this("")
   }
   class Foo7(s: String) {
-    @SourceAnnotation("secondary constructor")
+    @SourceAnnotation_1("secondary constructor")
     def this() = this("")
   }
-  class Foo8(@SourceAnnotation("constructor val") val n: Int) {}
+  class Foo8(@SourceAnnotation_1("constructor val") val n: Int) {}
   class Foo9 {
     import scala.annotation.meta._
     import scala.beans.BeanProperty
-    @(SourceAnnotation @getter)("http://apple.com") val x = 0
-    @BeanProperty @(SourceAnnotation @beanSetter)("http://uppla.com") var y = 0
+    @(SourceAnnotation_1 @getter)("http://apple.com") val x = 0
+    @BeanProperty @(SourceAnnotation_1 @beanSetter)("http://uppla.com") var y = 0
 
-    type myAnn = SourceAnnotation @beanGetter @field
+    type myAnn = SourceAnnotation_1 @beanGetter @field
     @BeanProperty @myAnn("http://eppli.com") var z = 0
 
-    type myAnn2[T] = SourceAnnotation @beanGetter @field
+    type myAnn2[T] = SourceAnnotation_1 @beanGetter @field
     @BeanProperty @myAnn2[String]("http://eppli.com") var z2 = 0
 
-    type myAnn3[CC[_]] = SourceAnnotation @beanGetter @field
+    type myAnn3[CC[_]] = SourceAnnotation_1 @beanGetter @field
     @BeanProperty @myAnn3[List]("http://eppli.com") var z3 = 0
   }
-  class Foo10(@SourceAnnotation("on param 1") val name: String)
-  class Foo11(@(SourceAnnotation @scala.annotation.meta.field)("on param 2") val name: String)
-  class Foo12(@(SourceAnnotation @scala.annotation.meta.setter)("on param 3") var name: String)
+  class Foo10(@SourceAnnotation_1("on param 1") val name: String)
+  class Foo11(@(SourceAnnotation_1 @scala.annotation.meta.field)("on param 2") val name: String)
+  class Foo12(@(SourceAnnotation_1 @scala.annotation.meta.setter)("on param 3") var name: String)
   def run {
     import java.lang.annotation.Annotation
     import java.lang.reflect.AnnotatedElement
     def printSourceAnnotation(a: Annotation) {
-      val ann = a.asInstanceOf[SourceAnnotation]
-      println("@test.SourceAnnotation(mails=" + ann.mails.deep.mkString("{", ",", "}") +
+      val ann = a.asInstanceOf[SourceAnnotation_1]
+      println("@test.SourceAnnotation_1(mails=" + ann.mails.deep.mkString("{", ",", "}") +
               ", value=" + ann.value + ")")
     }
     def printSourceAnnotations(target: AnnotatedElement) {
