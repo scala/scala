@@ -521,7 +521,7 @@ final class StringOps(private val s: String) extends AnyVal {
     while(i < len) {
       if(i != 0) b.append(sep)
       b.append(s.charAt(i))
-      i += i
+      i += 1
     }
     b.append(end)
     b
