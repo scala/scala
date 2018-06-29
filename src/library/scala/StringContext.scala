@@ -55,6 +55,10 @@ case class StringContext(parts: String*) {
 
   import StringContext._
 
+  @deprecated("use same-named method on StringContext companion object", "2.13.0")
+  def checkLengths(args: scala.collection.Seq[Any]): Unit =
+    StringContext.checkLengths(args, parts)
+
   /** The simple string interpolator.
    *
    *  It inserts its arguments between corresponding parts of the string context.
@@ -223,7 +227,7 @@ object StringContext {
   }
 
   private def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
-    checkLengths(args, parts)
+    StringContext.checkLengths(args, parts)
     val pi = parts.iterator
     val ai = args.iterator
     val bldr = new JLSBuilder(process(pi.next()))
@@ -239,7 +243,7 @@ object StringContext {
    *
    *  @throws IllegalArgumentException  if this is not the case.
    */
-  private def checkLengths(args: scala.collection.Seq[Any], parts: Seq[String]): Unit =
+  def checkLengths(args: scala.collection.Seq[Any], parts: Seq[String]): Unit =
     if (parts.length != args.length + 1)
       throw new IllegalArgumentException("wrong number of arguments ("+ args.length
         +") for interpolated string with "+ parts.length +" parts")
