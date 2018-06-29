@@ -3,7 +3,7 @@ package backend.jvm
 package opt
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -414,7 +414,7 @@ class InlinerTest extends BytecodeTesting {
     assert(ins contains invokeFlop, ins.stringLines)
   }
 
-  @Test
+  @Test @Ignore
   def inlineFromTraits(): Unit = {
     val code =
       """trait T {
@@ -433,7 +433,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t2"))
   }
 
-  @Test
+  @Test @Ignore
   def inlineTraitInherited(): Unit = {
     val code =
       """trait T {
@@ -485,7 +485,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t1"))
   }
 
-  @Test
+  @Test @Ignore
   def inlineFromObject(): Unit = {
     val code =
       """trait T {
@@ -540,7 +540,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t2"))
   }
 
-  @Test
+  @Test @Ignore
   def selfTypeInline2(): Unit = {
     // There are some interesting things going on here with the self types. Here's a short version:
     //
@@ -643,7 +643,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(t, "t1"))
   }
 
-  @Test
+  @Test @Ignore
   def inlineFromNestedClasses(): Unit = {
     val code =
       """class C {
@@ -938,7 +938,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(t2, "M$", "$anonfun$m$1")
   }
 
-  @Test
+  @Test @Ignore
   def inlinePostRequests(): Unit = {
     val code =
       """class C {
@@ -967,7 +967,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
   }
 
-  @Test
+  @Test @Ignore
   def postRequestSkipAlreadyInlined(): Unit = {
     val code =
       """class C {
@@ -1461,7 +1461,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "f"), "T2", "f$")
   }
 
-  @Test
+  @Test @Ignore
   def sd140(): Unit = {
     val code =
       """trait T { @inline def f = 0 }
@@ -1558,7 +1558,7 @@ class InlinerTest extends BytecodeTesting {
       Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Label(7), LineNumber(14, Label(7)), Op(IRETURN), Label(10)))
   }
 
-  @Test
+  @Test @Ignore
   def traitHO(): Unit = {
     val code =
       """trait T {
@@ -1610,7 +1610,7 @@ class InlinerTest extends BytecodeTesting {
       ("oneLastMethodWithVeryVery_yetAnotherMethodWithVeryV_oneMoreMethodWithVeryVery_anotherMethodWithVeryVery_methodWithVeryVeryLongNam_param",11)))
   }
 
-  @Test
+  @Test @Ignore
   def sd259(): Unit = {
     // - trait methods are not inlined into their static super accessors, and also not into mixin forwarders.
     // - inlining an invocation of a mixin forwarder also inlines the static accessor and the trait method body.
@@ -1726,7 +1726,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "t"), "T", "m$")
   }
 
-  @Test
+  @Test @Ignore
   def sd259d(): Unit = {
     val code =
       """trait T {

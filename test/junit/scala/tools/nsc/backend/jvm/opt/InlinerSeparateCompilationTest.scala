@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -12,7 +12,7 @@ import scala.tools.testing.BytecodeTesting._
 class InlinerSeparateCompilationTest {
   val args = "-opt:l:inline -opt-inline-from:**"
 
-  @Test
+  @Test @Ignore
   def inlineMixedinMember(): Unit = {
     val codeA =
       """trait T {
@@ -56,7 +56,7 @@ class InlinerSeparateCompilationTest {
     assertNoInvoke(getMethod(c, "t1"))
   }
 
-  @Test
+  @Test @Ignore
   def inlineInheritedMember(): Unit = {
     val codeA =
       """trait T {
