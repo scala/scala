@@ -28,11 +28,12 @@ trait Seq[+A]
     */
   def canEqual(that: Any): Boolean = true
 
-  override def equals(o: scala.Any): Boolean =
+  override def equals(o: scala.Any): Boolean = this.eq(o.asInstanceOf[AnyRef]) || (
     o match {
-      case it: Seq[A] => (this eq it) || (it canEqual this) && sameElements(it)
+      case it: Seq[A] => (it canEqual this) && sameElements(it)
       case _ => false
     }
+  )
 
   override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
 
