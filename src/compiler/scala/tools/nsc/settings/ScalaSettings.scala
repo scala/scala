@@ -353,6 +353,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
+  def optUseAnalyzerCache        = opt.isSetByUser && !optNone && (optBuildCallGraph || opt.value.size > 1)
 
   val optInlineFrom = MultiStringSetting(
     "-opt-inline-from",

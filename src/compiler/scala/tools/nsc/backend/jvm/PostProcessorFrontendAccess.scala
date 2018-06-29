@@ -53,6 +53,7 @@ object PostProcessorFrontendAccess {
 
     def optAddToBytecodeRepository: Boolean
     def optBuildCallGraph: Boolean
+    def optUseAnalyzerCache: Boolean
 
     def optNone: Boolean
     def optLClasspath: Boolean
@@ -173,6 +174,7 @@ object PostProcessorFrontendAccess {
 
       val optAddToBytecodeRepository: Boolean = s.optAddToBytecodeRepository
       val optBuildCallGraph: Boolean = s.optBuildCallGraph
+      val optUseAnalyzerCache: Boolean = s.optUseAnalyzerCache
 
       val optNone: Boolean = s.optNone
       val optLClasspath: Boolean = s.optLClasspath
