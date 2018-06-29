@@ -85,16 +85,13 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     else new PathResolver(settings).resultAsURLs  // the compiler's classpath
     )
 
-
   // Run the code body with the given boolean settings flipped to true.
-  def withoutWarnings[T](body: => T): T = reporter.withoutPrintingResults {
-    val saved = settings.nowarn.value
-    if (!saved)
-      settings.nowarn.value = true
+  def withoutWarnings[T](body: => T): T =
+    reporter.withoutPrintingResults(IMain.withSuppressedSettings(settings, global)(body))
 
-    try body
-    finally if (!saved) settings.nowarn.value = false
-  }
+  def withSuppressedSettings(body: => Unit): Unit =
+    IMain.withSuppressedSettings(settings, global)(body)
+
   // Apply a temporary label for compilation (for example, script name)
   override def withLabel[A](temp: String)(body: => A): A = {
     val saved = label
@@ -137,10 +134,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val compiler = new Global(compilerSettings, startupReporter) with ReplGlobal
 
     try {
-      // if this crashes, REPL will hang its head in shame
       val run = new compiler.Run()
       assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
-      run compileSources List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+      IMain.withSuppressedSettings(compilerSettings, compiler) {
+        run compileSources List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+      }
 
       // there shouldn't be any errors yet; just in case, print them if we're debugging
       if (reporter.isDebug)
@@ -1298,16 +1296,37 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
 /** Utility methods for the Interpreter. */
 object IMain {
-  /** Dummy identifier fragment inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
+  /** Dummy identifier fragment inserted at the cursor before presentation compilation.
+   *  Needed to support completion of `global.def<TAB>`.
+   */
   final val DummyCursorFragment = "_CURSOR_"
 
-  // The two name forms this is catching are the two sides of this assignment:
-  //
-  // $line3.$read.$iw.$iw.Bippy =
-  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-//  private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
-//  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
-//  def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
-
+  /** Temporarily suppress some noisy settings.
+   */
+  private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
+    import settings.{reporter => _, _}
+    val wasWarning = !nowarn
+    val noisy = List(Xprint, Ytyperdebug, browse)
+    val current = (Xprint.value, Ytyperdebug.value, browse.value)
+    val noisesome = wasWarning || noisy.exists(!_.isDefault)
+    if (/*isDebug ||*/ !noisesome) body
+    else {
+      Xprint.value = List.empty
+      browse.value = List.empty
+      Ytyperdebug.value = false
+      if (wasWarning) nowarn.value = true
+      try body
+      finally {
+        Xprint.value       = current._1
+        Ytyperdebug.value  = current._2
+        browse.value       = current._3
+        if (wasWarning) nowarn.value = false
+        // ctl-D in repl can result in no compiler
+        val g = global
+        if (g != null) {
+          g.printTypings = current._2
+        }
+      }
+    }
+  }
 }
-

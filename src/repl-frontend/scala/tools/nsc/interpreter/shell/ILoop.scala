@@ -977,7 +977,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     val firstLine =
       SplashLoop.readLine(in, prompt) {
         if (intp eq null) createInterpreter(interpreterSettings)
-        intp.reporter.withoutPrintingResults {
+        intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
           intp.initializeCompiler()
           interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
@@ -994,7 +994,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           if (doCompletion)
             in.initCompletion(newCompleter())
 
-        }
+        })
       }.orNull // null is used by readLine to signal EOF (`loop` will exit)
 
     // start full loop (if initialization was successful)

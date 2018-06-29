@@ -181,6 +181,10 @@ trait Repl extends ReplCore {
 
   // Used in a test case.
   def valueOfTerm(id: String): Option[Any]
+
+  // like beQuietDuring, but also turn off noisy settings.
+  // this requires access to both settings and the global compiler
+  def withSuppressedSettings(body: => Unit): Unit
 }
 
 /**
