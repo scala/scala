@@ -1202,6 +1202,7 @@ trait Namers extends MethodSynthesis {
         }
         cda.companionModuleClassNamer = templateNamer
       }
+
       val classTp = ClassInfoType(parents, decls, clazz)
       templateNamer.expandMacroAnnotations(templ.body)
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)

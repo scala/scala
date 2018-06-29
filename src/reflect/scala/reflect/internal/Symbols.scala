@@ -118,6 +118,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def isJavaEnum: Boolean = hasJavaEnumFlag
     def isJavaAnnotation: Boolean = hasJavaAnnotationFlag
+    def isStaticAnnotation: Boolean =
+      hasJavaAnnotationFlag || isNonBottomSubClass(StaticAnnotationClass)
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)

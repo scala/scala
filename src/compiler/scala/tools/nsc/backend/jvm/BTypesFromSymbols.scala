@@ -207,16 +207,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
 
-    // scala/bug#9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
-    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
 
-    val classParents = {
-      val parents = classSym.info.parents
-      // scala/bug#9393: the classfile / java source parsers add Annotation and StaticAnnotation to the
-      // parents of a java annotations. undo this for the backend (where we need classfile-level information).
-      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == StaticAnnotationClass || c.typeSymbol == AnnotationClass)
-      else parents
-    }
+    val classParents = classSym.info.parents
 
     val minimizedParents = if (classSym.isJavaDefined) classParents else erasure.minimizeParents(classSym, classParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.

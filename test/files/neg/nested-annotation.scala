@@ -1,6 +1,6 @@
 import annotation._
 
-class ComplexAnnotation(val value: Annotation) extends ConstantAnnotation
+class ComplexAnnotation(val value: Any) extends ConstantAnnotation
 
 class A {
   // It's hard to induce this error because @ComplexAnnotation(@inline) is a parse
