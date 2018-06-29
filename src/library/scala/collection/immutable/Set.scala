@@ -249,11 +249,6 @@ object Set extends IterableFactory[Set] {
     private[immutable] def buildTo(builder: Builder[A, Set[A]]): builder.type =
       builder.addOne(elem1).addOne(elem2).addOne(elem3).addOne(elem4)
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */

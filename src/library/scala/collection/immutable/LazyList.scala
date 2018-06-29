@@ -869,11 +869,6 @@ object LazyList extends SeqFactory[LazyList] {
 
   def newBuilder[A]: Builder[A, LazyList[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
 
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
-
   /** This serialization proxy is used for LazyLists which start with a sequence of evaluated cons cells.
     * The forced sequence is serialized in a compact, sequential format, followed by the unevaluated tail, which uses
     * standard Java serialization to store the complete structure of unevaluated thunks. This allows the serialization

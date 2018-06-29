@@ -582,6 +582,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NoneModule: ModuleSymbol   = requiredModule[scala.None.type]
     lazy val SomeModule: ModuleSymbol   = requiredModule[scala.Some.type]
 
+    // Serialization
+    lazy val ModuleSerializationProxyClass: ClassSymbol = requiredClass[scala.runtime.ModuleSerializationProxy]
+
     def compilerTypeFromTag(tt: ApiUniverse # WeakTypeTag[_]): Type = tt.in(rootMirror).tpe
     def compilerSymbolFromTag(tt: ApiUniverse # WeakTypeTag[_]): Symbol = tt.in(rootMirror).tpe.typeSymbol
 

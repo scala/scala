@@ -603,9 +603,4 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     require(size >= 0, s"ArrayDeque too big - cannot allocate ArrayDeque of length $len")
     new Array[AnyRef](Math.max(size, DefaultInitialSize))
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

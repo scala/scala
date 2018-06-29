@@ -51,11 +51,6 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
   // Constants governing concat strategy for performance
   private final val Log2ConcatFaster = 5
   private final val TinyAppendFaster = 2
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 // in principle, most members should be private. however, access privileges must
