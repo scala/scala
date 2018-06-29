@@ -63,33 +63,38 @@ abstract class BackendUtils extends PerRunInit {
     recordPerRunJavaMapCache(new ConcurrentHashMap)
 
   object analyzerCache {
-    // TODO: remove keys where the soft references are empty
+    val enabled: LazyVar[Boolean] = perRunLazy(BackendUtils.this)(compilerSettings.optUseAnalyzerCache)
+
+    // TODO: should remove keys where the soft references are empty
     private val cache: ConcurrentHashMap[MethodNode, SoftReference[mutable.Set[AsmAnalyzer[_]]]] =
       recordPerRunJavaMapCache(new ConcurrentHashMap)
 
     private def getImpl[A <: AsmAnalyzer[_]](methodNode: MethodNode, filter: AsmAnalyzer[_] => Boolean, constr: => A): A = {
-      var as: mutable.Set[AsmAnalyzer[_]] = null
-      cache.compute(methodNode, (_, ref) => {
-        if (ref == null) {
-          as = mutable.Set.empty // keep a live reference to the set
-          new SoftReference(as)
-        } else {
-          as = ref.get()
-          if (as == null) {
-            as = mutable.Set.empty
+      if (!enabled.get) constr
+      else {
+        var as: mutable.Set[AsmAnalyzer[_]] = null
+        cache.compute(methodNode, (_, ref) => {
+          if (ref == null) {
+            as = mutable.Set.empty // keep a live reference to the set
             new SoftReference(as)
-          } else ref
-        }
-      })
-      as.synchronized {
-        as.find(filter) match {
-          case Some(a) =>
-            println(s"Re-using $a for ${methodNode.name}")
-            a.asInstanceOf[A]
-          case _ =>
-            val a = constr
-            as += a
-            a
+          } else {
+            as = ref.get()
+            if (as == null) {
+              as = mutable.Set.empty
+              new SoftReference(as)
+            } else ref
+          }
+        })
+        as.synchronized {
+          as.find(filter) match {
+            case Some(a) =>
+              println(s"Re-using $a for ${methodNode.name}")
+              a.asInstanceOf[A]
+            case _ =>
+              val a = constr
+              as += a
+              a
+          }
         }
       }
     }
@@ -104,7 +109,7 @@ abstract class BackendUtils extends PerRunInit {
     }
 
     def invalidate(methodNode: MethodNode): Unit = {
-      cache.remove(methodNode)
+      if (enabled.get) cache.remove(methodNode)
     }
   }
 
