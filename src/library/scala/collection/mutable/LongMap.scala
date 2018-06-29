@@ -405,7 +405,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
-  // TODO override these for efficiency. See immutable.LongMap for how to organize the code.
+  // TODO PERF override these for efficiency. See immutable.LongMap for how to organize the code.
   override def keysIterator: Iterator[Long] = super.keysIterator
   override def valuesIterator: Iterator[V] = super.valuesIterator
 
