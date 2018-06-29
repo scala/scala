@@ -375,6 +375,10 @@ abstract class LocalOpt {
       r
     } else (false, false)
 
+    // Remove the method from the cache. Analyzers are no longer needed once local optimizations
+    // are done. The cleanup steps below don't use analyzers.
+    analyzerCache.invalidate(method)
+
     // (*) Removing stale local variable descriptors is required for correctness, see comment in `methodOptimizations`
     val localsRemoved =
       if (compilerSettings.optCompactLocals) compactLocalVariables(method) // also removes unused
