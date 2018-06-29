@@ -57,7 +57,7 @@ abstract class BackendUtils extends PerRunInit {
     private val cache: ConcurrentHashMap[MethodNode, SoftReference[mutable.Set[AsmAnalyzer[_]]]] =
       recordPerRunJavaMapCache(new ConcurrentHashMap)
 
-    private def getImpl[A <: AsmAnalyzer[_]](methodNode: MethodNode, filter: AsmAnalyzer[_] => Boolean, constr: => A): A = {
+    private def getImpl[A <: AsmAnalyzer[_]](methodNode: MethodNode, cond: AsmAnalyzer[_] => Boolean, constr: => A): A = {
       if (!enabled.get) constr
       else {
         var as: mutable.Set[AsmAnalyzer[_]] = null
@@ -74,7 +74,7 @@ abstract class BackendUtils extends PerRunInit {
           }
         })
         as.synchronized {
-          as.find(filter) match {
+          as.find(cond) match {
             case Some(a) =>
               println(s"Re-using $a for ${methodNode.name}")
               a.asInstanceOf[A]
@@ -90,6 +90,10 @@ abstract class BackendUtils extends PerRunInit {
     def get[A <: AsmAnalyzer[_] : ClassTag](methodNode: MethodNode)(constr: => A): A = {
       val c = implicitly[ClassTag[A]].runtimeClass
       getImpl[A](methodNode, _.getClass == c, constr)
+    }
+
+    def getCond(methodNode: MethodNode, cond: AsmAnalyzer[_] => Boolean)(constr: => AsmAnalyzer[_ <: Value]): AsmAnalyzer[_ <: Value] = {
+      getImpl(methodNode, cond, constr)
     }
 
     def getAny(methodNode: MethodNode, classInternalName: InternalName): AsmAnalyzer[_ <: Value] = {

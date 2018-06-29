@@ -6,9 +6,10 @@ import scala.annotation.switch
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.{Analyzer, Value, Frame, Interpreter}
-import opt.BytecodeUtils._
-import AliasSet.SmallBitSet
+import scala.tools.asm.tree.analysis._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.AliasSet.SmallBitSet
+import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
  * A subclass of Frame that tracks aliasing of values stored in local variables and on the stack.
@@ -396,6 +397,13 @@ class AliasingAnalyzer[V <: Value](interpreter: Interpreter[V]) extends Analyzer
   override def newFrame(nLocals: Int, nStack: Int): AliasingFrame[V] = new AliasingFrame(nLocals, nStack)
   override def newFrame(src: Frame[_ <: V]): AliasingFrame[V] = new AliasingFrame(src)
 }
+
+// Marker trait for AsmAnalyzers that use AliasingFrame
+trait AliasingAsmAnalyzerMarker
+
+class BasicAliasingAnalyzer(methodNode: MethodNode, classInternalName: InternalName)
+  extends AsmAnalyzer[BasicValue](methodNode, classInternalName, new AliasingAnalyzer(new BasicInterpreter))
+    with AliasingAsmAnalyzerMarker
 
 /**
  * An iterator over Int (required to prevent boxing the result of next).

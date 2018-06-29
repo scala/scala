@@ -34,8 +34,8 @@ abstract class CopyProp {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
-      // TODO: nullness works here too!!!
-      lazy val aliasAnalysis = analyzerCache.get[BasicAliasingAnalyzer](method)(new BasicAliasingAnalyzer(method, owner))
+      // Re-uses an existing nullness analysis if one exists in the cache.
+      lazy val aliasAnalysis = analyzerCache.getCond(method, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(method, owner))
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
       //
