@@ -270,8 +270,13 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   }
 }
 
-class NullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName, knownNonNullInvocation: MethodInsnNode => Boolean) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer[NullnessValue](new NullnessInterpreter(knownNonNullInvocation, methodNode)) {
+class NullnessAnalyzerImpl(methodNode: MethodNode, knownNonNullInvocation: MethodInsnNode => Boolean)
+  extends Analyzer[NullnessValue](new NullnessInterpreter(knownNonNullInvocation, methodNode)) {
   // override the `newFrame` methods to make sure the analyzer uses NullnessFrames.
   override def newFrame(nLocals: Int, nStack: Int): NullnessFrame = new NullnessFrame(nLocals, nStack)
   override def newFrame(src: Frame[_ <: NullnessValue]): NullnessFrame = new NullnessFrame(src)
-})
+}
+
+class NullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName, knownNonNullInvocation: MethodInsnNode => Boolean)
+  extends AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzerImpl(methodNode, knownNonNullInvocation))
+    with AliasingAsmAnalyzerMarker

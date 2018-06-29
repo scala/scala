@@ -35,8 +35,6 @@ abstract class AsmAnalyzer[V <: Value](methodNode: MethodNode, classInternalName
 
 class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer[BasicValue](methodNode, classInternalName, new Analyzer(new BasicInterpreter))
 
-class BasicAliasingAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer[BasicValue](methodNode, classInternalName, new AliasingAnalyzer(new BasicInterpreter))
-
 /**
  * See the doc comment on package object `analysis` for a discussion on performance.
  */
