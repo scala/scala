@@ -704,11 +704,6 @@ object LazyList extends LazyListFactory[LazyList] {
     } else LazyList.Empty
 
   def empty[A]: LazyList[A] = Empty
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
@@ -878,9 +873,4 @@ object Stream extends LazyListFactory[Stream] {
     } else Stream.Empty
 
   def empty[A]: Stream[A] = Empty
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
