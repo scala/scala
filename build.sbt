@@ -158,7 +158,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     // END: Copy/pasted from SBT
   },
   fork in run := true,
-  //scalacOptions += "-Xlint:-nullary-override,-by-name-right-associative,-inaccessible,_",
+  //scalacOptions += "-Xlint:-nullary-override,-inaccessible,_",
   //scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
