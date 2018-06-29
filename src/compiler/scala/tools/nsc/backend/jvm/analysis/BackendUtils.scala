@@ -76,7 +76,6 @@ abstract class BackendUtils extends PerRunInit {
         as.synchronized {
           as.find(cond) match {
             case Some(a) =>
-              println(s"Re-using $a for ${methodNode.name}")
               a.asInstanceOf[A]
             case _ =>
               val a = constr
