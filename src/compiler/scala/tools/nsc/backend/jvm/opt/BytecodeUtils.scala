@@ -94,18 +94,18 @@ object BytecodeUtils {
 
   def isLoadOrStore(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
-  def isNonVirtualCall(instruction: AbstractInsnNode): Boolean = {
-    val op = instruction.getOpcode
-    op == INVOKESPECIAL || op == INVOKESTATIC
+  def isStaticCall(instruction: AbstractInsnNode): Boolean = {
+    instruction.getOpcode == INVOKESTATIC
   }
 
   def isVirtualCall(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    op == INVOKEVIRTUAL || op == INVOKEINTERFACE
+    // invokespecial
+    op == INVOKESPECIAL || op == INVOKEVIRTUAL || op == INVOKEINTERFACE
   }
 
   def isCall(instruction: AbstractInsnNode): Boolean = {
-    isNonVirtualCall(instruction) || isVirtualCall(instruction)
+    isStaticCall(instruction) || isVirtualCall(instruction)
   }
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0

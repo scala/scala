@@ -64,7 +64,7 @@ abstract class InlinerHeuristics extends PerRunInit {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
         case callsite @ Callsite(_, _, _, Right(Callee(callee, _, _, _, _, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
-          inlineRequest(callsite, requests) match {
+          inlineRequest(callsite) match {
             case Some(Right(req)) => requests += req
 
             case Some(Left(w)) =>
@@ -141,7 +141,7 @@ abstract class InlinerHeuristics extends PerRunInit {
    *           InlineRequest for the original callsite? new subclass of OptimizerWarning.
    *         `Some(Right)` if the callsite should be and can be inlined
    */
-  def inlineRequest(callsite: Callsite, selectedRequestsForCallee: Set[InlineRequest]): Option[Either[OptimizerWarning, InlineRequest]] = {
+  def inlineRequest(callsite: Callsite): Option[Either[OptimizerWarning, InlineRequest]] = {
     def requestIfCanInline(callsite: Callsite, reason: String): Option[Either[OptimizerWarning, InlineRequest]] = {
       val callee = callsite.callee.get
       if (!callee.safeToInline) {

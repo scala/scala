@@ -163,7 +163,7 @@ abstract class CallGraph {
               (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
             } yield {
               val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-              val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath)
+              val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath, definingClass)
               import info._
               Callee(
                 callee = method,
@@ -295,7 +295,7 @@ abstract class CallGraph {
   /**
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
    */
-  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, calleeSourceFilePath: Option[String]): CallsiteInfo = {
+  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, calleeSourceFilePath: Option[String], callsiteClass: ClassBType): CallsiteInfo = {
     val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
 
     try {
@@ -304,12 +304,16 @@ abstract class CallGraph {
       // callee, we only check there for the methodInlineInfo, we should find it there.
       calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
         case Some(methodInlineInfo) =>
-
           val receiverType = classBTypeFromParsedClassfile(call.owner)
-          // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
+          // (1) Special case for trait super accessors. trait T { def f = 1 } generates a static
+          // method t$ which calls `invokespecial T.f`. Even if `f` is not final, this call will
+          // always resolve to `T.f`. This is a (very) special case. Otherwise, `invokespecial`
+          // is only used for private methods, constructors and super calls.
+          //
+          // (2) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
           //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
           //
-          // TODO: (1) doesn't cover the following example:
+          // TODO: (2) doesn't cover the following example:
           //   trait TravLike { def map = ... }
           //   sealed trait List extends TravLike { ... } // assume map is not overridden
           //   final case class :: / final case object Nil
@@ -323,9 +327,10 @@ abstract class CallGraph {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
-            isNonVirtualCall(call) || // scala/scala-dev#86: super calls (invokespecial) can be inlined -- TODO: check if that's still needed, and if it's correct: scala-dev#143
-            methodInlineInfo.effectivelyFinal ||
-              receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
+            isStaticCall(call) ||
+              (call.getOpcode == Opcodes.INVOKESPECIAL && receiverType == callsiteClass) || // (1)
+              methodInlineInfo.effectivelyFinal ||
+              receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (2)
           }
 
           val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
