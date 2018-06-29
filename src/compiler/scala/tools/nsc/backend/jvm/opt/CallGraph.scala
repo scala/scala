@@ -12,8 +12,8 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.IntMap
 import scala.collection.{concurrent, mutable}
 import scala.reflect.internal.util.{NoPosition, Position}
-import scala.tools.asm.tree._
-import scala.tools.asm.{Handle, Opcodes, Type}
+import org.objectweb.asm.tree._
+import org.objectweb.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis._

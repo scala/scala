@@ -10,7 +10,7 @@ package jvm
 
 import scala.collection.{immutable, mutable}
 import scala.tools.nsc.symtab._
-import scala.tools.asm
+import org.objectweb.asm
 import GenBCode._
 import BackendReporting._
 
@@ -105,7 +105,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       thisBType         = classBTypeFromSymbol(claszSymbol)
       initModuleInClinit = isCZStaticModule && canAssignModuleInClinit(cd, claszSymbol)
 
-      cnode = new asm.tree.ClassNode()
+      cnode = new ClassNode1()
 
       initJClass(cnode)
 

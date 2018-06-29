@@ -1,5 +1,5 @@
 import p.C
-import scala.tools.asm.Opcodes
+import org.objectweb.asm.Opcodes
 import scala.tools.partest.BytecodeTest
 import scala.tools.partest.ASMConverters._
 

@@ -2,8 +2,8 @@ package scala.tools.nsc.backend.jvm
 
 import scala.annotation.switch
 import scala.collection.JavaConverters._
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{ClassNode, InnerClassNode}
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.{ClassNode, InnerClassNode}
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting.{NoClassBTypeInfoMissingBytecode, NoInlineInfoAttribute}
 import scala.tools.nsc.backend.jvm.opt.{BytecodeUtils, InlineInfoAttribute}

@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.reflect.internal.util.Position
-import scala.tools.asm.tree.{AbstractInsnNode, MethodNode}
+import org.objectweb.asm.tree.{AbstractInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.CompilerSettings
 import scala.util.control.ControlThrowable

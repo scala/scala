@@ -2,7 +2,7 @@ import java.io.{File, FileOutputStream}
 
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.partest._
-import scala.tools.asm
+import org.objectweb.asm
 import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor, Opcodes}
 import Opcodes._
 

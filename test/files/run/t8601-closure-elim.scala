@@ -1,7 +1,7 @@
 import scala.tools.partest.BytecodeTest
 import scala.tools.partest.ASMConverters.instructionsFromMethod
-import scala.tools.asm
-import scala.tools.asm.util._
+import org.objectweb.asm
+import org.objectweb.asm.util._
 import scala.collection.JavaConverters._
 
 object Test extends BytecodeTest {

@@ -1,7 +1,7 @@
 import java.io.{FileOutputStream, FileInputStream}
 
-import scala.tools.asm.{ClassWriter, Opcodes, ClassReader}
-import scala.tools.asm.tree.{InsnNode, ClassNode}
+import org.objectweb.asm.{ClassWriter, Opcodes, ClassReader}
+import org.objectweb.asm.tree.{InsnNode, ClassNode}
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.partest.DirectTest
 import scala.collection.JavaConverters._

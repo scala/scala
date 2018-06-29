@@ -12,9 +12,9 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.internal.util.NoPosition
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.Type
-import scala.tools.asm.tree._
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
@@ -491,7 +491,7 @@ abstract class ClosureOptimizer {
    * Stores a local variable index the opcode offset required for operating on that variable.
    *
    * The xLOAD / xSTORE opcodes are in the following sequence: I, L, F, D, A, so the offset for
-   * a local variable holding a reference (`A`) is 4. See also method `getOpcode` in [[scala.tools.asm.Type]].
+   * a local variable holding a reference (`A`) is 4. See also method `getOpcode` in [[org.objectweb.asm.Type]].
    */
   case class Local(local: Int, opcodeOffset: Int) {
     def size = if (loadOpcode == LLOAD || loadOpcode == DLOAD) 2  else 1

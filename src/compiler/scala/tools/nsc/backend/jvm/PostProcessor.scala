@@ -1,12 +1,14 @@
 package scala.tools.nsc
 package backend.jvm
 
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
-import scala.tools.asm.ClassWriter
-import scala.tools.asm.tree.ClassNode
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.ClassNode
+
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt._
 
@@ -72,9 +74,6 @@ abstract class PostProcessor extends PerRunInit {
     }
 
     if (bytes != null) {
-      if (AsmUtils.traceSerializedClassEnabled && internalName.contains(AsmUtils.traceSerializedClassPattern))
-        AsmUtils.traceClass(bytes)
-
       classfileWriter.write(internalName, bytes, paths)
     }
   }
@@ -127,10 +126,20 @@ abstract class PostProcessor extends PerRunInit {
     backendUtils.addInnerClasses(classNode, backendUtils.collectNestedClasses(classNode))
   }
 
-  def serializeClass(classNode: ClassNode): Array[Byte] = {
-    val cw = new ClassWriterWithBTypeLub(backendUtils.extraProc.get)
+  val classWriter: ThreadLocal[ClassWriter] = new ThreadLocal[ClassWriter] {
+    override def initialValue(): ClassWriter = new ClassWriterWithBTypeLub(backendUtils.extraProc.get)
+  }
+
+  def serializeClass(classNode: ClassNode): ByteBuffer = {
+    val cw = if (java.lang.Boolean.getBoolean("scala.class.writer.reuse")) {
+      val cw1 = classWriter.get
+      cw1.clear()
+      cw1
+    } else {
+      new ClassWriterWithBTypeLub(backendUtils.extraProc.get)
+    }
     classNode.accept(cw)
-    cw.toByteArray
+    cw.toByteBuffer()
   }
 
   /**

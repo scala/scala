@@ -7,7 +7,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.mutable
-import scala.tools.asm.Opcodes._
+import org.objectweb.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.testing.BytecodeTesting

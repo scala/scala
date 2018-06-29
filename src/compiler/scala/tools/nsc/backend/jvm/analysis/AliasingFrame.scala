@@ -4,9 +4,9 @@ package analysis
 
 import scala.annotation.switch
 import scala.collection.mutable
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.{Analyzer, Value, Frame, Interpreter}
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis.{Analyzer, Value, Frame, Interpreter}
 import opt.BytecodeUtils._
 import AliasSet.SmallBitSet
 

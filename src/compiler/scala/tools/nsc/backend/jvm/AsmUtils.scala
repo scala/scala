@@ -8,9 +8,9 @@ package scala.tools.nsc.backend.jvm
 import java.io.{PrintWriter, StringWriter}
 
 import scala.collection.JavaConverters._
-import scala.tools.asm.tree._
-import scala.tools.asm.util._
-import scala.tools.asm.{Attribute, ClassReader, ClassWriter}
+import org.objectweb.asm.tree._
+import org.objectweb.asm.util._
+import org.objectweb.asm.{Attribute, ClassReader, ClassWriter}
 import scala.tools.nsc.backend.jvm.analysis.InitialProducer
 import scala.tools.nsc.backend.jvm.opt.InlineInfoAttributePrototype
 
@@ -66,7 +66,7 @@ object AsmUtils {
   }
 
   def classFromBytes(bytes: Array[Byte]): ClassNode = {
-    val node = new ClassNode()
+    val node = new ClassNode1()
     new ClassReader(bytes).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
 
     node

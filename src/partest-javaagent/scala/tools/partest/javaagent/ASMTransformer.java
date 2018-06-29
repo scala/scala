@@ -8,8 +8,8 @@ package scala.tools.partest.javaagent;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 
-import scala.tools.asm.ClassReader;
-import scala.tools.asm.ClassWriter;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 
 public class ASMTransformer implements ClassFileTransformer {
 

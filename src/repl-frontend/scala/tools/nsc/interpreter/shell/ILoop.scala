@@ -15,7 +15,7 @@ import scala.reflect.classTag
 import scala.reflect.internal.util.ScalaClassLoader._
 import scala.reflect.internal.util.{BatchSourceFile, NoPosition, ScalaClassLoader}
 import scala.reflect.io.{AbstractFile, Directory, File, Path}
-import scala.tools.asm.ClassReader
+import org.objectweb.asm.ClassReader
 import scala.tools.util.PathResolver
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{stackTraceString, stringFromStream}

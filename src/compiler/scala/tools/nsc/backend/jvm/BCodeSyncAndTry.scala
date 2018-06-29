@@ -10,7 +10,7 @@ package backend
 package jvm
 
 import scala.collection.immutable
-import scala.tools.asm
+import org.objectweb.asm
 
 /*
  *

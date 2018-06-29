@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.asm.tree.analysis._
+import org.objectweb.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.analysis.{AliasingAnalyzer, AliasingFrame}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.tools.testing.BytecodeTesting

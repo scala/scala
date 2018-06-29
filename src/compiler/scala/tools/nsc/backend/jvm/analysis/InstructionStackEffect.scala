@@ -3,10 +3,10 @@ package backend.jvm
 package analysis
 
 import scala.annotation.switch
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.Type
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.{Frame, Value}
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis.{Frame, Value}
 import opt.BytecodeUtils._
 
 object InstructionStackEffect {

@@ -10,11 +10,11 @@ package opt
 import scala.annotation.{tailrec, switch}
 
 import scala.reflect.internal.util.Collections._
-import scala.tools.asm.commons.CodeSizeEvaluator
-import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Label, Type}
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
+import org.objectweb.asm.commons.CodeSizeEvaluator
+import org.objectweb.asm.tree.analysis._
+import org.objectweb.asm.{Label, Type}
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.tree._
 import GenBCode._
 import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
@@ -311,7 +311,7 @@ object BytecodeUtils {
    */
   def newLabelNode: LabelNode = {
     val label = new Label
-    val labelNode = new LabelNode(label)
+    val labelNode = new LabelNode1(label)
     label.info = labelNode
     labelNode
   }

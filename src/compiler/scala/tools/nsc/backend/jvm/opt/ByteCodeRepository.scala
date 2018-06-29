@@ -9,9 +9,9 @@ package opt
 
 import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
-import scala.tools.asm
-import scala.tools.asm.Attribute
-import scala.tools.asm.tree._
+import org.objectweb.asm
+import org.objectweb.asm.Attribute
+import org.objectweb.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -246,7 +246,7 @@ abstract class ByteCodeRepository extends PerRunInit {
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
     backendClassPath.findClassFile(fullName) map { classFile =>
-      val classNode = new asm.tree.ClassNode()
+      val classNode = new ClassNode1
       val classReader = new asm.ClassReader(classFile.toByteArray)
 
       // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`

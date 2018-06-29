@@ -5,9 +5,9 @@
 
 package scala.tools.partest.javaagent;
 
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 public class ProfilerVisitor extends ClassVisitor implements Opcodes {
 

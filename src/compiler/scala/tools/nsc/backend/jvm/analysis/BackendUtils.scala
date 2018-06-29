@@ -9,11 +9,11 @@ import scala.collection.mutable
 import scala.collection.JavaConverters._
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.tools.asm
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, LabelAccess, Type}
+import org.objectweb.asm
+import org.objectweb.asm.Opcodes._
+import org.objectweb.asm.tree._
+import org.objectweb.asm.tree.analysis._
+import org.objectweb.asm.{Handle, Label, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -160,7 +160,7 @@ abstract class BackendUtils extends PerRunInit {
     val groups: Array[Array[Handle]] = implMethodsArray.grouped(targetMethodGroupLimit).toArray
     val numGroups = groups.length
 
-    import scala.tools.asm.Label
+    import org.objectweb.asm.Label
     val initialLabels = Array.fill(numGroups - 1)(new Label())
     val terminalLabel = new Label
     def nextLabel(i: Int) = if (i == numGroups - 2) terminalLabel else initialLabels(i + 1)
@@ -587,9 +587,18 @@ object BackendUtils {
   def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
 
   private val LABEL_REACHABLE_STATUS = 0x1000000
-  def isLabelReachable(label: LabelNode) = LabelAccess.isLabelFlagSet(label.getLabel, LABEL_REACHABLE_STATUS)
-  def setLabelReachable(label: LabelNode) = LabelAccess.setLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
-  def clearLabelReachable(label: LabelNode) = LabelAccess.clearLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
+  private def isLabelFlagSet(l: LabelNode1, f: Int): Boolean = (l.flags & f) != 0
+
+  private def setLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags |= f
+  }
+
+  private def clearLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags &= ~f
+  }
+  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]

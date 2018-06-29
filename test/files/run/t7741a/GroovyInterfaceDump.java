@@ -1,12 +1,12 @@
 import java.util.*;
-import scala.tools.asm.*;
+import org.objectweb.asm.*;
 
 // generated with
 //    git clone alewando/scala_groovy_interop
 //    SCALA_HOME=... GROOVY_HOME=... ant
 //    cd /code/scala2
-//    java  -classpath build/asm/classes:/Users/jason/code/scala_groovy_interop/classes:/code/scala2/build/pack/lib/scala-library.jar:/usr/local/Cellar/groovy/2.4.1/libexec/embeddable/groovy-all-2.4.1.jar scala.tools.asm.util.ASMifier 'GroovyInterface$1'
-//    java  -classpath build/asm/classes:/Users/jason/code/scala_groovy_interop/classes:/code/scala2/build/pack/lib/scala-library.jar:/usr/local/Cellar/groovy/2.4.1/libexec/embeddable/groovy-all-2.4.1.jar scala.tools.asm.util.ASMifier 'GroovyInterface$1'
+//    java  -classpath build/asm/classes:/Users/jason/code/scala_groovy_interop/classes:/code/scala2/build/pack/lib/scala-library.jar:/usr/local/Cellar/groovy/2.4.1/libexec/embeddable/groovy-all-2.4.1.jar org.ow2.asm.util.ASMifier 'GroovyInterface$1'
+//    java  -classpath build/asm/classes:/Users/jason/code/scala_groovy_interop/classes:/code/scala2/build/pack/lib/scala-library.jar:/usr/local/Cellar/groovy/2.4.1/libexec/embeddable/groovy-all-2.4.1.jar org.ow2.asm.util.ASMifier 'GroovyInterface$1'
 public class GroovyInterfaceDump implements Opcodes {
 
     public static byte[] dump () throws Exception {

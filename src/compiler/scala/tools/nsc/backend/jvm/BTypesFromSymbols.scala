@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
-import scala.tools.asm
+import org.objectweb.asm
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 

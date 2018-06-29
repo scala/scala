@@ -7,8 +7,10 @@ package scala
 package tools.nsc
 package backend.jvm
 
-import scala.tools.asm
+import org.objectweb.asm
 import BackendReporting._
+import scala.reflect.internal.Flags
+import org.objectweb.asm.{ByteVector, ClassWriter}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
 
@@ -354,9 +356,14 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      * can-multi-thread
      */
     def createJAttribute(name: String, b: Array[Byte], offset: Int, len: Int): asm.Attribute = {
-      val dest = new Array[Byte](len)
-      System.arraycopy(b, offset, dest, 0, len)
-      new asm.CustomAttr(name, dest)
+      new asm.Attribute(name) {
+        override def write(classWriter: ClassWriter, code: Array[Byte],
+                           codeLength: Int, maxStack: Int, maxLocals: Int): asm.ByteVector = {
+          val byteVector = new asm.ByteVector(len)
+          byteVector.putByteArray(b, offset, len)
+          byteVector
+        }
+      }
     }
 
     /*
@@ -661,7 +668,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         // Run the signature parser to catch bogus signatures.
         val isValidSignature = wrap {
           // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
-          import scala.tools.asm.util.CheckClassAdapter
+          import org.objectweb.asm.util.CheckClassAdapter
           if (sym.isMethod)    { CheckClassAdapter checkMethodSignature sig } // requires asm-util.jar
           else if (sym.isTerm) { CheckClassAdapter checkFieldSignature  sig }
           else                 { CheckClassAdapter checkClassSignature  sig }
@@ -871,7 +878,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       assert(moduleClass.companionClass == NoSymbol, moduleClass)
 
       val bType = mirrorClassClassBType(moduleClass)
-      val mirrorClass = new asm.tree.ClassNode
+      val mirrorClass = new ClassNode1
       mirrorClass.visit(
         backendUtils.classfileVersion.get,
         bType.info.get.flags,

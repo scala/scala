@@ -8,8 +8,8 @@ package backend.jvm
 
 import scala.annotation.switch
 import scala.collection.mutable
-import scala.tools.asm
-import scala.tools.asm.tree.MethodInsnNode
+import org.objectweb.asm
+import org.objectweb.asm.tree.MethodInsnNode
 import scala.tools.nsc.backend.jvm.BCodeHelpers.TestOp
 import scala.tools.nsc.backend.jvm.GenBCode._
 

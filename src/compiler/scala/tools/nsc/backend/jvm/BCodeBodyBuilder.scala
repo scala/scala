@@ -8,9 +8,9 @@ package backend.jvm
 
 import scala.annotation.switch
 import scala.reflect.internal.Flags
-import scala.tools.asm
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
+import org.objectweb.asm
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.{MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.GenBCode._

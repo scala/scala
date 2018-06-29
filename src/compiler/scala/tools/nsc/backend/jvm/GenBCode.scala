@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 package jvm
 
-import scala.tools.asm.Opcodes
+import org.objectweb.asm.Opcodes
 
 /**
  * Some notes about the backend's state and its initialization and release.
@@ -92,6 +92,8 @@ abstract class GenBCode extends SubComponent {
 
     private def close(): Unit = {
       postProcessor.classfileWriter.close()
+      postProcessor.classWriter.remove()
+      postProcessorFrontendAccess.close()
       generatedClassHandler.close()
     }
   }

@@ -2,7 +2,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.asm.tree.ClassNode
+import org.objectweb.asm.tree.ClassNode
 
 abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
   val bTypes: BTypesFromSymbols[global.type]
