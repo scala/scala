@@ -39,4 +39,13 @@ class VectorTest {
       assertEquals(els, prefix.toList ++: suffix)
     }
   }
+
+  @Test
+  def factoryReuse(): Unit = {
+    assertSame(Vector.empty, Vector.empty)
+    assertSame(Vector.empty, Vector())
+    val m = Vector("a")
+    assertSame(m, Vector.from(m))
+    assertSame(m, Vector.apply(m: _*))
+  }
 }

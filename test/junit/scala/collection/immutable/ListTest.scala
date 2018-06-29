@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+import org.junit.Assert.assertSame
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -64,5 +65,12 @@ class ListTest {
     } catch {
       case e: IndexOutOfBoundsException => ()
     }
+  }
+
+  @Test
+  def factoryReuse(): Unit = {
+    val ls = List("a")
+    assertSame(ls, List.apply(ls: _*))
+    assertSame(ls, List.from(ls))
   }
 }

@@ -17,4 +17,10 @@ class TreeMapTest {
     assertEquals(tree, tree drop Int.MinValue)
     assertEquals(tree, tree dropRight Int.MinValue)
   }
+
+  @Test
+  def factoryReuse(): Unit = {
+    val m = TreeMap("a" -> "a")
+    assertSame(m, TreeMap.from(m))
+  }
 }
