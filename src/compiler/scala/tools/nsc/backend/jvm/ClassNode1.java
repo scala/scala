@@ -9,6 +9,10 @@ import scala.tools.asm.Opcodes;
 import scala.tools.asm.tree.ClassNode;
 import scala.tools.asm.tree.MethodNode;
 
+/**
+ * A subclass of {@link ClassNode} to customize the representation of
+ * label nodes with {@link LabelNode1}.
+ */
 public class ClassNode1 extends ClassNode {
     public ClassNode1() {
         this(Opcodes.ASM6);

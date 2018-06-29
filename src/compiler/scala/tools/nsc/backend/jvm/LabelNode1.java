@@ -5,8 +5,12 @@
 package scala.tools.nsc.backend.jvm;
 
 import scala.tools.asm.Label;
+import scala.tools.asm.tree.ClassNode;
 import scala.tools.asm.tree.LabelNode;
 
+/**
+ * A subclass of {@link LabelNode} to add user-definable flags.
+ */
 public class LabelNode1 extends LabelNode {
     public LabelNode1() {
     }

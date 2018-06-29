@@ -8,7 +8,10 @@ import scala.tools.asm.Label;
 import scala.tools.asm.Opcodes;
 import scala.tools.asm.tree.LabelNode;
 import scala.tools.asm.tree.MethodNode;
-
+/**
+ * A subclass of {@link MethodNode} to customize the representation of
+ * label nodes with {@link LabelNode1}.
+ */
 public class MethodNode1 extends MethodNode {
     public MethodNode1(int api, int access, String name, String descriptor, String signature, String[] exceptions) {
         super(api, access, name, descriptor, signature, exceptions);
