@@ -111,9 +111,10 @@ object OldHashMap extends MapFactory[OldHashMap] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), OldHashMap[K, V]] =
-    new ImmutableBuilder[(K, V), OldHashMap[K, V]](empty) {
+  def newBuilder[K, V]: MapBuilder[(K, V), OldHashMap[K, V]] =
+    new MapBuilder[(K, V), OldHashMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+      override protected def isCompatibleType(value: IterableOnce[(K, V)]): Boolean = value.isInstanceOf[HashMap[K,V]]
     }
 
   private[collection] abstract class Merger[A, B] {

@@ -762,12 +762,13 @@ object HashMap extends MapFactory[HashMap] {
       case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
-    new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
+  def newBuilder[K, V]: MapBuilder[(K, V), HashMap[K, V]] =
+    new MapBuilder[(K, V), HashMap[K, V]](empty) {
       def addOne(element: (K, V)): this.type = {
         elems = elems + element
         this
       }
+      override protected def isCompatibleType(value: IterableOnce[(K, V)]): Boolean = value.isInstanceOf[ChampHashMap[K,V]]
     }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
