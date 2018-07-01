@@ -124,7 +124,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
   }
   private def readHeapUsage() = RealProfiler.memoryMx.getHeapMemoryUsage.getUsed
 
-  private def doGC: Unit = {
+  private def doGC(): Unit = {
     System.gc()
     System.runFinalization()
   }
