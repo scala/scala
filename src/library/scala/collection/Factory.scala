@@ -420,6 +420,15 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
     */
   def tabulate[A : Ev](n: Int)(f: Int => A): CC[A] = from(new View.Tabulate(n)(f))
 
+  /** Produces a $coll containing repeated applications of a function to a start value.
+    *
+    *  @param start the start value of the $coll
+    *  @param len   the number of elements contained in the $coll
+    *  @param f     the function that's repeatedly applied
+    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
+    */
+  def iterate[A : Ev](start: A, len: Int)(f: A => A): CC[A] = from(new View.Iterate(start, len)(f))
+
   /** Produces a $coll that uses a function `f` to produce elements of type `A`
     * and update an internal state of type `S`.
     *
@@ -488,15 +497,6 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
 
   @`inline` private[this] implicit def ccClassTag[X]: ClassTag[CC[X]] =
     ClassTag.AnyRef.asInstanceOf[ClassTag[CC[X]]] // Good enough for boxed vs primitive arrays
-
-  /** Produces a $coll containing repeated applications of a function to a start value.
-    *
-    *  @param start the start value of the $coll
-    *  @param len   the number of elements contained in the $coll
-    *  @param f     the function that's repeatedly applied
-    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
-    */
-  def iterate[A : ClassTag](start: A, len: Int)(f: A => A): CC[A] = from(new View.Iterate(start, len)(f))
 
   /** Produces a $coll containing a sequence of increasing of integers.
     *
