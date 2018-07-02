@@ -107,6 +107,8 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
 
   def length: Int = sb.length()
 
+  def length_=(n: Int): Unit = sb.setLength(n)
+
   def addOne(x: Char) = { sb.append(x); this }
 
   def clear() = sb.setLength(0)
