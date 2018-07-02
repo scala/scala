@@ -100,21 +100,11 @@ trait Analyzer extends AnyRef
         clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
       }
-      def apply(unit: CompilationUnit): Unit = {
-        try {
-          val typer = newTyper(rootContext(unit))
-          unit.body = typer.typed(unit.body)
-          if (global.settings.Yrangepos && !global.reporter.hasErrors) global.validatePositions(unit.body)
-          for (workItem <- unit.toCheck) workItem()
-          if (settings.warnUnusedImport)
-            warnUnusedImports(unit)
-          if (settings.warnUnused.isSetByUser)
-            new checkUnused(typer).apply(unit)
-        }
-        finally {
-          unit.toCheck.clear()
-        }
-      }
+      def apply(unit: CompilationUnit): Unit = try {
+        val typer = newTyper(rootContext(unit))
+        unit.body = typer.typed(unit.body)
+        for (workItem <- unit.toCheck) workItem()
+      } finally unit.toCheck.clear()
     }
   }
 }

@@ -72,6 +72,7 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
+  def isPastTyperChecks = false
   def isDeveloper: Boolean = settings.debug
 
   @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")

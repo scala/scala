@@ -482,10 +482,7 @@ trait TypeDiagnostics {
     def inMode(context: Context, mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(context, tree) else tree
   }
 
-  class checkUnused(typer: Typer) {
-    val ignoreNames: Set[TermName] = Set(
-      "readResolve", "readObject", "writeObject", "writeReplace"
-    ).map(TermName(_))
+  class checkUnused(typer: Typer, ignoreNames: Set[TermName]) {
 
     class UnusedPrivates extends Traverser {
       val defnTrees = ListBuffer[MemberDef]()
@@ -712,7 +709,7 @@ trait TypeDiagnostics {
           typer.context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
       }
     }
-    def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
+    def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava) {
       val body = unit.body
       // TODO the message should distinguish whether the unusage is before or after macro expansion.
       settings.warnMacros.value match {
