@@ -53,7 +53,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.KnownDirectSubclassesCalled
     this.noPrint
     this.typeDebug
-    this.Range
     // inaccessible: this.posAssigner
     this.ConsoleWriter
     this.RefTree
