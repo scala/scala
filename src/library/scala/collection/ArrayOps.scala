@@ -1,10 +1,12 @@
 package scala
 package collection
 
+import java.lang.Math.{min, max}
+
 import mutable.ArrayBuilder
 import immutable.Range
 import scala.reflect.ClassTag
-import scala.math.{max, min, Ordering}
+import scala.math.Ordering
 import scala.Predef.{ // unimport all array-related implicit conversions to avoid triggering them accidentally
   genericArrayOps => _,
   booleanArrayOps => _,
@@ -234,24 +236,20 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           of this array.
     */
   def slice(from: Int, until: Int): Array[A] = {
+    import java.util.Arrays.copyOfRange
     val lo = max(from, 0)
-    val hi = min(max(until, 0), xs.length)
-    val len = max(hi - lo, 0)
-    if(len > 0) {
-      ((xs: Array[_]) match {
-        case x: Array[AnyRef]     => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Int]        => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Double]     => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Long]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Float]      => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Char]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Byte]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Short]      => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Boolean]    => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Unit]       =>
-          val res = new Array[Unit](len)
-          Array.copy(xs, lo, res, 0, len)
-          res
+    if (until > lo) {
+      // TODO: Switch type to Array[_]. See scala/scala-dev#528.
+      ((xs: Any) match {
+        case x: Array[AnyRef]     => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Int]        => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Double]     => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Long]       => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Float]      => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Char]       => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Byte]       => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Short]      => copyOfRange(x, lo, min(until, x.length))
+        case x: Array[Boolean]    => copyOfRange(x, lo, min(until, x.length))
       }).asInstanceOf[Array[A]]
     } else new Array[A](0)
   }
@@ -285,10 +283,10 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     Iterator.iterate(xs)(f).takeWhile(x => x.length != 0) ++ Iterator(Array.empty[A])
 
   /** An array containing the first `n` elements of this array. */
-  def take(n: Int): Array[A] = slice(0, min(n, xs.length))
+  def take(n: Int): Array[A] = slice(0, n)
 
   /** The rest of the array without its `n` first elements. */
-  def drop(n: Int): Array[A] = slice(min(n, xs.length), xs.length)
+  def drop(n: Int): Array[A] = slice(n, xs.length)
 
   /** An array containing the last `n` elements of this array. */
   def takeRight(n: Int): Array[A] = drop(xs.length - max(n, 0))
@@ -533,7 +531,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           to `elem`, or `-1`, if none exists.
     */
   def lastIndexOf[B >: A](elem: B, end: Int = xs.length - 1): Int = {
-    var i = math.min(end, xs.length-1)
+    var i = min(end, xs.length-1)
     while(i >= 0) {
       if(elem == xs(i)) return i
       i -= 1
@@ -548,7 +546,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           or `-1`, if none exists.
     */
   def lastIndexWhere(p: A => Boolean, end: Int = xs.length - 1): Int = {
-    var i = math.min(end, xs.length-1)
+    var i = min(end, xs.length-1)
     while(i >= 0) {
       if(p(xs(i))) return i
       i -= 1
@@ -1266,7 +1264,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @tparam B      the type of the elements of the array.
     */
   def copyToArray[B >: A](dest: Array[B], start: Int, len: Int = Int.MaxValue): dest.type = {
-    Array.copy(xs, 0, dest, start, math.min(xs.length, math.min(dest.length-start, len)))
+    Array.copy(xs, 0, dest, start, min(xs.length, min(dest.length-start, len)))
     dest
   }
 
