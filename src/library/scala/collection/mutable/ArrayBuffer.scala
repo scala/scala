@@ -159,6 +159,17 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     if(l > 0) Array.copy(array, 0, xs, start, l)
     xs
   }
+
+  /** Sorts this $coll in place according to an Ordering.
+    *
+    * @see [[scala.collection.mutable.IndexedSeqOps.sortInPlace]]
+    * @param  ord the ordering to be used to compare elements.
+    * @return modified input $coll sorted according to the ordering `ord`.
+    */
+  override def sortInPlace[B >: A]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    this
+  }
 }
 
 /**

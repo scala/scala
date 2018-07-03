@@ -76,6 +76,11 @@ abstract class ArraySeq[T]
     case _ =>
       super.equals(other)
   }
+
+  override def sortInPlace[B >: T]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    this
+  }
 }
 
 /** A companion object used to create instances of `ArraySeq`.

@@ -15,4 +15,44 @@ object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](ArrayBuffer)
 
 trait IndexedSeqOps[A, +CC[_], +C <: AnyRef]
   extends scala.collection.IndexedSeqOps[A, CC, C]
-  with SeqOps[A, CC, C]
+    with SeqOps[A, CC, C] {
+
+  /** Sorts this $coll in place according to an Ordering.
+    *
+    * @see [[scala.collection.SeqOps.sorted]]
+    * @param  ord the ordering to be used to compare elements.
+    * @return modified input $coll sorted according to the ordering `ord`.
+    */
+  def sortInPlace[B >: A]()(implicit ord: Ordering[B]): this.type = {
+    val len = this.length
+    if (len > 1) {
+      val arr = new Array[AnyRef](len)
+      var i = 0
+      for (x <- this) {
+        arr(i) = x.asInstanceOf[AnyRef]
+        i += 1
+      }
+      java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
+      i = 0
+      while (i < arr.length) {
+        update(i, arr(i).asInstanceOf[A])
+        i += 1
+      }
+    }
+    this
+  }
+
+  /** Sorts this $coll in place according to a comparison function.
+    *
+    * @see [[scala.collection.SeqOps.sortWith]]
+    */
+  def sortInPlaceWith(lt: (A, A) => Boolean): this.type = sortInPlace()(Ordering.fromLessThan(lt))
+
+  /** Sorts this $coll in place according to the Ordering which results from transforming
+    * an implicitly given Ordering with a transformation function.
+    *
+    * @see [[scala.collection.SeqOps.sortBy]]
+    */
+  def sortInPlaceBy[B](f: A => B)(implicit ord: Ordering[B]): this.type = sortInPlace()(ord on f)
+
+}
