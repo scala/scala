@@ -26,7 +26,7 @@ final class VectorMap[K, +V] private[immutable] (
     private val fields: Vector[K],
     private val underlying: Map[K, (Int, V)])
     extends AbstractMap[K, V]
-    with LinkedMap[K, V]
+    with SeqMap[K, V]
     with MapOps[K, V, VectorMap, VectorMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, VectorMap[K, V]] {
 

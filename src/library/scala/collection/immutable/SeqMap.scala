@@ -8,9 +8,9 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /**
   * A generic trait for ordered immutable maps. Concrete classes have to provide
-  * functionality for the abstract methods in `LinkedMap`.
+  * functionality for the abstract methods in `SeqMap`.
   *
-  * Note that when checking for equality [[LinkedMap]] does not take into account
+  * Note that when checking for equality [[SeqMap]] does not take into account
   * ordering.
   *
   * @tparam K      the type of the keys contained in this linked map.
@@ -20,26 +20,26 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   * @version 2.13
   * @since 2.13
   * @define coll immutable linked map
-  * @define Coll `immutable.LinkedMap`
+  * @define Coll `immutable.SeqMap`
   */
 
-trait LinkedMap[K, +V]
+trait SeqMap[K, +V]
   extends AbstractMap[K, V]
-    with MapOps[K, V, LinkedMap, LinkedMap[K, V]]
+    with MapOps[K, V, SeqMap, SeqMap[K, V]]
 
-object LinkedMap extends MapFactory[LinkedMap] {
-  def empty[K, V]: LinkedMap[K, V] = EmptyLinkedMap.asInstanceOf[LinkedMap[K, V]]
+object SeqMap extends MapFactory[SeqMap] {
+  def empty[K, V]: SeqMap[K, V] = EmptyLinkedMap.asInstanceOf[SeqMap[K, V]]
 
-  def from[K, V](it: collection.IterableOnce[(K, V)]): LinkedMap[K, V] =
+  def from[K, V](it: collection.IterableOnce[(K, V)]): SeqMap[K, V] =
     it match {
-      case vm: LinkedMap[K, V] => vm
+      case sm: SeqMap[K, V] => sm
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), LinkedMap[K, V]] = VectorMap.newBuilder
+  def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = VectorMap.newBuilder
 
   @SerialVersionUID(3L)
-  private object EmptyLinkedMap extends LinkedMap[Any, Nothing] {
+  private object EmptyLinkedMap extends SeqMap[Any, Nothing] {
     override def size: Int = 0
     override def knownSize: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
@@ -47,12 +47,12 @@ object LinkedMap extends MapFactory[LinkedMap] {
     def get(key: Any): Option[Nothing] = None
     override def getOrElse [V1](key: Any, default: => V1): V1 = default
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
-    def updated [V1] (key: Any, value: V1): LinkedMap[Any, V1] = new LinkedMap1(key, value)
-    def remove(key: Any): LinkedMap[Any, Nothing] = this
+    def updated [V1] (key: Any, value: V1): SeqMap[Any, V1] = new SeqMap1(key, value)
+    def remove(key: Any): SeqMap[Any, Nothing] = this
   }
 
   @SerialVersionUID(3L)
-  final class LinkedMap1[K, +V](key1: K, value1: V) extends LinkedMap[K,V] with Serializable {
+  final class SeqMap1[K, +V](key1: K, value1: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -62,18 +62,18 @@ object LinkedMap extends MapFactory[LinkedMap] {
     override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
       if (key == key1) value1 else default
     def iterator = Iterator.single((key1, value1))
-    def updated[V1 >: V](key: K, value: V1): LinkedMap[K, V1] =
-      if (key == key1) new LinkedMap1(key1, value)
-      else new LinkedMap2(key1, value1, key, value)
-    def remove(key: K): LinkedMap[K, V] =
-      if (key == key1) LinkedMap.empty else this
+    def updated[V1 >: V](key: K, value: V1): SeqMap[K, V1] =
+      if (key == key1) new SeqMap1(key1, value)
+      else new SeqMap2(key1, value1, key, value)
+    def remove(key: K): SeqMap[K, V] =
+      if (key == key1) SeqMap.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
     }
   }
 
   @SerialVersionUID(3L)
-  final class LinkedMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends LinkedMap[K,V] with Serializable {
+  final class SeqMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -90,13 +90,13 @@ object LinkedMap extends MapFactory[LinkedMap] {
       else if (key == key2) value2
       else default
     def iterator = ((key1, value1) :: (key2, value2) :: Nil).iterator
-    def updated[V1 >: V](key: K, value: V1): LinkedMap[K, V1] =
-      if (key == key1) new LinkedMap2(key1, value, key2, value2)
-      else if (key == key2) new LinkedMap2(key1, value1, key2, value)
-      else new LinkedMap3(key1, value1, key2, value2, key, value)
-    def remove(key: K): LinkedMap[K, V] =
-      if (key == key1) new LinkedMap1(key2, value2)
-      else if (key == key2) new LinkedMap1(key1, value1)
+    def updated[V1 >: V](key: K, value: V1): SeqMap[K, V1] =
+      if (key == key1) new SeqMap2(key1, value, key2, value2)
+      else if (key == key2) new SeqMap2(key1, value1, key2, value)
+      else new SeqMap3(key1, value1, key2, value2, key, value)
+    def remove(key: K): SeqMap[K, V] =
+      if (key == key1) new SeqMap1(key2, value2)
+      else if (key == key2) new SeqMap1(key1, value1)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
@@ -104,7 +104,7 @@ object LinkedMap extends MapFactory[LinkedMap] {
   }
 
   @SerialVersionUID(3L)
-  class LinkedMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends LinkedMap[K,V] with Serializable {
+  class SeqMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -124,15 +124,15 @@ object LinkedMap extends MapFactory[LinkedMap] {
       else if (key == key3) value3
       else default
     def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: Nil).iterator
-    def updated[V1 >: V](key: K, value: V1): LinkedMap[K, V1] =
-      if (key == key1)      new LinkedMap3(key1, value, key2, value2, key3, value3)
-      else if (key == key2) new LinkedMap3(key1, value1, key2, value, key3, value3)
-      else if (key == key3) new LinkedMap3(key1, value1, key2, value2, key3, value)
-      else new LinkedMap4(key1, value1, key2, value2, key3, value3, key, value)
-    def remove(key: K): LinkedMap[K, V] =
-      if (key == key1)      new LinkedMap2(key2, value2, key3, value3)
-      else if (key == key2) new LinkedMap2(key1, value1, key3, value3)
-      else if (key == key3) new LinkedMap2(key1, value1, key2, value2)
+    def updated[V1 >: V](key: K, value: V1): SeqMap[K, V1] =
+      if (key == key1)      new SeqMap3(key1, value, key2, value2, key3, value3)
+      else if (key == key2) new SeqMap3(key1, value1, key2, value, key3, value3)
+      else if (key == key3) new SeqMap3(key1, value1, key2, value2, key3, value)
+      else new SeqMap4(key1, value1, key2, value2, key3, value3, key, value)
+    def remove(key: K): SeqMap[K, V] =
+      if (key == key1)      new SeqMap2(key2, value2, key3, value3)
+      else if (key == key2) new SeqMap2(key1, value1, key3, value3)
+      else if (key == key3) new SeqMap2(key1, value1, key2, value2)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
@@ -140,7 +140,7 @@ object LinkedMap extends MapFactory[LinkedMap] {
   }
 
   @SerialVersionUID(3L)
-  final class LinkedMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends LinkedMap[K,V] with Serializable {
+  final class SeqMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =
@@ -163,11 +163,11 @@ object LinkedMap extends MapFactory[LinkedMap] {
       else if (key == key4) value4
       else default
     def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: (key4, value4) :: Nil).iterator
-    def updated[V1 >: V](key: K, value: V1): LinkedMap[K, V1] =
-      if (key == key1)      new LinkedMap4(key1, value, key2, value2, key3, value3, key4, value4)
-      else if (key == key2) new LinkedMap4(key1, value1, key2, value, key3, value3, key4, value4)
-      else if (key == key3) new LinkedMap4(key1, value1, key2, value2, key3, value, key4, value4)
-      else if (key == key4) new LinkedMap4(key1, value1, key2, value2, key3, value3, key4, value)
+    def updated[V1 >: V](key: K, value: V1): SeqMap[K, V1] =
+      if (key == key1)      new SeqMap4(key1, value, key2, value2, key3, value3, key4, value4)
+      else if (key == key2) new SeqMap4(key1, value1, key2, value, key3, value3, key4, value4)
+      else if (key == key3) new SeqMap4(key1, value1, key2, value2, key3, value, key4, value4)
+      else if (key == key4) new SeqMap4(key1, value1, key2, value2, key3, value3, key4, value)
       else {
         // Directly create the elements for performance reasons
         val fields = Vector(key1, key2, key3, key4, key)
@@ -189,11 +189,11 @@ object LinkedMap extends MapFactory[LinkedMap] {
           )
         new VectorMap(fields, underlying)
       }
-    def remove(key: K): LinkedMap[K, V] =
-      if (key == key1)      new LinkedMap3(key2, value2, key3, value3, key4, value4)
-      else if (key == key2) new LinkedMap3(key1, value1, key3, value3, key4, value4)
-      else if (key == key3) new LinkedMap3(key1, value1, key2, value2, key4, value4)
-      else if (key == key4) new LinkedMap3(key1, value1, key2, value2, key3, value3)
+    def remove(key: K): SeqMap[K, V] =
+      if (key == key1)      new SeqMap3(key2, value2, key3, value3, key4, value4)
+      else if (key == key2) new SeqMap3(key1, value1, key3, value3, key4, value4)
+      else if (key == key3) new SeqMap3(key1, value1, key2, value2, key4, value4)
+      else if (key == key4) new SeqMap3(key1, value1, key2, value2, key3, value3)
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))

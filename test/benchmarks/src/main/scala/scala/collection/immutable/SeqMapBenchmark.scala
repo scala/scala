@@ -12,13 +12,13 @@ import org.openjdk.jmh.infra._
 @Measurement(iterations = 10)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-class LinkedMapBenchmark {
+class SeqMapBenchmark {
 
-  var base: LinkedMap[String,String] = _
+  var base: SeqMap[String,String] = _
 
 
   @Setup(Level.Trial) def initKeys(): Unit = {
-    base = LinkedMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d")
+    base = SeqMap("a" -> "a", "b" -> "b", "c" -> "c", "d" -> "d")
   }
 
   // immutable map is implemented as EmptyMap -> Map1 -> Map2 -> Map3 -> Map4 -> Hashmap
