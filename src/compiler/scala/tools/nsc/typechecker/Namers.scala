@@ -2079,7 +2079,7 @@ trait Namers extends MethodSynthesis {
         if (sym.owner == method && sym.isValueParameter && !okParams(sym))
           namer.NamerErrorGen.IllegalDependentMethTpeError(sym)(ctx)
 
-      case _ => mapOver(tp)
+      case _ => traverseOver(tp)
     }
     def check(vparamss: List[List[Symbol]]): Unit = {
       for (vps <- vparamss) {
