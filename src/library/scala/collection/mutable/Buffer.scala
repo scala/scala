@@ -19,12 +19,28 @@ trait Buffer[A]
     */
   def prepend(elem: A): this.type
 
+  /** Appends the given elements to this buffer.
+    *
+    *  @param elem  the element to append.
+    */
   @`inline` final def append(elem: A): this.type = addOne(elem)
+
+  @deprecated("Use appendAll instead", "2.13.0")
+  @`inline` final def append(elems: A*): this.type = addAll(elems)
+
+  /** Appends the elements contained in a iterable object to this buffer.
+    *  @param xs  the iterable object containing the elements to append.
+    */
+  @`inline` final def appendAll(xs: IterableOnce[A]): this.type = addAll(xs)
+
 
   /** Alias for `prepend` */
   @`inline` final def +=: (elem: A): this.type = prepend(elem)
 
   def prependAll(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
+
+  @deprecated("Use prependAll instead", "2.13.0")
+  @`inline` final def prepend(elems: A*): this.type = prependAll(elems)
 
   /** Inserts a new element at a given index into this buffer.
     *
