@@ -321,18 +321,22 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
    *  A missing flag evaluates the same as true.
    */
   def filteredCheck: Seq[String] = {
-    import scala.util.Properties.{javaVersion, isAvian}
-    // use lines in block so labeled? Default to sorry, Charlie.
-    def retainOn(expr: String) = {
-      val f = expr.trim
-      val allArgs = suiteRunner.scalacExtraArgs ++ suiteRunner.scalacOpts.split(' ')
-      def flagWasSet(f: String) = allArgs contains f
-      val (invert, token) =
-        if (f startsWith "!") (true, f drop 1) else (false, f)
+    import scala.util.Properties.{javaSpecVersion, isAvian}
+    import scala.tools.nsc.settings.ScalaVersion
+    // use lines in block with this label?
+    def retainOn(expr0: String) = {
+      val expr = expr0.trim
+      def flagWasSet(f: String) = {
+        val allArgs = suiteRunner.scalacExtraArgs ++ suiteRunner.scalacOpts.split(' ')
+        allArgs contains f
+      }
+      val (invert, token) = if (expr startsWith "!") (true, expr drop 1) else (false, expr)
+      val javaN = raw"java(\d+)(\+)?".r
       val cond = token.trim match {
-        case "java8"  => javaVersion startsWith "1.8"
-        case "java7"  => javaVersion startsWith "1.7"
-        case "java6"  => javaVersion startsWith "1.6"
+        case javaN(v, up) =>
+          val required = ScalaVersion(if (v.toInt <= 8) s"1.$v" else v)
+          val current  = ScalaVersion(javaSpecVersion)
+          if (up != null) current >= required else current == required
         case "avian"  => isAvian
         case "true"   => true
         case "-optimise" | "-optimize"
