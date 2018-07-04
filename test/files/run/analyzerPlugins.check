@@ -1,3 +1,4 @@
+warning: there was one deprecation warning (since 2.13.0); re-run with -deprecation for details
 adaptBoundsToAnnots(List( <: Int), List(type T), List(Int @testAnn)) [2]
 annotationsConform(Boolean @testAnn, Boolean @testAnn) [2]
 annotationsConform(Boolean @testAnn, Boolean) [1]
