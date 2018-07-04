@@ -643,9 +643,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  $willNotTerminateInf
     */
   def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
+    val xsLen = xs.length
     val it = iterator
     var i = start
-    while (i < xs.length && it.hasNext) {
+    while (i < xsLen && it.hasNext) {
       xs(i) = it.next()
       i += 1
     }
