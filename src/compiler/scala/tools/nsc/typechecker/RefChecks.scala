@@ -1416,14 +1416,15 @@ abstract class RefChecks extends Transform {
           val sym = m.symbol
           applyChecks(sym.annotations)
 
-          def messageWarning(name: String)(warn: String) =
-            reporter.warning(tree.pos, f"Invalid $name message for ${sym}%s${sym.locationString}%s:%n$warn")
-
           // validate implicitNotFoundMessage and implicitAmbiguousMessage
-          analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
-          analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
+          if (settings.lintImplicitNotFound) {
+            def messageWarning(name: String)(warn: String) =
+              reporter.warning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn")
+            analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
+            analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
+          }
 
-          if (sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
+          if (settings.warnSerialization && sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
             def warn(what: String) =
               reporter.warning(tree.pos, s"@SerialVersionUID has no effect on $what")
 

@@ -98,6 +98,8 @@ trait Warnings {
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
     val NonlocalReturn         = LintWarning("nonlocal-return",           "A return statement used an exception for flow control.")
+    val ImplicitNotFound       = LintWarning("implicit-not-found",        "Check @implicitNotFound and @implicitAmbiguous messages.")
+    val Serial                 = LintWarning("serial",                    "@SerialVersionUID on traits and non-serializable classes.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -120,6 +122,8 @@ trait Warnings {
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused
   def warnNonlocalReturn         = lint contains NonlocalReturn
+  def lintImplicitNotFound       = lint contains ImplicitNotFound
+  def warnSerialization          = lint contains Serial
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
