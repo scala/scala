@@ -126,6 +126,9 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   override def clone(): C = empty ++= toIterable
 
+  @deprecated("Use `mapInPlace` instead", "2.13.0")
+  @`inline`final def transform(f: (K, V) => (K, V)): this.type = mapInPlace(f.tupled)
+
   def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
     val toAdd = Map[K, V]()
     for (elem <- this) {
