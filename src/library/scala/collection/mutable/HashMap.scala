@@ -74,6 +74,11 @@ class HashMap[K, V]
     else { val v = e.value; e.value = value; Some(v) }
   }
 
+  override def update(key: K, value: V): Unit = {
+    val e = table.findOrAddEntry(key, value)
+    if (e ne null) e.value = value
+  }
+
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
     val hash = table.elemHashCode(key)
     val i = table.index(hash)
