@@ -19,7 +19,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   * @author Matthew de Detrich
   * @version 2.13
   * @since 2.13
-  * @define coll immutable linked map
+  * @define coll immutable seq map
   * @define Coll `immutable.SeqMap`
   */
 
