@@ -29,10 +29,7 @@ abstract class InlinerHeuristics extends PerRunInit {
   lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
   // TODO doc `reason`. where is it used??? in the inliner log?
-  final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
-    // invariant: all post inline requests denote callsites in the callee of the main callsite
-    for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
-  }
+  final case class InlineRequest(callsite: Callsite, reason: String)
 
   def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
     compilerSettings.optLClasspath ||
@@ -126,15 +123,12 @@ abstract class InlinerHeuristics extends PerRunInit {
    * Returns the inline request for a callsite if the callsite should be inlined according to the
    * current heuristics (`-Yopt-inline-heuristics`).
    *
-   * The resulting inline request may contain post-inlining requests of callsites that in turn are
-   * also selected as individual inlining requests.
-   *
    * @return `None` if this callsite should not be inlined according to the active heuristic
-   *         `Some(Left)` if the callsite cannot be inlined (for example because that would cause
-   *           an IllegalAccessError) but should be according to the heuristic
-   *           TODO: what if a downstream inline request would cause an IAE and we don't create an
-   *           InlineRequest for the original callsite? new subclass of OptimizerWarning.
-   *         `Some(Right)` if the callsite should be and can be inlined
+   *         `Some(Left)` if the callsite should be inlined according to the heuristic, but cannot
+   *           be inlined according to an early, incomplete check (see earlyCanInlineCheck)
+   *         `Some(Right)` if the callsite should be inlined (it's still possible that the callsite
+   *           cannot be inlined in the end, for example if it contains instructions that would
+   *           cause an IllegalAccessError in the new class; this is checked in the inliner)
    */
   def inlineRequest(callsite: Callsite): Option[Either[OptimizerWarning, InlineRequest]] = {
     def requestIfCanInline(callsite: Callsite, reason: String): Option[Either[OptimizerWarning, InlineRequest]] = {
@@ -153,9 +147,10 @@ abstract class InlinerHeuristics extends PerRunInit {
             callsite.isInlineAnnotated)))
         } else None
       } else inliner.earlyCanInlineCheck(callsite) match {
-        case Some(w) => Some(Left(w))
+        case Some(w) =>
+          Some(Left(w))
         case None =>
-          Some(Right(InlineRequest(callsite, Nil, reason)))
+          Some(Right(InlineRequest(callsite, reason)))
       }
     }
 
