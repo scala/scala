@@ -823,6 +823,7 @@ trait StdNames {
     val values : NameType              = "values"
     val wait_ : NameType               = "wait"
     val withFilter: NameType           = "withFilter"
+    val writeReplace: NameType         = "writeReplace"
     val xml: NameType                  = "xml"
     val zero: NameType                 = "zero"
 

@@ -29,7 +29,7 @@ import symtab.Flags._
  *    def toString(): String
  *
  *  Special handling:
- *    protected def readResolve(): AnyRef
+ *    protected def writeReplace(): AnyRef
  */
 trait SyntheticMethods extends ast.TreeDSL {
   self: Analyzer =>
@@ -318,14 +318,15 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     /* If you serialize a singleton and then deserialize it twice,
      * you will have two instances of your singleton unless you implement
-     * readResolve.  Here it is implemented for all objects which have
-     * no implementation and which are marked serializable (which is true
-     * for all case objects.)
+     * readResolve.  Here we use a serialization proxy that prevents
+     * serialization of state and implements readResolve
+     * for all objects which have no implementation and which are marked
+     * serializable (which is true for all case objects.)
      */
-    def needsReadResolve = (
+    def needsModuleSerializationProxy = (
          clazz.isModuleClass
       && clazz.isSerializable
-      && !hasConcreteImpl(nme.readResolve)
+      && !hasConcreteImpl(nme.writeReplace)
       && clazz.isStatic
     )
 
@@ -359,13 +360,14 @@ trait SyntheticMethods extends ast.TreeDSL {
         for ((m, impl) <- methods ; if shouldGenerate(m)) yield impl()
       }
       def extras = {
-        if (needsReadResolve) {
+        if (needsModuleSerializationProxy) {
           // Aha, I finally decoded the original comment.
           // This method should be generated as private, but apparently if it is, then
           // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
-          // For sure special methods like "readResolve" should not be mangled.
-          List(createMethod(nme.readResolve, Nil, ObjectTpe)(m => {
-            m setFlag PRIVATE; REF(clazz.sourceModule)
+          // For sure special methods like "writeReplace" should not be mangled.
+          List(createMethod(nme.writeReplace, Nil, ObjectTpe)(m => {
+            m setFlag PRIVATE
+            New(ModuleSerializationProxyClass, gen.mkClassOf(clazz.typeOfThis))
           }))
         }
         else Nil
