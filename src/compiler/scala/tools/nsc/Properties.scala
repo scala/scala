@@ -23,6 +23,7 @@ object Properties extends scala.util.PropertiesTrait {
     """Welcome to Scala %1$#s (%3$s, Java %2$s).
       |Type in expressions for evaluation. Or try :help.""".stripMargin
   )
+  def shellBannerString   = scalaPropOrElse("shell.banner", shellWelcomeString)
 
   // message to display at EOF (which by default ends with
   // a newline so as not to break the user's terminal)
