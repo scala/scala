@@ -126,8 +126,28 @@ abstract class Inliner {
     }
   }
 
-  def maybeInlinedLater(insns: List[AbstractInsnNode]): Boolean = {
-    insns.forall(_.isInstanceOf[MethodInsnNode]) // TODO: further checks?
+  // TODO: document side-effect
+  def maybeInlinedLater(callsite: Callsite, insns: List[AbstractInsnNode]): Boolean = {
+    insns.forall({
+      case mi: MethodInsnNode =>
+        (mi.getOpcode != INVOKESPECIAL) || {
+          // An invokespecial T.f that appears within T, and T defines f.
+          // Such an instruction is inlined into a different class, but it needs to be inlined in
+          // turn in a later inlining round.
+          // The call graph needs to treat it specially: the normal dynamic lookup needs to be
+          // avoided, it needs to resolve to T.f, no matter in which class the invocation appears.
+          def hasMethod(c: ClassNode): Boolean = {
+            val r = c.methods.iterator.asScala.exists(m => m.name == mi.name && m.desc == mi.desc)
+            if (r) callGraph.staticallyResolvedInvokespecial += mi
+            r
+          }
+
+          mi.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME &&
+            mi.owner == callsite.callee.get.calleeDeclarationClass.internalName &&
+            byteCodeRepository.classNode(mi.owner).map(hasMethod).getOrElse(false)
+        }
+      case _ => false
+    })
   }
 
 
@@ -178,7 +198,7 @@ abstract class Inliner {
               illegalAccessInstructions(method).remove(r.callsite.callsiteInstruction)
               changed = true
 
-            case Some(w: IllegalAccessInstructions) if maybeInlinedLater(w.instructions) =>
+            case Some(w: IllegalAccessInstructions) if maybeInlinedLater(r.callsite, w.instructions) =>
               val undo = undoLogs.getOrElseUpdate(method, new UndoLog())
               val insnMap = inlineCallsite(r.callsite, undo, updateCallGraph = false)
               val illegalInsns = illegalAccessInstructions.getOrElseUpdate(method, mutable.Map.empty)
@@ -626,6 +646,7 @@ abstract class Inliner {
 
     // TODO: add to callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites for inlined code
 
+    callGraph.staticallyResolvedInvokespecial -= callsiteInstruction
     if (updateCallGraph) callGraph.refresh(callsiteMethod, callsiteClass)
 
     // Inlining a method body can render some code unreachable, see example above in this method.

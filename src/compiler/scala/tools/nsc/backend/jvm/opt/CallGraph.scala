@@ -75,6 +75,9 @@ abstract class CallGraph {
   //currently single threaded access only
   val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
+  // TODO document
+  val staticallyResolvedInvokespecial: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
     val methodCallsites = callsites(methodNode)
     val newCallsites = methodCallsites - invocation
@@ -169,22 +172,31 @@ abstract class CallGraph {
               f.peekStack(numParams).getType.getInternalName
             }
 
-            val callee: Either[OptimizerWarning, Callee] = for {
-              (method, declarationClass)                   <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
-              (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
-            } yield {
-              val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-              val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath, definingClass)
-              import info._
-              Callee(
-                callee = method,
-                calleeDeclarationClass = declarationClassBType,
-                isStaticallyResolved = isStaticallyResolved,
-                sourceFilePath = sourceFilePath,
-                annotatedInline = annotatedInline,
-                annotatedNoInline = annotatedNoInline,
-                samParamTypes = info.samParamTypes,
-                calleeInfoWarning = warning)
+            val callee: Either[OptimizerWarning, Callee] = {
+              def make(method: MethodNode, declarationClassNode: ClassNode, calleeSourceFilePath: Option[String]): Callee = {
+                val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
+                val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath, definingClass)
+                import info._
+                Callee(
+                  callee = method,
+                  calleeDeclarationClass = declarationClassBType,
+                  isStaticallyResolved = isStaticallyResolved,
+                  sourceFilePath = sourceFilePath,
+                  annotatedInline = annotatedInline,
+                  annotatedNoInline = annotatedNoInline,
+                  samParamTypes = info.samParamTypes,
+                  calleeInfoWarning = warning)
+              }
+              if (staticallyResolvedInvokespecial(call)) {
+                val (cn, sourcePath) = byteCodeRepository.classNodeAndSourceFilePath(call.owner).get
+                val m = cn.methods.iterator.asScala.find(m => m.name == call.name && m.desc == call.desc).get
+                Right(make(m, cn, sourcePath))
+              } else for {
+                (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+                (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
+              } yield {
+                make(method, declarationClassNode, calleeSourceFilePath)
+              }
             }
 
             val argInfos = computeArgInfos(callee, call, prodCons)

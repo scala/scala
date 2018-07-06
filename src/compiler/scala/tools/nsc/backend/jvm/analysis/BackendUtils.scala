@@ -216,6 +216,12 @@ abstract class BackendUtils extends PerRunInit {
       }
       if (keepLineNumbers || !ins.isInstanceOf[LineNumberNode]) {
         val cloned = ins.clone(javaLabelMap)
+        ins match {
+          case mi: MethodInsnNode =>
+            if (callGraph.staticallyResolvedInvokespecial(mi))
+              callGraph.staticallyResolvedInvokespecial += cloned.asInstanceOf[MethodInsnNode]
+          case _ =>
+        }
         result add cloned
         map += ((ins, cloned))
       }
