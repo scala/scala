@@ -55,12 +55,12 @@ class InlinerTest extends BytecodeTesting {
 
   def canInlineTest(code: String, mod: ClassNode => Unit = _ => ()): Option[OptimizerWarning] = {
     val cs = gMethAndFCallsite(code, mod)._2
-    inliner.earlyCanInlineCheck(cs) orElse inliner.canInlineCallsite(cs).map(_._1)
+    inliner.earlyCanInlineCheck(cs) orElse inliner.canInlineCallsite(cs)
   }
 
   def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): MethodNode = {
     val (gMethod, fCall) = gMethAndFCallsite(code, mod)
-    inliner.inline(InlineRequest(fCall, Nil, null))
+    inliner.inlineCallsite(fCall)
     gMethod
   }
 
@@ -188,7 +188,7 @@ class InlinerTest extends BytecodeTesting {
     val hMeth = getAsmMethod(d, "h")
     val gCall = getCallsite(hMeth, "g")
     val r = inliner.canInlineCallsite(gCall)
-    assert(r.nonEmpty && r.get._1.isInstanceOf[IllegalAccessInstruction], r)
+    assert(r.nonEmpty && r.get.isInstanceOf[IllegalAccessInstructions], r)
   }
 
   @Test
@@ -331,7 +331,7 @@ class InlinerTest extends BytecodeTesting {
     val warning = inliner.canInlineCallsite(call)
     assert(warning.isEmpty, warning)
 
-    inliner.inline(InlineRequest(call, Nil, null))
+    inliner.inlineCallsite(call)
     val ins = instructionsFromMethod(fMeth)
 
     // no invocations, lowestOneBit is inlined
@@ -414,7 +414,7 @@ class InlinerTest extends BytecodeTesting {
     assert(ins contains invokeFlop, ins.stringLines)
   }
 
-  @Test @Ignore
+  @Test
   def inlineFromTraits(): Unit = {
     val code =
       """trait T {
@@ -959,12 +959,13 @@ class InlinerTest extends BytecodeTesting {
 
     val warning = inliner.canInlineCallsite(gCall)
     assert(warning.isEmpty, warning)
+//  TODO: no more post requests
 
-    inliner.inline(InlineRequest(hCall,
-      post = List(InlineRequest(gCall,
-        post = List(InlineRequest(fCall, Nil, null)), null)), null))
-    assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
-    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
+//    inliner.inline(InlineRequest(hCall,
+//      post = List(InlineRequest(gCall,
+//        post = List(InlineRequest(fCall, Nil, null)), null)), null))
+//    assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
+//    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
   }
 
   @Test @Ignore
@@ -984,14 +985,14 @@ class InlinerTest extends BytecodeTesting {
     val bCall = getCallsite(c, "b")
     val cCall = getCallsite(d, "c")
 
-    inliner.inline(InlineRequest(bCall, Nil, null))
-
-    val req = InlineRequest(cCall,
-      List(InlineRequest(bCall,
-        List(InlineRequest(aCall, Nil, null)), null)), null)
-    inliner.inline(req)
-
-    assertNoInvoke(convertMethod(d))
+    inliner.inlineCallsite(bCall)
+//  TODO no post requests
+//    val req = InlineRequest(cCall,
+//      List(InlineRequest(bCall,
+//        List(InlineRequest(aCall, Nil, null)), null)), null)
+//    inliner.inline(req)
+//
+//    assertNoInvoke(convertMethod(d))
   }
 
   @Test
@@ -1771,5 +1772,21 @@ class InlinerTest extends BytecodeTesting {
     val List(t) = compileClasses(code)
     val i = getMethod(t, "bar")
     assertSameCode(i.instructions, List(Label(0), LineNumber(7, Label(0)), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false), Op(ARETURN), Label(5)))
+  }
+
+  @Test
+  def multipleRounds(): Unit = {
+    val code =
+      """abstract class A {
+        |  @inline def f = g
+        |  def g: Int
+        |}
+        |final class C extends A {
+        |  @inline def g = 1
+        |  def t(c: C) = c.f
+        |}
+      """.stripMargin
+    val List(a, c) = compileClasses(code)
+    assertNoInvoke(getMethod(c, "t"))
   }
 }

@@ -116,8 +116,16 @@ abstract class CallGraph {
     classNode.methods.asScala.foreach(addMethod(_, classType))
   }
 
+  // TODO: remove if no longer used
   def addIfMissing(methodNode: MethodNode, definingClass: ClassBType): Unit = {
     if (!callsites.contains(methodNode)) addMethod(methodNode, definingClass)
+  }
+
+  def refresh(methodNode: MethodNode, definingClass: ClassBType): Unit = {
+    callsites.remove(methodNode)
+    closureInstantiations.remove(methodNode)
+    // TODO: callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites
+    addMethod(methodNode, definingClass)
   }
 
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
@@ -156,10 +164,20 @@ abstract class CallGraph {
         // lazy so it is only computed if actually used by computeArgInfos
         lazy val prodCons = backendUtils.analyzerCache.get[ProdConsAnalyzer](methodNode)(new ProdConsAnalyzer(methodNode, definingClass.internalName))
 
+        // TODO: check which analyzer to run! nullness, type flow, prod cons. really all of them!?
+        lazy val typeFlow = backendUtils.analyzerCache.get[NonLubbingTypeFlowAnalyzer](methodNode)(new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName))
+
         methodNode.instructions.iterator.asScala foreach {
-          case call: MethodInsnNode if a.frameAt(call) != null => // skips over unreachable code
+          case call: MethodInsnNode if typeFlow.frameAt(call) != null => // skips over unreachable code
+            val preciseOwner = if (isStaticCall(call)) call.owner else {
+              val f = typeFlow.frameAt(call)
+              // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
+              val numParams = Type.getArgumentTypes(call.desc).length
+              f.peekStack(numParams).getType.getInternalName
+            }
+
             val callee: Either[OptimizerWarning, Callee] = for {
-              (method, declarationClass)                   <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+              (method, declarationClass)                   <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
               (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
             } yield {
               val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
