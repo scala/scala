@@ -528,6 +528,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = fromIterable(new View.ScanLeft(this, z, op))
 
+  def scanLeft1[B >: A](op: (B, A) => B): CC[B] = fromIterable(new View.ScanLeft1(this, op))
+
   /** Produces a collection containing cumulative results of applying the operator going right to left.
     *  The head of the collection is the last cumulative result.
     *  $willNotTerminateInf

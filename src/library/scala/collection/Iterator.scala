@@ -341,6 +341,17 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def hasNext: Boolean = current.hasNext
   }
 
+  def scanLeft1[B >: A](op: (B, A) => B): Iterator[B] = new AbstractIterator[B] {
+    private[this] var first = true
+    private[this] var acc: B = _
+    def hasNext = self.hasNext
+    def next()  = {
+      val v = self.next()
+      acc = if (first) { first = false ; v } else op(acc, v)
+      acc
+    }
+  }
+
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
     drop(from)
