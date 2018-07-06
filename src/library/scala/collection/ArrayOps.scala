@@ -280,7 +280,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Array[A] => Array[A]): Iterator[Array[A]] =
-    Iterator.iterate(xs)(f).takeWhile(x => x.length != 0) ++ Iterator(Array.empty[A])
+    Iterator.iterate(xs)(f).takeWhile(x => x.length != 0) ++ Iterator.single(Array.empty[A])
 
   /** An array containing the first `n` elements of this array. */
   def take(n: Int): Array[A] = slice(0, n)

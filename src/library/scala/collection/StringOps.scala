@@ -1105,7 +1105,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: String => String): Iterator[String] =
-    Iterator.iterate(s)(f).takeWhile(x => !x.isEmpty) ++ Iterator("")
+    Iterator.iterate(s)(f).takeWhile(x => !x.isEmpty) ++ Iterator.single("")
 
   /** Selects all chars of this string which satisfy a predicate. */
   def filter(pred: Char => Boolean): String = {
