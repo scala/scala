@@ -2,10 +2,6 @@ package scala
 package collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import scala.collection.mutable.{Builder, ImmutableBuilder}
-
 /**
   * A generic trait for ordered mutable maps. Concrete classes have to provide
   * functionality for the abstract methods in `SeqMap`.
@@ -25,3 +21,5 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 trait SeqMap[K, V] extends AbstractMap[K, V]
   with MapOps[K, V, SeqMap, SeqMap[K, V]]
+
+object SeqMap extends MapFactory.Delegate[SeqMap](LinkedHashMap)
