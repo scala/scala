@@ -434,7 +434,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
   def permutations: Iterator[C] =
-    if (isEmpty) Iterator(coll)
+    if (isEmpty) Iterator.single(coll)
     else new PermutationsItr
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of

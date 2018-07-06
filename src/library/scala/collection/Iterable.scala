@@ -681,7 +681,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {
     val it = Iterator.iterate(toIterable)(f).takeWhile(x => !x.isEmpty)
-    (it ++ Iterator(Iterable.empty)).map(fromSpecificIterable)
+    (it ++ Iterator.single(Iterable.empty)).map(fromSpecificIterable)
   }
 }
 
