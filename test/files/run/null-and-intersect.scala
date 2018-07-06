@@ -1,4 +1,5 @@
 object Test {
+  trait Immutable
   trait Immortal
   class Bippy extends Immutable with Immortal
   class Boppy extends Immutable
