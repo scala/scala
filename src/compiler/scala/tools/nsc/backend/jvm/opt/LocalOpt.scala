@@ -574,8 +574,7 @@ abstract class LocalOpt {
         (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
       }
 
-      // not using analyzerCache since this is the only place where NonLubbingTypeFlowAnalyzer is used (for now)
-      lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(method, owner)
+      lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
 
       // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
       val toRemove = mutable.Set.empty[TypeInsnNode]

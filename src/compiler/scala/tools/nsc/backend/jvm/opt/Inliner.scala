@@ -126,16 +126,118 @@ abstract class Inliner {
     }
   }
 
+  def maybeInlinedLater(insns: List[AbstractInsnNode]): Boolean = {
+    insns.forall(_.isInstanceOf[MethodInsnNode]) // TODO: further checks?
+  }
+
+
   def runInliner(): Unit = {
-    for (request <- collectAndOrderInlineRequests) {
-      val Right(callee) = request.callsite.callee // collectAndOrderInlineRequests returns callsites with a known callee
-      val warnings = inline(request)
-      for (warning <- warnings) {
-        if (warning.emitWarning(compilerSettings))
-          backendReporting.inlinerWarning(request.callsite.callsitePosition, warning.toString)
+    val requests: mutable.Queue[(MethodNode, List[InlineRequest])] = collectAndOrderInlineRequests
+
+    // Methods that were changed (inlined into), they will be checked again for more callsites to
+    // inline.
+    val changedMethods = mutable.Queue.empty[MethodNode]
+
+    // Contains instructions that were copied into a method and would cause an IllegalAccess. If
+    // these instructions are not inlined, the method is rolled back to its original state.
+    final case class OriginalIllegalAccessWarning(callsite: Callsite, insnWarning: IllegalAccessInstructions)
+    val illegalAccessInstructions = mutable.Map.empty[MethodNode, mutable.Map[AbstractInsnNode, OriginalIllegalAccessWarning]].withDefaultValue(mutable.Map.empty)
+
+
+    // Don't try to inline failed callsites again
+    val failed = mutable.Set.empty[MethodInsnNode]
+
+    // TODO: simplify undo logging. instead of passing it around, just save the current state of a method,
+    // with all derived state, once. then go ahead and modify stuff. only thing left to do (it seems): indyLambdaMethods.
+    // no need for arbitrary undo actions.
+    val undoLogs = mutable.Map.empty[MethodNode, UndoLog] withDefaultValue NoUndoLogging
+
+
+
+    // before: we know that that illegal insns would be tried to inlnie.
+    // if it failed, the warning issued was that of the post request.
+    // now: we don't know if the illegal insns will be tried.
+    // what should we warn?
+    //   - the insn if it's not tried
+    //   - the second round if it was tried? both?
+
+
+    while (requests.nonEmpty || changedMethods.nonEmpty) {
+      // TODO: refresh call graph only at the end of a method optimization
+      // TODO: treat closure optimizer as part of inlining, probably as a next round (call graph update)
+      // do inlines by method, then add to queue, update call graph
+
+      if (requests.nonEmpty) {
+        val (method, rs) = requests.dequeue()
+        var changed = false
+
+        for (r <- rs) {
+          canInlineCallsite(r.callsite) match {
+            case None =>
+              inlineCallsite(r.callsite, undoLogs(method), updateCallGraph = false)
+              illegalAccessInstructions(method).remove(r.callsite.callsiteInstruction)
+              changed = true
+
+            case Some(w: IllegalAccessInstructions) if maybeInlinedLater(w.instructions) =>
+              val undo = undoLogs.getOrElseUpdate(method, new UndoLog())
+              val insnMap = inlineCallsite(r.callsite, undo, updateCallGraph = false)
+              val illegalInsns = illegalAccessInstructions.getOrElseUpdate(method, mutable.Map.empty)
+              val makeWarning: AbstractInsnNode => OriginalIllegalAccessWarning = illegalInsns.remove(r.callsite.callsiteInstruction) match {
+                case Some(currentWarning) =>
+                  _ => currentWarning
+                case _ =>
+                  i => OriginalIllegalAccessWarning(r.callsite, w.copy(instructions = List(i)))
+              }
+              w.instructions.foreach(i => {
+                val mappedI = insnMap(i)
+                illegalInsns(mappedI) = makeWarning(mappedI)
+              })
+              changed = true
+
+            case Some(w) =>
+              failed += r.callsite.callsiteInstruction
+              illegalAccessInstructions(method).remove(r.callsite.callsiteInstruction)
+              if (w.emitWarning(compilerSettings))
+                backendReporting.inlinerWarning(r.callsite.callsitePosition, w.toString)
+          }
+
+          if (changed) {
+            callGraph.refresh(method, rs.head.callsite.callsiteClass)
+            changedMethods.enqueue(method)
+          }
+        }
+      } else {
+        // look at all callsites in a methods again, also those that were previously not selected for
+        // inlining. after inlining, types might get more precise and make a callsite inlineable.
+        val m = changedMethods.dequeue()
+
+        val rs = mutable.ListBuffer.empty[InlineRequest]
+        callGraph.callsites(m).valuesIterator foreach {
+          // Don't inline: recursive calls, callsites that failed inlining before
+          case cs: Callsite if cs.callee.isRight && cs.callee.get.callee != m && !failed(cs.callsiteInstruction) =>
+            inlineRequest(cs) match {
+              case Some(Right(req)) => rs += req
+              case _ =>
+            }
+          case _ =>
+        }
+        val newRequests = rs.toList.sorted(callsiteOrdering)
+
+        val illegalAccess = illegalAccessInstructions(m)
+        illegalAccess.keySet.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
+          case None =>
+            requests.enqueue(m -> newRequests)
+
+          case Some(notInlinedIllegalInsn) =>
+            undoLogs(m).rollback()
+            val originalWarning = illegalAccess(notInlinedIllegalInsn)
+            if (originalWarning.insnWarning.emitWarning(compilerSettings))
+              backendReporting.inlinerWarning(originalWarning.callsite.callsitePosition, originalWarning.insnWarning.toString)
+        }
       }
     }
-    InlineLog.print()
+    // todo inline logging
+//    InlineLog.print()
   }
 
   /**
@@ -162,19 +264,17 @@ abstract class Inliner {
   }
 
   /**
-   * Returns the callsites that can be inlined. Ensures that the returned inline request graph does
-   * not contain cycles.
+   * Returns the callsites that can be inlined, grouped by method. Ensures that the returned inline
+   * request graph does not contain cycles.
    *
-   * The resulting list is sorted such that the leaves of the inline request tree are on the left.
+   * The resulting list is sorted such that the leaves of the inline request graph are on the left.
    * Once these leaves are inlined, the successive elements will be leaves, etc.
    */
-  private def collectAndOrderInlineRequests: List[InlineRequest] = {
+  private def collectAndOrderInlineRequests: mutable.Queue[(MethodNode, List[InlineRequest])] = {
     val requestsByMethod = selectCallsitesForInlining withDefaultValue Set.empty
 
     val elided = mutable.Set.empty[InlineRequest]
     def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
-
-    def allCallees(r: InlineRequest): Set[MethodNode] = r.post.flatMap(allCallees).toSet + r.callsite.callee.get.callee
 
     /**
      * Break cycles in the inline request graph by removing callsites.
@@ -182,9 +282,9 @@ abstract class Inliner {
      * The list `requests` is traversed left-to-right, removing those callsites that are part of a
      * cycle. Elided callsites are also removed from the `inlineRequestsForMethod` map.
      */
-    def breakInlineCycles: List[InlineRequest] = {
+    def breakInlineCycles: List[(MethodNode, List[InlineRequest])] = {
       // is there a path of inline requests from start to goal?
-      def isReachable(start: Set[MethodNode], goal: MethodNode): Boolean = {
+      def isReachable(start: MethodNode, goal: MethodNode): Boolean = {
         @tailrec def reachableImpl(check: Set[MethodNode], visited: Set[MethodNode]): Boolean = {
           if (check.isEmpty) false
           else {
@@ -192,41 +292,66 @@ abstract class Inliner {
             if (x == goal) true
             else if (visited(x)) reachableImpl(check - x, visited)
             else {
-              val callees = nonElidedRequests(x).flatMap(allCallees)
+              val callees = nonElidedRequests(x).map(_.callsite.callee.get.callee)
               reachableImpl(check - x ++ callees, visited + x)
             }
           }
         }
-        reachableImpl(start, Set.empty)
+        reachableImpl(Set(start), Set.empty)
       }
 
-      val result = new mutable.ListBuffer[InlineRequest]()
       val requests = requestsByMethod.valuesIterator.flatten.toArray
       // sort the inline requests to ensure that removing requests is deterministic
+      // Callsites within the same method are next to each other in the sorted array.
       java.util.Arrays.sort(requests, callsiteOrdering)
+
+      val result = new mutable.ListBuffer[(MethodNode, List[InlineRequest])]()
+      var currentMethod: MethodNode = null
+      val currentMethodRequests = mutable.ListBuffer.empty[InlineRequest]
       for (r <- requests) {
         // is there a chain of inlining requests that would inline the callsite method into the callee?
-        if (isReachable(allCallees(r), r.callsite.callsiteMethod))
+        if (isReachable(r.callsite.callee.get.callee, r.callsite.callsiteMethod))
           elided += r
-        else
-          result += r
-        ()
+        else {
+          val m = r.callsite.callsiteMethod
+          if (m == currentMethod) {
+            currentMethodRequests += r
+          } else {
+            if (currentMethod != null)
+              result += ((currentMethod, currentMethodRequests.toList))
+            currentMethod = m
+            currentMethodRequests.clear()
+            currentMethodRequests += r
+          }
+        }
       }
+      if (currentMethod != null)
+        result += ((currentMethod, currentMethodRequests.toList))
       result.toList
     }
 
     // sort the remaining inline requests such that the leaves appear first, then those requests
     // that become leaves, etc.
-    def leavesFirst(requests: List[InlineRequest], visited: Set[InlineRequest] = Set.empty): List[InlineRequest] = {
-      if (requests.isEmpty) Nil
-      else {
-        val (leaves, others) = requests.partition(r => {
-          val inlineRequestsForCallees = allCallees(r).flatMap(nonElidedRequests)
-          inlineRequestsForCallees.forall(visited)
-        })
-        assert(leaves.nonEmpty, requests)
-        leaves ::: leavesFirst(others, visited ++ leaves)
-      }
+    def leavesFirst(requests: List[(MethodNode, List[InlineRequest])]): mutable.Queue[(MethodNode, List[InlineRequest])] = {
+      val result = mutable.Queue.empty[(MethodNode, List[InlineRequest])]
+      val visited = mutable.Set.empty[MethodNode]
+
+      @tailrec def impl(toAdd: List[(MethodNode, List[InlineRequest])]): Unit =
+        if (toAdd.nonEmpty) {
+          val rest = mutable.ListBuffer.empty[(MethodNode, List[InlineRequest])]
+          toAdd.foreach { case r @ (_, rs) =>
+            val callees = rs.iterator.map(_.callsite.callee.get.callee)
+            if (callees.forall(c => visited(c) || nonElidedRequests(c).isEmpty)) {
+              result += r
+              visited += r._1
+            } else
+              rest += r
+          }
+          impl(rest.toList)
+        }
+
+      impl(requests)
+      result
     }
 
     leavesFirst(breakInlineCycles)
@@ -277,11 +402,12 @@ abstract class Inliner {
    *     - recursively we search for the callsite of c1' that was cloned when inlining c3, we find c1''
    *     - so we create an inline request for c1''
    */
+  // TODO remove, unused
   def adaptPostRequestForMainCallsite(post: InlineRequest, mainCallsite: Callsite): List[InlineRequest] = {
     def impl(post: InlineRequest, at: Callsite): List[InlineRequest] = {
       post.callsite.inlinedClones.find(_.clonedWhenInlining == at) match {
         case Some(clonedCallsite) =>
-          List(InlineRequest(clonedCallsite.callsite, post.post, post.reason))
+          List(InlineRequest(clonedCallsite.callsite, post.post))
         case None =>
           post.post.flatMap(impl(_, post.callsite)).flatMap(impl(_, at))
       }
@@ -306,6 +432,12 @@ abstract class Inliner {
       val currentMaxLocals = methodNode.maxLocals
       val currentMaxStack = methodNode.maxStack
 
+      val currentCallsites = callsites(methodNode)
+      val currentClosureInstantiations = closureInstantiations(methodNode)
+
+      // TODO: callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites
+      // maybe create a helper in the call graph to save / restore all state for a method
+
       apply {
         // `methodNode.instructions.clear()` doesn't work: it keeps the `prev` / `next` / `index` of
         // instruction nodes. `instructions.removeAll(true)` would work, but is not public.
@@ -320,6 +452,9 @@ abstract class Inliner {
 
         methodNode.maxLocals = currentMaxLocals
         methodNode.maxStack = currentMaxStack
+
+        callsites(methodNode) = currentCallsites
+        closureInstantiations(methodNode) = currentClosureInstantiations
       }
     }
   }
@@ -331,6 +466,7 @@ abstract class Inliner {
    *
    * @return An inliner warning for each callsite that could not be inlined.
    */
+  /*
   def inline(request: InlineRequest, undo: UndoLog = NoUndoLogging): List[CannotInlineWarning] = {
     def doInline(undo: UndoLog, callRollback: Boolean = false): List[CannotInlineWarning] = {
       InlineLog.withInlineLogging(request) {
@@ -363,6 +499,7 @@ abstract class Inliner {
         List(w)
     }
   }
+  */
 
   /**
    * Copy and adapt the instructions of a method to a callsite.
@@ -374,7 +511,7 @@ abstract class Inliner {
    * @return A map associating instruction nodes of the callee with the corresponding cloned
    *         instruction in the callsite method.
    */
-  def inlineCallsite(callsite: Callsite, undo: UndoLog = NoUndoLogging): Unit = {
+  def inlineCallsite(callsite: Callsite, undo: UndoLog = NoUndoLogging, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
     import callsite._
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
@@ -388,7 +525,7 @@ abstract class Inliner {
     localOpt.minimalRemoveUnreachableCode(callee, calleeDeclarationClass.internalName)
 
     // If the callsite was eliminated by DCE, do nothing.
-    if (!callGraph.containsCallsite(callsite)) return
+    if (!callGraph.containsCallsite(callsite)) return Map.empty
 
     // New labels for the cloned instructions
     val labelsMap = cloneLabels(callee)
@@ -545,55 +682,15 @@ abstract class Inliner {
     val added = addIndyLambdaImplMethod(callsiteClass.internalName, targetHandles)
     undo { removeIndyLambdaImplMethod(callsiteClass.internalName, added) }
 
-    callGraph.addIfMissing(callee, calleeDeclarationClass)
+    // TODO: add to callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites for inlined code
 
-    def mapArgInfo(argInfo: (Int, ArgInfo)): IterableOnce[(Int, ArgInfo)] = argInfo match {
-      case lit @ (_, FunctionLiteral)             => Iterator(lit)
-      case (argIndex, ForwardedParam(paramIndex)) => callsite.argInfos.get(paramIndex).map((argIndex, _)).iterator
-    }
-
-    // Add all invocation instructions and closure instantiations that were inlined to the call graph
-    callGraph.callsites(callee).valuesIterator foreach { originalCallsite =>
-      val newCallsiteIns = instructionMap(originalCallsite.callsiteInstruction).asInstanceOf[MethodInsnNode]
-      val argInfos = originalCallsite.argInfos.flatMap(mapArgInfo _)
-      val newCallsite = originalCallsite.copy(
-        callsiteInstruction = newCallsiteIns,
-        callsiteMethod = callsiteMethod,
-        callsiteClass = callsiteClass,
-        argInfos = argInfos,
-        callsiteStackHeight = callsiteStackHeight + originalCallsite.callsiteStackHeight
-      )
-      val clonedCallsite = ClonedCallsite(newCallsite, callsite)
-      originalCallsite.inlinedClones += clonedCallsite
-      callGraph.addCallsite(newCallsite)
-      undo {
-        originalCallsite.inlinedClones -= clonedCallsite
-        callGraph.removeCallsite(newCallsite.callsiteInstruction, newCallsite.callsiteMethod)
-      }
-    }
-
-    callGraph.closureInstantiations(callee).valuesIterator foreach { originalClosureInit =>
-      val newIndy = instructionMap(originalClosureInit.lambdaMetaFactoryCall.indy).asInstanceOf[InvokeDynamicInsnNode]
-      val capturedArgInfos = originalClosureInit.capturedArgInfos.flatMap(mapArgInfo _)
-      val newClosureInit = ClosureInstantiation(
-        originalClosureInit.lambdaMetaFactoryCall.copy(indy = newIndy),
-        callsiteMethod,
-        callsiteClass,
-        capturedArgInfos)
-      originalClosureInit.inlinedClones += newClosureInit
-      callGraph.addClosureInstantiation(newClosureInit)
-      undo {
-        callGraph.removeClosureInstantiation(newClosureInit.lambdaMetaFactoryCall.indy, newClosureInit.ownerMethod)
-      }
-    }
-
-    // Remove the elided invocation from the call graph
-    callGraph.removeCallsite(callsiteInstruction, callsiteMethod)
-    undo { callGraph.addCallsite(callsite) }
+    if (updateCallGraph) callGraph.refresh(callsiteMethod, callsiteClass)
 
     // Inlining a method body can render some code unreachable, see example above in this method.
     BackendUtils.clearDceDone(callsiteMethod)
     analyzerCache.invalidate(callsiteMethod)
+
+    instructionMap
   }
 
   /**
@@ -640,7 +737,7 @@ abstract class Inliner {
    *  - `Some((message, instructions))` if inlining `instructions` into the callsite method would
    *    cause an IllegalAccessError
    */
-  def canInlineCallsite(callsite: Callsite): Option[(CannotInlineWarning, List[AbstractInsnNode])] = {
+  def canInlineCallsite(callsite: Callsite): Option[CannotInlineWarning] = {
     import callsite.{callsiteClass, callsiteInstruction, callsiteMethod, callsiteStackHeight}
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass}
@@ -674,27 +771,27 @@ abstract class Inliner {
       val warning = ResultingMethodTooLarge(
         calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc)
-      Some((warning, Nil))
+      Some(warning)
     } else if (!callee.tryCatchBlocks.isEmpty && stackHasNonParameters) {
       val warning = MethodWithHandlerCalledOnNonEmptyStack(
         calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc)
-      Some((warning, Nil))
+      Some(warning)
     } else findIllegalAccess(callee.instructions, calleeDeclarationClass, callsiteClass) match {
       case Right(Nil) =>
         None
 
       case Right(illegalAccessInsns) =>
-        val warning = IllegalAccessInstruction(
+        val warning = IllegalAccessInstructions(
           calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
-          callsiteClass.internalName, illegalAccessInsns.head)
-        Some((warning, illegalAccessInsns))
+          callsiteClass.internalName, illegalAccessInsns)
+        Some(warning)
 
       case Left((illegalAccessIns, cause)) =>
         val warning = IllegalAccessCheckFailed(
           calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
           callsiteClass.internalName, illegalAccessIns, cause)
-        Some((warning, Nil))
+        Some(warning)
     }
   }
 

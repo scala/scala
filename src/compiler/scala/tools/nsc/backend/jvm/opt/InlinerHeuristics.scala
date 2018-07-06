@@ -11,6 +11,7 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.immutable.ListMap
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
@@ -27,6 +28,7 @@ abstract class InlinerHeuristics extends PerRunInit {
 
   lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
+  // TODO doc `reason`. where is it used??? in the inliner log?
   final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
     // invariant: all post inline requests denote callsites in the callee of the main callsite
     for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
@@ -153,23 +155,7 @@ abstract class InlinerHeuristics extends PerRunInit {
       } else inliner.earlyCanInlineCheck(callsite) match {
         case Some(w) => Some(Left(w))
         case None =>
-          val postInlineRequest: List[InlineRequest] = {
-            val postCall =
-              if (isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)) {
-                // scala-dev#259: when inlining a trait super accessor, also inline the callsite to the default method
-                val implName = callee.callee.name.dropRight(1)
-                findSingleCall(callee.callee, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && mi.name == implName)
-              } else {
-                // scala-dev#259: when inlining a mixin forwarder, also inline the callsite to the static super accessor
-                superAccessorInvocation(callee.callee)
-              }
-            postCall.flatMap(call => {
-              callGraph.addIfMissing(callee.callee, callee.calleeDeclarationClass)
-              val maybeCallsite = callGraph.findCallSite(callee.callee, call)
-              maybeCallsite.flatMap(requestIfCanInline(_, reason).flatMap(_.toOption))
-            }).toList
-          }
-          Some(Right(InlineRequest(callsite, postInlineRequest, reason)))
+          Some(Right(InlineRequest(callsite, Nil, reason)))
       }
     }
 
