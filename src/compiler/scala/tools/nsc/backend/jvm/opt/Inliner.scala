@@ -364,64 +364,6 @@ abstract class Inliner {
     leavesFirst(breakInlineCycles)
   }
 
-  /**
-   * Given an InlineRequest(mainCallsite, post = List(postCallsite)), the postCallsite is a callsite
-   * in the method `mainCallsite.callee`. Once the mainCallsite is inlined into the target method
-   * (mainCallsite.callsiteMethod), we need to find the cloned callsite that corresponds to the
-   * postCallsite so we can inline that into the target method as well.
-   *
-   * However, it is possible that there is no cloned callsite at all that corresponds to the
-   * postCallsite, for example if the corresponding callsite already inlined. Example:
-   *
-   *   def a() = 1
-   *   def b() = a() + 2
-   *   def c() = b() + 3
-   *   def d() = c() + 4
-   *
-   * We have the following callsite objects in the call graph:
-   *
-   *   c1 = a() in b
-   *   c2 = b() in c
-   *   c3 = c() in d
-   *
-   * Assume we have the following inline request
-   *   r = InlineRequest(c3,
-   *         post = List(InlineRequest(c2,
-   *           post = List(InlineRequest(c1, post = Nil)))))
-   *
-   * But before inlining r, assume a separate InlineRequest(c2, post = Nil) is inlined first. We get
-   *
-   *   c1' = a() in c                  // added to the call graph
-   *   c1.inlinedClones += (c1' at c2) // remember that c1' was created when inlining c2
-   *   ~c2~                            // c2 is removed from the call graph
-   *
-   * If we now inline r, we first inline c3. We get
-   *
-   *   c1'' = a() in d                   // added to call graph
-   *   c1'.inlinedClones += (c1'' at c3) // remember that c1'' was created when inlining c3
-   *   ~c3~
-   *
-   * Now we continue with the post-requests for r, i.e. c2.
-   *   - we try to find the clone of c2 that was created when inlining c3 - but there is none. c2
-   *     was already inlined before
-   *   - we continue with the post-request of c2: c1
-   *     - we search for the callsite of c1 that was cloned when inlining c2, we find c1'
-   *     - recursively we search for the callsite of c1' that was cloned when inlining c3, we find c1''
-   *     - so we create an inline request for c1''
-   */
-  // TODO remove, unused
-  def adaptPostRequestForMainCallsite(post: InlineRequest, mainCallsite: Callsite): List[InlineRequest] = {
-    def impl(post: InlineRequest, at: Callsite): List[InlineRequest] = {
-      post.callsite.inlinedClones.find(_.clonedWhenInlining == at) match {
-        case Some(clonedCallsite) =>
-          List(InlineRequest(clonedCallsite.callsite, post.post))
-        case None =>
-          post.post.flatMap(impl(_, post.callsite)).flatMap(impl(_, at))
-      }
-    }
-    impl(post, mainCallsite)
-  }
-
   class UndoLog(active: Boolean = true) {
     import java.util.{ArrayList => JArrayList}
 
