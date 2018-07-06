@@ -297,7 +297,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
       // this can be made more efficient by passing the entire ListMap at once
       var m = that
-      for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger)
+      for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger.invert)
       m
     }
   }
