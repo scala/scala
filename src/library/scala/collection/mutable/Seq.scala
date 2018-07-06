@@ -34,6 +34,9 @@ trait SeqOps[A, +CC[_], +C <: AnyRef]
     b.result()
   }
 
+  @deprecated("Use `mapInPlace` instead", "2.13.0")
+  @`inline`final def transform(f: A => A): this.type = mapInPlace(f)
+
   /** Replaces element at given index with a new value.
     *
     *  @param idx      the index of the element to replace.
