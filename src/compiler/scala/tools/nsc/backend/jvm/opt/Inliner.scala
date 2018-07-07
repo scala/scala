@@ -216,9 +216,17 @@ abstract class Inliner {
 
             case Some(w) =>
               failed += r.callsite.callsiteInstruction
-              illegalAccessInstructions(method).remove(r.callsite.callsiteInstruction)
-              if (w.emitWarning(compilerSettings))
-                backendReporting.inlinerWarning(r.callsite.callsitePosition, w.toString)
+              illegalAccessInstructions(method).remove(r.callsite.callsiteInstruction) match {
+                case Some(originalWarning) =>
+                  undoLogs(method).rollback()
+                  analyzerCache.invalidate(method)
+                  if (originalWarning.insnWarning.emitWarning(compilerSettings))
+                    backendReporting.inlinerWarning(originalWarning.callsite.callsitePosition, originalWarning.insnWarning.toString)
+
+                case _ =>
+                  if (w.emitWarning(compilerSettings))
+                    backendReporting.inlinerWarning(r.callsite.callsitePosition, w.toString)
+              }
           }
 
           if (changed) {
@@ -250,6 +258,7 @@ abstract class Inliner {
 
           case Some(notInlinedIllegalInsn) =>
             undoLogs(m).rollback()
+            analyzerCache.invalidate(m)
             val originalWarning = illegalAccess(notInlinedIllegalInsn)
             if (originalWarning.insnWarning.emitWarning(compilerSettings))
               backendReporting.inlinerWarning(originalWarning.callsite.callsitePosition, originalWarning.insnWarning.toString)
