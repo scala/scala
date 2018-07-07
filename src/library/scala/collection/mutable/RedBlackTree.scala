@@ -67,12 +67,6 @@ private[collection] object RedBlackTree {
     case node => Some(node.value)
   }
 
-  def getKey[A : Ordering](tree: Tree[A, _], key: A): Option[A] =
-    getNode(tree.root, key) match {
-      case null => None
-      case node => Some(node.key)
-    }
-
   @tailrec private[this] def getNode[A, B](node: Node[A, B], key: A)(implicit ord: Ordering[A]): Node[A, B] =
     if (node eq null) null
     else {
@@ -82,7 +76,7 @@ private[collection] object RedBlackTree {
       else node
     }
 
-  def contains[A: Ordering](tree: Tree[A, _], key: A) = getNode(tree.root, key) ne null
+  def contains[A: Ordering](tree: Tree[A, _], key: A): Boolean = getNode(tree.root, key) ne null
 
   def min[A, B](tree: Tree[A, B]): Option[(A, B)] = minNode(tree.root) match {
     case null => None

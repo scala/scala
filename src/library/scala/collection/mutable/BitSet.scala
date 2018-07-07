@@ -85,8 +85,6 @@ class BitSet(protected[collection] final var elems: Array[Long])
     }
   }
 
-  def get(elem: Int): Option[Int] = if (contains(elem)) Some(elem) else None
-
   def unconstrained: collection.Set[Int] = this
 
   /** Updates this bitset to the union with another bitset by performing a bitwise "or".
