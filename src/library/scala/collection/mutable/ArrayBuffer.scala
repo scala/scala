@@ -152,7 +152,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override protected[this] def stringPrefix = "ArrayBuffer"
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
 
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
     val l = scala.math.min(scala.math.min(len, length), xs.length-start)

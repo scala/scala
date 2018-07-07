@@ -140,6 +140,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @deprecated("Use toIterable instead", "2.13.0")
   final def toTraversable: Traversable[A] = toIterable
 
+  override def isTraversableAgain: Boolean = true
+
   /**
     * @return This collection as a `C`.
     */
@@ -222,9 +224,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *           `None` if it is empty.
     */
   def lastOption: Option[A] = if (isEmpty) None else Some(last)
-
-  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
-  @`inline` final def hasDefiniteSize = knownSize >= 0
 
   /** A view over the elements of this collection. */
   def view: View[A] = View.fromIteratorProvider(() => iterator)
@@ -309,7 +308,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def withFilter(p: A => Boolean): collection.WithFilter[A, CC] = new IterableOps.WithFilter(this, p)
 
-  /** A pair of, first, all elements that satisfy prediacte `p` and, second,
+  /** A pair of, first, all elements that satisfy predicate `p` and, second,
     *  all elements that do not. Interesting because it splits a collection in two.
     *
     *  The default implementation provided here needs to traverse the collection twice.

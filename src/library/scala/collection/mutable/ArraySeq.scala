@@ -60,7 +60,7 @@ abstract class ArraySeq[T]
   /** Clones this object, including the underlying Array. */
   override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]
 
-  override def copyToArray[B >: T](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: T](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
 
   override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): xs.type = {
     val l = scala.math.min(scala.math.min(len, length), xs.length-start)

@@ -310,19 +310,8 @@ object View extends IterableFactory[View] {
 
   @SerialVersionUID(3L)
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
-    def iterator: Iterator[A] = new AbstractIterator[A] {
-      private[this] var i = 0
-      private[this] val it = underlying.iterator
-      def next(): A = {
-        val a =
-          if (it.hasNext) it.next()
-          else if (i < len) elem
-          else Iterator.empty.next()
-        i += 1
-        a
-      }
-      def hasNext: Boolean = it.hasNext || i < len
-    }
+    def iterator: Iterator[A] = underlying.iterator.padTo(len, elem)
+
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
   }
 

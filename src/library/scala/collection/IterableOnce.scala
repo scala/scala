@@ -3,7 +3,7 @@ package collection
 
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
-import scala.math.{Ordering, Numeric}
+import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 import scala.collection.mutable.StringBuilder
 
@@ -357,6 +357,16 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def knownSize: Int = -1
 
+  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
+  @`inline` final def hasDefiniteSize = knownSize >= 0
+
+  /** Tests whether this $coll can be repeatedly traversed.  Always
+   *  true for Iterables and false for Iterators unless overridden.
+   *
+   *  @return   `true` if it is repeatedly traversable, `false` otherwise.
+   */
+  def isTraversableAgain: Boolean = false
+
   /** Apply `f` to each element for its side effects
     *  Note: [U] parameter needed to help scalac's type inference.
     */
@@ -628,6 +638,22 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
   /** Copy elements to an array.
+   *
+   *  Fills the given array `xs` starting at index `start` with values of this $coll.
+   *
+   *  Copying will stop once either all the elements of this $coll have been copied,
+   *  or the end of the array is reached.
+   *
+   *  @param  xs     the array to fill.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @usecase def copyToArray(xs: Array[A]): Unit
+   *
+   *  $willNotTerminateInf
+   */
+  def copyToArray[B >: A](xs: Array[B]): xs.type = copyToArray(xs, 0)
+
+  /** Copy elements to an array.
     *
     *  Fills the given array `xs` starting at index `start` with values of this $coll.
     *
@@ -642,7 +668,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  $willNotTerminateInf
     */
-  def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
+
+  def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = {
     val xsLen = xs.length
     val it = iterator
     var i = start
@@ -914,13 +941,39 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
     // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
-    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
+    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any] {
+      def apply(a: A) = this
+    }
     val it = iterator
     while (it.hasNext) {
       val x = pf.applyOrElse(it.next(), sentinel)
       if (x.asInstanceOf[AnyRef] ne sentinel) return Some(x.asInstanceOf[B])
     }
     None
+  }
+
+  @deprecated("`aggregate` is not relevant for sequential collections. Use `foldLeft(z)(seqop)` instead.", "2.13.0")
+  def aggregate[B](z: => B)(seqop: (B, A) => B, combop: (B, B) => B): B = foldLeft(z)(seqop)
+
+  /** Tests whether every element of this collection's iterator relates to the
+   *  corresponding element of another collection by satisfying a test predicate.
+   *
+   *  @param   that    the other collection
+   *  @param   p       the test predicate, which relates elements from both collections
+   *  @tparam  B       the type of the elements of `that`
+   *  @return          `true` if both collections have the same length and
+   *                   `p(x, y)` is `true` for all corresponding elements `x` of this iterator
+   *                   and `y` of `that`, otherwise `false`
+   */
+  def corresponds[B](that: IterableOnce[B])(p: (A, B) => Boolean): Boolean = {
+    val a = iterator
+    val b = that.iterator
+
+    while (a.hasNext && b.hasNext) {
+      if (!p(a.next(), b.next())) return false
+    }
+
+    a.hasNext == b.hasNext
   }
 
   /** Displays all elements of this $coll in a string using start, end, and
