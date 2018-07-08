@@ -156,39 +156,39 @@ class ArrayBufferTest {
 
   @Test
   def testRemoveMany: Unit = {
-    def testRemoveMany(idx: Int, count: Int, expectation: ArrayBuffer[Int]): Unit = {
+    def testRemoveMany(index: Int, count: Int, expectation: ArrayBuffer[Int]): Unit = {
       val buffer = ArrayBuffer(0, 1, 2)
-      buffer.remove(idx, count)
+      buffer.remove(index, count)
       assertEquals(expectation, buffer)
     }
 
-    testRemoveMany(idx = 0, count = 0, expectation = ArrayBuffer(0, 1, 2))
-    testRemoveMany(idx = 0, count = 1, expectation = ArrayBuffer(1, 2))
-    testRemoveMany(idx = 0, count = 2, expectation = ArrayBuffer(2))
-    testRemoveMany(idx = 0, count = 3, expectation = ArrayBuffer())
-    testRemoveMany(idx = 1, count = 1, expectation = ArrayBuffer(0, 2))
-    testRemoveMany(idx = 1, count = 2, expectation = ArrayBuffer(0))
-    testRemoveMany(idx = 2, count = 1, expectation = ArrayBuffer(0, 1))
+    testRemoveMany(index = 0, count = 0, expectation = ArrayBuffer(0, 1, 2))
+    testRemoveMany(index = 0, count = 1, expectation = ArrayBuffer(1, 2))
+    testRemoveMany(index = 0, count = 2, expectation = ArrayBuffer(2))
+    testRemoveMany(index = 0, count = 3, expectation = ArrayBuffer())
+    testRemoveMany(index = 1, count = 1, expectation = ArrayBuffer(0, 2))
+    testRemoveMany(index = 1, count = 2, expectation = ArrayBuffer(0))
+    testRemoveMany(index = 2, count = 1, expectation = ArrayBuffer(0, 1))
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
   def testRemoveManyWithNegativeIndex: Unit = {
-    ArrayBuffer(0, 1, 2).remove(idx = -1, count = 1)
+    ArrayBuffer(0, 1, 2).remove(index = -1, count = 1)
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
   def testRemoveManyWithTooLargeIndex: Unit = {
-    ArrayBuffer(0).remove(idx = 1, count = 1)
+    ArrayBuffer(0).remove(index = 1, count = 1)
   }
 
   @Test(expected = classOf[IllegalArgumentException])
   def testRemoveManyWithNegativeCount: Unit = {
-    ArrayBuffer(0).remove(idx = 0, count = -1)
+    ArrayBuffer(0).remove(index = 0, count = -1)
   }
 
   @Test(expected = classOf[IndexOutOfBoundsException])
   def testRemoveManyWithTooLargeCount: Unit = {
-    ArrayBuffer(0).remove(idx = 0, count = 100)
+    ArrayBuffer(0).remove(index = 0, count = 100)
   }
 
   @Test

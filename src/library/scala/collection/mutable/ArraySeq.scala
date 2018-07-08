@@ -48,7 +48,7 @@ abstract class ArraySeq[T]
   def elemTag: ClassTag[_]
 
   /** Update element at given index */
-  def update(index: Int, elem: T): Unit
+  def update(@deprecatedName('idx, "2.13.0") index: Int, elem: T): Unit
 
   /** The underlying array. Its element type does not have to be equal to the element type of this ArraySeq. A primitive
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
