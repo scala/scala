@@ -764,6 +764,17 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 
   override protected[this] def writeReplace(): AnyRef =
     if(headDefined && tailDefined) new LazyListOps.SerializationProxy[A, Stream](this) else this
+
+  /** Prints elements of this stream one by one, separated by commas. */
+  @deprecated("""Use print(stream.force.mkString(", ")) instead""")
+  @inline def print(): Unit = Console.print(this.force.mkString(", "))
+
+  /** Prints elements of this stream one by one, separated by `sep`.
+    *  @param sep   The separator string printed between consecutive elements.
+    */
+  @deprecated("Use print(stream.force.mkString(sep)) instead")
+  @inline def print(sep: String): Unit = Console.print(this.force.mkString(sep))
+
 }
 
 @deprecated("Use LazyList (which has a lazy head and tail) instead of Stream (which has a lazy tail only)", "2.13.0")
