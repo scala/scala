@@ -169,6 +169,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def iterableFactory: IterableFactory[IterableCC]
 
+  @deprecated("Use iterableFactory instead", "2.13.0")
+  @deprecatedOverriding("Use iterableFactory instead", "2.13.0")
+  @`inline` def companion: IterableFactory[IterableCC] = iterableFactory
+
   /**
     * @return a strict builder for the same collection type.
     *
