@@ -150,6 +150,14 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
       throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
+  @deprecated("Use 'this' instance instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def result(): this.type = this
+
+  @deprecated("Use 'new GrowableBuilder(this).mapResult(f)' instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def mapResult[NewTo](f: (ArrayBuffer[A]) ⇒ NewTo): Builder[A, NewTo] = new GrowableBuilder(this).mapResult(f)
+
   override protected[this] def stringPrefix = "ArrayBuffer"
 
   override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
@@ -240,4 +248,5 @@ object RefArrayUtils {
       i += 1
     }
   }
+
 }

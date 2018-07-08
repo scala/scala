@@ -297,4 +297,14 @@ class ArrayBufferTest {
 
     assertEquals(ArrayBuffer(1, 2, 3), buffer)
   }
+  @Test
+  def testMapResult: Unit = {
+    val buffer = ArrayBuffer(3, 2, 1)
+
+    val builder = buffer.mapResult(_.mkString(","))
+
+    buffer.prepend(4)
+
+    assertEquals(builder.result(), "4,3,2,1")
+  }
 }
