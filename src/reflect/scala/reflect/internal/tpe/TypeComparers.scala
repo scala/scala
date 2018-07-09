@@ -199,7 +199,7 @@ trait TypeComparers {
      *  up any type constraints naive enough to get into their hot rods.
      */
     def mutateNonTypeConstructs(lhs: Type, rhs: Type) = lhs match {
-      case BoundedWildcardType(bounds)         => bounds containsType rhs
+      case pt: ProtoType                       => pt.registerTypeEquality(rhs)
       case tv @ TypeVar(_, _)                  => tv.registerTypeEquality(rhs, typeVarLHS = lhs eq tp1)
       case TypeRef(tv @ TypeVar(_, _), sym, _) => tv.registerTypeSelection(sym, rhs)
       case _                                   => false
@@ -462,11 +462,10 @@ trait TypeComparers {
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
-      case BoundedWildcardType(bounds) =>
-        isSubType(tp1, bounds.hi, depth)
+      case tp2: ProtoType => tp2.isMatchedBy(tp1, depth)
       case tv2 @ TypeVar(_, constr2) =>
         tp1 match {
-          case AnnotatedType(_, _) | BoundedWildcardType(_) =>
+          case AnnotatedType(_, _) | _: ProtoType =>
             secondTry
           case _ =>
             tv2.registerBound(tp1, isLowerBound = true)
@@ -476,16 +475,16 @@ trait TypeComparers {
     }
 
     /* Second try, on the left:
-     *   - unwrap AnnotatedTypes, BoundedWildcardTypes,
+     *   - ProtoType (usually a BoundedWildcardType)
+     *   - unwrap AnnotatedTypes
      *   - bind typevars,
      *   - handle existential types by skolemization.
      */
     def secondTry = tp1 match {
+      case pt: ProtoType => pt.canMatch(tp2, depth)
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
-      case BoundedWildcardType(bounds) =>
-        isSubType(tp1.bounds.lo, tp2, depth)
       case tv @ TypeVar(_,_) =>
         tv.registerBound(tp2, isLowerBound = false)
       case ExistentialType(_, _) =>

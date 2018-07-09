@@ -329,6 +329,8 @@ trait Implicits {
     result
   }
 
+  // TODO: use ProtoType for HasMember/HasMethodMatching
+
   /** An extractor for types of the form ? { name: ? }
    */
   object HasMember {
@@ -634,7 +636,7 @@ trait Implicits {
     private def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean = tp match {
       case MethodType(p :: _, restpe) if p.isImplicit => matchesPtView(restpe, ptarg, ptres, undet)
       case MethodType(p :: Nil, restpe)               => matchesArgRes(p.tpe, restpe, ptarg, ptres, undet)
-      case ExistentialType(_, qtpe)                   => matchesPtView(normalize(qtpe), ptarg, ptres, undet)
+      case ExistentialType(_, qtpe)                   => matchesPtView(methodToExpressionTp(qtpe), ptarg, ptres, undet)
       case Function1(arg1, res1)                      => matchesArgRes(arg1, res1, ptarg, ptres, undet)
       case _                                          => false
     }
@@ -733,7 +735,7 @@ trait Implicits {
           }
         case NullaryMethodType(restpe)  => loop(restpe, pt)
         case PolyType(_, restpe)        => loop(restpe, pt)
-        case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else normalize(tp) <:< pt // is !fast case needed??
+        case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else methodToExpressionTp(tp) <:< pt // is !fast case needed??
         case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
       }
       loop(tp0, pt0)

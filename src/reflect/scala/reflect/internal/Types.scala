@@ -1127,8 +1127,7 @@ trait Types
   /** An object representing an unknown type, used during type inference.
    *  If you see WildcardType outside of inference it is almost certainly a bug.
    */
-  case object WildcardType extends Type {
-    override def isWildcard = true
+  case object WildcardType extends Type with ProtoType {
     override def safeToString: String = "?"
     override def kind = "WildcardType"
   }
@@ -1142,8 +1141,14 @@ trait Types
    *       type is created: a MethodType with parameters typed as
    *       BoundedWildcardTypes.
    */
-  case class BoundedWildcardType(override val bounds: TypeBounds) extends Type with BoundedWildcardTypeApi {
-    override def isWildcard = true
+  case class BoundedWildcardType(override val bounds: TypeBounds) extends Type with BoundedWildcardTypeApi with ProtoType {
+    override def isMatchedBy(tp: Type, depth: Depth)= isSubType(tp, bounds.hi, depth)
+    override def canMatch(tp: Type, depth: Depth): Boolean = isSubType(bounds.lo, tp, depth)
+    override def registerTypeEquality(tp: Type): Boolean = bounds.containsType(tp)
+    override def toBounds: TypeBounds = bounds
+    override def members = bounds.lo.members
+
+    override def toVariantType: Type = bounds
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
     override def mapOver(map: TypeMap): Type = {
@@ -1154,6 +1159,30 @@ trait Types
   }
 
   object BoundedWildcardType extends BoundedWildcardTypeExtractor
+
+  trait ProtoType extends Type {
+    def toBounds: TypeBounds = TypeBounds.empty
+
+    override def isWildcard = true
+    override def members = ErrorType.decls
+
+    // tp <:< this prototype?
+    def isMatchedBy(tp: Type, depth: Depth): Boolean = true
+
+    // could this prototype <:< tp?
+    def canMatch(tp: Type, depth: Depth): Boolean = true
+
+    // when comparing for type equality
+    def registerTypeEquality(tp: Type): Boolean = true
+
+    // Does this prototype denote that we're expecting a function?
+    def expectsFunctionType: Boolean = false
+
+    def asFunctionType: Type = NoType
+
+    // represent this type as a ground type for use in varianceInType
+    def toVariantType: Type = NoType
+  }
 
   /** An object representing a non-existing type */
   case object NoType extends Type {
@@ -4313,11 +4342,10 @@ trait Types
   }
   ****/
   private def isInternalTypeUsedAsTypeArg(tp: Type): Boolean = tp match {
-    case WildcardType           => true
-    case BoundedWildcardType(_) => true
-    case ErrorType              => true
-    case _: TypeVar             => true
-    case _                      => false
+    case ErrorType    => true
+    case _: ProtoType => true
+    case _: TypeVar   => true
+    case _            => false
   }
   private def isAlwaysValueType(tp: Type) = tp match {
     case RefinedType(_, _)       => true

@@ -209,10 +209,10 @@ trait Variances {
 
     def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
     def inType(tp: Type): Variance   = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
+      case pt: ProtoType                                => inType(pt.toVariantType)
+      case ErrorType | NoType | NoPrefix                => Bivariant
       case ThisType(_) | ConstantType(_)                => Bivariant
       case TypeRef(_, `tparam`, _)                      => Covariant
-      case BoundedWildcardType(bounds)                  => inType(bounds)
       case NullaryMethodType(restpe)                    => inType(restpe)
       case SingleType(pre, sym)                         => inType(pre)
       case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)                 // a type constructor cannot occur in tp's args
