@@ -4,7 +4,11 @@ public <A> int C0.v1(int)
 public int C0.v3()
 public <A> int C0.v3()
 public int C0.v4(int,scala.collection.immutable.List)
+#partest !java15+
 public <A> int C0.v4(int,scala.collection.immutable.List<Val<A>>)
+#partest java15+
+public <A extends java.lang.String> int C0.v4(int,scala.collection.immutable.List<Val<A>>)
+#partest
 public scala.collection.immutable.List C0.v2()
 public <A> scala.collection.immutable.List<Val<A>> C0.v2()
 
@@ -14,7 +18,11 @@ public <A> java.lang.Object C1.v1(java.lang.Object)
 public java.lang.Object C1.v3()
 public <A> java.lang.Object C1.v3()
 public java.lang.Object C1.v4(java.lang.Object,scala.collection.immutable.List)
+#partest !java15+
 public <A> java.lang.Object C1.v4(java.lang.Object,scala.collection.immutable.List<ValAny<A>>)
+#partest java15+
+public <A extends java.lang.String> java.lang.Object C1.v4(java.lang.Object,scala.collection.immutable.List<ValAny<A>>)
+#partest
 public scala.collection.immutable.List C1.v2()
 public <A> scala.collection.immutable.List<ValAny<A>> C1.v2()
 
@@ -24,7 +32,11 @@ public <A> java.lang.String C2.v1(java.lang.String)
 public java.lang.String C2.v3()
 public <A> java.lang.String C2.v3()
 public java.lang.String C2.v4(java.lang.String,scala.collection.immutable.List)
+#partest !java15+
 public <A> java.lang.String C2.v4(java.lang.String,scala.collection.immutable.List<ValStr<A>>)
+#partest java15+
+public <A extends java.lang.String> java.lang.String C2.v4(java.lang.String,scala.collection.immutable.List<ValStr<A>>)
+#partest
 public scala.collection.immutable.List C2.v2()
 public <A> scala.collection.immutable.List<ValStr<A>> C2.v2()
 

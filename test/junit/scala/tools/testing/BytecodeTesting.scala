@@ -338,5 +338,5 @@ object BytecodeTesting {
     def stringLines = l.mkString("\n")
   }
 
-  val ignoreDeprecations = (info: StoreReporter.Info) => info.msg.contains("deprecation")
+  val ignoreDeprecations = (info: StoreReporter#Info) => info.msg.contains("deprecation")
 }

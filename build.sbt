@@ -669,6 +669,13 @@ lazy val bench = project.in(file("test") / "benchmarks")
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala/**", "-opt-warnings"),
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
+// Jigsaw: reflective access between modules (`setAccessible(true)`) requires an `opens` directive.
+// This is enforced by error (not just by warning) since JDK 16. In our tests we use reflective access
+// from the unnamed package (the classpath) to JDK modules in testing utilities like `assertNotReachable`.
+// `add-exports=jdk.jdeps/com.sun.tools.javap` is tests that use `:javap` in the REPL, see scala/bug#12378
+val addOpensForTesting = "-XX:+IgnoreUnrecognizedVMOptions" +: "--add-exports=jdk.jdeps/com.sun.tools.javap=ALL-UNNAMED" +:
+  Seq("java.util.concurrent.atomic", "java.lang", "java.lang.reflect", "java.net").map(p => s"--add-opens=java.base/$p=ALL-UNNAMED")
+
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partest, scaladoc)
   .settings(clearSourceAndResourceDirectories)
@@ -677,7 +684,7 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(disablePublishing)
   .settings(
     fork in Test := true,
-    javaOptions in Test += "-Xss1M",
+    javaOptions in Test ++= "-Xss1M" +: addOpensForTesting,
     (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
@@ -695,7 +702,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(
     // enable forking to workaround https://github.com/sbt/sbt/issues/4009
     fork in Test := true,
-    javaOptions in Test += "-Xss1M",
+    javaOptions in Test ++= "-Xss1M" +: addOpensForTesting,
     testOptions ++= {
       if ((fork in Test).value) Nil
       else List(Tests.Cleanup { loader =>
@@ -712,11 +719,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
 
 lazy val osgiTestFelix = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestFelix"),
-  "org.apache.felix" % "org.apache.felix.framework" % "5.0.1")
+  "org.apache.felix" % "org.apache.felix.framework" % "5.6.10")
 
 lazy val osgiTestEclipse = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestEclipse"),
-  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.10.100.v20150521-1310")
+  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.13.0.v20180226-1711")
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
@@ -728,7 +735,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     fork in Test := true,
     parallelExecution in Test := false,
     libraryDependencies ++= {
-      val paxExamVersion = "4.5.0" // Last version which supports Java 6
+      val paxExamVersion = "4.11.0" // Last version which supports Java 9+
       Seq(
         junitDep,
         junitInterfaceDep,
@@ -744,8 +751,9 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
       )
     },
     Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
+    Keys.testOnly in Test := (Keys.testOnly in Test).dependsOn(packageBin in Compile).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
-    javaOptions in Test += "-Dscala.bundle.dir=" + (buildDirectory in ThisBuild).value / "osgi",
+    javaOptions in Test ++= ("-Dscala.bundle.dir=" + (buildDirectory in ThisBuild).value / "osgi") +: addOpensForTesting,
     (forkOptions in Test in test) := (forkOptions in Test in test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
@@ -797,10 +805,10 @@ lazy val test = project
     // enable this in 2.13, when tests pass
     //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
     scalacOptions in Compile -= "-Ywarn-unused:imports",
-    javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
+    javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US") ++ addOpensForTesting,
     testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
-    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
+    testOptions in IntegrationTest += Tests.Argument(s"""-Dpartest.java_opts=-Xmx1024M -Xms64M ${addOpensForTesting.mkString(" ")}"""),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
     (forkOptions in IntegrationTest) := (forkOptions in IntegrationTest).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     testOptions in IntegrationTest += {

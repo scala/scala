@@ -15,9 +15,7 @@ class C {
 }
 
 object Test {
-  def main(args: Array[String]): Unit = {
-    test()
-  }
+  def main(args: Array[String]): Unit = test()
 
   def test(): Unit = {
     val loader = getClass.getClassLoader.asInstanceOf[URLClassLoader]
@@ -29,7 +27,7 @@ object Test {
       }
       val clazz = throwawayLoader.loadClass("C")
       assert(clazz != loaderCClass)
-      clazz.newInstance()
+      clazz.getConstructor().newInstance()
     }
     (1 to 4) foreach { i =>
       // This would OOM by the third iteration if we leaked `throwawayLoader` during
