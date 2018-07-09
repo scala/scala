@@ -340,19 +340,14 @@ trait Contexts { self: Analyzer =>
 
           val vsymMap = (vsyms zip vsyms0).toMap
 
-          object patchRefs extends Transformer {
-            override def transform(tree: Tree): Tree = {
-              tree match {
-                case i: Ident if vsymMap.contains(i.symbol) =>
-                  gen.mkAttributedSelect(gen.mkAttributedRef(msym0), vsymMap(i.symbol)) setType i.tpe
-                case _ =>
-                  super.transform(tree)
-              }
+          val substitutor = new TreeSymSubstituter(vsyms, vsyms0) {
+            override def transform(tree: Tree): Tree = tree match {
+              case i: Ident if vsymMap.contains(i.symbol) =>
+                super.transform(treeCopy.Select(i, gen.mkAttributedRef(msym0), i.name))
+              case _ => super.transform(tree)
             }
           }
-
-          val tree0 = patchRefs.transform(result.tree)
-          val tree1 = Block(mdef0, tree0).substituteSymbols(vsyms, vsyms0) setType tree.tpe
+          val tree1 = substitutor(Block(mdef0, result.tree)) setType tree.tpe
 
           new SearchResult(atPos(pos.focus)(tree1), result.subst, result.undetparams)
         }
