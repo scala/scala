@@ -381,16 +381,19 @@ sealed abstract class List[+A]
     None
   }
 
-  override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = {
-    var i = this
-    var j = that
-    while (!(i.isEmpty || j.isEmpty)) {
-      if (!p(i.head, j.head))
-        return false
-      i = i.tail
-      j = j.tail
-    }
-    i.isEmpty && j.isEmpty
+  override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
+    case that: LinearSeq[B] =>
+      var i = this
+      var j = that
+      while (!(i.isEmpty || j.isEmpty)) {
+        if (!p(i.head, j.head))
+          return false
+        i = i.tail
+        j = j.tail
+      }
+      i.isEmpty && j.isEmpty
+    case _ =>
+      super.corresponds(that)(p)
   }
 
   override protected[this] def className = "List"
