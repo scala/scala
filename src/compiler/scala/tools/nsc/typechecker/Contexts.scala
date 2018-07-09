@@ -262,7 +262,8 @@ trait Contexts { self: Analyzer =>
         implicitDictionary.find(_._1 =:= tpe) match {
           case Some((_, (sym, _))) => sym
           case None =>
-            val vname = unit.freshTermName("rec$")
+            val fresh = freshNameCreatorFor(this)
+            val vname = newTermName(fresh.newName("rec$"))
             val vsym = owner.newValue(vname, newFlags = FINAL | SYNTHETIC) setInfo tpe
             implicitDictionary +:= (tpe -> (vsym, EmptyTree))
             vsym
@@ -323,7 +324,7 @@ trait Contexts { self: Analyzer =>
           }.unzip
 
           val ctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
-          val mname = unit.freshTermName("LazyDefns$")
+          val mname = newTermName(typer.fresh.newName("LazyDefns$"))
           val mdef =
             ModuleDef(Modifiers(SYNTHETIC), mname,
               Template(List(Ident(AnyRefClass)), noSelfType, ctor :: vdefs.toList)
