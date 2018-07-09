@@ -46,8 +46,6 @@ object View extends IterableFactory[View] {
     */
   def fromIteratorProvider[A](it: () => Iterator[A]): View[A] = new AbstractView[A] {
     def iterator = it()
-    override def knownSize: Int = iterator.knownSize
-    override def isEmpty: Boolean = iterator.isEmpty
   }
 
   /**
