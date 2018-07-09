@@ -334,8 +334,9 @@ trait Contexts { self: Analyzer =>
 
           val mdef0 = typer.typed(mdef)
           val msym0 = mdef0.symbol
+          val moduleClassInfo = mdef0.symbol.moduleClass.info
           val vsyms0 = vsyms.map { vsym =>
-            mdef0.symbol.moduleClass.asClass.toType.decl(vsym.name)
+            moduleClassInfo.decl(vsym.name)
           }
 
           val vsymMap = (vsyms zip vsyms0).toMap
