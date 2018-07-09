@@ -70,8 +70,8 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |
         |  def t6: Long = {
-        |    val y = new java.lang.Boolean(true)
-        |    val i: Integer = if (y) new Integer(10) else 13
+        |    val y = java.lang.Boolean.valueOf(true)
+        |    val i: Integer = if (y) Integer.valueOf(10) else 13
         |    val j: java.lang.Long = 3l
         |    j + i
         |  }
@@ -273,7 +273,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |
         |  def t3 = {
         |    // boxed before tuple creation, a non-specialized tuple is created
-        |    val t = (new Integer(3), Integer.valueOf(4))
+        |    val t = (Integer.valueOf(3), Integer.valueOf(4))
         |    t._1 + t._2 // invokes the generic `_1` / `_2` getters, both values unboxed by Integer2int
         |  }
         |

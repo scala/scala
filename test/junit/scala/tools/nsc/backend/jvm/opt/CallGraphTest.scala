@@ -12,6 +12,7 @@ import scala.collection.immutable.IntMap
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testing.AssertUtil._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 
