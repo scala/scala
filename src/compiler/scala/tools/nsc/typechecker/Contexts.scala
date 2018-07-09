@@ -320,7 +320,7 @@ trait Contexts { self: Analyzer =>
         if(pruned.isEmpty) result
         else {
           val (vsyms, vdefs) = pruned.map { case (vsym, rhs) =>
-            (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs))
+            (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs.changeOwner(owner -> vsym)))
           }.unzip
 
           val ctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
@@ -352,7 +352,7 @@ trait Contexts { self: Analyzer =>
           }
 
           val tree0 = patchRefs.transform(result.tree)
-          val tree1 = Block(mdef0, tree0).substituteSymbols(vsyms.toList, vsyms0.toList) setType tree.tpe
+          val tree1 = Block(mdef0, tree0).substituteSymbols(vsyms, vsyms0) setType tree.tpe
 
           new SearchResult(atPos(pos.focus)(tree1), result.subst, result.undetparams)
         }
