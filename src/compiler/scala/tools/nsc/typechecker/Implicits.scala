@@ -90,7 +90,9 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
-    val search = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos)
+    val dpt = if (isView) pt else dropByName(pt)
+    val isByName = dpt ne pt
+    val search = new ImplicitSearch(tree, dpt, isView, isByName, implicitSearchContext, pos)
     pluginsNotifyImplicitSearch(search)
     val result = search.bestImplicit
     pluginsNotifyImplicitSearchResult(result)
@@ -152,7 +154,7 @@ trait Implicits {
     val tvars = tpars map (TypeVar untouchable _)
     val tpSubsted = tp.subst(tpars, tvars)
 
-    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false))
+    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, false, context.makeImplicit(reportAmbiguousErrors = false))
 
     search.allImplicitsPoly(tvars)
   }
@@ -291,11 +293,16 @@ trait Implicits {
     private def isView_=(value: Boolean): Unit = _isView = value
 
     private[this] var _isView: Boolean = false
+
+    def isByName: Boolean = _isByName
+    private def isByName_=(value: Boolean): Unit = _isByName = value
+    private[this] var _isByName: Boolean = false
   }
   object OpenImplicit {
-    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean): OpenImplicit = {
+    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean, isByName: Boolean): OpenImplicit = {
       val result = new OpenImplicit(info, pt, tree)
       result.isView = isView
+      result.isByName = isByName
       result
     }
   }
@@ -382,7 +389,7 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val isByNamePt: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
@@ -532,9 +539,7 @@ trait Implicits {
       val existsDominatedImplicit: Boolean =
         if(tree == EmptyTree) false
         else {
-          val ptByName = isByNameParamType(pt)
-          val dpt = if (ptByName) dropByName(pt) else pt
-          lazy val spt = stripped(core(dpt))
+          lazy val spt = stripped(core(pt))
           lazy val sptSyms = allSymbols(spt)
           // Are all the symbols of the stripped core of pt contained in the stripped core of tp?
           def coversPt(tp: Type): Boolean = {
@@ -547,43 +552,41 @@ trait Implicits {
             ois match {
               case Nil => false
               case (hd@OpenImplicit(info1, tp, tree1)) :: tl =>
-                val byName = isByNameParamType(tp)
-                val dtp = if (byName) dropByName(tp) else tp
                 (if (!info1.sym.isMacro && tree1.symbol == tree.symbol) {
-                  if(belowByName && (dtp =:= dpt)) Some(false) // if there is a byname argument between tp and pt we can tie the knot
-                  else if (dominates(dpt, dtp) && coversPt(dtp)) Some(true)
+                  if(belowByName && (tp =:= pt)) Some(false) // if there is a byname argument between tp and pt we can tie the knot
+                  else if (dominates(pt, tp) && coversPt(tp)) Some(true)
                   else None
                 } else None) match {
                   case Some(res) => res
-                  case None => loop(tl, byName || belowByName)
+                  case None => loop(tl, hd.isByName || belowByName)
                 }
             }
           }
-          loop(context.openImplicits, ptByName)
+          loop(context.openImplicits, this.isByNamePt)
         }
 
       if(existsDominatedImplicit) {
         //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
         DivergentSearchFailure
       } else {
-        val ref = context.refByNameImplicit(dropByName(pt))
+        val ref = context.refByNameImplicit(pt)
         if(ref != EmptyTree)
           new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
         else {
           val recursiveImplicit: Option[OpenImplicit] =
             if(tree == EmptyTree) None
             else context.openImplicits find {
-              case OpenImplicit(info, tp, tree1) =>
-                (isByNameParamType(tp) || isByNameParamType(pt)) && dropByName(tp) <:< dropByName(pt)
+              case oi @ OpenImplicit(info, tp, tree1) =>
+                (oi.isByName || isByNamePt) && oi.pt <:< pt
             }
 
           recursiveImplicit match {
             case Some(rec) =>
-              val ref = atPos(pos.focus)(context.linkByNameImplicit(dropByName(rec.pt)))
+              val ref = atPos(pos.focus)(context.linkByNameImplicit(rec.pt))
               new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
             case None =>
               try {
-                context.openImplicits = OpenImplicit(info, pt, tree, isView) :: context.openImplicits
+                context.openImplicits = OpenImplicit(info, pt, tree, isView, isByNamePt) :: context.openImplicits
                 //println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
                 val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
                 if (result.isDivergent) {
@@ -591,7 +594,7 @@ trait Implicits {
                   if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
                     DivergingImplicitExpansionError(tree, pt, info.sym)(context)
                   result
-                } else context.defineByNameImplicit(dropByName(pt), result)
+                } else context.defineByNameImplicit(pt, result)
               } finally {
                 context.openImplicits = context.openImplicits.tail
               }
@@ -688,7 +691,7 @@ trait Implicits {
         case NullaryMethodType(restpe)  => loop(restpe, pt)
         case PolyType(_, restpe)        => loop(restpe, pt)
         case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else normalize(tp) <:< pt // is !fast case needed??
-        case _                          => if (fast) isPlausiblySubType(tp, if(isView) pt else dropByName(pt)) else tp <:< dropByName(pt)
+        case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
       }
       loop(tp0, pt0)
     }
@@ -758,7 +761,7 @@ trait Implicits {
       typingLog("considering", typeDebug.ptTree(itree1))
 
       @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
-      def fallback = typed1(itree1, EXPRmode, dropByName(wildPt))
+      def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
         val itree2 = if (!isView) fallback else pt match {
           case Function1(arg1, arg2) =>
@@ -796,7 +799,7 @@ trait Implicits {
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedImplicits)
 
         val itree3 = if (isView) treeInfo.dissectApplied(itree2).callee
-                     else adapt(itree2, EXPRmode, dropByName(wildPt))
+                     else adapt(itree2, EXPRmode, wildPt)
 
         typingStack.showAdapt(itree0, itree3, pt, context)
 
