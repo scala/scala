@@ -50,6 +50,8 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedSeqView.Slice(this, from, until))
 
+  override def last: A = apply(length - 1)
+
   override def lengthCompare(len: Int): Int = length - len
 
   final override def knownSize: Int = length
