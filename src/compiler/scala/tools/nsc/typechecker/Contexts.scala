@@ -249,7 +249,7 @@ trait Contexts { self: Analyzer =>
     private type ImplicitDict = List[(Type, (Symbol, Tree))]
     private var implicitDictionary: ImplicitDict = null
 
-    def implicitRootContext: Context = {
+    @tailrec final def implicitRootContext: Context = {
       if(implicitDictionary != null) this
       else if(outerIsNoContext || outer.openImplicits.isEmpty) {
         implicitDictionary = Nil
@@ -271,7 +271,7 @@ trait Contexts { self: Analyzer =>
       gen.mkAttributedRef(sym) setType tpe
     }
 
-    def linkByNameImplicit(tpe: Type): Tree = implicitRootContext.linkImpl(tpe)
+    final def linkByNameImplicit(tpe: Type): Tree = implicitRootContext.linkImpl(tpe)
 
     private def refImpl(tpe: Type): Tree =
       implicitDictionary.find(_._1 =:= tpe) match {
@@ -281,7 +281,7 @@ trait Contexts { self: Analyzer =>
           EmptyTree
       }
 
-    def refByNameImplicit(tpe: Type): Tree = implicitRootContext.refImpl(tpe)
+    final def refByNameImplicit(tpe: Type): Tree = implicitRootContext.refImpl(tpe)
 
     private def defineImpl(tpe: Type, result: SearchResult): SearchResult = {
       @tailrec
@@ -316,7 +316,7 @@ trait Contexts { self: Analyzer =>
             else prune(in.map(_._2) ++ trees, out, in ++ acc)
         }
 
-        val pruned = prune(List(result.tree), implicitDictionary.map(_._2), List.empty[(Symbol, Tree)])
+        val pruned = prune(List(result.tree), implicitDictionary.map(_._2), Nil)
         if(pruned.isEmpty) result
         else {
           val (vsyms, vdefs) = pruned.map { case (vsym, rhs) =>
