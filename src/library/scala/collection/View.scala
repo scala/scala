@@ -309,8 +309,8 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   private[collection] class Patched[A](underlying: SomeIterableOps[A], from: Int, other: IterableOnce[A], replaced: Int) extends AbstractView[A] {
     def iterator: Iterator[A] = underlying.iterator.patch(from, other.iterator, replaced)
-    override def knownSize: Int = if (underlying.knownSize == 0) 0 else super.knownSize
-    override def isEmpty: Boolean = iterator.isEmpty
+    override def knownSize: Int = if (underlying.knownSize == 0 && other.knownSize == 0) 0 else super.knownSize
+    override def isEmpty: Boolean = if (knownSize == 0) true else iterator.isEmpty
   }
 
   @SerialVersionUID(3L)
