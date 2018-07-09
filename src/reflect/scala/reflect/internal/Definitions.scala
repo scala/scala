@@ -723,9 +723,12 @@ trait Definitions extends api.StandardDefinitions {
       )
 
     // @requires pt.typeSymbol == PartialFunctionClass
-    def partialFunctionArgTypeFromProto(pt: Type) =
+    def partialFunctionArgResTypeFromProto(pt: Type): (Type, Type) =
       pt match {
-        case _                          => pt.dealiasWiden.typeArgs
+        case oap: OverloadedArgFunProto => (oap.hofParamTypes.head, WildcardType)
+        case _                          =>
+          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs
+          (arg, res)
       }
 
     // the number of arguments expected by the function described by `tp` (a FunctionN or SAM type),
