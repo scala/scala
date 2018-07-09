@@ -759,7 +759,7 @@ final class StringOps(private val s: String) extends AnyVal {
   
   /**
    * Try to parse as a `Boolean`
-   * @return `Some(true)` if the string is "true" case insenitive,
+   * @return `Some(true)` if the string is "true" case insensitive,
    * `Some(false)` if the string is "false" case insensitive, 
    * and `None` if the string is anything else
    * @throws java.lang.NullPointerException if the string is `null`
