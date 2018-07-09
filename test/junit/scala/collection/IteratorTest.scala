@@ -484,4 +484,20 @@ class IteratorTest {
     assertSameElements(List(10,11,13), scan)
     assertSameElements(List(10,-1,-1,-11,11,-2,-2,-13,13,-3), results)
   }
+
+  @Test def unfoldCorrectness(): Unit = {
+    val it1 = Iterator.unfold(1)(i => if (i > 10) None else Some((i, i + 1)))
+    assertSameElements(1 to 10, it1)
+
+    val it2 = Iterator.unfold(0)(_ => None)
+    assertSameElements(Nil, it2)
+  }
+
+  @Test def unfoldLaziness(): Unit = {
+    var executed: Boolean = false
+    val it = Iterator.unfold(0)(_ => {executed = true; None})
+    assertFalse(executed)
+    it.toList
+    assertTrue(executed)
+  }
 }

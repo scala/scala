@@ -960,6 +960,18 @@ object Iterator extends IterableFactory[Iterator] {
     }
   }
 
+  /** Creates an Iterator that uses a function `f` to produce elements of type `A`
+    * and update an internal state of type `S`.
+    *
+    * @param init State initial value
+    * @param f    Computes the next element (or returns `None` to signal
+    *             the end of the collection)
+    * @tparam A   Type of the elements
+    * @tparam S   Type of the internal state
+    * @return an Iterator that produces elements using `f` until `f` returns `None`
+    */
+  override def unfold[A, S](init: S)(f: S => Option[(A, S)]): Iterator[A] = new UnfoldIterator(init)(f)
+
   /** Creates an infinite-length iterator returning the results of evaluating an expression.
     *  The expression is recomputed for every element.
     *
@@ -1087,6 +1099,35 @@ object Iterator extends IterableFactory[Iterator] {
         remaining = rest
         this
       }
+    }
+  }
+
+  /** Creates an iterator that uses a function `f` to produce elements of
+    * type `A` and update an internal state of type `S`.
+    */
+  private final class UnfoldIterator[A, S](init: S)(f: S => Option[(A, S)]) extends AbstractIterator[A] {
+    private[this] var state: S = init
+    private[this] var nextResult: Option[(A, S)] = null
+
+    override def hasNext: Boolean = {
+      if (nextResult eq null) {
+        nextResult = {
+          val res = f(state)
+          if (res eq null) throw new NullPointerException("null during unfold")
+          res
+        }
+        state = null.asInstanceOf[S] // allow GC
+      }
+      nextResult.isDefined
+    }
+
+    override def next(): A = {
+      if (hasNext) {
+        val (value, newState) = nextResult.get
+        state = newState
+        nextResult = null
+        value
+      } else Iterator.empty.next()
     }
   }
 
