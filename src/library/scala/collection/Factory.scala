@@ -235,6 +235,15 @@ trait IterableFactory[+CC[_]] extends Serializable {
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
+  /** Concatenates all argument collections into a single $coll.
+   *
+   *  @param xss the collections that are to be concatenated.
+   *  @return the concatenation of all the collections.
+   */
+  def concat[A](xss: Iterable[A]*): CC[A] = {
+    from(xss.foldLeft(View.empty[A])(_ ++ _))
+  }
+
   implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
 }
 
@@ -307,6 +316,16 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
       b += f(i)
       i += 1
     }
+    b.result()
+  }
+
+  override def concat[A](xss: Iterable[A]*): CC[A] = {
+    val b = newBuilder[A]
+    val knownSizes = xss.view.map(_.knownSize)
+    if (knownSizes forall (_ >= 0)) {
+      b.sizeHint(knownSizes.sum)
+    }
+    for (xs <- xss) b ++= xs
     b.result()
   }
 

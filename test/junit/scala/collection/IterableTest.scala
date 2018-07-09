@@ -20,6 +20,22 @@ class IterableTest {
   }
 
   @Test
+  def concatTest: Unit = {
+    val seq = Seq.concat(Seq(1, 2, 3), Iterable(4, 5, 6))
+    assert(seq == Seq(1, 2, 3, 4, 5, 6))
+
+    val vector = Vector.concat(Seq(1, 2, 3), Iterable(4, 5, 6))
+    assert(vector == Vector(1, 2, 3, 4, 5, 6))
+
+    val set = Set.concat(Seq(1, 2, 3), Iterable(3, 4, 5))
+    assert(set == Set(1, 2, 3, 4, 5))
+
+    val iterator = Iterator.concat(Seq(1, 2, 3), Seq(4, 5, 6))
+    assert(iterator.toSeq == Seq(1, 2, 3, 4, 5, 6))
+    assert(iterator.isEmpty)
+  }
+
+  @Test
   def groupMap(): Unit = {
     case class User(name: String, age: Int)
 
