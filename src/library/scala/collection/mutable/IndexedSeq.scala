@@ -17,6 +17,13 @@ trait IndexedSeqOps[A, +CC[_], +C <: AnyRef]
   extends scala.collection.IndexedSeqOps[A, CC, C]
     with SeqOps[A, CC, C] {
 
+  def mapInPlace(f: A => A): this.type = {
+    var i = 0
+    val siz = size
+    while (i < siz) { this(i) = f(this(i)); i += 1 }
+    this
+  }
+
   /** Sorts this $coll in place according to an Ordering.
     *
     * @see [[scala.collection.SeqOps.sorted]]

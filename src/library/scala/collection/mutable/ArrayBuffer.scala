@@ -28,9 +28,8 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
   */
 class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
   extends AbstractBuffer[A]
-    with IndexedSeq[A]
+    with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with IndexedOptimizedBuffer[A]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)

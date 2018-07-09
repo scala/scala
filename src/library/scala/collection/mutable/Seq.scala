@@ -47,16 +47,6 @@ trait SeqOps[A, +CC[_], +C <: AnyRef]
   def update(idx: Int, elem: A): Unit
 }
 
-trait IndexedOptimizedSeq[A] extends Seq[A] {
-
-  def mapInPlace(f: A => A): this.type = {
-    var i = 0
-    val siz = size
-    while (i < siz) { this(i) = f(this(i)); i += 1 }
-    this
-  }
-}
-
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]

@@ -1071,11 +1071,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
-  @deprecated("Use Stream.from(it) instead of it.toStream", "2.13.0")
-  @`inline` final def toStream: immutable.Stream[A] = immutable.Stream.from(this)
+  @deprecated("Use .to(Stream) instead of .toStream", "2.13.0")
+  @`inline` final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
-  @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
-  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(this)
+  @deprecated("Use .to(Buffer) instead of .toBuffer", "2.13.0")
+  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = to(mutable.Buffer)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
