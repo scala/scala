@@ -302,7 +302,7 @@ trait Contexts { self: Analyzer =>
 
     def defineByNameImplicit(tpe: Type, result: SearchResult): SearchResult = implicitRootContext.defineImpl(tpe, result)
 
-    def emitImplicitDictionary(result: SearchResult): SearchResult =
+    def emitImplicitDictionary(pos: Position, result: SearchResult): SearchResult =
       if(implicitDictionary == null || implicitDictionary.isEmpty || result.tree == EmptyTree) result
       else {
         val typer = newTyper(this)
@@ -354,7 +354,7 @@ trait Contexts { self: Analyzer =>
           val tree0 = patchRefs.transform(result.tree)
           val tree1 = Block(mdef0, tree0).substituteSymbols(vsyms.toList, vsyms0.toList) setType tree.tpe
 
-          new SearchResult(tree1, result.subst, result.undetparams)
+          new SearchResult(atPos(pos.focus)(tree1), result.subst, result.undetparams)
         }
       }
 

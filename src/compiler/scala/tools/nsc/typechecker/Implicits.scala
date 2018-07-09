@@ -117,7 +117,7 @@ trait Implicits {
       if (context.owner.hasTransOwner(s))
         context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}")
     }
-    implicitSearchContext.emitImplicitDictionary(result)
+    implicitSearchContext.emitImplicitDictionary(search.pos, result)
   }
 
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
@@ -579,7 +579,7 @@ trait Implicits {
 
           recursiveImplicit match {
             case Some(rec) =>
-              val ref = context.linkByNameImplicit(dropByName(rec.pt))
+              val ref = atPos(pos.focus)(context.linkByNameImplicit(dropByName(rec.pt)))
               new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
             case None =>
               try {
