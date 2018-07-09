@@ -797,7 +797,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       }
 
       // Before erasure * to exclude bridge methods. Excluding them by flag doesn't work, because then
-      // the the method from the base class that the bridge overrides is included (scala/bug#10812).
+      // the method from the base class that the bridge overrides is included (scala/bug#10812).
       // * using `exitingPickler` (not `enteringErasure`) because erasure enters bridges in traversal,
       //   not in the InfoTransform, so it actually modifies the type from the previous phase.
       val members = exitingPickler(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
