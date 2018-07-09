@@ -327,7 +327,7 @@ trait Contexts { self: Analyzer =>
           val mname = newTermName(typer.fresh.newName("LazyDefns$"))
           val mdef =
             ModuleDef(Modifiers(SYNTHETIC), mname,
-              Template(List(Ident(AnyRefClass)), noSelfType, ctor :: vdefs.toList)
+              gen.mkTemplate(gen.mkParents(NoMods, Nil), noSelfType, NoMods, ListOfNil, vdefs)
             )
 
           typer.namer.enterSym(mdef)
