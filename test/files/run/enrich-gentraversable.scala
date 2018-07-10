@@ -23,7 +23,7 @@ object Test extends App {
     val a = Array(1, 2, 3, 4, 5)
     val fma = a.filterMap(i => if(i % 2 == 0) Some(i) else None)
     typed[Array[Int]](fma)
-    println(fma.deep)
+    println(fma.prettyArray)
 
     val s = "Hello World"
     val fms1 = s.filterMap(c => if(c >= 'A' && c <= 'Z') Some(c) else None)
@@ -53,7 +53,7 @@ object Test extends App {
     val a = Array(1, 2, 3, 4, 5)
     val fma = a.filterMap(i => if(i % 2 == 0) Some(i) else None)
     typed[Array[Int]](fma)
-    println(fma.deep)
+    println(fma.prettyArray)
 
     val s = "Hello World"
     val fms1 = s.filterMap(c => if(c >= 'A' && c <= 'Z') Some(c) else None)

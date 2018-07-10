@@ -1,6 +1,7 @@
 package scala.tools.partest
 
 import scala.language.experimental.macros
+import scala.collection.mutable
 
 object Util {
   /**
@@ -50,18 +51,24 @@ object Util {
       a.tree))
   }
 
-  def prettyArray(a: Array[_]): collection.IndexedSeq[Any] = new collection.AbstractSeq[Any] with collection.IndexedSeq[Any] {
-    def length = a.length
-
-    def apply(idx: Int): Any = a(idx) match {
-      case x: AnyRef if x.getClass.isArray => prettyArray(x.asInstanceOf[Array[_]])
-      case x => x
-    }
-
-    override def className = "Array"
+  private def prettyArray0(a: Array[_]): collection.IndexedSeq[Any] = {
+    prettyArray0(mutable.ArraySeq.make(a))
   }
+  private def prettyArray0(a: mutable.ArraySeq[_]): collection.IndexedSeq[Any] = {
+    new scala.collection.AbstractSeq[Any] with scala.collection.IndexedSeq[Any] {
+      def length = a.length
+      def apply(idx: Int): Any = a.apply(idx) match {
+        case x: Array[_] => prettyArray0(x)
+        case x => x
+      }
+      override def className = "Array"
+    }
+  }
+
+  def prettyArray(a: Array[_]): collection.IndexedSeq[Any] = prettyArray0(a)
 
   implicit class ArrayDeep(val a: Array[_]) extends AnyVal {
-    def deep: collection.IndexedSeq[Any] = prettyArray(a)
+    def prettyArray: collection.IndexedSeq[Any] = prettyArray0(a)
   }
+
 }

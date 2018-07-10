@@ -1,3 +1,4 @@
+warning: there were 21 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 testEquals1
 false
 false

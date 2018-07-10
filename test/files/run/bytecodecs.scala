@@ -6,15 +6,15 @@ object Test {
   def test8to7(xs: Array[Byte]): Unit = {
     val ys = encode8to7(xs)
     decode7to8(ys, ys.length)
-    assert(ys.take(xs.length).deep == xs.deep,
-           "test8to7("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
+    assert(ys.take(xs.length).prettyArray == xs.prettyArray,
+           "test8to7("+xs.prettyArray+") failed, result = "+ys.take(xs.length).prettyArray)
   }
 
   def testAll(xs: Array[Byte]): Unit = {
     val ys = encode(xs)
     decode(ys)
-    assert(ys.take(xs.length).deep == xs.deep,
-           "testAll("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
+    assert(ys.take(xs.length).prettyArray == xs.prettyArray,
+           "testAll("+xs.prettyArray+") failed, result = "+ys.take(xs.length).prettyArray)
   }
 
   def test(inputs: Array[Byte]*): Unit = {

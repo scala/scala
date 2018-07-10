@@ -108,7 +108,7 @@ object Test4 {
     import java.lang.reflect.AnnotatedElement
     def printSourceAnnotation(a: Annotation): Unit = {
       val ann = a.asInstanceOf[SourceAnnotation]
-      println("@test.SourceAnnotation(mails=" + ann.mails.deep.mkString("{", ",", "}") +
+      println("@test.SourceAnnotation(mails=" + ann.mails.prettyArray.mkString("{", ",", "}") +
               ", value=" + ann.value + ")")
     }
     def printSourceAnnotations(target: AnnotatedElement): Unit = {

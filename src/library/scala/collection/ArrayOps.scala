@@ -1421,4 +1421,22 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return `true` if this array has `that` as a suffix, `false` otherwise.
     */
   def endsWith[B >: A](that: Iterable[B]): Boolean = mutable.ArraySeq.make(xs).endsWith(that)
+
+
+  /** Creates a possible nested `IndexedSeq` which consists of all the elements
+   *  of this array. If the elements are arrays themselves, the `deep` transformation
+   *  is applied recursively to them. The `className` of the `IndexedSeq` is
+   *  "Array", hence the `IndexedSeq` prints like an array with all its
+   *  elements shown, and the same recursively for any subarrays.
+   *
+   *  Example:
+   *  {{{
+   *  Array(Array(1, 2), Array(3, 4)).deep.toString
+   *  }}}
+   *  prints: `Array(Array(1, 2), Array(3, 4))`
+   *
+   *  @return    An possibly nested indexed sequence of consisting of all the elements of the array.
+   */
+  @deprecated("deep has no replacement", "2.13.0")
+  def deep: IndexedSeq[Any] = mutable.ArraySeq.deep(mutable.ArraySeq.make(xs))
 }
