@@ -33,12 +33,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     this
   }
 
-  /**
-    * @return The reference of the contained element that is equal to `elem`, if found, otherwise `None`
-    * @param elem The element to get.
-    */
-  def get(elem: A): Option[A]
-
   def add(elem: A): Boolean =
     !contains(elem) && {
       coll += elem; true

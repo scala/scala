@@ -53,11 +53,6 @@ class LinkedHashSet[A]
       }
     }
 
-  def get(elem: A): Option[A] = {
-    val entry = table.findEntry(elem)
-    if (entry != null) Some(entry.key) else None
-  }
-
   override def size: Int = table.tableSize
 
   def contains(elem: A): Boolean = table.findEntry(elem) ne null

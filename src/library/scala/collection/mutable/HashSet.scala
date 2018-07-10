@@ -46,8 +46,6 @@ final class HashSet[A]
 
   def contains(elem: A): Boolean = table.containsElem(elem)
 
-  def get(elem: A): Option[A] = table.findEntry(elem)
-
   override def knownSize: Int = table.size
 
   override def size: Int = table.size
