@@ -759,7 +759,7 @@ final class StringOps(private val s: String) extends AnyVal {
   
   /**
    * Try to parse as a `Boolean`
-   * @return `Some(true)` if the string is "true" case insenitive,
+   * @return `Some(true)` if the string is "true" case insensitive,
    * `Some(false)` if the string is "false" case insensitive, 
    * and `None` if the string is anything else
    * @throws java.lang.NullPointerException if the string is `null`
@@ -767,7 +767,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toBooleanOption: Option[Boolean] = StringParsers.parseBool(s)
 
   /**
-    * Parse as a `Byte` (string must contain only decimal digits and optional leading `-`).
+    * Parse as a `Byte` (string must contain only decimal digits and optional leading `-` or `+`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Byte`.
     */
   def toByte: Byte                     = java.lang.Byte.parseByte(s)
@@ -780,7 +780,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toByteOption: Option[Byte]       = StringParsers.parseByte(s)
 
   /**
-    * Parse as a `Short` (string must contain only decimal digits and optional leading `-`).
+    * Parse as a `Short` (string must contain only decimal digits and optional leading `-` or `+`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Short`.
     */
   def toShort: Short                   = java.lang.Short.parseShort(s)
@@ -793,7 +793,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toShortOption: Option[Short]     = StringParsers.parseShort(s)
 
   /**
-    * Parse as an `Int` (string must contain only decimal digits and optional leading `-`).
+    * Parse as an `Int` (string must contain only decimal digits and optional leading `-` or `+`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
     */
   def toInt: Int                       = java.lang.Integer.parseInt(s)
@@ -806,7 +806,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def toIntOption: Option[Int]         = StringParsers.parseInt(s)
 
   /**
-    * Parse as a `Long` (string must contain only decimal digits and optional leading `-`).
+    * Parse as a `Long` (string must contain only decimal digits and optional leading `-` or `+`).
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Long`.
     */
   def toLong: Long                     = java.lang.Long.parseLong(s)
