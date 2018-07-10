@@ -67,21 +67,22 @@ trait Adaptations {
       }
 
       if (args.isEmpty) {
-        if (settings.future)
-          context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
+        def msg(what: String): String = s"adaptation of an empty argument list by appending () is $what"
+        if (settings.isScala3)
+          context.error(t.pos, adaptWarningMessage(msg("unsupported"), showAdaptation = false))
         else {
-          val msg = "Adaptation of argument list by inserting () is deprecated: " + (
-          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
-          else "this is unlikely to be what you want.")
-          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg), "2.11.0")
+          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(
+            msg("deprecated") + ": " + (
+              if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
+              else "this is unlikely to be what you want")), "2.11.0")
         }
       } else if (settings.warnAdaptedArgs)
         context.warning(t.pos, adaptWarningMessage(
-          s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want.")
+          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead")
         )
 
       // return `true` if the adaptation should be kept
-      !(args.isEmpty && settings.future)
+      !(args.isEmpty && settings.isScala3)
     }
   }
 }
