@@ -17,8 +17,10 @@ import scala.reflect.internal.Reporter
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
+  import definitions.{ AnyRefClass, JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
   import ContextMode._
+  import scala.reflect.internal.Flags._
+
 
   protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
 
@@ -243,6 +245,114 @@ trait Contexts { self: Analyzer =>
     final def isSearchingForImplicitParam: Boolean = {
       openImplicits.nonEmpty && openImplicits.exists(x => !x.isView)
     }
+
+    private type ImplicitDict = List[(Type, (Symbol, Tree))]
+    private var implicitDictionary: ImplicitDict = null
+
+    @tailrec final def implicitRootContext: Context = {
+      if(implicitDictionary != null) this
+      else if(outerIsNoContext || outer.openImplicits.isEmpty) {
+        implicitDictionary = Nil
+        this
+      } else outer.implicitRootContext
+    }
+
+    private def linkImpl(tpe: Type): Tree = {
+      val sym =
+        implicitDictionary.find(_._1 =:= tpe) match {
+          case Some((_, (sym, _))) => sym
+          case None =>
+            val fresh = freshNameCreatorFor(this)
+            val vname = newTermName(fresh.newName("rec$"))
+            val vsym = owner.newValue(vname, newFlags = FINAL | SYNTHETIC) setInfo tpe
+            implicitDictionary +:= (tpe -> (vsym, EmptyTree))
+            vsym
+        }
+      gen.mkAttributedRef(sym) setType tpe
+    }
+
+    final def linkByNameImplicit(tpe: Type): Tree = implicitRootContext.linkImpl(tpe)
+
+    private def refImpl(tpe: Type): Tree =
+      implicitDictionary.find(_._1 =:= tpe) match {
+        case Some((_, (sym, _))) =>
+          gen.mkAttributedRef(sym) setType tpe
+        case None =>
+          EmptyTree
+      }
+
+    final def refByNameImplicit(tpe: Type): Tree = implicitRootContext.refImpl(tpe)
+
+    private def defineImpl(tpe: Type, result: SearchResult): SearchResult = {
+      @tailrec
+      def patch(d: ImplicitDict, acc: ImplicitDict): (ImplicitDict, SearchResult) = d match {
+        case Nil => (implicitDictionary, result)
+        case (tp, (sym, EmptyTree)) :: tl if tp =:= tpe =>
+          val ref = gen.mkAttributedRef(sym) setType tpe
+          val res = new SearchResult(ref, result.subst, result.undetparams)
+          (acc reverse_::: ((tpe, (sym, result.tree)) :: tl), res)
+        case hd :: tl =>
+          patch(tl, hd :: acc)
+      }
+
+      val (d, res) = patch(implicitDictionary, Nil)
+      implicitDictionary = d
+      res
+    }
+
+    def defineByNameImplicit(tpe: Type, result: SearchResult): SearchResult = implicitRootContext.defineImpl(tpe, result)
+
+    def emitImplicitDictionary(pos: Position, result: SearchResult): SearchResult =
+      if(implicitDictionary == null || implicitDictionary.isEmpty || result.tree == EmptyTree) result
+      else {
+        val typer = newTyper(this)
+
+        @tailrec
+        def prune(trees: List[Tree], pending: List[(Symbol, Tree)], acc: List[(Symbol, Tree)]): List[(Symbol, Tree)] = pending match {
+          case Nil => acc
+          case ps =>
+            val (in, out) = ps.partition { case (vsym, rhs) => trees.exists(_.exists(_.symbol == vsym)) }
+            if(in.isEmpty) acc
+            else prune(in.map(_._2) ++ trees, out, in ++ acc)
+        }
+
+        val pruned = prune(List(result.tree), implicitDictionary.map(_._2), Nil)
+        if(pruned.isEmpty) result
+        else {
+          val (vsyms, vdefs) = pruned.map { case (vsym, rhs) =>
+            (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs.changeOwner(owner -> vsym)))
+          }.unzip
+
+          val ctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
+          val mname = newTermName(typer.fresh.newName("LazyDefns$"))
+          val mdef =
+            ModuleDef(Modifiers(SYNTHETIC), mname,
+              gen.mkTemplate(gen.mkParents(NoMods, Nil), noSelfType, NoMods, ListOfNil, vdefs)
+            )
+
+          typer.namer.enterSym(mdef)
+
+          val mdef0 = typer.typed(mdef)
+          val msym0 = mdef0.symbol
+          val moduleClassInfo = mdef0.symbol.moduleClass.info
+          val vsyms0 = vsyms.map { vsym =>
+            moduleClassInfo.decl(vsym.name)
+          }
+
+          val vsymMap = (vsyms zip vsyms0).toMap
+
+          val substitutor = new TreeSymSubstituter(vsyms, vsyms0) {
+            override def transform(tree: Tree): Tree = tree match {
+              case i: Ident if vsymMap.contains(i.symbol) =>
+                super.transform(treeCopy.Select(i, gen.mkAttributedRef(msym0), i.name))
+              case _ => super.transform(tree)
+            }
+          }
+          val tree1 = substitutor(Block(mdef0, result.tree)) setType tree.tpe
+
+          new SearchResult(atPos(pos.focus)(tree1), result.subst, result.undetparams)
+        }
+      }
 
     var prefix: Type = NoPrefix
 
