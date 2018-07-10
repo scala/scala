@@ -76,7 +76,8 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def removeAll(keys: IterableOnce[K]): C = keys.iterator.foldLeft[C](coll)(_ - _)
 
   /** Alias for `removeAll` */
-  @`inline` final def -- (keys: IterableOnce[K]): C = removeAll(keys)
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /* @`inline` final */ override def -- (keys: IterableOnce[K]): C = removeAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key
