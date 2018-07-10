@@ -83,7 +83,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   *  section on `StringBuilders` for more information.
   */
 @SerialVersionUID(3L)
-class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq[Char]
+class StringBuilder(private val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
   with Builder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
@@ -92,12 +92,27 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
 
   def this() = this(new java.lang.StringBuilder)
 
-  def this(length: Int) = this(new java.lang.StringBuilder(length))
+  /** Constructs a string builder with no characters in it and an
+    *  initial capacity specified by the `capacity` argument.
+    *
+    *  @param  capacity  the initial capacity.
+    *  @throws NegativeArraySizeException  if capacity < 0.
+    */
+  def this(capacity: Int) = this(new java.lang.StringBuilder(capacity))
 
-  def this(s: String) = this(new java.lang.StringBuilder(s))
+  /** Constructs a string builder with initial characters
+    *  equal to characters of `str`.
+    */
+  def this(str: String) = this(new java.lang.StringBuilder(str))
+
+  /** Constructs a string builder initialized with string value `initValue`
+    *  and with additional character capacity `initCapacity`.
+    */
+  def this(initCapacity: Int, initValue: String) =
+    this(new java.lang.StringBuilder(initValue.length + initCapacity) append initValue)
 
   // Methods required to make this an IndexedSeq:
-  def apply(i: Int): Char = sb.charAt(i)
+  def apply(i: Int): Char = underlying.charAt(i)
 
  override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
     new StringBuilder() ++= coll
@@ -105,28 +120,28 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
 
-  def length: Int = sb.length()
+  def length: Int = underlying.length()
 
-  def length_=(n: Int): Unit = sb.setLength(n)
+  def length_=(n: Int): Unit = underlying.setLength(n)
 
-  def addOne(x: Char) = { sb.append(x); this }
+  def addOne(x: Char) = { underlying.append(x); this }
 
-  def clear() = sb.setLength(0)
+  def clear() = underlying.setLength(0)
 
   /** Overloaded version of `addAll` that takes a string */
-  def addAll(s: String): this.type = { sb.append(s); this }
+  def addAll(s: String): this.type = { underlying.append(s); this }
 
   /** Alias for `addAll` */
   def ++= (s: String): this.type = addAll(s)
 
-  def result() = sb.toString
+  def result() = underlying.toString
 
   override def toString = result()
 
   // append* methods delegate to the underlying java.lang.StringBuilder:
 
   def appendAll(xs: String): StringBuilder = {
-    sb append xs
+    underlying append xs
     this
   }
 
@@ -137,7 +152,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return     this StringBuilder.
     */
   def append(x: Any): StringBuilder = {
-    sb append String.valueOf(x)
+    underlying append String.valueOf(x)
     this
   }
 
@@ -147,7 +162,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return     this StringBuilder.
     */
   def append(s: String): StringBuilder = {
-    sb append s
+    underlying append s
     this
   }
 
@@ -157,7 +172,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return
     */
   def append(s: StringBuilder): StringBuilder = {
-    sb append s.sb
+    underlying append s.underlying
     this
   }
 
@@ -174,7 +189,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return     a reference to this object.
     */
   def appendAll(xs: Array[Char]): StringBuilder = {
-    sb append xs
+    underlying append xs
     this
   }
 
@@ -186,7 +201,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @return         this StringBuilder.
     */
   def appendAll(xs: Array[Char], offset: Int, len: Int): StringBuilder = {
-    sb.append(xs, offset, len)
+    underlying.append(xs, offset, len)
     this
   }
 
@@ -197,14 +212,14 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @param   x  a primitive value
     *  @return     This StringBuilder.
     */
-  def append(x: Boolean): StringBuilder = { sb append x ; this }
+  def append(x: Boolean): StringBuilder = { underlying append x ; this }
   def append(x: Byte): StringBuilder = append(x.toInt)
   def append(x: Short): StringBuilder = append(x.toInt)
-  def append(x: Int): StringBuilder = { sb append x ; this }
-  def append(x: Long): StringBuilder = { sb append x ; this }
-  def append(x: Float): StringBuilder = { sb append x ; this }
-  def append(x: Double): StringBuilder = { sb append x ; this }
-  def append(x: Char): StringBuilder = { sb append x ; this }
+  def append(x: Int): StringBuilder = { underlying append x ; this }
+  def append(x: Long): StringBuilder = { underlying append x ; this }
+  def append(x: Float): StringBuilder = { underlying append x ; this }
+  def append(x: Double): StringBuilder = { underlying append x ; this }
+  def append(x: Char): StringBuilder = { underlying append x ; this }
 
   /** Remove a subsequence of Chars from this sequence, starting at the
     *  given start index (inclusive) and extending to the end index (exclusive)
@@ -216,7 +231,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @throws StringIndexOutOfBoundsException   if start < 0 || start > end
     */
   def delete(start: Int, end: Int): StringBuilder = {
-    sb.delete(start, end)
+    underlying.delete(start, end)
     this
   }
 
@@ -230,7 +245,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @throws StringIndexOutOfBoundsException if start < 0, start > length, or start > end
     */
   def replace(start: Int, end: Int, str: String): StringBuilder = {
-    sb.replace(start, end, str)
+    underlying.replace(start, end, str)
     this
   }
 
@@ -247,7 +262,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *         offset < 0, len < 0, or (offset + len) > str.length.
     */
   def insertAll(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder = {
-    sb.insert(index, str, offset, len)
+    underlying.insert(index, str, offset, len)
     this
   }
 
@@ -269,7 +284,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insert(index: Int, x: String): StringBuilder = {
-    sb.insert(index, x)
+    underlying.insert(index, x)
     this
   }
 
@@ -291,7 +306,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @throws StringIndexOutOfBoundsException  if the index is out of bounds.
     */
   def insertAll(index: Int, xs: Array[Char]): StringBuilder = {
-    sb.insert(index, xs)
+    underlying.insert(index, xs)
     this
   }
 
@@ -318,9 +333,9 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
     *  @param  len  the new length
     *  @throws IndexOutOfBoundsException if the argument is negative.
     */
-  def setLength(len: Int): Unit = sb.setLength(len)
+  def setLength(len: Int): Unit = underlying.setLength(len)
 
-  def update(idx: Int, elem: Char): Unit = sb.setCharAt(idx, elem)
+  def update(idx: Int, elem: Char): Unit = underlying.setCharAt(idx, elem)
 
 
   /** Like reverse, but destructively updates the target StringBuilder.
@@ -335,7 +350,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @return   the reversed StringBuilder (same as the target StringBuilder)
    */
   def reverseInPlace(): this.type = {
-    sb.reverse()
+    underlying.reverse()
     this
   }
 
@@ -345,7 +360,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *
    *  @return  the capacity
    */
-  def capacity: Int = sb.capacity()
+  def capacity: Int = underlying.capacity()
 
   /** Ensure that the capacity is at least the given argument.
    *  If the argument is greater than the current capacity, new
@@ -354,7 +369,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *
    *  @param newCapacity    the minimum desired capacity.
    */
-  def ensureCapacity(newCapacity: Int): Unit = { sb.ensureCapacity(newCapacity) }
+  def ensureCapacity(newCapacity: Int): Unit = { underlying.ensureCapacity(newCapacity) }
 
   /** Returns the Char at the specified index, counting from 0 as in Arrays.
    *
@@ -362,7 +377,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @return         the Char at the given index.
    *  @throws IndexOutOfBoundsException  if the index is out of bounds.
    */
-  def charAt(index: Int): Char = sb.charAt(index)
+  def charAt(index: Int): Char = underlying.charAt(index)
 
   /** Removes the Char at the specified index.  The sequence is
    *  shortened by one.
@@ -372,7 +387,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @throws IndexOutOfBoundsException  if the index is out of bounds.
    */
   def deleteCharAt(index: Int): this.type = {
-    sb.deleteCharAt(index)
+    underlying.deleteCharAt(index)
     this
   }
 
@@ -383,7 +398,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @throws IndexOutOfBoundsException  if the index is out of bounds.
    */
   def setCharAt(index: Int, ch: Char): this.type = {
-    sb.setCharAt(index, ch)
+    underlying.setCharAt(index, ch)
     this
   }
 
@@ -410,7 +425,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @throws StringIndexOutOfBoundsException If either index is out of bounds,
    *          or if start > end.
    */
-  def substring(start: Int, end: Int): String = sb.substring(start, end)
+  def substring(start: Int, end: Int): String = underlying.substring(start, end)
 
   /** For implementing CharSequence.
    */
@@ -422,7 +437,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @param    str       the target string to search for
    *  @return             the first applicable index where target occurs, or -1 if not found.
    */
-  def indexOf(str: String): Int = sb.indexOf(str)
+  def indexOf(str: String): Int = underlying.indexOf(str)
 
   /** Finds the index of the first occurrence of the specified substring.
    *
@@ -430,14 +445,14 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @param    fromIndex the smallest index in the source string to consider
    *  @return             the first applicable index where target occurs, or -1 if not found.
    */
-  def indexOf(str: String, fromIndex: Int): Int = sb.indexOf(str, fromIndex)
+  def indexOf(str: String, fromIndex: Int): Int = underlying.indexOf(str, fromIndex)
 
   /** Finds the index of the last occurrence of the specified substring.
    *
    *  @param    str       the target string to search for
    *  @return             the last applicable index where target occurs, or -1 if not found.
    */
-  def lastIndexOf(str: String): Int = sb.lastIndexOf(str)
+  def lastIndexOf(str: String): Int = underlying.lastIndexOf(str)
 
   /** Finds the index of the last occurrence of the specified substring.
    *
@@ -445,7 +460,7 @@ class StringBuilder(private val sb: java.lang.StringBuilder) extends AbstractSeq
    *  @param    fromIndex the smallest index in the source string to consider
    *  @return             the last applicable index where target occurs, or -1 if not found.
    */
-  def lastIndexOf(str: String, fromIndex: Int): Int = sb.lastIndexOf(str, fromIndex)
+  def lastIndexOf(str: String, fromIndex: Int): Int = underlying.lastIndexOf(str, fromIndex)
 
   override protected[this] def writeReplace(): AnyRef = this
 }
