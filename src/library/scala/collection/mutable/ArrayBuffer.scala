@@ -62,7 +62,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     array(n).asInstanceOf[A]
   }
 
-  def update(@deprecatedName('n, "2.13.0") index: Int, elem: A): Unit = {
+  def update(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
     checkWithinBounds(index, index + 1)
     array(index) = elem.asInstanceOf[AnyRef]
   }
@@ -95,7 +95,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     this
   }
 
-  def insert(@deprecatedName('n, "2.13.0") index: Int, elem: A): Unit = {
+  def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
     checkWithinBounds(index, index)
     ensureSize(size0 + 1)
     Array.copy(array, index, array, index + 1, size0 - index)
@@ -108,7 +108,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     this
   }
 
-  def insertAll(@deprecatedName('n, "2.13.0") index: Int, elems: IterableOnce[A]): Unit = {
+  def insertAll(@deprecatedName("n", "2.13.0") index: Int, elems: IterableOnce[A]): Unit = {
     checkWithinBounds(index, index)
     elems match {
       case elems: collection.Iterable[A] =>
@@ -132,7 +132,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     }
   }
 
-  def remove(@deprecatedName('n, "2.13.0") index: Int): A = {
+  def remove(@deprecatedName("n", "2.13.0") index: Int): A = {
     checkWithinBounds(index, index + 1)
     val res = this(index)
     Array.copy(array, index + 1, array, index, size0 - (index + 1))
@@ -140,7 +140,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     res
   }
 
-  def remove(@deprecatedName('n, "2.13.0") index: Int, count: Int): Unit =
+  def remove(@deprecatedName("n", "2.13.0") index: Int, count: Int): Unit =
     if (count > 0) {
       checkWithinBounds(index, index + count)
       Array.copy(array, index + count, array, index, size0 - (index + count))

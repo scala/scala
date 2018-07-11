@@ -107,11 +107,11 @@ names-defaults-neg.scala:86: error: module extending its companion class cannot 
     object C extends C()
                      ^
 names-defaults-neg.scala:90: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
-  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
-                                           ^
+  def deprNam1(x: Int, @deprecatedName("x") y: String) = 0
+                                            ^
 names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
-  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
-                                              ^
+  def deprNam2(a: String)(@deprecatedName("a") b: Int) = 1
+                                               ^
 names-defaults-neg.scala:93: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
@@ -124,32 +124,38 @@ names-defaults-neg.scala:96: warning: naming parameter deprNam4Arg is deprecated
 names-defaults-neg.scala:98: warning: naming parameter deprNam5Arg is deprecated.
   deprNam5(deprNam5Arg = null)
                        ^
-names-defaults-neg.scala:102: error: unknown parameter name: m
+names-defaults-neg.scala:102: warning: the parameter name foo is deprecated: use deprNam6Arg instead
+  deprNam6(foo = null)
+               ^
+names-defaults-neg.scala:104: warning: the parameter name bar is deprecated (since 2.12.0): use deprNam7Arg instead
+  deprNam7(bar = null)
+               ^
+names-defaults-neg.scala:108: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
-names-defaults-neg.scala:135: warning: a pure expression does nothing in statement position
+names-defaults-neg.scala:141: warning: a pure expression does nothing in statement position
   delay(var2 = 40)
                ^
-names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
+names-defaults-neg.scala:144: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:138: error: not found: value a
+names-defaults-neg.scala:144: error: not found: value a
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                      ^
-names-defaults-neg.scala:138: error: not found: value get
+names-defaults-neg.scala:144: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
-names-defaults-neg.scala:139: error: parameter 'a' is already specified at parameter position 1
+names-defaults-neg.scala:145: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg.scala:146: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
+names-defaults-neg.scala:146: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-names-defaults-neg.scala:140: error: not found: value b
+names-defaults-neg.scala:146: error: not found: value b
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                   ^
-5 warnings found
+7 warnings found
 36 errors found
