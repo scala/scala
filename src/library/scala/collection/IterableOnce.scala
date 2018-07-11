@@ -40,6 +40,72 @@ trait IterableOnce[+A] extends Any {
 }
 
 final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) extends AnyVal {
+  @deprecated("Use .iterator.withFilter(...) instead", "2.13.0")
+  def withFilter(f: A => Boolean): Iterator[A] = it.iterator.withFilter(f)
+
+  @deprecated("Use .iterator.reduceLeftOption(...) instead", "2.13.0")
+  def reduceLeftOption(f: (A, A) => A): Option[A] = it.iterator.reduceLeftOption(f)
+
+  @deprecated("Use .iterator.min instead", "2.13.0")
+  def min(implicit ord: Ordering[A]): A = it.iterator.min
+
+  @deprecated("Use .iterator.nonEmpty instead", "2.13.0")
+  def nonEmpty: Boolean = it.iterator.nonEmpty
+
+  @deprecated("Use .iterator.max instead", "2.13.0")
+  def max(implicit ord: Ordering[A]): A = it.iterator.max
+
+  @deprecated("Use .iterator.reduceRight(...) instead", "2.13.0")
+  def reduceRight(f: (A, A) => A): A = it.iterator.reduceRight(f)
+
+  @deprecated("Use .iterator.maxBy(...) instead", "2.13.0")
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = it.iterator.maxBy(f)
+
+  @deprecated("Use .iterator.reduceLeft(...) instead", "2.13.0")
+  def reduceLeft(f: (A, A) => A) = it.iterator.reduceLeft(f)
+
+  @deprecated("Use .iterator.sum instead", "2.13.0")
+  def sum(implicit num: Numeric[A]): A = it.iterator.sum
+
+  @deprecated("Use .iterator.product instead", "2.13.0")
+  def product(implicit num: Numeric[A]): A = it.iterator.product
+
+  @deprecated("Use .iterator.count(...) instead", "2.13.0")
+  def count(f: A => Boolean): Int = it.iterator.count(f)
+
+  @deprecated("Use .iterator.reduceOption(...) instead", "2.13.0")
+  def reduceOption(f: (A, A) => A): Option[A] = it.iterator.reduceOption(f)
+
+  @deprecated("Use .iterator.minBy(...) instead", "2.13.0")
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = it.iterator.minBy(f)
+
+  @deprecated("Use .iterator.size instead", "2.13.0")
+  def size: Int = it.iterator.size
+
+  @deprecated("Use .iterator.forall(...) instead", "2.13.0")
+  def forall(f: A => Boolean): Boolean = it.iterator.forall(f)
+
+  @deprecated("Use .iterator.collectFirst(...) instead", "2.13.0")
+  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = it.iterator.collectFirst(f)
+
+  @deprecated("Use .iterator.filter(...) instead", "2.13.0")
+  def filter(f: A => Boolean): Iterator[A] = it.iterator.filter(f)
+
+  @deprecated("Use .iterator.exists(...) instead", "2.13.0")
+  def exists(f: A => Boolean): Boolean = it.iterator.exists(f)
+
+  @deprecated("Use .iterator.copyToBuffer(...) instead", "2.13.0")
+  def copyToBuffer(dest: mutable.Buffer[A]): Unit = it.iterator.copyToBuffer(dest)
+
+  @deprecated("Use .iterator.reduce(...) instead", "2.13.0")
+  def reduce(f: (A, A) => A): A = it.iterator.reduce(f)
+
+  @deprecated("Use .iterator.reduceRightOption(...) instead", "2.13.0")
+  def reduceRightOption(f: (A, A) => A): Option[A] = it.iterator.reduceRightOption(f)
+
+  @deprecated("Use .iterator.toIndexedSeq instead", "2.13.0")
+  def toIndexedSeq: IndexedSeq[A] = it.iterator.toIndexedSeq
+
   @deprecated("Use .iterator.foreach(...) instead", "2.13.0")
   @`inline` def foreach[U](f: A => U): Unit = it match {
     case it: Iterable[A] => it.foreach(f)
