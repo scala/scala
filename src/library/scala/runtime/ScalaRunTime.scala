@@ -83,20 +83,10 @@ object ScalaRunTime {
   }
 
   /** Get generic array length */
-  def array_length(xs: AnyRef): Int = xs match {
-    case x: Array[AnyRef]  => x.length
-    case x: Array[Int]     => x.length
-    case x: Array[Double]  => x.length
-    case x: Array[Long]    => x.length
-    case x: Array[Float]   => x.length
-    case x: Array[Char]    => x.length
-    case x: Array[Byte]    => x.length
-    case x: Array[Short]   => x.length
-    case x: Array[Boolean] => x.length
-    case x: Array[Unit]    => x.length
-    case null => throw new NullPointerException
-  }
+  def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
 
+  // TODO: bytecode Object.clone() will in fact work here and avoids
+  // the type switch. See Array_clone comment in BCodeBodyBuilder.
   def array_clone(xs: AnyRef): AnyRef = xs match {
     case x: Array[AnyRef]  => x.clone()
     case x: Array[Int]     => x.clone()
@@ -107,7 +97,6 @@ object ScalaRunTime {
     case x: Array[Byte]    => x.clone()
     case x: Array[Short]   => x.clone()
     case x: Array[Boolean] => x.clone()
-    case x: Array[Unit]    => x
     case null => throw new NullPointerException
   }
 
