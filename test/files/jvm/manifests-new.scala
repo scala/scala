@@ -71,7 +71,7 @@ object Test2 {
   println()
 
   def loadArray[T](x: Array[Byte])(implicit t: reflect.ClassTag[Array[T]]) =
-    load[Array[T]](x)(t).deep.toString
+    load[Array[T]](x)(t).prettyArray.toString
   println("Array()="+loadArray[Int](dump(Array(): Array[Int])))
   println("Array(true)="+loadArray[Boolean](dump(Array(true))))
   println("Array(a)="+loadArray[Char](dump(Array('a'))))

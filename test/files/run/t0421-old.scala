@@ -21,16 +21,16 @@ object Test extends App {
   def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
     val ysst = transpose(yss)
     val ysst1: Array[Array[Double]] = yss.transpose
-    assert(ysst.deep == ysst1.deep)
+    assert(ysst.prettyArray == ysst1.prettyArray)
     for (xs <- xss) yield
       for (yst <- ysst) yield
         scalprod(xs, yst)
   }
 
   val a1 = Array(Array(0, 2, 4), Array(1, 3, 5))
-  println(transpose(a1).deep.mkString("[", ",", "]"))
+  println(transpose(a1).prettyArray.mkString("[", ",", "]"))
 
-  println(matmul(Array(Array(2, 3)), Array(Array(5), Array(7))).deep.mkString("[", ",", "]"))
+  println(matmul(Array(Array(2, 3)), Array(Array(5), Array(7))).prettyArray.mkString("[", ",", "]"))
 
-  println(matmul(Array(Array(4)), Array(Array(6, 8))).deep.mkString("[", ",", "]"))
+  println(matmul(Array(Array(4)), Array(Array(6, 8))).prettyArray.mkString("[", ",", "]"))
 }

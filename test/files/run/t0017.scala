@@ -14,5 +14,5 @@ object Test extends App {
 
   val transposed = transpose(my_arr)
 
-  println(transposed.deep.toString)
+  println(transposed.prettyArray.toString)
 }

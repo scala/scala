@@ -97,5 +97,15 @@ class ArrayOpsTest {
   @Test
   def slice: Unit = {
     assertArrayEquals(Array[Int](), Array[Int](1).slice(1052471512, -1496048404))
+  }:
+
+  @Test
+  def deep: Unit = {
+    assertEquals(
+       Array(Array(1, 2), Array(3, 4)).deep.toString,
+      "Array(Array(1, 2), Array(3, 4))"
+    )
   }
+
+
 }

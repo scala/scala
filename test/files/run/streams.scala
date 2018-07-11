@@ -10,7 +10,7 @@ object Test extends App {
   println
 
   val s1 = LazyList.cons(1, LazyList.empty)
-  println(s1.toArray.deep)
+  println(s1.toArray.prettyArray)
   println(s1.take(1))
   println(s1.take(2))
   println(s1.drop(1))
@@ -24,7 +24,7 @@ object Test extends App {
   println
 
   val s2 = s1.lazyAppendedAll(LazyList.cons(2, LazyList.empty))
-  println(s2.toArray.deep)
+  println(s2.toArray.prettyArray)
   println(s2.drop(1))
   println(s2.drop(2))
   println(s2.drop(-1))

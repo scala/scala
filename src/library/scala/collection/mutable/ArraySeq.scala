@@ -80,6 +80,9 @@ abstract class ArraySeq[T]
     if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
     this
   }
+
+  @deprecated("deep has no replacement", "2.13.0")
+  def deep: scala.collection.IndexedSeq[Any] = mutable.ArraySeq.deep(this)
 }
 
 /** A companion object used to create instances of `ArraySeq`.
@@ -268,4 +271,15 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   // This prevents it from serializing it in the first place:
   private[this] def writeObject(out: ObjectOutputStream): Unit = ()
   private[this] def readObject(in: ObjectInputStream): Unit = ()
+
+  private[collection] def deep[T](ms: ArraySeq[T]): scala.collection.IndexedSeq[Any] = {
+    new scala.collection.AbstractSeq[Any] with scala.collection.IndexedSeq[Any] {
+      def length = ms.length
+      def apply(idx: Int): Any = ms.apply(idx) match {
+        case x: Array[_] => deep(make(x))
+        case x => x
+      }
+      override def className = "Array"
+    }
+  }
 }
