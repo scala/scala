@@ -238,18 +238,18 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def slice(from: Int, until: Int): Array[A] = {
     import java.util.Arrays.copyOfRange
     val lo = max(from, 0)
-    if (until > lo) {
-      // TODO: Switch type to Array[_]. See scala/scala-dev#528.
-      ((xs: Any) match {
-        case x: Array[AnyRef]     => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Int]        => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Double]     => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Long]       => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Float]      => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Char]       => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Byte]       => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Short]      => copyOfRange(x, lo, min(until, x.length))
-        case x: Array[Boolean]    => copyOfRange(x, lo, min(until, x.length))
+    val hi = min(until, xs.length)
+    if (hi > lo) {
+      ((xs: Array[_]) match {
+        case x: Array[AnyRef]     => copyOfRange(x, lo, hi)
+        case x: Array[Int]        => copyOfRange(x, lo, hi)
+        case x: Array[Double]     => copyOfRange(x, lo, hi)
+        case x: Array[Long]       => copyOfRange(x, lo, hi)
+        case x: Array[Float]      => copyOfRange(x, lo, hi)
+        case x: Array[Char]       => copyOfRange(x, lo, hi)
+        case x: Array[Byte]       => copyOfRange(x, lo, hi)
+        case x: Array[Short]      => copyOfRange(x, lo, hi)
+        case x: Array[Boolean]    => copyOfRange(x, lo, hi)
       }).asInstanceOf[Array[A]]
     } else new Array[A](0)
   }
