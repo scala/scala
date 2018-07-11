@@ -87,7 +87,6 @@ class StringBuilder(private val underlying: java.lang.StringBuilder) extends Abs
   with Builder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
-  with IndexedOptimizedSeq[Char]
   with java.lang.CharSequence {
 
   def this() = this(new java.lang.StringBuilder)

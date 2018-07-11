@@ -28,7 +28,6 @@ abstract class ArraySeq[T]
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
-    with IndexedOptimizedSeq[T]
     with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]] {
 
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged

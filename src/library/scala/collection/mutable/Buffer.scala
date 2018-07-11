@@ -153,7 +153,11 @@ trait Buffer[A]
   override protected[this] def stringPrefix = "Buffer"
 }
 
-trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
+trait IndexedBuffer[A] extends IndexedSeq[A]
+  with IndexedSeqOps[A, IndexedBuffer, IndexedBuffer[A]]
+  with Buffer[A] {
+
+  override def iterableFactory: SeqFactory[IndexedBuffer] = IndexedBuffer
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     // There's scope for a better implementation which copies elements in place.
@@ -199,6 +203,9 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
 
 @SerialVersionUID(3L)
 object Buffer extends SeqFactory.Delegate[Buffer](ArrayBuffer)
+
+@SerialVersionUID(3L)
+object IndexedBuffer extends SeqFactory.Delegate[IndexedBuffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
