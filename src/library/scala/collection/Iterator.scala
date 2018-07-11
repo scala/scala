@@ -267,6 +267,47 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
   }
 
+  /** A copy of this $coll with an element value appended until a given target length is reached.
+   *
+   *  @param   len   the target length
+   *  @param   elem  the padding value
+   *  @tparam B      the element type of the returned $coll.
+   *  @return a new $coll consisting of
+   *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
+   *          that the resulting collection has a length of at least `len`.
+   */
+  def padTo[B >: A](len: Int, elem: B): Iterator[B] = {
+    val it = this
+    new AbstractIterator[B] {
+      private[this] var i = 0
+
+      def next(): B = {
+        val b =
+          if (it.hasNext) it.next()
+          else if (i < len) elem
+          else Iterator.empty.next()
+        i += 1
+        b
+      }
+
+      def hasNext: Boolean = it.hasNext || i < len
+    }
+  }
+
+  /** Partitions this iterator in two iterators according to a predicate.
+   *
+   *  @param p the predicate on which to partition
+   *  @return  a pair of iterators: the iterator that satisfies the predicate
+   *           `p` and the iterator that does not.
+   *           The relative order of the elements in the resulting iterators
+   *           is the same as in the original iterator.
+   *  @note    Reuse: $consumesOneAndProducesTwoIterators
+   */
+  def partition(p: A => Boolean): (Iterator[A], Iterator[A]) = {
+    val (a, b) = duplicate
+    (a filter p, b filterNot p)
+  }
+
   /** Returns an iterator which groups this iterator into fixed size
    *  blocks.  Example usages:
    *  {{{
@@ -340,6 +381,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next(): B = current.next()
     def hasNext: Boolean = current.hasNext
   }
+
+  @deprecated("Call scanRight on an Iterable instead.", "2.13.0")
+  def scanRight[B](z: B)(op: (A, B) => B): Iterator[B] = ArrayBuffer.from(this).scanRight(z)(op).iterator
 
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)

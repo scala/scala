@@ -404,6 +404,29 @@ class IteratorTest {
     assertSame(Iterator.empty, iteratorBuilder.result())
   }
 
+  @Test def partition: Unit = {
+    val it = Iterator(1, 2, 3, 4, 5, 6, 7)
+    val (even, odd) = it.partition(n => (n & 1) == 0)
+    assertSameElements(List.from(even), List(2, 4, 6))
+    assertSameElements(List.from(odd), List(1, 3, 5, 7))
+  }
+
+  @Test def padTo: Unit = {
+    val it = Iterator(2, 4, 6, 8)
+    val padded = it.padTo(7, 10)
+    assertSameElements(List.from(padded), List(2, 4, 6, 8, 10, 10, 10))
+  }
+
+  @Test def corresponds: Unit = {
+    val it = Iterator(1, 2, 3, 4, 5)
+    assertTrue(it.corresponds(Seq(1, 4, 9, 16, 25)) { (a, b) => b == a*a })
+  }
+
+  @Test def aggregate: Unit = {
+    val result = Iterator('a', 'b', 'c').aggregate(0)({ (sum, ch) => sum + ch.toInt }, { (p1, p2) => p1 + p2 })
+    assertEquals(result, 294)
+  }
+
   @Test def copyToArray(): Unit = {
     def check(a: Array[Int], start: Int, end: Int) = {
       var i = 0
