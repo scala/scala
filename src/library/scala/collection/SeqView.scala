@@ -8,7 +8,7 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
 
   override def map[B](f: A => B): SeqView[B] = new SeqView.Map(this, f)
 
-  override def prepended[B >: A](elem: B): SeqView[B] = new SeqView.Prepended(elem, this)
+  override def +: [B >: A](elem: B): SeqView[B] = new SeqView.Prepended(elem, this)
 
   override def take(n: Int): SeqView[A] = new SeqView.Take(this, n)
 

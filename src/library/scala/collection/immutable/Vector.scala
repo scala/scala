@@ -172,7 +172,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendedAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
+  override def :++ [B >: A](suffix: collection.Iterable[B]): Vector[B] = {
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
     if (suffix.isEmpty) this
     else {
@@ -187,12 +187,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           val ri = this.reverseIterator
           while (ri.hasNext) v = ri.next() +: v
           v
-        case _ => super.appendedAll(suffix)
+        case _ => super.:++(suffix)
       }
     }
   }
 
-  override def prependedAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
+  override def ++: [B >: A](prefix: collection.Iterable[B]): Vector[B] = {
     // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
     // has a small number of elements compared to the other, then we add them using `:+` or `+:` in a loop
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
@@ -209,7 +209,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           val it = this.iterator
           while (it.hasNext) v = v :+ it.next()
           v
-        case _ => super.prependedAll(prefix)
+        case _ => super.++:(prefix)
       }
     }
   }
@@ -240,7 +240,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     dirty = true
   }
 
-  override def prepended[B >: A](value: B): Vector[B] = {
+  override def +: [B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = (startIndex - 1) & ~31
       val lo = (startIndex - 1) & 31
@@ -318,7 +318,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     }
   }
 
-  override def appended[B >: A](value: B): Vector[B] = {
+  override def :+ [B >: A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       val blockIndex = endIndex & ~31
       val lo = endIndex & 31
@@ -602,7 +602,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   def isEmpty: Boolean = size == 0
   def nonEmpty: Boolean = size != 0
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32
       gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)

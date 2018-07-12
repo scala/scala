@@ -11,10 +11,10 @@ class HS[A]
     with Serializable {
   def get(elem: A): Option[A] = ???
   def contains(elem: A): Boolean = ???
-  def addOne(elem: A): HS.this.type = ???
+  def += (elem: A): HS.this.type = ???
   def clear(): Unit = ???
   def iterator: Iterator[A] = ???
-  def subtractOne(elem: A): HS.this.type = ???
+  def -= (elem: A): HS.this.type = ???
 }
 
 object Test {

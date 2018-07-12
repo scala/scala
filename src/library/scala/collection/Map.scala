@@ -48,11 +48,17 @@ trait Map[K, +V]
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(mapFactory.mapFactory[K, V], this)
 
-  // These two methods are not in MapOps so that MapView is not forced to implement them
+  // These deprecated methods are not in MapOps so that MapView is not forced to implement them
   @deprecated("Use - or remove on an immutable Map", "2.13.0")
   def - (key: K): Map[K, V]
   @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
   def - (key1: K, key2: K, keys: K*): Map[K, V]
+  @deprecated("Consider requiring an immutable Map.", "2.13.0")
+  def -- (keys: IterableOnce[K]): Map[K, V]
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
+  def + [V1 >: V](kv: (K, V1)): Map[K, V1]
+  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
+  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): Map[K, V1]
 
   override protected[this] def stringPrefix: String = "Map"
 
@@ -143,7 +149,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class KeySet extends AbstractSet[K] with GenKeySet {
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
+    def + (elem: K): Set[K] = fromSpecificIterable(new View.Appended(this, elem))
+    def - (elem: K): Set[K] = diff(Set(elem))
   }
 
   /** A generic trait that is reused by keyset implementations */
@@ -276,10 +283,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(new View.Concat(toIterable, suffix))
+  def ++ [V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(new View.Concat(toIterable, suffix))
 
-  /** Alias for `concat` */
-  /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
+  /** Alias for `++` */
+  @`inline` /*final*/ def concat[V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = this ++ xs
 
   override def mkString(start: String, sep: String, end: String): String =
     iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
@@ -288,19 +295,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def mkString(sep: String): String = super.mkString(sep)
   override def mkString: String = super.mkString
 
-  @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
-  def + [V1 >: V](kv: (K, V1)): CC[K, V1] =
-    mapFactory.from(new View.Appended(toIterable, kv))
-
-  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] =
-    mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
-
-  @deprecated("Consider requiring an immutable Map.", "2.13.0")
-  @`inline` def -- (keys: IterableOnce[K]): C = {
-    lazy val keysSet = keys.toSet
-    fromSpecificIterable(this.filterKeys(k => !keysSet.contains(k)))
-  }
 }
 
 object MapOps {

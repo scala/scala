@@ -42,12 +42,12 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
 
   def iteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     RB.insert(tree, elem, null)
     this
   }
 
-  def subtractOne(elem: A): this.type = {
+  def -= (elem: A): this.type = {
     RB.delete(tree, elem)
     this
   }

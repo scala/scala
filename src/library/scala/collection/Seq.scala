@@ -87,6 +87,9 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def toSeq: immutable.Seq[A]
 
+  /** Alias for `+:`. */
+  @`inline` final def prepended[B >: A](elem: B): CC[B] = elem +: this
+
   /** A copy of the $coll with an element prepended.
     *
     * Also, the original $coll is not modified, so you will want to capture the result.
@@ -103,20 +106,19 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *      List(1)
     *    }}}
     *
+    * Note that :-ending operators are right associative (see example).
+    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+    *
     *  @param  elem   the prepended element
     *  @tparam B      the element type of the returned $coll.
     *
     *    @return a new $coll consisting of `value` followed
     *            by all elements of this $coll.
     */
-  def prepended[B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, this))
+  def +: [B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, this))
 
-  /** Alias for `prepended`.
-    *
-    * Note that :-ending operators are right associative (see example).
-    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
-    */
-  @`inline` final def +: [B >: A](elem: B): CC[B] = prepended(elem)
+  /** Alias for `:+` */
+  @`inline` final def appended[B >: A](elem: B): CC[B] = this :+ elem
 
   /** A copy of this $coll with an element appended.
     *
@@ -134,19 +136,18 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *    List(1)
     * }}}
     *
+    * Note that :-ending operators are right associative (see example).
+    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
+    *
     * @param  elem   the appended element
     * @tparam B      the element type of the returned $coll.
     * @return a new $coll consisting of
     *         all elements of this $coll followed by `value`.
     */
-  def appended[B >: A](elem: B): CC[B] = fromIterable(new View.Appended(this, elem))
+  def :+ [B >: A](elem: B): CC[B] = fromIterable(new View.Appended(this, elem))
 
-  /** Alias for `appended`
-    *
-    * Note that :-ending operators are right associative (see example).
-    * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
-    */
-  @`inline` final def :+ [B >: A](elem: B): CC[B] = appended(elem)
+  /** Alias for `++:` */
+  @`inline` final def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = prefix ++: this
 
   /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.
@@ -160,10 +161,10 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
-  def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, this))
+  def ++: [B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, this))
 
-  /** Alias for `prependedAll` */
-  @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependedAll(prefix)
+  /** Alias for `:++` */
+  @`inline` final def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = this :++ suffix
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -174,14 +175,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = super.concat(suffix)
+  def :++ [B >: A](suffix: Iterable[B]): CC[B] = super.++(suffix)
 
-  /** Alias for `appendedAll` */
-  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
-
-  // Make `concat` an alias for `appendedAll` so that it benefits from performance
+  // Make `++` an alias for `:++` so that it benefits from performance
   // overrides of this method
-  @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  @`inline` final override def ++ [B >: A](suffix: Iterable[B]): CC[B] = this :++ suffix
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.

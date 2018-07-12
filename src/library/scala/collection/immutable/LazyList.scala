@@ -305,7 +305,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
   override final def withFilter(p: A => Boolean): collection.WithFilter[A, CC] =
     iterableFactory.withFilter(coll, p)
 
-  override final def prepended[B >: A](elem: B): CC[B] = cons(elem, coll)
+  override final def +: [B >: A](elem: B): CC[B] = cons(elem, coll)
 
   override final def map[B](f: A => B): CC[B] =
     if (isEmpty) iterableFactory.empty

@@ -45,7 +45,7 @@ class HashMap[K, V]
     if (e eq null) None else Some(e.value)
   }
 
-  def addOne(kv: (K, V)): this.type = {
+  def += (kv: (K, V)): this.type = {
     val e = table.findOrAddEntry(kv._1, kv._2)
     if (e ne null) e.value = kv._2
     this
@@ -53,7 +53,7 @@ class HashMap[K, V]
 
   override def clear(): Unit = table.clearTable()
 
-  def subtractOne(key: K): this.type = { table.removeEntry(key); this }
+  def -= (key: K): this.type = { table.removeEntry(key); this }
 
   override def size: Int = table.size
 

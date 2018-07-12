@@ -22,7 +22,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     builder.result()
   }
 
-  override def prepended[B >: A](elem: B): CC[B] = {
+  override def +: [B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
@@ -32,7 +32,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def appended[B >: A](elem: B): CC[B] = {
+  override def :+ [B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size + 1)
@@ -42,14 +42,14 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = {
+  override def :++ [B >: A](suffix: Iterable[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     b ++= this
     b ++= suffix
     b.result()
   }
 
-  override def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = {
+  override def ++: [B >: A](prefix: Iterable[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     b ++= prefix
     b ++= this

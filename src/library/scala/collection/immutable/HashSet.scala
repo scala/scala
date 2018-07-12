@@ -36,9 +36,9 @@ sealed abstract class HashSet[A]
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
-  def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
+  def + (elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
 
-  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+  def - (elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
 
   override def subsetOf(that: collection.Set[A]): Boolean = that match {
     case that:HashSet[A] =>
@@ -49,11 +49,11 @@ sealed abstract class HashSet[A]
       super.subsetOf(that)
   }
 
-  override def concat(that: collection.Iterable[A]): HashSet[A] = that match {
+  override def ++ (that: collection.Iterable[A]): HashSet[A] = that match {
     case that: HashSet[A] =>
       val buffer = new Array[HashSet[A]](bufferSize(this.size + that.size))
       nullToEmpty(union0(that, 0, buffer, 0))
-    case _ => super.concat(that)
+    case _ => super.++(that)
   }
 
   override def intersect(that: collection.Set[A]): HashSet[A] = that match {
@@ -164,7 +164,7 @@ object HashSet extends IterableFactory[HashSet] {
 
   def newBuilder[A]: Builder[A, HashSet[A]] =
     new ImmutableBuilder[A, HashSet[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
+      def += (elem: A): this.type = { elems = elems + elem; this }
     }
 
   private object EmptyHashSet extends HashSet[Any] {

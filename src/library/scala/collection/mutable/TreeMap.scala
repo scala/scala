@@ -42,9 +42,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   override def valuesIteratorFrom(start: K): Iterator[V] = RB.valuesIterator(tree, Some(start))
 
-  def addOne(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
+  def += (elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
 
-  def subtractOne(elem: K): this.type = { RB.delete(tree, elem); this }
+  def -= (elem: K): this.type = { RB.delete(tree, elem); this }
 
   override def clear(): Unit = RB.clear(tree)
 

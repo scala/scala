@@ -40,8 +40,8 @@ sealed class ListSet[A]
 
   def contains(elem: A): Boolean = false
 
-  def incl(elem: A): ListSet[A] = new Node(elem)
-  def excl(elem: A): ListSet[A] = this
+  def + (elem: A): ListSet[A] = new Node(elem)
+  def - (elem: A): ListSet[A] = this
 
   def iterator: scala.collection.Iterator[A] = {
     var curr: ListSet[A] = this
@@ -76,9 +76,9 @@ sealed class ListSet[A]
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))
 
-    override def incl(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
+    override def + (e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def excl(e: A): ListSet[A] = removeInternal(e, this, Nil)
+    override def - (e: A): ListSet[A] = removeInternal(e, this, Nil)
 
     @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
       if (cur.isEmpty) acc.last
@@ -120,7 +120,7 @@ object ListSet extends IterableFactory[ListSet] {
 
   def newBuilder[A]: Builder[A, ListSet[A]] =
     new ImmutableBuilder[A, ListSet[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
+      def += (elem: A): this.type = { elems = elems + elem; this }
     }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).

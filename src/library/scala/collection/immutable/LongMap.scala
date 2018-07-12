@@ -56,7 +56,7 @@ object LongMap {
 
   def newBuilder[V]: Builder[(Long, V), LongMap[V]] =
     new ImmutableBuilder[(Long, V), LongMap[V]](empty) {
-      def addOne(elem: (Long, V)): this.type = { elems = elems + elem; this }
+      def += (elem: (Long, V)): this.type = { elems = elems + elem; this }
     }
 
   private[immutable] case object Nil extends LongMap[Nothing] {
@@ -189,7 +189,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   }
   override protected def newSpecificBuilder: Builder[(Long, T), LongMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Long, T), LongMap[T]](empty) {
-      def addOne(elem: (Long, T)): this.type = { elems = elems + elem; this }
+      def += (elem: (Long, T)): this.type = { elems = elems + elem; this }
     }
 
   override def empty: LongMap[T] = LongMap.Nil
@@ -341,7 +341,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil => LongMap.Tip(key, value)
   }
 
-  def remove(key: Long): LongMap[T] = this match {
+  def - (key: Long): LongMap[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this
       else if (zero(key, mask)) bin(prefix, mask, left - key, right)

@@ -75,7 +75,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def clear(): Unit = reduceToSize(0)
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     val i = size0
     ensureSize(size0 + 1)
     size0 += 1
@@ -84,13 +84,13 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   }
 
   // Overridden to use array copying for efficiency where possible.
-  override def addAll(elems: IterableOnce[A]): this.type = {
+  override def ++= (elems: IterableOnce[A]): this.type = {
     elems match {
       case elems: ArrayBuffer[_] =>
         ensureSize(length + elems.length)
         Array.copy(elems.array, 0, array, length, elems.length)
         size0 = length + elems.length
-      case _ => super.addAll(elems)
+      case _ => super.++=(elems)
     }
     this
   }
@@ -103,7 +103,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     this(index) = elem
   }
 
-  def prepend(elem: A): this.type = {
+  def +=: (elem: A): this.type = {
     insert(0, elem)
     this
   }

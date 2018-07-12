@@ -41,7 +41,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
 
-  def incl(element: A): ChampHashSet[A] = {
+  def + (element: A): ChampHashSet[A] = {
     val elementHash = computeHash(element)
     val newRootNode = rootNode.updated(element, elementHash, 0)
 
@@ -50,7 +50,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     else this
   }
 
-  def excl(element: A): ChampHashSet[A] = {
+  def - (element: A): ChampHashSet[A] = {
     val elementHash = computeHash(element)
     val newRootNode = rootNode.removed(element, elementHash, 0)
 
@@ -596,7 +596,7 @@ object ChampHashSet extends IterableFactory[ChampHashSet] {
 
   def newBuilder[A]: Builder[A, ChampHashSet[A]] =
     new ImmutableBuilder[A, ChampHashSet[A]](empty) {
-      def addOne(element: A): this.type = {
+      def += (element: A): this.type = {
         elems = elems + element
         this
       }

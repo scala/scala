@@ -73,7 +73,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     else this
   }
 
-  def remove(key: K): ChampHashMap[K, V] = {
+  def - (key: K): ChampHashMap[K, V] = {
     val keyHash = computeHash(key)
     val newRootNode = rootNode.removed(key, keyHash, 0)
 
@@ -668,7 +668,7 @@ object ChampHashMap extends MapFactory[ChampHashMap] {
 
   def newBuilder[K, V]: Builder[(K, V), ChampHashMap[K, V]] =
     new ImmutableBuilder[(K, V), ChampHashMap[K, V]](empty) {
-      def addOne(element: (K, V)): this.type = {
+      def += (element: (K, V)): this.type = {
         elems = elems + element
         this
       }

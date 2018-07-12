@@ -280,8 +280,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
     override def empty = ValueSet.empty
     def contains(v: Value) = nnIds contains (v.id - bottomId)
-    def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
-    def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
+    def + (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
+    def - (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
     def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
     override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
     override def className = thisenum + ".ValueSet"
@@ -322,7 +322,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     /** A builder object for value sets */
     def newBuilder: mutable.Builder[Value, ValueSet] = new mutable.Builder[Value, ValueSet] {
       private[this] val b = new mutable.BitSet
-      def addOne (x: Value) = { b += (x.id - bottomId); this }
+      def += (x: Value) = { b += (x.id - bottomId); this }
       def clear() = b.clear()
       def result() = new ValueSet(b.toImmutable)
     }

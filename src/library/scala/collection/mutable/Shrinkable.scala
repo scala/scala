@@ -18,10 +18,10 @@ trait Shrinkable[-A] {
     *  @param elem  the element to remove.
     *  @return the $coll itself
     */
-  def subtractOne(elem: A): this.type
+  def -= (elem: A): this.type
 
-  /** Alias for `subtractOne` */
-  @`inline` final def -= (elem: A): this.type = subtractOne(elem)
+  /** Alias for `-=` */
+  @`inline` final def subtractOne(elem: A): this.type = this -= elem
 
   /** Removes two or more elements from this $coll.
     *
@@ -30,6 +30,7 @@ trait Shrinkable[-A] {
     *  @param elems the remaining elements to remove.
     *  @return the $coll itself
     */
+  @deprecated("Use --= with a collection instead of -= with varargs", "2.13.0")
   def -= (elem1: A, elem2: A, elems: A*): this.type = {
     this -= elem1
     this -= elem2
@@ -41,7 +42,7 @@ trait Shrinkable[-A] {
     *  @param xs   the iterator producing the elements to remove.
     *  @return the $coll itself
     */
-  def subtractAll(xs: collection.IterableOnce[A]): this.type = {
+  def --= (xs: collection.IterableOnce[A]): this.type = {
     @tailrec def loop(xs: collection.LinearSeq[A]): Unit = {
       if (xs.nonEmpty) {
         subtractOne(xs.head)
@@ -55,7 +56,7 @@ trait Shrinkable[-A] {
     this
   }
 
-  /** Alias for `subtractAll` */
-  @`inline` final def --= (xs: collection.IterableOnce[A]): this.type = subtractAll(xs)
+  /** Alias for `--=` */
+  @`inline` final def subtractAll(xs: collection.IterableOnce[A]): this.type = this --= xs
 
 }

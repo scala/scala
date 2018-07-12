@@ -35,7 +35,7 @@ sealed abstract class HashMap[K, +V]
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
-  def remove(key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
+  def - (key: K): HashMap[K, V] = removed0(key, computeHash(key), 0)
 
   final def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] =
     updated0(key, computeHash(key), 0, value, null, null)
@@ -111,7 +111,7 @@ object HashMap extends MapFactory[HashMap] {
 
   def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
     new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def += (elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
   private[collection] abstract class Merger[A, B] {

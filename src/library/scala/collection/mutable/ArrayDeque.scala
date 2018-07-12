@@ -60,12 +60,12 @@ class ArrayDeque[A] protected (
     _set(idx, elem)
   }
 
-  def addOne(elem: A) = {
+  def += (elem: A) = {
     ensureSize(length + 1)
     appendAssumingCapacity(elem)
   }
 
-  def prepend(elem: A) = {
+  def +=: (elem: A) = {
     ensureSize(length + 1)
     prependAssumingCapacity(elem)
   }
@@ -82,7 +82,7 @@ class ArrayDeque[A] protected (
     this
   }
 
-  override def prependAll(elems: IterableOnce[A]): this.type = {
+  override def ++=: (elems: IterableOnce[A]): this.type = {
     val it = elems.iterator
     if (it.nonEmpty) {
       val n = length
@@ -114,7 +114,7 @@ class ArrayDeque[A] protected (
     this
   }
 
-  override def addAll(elems: IterableOnce[A]): this.type = {
+  override def ++= (elems: IterableOnce[A]): this.type = {
     elems.knownSize match {
       case srcLength if srcLength > 0 =>
         ensureSize(srcLength + length)
@@ -252,7 +252,7 @@ class ArrayDeque[A] protected (
     elem
   }
 
-  override def subtractOne(elem: A): this.type = {
+  override def -= (elem: A): this.type = {
     val idx = indexOf(elem)
     if (idx >= 0) remove(idx, 1) //TODO: SeqOps should be fluent API
     this

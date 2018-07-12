@@ -81,7 +81,7 @@ object IntMap {
 
   def newBuilder[V]: Builder[(Int, V), IntMap[V]] =
     new ImmutableBuilder[(Int, V), IntMap[V]](empty) {
-      def addOne(elem: (Int, V)): this.type = { elems = elems + elem; this }
+      def += (elem: (Int, V)): this.type = { elems = elems + elem; this }
     }
 
   implicit def toFactory[V](dummy: IntMap.type): Factory[(Int, V), IntMap[V]] = ToFactory.asInstanceOf[Factory[(Int, V), IntMap[V]]]
@@ -194,7 +194,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   }
   override protected def newSpecificBuilder: Builder[(Int, T), IntMap[T]] @uncheckedVariance =
     new ImmutableBuilder[(Int, T), IntMap[T]](empty) {
-      def addOne(elem: (Int, T)): this.type = { elems = elems + elem; this }
+      def += (elem: (Int, T)): this.type = { elems = elems + elem; this }
     }
 
   override def empty: IntMap[T] = IntMap.Nil
@@ -358,7 +358,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil => IntMap.Tip(key, value)
   }
 
-  def remove (key: Int): IntMap[T] = this match {
+  def - (key: Int): IntMap[T] = this match {
     case IntMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this
       else if (zero(key, mask)) bin(prefix, mask, left - key, right)

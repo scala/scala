@@ -47,7 +47,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     if (elems.length == 0) empty
     else new BitSet(elems)
 
-  def addOne(elem: Int): this.type = {
+  def += (elem: Int): this.type = {
     require(elem >= 0)
     if (!contains(elem)) {
       val idx = elem >> LogWL
@@ -56,7 +56,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     this
   }
 
-  def subtractOne(elem: Int): this.type = {
+  def -= (elem: Int): this.type = {
     require(elem >= 0)
     if (contains(elem)) {
       val idx = elem >> LogWL

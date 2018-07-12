@@ -48,8 +48,8 @@ extends mutable.AbstractMap[String, String] {
     wrapAccess(super.contains(key)) exists (x => x)
 
   override def clear(): Unit = wrapAccess(System.getProperties().clear())
-  def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
-  def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
+  def -= (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
+  def += (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
 
   def wrapAccess[T](body: => T): Option[T] =
     try Some(body) catch { case _: AccessControlException => None }

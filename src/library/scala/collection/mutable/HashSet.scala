@@ -29,11 +29,11 @@ final class HashSet[A]
 
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     table.addElem(elem)
     this
   }
-  def subtractOne(elem: A): this.type = {
+  def -= (elem: A): this.type = {
     table.removeElem(elem)
     this
   }

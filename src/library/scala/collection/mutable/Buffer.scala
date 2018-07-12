@@ -11,19 +11,22 @@ trait Buffer[A]
 
   override def iterableFactory: SeqFactory[Buffer] = Buffer
 
-  //TODO Prepend is a logical choice for a readable name of `+=:` but it conflicts with the renaming of `append` to `add`
   /** Prepends a single element at the front of this $coll.
     *
     *  @param elem  the element to $add.
     *  @return the $coll itself
     */
-  def prepend(elem: A): this.type
+  def +=: (elem: A): this.type
+
+  //TODO Prepend is a logical choice for a readable name of `+=:` but it conflicts with the renaming of `append` to `add`
+  /** Alias for `+=:` */
+  @`inline` final def prepend(elem: A): this.type = this.+=:(elem)
 
   /** Appends the given elements to this buffer.
     *
     *  @param elem  the element to append.
     */
-  @`inline` final def append(elem: A): this.type = addOne(elem)
+  @`inline` final def append(elem: A): this.type = this += elem
 
   @deprecated("Use appendAll instead", "2.13.0")
   @`inline` final def append(elems: A*): this.type = addAll(elems)
@@ -33,17 +36,18 @@ trait Buffer[A]
     */
   @`inline` final def appendAll(xs: IterableOnce[A]): this.type = addAll(xs)
 
+  /** Prepends elements to this buffer.
+    *
+    *  @param elems  the collection containing the elements to prepend.
+    *  @return the buffer itself.
+    */
+  def ++=: (elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
 
-  /** Alias for `prepend` */
-  @`inline` final def +=: (elem: A): this.type = prepend(elem)
-
-  def prependAll(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
+  /** Alias for `++=:` */
+  @inline final def prependAll(elems: IterableOnce[A]): this.type = this.++=:(elems)
 
   @deprecated("Use prependAll instead", "2.13.0")
   @`inline` final def prepend(elems: A*): this.type = prependAll(elems)
-
-  /** Alias for `prependAll` */
-  @inline final def ++=:(elems: IterableOnce[A]): this.type = prependAll(elems)
 
   /** Inserts a new element at a given index into this buffer.
     *
@@ -93,7 +97,7 @@ trait Buffer[A]
     *  @param x  the element to remove.
     *  @return   the buffer itself
     */
-  def subtractOne (x: A): this.type = {
+  def -= (x: A): this.type = {
     val i = indexOf(x)
     if (i != -1) remove(i)
     this

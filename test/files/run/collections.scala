@@ -36,7 +36,7 @@ object Test extends App {
     println("***** "+msg+":")
     var s = s0
     s = s.clone() += 2
-    s = s.clone += (3, 4000, 10000)
+    s = s.clone ++= Set(3, 4000, 10000)
     println("test1: "+sum(s))
     time {
       s = s ++ (List.range(0, iters) map (2*))
@@ -89,7 +89,7 @@ object Test extends App {
     println("***** "+msg+":")
     var s = s0
     s = s.clone() += (2 -> 2)
-    s = s.clone() += (3 -> 3, 4000 -> 4000, 10000 -> 10000)
+    s = s.clone() ++= Map(3 -> 3, 4000 -> 4000, 10000 -> 10000)
     println("test1: "+sum(s map (_._2)))
     time {
       s = s ++ (List.range(0, iters) map (x => x * 2 -> x * 2))

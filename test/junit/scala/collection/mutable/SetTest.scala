@@ -13,8 +13,8 @@ class SetTest {
     override protected[this] def fromSpecificIterable(coll: scala.collection.Iterable[String]): MySet = new MySet(fromIterable(coll))
     override protected[this] def newSpecificBuilder: Builder[String, MySet] = iterableFactory.newBuilder[String].mapResult(new MySet(_))
 
-    def subtractOne(elem: String) = { self -= elem; this }
-    def addOne(elem: String) = { self += elem; this }
+    def -= (elem: String) = { self -= elem; this }
+    def += (elem: String) = { self += elem; this }
 
     override def empty = new MySet(self.empty)
     def iterator = self.iterator

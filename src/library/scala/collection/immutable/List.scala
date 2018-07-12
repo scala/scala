@@ -121,18 +121,18 @@ sealed abstract class List[+A]
     these
   }
 
-  override def prepended[B >: A](elem: B): List[B] = elem :: this
+  override def +: [B >: A](elem: B): List[B] = elem :: this
 
   // When calling prependAll with another list `prefix`, avoid copying `this`
-  override def prependedAll[B >: A](prefix: collection.Iterable[B]): List[B] = prefix match {
+  override def ++: [B >: A](prefix: collection.Iterable[B]): List[B] = prefix match {
     case xs: List[B] => xs ::: this
-    case _ => super.prependedAll(prefix)
+    case _ => super.++:(prefix)
   }
 
   // When calling appendAll with another list `suffix`, avoid copying `suffix`
-  override def appendedAll[B >: A](suffix: collection.Iterable[B]): List[B] = suffix match {
+  override def :++ [B >: A](suffix: collection.Iterable[B]): List[B] = suffix match {
     case xs: List[B] => this ::: xs
-    case _ => super.appendedAll(suffix)
+    case _ => super.:++(suffix)
   }
 
   override def take(n: Int): List[A] = if (isEmpty || n <= 0) Nil else {

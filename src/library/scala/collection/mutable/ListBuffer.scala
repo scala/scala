@@ -86,7 +86,7 @@ class ListBuffer[A]
     aliased = false
   }
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     ensureUnaliased()
     val last1 = new ::[A](elem, Nil)
     if (len == 0) first = last1 else last0.next = last1
@@ -95,7 +95,7 @@ class ListBuffer[A]
     this
   }
 
-  override def subtractOne(elem: A): this.type = {
+  override def -= (elem: A): this.type = {
     ensureUnaliased()
     if (isEmpty) {}
     else if (first.head == elem) {
@@ -171,7 +171,7 @@ class ListBuffer[A]
     }
   }
 
-  def prepend(elem: A): this.type = {
+  def +=: (elem: A): this.type = {
     insert(0, elem)
     this
   }

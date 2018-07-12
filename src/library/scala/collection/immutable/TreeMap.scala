@@ -45,7 +45,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
-  def remove(key: K): TreeMap[K,V] =
+  def - (key: K): TreeMap[K,V] =
     if (!RB.contains(tree, key)) this
     else new TreeMap(RB.delete(tree, key))
 
@@ -159,7 +159,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def newBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
     new ImmutableBuilder[(K, V), TreeMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+      def += (elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
 }

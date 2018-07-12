@@ -34,7 +34,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
   override protected def reversed: Iterable[A] = new IndexedSeqView.Reverse(this)
 
   // Override transformation operations to use more efficient views than the default ones
-  override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedSeqView.Prepended(elem, this))
+  override def +: [B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedSeqView.Prepended(elem, this))
 
   override def take(n: Int): C = fromSpecificIterable(new IndexedSeqView.Take(this, n))
 

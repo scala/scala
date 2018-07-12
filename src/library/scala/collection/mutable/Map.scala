@@ -2,7 +2,6 @@ package scala
 package collection
 package mutable
 
-import scala.collection.{IterableOnce, MapFactory}
 import scala.language.higherKinds
 
 /** Base type of mutable Maps */
@@ -46,6 +45,21 @@ trait Map[K, V]
     *  @return      a wrapper of the map with a default value
     */
   def withDefaultValue(d: V): Map.WithDefault[K, V] = new Map.WithDefault[K, V](this, x => d)
+
+  @deprecated("Use - or remove on an immutable Map", "2.13.0")
+  def - (key: K): Map[K, V] = clone() -= key
+  @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
+  def - (key1: K, key2: K, keys: K*): Map[K, V] = clone() -= key1 -= key2 --= keys
+  @deprecated("Consider requiring an immutable Map.", "2.13.0")
+  def -- (keys: IterableOnce[K]): Map[K, V] = {
+    lazy val keysSet = keys.iterator.toSet
+    fromSpecificIterable(this.filterKeys(k => !keysSet.contains(k)))
+  }
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
+  def + [V1 >: V](kv: (K, V1)): Map[K, V1] = mapFactory.from(new View.Appended(this, kv))
+  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
+  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): Map[K, V1] = this + elem1 + elem2 ++ elems
+
 }
 
 /**
@@ -58,12 +72,6 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     with Cloneable[C]
     with Growable[(K, V)]
     with Shrinkable[K] {
-
-  @deprecated("Use - or remove on an immutable Map", "2.13.0")
-  /* final */ def - (key: K): C = clone() -= key
-
-  @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
-  /* final */ def - (key1: K, key2: K, keys: K*): C = clone() -= key1 -= key2 --= keys
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a
@@ -182,9 +190,9 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     def get(key: K): Option[V] = underlying.get(key)
 
-    def subtractOne(elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
+    def -= (elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
 
-    def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
+    def += (elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
