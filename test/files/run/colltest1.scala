@@ -200,7 +200,7 @@ object Test extends App {
   def mutableMapTest(empty: => mutable.Map[String, String]) = {
     mapTest(empty)
     val m1 = empty ++ (('A' to 'Z') map (_.toString) map (x => (x, x)))
-    val m2 = m1 retain ((k, v) => k == "N")
+    val m2 = m1 filterInPlace ((k, v) => k == "N")
     assert(m2.size == 1, m2)
   }
 
