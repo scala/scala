@@ -221,7 +221,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *        x >  0       if this.length >  len
     *   }}}
     */
-  def lengthCompare(len: Int): Int = xs.length - len
+  def lengthCompare(len: Int): Int = Integer.compare(xs.length, len)
 
   /** Selects an interval of elements. The returned array is made up
     * of all elements `x` which satisfy the invariant:
