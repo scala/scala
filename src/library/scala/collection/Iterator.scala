@@ -431,7 +431,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     -1
   }
 
-  final def length: Int = size
+  @deprecatedOverriding("This method will be made final", "2.13.0")
+  def length: Int = size
 
   def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
 

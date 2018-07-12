@@ -77,7 +77,8 @@ sealed abstract class Range(
     }
   }
 
-  final def length = if (numRangeElements < 0) fail() else numRangeElements
+  @deprecatedOverriding("This method will be made final", "2.13.0")
+  def length = if (numRangeElements < 0) fail() else numRangeElements
 
   // This field has a sensible value only for non-empty ranges
   private[this] val lastElement = step match {
