@@ -1,3 +1,6 @@
+
+// scalac: -Ycheck:typer
+//
 class A {
   class C[x]
   val cs = new scala.collection.mutable.HashMap[C[_], Int]

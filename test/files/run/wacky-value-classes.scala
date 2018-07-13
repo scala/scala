@@ -1,3 +1,5 @@
+// scalac: -Xverify
+//
 // scala/bug#10361
 final class AnyValNothing(val self: Nothing) extends AnyVal
 final class AnyValNull   (val self: Null   ) extends AnyVal

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 // a.scala
 // Fri Jan 13 11:31:47 PST 2012
 

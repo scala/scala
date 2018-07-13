@@ -1,3 +1,5 @@
+// scalac: -Ydelambdafy:method
+//
 class C {
   final def resume: Any = (this: Any) match {
     case x : C => (x: Any) match {

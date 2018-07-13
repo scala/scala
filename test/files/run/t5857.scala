@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 import scala.math.Ordering.Double.IeeeOrdering
 
 

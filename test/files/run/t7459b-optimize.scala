@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 class LM {
   class Node[B1]
 

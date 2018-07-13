@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.{currentMirror => cm}

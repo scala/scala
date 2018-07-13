@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 object Test extends App {
   // TESTS
 

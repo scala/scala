@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.12
+//
 // This test case was extracted from `names-defaults-neg.scala`
 // It pinpoints an improvement an error message that results from
 // a type inference failure

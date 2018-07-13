@@ -1,3 +1,5 @@
+// scalac: -Xlint -Xfatal-warnings
+//
 // https://github.com/scala/bug/issues/4762
 
 // In A, x and y are -1.

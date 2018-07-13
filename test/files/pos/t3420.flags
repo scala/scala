@@ -1,1 +1,0 @@
--opt-warnings -opt:l:inline -opt-inline-from:** -Xfatal-warnings

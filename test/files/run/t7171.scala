@@ -1,3 +1,5 @@
+// scalac: -unchecked
+//
 trait T {
   final case class A()
 

@@ -1,3 +1,5 @@
+// scalac: -opt-warnings -opt:l:inline -opt-inline-from:**
+//
 class A extends Cloneable {
   @inline final def foo = clone()
 }

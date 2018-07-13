@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object Test {
   object NF {
     def unapply(t: Throwable): Option[Throwable] = None

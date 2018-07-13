@@ -1,13 +1,13 @@
-t4440.scala:12: warning: The outer reference in this type test cannot be checked at run time.
+t4440.scala:14: warning: The outer reference in this type test cannot be checked at run time.
     case _: b.Inner => println("b")
           ^
-t4440.scala:13: warning: The outer reference in this type test cannot be checked at run time.
+t4440.scala:15: warning: The outer reference in this type test cannot be checked at run time.
     case _: a.Inner => println("a") // this is the case we want
           ^
-t4440.scala:16: warning: The outer reference in this type test cannot be checked at run time.
+t4440.scala:18: warning: The outer reference in this type test cannot be checked at run time.
     case _: a.Inner => println("a")
           ^
-t4440.scala:17: warning: The outer reference in this type test cannot be checked at run time.
+t4440.scala:19: warning: The outer reference in this type test cannot be checked at run time.
     case _: b.Inner => println("b") // this is the case we want
           ^
 error: No warnings can be incurred under -Xfatal-warnings.

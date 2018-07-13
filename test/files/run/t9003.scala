@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 object Single {
   var i = 0
   def isEmpty = false
