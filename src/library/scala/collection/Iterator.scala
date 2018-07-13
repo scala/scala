@@ -91,7 +91,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   @throws[NoSuchElementException]
   def next(): A
-  def iterator = this
+
+  @inline final def iterator = this
 
   /** Wraps the value of `next()` in an option.
     *
@@ -431,7 +432,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     -1
   }
 
-  final def length: Int = size
+  @inline final def length: Int = size
+
+  @deprecatedOverriding("isEmpty is defined as !hasNext; override hasNext instead", "2.13.0")
+  override def isEmpty: Boolean = !hasNext
 
   def filter(p: A => Boolean): Iterator[A] = filterImpl(p, isFlipped = false)
 
