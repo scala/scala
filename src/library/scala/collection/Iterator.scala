@@ -518,25 +518,15 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private[this] var nextElementDefined: Boolean = false
     private[this] var nextElement: A = _
 
-    def hasNext: Boolean = {
-      @tailrec
-      def loop(): Boolean = {
-        if (!self.hasNext) false
-        else {
-          nextElement = self.next()
-          val y = f(nextElement)
-          if (traversedValues.contains(y)) {
-            loop()
-          } else {
-            traversedValues += y
-            nextElementDefined = true
-            true
-          }
-        }
+    def hasNext: Boolean = nextElementDefined || (self.hasNext && {
+      val a = self.next()
+      if (traversedValues.add(f(a))) {
+        nextElement = a
+        nextElementDefined = true
+        true
       }
-
-      nextElementDefined || loop()
-    }
+      else hasNext
+    })
 
     def next(): A =
       if (hasNext) {
