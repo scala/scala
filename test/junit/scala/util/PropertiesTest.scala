@@ -29,7 +29,7 @@ class PropertiesTest {
 
     var done = false
     assertEquals(Properties.propOrElse(TestProperty, { done = true; "bar" }), "foo")
-    assertTrue("Does not evaluate alt if not needed", done == false)
+    assertFalse("Does not evaluate alt if not needed", done)
   }
 
   @Test
@@ -37,7 +37,8 @@ class PropertiesTest {
     assertEquals(Properties.envOrElse("_PropertiesTest_NOT_DEFINED", "test"), "test")
 
     var done = false
-    assertNotEquals(Properties.envOrElse("JAVA_HOME", { done = true; "bar" }), "bar")
-    assertTrue("Does not evaluate alt if not needed", done == false)
+    val envName = System.getenv().keySet().iterator().next()
+    assertNotEquals(Properties.envOrElse(envName, { done = true; "bar" }), "bar")
+    assertFalse("Does not evaluate alt if not needed", done)
   }
 }
