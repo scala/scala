@@ -196,6 +196,43 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
+    /* The toString method for case classes.
+     * def toString = getClass.name + "(" +
+     *   this.field_1_name + "=" + this.field_1 +
+     *   ", " + this.field_2_name + "=" + this.field_2 +
+     *   ... +
+     *   ")"
+     */
+    def toStringCaseClassMethod: Tree = createMethod(nme.toString_, Nil, StringTpe) { m =>
+
+      if (accessors.isEmpty) {
+        LIT(clazz.name.decode + "()")
+      } else {
+        val String_Plus = getMemberMethod(StringClass, nme.PLUS)
+
+        def applyStringPlus(left: Tree, right: Tree): Tree = Apply(Select(left, String_Plus), List(right))
+
+        if (accessors.size == 1) {
+          val acc = accessors.head
+          applyStringPlus( applyStringPlus(LIT(clazz.name.decode + "("), LIT(acc.name.decode + "=")), LIT(")") )
+
+        } else {
+          // each individual accessor name=value pair
+          val accessorStrings =
+            accessors.map(acc =>
+              applyStringPlus(LIT(acc.name.decode + "="), Apply(Select(Select(mkThis, acc), Any_toString),Nil)))
+
+          val combined = accessorStrings.zipWithIndex.map {
+            case (accessorString, 0) => accessorString
+            case (accessorString, _) => Apply(Select(LIT(","), String_Plus), List(accessorString))
+          }.reduceLeft((left, right) => Apply(Select(left, String_Plus), List(right)))
+
+          applyStringPlus(applyStringPlus(LIT(clazz.name.decode + "("), combined), LIT(")"))
+
+        }
+      }
+    }
+
     /* The equality method for case classes.
      * 0 args:
      *   def equals(that: Any) = that.isInstanceOf[this.C] && that.asInstanceOf[this.C].canEqual(this)
@@ -301,7 +338,8 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def caseClassMethods = productMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
-      Object_toString -> (() => forwardToRuntime(Object_toString)),
+//      Object_toString -> (() => forwardToRuntime(Object_toString)),
+      Object_toString -> (() => toStringCaseClassMethod),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
 

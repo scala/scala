@@ -1,0 +1,1 @@
+case class A(i: Int, j: String)
