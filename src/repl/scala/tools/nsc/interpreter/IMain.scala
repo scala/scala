@@ -587,11 +587,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val unwrapped = rootCause(t)
 
       // Example input: $line3.$read$$iw$$iw$
-      val classNameRegex = (lineRegex + ".*").r
-      def isWrapperInit(x: StackTraceElement) = cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
+      val classNameRegex = s"$lineRegex.*".r
+      def isWrapperCode(x: StackTraceElement) = cond(x.getClassName) {
+        case classNameRegex() =>
+          x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == printName
       }
-      val stackTrace = unwrapped stackTracePrefixString (!isWrapperInit(_))
+      val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
 
       withLastExceptionLock[String]({
         directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
