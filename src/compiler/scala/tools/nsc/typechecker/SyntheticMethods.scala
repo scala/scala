@@ -337,7 +337,6 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def caseClassMethods = productMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
-//      Object_toString -> (() => forwardToRuntime(Object_toString)),
       Object_toString -> (() => toStringCaseClassMethod),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
