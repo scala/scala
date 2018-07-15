@@ -863,7 +863,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     b.result()
   }
 
-  /** Finds the first element of the $coll for which the given partial function is defined, and applies the
+  /** Finds the first element of the array for which the given partial function is defined, and applies the
     * partial function to it. */
   def collectFirst[B](f: PartialFunction[A, B]): Option[B] = {
     var i = 0
@@ -929,7 +929,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @param that     the iterable providing the second half of each result pair
     *  @param thisElem the element to be used to fill up the result if this array is shorter than `that`.
-    *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+    *  @param thatElem the element to be used to fill up the result if `that` is shorter than this array.
     *  @return        a new array containing pairs consisting of corresponding elements of this array and `that`.
     *                 The length of the returned array is the maximum of the lengths of this array and `that`.
     *                 If this array is shorter than `that`, `thisElem` values are used to pad the result.

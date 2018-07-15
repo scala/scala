@@ -2,7 +2,13 @@ package scala.collection
 
 import scala.language.implicitConversions
 
-/** Decorator representing lazily zipped pairs. */
+/** Decorator representing lazily zipped pairs.
+  *
+  * @define coll pair
+  * @define willNotTerminateInf
+  *
+  *              Note: will not terminate for infinite-sized collections.
+  */
 final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]) {
 
   /** Zips `that` iterable collection with an existing `LazyZip2`. The elements in each collection are
@@ -113,7 +119,13 @@ object LazyZip2 {
 }
 
 
-/** Decorator representing lazily zipped triples. */
+/** Decorator representing lazily zipped triples.
+  *
+  * @define coll triple
+  * @define willNotTerminateInf
+  *
+  *              Note: will not terminate for infinite-sized collections.
+  */
 final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
                                                                coll1: Iterable[El1],
                                                                coll2: Iterable[El2],
@@ -237,7 +249,13 @@ object LazyZip3 {
 
 
 
-/** Decorator representing lazily zipped 4-tuples. */
+/** Decorator representing lazily zipped 4-tuples.
+  *
+  * @define coll tuple
+  * @define willNotTerminateInf
+  *
+  *              Note: will not terminate for infinite-sized collections.
+  */
 final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
                                                                      coll1: Iterable[El1],
                                                                      coll2: Iterable[El2],

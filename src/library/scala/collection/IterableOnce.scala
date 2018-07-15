@@ -11,24 +11,6 @@ import scala.collection.mutable.StringBuilder
   * A template trait for collections which can be traversed either once only
   * or one or more times.
   *
-  * @define orderDependent
-  *
-  *    Note: might return different results for different runs, unless the underlying collection type is ordered.
-  * @define orderDependentFold
-  *
-  *    Note: might return different results for different runs, unless the
-  *    underlying collection type is ordered or the operator is associative
-  *    and commutative.
-  * @define mayNotTerminateInf
-  *
-  *    Note: may not terminate for infinite-sized collections.
-  * @define willNotTerminateInf
-  *
-  *    Note: will not terminate for infinite-sized collections.
-  *
-  * @define willForceEvaluation
-  *    Note: Even when applied to a view or a lazy collection it will always force the elements.
-  *
   * @define coll collection
   */
 trait IterableOnce[+A] extends Any {
@@ -231,6 +213,41 @@ object IterableOnce {
 /** This implementation trait can be mixed into an `IterableOnce` to get the basic methods that are shared between
   * `Iterator` and `Iterable`. The `IterableOnce` must support multiple calls to `iterator` but may or may not
   * return the same `Iterator` every time.
+  *
+  * @define orderDependent
+  *
+  *              Note: might return different results for different runs, unless the underlying collection type is ordered.
+  * @define orderDependentFold
+  *
+  *              Note: might return different results for different runs, unless the
+  *              underlying collection type is ordered or the operator is associative
+  *              and commutative.
+  * @define mayNotTerminateInf
+  *
+  *              Note: may not terminate for infinite-sized collections.
+  * @define willNotTerminateInf
+  *
+  *              Note: will not terminate for infinite-sized collections.
+  * @define willForceEvaluation
+  *              Note: Even when applied to a view or a lazy collection it will always force the elements.
+  * @define consumesIterator
+  *              After calling this method, one should discard the iterator it was called
+  * on. Using it is undefined and subject to change.
+  * @define consumesAndProducesIterator
+  *              After calling this method, one should discard the iterator it was called
+  *              on, and use only the iterator that was returned. Using the old iterator
+  *              is undefined, subject to change, and may result in changes to the new
+  *              iterator as well.
+  * @define consumesOneAndProducesTwoIterators
+  *              After calling this method, one should discard the iterator it was called
+  *              on, and use only the iterators that were returned. Using the old iterator
+  *              is undefined, subject to change, and may result in changes to the new
+  *              iterators as well.
+  * @define undefinedorder
+  *              The order in which operations are performed on elements is unspecified
+  *              and may be nondeterministic.
+  * @define coll collection
+  *
   */
 trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
@@ -746,7 +763,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  $willNotTerminateInf
     */
-
   def copyToArray[B >: A](xs: Array[B], start: Int): Int = {
     val xsLen = xs.length
     val it = iterator
