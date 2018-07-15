@@ -43,6 +43,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
   private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
   private lazy val caseObjectSymbols = Object_equals :: caseSymbols
+  private lazy val stringPlus        = getMemberMethod(StringClass, nme.PLUS)
   private def symbolsToSynthesize(clazz: Symbol): List[Symbol] = {
     if (clazz.isCase) {
       if (clazz.isDerivedValueClass) caseValueSymbols
@@ -197,39 +198,37 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     /* The toString method for case classes.
-     * def toString = getClass.name + "(" +
-     *   this.field_1_name + "=" + this.field_1 +
-     *   ", " + this.field_2_name + "=" + this.field_2 +
-     *   ... +
-     *   ")"
+     * e.g.
+     *   case class A()
+     *   A().toString // "A()"
+     *
+     *   case class B(i: Int)
+     *   B(1).toString // "B(i=1)"
+     *
+     *   case class C(i: Int, j: Int, k: Int)
+     *   C(1,2,3).toString // "C(i=1, j=2, k=3)"
      */
     def toStringCaseClassMethod: Tree = createMethod(nme.toString_, Nil, StringTpe) { m =>
+      def applyStringPlus(left: Tree, right: Tree): Tree = Apply(Select(left, stringPlus), List(right))
+      def selectAccessorAsString(accessor: Symbol): Tree = Apply(Select(Select(mkThis, accessor), Any_toString),Nil)
 
-      if (accessors.isEmpty) {
-        LIT(clazz.name.decode + "()")
-      } else {
-        val String_Plus = getMemberMethod(StringClass, nme.PLUS)
+      accessors match {
+        case Seq() => LIT(clazz.name.decode + "()")
+        case Seq(single) =>
+          applyStringPlus(
+            applyStringPlus(LIT(clazz.name.decode + "(" + single.name.decode + "="), selectAccessorAsString(single)),
+            LIT(")")
+          )
+        case head +: tail =>
+          val headString: Tree =
+            applyStringPlus(LIT(clazz.name.decode + "(" + head.name.decode + "="), selectAccessorAsString(head))
 
-        def applyStringPlus(left: Tree, right: Tree): Tree = Apply(Select(left, String_Plus), List(right))
+          val tailStrings: Seq[Tree] =
+            tail.map(acc => applyStringPlus(LIT(", " + acc.name.decode + "="), selectAccessorAsString(acc)))
 
-        if (accessors.size == 1) {
-          val acc = accessors.head
-          applyStringPlus( applyStringPlus(LIT(clazz.name.decode + "("), LIT(acc.name.decode + "=")), LIT(")") )
+          val combined = applyStringPlus(headString, tailStrings.reduceLeft(applyStringPlus))
 
-        } else {
-          // each individual accessor name=value pair
-          val accessorStrings =
-            accessors.map(acc =>
-              applyStringPlus(LIT(acc.name.decode + "="), Apply(Select(Select(mkThis, acc), Any_toString),Nil)))
-
-          val combined = accessorStrings.zipWithIndex.map {
-            case (accessorString, 0) => accessorString
-            case (accessorString, _) => Apply(Select(LIT(","), String_Plus), List(accessorString))
-          }.reduceLeft((left, right) => Apply(Select(left, String_Plus), List(right)))
-
-          applyStringPlus(applyStringPlus(LIT(clazz.name.decode + "("), combined), LIT(")"))
-
-        }
+          applyStringPlus(combined, LIT(")"))
       }
     }
 
