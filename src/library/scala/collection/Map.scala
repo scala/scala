@@ -3,6 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
+import scala.collection.mutable.StringBuilder
 import scala.language.{higherKinds, implicitConversions}
 import scala.util.hashing.MurmurHash3
 
@@ -281,12 +282,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
 
-  override def mkString(start: String, sep: String, end: String): String =
-    iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
-
-  // these dummy overrides are necessary for disambiguation
-  override def mkString(sep: String): String = super.mkString(sep)
-  override def mkString: String = super.mkString
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    iterator.map { case (k, v) => s"$k -> $v" }.addString(sb, start, sep, end)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] =

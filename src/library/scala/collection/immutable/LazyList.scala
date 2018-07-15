@@ -3,6 +3,7 @@ package collection
 package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.lang.{StringBuilder => JStringBuilder}
 
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.annotation.tailrec
@@ -370,14 +371,20 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  override def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
-    b append start
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    force
+    addStringNoForce(sb.underlying, start, sep, end)
+    sb
+  }
+
+  private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
+    b.append(start)
     if (nonEmpty) {
-      if (headDefined) b append head else b append "_"
+      if (headDefined) b.append(head) else b.append('_')
       var cursor = this
-      def appendCursorElement(): Unit = {
-        b append sep
-        if (cursor.headDefined) b append cursor.head else b append "_"
+      def appendCursorElement() = {
+        b.append(sep)
+        if (cursor.headDefined) b.append(cursor.head) else b.append('_')
       }
       if (tailDefined) {  // If tailDefined, also !isEmpty
         var scout = tail
@@ -437,22 +444,12 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
       }
       if (cursor.nonEmpty) {
         // Either undefined or cyclic; we can check with tailDefined
-        if (!cursor.tailDefined) b append sep append "?"
-        else b append sep append "..."
+        if (!cursor.tailDefined) b.append(sep).append('?')
+        else b.append(sep).append("...")
       }
     }
-    b append end
-    b
+    b.append(end)
   }
-
-  override def mkString(start: String, sep: String, end: String): String = {
-    this.force
-    super.mkString(start, sep, end)
-  }
-
-  // override here to ensure disambiguation between the overloaded methods works correctly
-  override def mkString(sep: String): String = super.mkString(sep)
-  override def mkString: String = super.mkString
 
   protected[this] def className: String
 
@@ -470,7 +467,7 @@ sealed private[immutable] trait LazyListOps[+A, +CC[+X] <: LinearSeq[X] with Laz
     *           - `"LazyList(1, 2, 3, ...)"`, an infinite lazy list that contains
     *             a cycle at the fourth element.
     */
-  override def toString = super.mkString(className + "(", ", ", ")")
+  override def toString = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
 }
 
 private[immutable] object LazyListOps {
