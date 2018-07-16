@@ -13,5 +13,5 @@ object Macros {
     c.Expr[String](Apply(Select(xs2, newTermName("$plus")), List(xi4)))
   }
 
-  def foo = macro impl
+  def foo: String = macro impl
 }

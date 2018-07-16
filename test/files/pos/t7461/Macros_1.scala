@@ -9,5 +9,5 @@ object Macros {
     c.Expr[Unit](q"()")
   }
 
-  def foo = macro impl
+  def foo: Unit = macro impl
 }

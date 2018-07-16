@@ -25,5 +25,5 @@ object Macros {
     c.Expr[Unit](Block(cdef1 :: Nil, Literal(Constant(()))))
   }
 
-  def foo = macro impl
+  def foo: Unit = macro impl
 }

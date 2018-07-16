@@ -13,5 +13,5 @@ object Macros {
       Apply(Ident(newTermName("println")), List(Ident(newTermName("x"))))))
   }
 
-  def foo = macro impl
+  def foo: Unit = macro impl
 }

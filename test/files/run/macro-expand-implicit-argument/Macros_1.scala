@@ -19,7 +19,7 @@ object Macros {
    *
    * "As seen on scala-internals!"
    */
-  def array[A](as:A*)(implicit ct: ClassTag[A]) = macro arrayMacro[A]
+  def array[A](as:A*)(implicit ct: ClassTag[A]): Array[A] = macro arrayMacro[A]
 
   /**
    * Takes in something like:

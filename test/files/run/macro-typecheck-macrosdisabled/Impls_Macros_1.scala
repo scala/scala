@@ -10,7 +10,7 @@ object Macros {
     c.Expr[String](Literal(Constant(ttree1.toString)))
   }
 
-  def foo_with_macros_enabled = macro impl_with_macros_enabled
+  def foo_with_macros_enabled: String = macro impl_with_macros_enabled
 
   def impl_with_macros_disabled(c: Context) = {
     import c.universe._
@@ -27,5 +27,5 @@ object Macros {
     c.Expr[String](Literal(Constant(ttree2.toString)))
   }
 
-  def foo_with_macros_disabled = macro impl_with_macros_disabled
+  def foo_with_macros_disabled: String = macro impl_with_macros_disabled
 }

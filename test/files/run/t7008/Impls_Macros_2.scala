@@ -9,5 +9,5 @@ object Macros {
     reify(println(c.Expr[String](Literal(Constant(s))).splice))
   }
 
-  def foo = macro impl
+  def foo: Unit = macro impl
 }

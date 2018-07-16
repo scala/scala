@@ -15,5 +15,5 @@ object Macros {
     c.Expr[Null](Literal(Constant(null)))
   }
 
-  def foo = macro impl
+  def foo: Any = macro impl
 }

@@ -14,6 +14,6 @@ object Macros {
   implicit def foo(x: String): Foo = new Foo(x)
 
   class Foo(val x: String) {
-    def toOptionOfInt = macro Impls.toOptionOfInt
+    def toOptionOfInt: Option[Int] = macro Impls.toOptionOfInt
   }
 }

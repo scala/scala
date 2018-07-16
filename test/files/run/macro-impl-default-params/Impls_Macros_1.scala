@@ -16,5 +16,5 @@ object Impls {
 }
 
 class Macros[T] {
-  def foo_targs[U](x: Int) = macro Impls.foo_targs[T, U]
+  def foo_targs[U](x: Int): Unit = macro Impls.foo_targs[T, U]
 }

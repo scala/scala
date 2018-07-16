@@ -2,13 +2,13 @@
 scala> def bar1(c: scala.reflect.macros.blackbox.Context) = ???
 bar1: (c: scala.reflect.macros.blackbox.Context)Nothing
 
-scala> def foo1 = macro bar1
+scala> def foo1: Nothing = macro bar1
 defined term macro foo1: Nothing
 
 scala> def bar2(c: scala.reflect.macros.whitebox.Context) = ???
 bar2: (c: scala.reflect.macros.whitebox.Context)Nothing
 
-scala> def foo2 = macro bar2
+scala> def foo2: Nothing = macro bar2
 defined term macro foo2: Nothing
 
 scala> :quit

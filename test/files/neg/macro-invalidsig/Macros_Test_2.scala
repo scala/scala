@@ -3,55 +3,55 @@ object Macros1 {
 }
 
 object Macros2 {
-  def foo = macro Impls2.foo
+  def foo: Any = macro Impls2.foo
 }
 
 object Macros3 {
-  def foo = macro Impls3.foo
+  def foo: Any = macro Impls3.foo
 }
 
 object Macros4 {
-  def foo = macro Impls4.foo
+  def foo: Any = macro Impls4.foo
 }
 
 object Macros5 {
-  def foo(x: Any) = macro Impls5.foo
+  def foo(x: Any): Any = macro Impls5.foo
 }
 
 class Macros6[T] {
-  def foo[U](x: Int) = macro Impls6.foo[T, U]
+  def foo[U](x: Int): Any = macro Impls6.foo[T, U]
 }
 
 object Macros7 {
-  def foo(x: Int) = macro Impls7.foo
+  def foo(x: Int): Any = macro Impls7.foo
 }
 
 object Macros8 {
-  def foo(x: Int) = macro Impls8.foo
+  def foo(x: Int): Any = macro Impls8.foo
 }
 
 object Macros9 {
-  def foo(x: Int, y: Int) = macro Impls9.foo
+  def foo(x: Int, y: Int): Any = macro Impls9.foo
 }
 
 object Macros10 {
-  def foo(x: Int, y: Int) = macro Impls10.foo
+  def foo(x: Int, y: Int): Any = macro Impls10.foo
 }
 
 object Macros11 {
-  def foo[U] = macro Impls11.foo[U]
+  def foo[U]: Any = macro Impls11.foo[U]
 }
 
 object Macros12 {
-  def foo[U] = macro Impls12.foo[U]
+  def foo[U]: Any = macro Impls12.foo[U]
 }
 
 object Macros13 {
-  def foo[U <: Int] = macro Impls13.foo[U]
+  def foo[U <: Int]: Any = macro Impls13.foo[U]
 }
 
 object Macros14 {
-  def foo = macro Impls14.foo
+  def foo: Any = macro Impls14.foo
 }
 
 class D[T] {

@@ -9,7 +9,7 @@ object Macros {
     c.Expr[String](Literal(Constant(ttree1.toString)))
   }
 
-  def foo_with_implicits_enabled = macro impl_with_implicits_enabled
+  def foo_with_implicits_enabled: String = macro impl_with_implicits_enabled
 
   def impl_with_implicits_disabled(c: Context) = {
     import c.universe._
@@ -24,5 +24,5 @@ object Macros {
     }
   }
 
-  def foo_with_implicits_disabled = macro impl_with_implicits_disabled
+  def foo_with_implicits_disabled: String = macro impl_with_implicits_disabled
 }

@@ -10,5 +10,5 @@ object Impls {
 }
 
 object Macros {
-  def foo(x: Int)(y: Int) = macro Impls.foo
+  def foo(x: Int)(y: Int): Unit = macro Impls.foo
 }
