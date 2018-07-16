@@ -63,7 +63,7 @@ class Driver extends HasDefaultMethod {
       testUnderJavaAtLeast("1.8") {
         generateInterface()
         compile()
-        Class.forName("Driver").newInstance()
+        Class.forName("Driver").getDeclaredConstructor().newInstance()
         ()
       } otherwise {
         println("hello from publicMethod")

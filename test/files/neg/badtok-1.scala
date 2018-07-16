@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.13 -deprecation -Xfatal-warnings
+//
 // bug 989
 '42'
 

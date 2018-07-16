@@ -1,3 +1,5 @@
+// scalac: -Xfuture
+//
 object Foo {
   List(1,2,3).toSet()
 

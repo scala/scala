@@ -1,3 +1,5 @@
+// scalac: -opt:l:none
+//
 import scala.tools.partest.BytecodeTest
 import scala.tools.asm
 import scala.tools.asm.util._

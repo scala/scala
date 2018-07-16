@@ -1,3 +1,5 @@
+// scalac: -Xmaxerrs 3 -Xfatal-warnings -deprecation
+//
 
 object X {
   @deprecated("just to annoy people", since="forever")

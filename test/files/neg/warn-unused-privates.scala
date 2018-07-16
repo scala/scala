@@ -1,3 +1,5 @@
+// scalac: -Ywarn-unused -Xfatal-warnings
+//
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
   private def bippy(x: Int): Int      = bippy(x)  // TODO: could warn

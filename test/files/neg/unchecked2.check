@@ -1,43 +1,43 @@
-unchecked2.scala:4: warning: fruitless type test: a value of type Some[List[Int]] cannot also be a Option[List[String]] (but still might match its erasure)
+unchecked2.scala:6: warning: fruitless type test: a value of type Some[List[Int]] cannot also be a Option[List[String]] (but still might match its erasure)
   /*   warn */ Some(List(1)).isInstanceOf[Option[List[String]]]
                                          ^
-unchecked2.scala:5: warning: non-variable type argument Option[_] in type Option[Option[_]] is unchecked since it is eliminated by erasure
+unchecked2.scala:7: warning: non-variable type argument Option[_] in type Option[Option[_]] is unchecked since it is eliminated by erasure
   /*   warn */ Some(123).isInstanceOf[Option[Option[_]]]
                                      ^
-unchecked2.scala:6: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[String] (but still might match its erasure)
+unchecked2.scala:8: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[String] (but still might match its erasure)
   /*   warn */ Some(123).isInstanceOf[Option[String]]
                                      ^
-unchecked2.scala:7: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[List[String]] (but still might match its erasure)
+unchecked2.scala:9: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[List[String]] (but still might match its erasure)
   /*   warn */ Some(123).isInstanceOf[Option[List[String]]]
                                      ^
-unchecked2.scala:8: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[List[Int => String]] (but still might match its erasure)
+unchecked2.scala:10: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[List[Int => String]] (but still might match its erasure)
   /*   warn */ Some(123).isInstanceOf[Option[List[Int => String]]]
                                      ^
-unchecked2.scala:9: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[(String, Double)] (but still might match its erasure)
+unchecked2.scala:11: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[(String, Double)] (but still might match its erasure)
   /*   warn */ Some(123).isInstanceOf[Option[(String, Double)]]
                                      ^
-unchecked2.scala:10: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[String => Double] (but still might match its erasure)
+unchecked2.scala:12: warning: fruitless type test: a value of type Some[Int] cannot also be a Option[String => Double] (but still might match its erasure)
   /*   warn */ Some(123).isInstanceOf[Option[String => Double]]
                                      ^
-unchecked2.scala:14: warning: non-variable type argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
+unchecked2.scala:16: warning: non-variable type argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(List(1)): Any).isInstanceOf[Option[List[String]]]
                                                 ^
-unchecked2.scala:15: warning: non-variable type argument Int in type Option[Int] is unchecked since it is eliminated by erasure
+unchecked2.scala:17: warning: non-variable type argument Int in type Option[Int] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[Int]]
                                             ^
-unchecked2.scala:16: warning: non-variable type argument String in type Option[String] is unchecked since it is eliminated by erasure
+unchecked2.scala:18: warning: non-variable type argument String in type Option[String] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[String]]
                                             ^
-unchecked2.scala:17: warning: non-variable type argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
+unchecked2.scala:19: warning: non-variable type argument List[String] in type Option[List[String]] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[List[String]]]
                                             ^
-unchecked2.scala:18: warning: non-variable type argument List[Int => String] in type Option[List[Int => String]] is unchecked since it is eliminated by erasure
+unchecked2.scala:20: warning: non-variable type argument List[Int => String] in type Option[List[Int => String]] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[List[Int => String]]]
                                             ^
-unchecked2.scala:19: warning: non-variable type argument (String, Double) in type Option[(String, Double)] is unchecked since it is eliminated by erasure
+unchecked2.scala:21: warning: non-variable type argument (String, Double) in type Option[(String, Double)] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[(String, Double)]]
                                             ^
-unchecked2.scala:20: warning: non-variable type argument String => Double in type Option[String => Double] is unchecked since it is eliminated by erasure
+unchecked2.scala:22: warning: non-variable type argument String => Double in type Option[String => Double] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[String => Double]]
                                             ^
 error: No warnings can be incurred under -Xfatal-warnings.

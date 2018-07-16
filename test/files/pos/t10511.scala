@@ -1,3 +1,5 @@
+
+// scalac: -deprecation
 object Test {
   val f = Ordering[Float]
   val d = Ordering[Double]

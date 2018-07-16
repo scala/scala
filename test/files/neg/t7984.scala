@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 class Test {
   type ListInt = List[Int]
   List[Any]("") match {

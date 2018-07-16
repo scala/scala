@@ -1,3 +1,5 @@
+import language.higherKinds
+
 object Test {
   sealed trait Coin[+A, +B]
   case class Heads[+A](face: A) extends Coin[A, Nothing]

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -opt:l:inline -opt-inline-from:** -opt-warnings
+//
 package neg1 {
   sealed abstract class Foo {
     @inline def bar(x: Int) = x + 1

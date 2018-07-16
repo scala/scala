@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:** -Xfatal-warnings -deprecation:false -opt-warnings:none
+//
 
 object Test extends App {
   @deprecated("","") def f = 42

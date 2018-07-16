@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -Xlint:nonlocal-return
+//
 
 import util.Try
 

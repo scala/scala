@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object Test {
   Some(Some(1)) collect {
     case Some(a) => 2

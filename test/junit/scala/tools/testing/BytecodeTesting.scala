@@ -337,4 +337,6 @@ object BytecodeTesting {
   implicit class listStringLines[T](val l: List[T]) extends AnyVal {
     def stringLines = l.mkString("\n")
   }
+
+  val ignoreDeprecations = (info: StoreReporter#Info) => info.msg.contains("deprecation")
 }

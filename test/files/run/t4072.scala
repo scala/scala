@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 import scala.tools.nsc._
 
 import scala.language.{ reflectiveCalls }

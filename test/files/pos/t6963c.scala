@@ -1,3 +1,5 @@
+// scalac: -Xmigration:2.9 -Xfatal-warnings
+//
 import collection.Seq
 object Test {
   def f1(x: Any) = x.isInstanceOf[Seq[_]]

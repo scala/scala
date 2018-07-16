@@ -1,3 +1,5 @@
+// scalac: -Yrangepos:false
+//
 import language._
 
 object Test extends App {

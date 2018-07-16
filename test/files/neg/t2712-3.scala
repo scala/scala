@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.12
+//
 package test
 
 class X1

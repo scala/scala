@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 sealed abstract class Base
 
 object Test {

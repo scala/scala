@@ -1,4 +1,6 @@
 
+// scalac: -Xfatal-warnings -Xlint:unused
+//
 import language.higherKinds
 
 object `package` {

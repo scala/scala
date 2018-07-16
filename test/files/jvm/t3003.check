@@ -1,1 +1,4 @@
+#partest java8
 List(List(@Annot(optionType=class java.lang.String)))
+#partest !java8
+List(List(@Annot(optionType=java.lang.String.class)))

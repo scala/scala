@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.13
+//
 trait OpacityTypes {
   type T
   def orderingT: Ordering[T]

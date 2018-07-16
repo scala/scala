@@ -1,4 +1,4 @@
-implicit-any2stringadd.scala:2: error: value + is not a member of Boolean
+implicit-any2stringadd.scala:4: error: value + is not a member of Boolean
   true + "what"
        ^
 one error found

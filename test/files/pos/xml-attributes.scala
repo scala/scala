@@ -1,3 +1,5 @@
+// scalac: -Ystop-after:parser
+//
 object foo {
   val bar = "baz"
   val xml =

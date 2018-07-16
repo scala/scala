@@ -1,7 +1,7 @@
 package scala
 
-import javax.xml.bind.DatatypeConverter._
 import scala.reflect.io.File
+import java.util.Base64
 import org.junit.Test
 
 // This test is self-modifying when run as follows:
@@ -12,6 +12,11 @@ import org.junit.Test
 
 // based on run/t8549.scala partest
 object SerializationStability {
+
+  def parseBase64Binary(s: String): Array[Byte] = Base64.getDecoder.decode(s)
+
+  def printBase64Binary(data: Array[Byte]): String = Base64.getEncoder.encode(data).map(_.toChar).mkString
+
   val overwrite: Option[File] = sys.props.get("overwrite.source").map(s => new File(new java.io.File(s)))
 
   def serialize(o: AnyRef): String = {

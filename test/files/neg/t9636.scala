@@ -1,3 +1,5 @@
+// scalac: -Xlint -Xfatal-warnings
+//
 
 import java.io._
 import java.util.zip._
