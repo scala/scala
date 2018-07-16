@@ -645,6 +645,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
       )
     },
     Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
+    Keys.testOnly in Test := (Keys.testOnly in Test).dependsOn(packageBin in Compile).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
