@@ -2,9 +2,6 @@ package scala
 package collection
 package mutable
 
-import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
-
-
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
   *  access take constant time (amortized time). Prepends and removes are
@@ -159,12 +156,14 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override protected[this] def stringPrefix = "ArrayBuffer"
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray[B](xs, start, length)
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
-    val l = scala.math.min(scala.math.min(len, length), xs.length-start)
-    if(l > 0) Array.copy(array, 0, xs, start, l)
-    xs
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
+    if(copied > 0) {
+      Array.copy(array, 0, xs, start, copied)
+    }
+    copied
   }
 
   /** Sorts this $coll in place according to an Ordering.

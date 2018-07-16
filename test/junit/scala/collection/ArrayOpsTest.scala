@@ -100,4 +100,10 @@ class ArrayOpsTest {
     assertArrayEquals(Array[Int](), Array[Int](1).slice(1052471512, -1496048404))
     assertArrayEquals(Array[Int](), Array[Int](1).slice(2, 3))
   }
+
+  @Test
+  def copyToArrayOutOfBoundsTest: Unit = {
+    val target = Array[Int]()
+    assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
+  }
 }

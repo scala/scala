@@ -5,6 +5,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
 import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
+import scala.collection.IterableOnce
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag
@@ -133,12 +134,14 @@ sealed abstract class ArraySeq[+A]
 
   override protected[this] def className = "ArraySeq"
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: A](xs: Array[B], start: Int = 0): Int = copyToArray[B](xs, start, length)
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
-    val l = scala.math.min(scala.math.min(len, length), xs.length-start)
-    if(l > 0) Array.copy(unsafeArray, 0, xs, start, l)
-    xs
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
+    if(copied > 0) {
+      Array.copy(unsafeArray, 0, xs, start, copied)
+    }
+    copied
   }
 
   override protected[this] def writeReplace(): AnyRef = this

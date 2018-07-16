@@ -216,6 +216,17 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 object IterableOnce {
   @`inline` implicit def iterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A] =
     new IterableOnceExtensionMethods[A](it)
+
+  /** Computes the number of elements to copy to an array from a source IterableOnce
+    *
+    * @param srcLen the length of the source collection
+    * @param destLen the length of the destination array
+    * @param start the index in the destination array at which to start copying elements to
+    * @param len the requested number of elements to copy (we may only be able to copy less than this)
+    * @return the number of elements that will be copied to the destination array
+    */
+  @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int =
+    math.max(math.min(math.min(len, srcLen), destLen - start), 0)
 }
 
 /** This implementation trait can be mixed into an `IterableOnce` to get the basic methods that are shared between
@@ -703,7 +714,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use `dest ++= coll` instead", "2.13.0")
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
    *
    *  Fills the given array `xs` starting at index `start` with values of this $coll.
    *
@@ -712,14 +723,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @param  xs     the array to fill.
    *  @tparam B      the type of the elements of the array.
+   *  @return        the number of elements written to the array
    *
-   *  @usecase def copyToArray(xs: Array[A]): Unit
+   *  @usecase def copyToArray(xs: Array[A]): Int
    *
    *  $willNotTerminateInf
    */
-  def copyToArray[B >: A](xs: Array[B]): xs.type = copyToArray(xs, 0)
+  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0)
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
     *
     *  Fills the given array `xs` starting at index `start` with values of this $coll.
     *
@@ -729,13 +741,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  xs     the array to fill.
     *  @param  start  the starting index of xs.
     *  @tparam B      the type of the elements of the array.
+    *  @return        the number of elements written to the array
     *
-    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+    *  @usecase def copyToArray(xs: Array[A], start: Int): Int
     *
     *  $willNotTerminateInf
     */
 
-  def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = {
+  def copyToArray[B >: A](xs: Array[B], start: Int): Int = {
     val xsLen = xs.length
     val it = iterator
     var i = start
@@ -743,10 +756,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       xs(i) = it.next()
       i += 1
     }
-    xs
+    i - start
   }
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
     *
     *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
     *
@@ -757,14 +770,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  start  the starting index of xs.
     *  @param  len    the maximal number of elements to copy.
     *  @tparam B      the type of the elements of the array.
+    *  @return        the number of elements written to the array
     *
     *  @note    Reuse: $consumesIterator
     *
-    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Int
     *
     *    $willNotTerminateInf
     */
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
     var i = start
     val end = start + math.min(len, xs.length - start)
@@ -772,7 +786,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       xs(i) = it.next()
       i += 1
     }
-    xs
+    i - start
   }
 
   /** Sums up the elements of this collection.
@@ -1205,7 +1219,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
-    if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
+    if (knownSize >= 0) {
+      val destination = new Array[B](knownSize)
+      copyToArray(destination, 0)
+      destination
+    }
     else mutable.ArrayBuffer.from(this).toArray[B]
 
   // For internal use

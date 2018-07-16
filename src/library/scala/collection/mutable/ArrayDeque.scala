@@ -434,8 +434,13 @@ class ArrayDeque[A] protected (
 
   override def grouped(n: Int): Iterator[IterableCC[A]] = sliding(n, n)
 
-  override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): dest.type =
-    copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)
+  override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, dest.length, destStart, len)
+    if (copied > 0) {
+      copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)
+    }
+    copied
+  }
 
   override def toArray[B >: A: ClassTag]: Array[B] =
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
