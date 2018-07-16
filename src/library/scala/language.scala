@@ -25,7 +25,7 @@ package scala
  *   - [[existentials        `existentials`]]        enables writing existential types
  *   - [[higherKinds         `higherKinds`]]         enables writing higher-kinded types
  *   - [[implicitConversions `implicitConversions`]] enables defining implicit methods and members
- *   - [[postfixOps          `postfixOps`]]          enables postfix operator notation
+ *   - [[postfixOps          `postfixOps`]]          enables postfix operators (not recommended)
  *   - [[reflectiveCalls     `reflectiveCalls`]]     enables using structural types
  *   - [[experimental        `experimental`]]        contains newer features that have not yet been tested in production
  *

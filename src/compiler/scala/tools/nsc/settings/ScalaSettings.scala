@@ -60,11 +60,11 @@ trait ScalaSettings extends AbsScalaSettings
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
   object languageFeatures extends MultiChoiceEnumeration {
     val dynamics            = Choice("dynamics",            "Allow direct or indirect subclasses of scala.Dynamic")
-    val postfixOps          = Choice("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList'")
-    val reflectiveCalls     = Choice("reflectiveCalls",     "Allow reflective access to members of structural types")
-    val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
-    val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
+    val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
+    val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
+    val postfixOps          = Choice("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList` (not recommended)")
+    val reflectiveCalls     = Choice("reflectiveCalls",     "Allow reflective access to members of structural types")
     val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
   }
   val language      = {
