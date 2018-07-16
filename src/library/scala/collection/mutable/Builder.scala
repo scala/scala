@@ -3,6 +3,16 @@ package scala.collection.mutable
 import java.lang.String
 
 import scala.collection.IterableOnce
+import scala.collection.immutable.WrappedString
+
+import scala.Predef.{ // unimport char-related implicit conversions to avoid triggering them accidentally
+  genericArrayOps => _,
+  charArrayOps => _,
+  genericWrapArray => _,
+  wrapCharArray => _,
+  wrapString => _,
+  _
+}
 
 /** Base trait for collection builders */
 trait Builder[-A, +To] extends Growable[A] { self =>
@@ -114,12 +124,12 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   def apply(i: Int): Char = underlying.charAt(i)
 
  override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
-    new StringBuilder() ++= coll
+    new StringBuilder() appendAll coll
 
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
 
-  def length: Int = underlying.length
+  @inline def length: Int = underlying.length
 
   def length_=(n: Int): Unit = underlying.setLength(n)
 
@@ -181,6 +191,21 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     this
   }
 
+  /** Appends the given CharSequence to this sequence.
+    *
+    *  @param  cs   a CharSequence.
+    *  @return     this StringBuilder.
+    */
+  def append(cs: java.lang.CharSequence): StringBuilder = {
+    underlying.append(cs match {
+      // Both cases call into append(<CharSequence>), but java SB
+      // looks up type at runtime and has fast path for SB.
+      case s: StringBuilder => s.underlying
+      case _                => cs
+    })
+    this
+  }
+
   /** Appends the specified string builder to this sequence.
     *
     *  @param s
@@ -196,7 +221,20 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @param  xs  the characters to be appended.
     *  @return     this StringBuilder.
     */
-  def appendAll(xs: IterableOnce[Char]): StringBuilder = appendAll(ArrayBuffer.from(xs).toArray)
+  def appendAll(xs: IterableOnce[Char]): StringBuilder = {
+    val ks = xs.knownSize
+    val b = underlying
+    if (ks != 0) xs match {
+      case x: WrappedString => b append x.self
+      case x: ArraySeq.ofChar => b append x.array
+      case x: StringBuilder => b append x.underlying
+      case _ =>
+        if (ks > 0) b.ensureCapacity(b.length + ks)
+        val it = xs.iterator
+        while (it.hasNext) { b append it.next() }
+    }
+    this
+  }
 
   /** Appends all the Chars in the given Array[Char] to this sequence.
     *
@@ -426,7 +464,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    *  @return        The new String.
    *  @throws IndexOutOfBoundsException  if the index is out of bounds.
    */
-  def substring(start: Int): String = substring(start, length)
+  def substring(start: Int): String = underlying.substring(start, length)
 
   /** Returns a new String made up of a subsequence of this sequence,
    *  beginning at the start index (inclusive) and extending to the
@@ -445,7 +483,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   /** For implementing CharSequence.
    */
   def subSequence(start: Int, end: Int): java.lang.CharSequence =
-    substring(start, end)
+    underlying.substring(start, end)
 
   /** Finds the index of the first occurrence of the specified substring.
    *
