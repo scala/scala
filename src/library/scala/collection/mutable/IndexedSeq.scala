@@ -17,6 +17,13 @@ trait IndexedSeqOps[A, +CC[_], +C <: AnyRef]
   extends scala.collection.IndexedSeqOps[A, CC, C]
     with SeqOps[A, CC, C] {
 
+  /** Modifies this $coll by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       this $coll modified by replacing all elements with the
+    *                result of applying the given function `f` to each element
+    *                of this $coll.
+    */
   def mapInPlace(f: A => A): this.type = {
     var i = 0
     val siz = size

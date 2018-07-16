@@ -42,18 +42,13 @@ trait SeqOps[A, +CC[_], +C <: AnyRef]
   @throws[IndexOutOfBoundsException]
   def update(idx: Int, elem: A): Unit
 
-
-  /** Modifies this $coll by applying a function to all elements of this $coll.
-    *
-    *  @param f      the function to apply to each element.
-    *  @return       this $coll modified by replacing all elements with the
-    *                result of applying the given function `f` to each element
-    *                of this $coll.
-    */
-  def mapInPlace(f: A => A): this.type
-
-  @deprecated("Use `mapInPlace` instead", "2.13.0")
-  @`inline`final def transform(f: A => A): this.type = mapInPlace(f)
+  @deprecated("Use `mapInPlace` on an `IndexedSeq` instead", "2.13.0")
+  @`inline`final def transform(f: A => A): this.type = {
+    var i = 0
+    val siz = size
+    while (i < siz) { this(i) = f(this(i)); i += 1 }
+    this
+  }
 }
 
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
