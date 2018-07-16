@@ -324,45 +324,44 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   }
 
   def computeMacroDefTypeFromMacroImplRef(macroDdef: DefDef, macroImplRef: Tree): Type = {
-    macroImplRef match {
-      case MacroImplReference(_, _, _, macroImpl, targs) =>
-        // Step I. Transform c.Expr[T] to T and everything else to Any
-        var runtimeType = decreaseMetalevel(macroImpl.info.finalResultType)
+    def computeIt(macroImpl: Symbol, targs: List[Tree]): Type = {
+      // Step I. Transform c.Expr[T] to T and everything else to Any
+      val runtimeType0 = decreaseMetalevel(macroImpl.info.finalResultType)
 
-        // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
-        runtimeType = runtimeType.substituteTypes(macroImpl.typeParams, targs map (_.tpe))
+      // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
+      val runtimeType = runtimeType0.substituteTypes(macroImpl.typeParams, targs.map(_.tpe))
 
-        // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
-        def unsigma(tpe: Type): Type =
-          transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => NoSymbol) match {
-            case (implCtxParam :: Nil) :: implParamss =>
-              val implToDef = flatMap2(implParamss, macroDdef.vparamss)(map2(_, _)((_, _))).toMap
-              object UnsigmaTypeMap extends TypeMap {
-                def apply(tp: Type): Type = tp match {
-                  case TypeRef(pre, sym, args) =>
-                    val pre1 = pre match {
-                      case SingleType(SingleType(SingleType(NoPrefix, c), prefix), value) if c == implCtxParam && prefix == MacroContextPrefix && value == ExprValue =>
-                        ThisType(macroDdef.symbol.owner)
-                      case SingleType(SingleType(NoPrefix, implParam), value) if value == ExprValue =>
-                        implToDef get implParam map (defParam => SingleType(NoPrefix, defParam.symbol)) getOrElse pre
-                      case _ =>
-                        pre
-                    }
-                    val args1 = args map mapOver
-                    TypeRef(pre1, sym, args1)
-                  case _ =>
-                    mapOver(tp)
-                }
+      // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
+      def unsigma(tpe: Type): Type =
+        transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => NoSymbol) match {
+          case (implCtxParam :: Nil) :: implParamss =>
+            val implToDef = flatMap2(implParamss, macroDdef.vparamss)(map2(_, _)((_, _))).toMap
+            object UnsigmaTypeMap extends TypeMap {
+              def apply(tp: Type): Type = tp match {
+                case TypeRef(pre, sym, args) =>
+                  val pre1 = pre match {
+                    case SingleType(SingleType(SingleType(NoPrefix, c), prefix), value) if c == implCtxParam && prefix == MacroContextPrefix && value == ExprValue =>
+                      ThisType(macroDdef.symbol.owner)
+                    case SingleType(SingleType(NoPrefix, implParam), value) if value == ExprValue =>
+                      implToDef get implParam map (defParam => SingleType(NoPrefix, defParam.symbol)) getOrElse pre
+                    case _ =>
+                      pre
+                  }
+                  val args1 = args map mapOver
+                  TypeRef(pre1, sym, args1)
+                case _ =>
+                  mapOver(tp)
               }
-
-              UnsigmaTypeMap(tpe)
-            case _ =>
-              tpe
-          }
-
-        unsigma(runtimeType)
-      case _ =>
-        ErrorType
+            }
+            UnsigmaTypeMap(tpe)
+          case _ =>
+            tpe
+        }
+      unsigma(runtimeType)
+    }
+    macroImplRef match {
+      case MacroImplReference(_, _, _, macroImpl, targs) => computeIt(macroImpl, targs)
+      case _ => ErrorType
     }
   }
 
