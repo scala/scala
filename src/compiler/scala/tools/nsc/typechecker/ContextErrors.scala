@@ -751,12 +751,10 @@ trait ContextErrors {
       def FinitaryError(tparam: Symbol) =
         issueSymbolTypeError(tparam, "class graph is not finitary because type parameter "+tparam.name+" is expansively recursive")
 
-      def QualifyingClassError(tree: Tree, qual: Name) = {
+      def QualifyingClassError(tree: Tree, qual: Name) =
         issueNormalTypeError(tree,
-          if (qual.isEmpty) tree + " can be used only in a class, object, or template"
-          else qual + " is not an enclosing class")
-        setError(tree)
-      }
+          if (qual.isEmpty) s"$tree can be used only in a class, object, or template"
+          else s"$qual is not an enclosing class")
 
       // def stabilize
       def NotAValueError(tree: Tree, sym: Symbol) = {

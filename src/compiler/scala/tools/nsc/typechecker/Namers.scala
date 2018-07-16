@@ -147,7 +147,7 @@ trait Namers extends MethodSynthesis {
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
-      else sym setPrivateWithin typer.qualifyingClass(tree, mods.privateWithin, packageOK = true)
+      else sym setPrivateWithin typer.qualifyingClass(tree, mods.privateWithin, packageOK = true, immediate = false)
 
     def setPrivateWithin(tree: MemberDef, sym: Symbol): Symbol =
       setPrivateWithin(tree, sym, tree.mods)
@@ -842,7 +842,7 @@ trait Namers extends MethodSynthesis {
 
     def monoTypeCompleter(tree: MemberDef) = new MonoTypeCompleter(tree)
     class MonoTypeCompleter(tree: MemberDef) extends TypeCompleterBase(tree) {
-      override def completeImpl(sym: Symbol): Unit = {
+      override def completeImpl(sym: Symbol): Unit = if (!tree.isErroneous) {
         // this early test is there to avoid infinite baseTypes when
         // adding setters and getters --> bug798
         // It is a def in an attempt to provide some insulation against
@@ -1157,12 +1157,10 @@ trait Namers extends MethodSynthesis {
       }
       pending.foreach(ErrorUtils.issueTypeError)
 
-      def checkParent(tpt: Tree): Type = {
-        if (tpt.tpe.isError) AnyRefTpe
-        else tpt.tpe
+      val parents = {
+        def checkParent(tpt: Tree): Type = if (tpt.tpe.isError) AnyRefTpe else tpt.tpe
+        parentTrees map checkParent
       }
-
-      val parents = parentTrees map checkParent
 
       enterSelf(templ.self)
 

@@ -453,10 +453,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  of a this or super with prefix `qual`.
      *  packageOk is equal false when qualifying class symbol
      */
-    def qualifyingClass(tree: Tree, qual: Name, packageOK: Boolean) =
+    def qualifyingClass(tree: Tree, qual: Name, packageOK: Boolean, immediate: Boolean) =
       context.enclClass.owner.ownerChain.find(o => qual.isEmpty || o.isClass && o.name == qual) match {
         case Some(c) if packageOK || !c.isPackageClass => c
-        case _                                         => QualifyingClassError(tree, qual) ; NoSymbol
+        case _ =>
+          QualifyingClassError(tree, qual)
+          if (immediate) setError(tree) else unit.toCheck += (() => setError(tree))
+          NoSymbol
       }
 
     /** The typer for an expression, depending on where we are. If we are before a superclass
@@ -4931,7 +4934,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedThis(tree: This) =
-        tree.symbol orElse qualifyingClass(tree, tree.qual, packageOK = false) match {
+        tree.symbol orElse qualifyingClass(tree, tree.qual, packageOK = false, immediate = true) match {
           case NoSymbol => tree
           case clazz    =>
             tree setSymbol clazz setType clazz.thisType.underlying
