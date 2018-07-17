@@ -10,6 +10,7 @@ import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
@@ -200,7 +201,7 @@ abstract class BackendUtils extends PerRunInit {
    * a list of lambda implementation methods referenced by invokedynamic[LambdaMetafactory] for a
    * serializable SAM types.
    */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], callsitePos: Position, keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
@@ -218,8 +219,14 @@ abstract class BackendUtils extends PerRunInit {
         val cloned = ins.clone(javaLabelMap)
         ins match {
           case mi: MethodInsnNode =>
+            val clonedMi = cloned.asInstanceOf[MethodInsnNode]
+            callGraph.callsitePositions(clonedMi) = callsitePos
+            if (callGraph.inlineAnnotatedCallsites(mi))
+              callGraph.inlineAnnotatedCallsites += clonedMi
+            if (callGraph.noInlineAnnotatedCallsites(mi))
+              callGraph.noInlineAnnotatedCallsites += clonedMi
             if (callGraph.staticallyResolvedInvokespecial(mi))
-              callGraph.staticallyResolvedInvokespecial += cloned.asInstanceOf[MethodInsnNode]
+              callGraph.staticallyResolvedInvokespecial += clonedMi
           case _ =>
         }
         result add cloned
@@ -342,6 +349,25 @@ abstract class BackendUtils extends PerRunInit {
       val fi = insn.asInstanceOf[FieldInsnNode]
       fi.owner == srBoxedUnitRef.internalName && fi.name == "UNIT" && fi.desc == srBoxedUnitRef.descriptor
     }
+  }
+
+  def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
+    owner.isInterface.get &&
+      isSyntheticMethod(method) &&
+      method.name.endsWith("$") &&
+      isStaticMethod(method) &&
+      findSingleCall(method, mi => mi.itf && mi.getOpcode == INVOKESPECIAL && mi.name + "$" == method.name).nonEmpty
+  }
+
+  def isMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
+    !owner.isInterface.get &&
+      // isSyntheticMethod(method) && // mixin forwarders are not synthetic it seems
+      !isStaticMethod(method) &&
+      findSingleCall(method, mi => mi.itf && mi.getOpcode == INVOKESTATIC && mi.name == method.name + "$").nonEmpty
+  }
+
+  def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
+    isTraitSuperAccessor(method, owner) || isMixinForwarder(method, owner)
   }
 
   private class Collector extends NestedClassesCollector[ClassBType] {

@@ -3,7 +3,7 @@ package backend.jvm
 package opt
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -31,8 +31,7 @@ class InlinerTest extends BytecodeTesting {
     postProcessor.byteCodeRepository.parsedClasses,
     postProcessor.callGraph.callsites))
 
-  import global.genBCode.postProcessor.{byteCodeRepository, callGraph, inliner, inlinerHeuristics}
-  import inlinerHeuristics._
+  import global.genBCode.postProcessor.{byteCodeRepository, callGraph, inliner}
 
   def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
     assert(callsite.callsiteMethod.instructions.contains(callsite.callsiteInstruction), instructionsFromMethod(callsite.callsiteMethod))
@@ -241,11 +240,22 @@ class InlinerTest extends BytecodeTesting {
     val methods @ List(f, g, h) = c.methods.asScala.filter(_.name.length == 1).sortBy(_.name).toList
     val List(fIns, gIns, hIns) = methods.map(instructionsFromMethod(_).dropNonOp)
     val invokeG = Invoke(INVOKEVIRTUAL, "C", "g", "()I", false)
-    assert(fIns.count(_ == invokeG) == 2, fIns) // no inlining into f, these requests are elided
+    // first round
+    //   - no inlining into f, these requests are elided
+    //   - h = g + g
+    //   - g = g + g
+    // second round
+    //   - h changed. both invocations of `g` are inlined (no callsite of `g` was inlined into h
+    //     before, so there's no loop). therefore: h = g + g + g + g
+    //   - g changed. both invocation are self-recursive, therefore not inlined
+    // third round
+    //   - h changed. each invocation of `g` ended up in `h` by inlining `g`. in other words, the
+    //     inline chain for `g` contains a call to `g`. therefore nothing else is inlined.
+    assert(fIns.count(_ == invokeG) == 2, fIns)
     assert(gIns.count(_ == invokeG) == 2, gIns)
-    assert(hIns.count(_ == invokeG) == 2, hIns)
+    assert(hIns.count(_ == invokeG) == 4, hIns)
 
-    assert(callGraph.callsites.valuesIterator.flatMap(_.valuesIterator).size == 7, callGraph.callsites)
+    assert(callGraph.callsites.valuesIterator.flatMap(_.valuesIterator).size == 9, callGraph.callsites)
     for (callsite <- callGraph.callsites.valuesIterator.flatMap(_.valuesIterator) if methods.contains(callsite.callsiteMethod)) {
       checkCallsite(callsite, g)
     }
@@ -433,7 +443,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t2"))
   }
 
-  @Test @Ignore
+  @Test
   def inlineTraitInherited(): Unit = {
     val code =
       """trait T {
@@ -485,7 +495,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t1"))
   }
 
-  @Test @Ignore
+  @Test
   def inlineFromObject(): Unit = {
     val code =
       """trait T {
@@ -540,7 +550,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t2"))
   }
 
-  @Test @Ignore
+  @Test
   def selfTypeInline2(): Unit = {
     // There are some interesting things going on here with the self types. Here's a short version:
     //
@@ -581,7 +591,7 @@ class InlinerTest extends BytecodeTesting {
         |final class Ca extends T1 with T2a {
         |  // mixin generates accessors like `def g1 = super[T1].g1`, the impl super call is inlined into the accessor.
         |
-        |  def m1a = g1           // call to accessor, inlined, we get the interface call T1.f
+        |  def m1a = g1           // call to accessor, inlined, then call to f inlined in the next round, we get ICONST_1
         |  def m2a = g2a          // call to accessor, inlined, we get ICONST_1
         |  def m3a = f            // call to accessor, inlined, we get ICONST_1
         |
@@ -596,7 +606,7 @@ class InlinerTest extends BytecodeTesting {
         |}
         |
         |final class Cb extends T1 with T2b {
-        |  def m1b = g1           // inlined, we get the interface call to T1.f
+        |  def m1b = g1           // inlined, then f is inlined in the next round, we get ICONST_1
         |  def m2b = g2b          // inlined, we get the interface call to T1.f
         |  def m3b = f            // inlined, we get ICONST_1
         |
@@ -613,14 +623,14 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(t2a, "g2a"))
     assertInvoke(getMethod(t2b, "g2b"), "T1", "f")
 
-    assertInvoke(getMethod(ca, "m1a"), "T1", "f")
+    assertNoInvoke(getMethod(ca, "m1a"))
     assertNoInvoke(getMethod(ca, "m2a"))            // no invoke, see comment on def g2a
     assertNoInvoke(getMethod(ca, "m3a"))
     assertInvoke(getMethod(ca, "m4a"), "T1", "f")
     assertNoInvoke(getMethod(ca, "m5a"))
 
-    assertInvoke(getMethod(cb, "m1b"), "T1", "f")
-    assertInvoke(getMethod(cb, "m2b"), "T1", "f")  // invoke, see comment on def g2b
+    assertNoInvoke(getMethod(cb, "m1b"))
+    assertInvoke(getMethod(cb, "m2b"), "T1", "f")  // invoke, see comment on def g2b << TODO: check why not inlined in later round??? >>
     assertNoInvoke(getMethod(cb, "m3b"))
     assertInvoke(getMethod(cb, "m4b"), "T1", "f")
     assertNoInvoke(getMethod(cb, "m5b"))
@@ -643,7 +653,7 @@ class InlinerTest extends BytecodeTesting {
     assertNoInvoke(getMethod(t, "t1"))
   }
 
-  @Test @Ignore
+  @Test
   def inlineFromNestedClasses(): Unit = {
     val code =
       """class C {
@@ -938,7 +948,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(t2, "M$", "$anonfun$m$1")
   }
 
-  @Test @Ignore
+  @Test
   def inlinePostRequests(): Unit = {
     val code =
       """class C {
@@ -968,7 +978,7 @@ class InlinerTest extends BytecodeTesting {
 //    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
   }
 
-  @Test @Ignore
+  @Test
   def postRequestSkipAlreadyInlined(): Unit = {
     val code =
       """class C {
@@ -1462,7 +1472,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "f"), "T2", "f$")
   }
 
-  @Test @Ignore
+  @Test
   def sd140(): Unit = {
     val code =
       """trait T { @inline def f = 0 }
@@ -1471,7 +1481,7 @@ class InlinerTest extends BytecodeTesting {
         |final class K extends V with U { override def m = super[V].m }
         |class C { def t = (new K).f }
       """.stripMargin
-    val c :: _ = compileClasses (code)
+    val c :: _ = compileClasses(code)
     assertSameSummary(getMethod(c, "t"), List(NEW, "<init>", ICONST_1, IRETURN))  // ICONST_1, U.f is inlined (not T.f)
   }
 
@@ -1559,7 +1569,7 @@ class InlinerTest extends BytecodeTesting {
       Label(4), LineNumber(10, Label(4)), Op(ICONST_1), Label(7), LineNumber(14, Label(7)), Op(IRETURN), Label(10)))
   }
 
-  @Test @Ignore
+  @Test
   def traitHO(): Unit = {
     val code =
       """trait T {
@@ -1611,7 +1621,7 @@ class InlinerTest extends BytecodeTesting {
       ("oneLastMethodWithVeryVery_yetAnotherMethodWithVeryV_oneMoreMethodWithVeryVery_anotherMethodWithVeryVery_methodWithVeryVeryLongNam_param",11)))
   }
 
-  @Test @Ignore
+  @Test
   def sd259(): Unit = {
     // - trait methods are not inlined into their static super accessors, and also not into mixin forwarders.
     // - inlining an invocation of a mixin forwarder also inlines the static accessor and the trait method body.
@@ -1727,7 +1737,7 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "t"), "T", "m$")
   }
 
-  @Test @Ignore
+  @Test
   def sd259d(): Unit = {
     val code =
       """trait T {

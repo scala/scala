@@ -165,7 +165,7 @@ abstract class ByteCodeRepository extends PerRunInit {
         case None =>
           if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
           else if (owner.superName == null) Right(None)
-          else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
+          else classNode(owner.superName).flatMap(findInSuperClasses(_, publicInstanceOnly = isInterface(owner)))
       }
     }
 
