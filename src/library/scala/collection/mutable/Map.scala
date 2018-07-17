@@ -2,7 +2,6 @@ package scala
 package collection
 package mutable
 
-import scala.collection.MapFactory
 import scala.language.higherKinds
 
 /** Base type of mutable Maps */
@@ -186,6 +185,9 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
     def subtractOne(elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
 
     def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
+
+    override def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+      underlying.concat(suffix).withDefault(defaultValue)
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 

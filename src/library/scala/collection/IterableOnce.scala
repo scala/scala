@@ -5,7 +5,6 @@ import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
-import java.lang.{StringBuilder => JStringBuilder}
 import scala.collection.mutable.StringBuilder
 
 /**

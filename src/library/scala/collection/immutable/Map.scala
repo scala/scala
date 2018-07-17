@@ -153,6 +153,9 @@ object Map extends MapFactory[Map] {
 
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
+    override def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+      new WithDefault(underlying.concat(xs), defaultValue)
+
     def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
 
     def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =

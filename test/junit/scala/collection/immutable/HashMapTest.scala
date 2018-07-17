@@ -68,10 +68,38 @@ class HashMapTest {
     assertEquals("a", m1.getOrElse(1, ???))
     assertEquals("c", m1.getOrElse(3, "c"))
 
-    class Collider { override def hashCode = 0 }
+    class Collider {
+      override def hashCode = 0
+    }
     val a, b, c = new Collider
     val m2 = HashMap(a -> "a", b -> "b")
     assertEquals("a", m2.getOrElse(a, ???))
     assertEquals("c", m2.getOrElse(c, "c"))
+  }
+
+  @Test
+  def testWithDefault: Unit = {
+    val m1 = HashMap(1 -> "a", 2 -> "b")
+
+    val m2: Map.WithDefault[Int, String] =
+      m1.withDefault(i => (i + 1).toString)
+        .updated(1, "aa")
+        .updated(100, "bb")
+        .concat(List(500 -> "c", 501 -> "c"))
+
+    assertEquals(m2(1), "aa")
+    assertEquals(m2(2), "b")
+    assertEquals(m2(3), "4")
+    assertEquals(m2(4), "5")
+    assertEquals(m2(500), "c")
+    assertEquals(m2(501), "c")
+    assertEquals(m2(502), "503")
+
+    val m3: Map.WithDefault[Int, String] = m2 - 1
+    assertEquals(m3(1), "2")
+
+    val m4: Map.WithDefault[Int, String] = m3 -- List(2, 100)
+    assertEquals(m4(2), "3")
+    assertEquals(m4(100), "101")
   }
 }
