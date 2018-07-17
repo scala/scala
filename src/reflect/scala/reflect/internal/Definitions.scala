@@ -749,6 +749,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
       def Product_productElement        = getMemberMethod(ProductRootClass, nme.productElement)
+      def Product_productElementName    = getMemberMethod(ProductRootClass, nme.productElementName)
       def Product_iterator              = getMemberMethod(ProductRootClass, nme.productIterator)
       def Product_productPrefix         = getMemberMethod(ProductRootClass, nme.productPrefix)
       def Product_canEqual              = getMemberMethod(ProductRootClass, nme.canEqual_)
