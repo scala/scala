@@ -867,7 +867,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** Finds the first element of the $coll for which the given partial function is defined, and applies the
     * partial function to it. */
-  def collectFirst[B : ClassTag](f: PartialFunction[A, B]): Option[B] = {
+  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = {
     var i = 0
     var matched = true
     def d(x: A): B = {
