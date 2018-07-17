@@ -44,9 +44,7 @@ trait Imports {
    *  scope twiddling which should be swept away in favor of digging
    *  into the compiler scopes.
    */
-  def sessionWildcards: List[Type] = {
-    importHandlers filter (_.importsWildcard) map (_.targetType) distinct
-  }
+  def sessionWildcards: List[Type] = importHandlers.filter(_.importsWildcard).map(_.targetType).distinct
 
   def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
   def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
