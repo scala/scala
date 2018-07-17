@@ -82,8 +82,14 @@ abstract class CallGraph {
   //currently single threaded access only
   val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
-  // TODO document
+  // Contains `INVOKESPECIAL` instructions that were cloned by the inliner and need to be resolved
+  // statically by the call graph. See Inliner.maybeInlinedLater.
   val staticallyResolvedInvokespecial: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+
+  def isStaticCallsite(call: MethodInsnNode): Boolean = {
+    val opc = call.getOpcode
+    opc == Opcodes.INVOKESTATIC || opc == Opcodes.INVOKESPECIAL && staticallyResolvedInvokespecial(call)
+  }
 
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
     val methodCallsites = callsites(methodNode)
@@ -99,7 +105,6 @@ abstract class CallGraph {
   }
 
   def containsCallsite(callsite: Callsite): Boolean = callsites(callsite.callsiteMethod) contains callsite.callsiteInstruction
-  def findCallSite(method: MethodNode, call: MethodInsnNode): Option[Callsite] = callsites.getOrElse(method, Map.empty).get(call)
 
   def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
     val methodClosureInits = closureInstantiations(methodNode)
@@ -119,15 +124,12 @@ abstract class CallGraph {
     classNode.methods.asScala.foreach(addMethod(_, classType))
   }
 
-  // TODO: remove if no longer used
-  def addIfMissing(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    if (!callsites.contains(methodNode)) addMethod(methodNode, definingClass)
-  }
-
   def refresh(methodNode: MethodNode, definingClass: ClassBType): Unit = {
     callsites.remove(methodNode)
     closureInstantiations.remove(methodNode)
-    // TODO: callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites
+    // callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites, staticallyResolvedInvokespecial
+    // are left unchanged. They contain individual instructions, the state for those remains valid in case
+    // the inliner performs a rollback.
     addMethod(methodNode, definingClass)
   }
 
@@ -172,7 +174,7 @@ abstract class CallGraph {
 
         methodNode.instructions.iterator.asScala foreach {
           case call: MethodInsnNode if typeFlow.frameAt(call) != null => // skips over unreachable code
-            val preciseOwner = if (isStaticCall(call)) call.owner else {
+            val preciseOwner = if (isStaticCallsite(call)) call.owner else {
               val f = typeFlow.frameAt(call)
               // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
               val numParams = Type.getArgumentTypes(call.desc).length
@@ -180,7 +182,10 @@ abstract class CallGraph {
             }
 
             val callee: Either[OptimizerWarning, Callee] = {
-              def make(method: MethodNode, declarationClassNode: ClassNode, calleeSourceFilePath: Option[String]): Callee = {
+              for {
+                (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+                (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
+              } yield {
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
                 val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath, definingClass)
                 import info._
@@ -193,16 +198,6 @@ abstract class CallGraph {
                   annotatedNoInline = annotatedNoInline,
                   samParamTypes = info.samParamTypes,
                   calleeInfoWarning = warning)
-              }
-              if (staticallyResolvedInvokespecial(call)) {
-                val (cn, sourcePath) = byteCodeRepository.classNodeAndSourceFilePath(call.owner).get
-                val m = cn.methods.iterator.asScala.find(m => m.name == call.name && m.desc == call.desc).get
-                Right(make(m, cn, sourcePath))
-              } else for {
-                (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
-                (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
-              } yield {
-                make(method, declarationClassNode, calleeSourceFilePath)
               }
             }
 
@@ -357,7 +352,7 @@ abstract class CallGraph {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
-            isStaticCall(call) ||
+            isStaticCallsite(call) ||
               (call.getOpcode == Opcodes.INVOKESPECIAL && receiverType == callsiteClass) || // (1)
               methodInlineInfo.effectivelyFinal ||
               receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (2)
@@ -403,12 +398,6 @@ abstract class CallGraph {
                             callee: Either[OptimizerWarning, Callee], argInfos: IntMap[ArgInfo],
                             callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position,
                             annotatedInline: Boolean, annotatedNoInline: Boolean) {
-    /**
-     * Contains callsites that were created during inlining by cloning this callsite. Used to find
-     * corresponding callsites when inlining post-inline requests.
-     */
-    val inlinedClones = mutable.Set.empty[ClonedCallsite]
-
     // an annotation at the callsite takes precedence over an annotation at the definition site
     def isInlineAnnotated = annotatedInline || (callee.get.annotatedInline && !annotatedNoInline)
     def isNoInlineAnnotated = annotatedNoInline || (callee.get.annotatedNoInline && !annotatedInline)
@@ -419,8 +408,6 @@ abstract class CallGraph {
         s"@${callsiteMethod.instructions.indexOf(callsiteInstruction)}" +
         s" in ${callsiteClass.internalName}.${callsiteMethod.name}${callsiteMethod.desc}"
   }
-
-  final case class ClonedCallsite(callsite: Callsite, clonedWhenInlining: Callsite)
 
   /**
    * Information about invocation arguments, obtained through data flow analysis of the callsite method.

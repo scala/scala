@@ -126,6 +126,8 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
+  def isSyntheticMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_SYNTHETIC) != 0
+
   // cross-jdk
   def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean =
     methodNode.visibleAnnotations != null &&
@@ -171,6 +173,23 @@ object BytecodeUtils {
     val next = insn.getNext
     if (next == null || isExecutable(next) || next.isInstanceOf[LabelNode]) Option(next)
     else nextExecutableInstructionOrLabel(next)
+  }
+
+  def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
+    @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
+      insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
+    }
+    @tailrec def find(insn: AbstractInsnNode): Option[MethodInsnNode] = {
+      if (insn == null) None
+      else insn match {
+        case mi: MethodInsnNode =>
+          if (such(mi) && noMoreInvoke(insn.getNext)) Some(mi)
+          else None
+        case _ =>
+          find(insn.getNext)
+      }
+    }
+    find(method.instructions.getFirst)
   }
 
   def sameTargetExecutableInstruction(a: JumpInsnNode, b: JumpInsnNode): Boolean = {

@@ -18,9 +18,7 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.immutable.ListMap
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
+import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
 import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
@@ -84,48 +82,6 @@ abstract class InlinerHeuristics extends PerRunInit {
     }).filterNot(_._2.isEmpty).toMap
   }
 
-  private def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
-    @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
-      insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
-    }
-    @tailrec def find(insn: AbstractInsnNode): Option[MethodInsnNode] = {
-      if (insn == null) None
-      else insn match {
-        case mi: MethodInsnNode =>
-          if (such(mi) && noMoreInvoke(insn.getNext)) Some(mi)
-          else None
-        case _ =>
-          find(insn.getNext)
-      }
-    }
-    find(method.instructions.getFirst)
-  }
-
-  private def traitStaticSuperAccessorName(s: String) = s + "$"
-
-  private def traitMethodInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && traitStaticSuperAccessorName(mi.name) == method.name)
-
-  private def superAccessorInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && mi.name == traitStaticSuperAccessorName(method.name))
-
-  private def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
-    owner.isInterface == Right(true) &&
-      BytecodeUtils.isStaticMethod(method) &&
-      traitMethodInvocation(method).nonEmpty
-  }
-
-  private def isMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
-    owner.isInterface == Right(false) &&
-      !BytecodeUtils.isStaticMethod(method) &&
-      superAccessorInvocation(method).nonEmpty
-  }
-
-  private def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
-    isTraitSuperAccessor(method, owner) || isMixinForwarder(method, owner)
-  }
-
-
   /**
    * Returns the inline request for a callsite if the callsite should be inlined according to the
    * current heuristics (`-Yopt-inline-heuristics`).
@@ -162,7 +118,7 @@ abstract class InlinerHeuristics extends PerRunInit {
     }
 
     // scala-dev#259: don't inline into static accessors and mixin forwarders
-    if (isTraitSuperAccessorOrMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass)) None
+    if (backendUtils.isTraitSuperAccessorOrMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass)) None
     else {
       val callee = callsite.callee.get
       compilerSettings.optInlineHeuristics match {
