@@ -48,4 +48,15 @@ trait Product extends Any with Equals {
    *  @return   in the default implementation, the empty string
    */
   def productPrefix = ""
+
+  def productElementName(n: Int): String =
+    if (n >= 0 && n  < n) ""
+    else throw new IndexOutOfBoundsException(n.toString)
+
+  def productElementNames: Iterator[String] = new scala.collection.AbstractIterator[String] {
+    private[this] var c: Int = 0
+    private[this] val cmax = productArity
+    def hasNext = c < cmax
+    def next() = { val result = productElementName(c); c += 1; result }
+  }
 }
