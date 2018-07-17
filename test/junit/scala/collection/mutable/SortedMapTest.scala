@@ -1,28 +1,22 @@
 package scala.collection.mutable
 
-import java.util.NoSuchElementException
 
 import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.{Option, Unit}
-
 @RunWith(classOf[JUnit4])
 class SortedMapTest {
   @Test
   def testWithDefaultValueReturnsSortedMapWithDefaultValue(): Unit = {
-    val tree: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
-      .withDefault(defaultValueFunction)
-
+    val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two")).withDefault(defaultValueFunction)
     assertEquals("3 is not present in this map", tree(3))
   }
 
   @Test
   def testDefaultValueIsPersistedAfterAnElementIsAddedToUnderlyingMap(): Unit = {
-    val tree: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
-      .withDefault(defaultValueFunction)
+    val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two")).withDefault(defaultValueFunction)
 
     tree.addOne(3 -> "Three")
 
@@ -31,7 +25,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterCreatingEmptyMapFromUnderlyingSortedMap(): Unit = {
-    val originalMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     val emptyMapWithDefault = originalMap.empty
@@ -41,7 +35,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterRangeOperationOnSortedMap(): Unit = {
-    val rangedProjectOfTreeMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
+    val rangedProjectOfTreeMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
       .withDefault(defaultValueFunction)
       .range(1, 3) // range `to` parameter is not inclusive
 
@@ -50,7 +44,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterAnElementFromUnderlyingMapIsRemoved(): Unit = {
-    val originalTreeMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
+    val originalTreeMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
       .withDefault(defaultValueFunction)
 
     originalTreeMap.remove(3)
@@ -61,7 +55,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsLostWhenNewSortedMapIsCreatedFromIterablesInOperationsLikeFlatMap(): Unit = {
-    val originalMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     val newTreeMap: SortedMap[String, Int] = originalMap.flatMap((kv: (Int, String)) => TreeMap(kv._2 -> kv._1))
@@ -78,7 +72,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedWhenNewSortedMapIsCreatedFromSpecificIterableInOperationsLikeFilter(): Unit = {
-    val evenNumbers: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 4 -> "Four", 5 -> "Five"))
+    val evenNumbers: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 4 -> "Four", 5 -> "Five"))
       .withDefault(defaultValueFunction)
       .filter((kv: (Int, String)) => kv._1 % 2 == 0)
 
@@ -87,7 +81,7 @@ class SortedMapTest {
 
   @Test
   def testDefaulValueIsNotPersistedWhenNewMapIterableIsConcatenatedToOriginalMutableMap(): Unit = {
-    val originaMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originaMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefaultValue("element missing")
 
     val newMap: SortedMap[Int, String] = originaMap ++ SortedMap.from(Map(3 -> "Three")).withDefaultValue("foobar")
@@ -100,6 +94,14 @@ class SortedMapTest {
         assertEquals("key not found: 4", e.getMessage)
       }
     }
+  }
+
+  @Test
+  // Test for bug/#11017
+  // Compile-time test only
+  def testMapWithDefaultReassignableToMap(): Unit = {
+    var map = SortedMap.empty[Int, Int].withDefaultValue(0)
+    map = map + (1 -> 1)
   }
 
   private def defaultValueFunction: Int => String = {
