@@ -122,11 +122,12 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   /** The implementation class of the set returned by `keySet` */
   protected class KeySortedSet extends SortedSet[K] with GenKeySet with GenKeySortedSet {
-    def diff(that: Set[K]): SortedSet[K] = fromSpecificIterable(view.filterNot(that))
     def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
       val map = SortedMapOps.this.rangeImpl(from, until)
       new map.KeySortedSet
     }
+    def + (elem: K): SortedSet[K] = fromSpecificIterable(new View.Appended(this, elem))
+    def - (elem: K): SortedSet[K] = diff(Set(elem))
   }
 
   /** A generic trait that is reused by sorted keyset implementations */
@@ -171,16 +172,9 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
       else View.Empty
     }
 
-  override def concat[V2 >: V](xs: Iterable[(K, V2)]): CC[K, V2] = sortedMapFactory.from(new View.Concat(toIterable, xs))
+  override def ++ [V2 >: V](xs: Iterable[(K, V2)]): CC[K, V2] = sortedMapFactory.from(new View.Concat(toIterable, xs))
 
-  /** Alias for `concat` */
-  @`inline` override final def ++ [V2 >: V](xs: Iterable[(K, V2)]): CC[K, V2] = concat(xs)
-
-  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
-  override def + [V1 >: V](kv: (K, V1)): CC[K, V1] = sortedMapFactory.from(new View.Appended(toIterable, kv))
-
-  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+  @`inline` override final def concat[V2 >: V](xs: Iterable[(K, V2)]): CC[K, V2] = this ++ xs
 
   // TODO Also override mapValues
 }

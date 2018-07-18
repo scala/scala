@@ -99,8 +99,8 @@ private[collection] trait Wrappers {
     override def iterator: Iterator[A] = underlying.iterator.asScala
     def apply(i: Int) = underlying.get(i)
     def update(i: Int, elem: A) = underlying.set(i, elem)
-    def prepend(elem: A) = { underlying.subList(0, 0) add elem; this }
-    def addOne(elem: A): this.type = { underlying add elem; this }
+    def +=: (elem: A) = { underlying.subList(0, 0) add elem; this }
+    def += (elem: A): this.type = { underlying add elem; this }
     def insert(idx: Int,elem: A): Unit = underlying.subList(0, idx).add(elem)
     def insertAll(i: Int, elems: IterableOnce[A]) = {
       val ins = underlying.subList(0, i)
@@ -139,7 +139,7 @@ private[collection] trait Wrappers {
       this
     }
     override def iterableFactory = mutable.ArrayBuffer
-    override def subtractOne(elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
+    override def -= (elem: A): this.type = { underlying.remove(elem.asInstanceOf[AnyRef]); this }
   }
 
   @SerialVersionUID(3L)
@@ -193,8 +193,8 @@ private[collection] trait Wrappers {
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
-    def addOne(elem: A): this.type = { underlying add elem; this }
-    def subtractOne(elem: A): this.type = { underlying remove elem; this }
+    def += (elem: A): this.type = { underlying add elem; this }
+    def -= (elem: A): this.type = { underlying remove elem; this }
 
     override def remove(elem: A): Boolean = underlying remove elem
     override def clear() = underlying.clear()
@@ -322,8 +322,8 @@ private[collection] trait Wrappers {
         None
     }
 
-    def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtractOne(key: K): this.type = { underlying remove key; this }
+    def += (kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -= (key: K): this.type = { underlying remove key; this }
 
     override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
 
@@ -435,8 +435,8 @@ private[collection] trait Wrappers {
 
     def get(k: A) = Option(underlying get k)
 
-    def addOne(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtractOne(key: A): this.type = { underlying remove key; this }
+    def += (kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -= (key: A): this.type = { underlying remove key; this }
 
     override def put(k: A, v: B): Option[B] = Option(underlying.put(k, v))
 
@@ -462,8 +462,8 @@ private[collection] trait Wrappers {
       if (v != null) Some(v.asInstanceOf[String]) else None
     }
 
-    def addOne(kv: (String, String)): this.type = { underlying.put(kv._1, kv._2); this }
-    def subtractOne(key: String): this.type = { underlying remove key; this }
+    def += (kv: (String, String)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -= (key: String): this.type = { underlying remove key; this }
 
     override def put(k: String, v: String): Option[String] = {
       val r = underlying.put(k, v)

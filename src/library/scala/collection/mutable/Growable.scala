@@ -20,10 +20,10 @@ trait Growable[-A] extends Clearable {
    *  @param elem  the element to $add.
    *  @return the $coll itself
    */
-  def addOne(elem: A): this.type
+  def += (elem: A): this.type
 
-  /** Alias for `addOne` */
-  @`inline` final def += (elem: A): this.type = addOne(elem)
+  /** Alias for `+=` */
+  @`inline` final def addOne(elem: A): this.type = this += elem
 
   //TODO This causes a conflict in StringBuilder; looks like a compiler bug
   //@deprecated("Use addOne or += instead of append", "2.13.0")
@@ -36,6 +36,7 @@ trait Growable[-A] extends Clearable {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
+  @deprecated("Use ++= with a collection instead of += with varargs", "2.13.0")
   @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
 
   /** ${Add}s all elements produced by an IterableOnce to this $coll.
@@ -43,7 +44,7 @@ trait Growable[-A] extends Clearable {
    *  @param xs   the IterableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def addAll(xs: IterableOnce[A]): this.type = {
+  def ++= (xs: IterableOnce[A]): this.type = {
     val it = xs.iterator
     while (it.hasNext) {
       addOne(it.next())
@@ -51,8 +52,8 @@ trait Growable[-A] extends Clearable {
     this
   }
 
-  /** Alias for `addAll` */
-  @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
+  /** Alias for `++=` */
+  @`inline` final def addAll(xs: IterableOnce[A]): this.type = this ++= xs
 }
 
 object Growable {

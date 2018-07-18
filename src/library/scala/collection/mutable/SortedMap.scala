@@ -62,9 +62,9 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     // Need to override following methods to match type signatures of `SortedMap.WithDefault`
     // for operations preserving default value
-    override def subtractOne(elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
+    override def -= (elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
 
-    override def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
+    override def += (elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 

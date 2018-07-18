@@ -109,7 +109,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     this
   }
 
-  def addOne(elem: T) = {
+  def += (elem: T) = {
     lastptr = lastptr.append(elem)
     sz += 1
     this
@@ -174,7 +174,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
       remove(idx, count-1)
     }
 
-  def prepend(elem: T) = {
+  def +=: (elem: T) = {
     headptr = headptr prepend elem
     sz += 1
     this
@@ -188,7 +188,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
       sz += headptr.insertAll(idx, elems, this)
     } else throw new IndexOutOfBoundsException(idx.toString)
 
-  override def subtractOne(elem: T): this.type = {
+  override def -= (elem: T): this.type = {
     headptr.subtractOne(elem, this)
     this
   }

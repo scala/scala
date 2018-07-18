@@ -15,9 +15,9 @@ class SparseArray[@specialized(Int) T:ClassManifest] extends collection.mutable.
     sys.error("impl doesn't matter")
   }
 
-  def addOne(elem: (Int, T)): SparseArray.this.type = ???
+  def += (elem: (Int, T)): SparseArray.this.type = ???
   def iterator: Iterator[(Int, T)] = ???
-  def subtractOne(elem: Int): SparseArray.this.type = ???
+  def -= (elem: Int): SparseArray.this.type = ???
 
   override protected[this] def fromSpecificIterable(coll: Iterable[(Int, T)]): SparseArray[T] = ???
   override protected[this] def newSpecificBuilder: mutable.Builder[(Int, T), SparseArray[T]] = ???

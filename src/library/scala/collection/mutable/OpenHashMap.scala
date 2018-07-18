@@ -145,11 +145,11 @@ class OpenHashMap[Key, Value](initialSize : Int)
   // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
   override def update(key: Key, value: Value): Unit = put(key, value)
 
-  @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
-  def addOne (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
+  @deprecatedOverriding("+= should not be overridden in order to maintain consistency with put.", "2.11.0")
+  def += (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
 
-  @deprecatedOverriding("subtractOne should not be overridden in order to maintain consistency with remove.", "2.11.0")
-  def subtractOne (key: Key): this.type = { remove(key); this }
+  @deprecatedOverriding("-= should not be overridden in order to maintain consistency with remove.", "2.11.0")
+  def -= (key: Key): this.type = { remove(key); this }
 
   override def put(key: Key, value: Value): Option[Value] =
     put(key, hashOf(key), value)

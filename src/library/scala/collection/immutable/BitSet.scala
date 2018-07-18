@@ -28,7 +28,7 @@ sealed abstract class BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
-  def incl(elem: Int): BitSet = {
+  def + (elem: Int): BitSet = {
     require(elem >= 0, "bitset element must be >= 0")
     if (contains(elem)) this
     else {
@@ -37,7 +37,7 @@ sealed abstract class BitSet
     }
   }
 
-  def excl(elem: Int): BitSet = {
+  def - (elem: Int): BitSet = {
     require(elem >= 0, "bitset element must be >= 0")
     if (contains(elem)) {
       val idx = elem >> LogWL

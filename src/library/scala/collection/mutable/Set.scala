@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import scala.collection.{IterableFactory, IterableOnce}
+import scala.collection.{IterableFactory, IterableOnce, View}
 import scala.language.higherKinds
 
 /** Base trait for mutable sets */
@@ -22,6 +22,10 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     with Growable[A]
     with Shrinkable[A] {
 
+  @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
+  def + (elem: A): C = fromSpecificIterable(new View.Appended(this, elem))
+  @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
+  def - (elem: A): C = diff(Set(elem))
 
   def add(elem: A): Boolean =
     !contains(elem) && {
@@ -51,9 +55,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     coll -= elem
     res
   }
-
-  def diff(that: collection.Set[A]): C =
-    toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
   @deprecated("Use filterInPlace instead", "2.13.0")
   @inline final def retain(p: A => Boolean): Unit = filterInPlace(p)

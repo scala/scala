@@ -9,7 +9,7 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 
   override def iterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewIterator(this)
 
-  override def prepended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Prepended(elem, this)
+  override def +: [B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Prepended(elem, this)
   override def take(n: Int): IndexedSeqView[A] = new IndexedSeqView.Take(this, n)
   override def takeRight(n: Int): IndexedSeqView[A] = new IndexedSeqView.TakeRight(this, n)
   override def drop(n: Int): IndexedSeqView[A] = new IndexedSeqView.Drop(this, n)

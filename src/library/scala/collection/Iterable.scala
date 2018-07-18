@@ -569,6 +569,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       else View.Empty
     }
 
+  /** Alias for `++` */
+  @`inline` final def concat[B >: A](suffix: Iterable[B]): CC[B] = this ++ suffix
+
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
     *  the element types of the two operands.
@@ -578,10 +581,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(new View.Concat(this, suffix))
-
-  /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
+  def ++ [B >: A](suffix: Iterable[B]): CC[B] = fromIterable(new View.Concat(this, suffix))
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.

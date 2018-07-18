@@ -45,7 +45,7 @@ sealed abstract class ArrayBuilder[T]
     this
   }
 
-  override def addAll(xs: IterableOnce[T]): this.type = {
+  override def ++= (xs: IterableOnce[T]): this.type = {
     val k = xs.knownSize
     if(k > 0) {
       ensureSize(this.size + k)
@@ -54,7 +54,7 @@ sealed abstract class ArrayBuilder[T]
         case _ => xs.iterator.copyToArray(elems, this.size)
       }
       size += k
-    } else if(k < 0) super.addAll(xs)
+    } else if(k < 0) super.++=(xs)
     this
   }
 }
@@ -108,7 +108,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: T): this.type = {
+    def += (elem: T): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -155,7 +155,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Byte): this.type = {
+    def += (elem: Byte): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -197,7 +197,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Short): this.type = {
+    def += (elem: Short): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -239,7 +239,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Char): this.type = {
+    def += (elem: Char): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -281,7 +281,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Int): this.type = {
+    def += (elem: Int): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -323,7 +323,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Long): this.type = {
+    def += (elem: Long): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -365,7 +365,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Float): this.type = {
+    def += (elem: Float): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -407,7 +407,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Double): this.type = {
+    def += (elem: Double): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -449,7 +449,7 @@ object ArrayBuilder {
       capacity = size
     }
 
-    def addOne(elem: Boolean): this.type = {
+    def += (elem: Boolean): this.type = {
       ensureSize(size + 1)
       elems(size) = elem
       size += 1
@@ -480,12 +480,12 @@ object ArrayBuilder {
 
     protected def elems: Array[Unit] = throw new UnsupportedOperationException()
 
-    def addOne(elem: Unit): this.type = {
+    def += (elem: Unit): this.type = {
       size += 1
       this
     }
 
-    override def addAll(xs: IterableOnce[Unit]): this.type = {
+    override def ++= (xs: IterableOnce[Unit]): this.type = {
       size += xs.iterator.size
       this
     }

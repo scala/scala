@@ -119,7 +119,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *  @param  elem        the element to insert.
     *  @return             this $coll.
     */
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     resarr.p_ensureSize(resarr.p_size0 + 1)
     resarr.p_array(resarr.p_size0) = elem.asInstanceOf[AnyRef]
     fixUp(resarr.p_array, resarr.p_size0)
@@ -127,7 +127,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     this
   }
 
-  override def addAll(xs: IterableOnce[A]): this.type = {
+  override def ++= (xs: IterableOnce[A]): this.type = {
     val from = resarr.p_size0
     for (x <- xs.iterator) unsafeAdd(x)
     heapify(from)
@@ -348,7 +348,7 @@ object PriorityQueue extends SortedIterableFactory[PriorityQueue] {
   def newBuilder[A : Ordering]: Builder[A, PriorityQueue[A]] = {
     new Builder[A, PriorityQueue[A]] {
       val pq = new PriorityQueue[A]
-      def addOne(elem: A): this.type = { pq.unsafeAdd(elem); this }
+      def += (elem: A): this.type = { pq.unsafeAdd(elem); this }
       def result(): PriorityQueue[A] = { pq.heapify(1); pq }
       def clear(): Unit = pq.clear()
     }

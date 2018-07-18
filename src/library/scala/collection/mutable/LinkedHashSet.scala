@@ -57,12 +57,12 @@ class LinkedHashSet[A]
 
   def contains(elem: A): Boolean = table.findEntry(elem) ne null
 
-  def addOne(elem: A): this.type = {
+  def += (elem: A): this.type = {
     table.findOrAddEntry(elem, null)
     this
   }
 
-  def subtractOne(elem: A): this.type = {
+  def -= (elem: A): this.type = {
     remove(elem)
     this
   }

@@ -201,7 +201,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   }
 
   // add an element to this set unless it's already in there and return this set
-  override def addOne (elem: A): this.type = elem match {
+  override def += (elem: A): this.type = elem match {
     case null => throw new NullPointerException("WeakHashSet cannot hold nulls")
     case _    => {
       removeStaleEntries()
@@ -228,7 +228,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   }
 
   // remove an element from this set and return this set
-  override def subtractOne(elem: A): this.type = elem match {
+  override def -= (elem: A): this.type = elem match {
     case null => this
     case _ => {
       removeStaleEntries()

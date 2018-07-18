@@ -61,9 +61,9 @@ trait Builder[-A, +To] extends Growable[A] { self =>
 
   /** A builder resulting from this builder my mapping the result using `f`. */
   def mapResult[NewTo](f: To => NewTo): Builder[A, NewTo] = new Builder[A, NewTo] {
-    def addOne(x: A): this.type = { self += x; this }
+    def += (x: A): this.type = { self += x; this }
     def clear(): Unit = self.clear()
-    override def addAll(xs: IterableOnce[A]): this.type = { self ++= xs; this }
+    override def ++= (xs: IterableOnce[A]): this.type = { self ++= xs; this }
     override def sizeHint(size: Int): Unit = self.sizeHint(size)
     def result(): NewTo = f(self.result())
   }
@@ -123,15 +123,15 @@ class StringBuilder(private val underlying: java.lang.StringBuilder) extends Abs
 
   def length_=(n: Int): Unit = underlying.setLength(n)
 
-  def addOne(x: Char) = { underlying.append(x); this }
+  def += (x: Char) = { underlying.append(x); this }
 
   def clear() = underlying.setLength(0)
 
-  /** Overloaded version of `addAll` that takes a string */
-  def addAll(s: String): this.type = { underlying.append(s); this }
+  /** Overloaded version of `++=` that takes a string */
+  def ++= (s: String): this.type = { underlying.append(s); this }
 
-  /** Alias for `addAll` */
-  def ++= (s: String): this.type = addAll(s)
+  /** Alias for `++=` */
+  final def addAll(s: String): this.type = this ++= s
 
   def result() = underlying.toString
 

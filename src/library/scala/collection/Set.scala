@@ -150,7 +150,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return     a set containing those elements of this
     *              set that are not also contained in the given set `that`.
     */
-  def diff(that: Set[A]): C
+  def diff(that: Set[A]): C = filterNot(that)
 
   /** Alias for `diff` */
   @`inline` final def &~ (that: Set[A]): C = this diff that
@@ -159,7 +159,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   def -- (that: IterableOnce[A]): C = fromSpecificIterable(coll.toSet.removeAll(that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
-  def - (elem: A): C = diff(Set(elem))
+  def - (elem: A): C
 
   @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
   def - (elem1: A, elem2: A, elems: A*): C = diff(elems.toSet + elem1 + elem2)
@@ -177,16 +177,16 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(new View.Concat(toIterable, that))
+  def ++ (that: collection.Iterable[A]): C = fromSpecificIterable(new View.Concat(toIterable, that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
-  def + (elem: A): C = fromSpecificIterable(new View.Appended(toIterable, elem))
+  def + (elem: A): C
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   def + (elem1: A, elem2: A, elems: A*): C = fromSpecificIterable(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
-  /** Alias for `concat` */
-  @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)
+  /** Alias for `++` */
+  @`inline` final def concat(that: collection.Iterable[A]): C = this ++ that
 
   /** Computes the union between of set and another set.
     *
