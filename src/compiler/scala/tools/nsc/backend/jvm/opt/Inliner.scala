@@ -226,21 +226,48 @@ abstract class Inliner {
     })
   }
 
-  // TODO: treat closure optimizer as part of inlining, probably as a next round (call graph update)
-  // do inlines by method, then add to queue, update call graph
+  def runInlinerAndClosureOptimizer(): Unit = {
+    val runClosureOptimizer = compilerSettings.optClosureInvocations
+    var firstRound = true
+    var changedByClosureOptimizer = Seq.empty[MethodNode]
 
-  def runInliner(): Unit = {
+    while (firstRound || changedByClosureOptimizer.nonEmpty) {
+      val specificMethodsForInlining = if (firstRound) None else Some(changedByClosureOptimizer)
+      val changedByInliner = runInliner(specificMethodsForInlining)
+
+      if (runClosureOptimizer) {
+        val specificMethodsForClosureRewriting = if (firstRound) None else Some(changedByInliner)
+        changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting)
+      }
+
+      firstRound = false
+    }
+  }
+
+  /**
+   * @param methods The methods to check for callsites to inline. If not defined, check all methods.
+   * @return The set of changed methods, in no deterministic order.
+   */
+  def runInliner(methods: Option[Seq[MethodNode]]): Iterable[MethodNode] = {
     // Inline requests are grouped by method for performance: we only update the call graph (which
     // runs analyzers) once all callsites are inlined.
-    val requests: mutable.Queue[(MethodNode, List[InlineRequest])] = collectAndOrderInlineRequests
+    val requests: mutable.Queue[(MethodNode, List[InlineRequest])] =
+      if (methods.isEmpty) collectAndOrderInlineRequests
+      else mutable.Queue.empty
 
     val inlinerState = mutable.Map.empty[MethodNode, MethodInlinerState]
 
     // Methods that were changed (inlined into), they will be checked for more callsites to inline
-    val changedMethods = mutable.Queue.empty[MethodNode]
+    val changedMethods = {
+      val r = mutable.Queue.empty[MethodNode]
+      methods.foreach(r.addAll)
+      r
+    }
 
     // Don't try again to inline failed callsites
     val failed = mutable.Set.empty[MethodInsnNode]
+
+    val overallChangedMethods = mutable.Set.empty[MethodNode]
 
     var currentMethodRolledBack = false
 
@@ -330,13 +357,14 @@ abstract class Inliner {
         if (changed) {
           callGraph.refresh(method, rs.head.callsite.callsiteClass)
           changedMethods.enqueue(method)
+          overallChangedMethods += method
         }
 
       } else {
         // look at all callsites in a methods again, also those that were previously not selected for
         // inlining. after inlining, types might get more precise and make a callsite inlineable.
         val method = changedMethods.dequeue()
-        val state = inlinerState(method)
+        val state = inlinerState.getOrElseUpdate(method, new MethodInlinerState)
 
         def isLoop(call: MethodInsnNode, callee: Callee): Boolean =
           callee.callee == method || {
@@ -381,6 +409,7 @@ abstract class Inliner {
     }
     // todo inline logging
 //    InlineLog.print()
+    overallChangedMethods
   }
 
   /**

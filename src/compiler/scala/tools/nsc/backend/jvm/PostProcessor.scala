@@ -111,9 +111,9 @@ abstract class PostProcessor extends PerRunInit {
         callGraph.addClass(c.classNode)
       }
       if (compilerSettings.optInlinerEnabled)
-        inliner.runInliner()
-      if (compilerSettings.optClosureInvocations)
-        closureOptimizer.rewriteClosureApplyInvocations()
+        inliner.runInlinerAndClosureOptimizer()
+      else if (compilerSettings.optClosureInvocations)
+        closureOptimizer.rewriteClosureApplyInvocations(None)
     }
   }
 

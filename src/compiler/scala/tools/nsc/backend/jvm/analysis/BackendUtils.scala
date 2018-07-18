@@ -239,9 +239,7 @@ abstract class BackendUtils extends PerRunInit {
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
 
   private val anonfunAdaptedName = """.*\$anonfun\$.*\$\d+\$adapted""".r
-  def hasAdaptedImplMethod(closureInit: ClosureInstantiation): Boolean = {
-    anonfunAdaptedName.pattern.matcher(closureInit.lambdaMetaFactoryCall.implMethod.getName).matches
-  }
+  def isAnonfunAdaptedMethod(method: MethodNode): Boolean = isSyntheticMethod(method) && anonfunAdaptedName.matches(method.name)
 
   private def primitiveAsmTypeToBType(primitiveType: Type): PrimitiveBType = (primitiveType.getSort: @switch) match {
     case Type.BOOLEAN => BOOL

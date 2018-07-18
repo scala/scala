@@ -530,7 +530,12 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |trait T { def f(x: Int): Int }
       """.stripMargin
     val List(c, t) = compileClasses(code)
-    assertSameSummary(getMethod(c, "t1"), List(ILOAD, "$anonfun$t1$1", IRETURN))
+
+    // This test runs with an `-opt:l:method` compiler, so the inliner is not enabled. The invocation
+    // to `$anonfun$t1$1$adapted` is therefore not inlined. In reality, this doesn't matter. People
+    // would not allocate a closure just to invoke it within the same method. This optimization is
+    // useful in combination with inlining.
+    assertSameSummary(getMethod(c, "t1"), List(ILOAD, "$anonfun$t1$1$adapted", "unboxToInt", IRETURN))
     assertSameSummary(getMethod(c, "t2"), List(ILOAD, "$anonfun$t2$1", IRETURN))
   }
 }
