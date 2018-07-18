@@ -36,7 +36,7 @@ abstract class InlinerHeuristics extends PerRunInit {
   // TODO doc `reason`. where is it used??? in the inliner log?
   final case class InlineRequest(callsite: Callsite, reason: String)
 
-  def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
+  def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName): Boolean = {
     compilerSettings.optLClasspath ||
       compilerSettings.optLProject && sourceFilePath.isDefined ||
       inlineSourceMatcher.get.allowFromSources && sourceFilePath.isDefined ||
@@ -156,10 +156,11 @@ abstract class InlinerHeuristics extends PerRunInit {
               s"the callee is a higher-order method, ${argInfos.mkString(", ")}"
             }
           }
+          def shouldInlineForwarder = backendUtils.isAnonfunAdaptedMethod(callee.callee)
           def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
             case (index, _) => callsite.argInfos.contains(index)
           })
-          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineHO)) requestIfCanInline(callsite, reason)
+          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineForwarder || shouldInlineHO)) requestIfCanInline(callsite, reason)
           else None
       }
     }

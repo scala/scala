@@ -456,10 +456,6 @@ abstract class CallGraph {
    *                              graph when re-writing a closure invocation to the body method.
    */
   final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType, capturedArgInfos: IntMap[ArgInfo]) {
-    /**
-     * Contains closure instantiations that were created during inlining by cloning this instantiation.
-     */
-    val inlinedClones = mutable.Set.empty[ClosureInstantiation]
     override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
   }
   final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
