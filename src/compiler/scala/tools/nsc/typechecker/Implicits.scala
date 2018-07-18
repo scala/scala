@@ -403,7 +403,7 @@ trait Implicits {
 
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
-    def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
+    @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
       if (settings.XlogImplicits)
         reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
       SearchFailure
@@ -565,6 +565,40 @@ trait Implicits {
        }
      }
 
+    private def matchesPtInst(info: ImplicitInfo): Boolean = {
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
+      info.tpe match {
+        case PolyType(tparams, restpe) =>
+          val tp = ApproximateDependentMap(restpe)
+          val allUndetparams = (undetParams ++ tparams).distinct
+          try {
+            val tvars = allUndetparams map freshVar
+            val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+            if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
+              if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
+              false
+            } else {
+              val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
+              val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(allUndetparams, tvars, targs)
+              if (!checkBounds(EmptyTree, NoPrefix, NoSymbol, okParams, okArgs, "inferred ")) {
+                if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
+                false
+              } else {
+                val remainingUndet = allUndetparams diff okParams
+                val tpSubst = deriveTypeWithWildcards(remainingUndet)(tp.instantiateTypeParams(okParams, okArgs))
+                if(!matchesPt(tpSubst, wildPt, remainingUndet)) {
+                  if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch3)
+                  false
+                } else true
+              }
+            }
+          } catch {
+            case _: NoInstance => false
+          }
+        case _ => true
+      }
+    }
+
     /** Capturing the overlap between isPlausiblyCompatible and normSubType.
      *  This is a faithful translation of the code which was there, but it
      *  seems likely the methods are intended to be even more similar than
@@ -667,7 +701,7 @@ trait Implicits {
       val itree1 = if (isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
       typingLog("considering", typeDebug.ptTree(itree1))
 
-      def fail(reason: String): SearchResult = failure(itree0, reason)
+      @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
       def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
         val itree2 = if (!isView) fallback else pt match {
@@ -728,7 +762,7 @@ trait Implicits {
             info.sym.fullLocationString, itree2.symbol.fullLocationString))
         else {
           val tvars = undetParams map freshVar
-          def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
+          val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
           if (matchesPt(itree3.tpe, ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
@@ -961,6 +995,13 @@ trait Implicits {
        *   - find the most likely one
        *   - if it matches, forget about all others it improves upon
        */
+
+      // the pt for views can have embedded unification type variables, BoundedWildcardTypes or 
+      // Nothings which can't be solved for. Rather than attempt to patch things up later we
+      // just skip those cases altogether.
+      lazy val wildPtIsInstantiable =
+        !isView || !wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
+
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
         case firstPending :: otherPending =>
@@ -974,7 +1015,10 @@ trait Implicits {
               }
             )
 
-          val typedFirstPending = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+          val typedFirstPending =
+            if(!wildPtIsInstantiable || matchesPtInst(firstPending))
+              typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+            else SearchFailure
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
           // the first `DivergentImplicitTypeError` that is being propagated
@@ -1620,4 +1664,12 @@ trait ImplicitsStats {
   val matchesPtNanos      = newSubTimer  ("  matchesPT", typerNanos)
   val implicitCacheAccs   = newCounter   ("implicit cache accesses", "typer")
   val implicitCacheHits   = newSubCounter("implicit cache hits", implicitCacheAccs)
+
+  val matchesPtInstCalls  = newCounter   ("implicits instantiated for pruning")
+  val matchesPtInstMismatch1
+                          = newSubCounter("  immediate mismatches", matchesPtInstCalls)
+  val matchesPtInstMismatch2
+                          = newSubCounter("  checkbounds failures", matchesPtInstCalls)
+  val matchesPtInstMismatch3
+                          = newSubCounter("  instantiated mismatches", matchesPtInstCalls)
 }
