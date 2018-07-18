@@ -12,5 +12,12 @@ class StringOpsTest {
     assert("".mkString(",") == "")
     assert("a".mkString(",") == "a")
     assert("ab".mkString(",") == "a,b")
+    assert("ab".mkString("foo", ",", "bar") == "fooa,bbar")
+  }
+
+  @Test def addString(): Unit = {
+    assert("".addString(new StringBuilder).toString == "")
+    assert("a".addString(new StringBuilder, ",").toString == "a")
+    assert("".addString(new StringBuilder, "foo", ",", "bar").toString == "foobar")
   }
 }

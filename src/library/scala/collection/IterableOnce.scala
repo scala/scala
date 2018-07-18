@@ -5,6 +5,7 @@ import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
+import java.lang.{StringBuilder => JStringBuilder}
 import scala.collection.mutable.StringBuilder
 
 /**
@@ -1045,6 +1046,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   /** Displays all elements of this $coll in a string using start, end, and
     *  separator strings.
     *
+    * Delegates to addString, which can be overridden.
+    *
     *  @param start the starting string.
     *  @param sep   the separator string.
     *  @param end   the ending string.
@@ -1056,10 +1059,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
     */
-  def mkString(start: String, sep: String, end: String): String =
-    addString(new StringBuilder(), start, sep, end).toString
+  final def mkString(start: String, sep: String, end: String): String =
+    if (isEmpty) start + end
+    else addString(new StringBuilder(), start, sep, end).result
 
   /** Displays all elements of this $coll in a string using a separator string.
+    *
+    * Delegates to addString, which can be overridden.
     *
     *  @param sep   the separator string.
     *  @return      a string representation of this $coll. In the resulting string
@@ -1068,16 +1074,18 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
     */
-  def mkString(sep: String): String = mkString("", sep, "")
+  @inline final def mkString(sep: String): String = mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
+    *
+    * Delegates to addString, which can be overridden.
     *
     *  @return a string representation of this $coll. In the resulting string
     *          the string representations (w.r.t. the method `toString`)
     *          of all elements of this $coll follow each other without any
     *          separator string.
     */
-  def mkString: String = mkString("")
+  @inline final def mkString: String = mkString("")
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
     *  The written text begins with the string `start` and ends with the string `end`.
@@ -1103,17 +1111,18 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
-    b.append(start)
+  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    val jsb = b.underlying
+    if (start.length != 0) jsb.append(start)
     val it = iterator
     if (it.hasNext) {
-      b.append(it.next)
+      jsb.append(it.next)
       while (it.hasNext) {
-        b.append(sep)
-        b.append(it.next)
+        jsb.append(sep)
+        jsb.append(it.next)
       }
     }
-    b.append(end)
+    if (end.length != 0) jsb.append(end)
     b
   }
 
@@ -1138,7 +1147,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param sep   the separator string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
+  @inline final def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
 
   /** Appends all elements of this $coll to a string builder.
     *  The written text consists of the string representations (w.r.t. the method
@@ -1160,7 +1169,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  b    the string builder to which elements are appended.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder): StringBuilder = addString(b, "")
+  @inline final def addString(b: StringBuilder): StringBuilder = addString(b, "")
 
   /** Given a collection factory `factory`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:

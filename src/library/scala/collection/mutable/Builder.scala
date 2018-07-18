@@ -83,7 +83,7 @@ trait Builder[-A, +To] extends Growable[A] { self =>
   *  section on `StringBuilders` for more information.
   */
 @SerialVersionUID(3L)
-class StringBuilder(private val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
+final class StringBuilder(val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
   with Builder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
@@ -119,7 +119,7 @@ class StringBuilder(private val underlying: java.lang.StringBuilder) extends Abs
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
 
-  def length: Int = underlying.length()
+  def length: Int = underlying.length
 
   def length_=(n: Int): Unit = underlying.setLength(n)
 
@@ -137,6 +137,22 @@ class StringBuilder(private val underlying: java.lang.StringBuilder) extends Abs
 
   override def toString = result()
 
+  override def toArray[B >: Char](implicit  ct: scala.reflect.ClassTag[B]) =
+    ct.runtimeClass match {
+      case java.lang.Character.TYPE => toCharArray.asInstanceOf[Array[B]]
+      case _ => super.toArray
+    }
+
+  /** Returns the contents of this StringBuilder as an `Array[Char]`.
+   *
+   *  @return  An array with the characters from this builder.
+   */
+  def toCharArray: Array[Char] = {
+    val len = underlying.length
+    val arr = new Array[Char](len)
+    underlying.getChars(0, len, arr, 0)
+    arr
+  }
   // append* methods delegate to the underlying java.lang.StringBuilder:
 
   def appendAll(xs: String): StringBuilder = {

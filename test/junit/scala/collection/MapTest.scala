@@ -24,4 +24,17 @@ class MapTest {
 
     assertEquals(expected, actual)
   }
+
+  @Test def mkString(): Unit = {
+    assert(Map().mkString == "")
+    assert(Map(1 -> 1).mkString(",") == "1 -> 1")
+    assert(Map(1 -> 1, 2 -> 2).mkString(",") == "1 -> 1,2 -> 2")
+  }
+
+  @Test def addString(): Unit = {
+    assert(Map().addString(new StringBuilder).toString == "")
+    assert(Map(1 -> 1).addString(new StringBuilder).toString == "1 -> 1")
+    assert(Map(1 -> 1, 2 -> 2).mkString("foo [", ", ", "] bar").toString ==
+      "foo [1 -> 1, 2 -> 2] bar")
+  }
 }

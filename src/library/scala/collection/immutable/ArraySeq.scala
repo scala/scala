@@ -3,7 +3,7 @@ package collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder}
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
 import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
@@ -205,7 +205,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
    * `ArraySeq.unsafeWrapArray(a.asInstanceOf[Array[Int]])` does not work, it throws a
    * `ClassCastException` at runtime.
    */
-  def unsafeWrapArray[T](x: Array[T]): ArraySeq[T] = (x.asInstanceOf[Array[_]] match {
+  def unsafeWrapArray[T](x: Array[T]): ArraySeq[T] = ((x: Array[_]) match {
     case null              => null
     case x: Array[AnyRef]  => new ofRef[AnyRef](x)
     case x: Array[Int]     => new ofInt(x)
@@ -269,6 +269,9 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
       case that: ofChar => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)
     }
+
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+      (new MutableArraySeq.ofChar(unsafeArray)).addString(sb, start, sep, end)
   }
 
   @SerialVersionUID(3L)

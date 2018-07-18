@@ -1,10 +1,11 @@
 package scala
 package collection
 
-import java.lang.StringBuilder
+import java.lang.{StringBuilder => JStringBuilder}
 import java.util.NoSuchElementException
 
 import scala.collection.immutable.{ArraySeq, WrappedString}
+import scala.collection.mutable.StringBuilder
 import scala.math.{ScalaNumber, max, min}
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
@@ -90,7 +91,7 @@ object StringOps {
       */
     def map(f: Char => Char): String = {
       val len = s.length
-      val sb = new StringBuilder(len)
+      val sb = new JStringBuilder(len)
       var i = 0
       while (i < len) {
         val x = s.charAt(i)
@@ -128,7 +129,7 @@ object StringOps {
       */
     def flatMap(f: Char => String): String = {
       val len = s.length
-      val sb = new StringBuilder
+      val sb = new JStringBuilder
       var i = 0
       while (i < len) {
         val x = s.charAt(i)
@@ -218,7 +219,7 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def flatMap(f: Char => String): String = {
     val len = s.length
-    val sb = new StringBuilder
+    val sb = new JStringBuilder
     var i = 0
     while (i < len) {
       sb append f(s.charAt(i))
@@ -252,7 +253,7 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def concat(suffix: IterableOnce[Char]): String = {
     val k = suffix.knownSize
-    val sb = new StringBuilder(s.length + (if(k >= 0) k else 16))
+    val sb = new JStringBuilder(s.length + (if(k >= 0) k else 16))
     sb.append(s)
     for (ch <- suffix.iterator) sb.append(ch)
     sb.toString
@@ -310,7 +311,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def padTo(len: Int, elem: Char): String = {
     val sLen = s.length
     if (sLen >= len) s else {
-      val sb = new StringBuilder(len)
+      val sb = new JStringBuilder(len)
       sb.append(s)
       // With JDK 11, this can written as:
       // sb.append(String.valueOf(elem).repeat(len - sLen))
@@ -337,7 +338,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** A copy of the String with an char prepended */
   def prepended(c: Char): String =
-    new StringBuilder(s.length + 1).append(c).append(s).toString
+    new JStringBuilder(s.length + 1).append(c).append(s).toString
 
   /** Alias for `prepended` */
   @`inline` def +: (c: Char): String = prepended(c)
@@ -375,7 +376,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** A copy of the String with an element appended */
   def appended(c: Char): String =
-    new StringBuilder(s.length + 1).append(s).append(c).toString
+    new JStringBuilder(s.length + 1).append(s).append(c).toString
 
   /** Alias for `appended` */
   @`inline` def :+ (c: Char): String = appended(c)
@@ -453,7 +454,7 @@ final class StringOps(private val s: String) extends AnyVal {
     */
   def patch(from: Int, other: String, replaced: Int): String = {
     val len = s.length
-    val sb = new StringBuilder(len + other.size - replaced)
+    val sb = new JStringBuilder(len + other.size - replaced)
     val chunk1 = if(from > 0) min(from, len) else 0
     if(chunk1 > 0) sb.append(s, 0, chunk1)
     sb.append(other)
@@ -469,7 +470,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated(index: Int, elem: Char): String = {
-    val sb = new StringBuilder(s.length).append(s)
+    val sb = new JStringBuilder(s.length).append(s)
     sb.setCharAt(index, elem)
     sb.toString
   }
@@ -493,8 +494,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *               `end`. Inside, the string chars of this string are separated by
     *               the string `sep`.
     */
-  def mkString(start: String, sep: String, end: String): String =
-    addString(new mutable.StringBuilder(), start, sep, end).toString
+  final def mkString(start: String, sep: String, end: String): String =
+    addString(new StringBuilder(), start, sep, end).toString
 
   /** Displays all elements of this string in a string using a separator string.
     *
@@ -502,30 +503,39 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return      In the resulting string
     *               the chars of this string are separated by the string `sep`.
     */
-  def mkString(sep: String): String = mkString("", sep, "")
+  @inline final def mkString(sep: String): String =
+    if (sep.isEmpty || s.length < 2) s
+    else mkString("", sep, "")
 
   /** Returns this String */
-  def mkString: String = s
+  @inline final def mkString: String = s
 
   /** Appends this string to a string builder. */
-  def addString(b: mutable.StringBuilder): mutable.StringBuilder =
-    b.append(s)
+  @inline final def addString(b: StringBuilder): StringBuilder = b.append(s)
 
   /** Appends this string to a string builder using a separator string. */
-  def addString(b: mutable.StringBuilder, sep: String): mutable.StringBuilder =
+  @inline final def addString(b: StringBuilder, sep: String): StringBuilder =
     addString(b, "", sep, "")
 
   /** Appends this string to a string builder using start, end and separator strings. */
-  def addString(b: mutable.StringBuilder, start: String, sep: String, end: String): mutable.StringBuilder = {
-    b.append(start)
+  final def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    val jsb = b.underlying
+    if (start.length != 0) jsb.append(start)
     val len = s.length
-    var i = 0
-    while(i < len) {
-      if(i != 0) b.append(sep)
-      b.append(s.charAt(i))
-      i += 1
+    if (len != 0) {
+      if (sep.isEmpty) jsb.append(s)
+      else {
+        jsb.ensureCapacity(jsb.length + len + end.length + (len - 1) * sep.length)
+        jsb.append(s.charAt(0))
+        var i = 1
+        while (i < len) {
+          jsb.append(sep)
+          jsb.append(s.charAt(i))
+          i += 1
+        }
+      }
     }
-    b.append(end)
+    if (end.length != 0) jsb.append(end)
     b
   }
 
@@ -553,7 +563,7 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Return the current string concatenated `n` times.
     */
   def *(n: Int): String = {
-    val sb = new StringBuilder(s.length * n)
+    val sb = new JStringBuilder(s.length * n)
     var i = 0
     while (i < n) {
       sb.append(s)
@@ -654,7 +664,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  followed by `marginChar` from the line.
     */
   def stripMargin(marginChar: Char): String = {
-    val sb = new StringBuilder(s.length)
+    val sb = new JStringBuilder(s.length)
     for (line <- linesWithSeparators) {
       val len = line.length
       var index = 0
@@ -758,11 +768,11 @@ final class StringOps(private val s: String) extends AnyVal {
    * @throws java.lang.IllegalArgumentException  If the string does not contain a parsable `Boolean`.
    */
   def toBoolean: Boolean               = toBooleanImpl(s)
-  
+
   /**
    * Try to parse as a `Boolean`
    * @return `Some(true)` if the string is "true" case insensitive,
-   * `Some(false)` if the string is "false" case insensitive, 
+   * `Some(false)` if the string is "false" case insensitive,
    * and `None` if the string is anything else
    * @throws java.lang.NullPointerException if the string is `null`
    */
@@ -799,7 +809,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * @throws java.lang.NumberFormatException  If the string does not contain a parsable `Int`.
     */
   def toInt: Int                       = java.lang.Integer.parseInt(s)
-  
+
   /**
    * Try to parse as an `Int`
    * @return `Some(value)` if the string contains a valid Int value, otherwise `None`
@@ -1046,7 +1056,7 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def nonEmpty: Boolean = !s.isEmpty
 
   /** Returns new sequence with elements in reversed order. */
-  def reverse: String = new StringBuilder(s).reverse().toString
+  def reverse: String = new JStringBuilder(s).reverse().toString
 
   /** An iterator yielding chars in reversed order.
     *
@@ -1112,7 +1122,7 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Selects all chars of this string which satisfy a predicate. */
   def filter(pred: Char => Boolean): String = {
     val len = s.length
-    val sb = new StringBuilder(len)
+    val sb = new JStringBuilder(len)
     var i = 0
     while (i < len) {
       val x = s.charAt(i)
@@ -1249,7 +1259,7 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** A pair of, first, all chars that satisfy predicate `p` and, second, all chars that do not. */
   def partition(p: Char => Boolean): (String, String) = {
-    val res1, res2 = new StringBuilder
+    val res1, res2 = new JStringBuilder
     var i = 0
     val len = s.length
     while(i < len) {

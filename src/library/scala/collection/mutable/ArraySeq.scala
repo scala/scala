@@ -24,7 +24,7 @@ import java.util.Arrays
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-abstract class ArraySeq[T]
+sealed abstract class ArraySeq[T]
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
@@ -183,6 +183,27 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     override def equals(that: Any) = that match {
       case that: ofChar => Arrays.equals(array, that.array)
       case _ => super.equals(that)
+    }
+
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+      val jsb = sb.underlying
+      if (start.length != 0) jsb.append(start)
+      val len = array.length
+      if (len != 0) {
+        if (sep.isEmpty) jsb.append(array)
+        else {
+          jsb.ensureCapacity(jsb.length + len + end.length + (len - 1) * sep.length)
+          jsb.append(array(0))
+          var i = 1
+          while (i < len) {
+            jsb.append(sep)
+            jsb.append(array(i))
+            i += i
+          }
+        }
+      }
+      if (end.length != 0) jsb.append(end)
+      sb
     }
   }
 
