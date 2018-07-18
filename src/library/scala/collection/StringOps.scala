@@ -155,6 +155,8 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Get the char at the specified index. */
   @`inline` def apply(i: Int): Char = s.charAt(i)
 
+  def lengthCompare(len: Int): Int = Integer.compare(s.length, len)
+
   /** Builds a new collection by applying a function to all chars of this String.
     *
     *  @param f      the function to apply to each char.
