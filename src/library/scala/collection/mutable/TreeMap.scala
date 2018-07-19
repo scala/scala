@@ -1,9 +1,8 @@
 package scala
 package collection.mutable
 
-import collection.{Iterator, SortedMapFactory, StrictOptimizedIterableOps}
+import collection.{Iterator, SortedMapFactory, StrictOptimizedIterableOps, StrictOptimizedSortedMapOps}
 import collection.mutable.{RedBlackTree => RB}
-
 import java.lang.String
 
 /**
@@ -23,7 +22,8 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   extends AbstractMap[K, V]
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
+    with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   override def sortedMapFactory = TreeMap
 
