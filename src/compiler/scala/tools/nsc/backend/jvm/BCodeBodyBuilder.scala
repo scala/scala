@@ -17,7 +17,7 @@ import scala.annotation.switch
 import scala.reflect.internal.Flags
 import scala.tools.asm
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
+import scala.tools.asm.tree.{InvokeDynamicInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.GenBCode._
@@ -1369,8 +1369,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable, markers)
-      if (isSerializable)
-        addIndyLambdaImplMethod(cnode.name, implMethodHandle)
+      if (isSerializable) {
+        val indy = bc.jmethod.instructions.getLast.asInstanceOf[InvokeDynamicInsnNode]
+        addIndyLambdaImplMethod(cnode.name, bc.jmethod, indy, implMethodHandle)
+      }
     }
   }
 

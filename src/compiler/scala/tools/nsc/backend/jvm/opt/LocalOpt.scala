@@ -492,6 +492,8 @@ abstract class LocalOpt {
         case _ =>
       }
 
+      // We don't need to worry about CallGraph.closureInstantiations and
+      // BackendUtils.indyLambdaImplMethods, the removed instructions are not IndyLambdas
       def removeFromCallGraph(insn: AbstractInsnNode): Unit = insn match {
         case mi: MethodInsnNode => callGraph.removeCallsite(mi, method)
         case _ =>
@@ -550,7 +552,9 @@ abstract class LocalOpt {
             changed = true
             insn match {
               case invocation: MethodInsnNode => callGraph.removeCallsite(invocation, method)
-              case indy: InvokeDynamicInsnNode => callGraph.removeClosureInstantiation(indy, method)
+              case indy: InvokeDynamicInsnNode =>
+                callGraph.removeClosureInstantiation(indy, method)
+                removeIndyLambdaImplMethod(ownerClassName, method, indy)
               case _ =>
             }
           }

@@ -312,6 +312,7 @@ abstract class CopyProp {
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
         toRemove += indy
         callGraph.removeClosureInstantiation(indy, method)
+        removeIndyLambdaImplMethod(owner, method, indy)
         handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
       }
 

@@ -114,11 +114,6 @@ abstract class CallGraph {
     methodClosureInits.get(indy)
   }
 
-  def addClosureInstantiation(closureInit: ClosureInstantiation) = {
-    val methodClosureInits = closureInstantiations(closureInit.ownerMethod)
-    closureInstantiations(closureInit.ownerMethod) = methodClosureInits + (closureInit.lambdaMetaFactoryCall.indy -> closureInit)
-  }
-
   def addClass(classNode: ClassNode): Unit = {
     val classType = classBTypeFromClassNode(classNode)
     classNode.methods.asScala.foreach(addMethod(_, classType))

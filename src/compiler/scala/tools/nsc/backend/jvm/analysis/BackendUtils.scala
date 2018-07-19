@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import java.lang.invoke.LambdaMetafactory
 import java.lang.ref.SoftReference
 import java.util.concurrent.ConcurrentHashMap
 
@@ -49,7 +48,6 @@ abstract class BackendUtils extends PerRunInit {
 
   import postProcessor.{bTypes, bTypesFromClassfile, callGraph}
   import bTypes._
-  import callGraph.ClosureInstantiation
   import coreBTypes._
   import frontendAccess.{compilerSettings, recordPerRunJavaMapCache}
 
@@ -60,7 +58,7 @@ abstract class BackendUtils extends PerRunInit {
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
    */
-  private val indyLambdaImplMethods: ConcurrentHashMap[InternalName, mutable.LinkedHashSet[asm.Handle]] =
+  private val indyLambdaImplMethods: ConcurrentHashMap[InternalName, mutable.Map[MethodNode, mutable.Map[InvokeDynamicInsnNode, asm.Handle]]] =
     recordPerRunJavaMapCache(new ConcurrentHashMap)
 
   object analyzerCache {
@@ -209,24 +207,17 @@ abstract class BackendUtils extends PerRunInit {
 
   /**
    * Clone the instructions in `methodNode` into a new [[InsnList]], mapping labels according to
-   * the `labelMap`. Returns the new instruction list and a map from old to new instructions, and
-   * a list of lambda implementation methods referenced by invokedynamic[LambdaMetafactory] for a
-   * serializable SAM types.
+   * the `labelMap`.
+   *
+   * For invocation instructions, set the callGraph.callsitePositions to the `callsitePos`.
+   *
+   * Returns the new instruction list and a map from old to new instructions.
    */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], callsitePos: Position, keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], List[Handle]) = {
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], callsitePos: Position, keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode]) = {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    val inlinedTargetHandles = mutable.ListBuffer[Handle]()
     for (ins <- methodNode.instructions.iterator.asScala) {
-      ins match {
-        case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => indy.bsmArgs match {
-          case Array(_, targetHandle: Handle, _, flags: Integer, xs@_*) if (flags.intValue & LambdaMetafactory.FLAG_SERIALIZABLE) != 0 =>
-            inlinedTargetHandles += targetHandle
-          case _ =>
-        }
-        case _ =>
-      }
       if (keepLineNumbers || !ins.isInstanceOf[LineNumberNode]) {
         val cloned = ins.clone(javaLabelMap)
         ins match {
@@ -245,7 +236,7 @@ abstract class BackendUtils extends PerRunInit {
         map += ((ins, cloned))
       }
     }
-    (result, map, inlinedTargetHandles.toList)
+    (result, map)
   }
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
@@ -425,47 +416,41 @@ abstract class BackendUtils extends PerRunInit {
     }
   }
 
-  def onIndyLambdaImplMethodIfPresent(hostClass: InternalName) (action : mutable.LinkedHashSet[asm.Handle] => Unit): Unit =
+  def onIndyLambdaImplMethodIfPresent[T](hostClass: InternalName)(action: mutable.Map[MethodNode, mutable.Map[InvokeDynamicInsnNode, asm.Handle]] => T): Option[T] =
     indyLambdaImplMethods.get(hostClass) match {
-      case null =>
-      case xs => xs.synchronized(action(xs))
+      case null => None
+      case methods => Some(methods.synchronized(action(methods)))
     }
 
-  def onIndyLambdaImplMethod[T](hostClass: InternalName) (action: mutable.LinkedHashSet[asm.Handle] => T): T ={
-    val methods = indyLambdaImplMethods.computeIfAbsent(hostClass, _ => mutable.LinkedHashSet[asm.Handle]())
+  def onIndyLambdaImplMethod[T](hostClass: InternalName)(action: mutable.Map[MethodNode, mutable.Map[InvokeDynamicInsnNode, asm.Handle]] => T): T = {
+    val methods = indyLambdaImplMethods.computeIfAbsent(hostClass, _ => mutable.Map.empty)
+    methods.synchronized(action(methods))
+  }
 
-    methods.synchronized (action(methods))
+  def addIndyLambdaImplMethod(hostClass: InternalName, method: MethodNode, indy: InvokeDynamicInsnNode, handle: asm.Handle): Unit = {
+    onIndyLambdaImplMethod(hostClass)(_.getOrElseUpdate(method, mutable.Map.empty)(indy) = handle)
+  }
+
+  def removeIndyLambdaImplMethod(hostClass: InternalName, method: MethodNode, indy: InvokeDynamicInsnNode): Unit = {
+    onIndyLambdaImplMethodIfPresent(hostClass)(_.get(method).foreach(_.remove(indy)))
   }
 
   /**
-   * add methods
-   * @return the added methods. Note the order is undefined
+   * The methods used as lambda bodies for IndyLambda instructions within `hostClass`. Note that
+   * the methods are not necessarily defined within the `hostClass` (when an IndyLambda is inlined
+   * into a different class).
    */
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Seq[asm.Handle] = {
-    if (handle.isEmpty) Nil else onIndyLambdaImplMethod(hostClass) {
-      case set =>
-        if (set.isEmpty) {
-          set ++= handle
-          handle
-        } else {
-          var added = List.empty[asm.Handle]
-          handle foreach { h => if (set.add(h)) added ::= h }
-          added
-        }
-    }
+  def indyLambdaBodyMethods(hostClass: InternalName): mutable.SortedSet[Handle] = {
+    val res = mutable.TreeSet.empty[Handle](handleOrdering)
+    onIndyLambdaImplMethodIfPresent(hostClass)(methods => res addAll methods.valuesIterator.flatMap(_.valuesIterator))
+    res
   }
 
-  def addIndyLambdaImplMethod(hostClass: InternalName, handle: asm.Handle): Boolean = {
-    onIndyLambdaImplMethod(hostClass) {
-      _ add handle
-    }
-  }
-
-  def removeIndyLambdaImplMethod(hostClass: InternalName, handle: Seq[asm.Handle]): Unit = {
-    if (handle.nonEmpty)
-      onIndyLambdaImplMethodIfPresent(hostClass) {
-        _ --= handle
-      }
+  /**
+   * The methods used as lambda bodies for IndyLambda instructions within `method` of `hostClass`.
+   */
+  def indyLambdaBodyMethods(hostClass: InternalName, method: MethodNode): Map[InvokeDynamicInsnNode, Handle] = {
+    onIndyLambdaImplMethodIfPresent(hostClass)(ms => ms.getOrElse(method, Nil).toMap).getOrElse(Map.empty)
   }
 }
 
@@ -943,6 +928,26 @@ object BackendUtils {
       def fieldSignature(): Unit = if (sig != null) safely {
         referenceTypeSignature()
       }
+    }
+  }
+
+  object handleOrdering extends Ordering[Handle] {
+    override def compare(x: Handle, y: Handle): Int = {
+      if (x eq y) return 0
+
+      val t = Ordering.Int.compare(x.getTag, y.getTag)
+      if (t != 0) return t
+
+      val i = Ordering.Boolean.compare(x.isInterface, y.isInterface)
+      if (x.isInterface != y.isInterface) return i
+
+      val o = x.getOwner compareTo y.getOwner
+      if (o != 0) return o
+
+      val n = x.getName compareTo y.getName
+      if (n != 0) return n
+
+      x.getDesc compareTo y.getDesc
     }
   }
 }
