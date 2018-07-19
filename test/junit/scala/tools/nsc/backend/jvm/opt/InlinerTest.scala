@@ -949,63 +949,6 @@ class InlinerTest extends BytecodeTesting {
   }
 
   @Test
-  def inlinePostRequests(): Unit = {
-    val code =
-      """class C {
-        |  final def f = 10
-        |  final def g = f + 19
-        |  final def h = g + 29
-        |  final def i = h + 39
-        |}
-      """.stripMargin
-
-    val List(c) = { compileClass(code); compiledClassesFromCache }
-    val hMeth = getAsmMethod(c, "h")
-    val gMeth = getAsmMethod(c, "g")
-    val iMeth = getAsmMethod(c, "i")
-    val fCall = getCallsite(gMeth, "f")
-    val gCall = getCallsite(hMeth, "g")
-    val hCall = getCallsite(iMeth, "h")
-
-    val warning = inliner.canInlineCallsite(gCall)
-    assert(warning.isEmpty, warning)
-//  TODO: no more post requests
-
-//    inliner.inline(InlineRequest(hCall,
-//      post = List(InlineRequest(gCall,
-//        post = List(InlineRequest(fCall, Nil, null)), null)), null))
-//    assertNoInvoke(convertMethod(iMeth)) // no invoke in i: first h is inlined, then the inlined call to g is also inlined, etc for f
-//    assertInvoke(convertMethod(gMeth), "C", "f") // g itself still has the call to f
-  }
-
-  @Test
-  def postRequestSkipAlreadyInlined(): Unit = {
-    val code =
-      """class C {
-        |  final def a = 10
-        |  final def b = a + 20
-        |  final def c = b + 30
-        |  final def d = c + 40
-        |}
-      """.stripMargin
-
-    val List(cl) = { compileClass(code); compiledClassesFromCache }
-    val List(b, c, d) = List("b", "c", "d").map(getAsmMethod(cl, _))
-    val aCall = getCallsite(b, "a")
-    val bCall = getCallsite(c, "b")
-    val cCall = getCallsite(d, "c")
-
-    inliner.inlineCallsite(bCall)
-//  TODO no post requests
-//    val req = InlineRequest(cCall,
-//      List(InlineRequest(bCall,
-//        List(InlineRequest(aCall, Nil, null)), null)), null)
-//    inliner.inline(req)
-//
-//    assertNoInvoke(convertMethod(d))
-  }
-
-  @Test
   def inlineAnnotatedCallsite(): Unit = {
     val code =
       """class C {

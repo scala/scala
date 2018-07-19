@@ -64,13 +64,19 @@ abstract class Inliner {
 
     var undoLog: UndoLog = NoUndoLogging
 
+    var inlineLog = new InlineLog
+
     override def clone(): MethodInlinerState = {
       val r = new MethodInlinerState
       r.illegalAccessInstructions ++= illegalAccessInstructions
       r.inlinedCalls ++= inlinedCalls
+      // The clone references the same InlineLog, so no logs are discarded when rolling back
+      r.inlineLog = inlineLog
       // Skip undoLog: clone() is only called when undoLog == NoUndoLogging
       r
     }
+
+    def outerCallsite(call: AbstractInsnNode): Option[Callsite] = inlinedCalls.get(call).map(_.eliminatedCallsite)
 
     // The chain of inlined callsites that that lead to some (call) instruction. Don't include
     // synthetic forwarders if skipForwarders is true (don't show those in inliner warnings, as they
@@ -108,100 +114,101 @@ abstract class Inliner {
     }
   }
 
-  sealed trait InlineLog {
-    def request: InlineRequest
+  final class InlineLog {
+    import InlineLog._
+
+    private var _active = false
+
+    var roots: mutable.ArrayBuffer[InlineLogResult] = null
+    var downstream: mutable.HashMap[Callsite, mutable.ArrayBuffer[InlineLogResult]] = null
+    var callsiteInfo: String = null
+
+    // A bit of a hack.. We check the -Yopt-log-inline flag when logging the first inline request.
+    // Because the InlineLog is part of the MethodInlinerState, subsequent requests will all be
+    // for the same callsite class / method. At the point where the MethodInlinerState is created
+    // we don't have access to the enclosing class.
+    private def active(callsite: Callsite) = {
+      if (roots == null) {
+        compilerSettings.optLogInline match {
+          case Some("_") => _active = true
+          case Some(prefix) => _active = s"${callsite.callsiteClass.internalName}.${callsite.callsiteMethod.name}" startsWith prefix
+          case _ => _active = false
+        }
+        if (_active) {
+          roots = mutable.ArrayBuffer.empty[InlineLogResult]
+          downstream = mutable.HashMap.empty[Callsite, mutable.ArrayBuffer[InlineLogResult]]
+          callsiteInfo = s"Inlining into ${callsite.callsiteClass.internalName}.${callsite.callsiteMethod.name}"
+        }
+      }
+      _active
+    }
+
+    private def bufferForOuter(outer: Option[Callsite]) = outer match {
+      case Some(o) => downstream.getOrElse(o, roots)
+      case _ => roots
+    }
+
+    def logSuccess(request: InlineRequest, sizeBefore: Int, sizeAfter: Int, outer: Option[Callsite]) = if (active(request.callsite)) {
+      bufferForOuter(outer) += InlineLogSuccess(request, sizeBefore, sizeAfter)
+      downstream(request.callsite) = mutable.ArrayBuffer.empty
+    }
+
+    def logFail(request: InlineRequest, warning: CannotInlineWarning, outer: Option[Callsite]) = if (active(request.callsite)) {
+      bufferForOuter(outer) += InlineLogFail(request, warning)
+    }
+
+    def logRollback(callsite: Callsite, reason: String, outer: Option[Callsite]) = if (active(callsite)) {
+      bufferForOuter(outer) += InlineLogRollback(reason)
+    }
+
+    def print(): Unit = if (roots != null) {
+      def printChildren(indent: Int, callsite: Callsite): Unit = downstream.get(callsite) match {
+        case Some(logs) => logs.foreach(l => printLog(indent, l))
+        case _ =>
+      }
+      def printLog(indent: Int, log: InlineLogResult): Unit = {
+        println(log.entryString(indent))
+        log match {
+          case s: InlineLogSuccess => printChildren(indent + 1, s.request.callsite)
+          case _ =>
+        }
+      }
+      roots.size match {
+        case 0 =>
+        case 1 =>
+          Console.print(callsiteInfo)
+          Console.print(": ")
+          printLog(0, roots(0))
+        case _ =>
+          println(callsiteInfo)
+          for (log <- roots) printLog(1, log)
+      }
+    }
   }
-  final case class InlineLogSuccess(request: InlineRequest, sizeBefore: Int, sizeInlined: Int) extends InlineLog {
-    var downstreamLog: mutable.Buffer[InlineLog] = mutable.ListBuffer.empty
-  }
-  final case class InlineLogFail(request: InlineRequest, warning: CannotInlineWarning) extends InlineLog
-  final case class InlineLogRollback(request: InlineRequest, warnings: List[CannotInlineWarning]) extends InlineLog
 
   object InlineLog {
-    private def shouldLog(request: InlineRequest): Boolean = compilerSettings.optLogInline match {
-      case Some(v) =>
-        def matchesName = {
-          val prefix = v match {
-            case "_" => ""
-            case p => p
-          }
-          val name: String = request.callsite.callsiteClass.internalName + "." + request.callsite.callsiteMethod.name
-          name startsWith prefix
+    sealed trait InlineLogResult {
+      def entryString(indent: Int): String = {
+        def calleeString(r: InlineRequest) = {
+          val callee = r.callsite.callee.get
+          callee.calleeDeclarationClass.internalName + "." + callee.callee.name
         }
-        upstream != null || (isTopLevel && matchesName)
+        val indentString = " " * indent
+        this match {
+          case s @ InlineLogSuccess(r, sizeBefore, sizeAfter) =>
+            s"${indentString}inlined ${calleeString(r)} (${r.reason}). Before: $sizeBefore ins, after: $sizeAfter ins."
 
-      case _ => false
-    }
+          case InlineLogFail(r, w) =>
+            s"${indentString}failed ${calleeString(r)} (${r.reason}). ${w.toString.replace('\n', ' ')}"
 
-    // indexed by callsite method
-    private val logs = mutable.Map.empty[MethodNode, mutable.LinkedHashSet[InlineLog]]
-
-    private var upstream: InlineLogSuccess = _
-    private var isTopLevel = true
-
-    def withInlineLogging[T](request: InlineRequest)(inlineRequest: => Unit)(inlinePost: => T): T = {
-      def doInlinePost(): T = {
-        val savedIsTopLevel = isTopLevel
-        isTopLevel = false
-        try inlinePost
-        finally isTopLevel = savedIsTopLevel
-      }
-      if (shouldLog(request)) {
-        val sizeBefore = request.callsite.callsiteMethod.instructions.size
-        inlineRequest
-        val log = InlineLogSuccess(request, sizeBefore, request.callsite.callee.get.callee.instructions.size)
-        apply(log)
-
-        val savedUpstream = upstream
-        upstream = log
-        try doInlinePost()
-        finally upstream = savedUpstream
-      } else {
-        inlineRequest
-        doInlinePost()
+          case InlineLogRollback(reason) =>
+            s"${indentString}rolled back: $reason."
+        }
       }
     }
-
-    def apply(log: => InlineLog): Unit = if (shouldLog(log.request)) {
-      if (upstream != null) upstream.downstreamLog += log
-      else {
-        val methodLogs = logs.getOrElseUpdate(log.request.callsite.callsiteMethod, mutable.LinkedHashSet.empty)
-        methodLogs += log
-      }
-    }
-
-    def entryString(log: InlineLog, indent: Int = 0): String = {
-      val callee = log.request.callsite.callee.get
-      val calleeString = callee.calleeDeclarationClass.internalName + "." + callee.callee.name
-      val indentString = " " * indent
-      log match {
-        case s @ InlineLogSuccess(_, sizeBefore, sizeInlined) =>
-          val self = s"${indentString}inlined $calleeString. Before: $sizeBefore ins, inlined: $sizeInlined ins."
-          if (s.downstreamLog.isEmpty) self
-          else s.downstreamLog.iterator.map(entryString(_, indent + 2)).mkString(self + "\n", "\n", "")
-
-        case InlineLogFail(_, w) =>
-          s"${indentString}failed $calleeString. ${w.toString.replace('\n', ' ')}"
-
-        case InlineLogRollback(_, _) =>
-          s"${indentString}rolling back, nested inline failed."
-      }
-    }
-
-    def print(): Unit = if (compilerSettings.optLogInline.isDefined) {
-      val byClassAndMethod: List[(InternalName, mutable.Map[MethodNode, mutable.LinkedHashSet[InlineLog]])] = {
-        logs.
-          groupBy(_._2.head.request.callsite.callsiteClass.internalName).
-          toList.sortBy(_._1)
-      }
-      for {
-        (c, methodLogs) <- byClassAndMethod
-        (m, mLogs) <- methodLogs.toList.sortBy(_._1.name)
-        mLog <- mLogs // insertion order
-      } {
-        println(s"Inline into $c.${m.name}: ${entryString(mLog)}")
-      }
-    }
+    final case class InlineLogSuccess(request: InlineRequest, sizeBefore: Int, sizeAfter: Int) extends InlineLogResult
+    final case class InlineLogFail(request: InlineRequest, warning: CannotInlineWarning) extends InlineLogResult
+    final case class InlineLogRollback(reason: String) extends InlineLogResult
   }
 
   // True if all instructions (they would cause an IllegalAccessError otherwise) can potentially be
@@ -299,6 +306,7 @@ abstract class Inliner {
         var changed = false
 
         def doInline(r: InlineRequest, w: Option[IllegalAccessInstructions]): Map[AbstractInsnNode, AbstractInsnNode] = {
+          val sizeBefore = method.instructions.size // cheap (a field read)
           val instructionMap = inlineCallsite(r.callsite, updateCallGraph = false)
           val inlined = InlinedCallsite(r.callsite, w.map(iw => iw.copy(instructions = iw.instructions.map(instructionMap))))
           instructionMap.valuesIterator foreach {
@@ -312,6 +320,7 @@ abstract class Inliner {
           state.illegalAccessInstructions.remove(callInsn)
           if (state.illegalAccessInstructions.isEmpty)
             state.undoLog = NoUndoLogging
+          state.inlineLog.logSuccess(r, sizeBefore, method.instructions.size, state.outerCallsite(r.callsite.callsiteInstruction))
           changed = true
           instructionMap
         }
@@ -342,8 +351,12 @@ abstract class Inliner {
             case Some(w) =>
               val callInsn = r.callsite.callsiteInstruction
 
-              if (state.illegalAccessInstructions(callInsn))
+              state.inlineLog.logFail(r, w, state.outerCallsite(r.callsite.callsiteInstruction))
+
+              if (state.illegalAccessInstructions(callInsn)) {
+                state.inlineLog.logRollback(r.callsite, "The could not be inlined, keeping it would cause an IllegalAccessError", state.outerCallsite(r.callsite.callsiteInstruction))
                 state.undoLog.rollback()
+              }
 
               state.rootInlinedCallsiteWithWarning(r.callsite.callsiteInstruction, skipForwarders = true) match {
                 case Some(inlinedCallsite) =>
@@ -393,9 +406,10 @@ abstract class Inliner {
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
-            if (newRequests.isEmpty)
+            if (newRequests.isEmpty) {
+              state.inlineLog.print()
               inlinerState.remove(method) // we're done with this method
-            else
+            } else
               requests.enqueue(method -> newRequests)
 
 
@@ -403,9 +417,11 @@ abstract class Inliner {
             state.undoLog.rollback()
             state.rootInlinedCallsiteWithWarning(notInlinedIllegalInsn, skipForwarders = true) match {
               case Some(inlinedCallsite) =>
+                val callsite = inlinedCallsite.eliminatedCallsite
                 val w = inlinedCallsite.warning.get
+                state.inlineLog.logRollback(callsite, "The method has instructions that would cause an IllegalAccessError, and they are not selected for inlining", state.outerCallsite(notInlinedIllegalInsn))
                 if (w.emitWarning(compilerSettings))
-                  backendReporting.inlinerWarning(inlinedCallsite.eliminatedCallsite.callsitePosition, w.toString + inlineChainSuffix(inlinedCallsite.eliminatedCallsite, state.inlineChain(inlinedCallsite.eliminatedCallsite.callsiteInstruction, skipForwarders = true)))
+                  backendReporting.inlinerWarning(callsite.callsitePosition, w.toString + inlineChainSuffix(callsite, state.inlineChain(callsite.callsiteInstruction, skipForwarders = true)))
               case _ =>
                 // TODO: replace by dev warning after testing
                 assert(false, "should not happen")
@@ -415,8 +431,8 @@ abstract class Inliner {
         currentMethodRolledBack = false
       }
     }
-    // todo inline logging
-//    InlineLog.print()
+
+    inlinerState.valuesIterator.foreach(_.inlineLog.print())
     overallChangedMethods
   }
 
