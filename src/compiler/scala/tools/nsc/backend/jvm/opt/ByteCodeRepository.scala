@@ -162,7 +162,7 @@ abstract class ByteCodeRepository extends PerRunInit {
     def findInSuperClasses(owner: ClassNode, publicInstanceOnly: Boolean = false): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
       findMethod(owner) match {
         case Some(m) if !publicInstanceOnly || (isPublicMethod(m) && !isStaticMethod(m)) => Right(Some((m, owner.name)))
-        case None =>
+        case _ =>
           if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
           else if (owner.superName == null) Right(None)
           else classNode(owner.superName).flatMap(findInSuperClasses(_, publicInstanceOnly = isInterface(owner)))
