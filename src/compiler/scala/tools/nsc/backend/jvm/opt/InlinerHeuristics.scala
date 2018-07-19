@@ -111,6 +111,7 @@ abstract class InlinerHeuristics extends PerRunInit {
     }
 
     // scala-dev#259: don't inline into static accessors and mixin forwarders
+    // TODO: also exclude bridge methods? Forwarder methods in general, also user-defined? We can just inline through them instead!
     if (backendUtils.isTraitSuperAccessorOrMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass)) None
     else {
       val callee = callsite.callee.get
@@ -128,10 +129,17 @@ abstract class InlinerHeuristics extends PerRunInit {
           else None
 
         case "default" =>
+          def shouldInlineForwarder = backendUtils.isAnonfunAdaptedMethod(callee.callee)
+          def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
+            case (index, _) => callsite.argInfos.contains(index)
+          })
+
           def reason = if (!compilerSettings.optLogInline.isDefined) null else {
             if (callsite.isInlineAnnotated) {
               val what = if (callee.annotatedInline) "callee" else "callsite"
               s"the $what is annotated `@inline`"
+            } else if (shouldInlineForwarder) {
+              "the callee is a forwarder method"
             } else {
               val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
               def param(i: Int) = {
@@ -149,10 +157,7 @@ abstract class InlinerHeuristics extends PerRunInit {
               s"the callee is a higher-order method, ${argInfos.mkString(", ")}"
             }
           }
-          def shouldInlineForwarder = backendUtils.isAnonfunAdaptedMethod(callee.callee)
-          def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
-            case (index, _) => callsite.argInfos.contains(index)
-          })
+
           if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineForwarder || shouldInlineHO)) requestIfCanInline(callsite, reason)
           else None
       }

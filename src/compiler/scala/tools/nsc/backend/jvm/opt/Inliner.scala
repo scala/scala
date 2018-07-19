@@ -292,7 +292,7 @@ abstract class Inliner {
         var changed = false
 
         def doInline(r: InlineRequest, w: Option[IllegalAccessInstructions]): Map[AbstractInsnNode, AbstractInsnNode] = {
-          val instructionMap = inlineCallsite(r.callsite, state.undoLog, updateCallGraph = false)
+          val instructionMap = inlineCallsite(r.callsite, updateCallGraph = false)
           val inlined = InlinedCallsite(r.callsite, w.map(iw => iw.copy(instructions = iw.instructions.map(instructionMap))))
           instructionMap.valuesIterator foreach {
             case mi: MethodInsnNode => state.inlinedCalls(mi) = inlined
@@ -318,6 +318,7 @@ abstract class Inliner {
               if (state.undoLog == NoUndoLogging) {
                 val undo = new UndoLog()
                 val currentState = state.clone()
+                undo.saveMethodState(r.callsite.callsiteClass.internalName, method)
                 undo {
                   failed += r.callsite.callsiteInstruction
                   inlinerState(method) = currentState
@@ -419,6 +420,8 @@ abstract class Inliner {
    */
   object callsiteOrdering extends Ordering[InlineRequest] {
     override def compare(x: InlineRequest, y: InlineRequest): Int = {
+      if (x eq y) return 0
+
       val xCs = x.callsite
       val yCs = y.callsite
       val cls = xCs.callsiteClass.internalName compareTo yCs.callsiteClass.internalName
@@ -533,13 +536,11 @@ abstract class Inliner {
     import java.util.{ArrayList => JArrayList}
 
     private var actions = List.empty[() => Unit]
-    private var methodStateSaved = false
 
     def apply(a: => Unit): Unit = if (active) actions = (() => a) :: actions
     def rollback(): Unit = if (active) actions.foreach(_.apply())
 
-    def saveMethodState(methodNode: MethodNode): Unit = if (active && !methodStateSaved) {
-      methodStateSaved = true
+    def saveMethodState(ownerClass: InternalName, methodNode: MethodNode): Unit = if (active) {
       val currentInstructions = methodNode.instructions.toArray
       val currentLocalVariables = new JArrayList(methodNode.localVariables)
       val currentTryCatchBlocks = new JArrayList(methodNode.tryCatchBlocks)
@@ -548,6 +549,8 @@ abstract class Inliner {
 
       val currentCallsites = callsites(methodNode)
       val currentClosureInstantiations = closureInstantiations(methodNode)
+
+      val currentIndyLambdaBodyMethods = indyLambdaBodyMethods(ownerClass, methodNode)
 
       // We don't save / restore the CallGraph's
       //   - callsitePositions
@@ -574,6 +577,10 @@ abstract class Inliner {
 
         callsites(methodNode) = currentCallsites
         closureInstantiations(methodNode) = currentClosureInstantiations
+
+        onIndyLambdaImplMethodIfPresent(ownerClass)(_.remove(methodNode))
+        if (currentIndyLambdaBodyMethods.nonEmpty)
+          onIndyLambdaImplMethod(ownerClass)(ms => ms(methodNode) = mutable.Map.empty ++= currentIndyLambdaBodyMethods)
       }
     }
   }
@@ -590,7 +597,7 @@ abstract class Inliner {
    * @return A map associating instruction nodes of the callee with the corresponding cloned
    *         instruction in the callsite method.
    */
-  def inlineCallsite(callsite: Callsite, undo: UndoLog = NoUndoLogging, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
+  def inlineCallsite(callsite: Callsite, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
     import callsite._
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
@@ -615,7 +622,7 @@ abstract class Inliner {
       }
       case _ => false
     }
-    val (clonedInstructions, instructionMap, targetHandles) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
+    val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
 
     // local vars in the callee are shifted by the number of locals at the callsite
     val localVarShift = callsiteMethod.maxLocals
@@ -730,8 +737,6 @@ abstract class Inliner {
       clonedInstructions.insert(postCallLabel, retVarLoad)
     }
 
-    undo.saveMethodState(callsiteMethod)
-
     callsiteMethod.instructions.insert(callsiteInstruction, clonedInstructions)
     callsiteMethod.instructions.remove(callsiteInstruction)
 
@@ -758,8 +763,14 @@ abstract class Inliner {
 
     callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
-    val added = addIndyLambdaImplMethod(callsiteClass.internalName, targetHandles)
-    undo { removeIndyLambdaImplMethod(callsiteClass.internalName, added) }
+    lazy val callsiteLambdaBodyMethods = onIndyLambdaImplMethod(callsiteClass.internalName)(_.getOrElseUpdate(callsiteMethod, mutable.Map.empty))
+    onIndyLambdaImplMethodIfPresent(calleeDeclarationClass.internalName)(methods => methods.getOrElse(callee, Nil) foreach {
+      case (indy, handle) => instructionMap.get(indy) match {
+        case Some(clonedIndy: InvokeDynamicInsnNode) =>
+          callsiteLambdaBodyMethods(clonedIndy) = handle
+        case _ =>
+      }
+    })
 
     // Don't remove the inlined instruction from callsitePositions, inlineAnnotatedCallsites so that
     // the information is still there in case the method is rolled back (UndoLog).

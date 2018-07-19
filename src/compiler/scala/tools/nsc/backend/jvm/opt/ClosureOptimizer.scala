@@ -35,6 +35,8 @@ abstract class ClosureOptimizer {
 
   private object closureInitOrdering extends Ordering[ClosureInstantiation] {
     override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
+      if (x eq y) return 0
+
       val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
       if (cls != 0) return cls
 
