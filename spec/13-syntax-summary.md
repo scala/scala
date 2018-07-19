@@ -70,6 +70,7 @@ interpolatedString
                  ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
                  |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
 escape           ::= ‘\$\$’ 
+                 | ‘\$"’ 
                  | ‘\$’ id 
                  | ‘\$’ BlockExpr
 alphaid          ::= upper idrest
