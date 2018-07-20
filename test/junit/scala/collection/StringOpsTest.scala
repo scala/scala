@@ -20,4 +20,8 @@ class StringOpsTest {
     assert("a".addString(new StringBuilder, ",").toString == "a")
     assert("".addString(new StringBuilder, "foo", ",", "bar").toString == "foobar")
   }
+
+  @Test def toArray(): Unit = {
+    assert("".toArray[Any].length == 0) // should not throw
+  }
 }
