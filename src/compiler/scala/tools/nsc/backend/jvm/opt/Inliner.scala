@@ -334,7 +334,7 @@ abstract class Inliner {
               if (state.undoLog == NoUndoLogging) {
                 val undo = new UndoLog()
                 val currentState = state.clone()
-                undo.saveMethodState(r.callsite.callsiteClass.internalName, method)
+                undo.saveMethodState(r.callsite.callsiteClass, method)
                 undo {
                   failed += r.callsite.callsiteInstruction
                   inlinerState(method) = currentState
@@ -419,7 +419,7 @@ abstract class Inliner {
               case Some(inlinedCallsite) =>
                 val callsite = inlinedCallsite.eliminatedCallsite
                 val w = inlinedCallsite.warning.get
-                state.inlineLog.logRollback(callsite, "The method has instructions that would cause an IllegalAccessError, and they are not selected for inlining", state.outerCallsite(notInlinedIllegalInsn))
+                state.inlineLog.logRollback(callsite, s"Instruction ${AsmUtils.textify(notInlinedIllegalInsn)} would cause an IllegalAccessError, and is not selected for inlining", state.outerCallsite(notInlinedIllegalInsn))
                 if (w.emitWarning(compilerSettings))
                   backendReporting.inlinerWarning(callsite.callsitePosition, w.toString + inlineChainSuffix(callsite, state.inlineChain(callsite.callsiteInstruction, skipForwarders = true)))
               case _ =>
@@ -563,18 +563,19 @@ abstract class Inliner {
     def apply(a: => Unit): Unit = if (active) actions = (() => a) :: actions
     def rollback(): Unit = if (active) actions.foreach(_.apply())
 
-    def saveMethodState(ownerClass: InternalName, methodNode: MethodNode): Unit = if (active) {
+    def saveMethodState(ownerClass: ClassBType, methodNode: MethodNode): Unit = if (active) {
       val currentInstructions = methodNode.instructions.toArray
       val currentLocalVariables = new JArrayList(methodNode.localVariables)
       val currentTryCatchBlocks = new JArrayList(methodNode.tryCatchBlocks)
       val currentMaxLocals = methodNode.maxLocals
       val currentMaxStack = methodNode.maxStack
 
-      val currentCallsites = callsites(methodNode)
-      val currentClosureInstantiations = closureInstantiations(methodNode)
+      val currentIndyLambdaBodyMethods = indyLambdaBodyMethods(ownerClass.internalName, methodNode)
 
-      val currentIndyLambdaBodyMethods = indyLambdaBodyMethods(ownerClass, methodNode)
-
+      // Instead of saving / restoring the CallGraph's callsites / closureInstantiations, we call
+      // callGraph.refresh on rollback. The call graph might not be up to date at the point where
+      // we save the method state, because it might be in the middle of inlining some callsites of
+      // that method. The call graph is only updated at the end (in the inliner loop).
       // We don't save / restore the CallGraph's
       //   - callsitePositions
       //   - inlineAnnotatedCallsites
@@ -598,12 +599,11 @@ abstract class Inliner {
         methodNode.maxLocals = currentMaxLocals
         methodNode.maxStack = currentMaxStack
 
-        callsites(methodNode) = currentCallsites
-        closureInstantiations(methodNode) = currentClosureInstantiations
+        callGraph.refresh(methodNode, ownerClass)
 
-        onIndyLambdaImplMethodIfPresent(ownerClass)(_.remove(methodNode))
+        onIndyLambdaImplMethodIfPresent(ownerClass.internalName)(_.remove(methodNode))
         if (currentIndyLambdaBodyMethods.nonEmpty)
-          onIndyLambdaImplMethod(ownerClass)(ms => ms(methodNode) = mutable.Map.empty ++= currentIndyLambdaBodyMethods)
+          onIndyLambdaImplMethod(ownerClass.internalName)(ms => ms(methodNode) = mutable.Map.empty ++= currentIndyLambdaBodyMethods)
       }
     }
   }
@@ -862,7 +862,7 @@ abstract class Inliner {
     assert(callsiteInstruction.desc == callee.desc, methodMismatch)
     assert(!isConstructor(callee), s"Constructors cannot be inlined: $calleeDesc")
     assert(!BytecodeUtils.isAbstractMethod(callee), s"Callee is abstract: $calleeDesc")
-    assert(callsiteMethod.instructions.contains(callsiteInstruction), s"Callsite ${textify(callsiteInstruction)} is not an instruction of $calleeDesc")
+    assert(callsiteMethod.instructions.contains(callsiteInstruction), s"Callsite ${textify(callsiteInstruction)} is not an instruction of $callsiteClass.${callsiteMethod.name}${callsiteMethod.desc}")
 
     // When an exception is thrown, the stack is cleared before jumping to the handler. When
     // inlining a method that catches an exception, all values that were on the stack before the
