@@ -238,9 +238,12 @@ abstract class Inliner {
     var firstRound = true
     var changedByClosureOptimizer = Seq.empty[MethodNode]
 
+    // Don't try again to inline failed callsites
+    val failedToInline = mutable.Set.empty[MethodInsnNode]
+
     while (firstRound || changedByClosureOptimizer.nonEmpty) {
       val specificMethodsForInlining = if (firstRound) None else Some(changedByClosureOptimizer)
-      val changedByInliner = runInliner(specificMethodsForInlining)
+      val changedByInliner = runInliner(specificMethodsForInlining, failedToInline)
 
       if (runClosureOptimizer) {
         val specificMethodsForClosureRewriting = if (firstRound) None else Some(changedByInliner)
@@ -255,7 +258,7 @@ abstract class Inliner {
    * @param methods The methods to check for callsites to inline. If not defined, check all methods.
    * @return The set of changed methods, in no deterministic order.
    */
-  def runInliner(methods: Option[Seq[MethodNode]]): Iterable[MethodNode] = {
+  def runInliner(methods: Option[Seq[MethodNode]], failed: mutable.Set[MethodInsnNode]): Iterable[MethodNode] = {
     // Inline requests are grouped by method for performance: we only update the call graph (which
     // runs analyzers) once all callsites are inlined.
     val requests: mutable.Queue[(MethodNode, List[InlineRequest])] =
@@ -270,9 +273,6 @@ abstract class Inliner {
       methods.foreach(r.addAll)
       r
     }
-
-    // Don't try again to inline failed callsites
-    val failed = mutable.Set.empty[MethodInsnNode]
 
     val overallChangedMethods = mutable.Set.empty[MethodNode]
 
