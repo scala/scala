@@ -1742,4 +1742,30 @@ class InlinerTest extends BytecodeTesting {
     val List(a, c) = compileClasses(code)
     assertNoInvoke(getMethod(c, "t"))
   }
+
+  @Test
+  def multipleInlineRollback(): Unit = {
+    val code =
+      """final class A {
+        |  @inline def f = {
+        |    def g = 0
+        |    g
+        |  }
+        |  @inline def m = 0
+        |}
+        |class C {
+        |  def t(a: A) = {
+        |    a.m // inlined
+        |    a.f // rolled back
+        |    a.m // inlined
+        |  }
+        |}
+      """.stripMargin
+    val warn =
+      """A::f()I is annotated @inline but could not be inlined:
+        |The callee A::f()I contains the instruction INVOKESTATIC A.g$1 ()I
+        |that would cause an IllegalAccessError when inlined into class C""".stripMargin
+    val List(a, c) = compileClasses(code, allowMessage = _.msg contains warn)
+    assertSameSummary(getMethod(c, "t"), List(ALOAD, IFNONNULL /*6*/, ACONST_NULL, ATHROW, -1 /*6*/, ALOAD, "f", POP, ICONST_0, IRETURN))
+  }
 }
