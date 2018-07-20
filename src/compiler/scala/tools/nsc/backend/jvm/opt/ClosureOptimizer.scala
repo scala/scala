@@ -9,7 +9,7 @@ package opt
 
 import scala.annotation.switch
 import scala.collection.JavaConverters._
-import scala.collection.immutable.{ArraySeq, IntMap}
+import scala.collection.immutable.IntMap
 import scala.collection.mutable
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.Opcodes._
@@ -84,7 +84,7 @@ abstract class ClosureOptimizer {
    *                instantiations.
    * @return The changed methods. The order of the resulting sequence is deterministic.
    */
-  def rewriteClosureApplyInvocations(methods: Option[Iterable[MethodNode]]): ArraySeq[MethodNode] = {
+  def rewriteClosureApplyInvocations(methods: Option[Iterable[MethodNode]]): mutable.LinkedHashSet[MethodNode] = {
 
     // sort all closure invocations to rewrite to ensure bytecode stability
     val toRewrite = mutable.TreeMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
@@ -127,7 +127,7 @@ abstract class ClosureOptimizer {
       case _ =>
     }
 
-    val changedMethods = ArraySeq.newBuilder[MethodNode]
+    val changedMethods = mutable.LinkedHashSet.empty[MethodNode]
     var previousMethod: MethodNode = null
 
     for ((closureInit, invocations) <- toRewrite) {
@@ -144,7 +144,7 @@ abstract class ClosureOptimizer {
       }
     }
 
-    changedMethods.result()
+    changedMethods
   }
 
   /**

@@ -1768,4 +1768,20 @@ class InlinerTest extends BytecodeTesting {
     val List(a, c) = compileClasses(code, allowMessage = _.msg contains warn)
     assertSameSummary(getMethod(c, "t"), List(ALOAD, IFNONNULL /*6*/, ACONST_NULL, ATHROW, -1 /*6*/, ALOAD, "f", POP, ICONST_0, IRETURN))
   }
+
+  @Test
+  def recursiveInlineClosureRewrite(): Unit = {
+    // first rec is inlined. then the closure invocation is re-written. this triggers another round of inlining.
+    val code =
+      """trait T {
+        |  @inline final def rec(x: Int, f: Int => Int): Int = if (x == 0) 0 else f(x) + rec(x - 1, f)
+        |}
+        |class C extends T {
+        |  def t = rec(10, x => x)
+        |}
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    // rec is inlined once, the closure application is rewritten to the body method
+    assertInvokedMethods(getMethod(c, "t"), List("C.$anonfun$t$1", "T.rec"))
+  }
 }

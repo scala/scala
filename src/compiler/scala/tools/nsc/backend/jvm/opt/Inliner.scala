@@ -236,19 +236,24 @@ abstract class Inliner {
   def runInlinerAndClosureOptimizer(): Unit = {
     val runClosureOptimizer = compilerSettings.optClosureInvocations
     var firstRound = true
-    var changedByClosureOptimizer = Seq.empty[MethodNode]
+    var changedByClosureOptimizer = mutable.LinkedHashSet.empty[MethodNode]
+
+    val inlinerState = mutable.Map.empty[MethodNode, MethodInlinerState]
 
     // Don't try again to inline failed callsites
     val failedToInline = mutable.Set.empty[MethodInsnNode]
 
     while (firstRound || changedByClosureOptimizer.nonEmpty) {
       val specificMethodsForInlining = if (firstRound) None else Some(changedByClosureOptimizer)
-      val changedByInliner = runInliner(specificMethodsForInlining, failedToInline)
+      val changedByInliner = runInliner(specificMethodsForInlining, inlinerState, failedToInline)
 
       if (runClosureOptimizer) {
         val specificMethodsForClosureRewriting = if (firstRound) None else Some(changedByInliner)
         changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting)
       }
+
+      for (m <- inlinerState.keySet if !changedByClosureOptimizer(m))
+        inlinerState.remove(m).get.inlineLog.print()
 
       firstRound = false
     }
@@ -258,14 +263,12 @@ abstract class Inliner {
    * @param methods The methods to check for callsites to inline. If not defined, check all methods.
    * @return The set of changed methods, in no deterministic order.
    */
-  def runInliner(methods: Option[Seq[MethodNode]], failed: mutable.Set[MethodInsnNode]): Iterable[MethodNode] = {
+  def runInliner(methods: Option[mutable.LinkedHashSet[MethodNode]], inlinerState: mutable.Map[MethodNode, MethodInlinerState], failed: mutable.Set[MethodInsnNode]): Iterable[MethodNode] = {
     // Inline requests are grouped by method for performance: we only update the call graph (which
     // runs analyzers) once all callsites are inlined.
     val requests: mutable.Queue[(MethodNode, List[InlineRequest])] =
       if (methods.isEmpty) collectAndOrderInlineRequests
       else mutable.Queue.empty
-
-    val inlinerState = mutable.Map.empty[MethodNode, MethodInlinerState]
 
     // Methods that were changed (inlined into), they will be checked for more callsites to inline
     val changedMethods = {
@@ -399,12 +402,7 @@ abstract class Inliner {
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
-            if (newRequests.isEmpty) {
-              state.inlineLog.print()
-              inlinerState.remove(method) // we're done with this method
-            } else
-              requests.enqueue(method -> newRequests)
-
+            if (newRequests.nonEmpty) requests.enqueue(method -> newRequests)
 
           case Some(notInlinedIllegalInsn) =>
             state.undoLog.rollback()
@@ -425,7 +423,6 @@ abstract class Inliner {
       }
     }
 
-    inlinerState.valuesIterator.foreach(_.inlineLog.print())
     overallChangedMethods
   }
 
