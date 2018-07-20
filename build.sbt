@@ -613,11 +613,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
 
 lazy val osgiTestFelix = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestFelix"),
-  "org.apache.felix" % "org.apache.felix.framework" % "5.0.1")
+  "org.apache.felix" % "org.apache.felix.framework" % "5.6.10")
 
 lazy val osgiTestEclipse = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestEclipse"),
-  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.10.100.v20150521-1310")
+  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.13.0.v20180226-1711")
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
@@ -629,7 +629,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     fork in Test := true,
     parallelExecution in Test := false,
     libraryDependencies ++= {
-      val paxExamVersion = "4.5.0" // Last version which supports Java 6
+      val paxExamVersion = "4.11.0" // Last version which supports Java 9+
       Seq(
         junitDep,
         junitInterfaceDep,
@@ -645,6 +645,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
       )
     },
     Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
+    Keys.testOnly in Test := (Keys.testOnly in Test).dependsOn(packageBin in Compile).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
