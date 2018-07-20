@@ -65,4 +65,6 @@ class ListTest {
       case e: IndexOutOfBoundsException => ()
     }
   }
+
+  @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 }
