@@ -598,6 +598,9 @@ trait StdNames {
 
     val ??? = encode("???")
 
+    val enhanceString: NameType    = "augmentString"
+    val stripMargin: NameType      = "stripMargin"
+
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
     val wrapShortArray: NameType   = "wrapShortArray"
