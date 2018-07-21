@@ -193,7 +193,7 @@ trait Importers { to: SymbolTable =>
           myexisting.orElse {
             val my = cachedRecreateSymbol(their)
             if (myscope != NoType) {
-              assert(myscope.decls.lookup(myname) == NoSymbol, myname+" "+myscope.decl(myname)+" "+myexisting)
+              assert(myscope.decls.lookup(myname) == NoSymbol, s"$myname ${myscope.decl(myname)} $myexisting")
               myscope.decls enter my
             }
             my
