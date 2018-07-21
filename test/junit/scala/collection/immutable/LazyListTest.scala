@@ -368,4 +368,11 @@ class LazyListTest {
       assertEquals(s"mkString 3 $i", goal(3,i), precyc(3,i).mkString)
     }
   }
+
+  @Test
+  def doNotEvaluateHeadWhenWithFilterChain: Unit = {
+    var called = false
+    LazyList.tabulate(3){ x => called = true ; x }.withFilter(_ => true).withFilter(_ => true)
+    assertFalse(called)
+  }
 }
