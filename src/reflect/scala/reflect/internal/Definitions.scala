@@ -349,6 +349,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val PredefModule               = requiredModule[scala.Predef.type]
          def Predef_???                 = getMemberMethod(PredefModule, nme.???)
+         def Predef_augmentString       = getMemberMethod(PredefModule, nme.enhanceString)
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )

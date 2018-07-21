@@ -1500,26 +1500,9 @@ abstract class RefChecks extends Transform {
             isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
 
           transform(qual)
-      case StringContextIntrinsic(treated, args) =>
-        var result: Tree = treated.head
-        def concat(t: Tree): Unit = {
-          result = atPos(t.pos)(gen.mkMethodCall(gen.mkAttributedSelect(result, definitions.String_+), t :: Nil)).setType(StringTpe)
-        }
-        val numLits = treated.length
-        foreachWithIndex(treated.tail) { (lit, i) =>
-          val treatedContents = lit.asInstanceOf[Literal].value.stringValue
-          val emptyLit = treatedContents.isEmpty
-          if (i < numLits - 1) {
-            concat(args(i))
-            if (!emptyLit) concat(lit)
-          } else if (!emptyLit) {
-            concat(lit)
-          }
-        }
-        result match {
-          case ap: Apply => transformApply(ap)
-          case _ => result
-        }
+      case StringContextIntrinsic(treated, args) => intrinsicStringInterpolation(treated, args)
+      case Apply(Select(Apply(fun, StringContextIntrinsic(treated, args) :: Nil), nme.stripMargin), Literal(Constant(c: Character)) :: Nil) if fun.symbol == definitions.Predef_augmentString =>
+        demarginalize(treated, args, c)
       case Apply(fn, args) =>
         // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
         // analyses in the pattern matcher
@@ -1529,6 +1512,44 @@ abstract class RefChecks extends Transform {
         }
         currentApplication = tree
         tree
+    }
+
+    // weave pre-treated parts with args
+    private def intrinsicStringInterpolation(treated: List[Tree], args: List[Tree]): Tree = {
+      var result: Tree = treated.head
+      def concat(t: Tree): Unit = {
+        result = atPos(t.pos)(gen.mkMethodCall(gen.mkAttributedSelect(result, definitions.String_+), t :: Nil)).setType(StringTpe)
+      }
+      val numLits = treated.length
+      foreachWithIndex(treated.tail) { (lit, i) =>
+        val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+        val emptyLit = treatedContents.isEmpty
+        if (i < numLits - 1) {
+          concat(args(i))
+          if (!emptyLit) concat(lit)
+        } else if (!emptyLit) {
+          concat(lit)
+        }
+      }
+      result match {
+        case ap: Apply => transformApply(ap)
+        case _ => result
+      }
+    }
+    // strip margins from the treated parts
+    private def demarginalize(treated: List[Tree], args: List[Tree], c: Char): Tree = {
+      def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+      def stripTrailingPart(s: String): String = {
+        val (pre, post) = s.span(!isLineBreak(_))
+        pre + post.stripMargin(c)
+      }
+      val stripped: List[Tree] = treated match {
+        case head :: tail =>
+          treeCopy.Literal(head, Constant(head.asInstanceOf[Literal].value.stringValue.stripMargin(c))) ::
+          tail.mapConserve(t => treeCopy.Literal(t, Constant(stripTrailingPart(t.asInstanceOf[Literal].value.stringValue))))
+        case Nil          => Nil
+      }
+      intrinsicStringInterpolation(stripped, args)
     }
 
     private object StringContextIntrinsic {
@@ -1564,7 +1585,7 @@ abstract class RefChecks extends Transform {
       }
     }
     private def transformSelect(tree: Select): Tree = {
-      val Select(qual, _) = tree
+      val Select(qual, member) = tree
       val sym = tree.symbol
 
       checkUndesiredProperties(sym, tree.pos)
@@ -1588,15 +1609,14 @@ abstract class RefChecks extends Transform {
       //
       // We don't need to perform the check on the Select node, and `!isHigherKinded will guard against this
       // redundant (and previously buggy, scala/bug#9546) consideration.
-      if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree)) {
+      if (!tree.tpe.isHigherKinded && isSimpleCaseApply(tree))
         transformCaseApply(tree)
-      } else {
+      else
         qual match {
-          case Super(_, mix)  => checkSuper(mix)
-          case _              =>
+          case Super(_, mix) => checkSuper(mix) ; tree
+          case Apply(fun, StringContextIntrinsic(treated, args) :: Nil) if fun.symbol == definitions.Predef_augmentString && member == nme.stripMargin => demarginalize(treated, args, '|')
+          case _             => tree
         }
-        tree
-      }
     }
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
