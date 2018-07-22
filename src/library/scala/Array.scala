@@ -11,7 +11,6 @@ package scala
 //import scala.collection.generic._
 import scala.collection.{Factory, immutable, mutable}
 import mutable.ArrayBuilder
-import immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
@@ -497,8 +496,9 @@ object Array {
    *  @param x the selector value
    *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
-  def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    Some(ArraySeq.unsafeWrapArray[T](x))
+  def unapplySeq[T](x: Array[T]): Option[scala.collection.Seq[T]] = {
+    Some(mutable.ArraySeq.make[T](x))
+  }
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
