@@ -230,7 +230,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
-  final def foreachKey(f: Long => Unit): Unit = this match {
+  final def foreachKey[U](f: Long => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
     case LongMap.Tip(key, _) => f(key)
     case LongMap.Nil =>
@@ -247,7 +247,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
-  final def foreachValue(f: T => Unit): Unit = this match {
+  final def foreachValue[U](f: T => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
     case LongMap.Tip(_, value) => f(value)
     case LongMap.Nil =>

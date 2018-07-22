@@ -235,7 +235,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     *
     * @param f The loop body
     */
-  final def foreachKey(f: Int => Unit): Unit = this match {
+  final def foreachKey[U](f: Int => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
     case IntMap.Tip(key, _) => f(key)
     case IntMap.Nil =>
@@ -252,7 +252,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     *
     * @param f The loop body
     */
-  final def foreachValue(f: T => Unit): Unit = this match {
+  final def foreachValue[U](f: T => U): Unit = this match {
     case IntMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
     case IntMap.Tip(_, value) => f(value)
     case IntMap.Nil =>
