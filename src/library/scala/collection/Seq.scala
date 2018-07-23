@@ -853,9 +853,12 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return a `Found` value containing the index corresponding to the element in the
     *         sequence, or the `InsertionPoint` where the element would be inserted if
     *         the element is not in the sequence.
+    * 
+    * @note if `to <= from`, the search space is empty, and an `InsertionPoint` at `from`
+    *       is returned
     */
-  def search[B >: A](elem: B, from: Int, to: Int) (implicit ord: Ordering[B]): SearchResult =
-    linearSearch(view.slice(from, to), elem, from)(ord)
+  def search[B >: A](elem: B, from: Int, to: Int) (implicit ord: Ordering[B]): SearchResult = 
+    linearSearch(view.slice(from, to), elem, math.max(0, from))(ord)
 
   private[this] def linearSearch[B >: A](c: View[A], elem: B, offset: Int)
                                         (implicit ord: Ordering[B]): SearchResult = {
