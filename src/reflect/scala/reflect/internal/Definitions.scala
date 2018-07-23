@@ -1224,7 +1224,7 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member", addendum: String = "") = {
-      throw new FatalError(owner + " does not have a " + what + " " + name + addendum)
+      throw new FatalError(s"$owner does not have a $what ${name}${addendum}")
     }
 
     def getLanguageFeature(name: String, owner: Symbol = languageFeatureModule): Symbol = getMember(owner, newTypeName(name))
