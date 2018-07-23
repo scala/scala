@@ -747,13 +747,13 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     if(headDefined && tailDefined) new LazyListOps.SerializationProxy[A, Stream](this) else this
 
   /** Prints elements of this stream one by one, separated by commas. */
-  @deprecated("""Use print(stream.force.mkString(", ")) instead""")
+  @deprecated(message = """Use print(stream.force.mkString(", ")) instead""", since = "2.13.0")
   @inline def print(): Unit = Console.print(this.force.mkString(", "))
 
   /** Prints elements of this stream one by one, separated by `sep`.
     *  @param sep   The separator string printed between consecutive elements.
     */
-  @deprecated("Use print(stream.force.mkString(sep)) instead")
+  @deprecated(message = "Use print(stream.force.mkString(sep)) instead", since = "2.13.0")
   @inline def print(sep: String): Unit = Console.print(this.force.mkString(sep))
 
 }
