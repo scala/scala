@@ -610,6 +610,8 @@ trait StdNames {
     val wrapUnitArray: NameType    = "wrapUnitArray"
     val genericWrapArray: NameType = "genericWrapArray"
 
+    val copyArrayToImmutableIndexedSeq: NameType = "copyArrayToImmutableIndexedSeq"
+
     // Compiler utilized names
 
     val AnnotatedType: NameType        = "AnnotatedType"
