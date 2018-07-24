@@ -116,7 +116,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
 
 private[immutable] object MapNode {
 
-  private final val EmptyMapNode = new BitmapIndexedMapNode(0, 0, Array.empty)
+  private final val EmptyMapNode = new BitmapIndexedMapNode(0, 0, Array.empty, Array.empty)
 
   def empty[K, V]: MapNode[K, V] =
     EmptyMapNode.asInstanceOf[MapNode[K, V]]
@@ -168,7 +168,7 @@ private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K,
 
 }
 
-private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
+private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any], val hashes: Array[Int]) extends MapNode[K, V] {
 
   import MapNode._
   import Node._
@@ -243,7 +243,8 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      return key == this.getKey(index)
+      assert(hashes(index) == computeHash(this.getKey(index)), (hashes.toSeq, content.toSeq, index, key, keyHash, shift))
+      return (hashes(index) == keyHash) && key == this.getKey(index)
     }
 
     if ((nodeMap & bitpos) != 0) {
@@ -288,7 +289,7 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
       }
     }
 
-    copyAndInsertValue(bitpos, key, value)
+    copyAndInsertValue(bitpos, key, keyHash, value)
   }
 
   def removed[V1 >: V](key: K, keyHash: Int, shift: Int): MapNode[K, V1] = {
@@ -307,9 +308,9 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(keyHash, 0))
           if (index == 0)
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)))
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)), Array(hashes(1)))
           else
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)))
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)), Array(hashes(0)))
         }
         else return copyAndRemoveValue(bitpos)
       } else return this
@@ -329,7 +330,7 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
             return subNodeNew
           }
           else { // inline value (move to front)
-            return copyAndMigrateFromNodeToInline(bitpos, subNodeNew)
+            return copyAndMigrateFromNodeToInline(bitpos, keyHash, subNodeNew)
           }
 
         case SizeMoreThanOne =>
@@ -357,16 +358,15 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
         val dataMap = bitposFrom(mask0) | bitposFrom(mask1)
 
         if (mask0 < mask1) {
-          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key0, value0, key1, value1))
+          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key0, value0, key1, value1), Array(keyHash0, keyHash1))
         } else {
-          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key1, value1, key0, value0))
+          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key1, value1, key0, value0), Array(keyHash1, keyHash0))
         }
       } else {
         // identical prefixes, payload must be disambiguated deeper in the trie
         val nodeMap = bitposFrom(mask0)
         val node = mergeTwoKeyValPairs(key0, value0, keyHash0, key1, value1, keyHash1, shift + BitPartitionSize)
-
-        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node))
+        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node), Array())
       }
     }
   }
@@ -391,7 +391,8 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
   def nodeIndex(bitpos: Int) = bitCount(nodeMap & (bitpos - 1))
 
   def copyAndSetValue[V1 >: V](bitpos: Int, newValue: V1): Replaced[K, V1] = {
-    val idx = TupleLength * dataIndex(bitpos) + 1
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx + 1
 
     val src = this.content
     val dst = new Array[Any](src.length)
@@ -399,7 +400,7 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
     dst(idx) = newValue
-    new Replaced(new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst))
+    new Replaced(new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, hashes))
   }
 
   def copyAndSetNode[V1 >: V](bitpos: Int, newNode: MapNodeSource[K, V1]): MapNodeSource[K, V1] = {
@@ -413,16 +414,17 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     newNode match {
       case r: Replaced[K, V1] =>
         dst(idx) = r.get
-        r.value = new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+        r.value = new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, hashes)
         r
       case mn: MapNode[K, V1] =>
         dst(idx) = mn.get
-        new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst)
+        new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, hashes)
     }
   }
 
-  def copyAndInsertValue[V1 >: V](bitpos: Int, key: K, value: V1): BitmapIndexedMapNode[K, V1] = {
-    val idx = TupleLength * dataIndex(bitpos)
+  def copyAndInsertValue[V1 >: V](bitpos: Int, key: K, keyHash: Int, value: V1): BitmapIndexedMapNode[K, V1] = {
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx
 
     val src = this.content
     val dst = new Array[Any](src.length + TupleLength)
@@ -433,11 +435,14 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     dst(idx + 1) = value
     arraycopy(src, idx, dst, idx + TupleLength, src.length - idx)
 
-    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap, dst)
+    val dstHashes = insertElement(hashes, dataIx, keyHash)
+
+    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap, dst, dstHashes)
   }
 
   def copyAndRemoveValue(bitpos: Int): BitmapIndexedMapNode[K, V] = {
-    val idx = TupleLength * dataIndex(bitpos)
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx
 
     val src = this.content
     val dst = new Array[Any](src.length - TupleLength)
@@ -446,11 +451,14 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     arraycopy(src, 0, dst, 0, idx)
     arraycopy(src, idx + TupleLength, dst, idx, src.length - idx - TupleLength)
 
-    new BitmapIndexedMapNode[K, V](dataMap ^ bitpos, nodeMap, dst)
+    val dstHashes = removeElement(hashes, dataIx)
+
+    new BitmapIndexedMapNode[K, V](dataMap ^ bitpos, nodeMap, dst, dstHashes)
   }
 
   def copyAndMigrateFromInlineToNode[V1 >: V](bitpos: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
-    val idxOld = TupleLength * dataIndex(bitpos)
+    val dataIx = dataIndex(bitpos)
+    val idxOld = TupleLength * dataIx
     val idxNew = this.content.length - TupleLength - nodeIndex(bitpos)
 
     val src = this.content
@@ -464,12 +472,15 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     dst(idxNew) = node
     arraycopy(src, idxNew + TupleLength, dst, idxNew + 1, src.length - idxNew - TupleLength)
 
-    new BitmapIndexedMapNode[K, V1](dataMap ^ bitpos, nodeMap | bitpos, dst)
+    val dstHashes = removeElement(hashes, dataIx)
+
+    new BitmapIndexedMapNode[K, V1](dataMap ^ bitpos, nodeMap | bitpos, dst, dstHashes)
   }
 
-  def copyAndMigrateFromNodeToInline[V1 >: V](bitpos: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
+  def copyAndMigrateFromNodeToInline[V1 >: V](bitpos: Int, keyHash: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
     val idxOld = this.content.length - 1 - nodeIndex(bitpos)
-    val idxNew = TupleLength * dataIndex(bitpos)
+    val dataIxNew = dataIndex(bitpos)
+    val idxNew = TupleLength * dataIxNew
 
     val key = node.getKey(0)
     val value = node.getValue(0)
@@ -484,8 +495,32 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     dst(idxNew + 1) = value
     arraycopy(src, idxNew, dst, idxNew + TupleLength, idxOld - idxNew)
     arraycopy(src, idxOld + 1, dst, idxOld + TupleLength, src.length - idxOld - 1)
+    val hash = node match {
+      case bitnode: BitmapIndexedMapNode[_, _] => bitnode.hashes(0)
+      case collision: HashCollisionMapNode[_, _] => collision.hash
+    }
 
-    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap ^ bitpos, dst)
+    val dstHashes = insertElement(hashes, dataIxNew, hash)
+    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap ^ bitpos, dst, dstHashes)
+  }
+
+  private def removeElement(as: Array[Int], ix: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
+  private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
@@ -576,7 +611,9 @@ private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K,
       // assert(updatedContent.size == content.size - 1)
 
       updatedContent.size match {
-        case 1 => new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, { val (k, v) = updatedContent(0) ; Array(k, v) })
+        case 1 =>
+          val (k, v) = updatedContent(0)
+          new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, Array(k, v), Array(hash))
         case _ => new HashCollisionMapNode[K, V1](hash, updatedContent)
       }
     }
