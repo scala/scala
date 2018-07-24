@@ -45,6 +45,12 @@ trait Reporting { self : Positions =>
 
   def supplementErrorMessage(errorMessage: String) = currentRun.reporting.supplementErrorMessage(errorMessage)
 
+  // used by sbt of a certain vintage
+  @deprecated("use reporter.echo", "2.13.0")
+  def inform(msg: String): Unit      = reporter.echo(NoPosition, msg)
+  @deprecated("use reporter.warning", "2.13.0")
+  def warning(msg: String): Unit     = reporter.warning(NoPosition, msg)
+
   def abort(msg: String): Nothing = {
     val augmented = supplementErrorMessage(msg)
     // Needs to call error to make sure the compile fails.
