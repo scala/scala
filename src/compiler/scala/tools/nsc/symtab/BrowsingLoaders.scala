@@ -112,7 +112,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
     val browser = new BrowserTraverser
     browser.traverse(body)
     if (browser.entered == 0)
-      warning("No classes or objects found in "+source+" that go in "+root)
+      reporter.warning(NoPosition, "No classes or objects found in "+source+" that go in "+root)
   }
 
   /** Enter top-level symbols from a source file

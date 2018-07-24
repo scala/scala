@@ -232,7 +232,7 @@ abstract class ExplicitOuter extends InfoTransform
           // The caller will report the error with more information.
           EmptyTree
         } else {
-          globalError(currentOwner.pos, s"Internal error: unable to find the outer accessor symbol of $baseSym")
+          reporter.error(currentOwner.pos, s"Internal error: unable to find the outer accessor symbol of $baseSym")
           EmptyTree
         }
       } else {

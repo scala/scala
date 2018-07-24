@@ -3395,7 +3395,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def children = childSet
     override def addChild(sym: Symbol): Unit = {
       if(!isPastTyper && hasAttachment[KnownDirectSubclassesCalled.type] && !childSet.contains(sym))
-        globalError(s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
+        reporter.error(NoPosition, s"knownDirectSubclasses of ${this.name} observed before subclass ${sym.name} registered")
 
       childSet = childSet + sym
     }
@@ -3512,7 +3512,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fail[T](alt: T): T = {
       // Avoid issuing lots of redundant errors
       if (!hasFlag(IS_ERROR)) {
-        globalError(pos, missingMessage)
+        reporter.error(pos, missingMessage)
         if (settings.debug.value)
           (new Throwable).printStackTrace
 

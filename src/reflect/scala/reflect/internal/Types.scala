@@ -1597,7 +1597,7 @@ trait Types
         def what = tpe.typeSymbol.toString + " in " + tpe.typeSymbol.owner.fullNameString
         val bcs  = computeBaseClasses(tpe)
         tpe.baseClassesCache = bcs
-        warning(s"Breaking cycle in base class computation of $what ($bcs)")
+        reporter.warning(NoPosition, s"Breaking cycle in base class computation of $what ($bcs)")
       }
     }
     else {
@@ -4830,11 +4830,11 @@ trait Types
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    inform(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
+    reporter.echo(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent stripSuffix "  "
-    inform(indent + result)
+    reporter.echo(indent + result)
     result
   }
 

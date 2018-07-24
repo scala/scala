@@ -229,11 +229,11 @@ object PostProcessorFrontendAccess {
       }
 
       def warning(pos: Position, message: String): Unit = frontendSynch {
-        global.warning(pos, message)
+        reporter.warning(pos, message)
       }
 
       def inform(message: String): Unit = frontendSynch {
-        global.inform(message)
+        reporter.echo(message)
       }
 
       def log(message: String): Unit = frontendSynch {

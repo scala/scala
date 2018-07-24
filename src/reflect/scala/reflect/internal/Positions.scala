@@ -87,20 +87,20 @@ trait Positions extends api.Positions { self: SymbolTable =>
 
     def reportTree(prefix : String, tree : Tree): Unit = {
       val source = if (tree.pos.isDefined) tree.pos.source else ""
-      inform("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
-      inform("")
-      inform(treeStatus(tree))
-      inform("")
+      reporter.echo("== "+prefix+" tree ["+tree.id+"] of type "+tree.productPrefix+" at "+tree.pos.show+source)
+      reporter.echo("")
+      reporter.echo(treeStatus(tree))
+      reporter.echo("")
     }
 
     def positionError(msg: String)(body : => Unit): Unit = {
-      inform("======= Position error\n" + msg)
+      reporter.echo("======= Position error\n" + msg)
       body
-      inform("\nWhile validating #" + tree.id)
-      inform(treeStatus(tree))
-      inform("\nChildren:")
-      tree.children foreach (t => inform("  " + treeStatus(t, tree)))
-      inform("=======")
+      reporter.echo("\nWhile validating #" + tree.id)
+      reporter.echo(treeStatus(tree))
+      reporter.echo("\nChildren:")
+      tree.children foreach (t => reporter.echo("  " + treeStatus(t, tree)))
+      reporter.echo("=======")
       throw new ValidateException(msg)
     }
 
@@ -108,13 +108,13 @@ trait Positions extends api.Positions { self: SymbolTable =>
 
       if (!tree.isEmpty && tree.canHaveAttrs) {
         if (settings.Yposdebug && (settings.verbose || settings.Yrangepos))
-          inform("[%10s] %s".format("validate", treeStatus(tree, encltree)))
+          reporter.echo("[%10s] %s".format("validate", treeStatus(tree, encltree)))
 
         if (!tree.pos.isDefined)
           positionError("Unpositioned tree #"+tree.id) {
-            inform("%15s %s".format("unpositioned", treeStatus(tree, encltree)))
-            inform("%15s %s".format("enclosing", treeStatus(encltree)))
-            encltree.children foreach (t => inform("%15s %s".format("sibling", treeStatus(t, encltree))))
+            reporter.echo("%15s %s".format("unpositioned", treeStatus(tree, encltree)))
+            reporter.echo("%15s %s".format("enclosing", treeStatus(encltree)))
+            encltree.children foreach (t => reporter.echo("%15s %s".format("sibling", treeStatus(t, encltree))))
           }
         if (tree.pos.isRange) {
           if (!encltree.pos.isRange)
@@ -224,7 +224,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     }
   } catch {
     case ex: Exception =>
-      inform("error while set children pos "+pos+" of "+trees)
+      reporter.echo("error while set children pos "+pos+" of "+trees)
       throw ex
   }
 

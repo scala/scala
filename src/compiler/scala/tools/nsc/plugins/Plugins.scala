@@ -36,8 +36,8 @@ trait Plugins { global: Global =>
     // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
       // legacy behavior ignores altogether, so at least warn devs
-      case e: MissingPluginException => if (global.isDeveloper) warning(e.getMessage)
-      case e: Exception              => inform(e.getMessage)
+      case e: MissingPluginException => if (global.isDeveloper) reporter.warning(NoPosition, e.getMessage)
+      case e: Exception              => reporter.echo(e.getMessage)
     })
     val classes = goods map (_.get)  // flatten
 
@@ -68,7 +68,7 @@ trait Plugins { global: Global =>
       def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
       lazy val commonPhases = phaseNames intersect plugPhaseNames
 
-      def note(msg: String): Unit = if (settings.verbose) inform(msg format plug.name)
+      def note(msg: String): Unit = if (settings.verbose) reporter.echo(msg format plug.name)
       def fail(msg: String)       = { note(msg) ; withoutPlug }
 
       if (plugNames contains plug.name)
@@ -87,16 +87,16 @@ trait Plugins { global: Global =>
 
     // Verify required plugins are present.
     for (req <- settings.require.value ; if !(plugs exists (_.name == req)))
-      globalError("Missing required plugin: " + req)
+      reporter.error(NoPosition, "Missing required plugin: " + req)
 
     // Verify no non-existent plugin given with -P
     for {
       opt <- settings.pluginOptions.value
       if !(plugs exists (opt startsWith _.name + ":"))
-    } globalError("bad option: -P:" + opt)
+    } reporter.error(NoPosition, "bad option: -P:" + opt)
 
     // Plugins may opt out, unless we just want to show info
-    plugs filter (p => p.init(p.options, globalError) || (settings.debug && settings.isInfo))
+    plugs filter (p => p.init(p.options, reporter.error(NoPosition, _)) || (settings.debug && settings.isInfo))
   }
 
   lazy val plugins: List[Plugin] = loadPlugins()
