@@ -108,6 +108,10 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     */
   def contains(elem: A): Boolean = RB.contains(tree, elem)
 
+  override def intersects(that: collection.Set[A]): Boolean =
+    if(this.size > that.size) that.intersects(this)
+    else super.intersects(that)
+
   override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
 
   def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
