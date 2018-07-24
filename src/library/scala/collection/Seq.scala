@@ -1035,7 +1035,7 @@ object SeqOps {
    *  @param  wlen Just in case we're only IndexedSeq and not IndexedSeqOptimized
    *  @return KMP jump table for target sequence
    */
- private def kmpJumpTable[B](Wopt: IndexedSeqView[B], wlen: Int) = {
+  private def kmpJumpTable[B](Wopt: IndexedSeqView[B], wlen: Int) = {
     val arr = new Array[Int](wlen)
     var pos = 2
     var cnd = 0
