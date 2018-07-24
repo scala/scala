@@ -79,9 +79,9 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   def result() = underlying.toString
 
-  override def toString = result()
+  override def toString = result
 
-  override def toArray[B >: Char](implicit  ct: scala.reflect.ClassTag[B]) =
+  override def toArray[B >: Char](implicit ct: scala.reflect.ClassTag[B]) =
     ct.runtimeClass match {
       case java.lang.Character.TYPE => toCharArray.asInstanceOf[Array[B]]
       case _ => super.toArray
@@ -97,6 +97,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     underlying.getChars(0, len, arr, 0)
     arr
   }
+
   // append* methods delegate to the underlying java.lang.StringBuilder:
 
   def appendAll(xs: String): StringBuilder = {
@@ -156,16 +157,18 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  @return     this StringBuilder.
     */
   def appendAll(xs: IterableOnce[Char]): StringBuilder = {
-    val ks = xs.knownSize
-    val b = underlying
-    if (ks != 0) xs match {
-      case x: WrappedString => b append x.self
-      case x: ArraySeq.ofChar => b append x.array
-      case x: StringBuilder => b append x.underlying
+    xs match {
+      case x: WrappedString => underlying append x.self
+      case x: ArraySeq.ofChar => underlying append x.array
+      case x: StringBuilder => underlying append x.underlying
       case _ =>
-        if (ks > 0) b.ensureCapacity(b.length + ks)
-        val it = xs.iterator
-        while (it.hasNext) { b append it.next() }
+        val ks = xs.knownSize
+        if (ks != 0) {
+          val b = underlying
+          if (ks > 0) b.ensureCapacity(b.length + ks)
+          val it = xs.iterator
+          while (it.hasNext) { b append it.next() }
+        }
     }
     this
   }
@@ -347,7 +350,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    *
    *  @return  the capacity
    */
-  def capacity: Int = underlying.capacity()
+  def capacity: Int = underlying.capacity
 
   /** Ensure that the capacity is at least the given argument.
    *  If the argument is greater than the current capacity, new
