@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import scala.reflect.internal.util.shortClassOfInstance
 import scala.reflect.internal.Reporter
@@ -17,7 +17,7 @@ import scala.reflect.internal.Reporter
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ AnyRefClass, JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
+  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
 
@@ -265,7 +265,7 @@ trait Contexts { self: Analyzer =>
             val fresh = freshNameCreatorFor(this)
             val vname = newTermName(fresh.newName("rec$"))
             val vsym = owner.newValue(vname, newFlags = FINAL | SYNTHETIC) setInfo tpe
-            implicitDictionary +:= (tpe -> (vsym, EmptyTree))
+            implicitDictionary +:= (tpe, (vsym, EmptyTree))
             vsym
         }
       gen.mkAttributedRef(sym) setType tpe
@@ -323,7 +323,6 @@ trait Contexts { self: Analyzer =>
             (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs.changeOwner(owner -> vsym)))
           }.unzip
 
-          val ctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
           val mname = newTermName(typer.fresh.newName("LazyDefns$"))
           val mdef =
             ModuleDef(Modifiers(SYNTHETIC), mname,

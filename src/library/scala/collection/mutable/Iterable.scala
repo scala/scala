@@ -1,7 +1,6 @@
 package scala.collection.mutable
 
 import scala.collection.IterableFactory
-import scala.language.higherKinds
 
 trait Iterable[A]
   extends collection.Iterable[A]

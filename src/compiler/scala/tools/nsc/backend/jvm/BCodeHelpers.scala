@@ -9,8 +9,7 @@ package backend.jvm
 
 import scala.tools.asm
 import BackendReporting._
-import scala.reflect.internal.Flags
-import scala.tools.asm.{ByteVector, ClassWriter}
+import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
 

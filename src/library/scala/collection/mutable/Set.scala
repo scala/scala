@@ -1,6 +1,6 @@
 package scala.collection.mutable
 
-import scala.collection.{IterableFactory, IterableOnce}
+import scala.collection.IterableFactory
 import scala.language.higherKinds
 
 /** Base trait for mutable sets */

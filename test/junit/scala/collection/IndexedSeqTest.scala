@@ -172,6 +172,7 @@ abstract class IndexedTest[T, E] {
   @Test def checkTakeTooBig: Unit = {
     val orig = underTest(size)
     val e = take(orig, 0)
+    assertNotNull(e)
     for (len <- List(size + 1, size + 10, Int.MaxValue)) {
       val all = take(orig, len)
       assertEquals(s"len $len", size, length(all))
@@ -547,7 +548,7 @@ package IndexedTestImpl {
     override def createEmpty(size: Int): StringBuilder = new StringBuilder(size)
 
     override protected def underTest(size: Int): StringBuilder = {
-      var res = createEmpty(size)
+      val res = createEmpty(size)
       for (i <- 0 until size)
         res += expectedValueAtIndex(i)
       res
@@ -556,7 +557,7 @@ package IndexedTestImpl {
   class StringOpsTest extends StringOpsBaseTest with CharTestData {
 
     override protected def underTest(size: Int): StringOps = {
-      var res = new StringBuilder(size)
+      val res = new StringBuilder(size)
       for (i <- 0 until size)
         res += expectedValueAtIndex(i)
       res.toString
@@ -567,7 +568,7 @@ package IndexedTestImpl {
     override def isTakeAllSame: Boolean = false
 
     override protected def underTest(size: Int):  WrappedString = {
-      var res = new StringBuilder(size)
+      val res = new StringBuilder(size)
       for (i <- 0 until size)
         res += expectedValueAtIndex(i)
       new WrappedString(res.toString)
@@ -576,7 +577,7 @@ package IndexedTestImpl {
   class VectorTest extends ImmutableIndexedSeqTest[Vector[String], String]  with StringTestData {
 
     override protected def underTest(size: Int): Vector[String] = {
-      var res = Vector.newBuilder[String]
+      val res = Vector.newBuilder[String]
       for (i <- 0 until size)
         res += expectedValueAtIndex(i)
       res.result()

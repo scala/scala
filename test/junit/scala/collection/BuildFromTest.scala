@@ -2,7 +2,7 @@ package scala.collection
 
 import org.junit.Test
 
-import scala.collection.mutable.{ArrayBuffer, Builder, Growable}
+import scala.collection.mutable.Builder
 import scala.math.Ordering
 
 class BuildFromTest {
