@@ -240,7 +240,7 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  final class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
