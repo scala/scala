@@ -18,7 +18,7 @@ object Specializable {
   trait SpecializedGroup { }
 
   // Smuggle a list of types by way of a tuple upon which Group is parameterized.
-  class Group[T >: Null](value: T) extends SpecializedGroup { }
+  final class Group[T >: Null](value: T) extends SpecializedGroup { }
 
   final val Primitives  = new Group((Byte, Short, Int, Long, Char, Float, Double, Boolean, Unit))
   final val Everything  = new Group((Byte, Short, Int, Long, Char, Float, Double, Boolean, Unit, AnyRef))
