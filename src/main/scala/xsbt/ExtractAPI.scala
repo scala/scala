@@ -14,6 +14,7 @@ import xsbti.api._
 
 import scala.annotation.tailrec
 import scala.tools.nsc.Global
+import scala.PartialFunction.cond
 
 /**
  * Extracts full (including private members) API representation out of Symbols and Types.
@@ -263,7 +264,7 @@ class ExtractAPI[GlobalType <: Global](
               typeParams: Array[xsbti.api.TypeParameter],
               valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def = {
       def parameterList(syms: List[Symbol]): xsbti.api.ParameterList = {
-        val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
+        val isImplicitList = cond(syms) { case head :: _ => isImplicit(head) }
         xsbti.api.ParameterList.of(syms.map(parameterS).toArray, isImplicitList)
       }
       t match {
@@ -551,7 +552,7 @@ class ExtractAPI[GlobalType <: Global](
       case SuperType(thistpe: Type, supertpe: Type) =>
         reporter.warning(
           NoPosition,
-          "sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe);
+          "sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe)
         Constants.emptyType
       case at: AnnotatedType =>
         at.annotations match {
@@ -567,10 +568,10 @@ class ExtractAPI[GlobalType <: Global](
         xsbti.api.Polymorphic.of(processType(in, resultType), typeParameters(in, typeParams))
       case NullaryMethodType(_) =>
         reporter.warning(NoPosition,
-                         "sbt-api: Unexpected nullary method type " + in + " in " + in.owner);
+                         "sbt-api: Unexpected nullary method type " + in + " in " + in.owner)
         Constants.emptyType
       case _ =>
-        reporter.warning(NoPosition, "sbt-api: Unhandled type " + t.getClass + " : " + t);
+        reporter.warning(NoPosition, "sbt-api: Unhandled type " + t.getClass + " : " + t)
         Constants.emptyType
     }
   }
