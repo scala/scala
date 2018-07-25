@@ -92,7 +92,7 @@ trait Implicits {
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val dpt = if (isView) pt else dropByName(pt)
     val isByName = dpt ne pt
-    val search = new ImplicitSearch(tree, dpt, isView, isByName, implicitSearchContext, pos)
+    val search = new ImplicitSearch(tree, dpt, isView, implicitSearchContext, pos, isByName)
     pluginsNotifyImplicitSearch(search)
     val result = search.bestImplicit
     pluginsNotifyImplicitSearchResult(result)
@@ -154,7 +154,7 @@ trait Implicits {
     val tvars = tpars map (TypeVar untouchable _)
     val tpSubsted = tp.subst(tpars, tvars)
 
-    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, false, context.makeImplicit(reportAmbiguousErrors = false))
+    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false), isByNamePt = false)
 
     search.allImplicitsPoly(tvars)
   }
@@ -389,7 +389,7 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val isByNamePt: Boolean = false, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition, val isByNamePt: Boolean = false) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
