@@ -987,7 +987,7 @@ object TrieMap extends MapFactory[TrieMap] {
 
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
-  class MangledHashing[K] extends Hashing[K] {
+  private class MangledHashing[K] extends Hashing[K] {
     def hash(k: K)= scala.util.hashing.byteswap32(k.##)
   }
 
