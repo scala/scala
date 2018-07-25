@@ -369,7 +369,7 @@ object NumericRange {
   }
 
   @SerialVersionUID(3L)
-  class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
+  private[scala] class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
     extends NumericRange(start, end, step, true) {
     override def copy(start: T, end: T, step: T): Inclusive[T] =
       NumericRange.inclusive(start, end, step)
@@ -378,7 +378,7 @@ object NumericRange {
   }
 
   @SerialVersionUID(3L)
-  class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
+  private[scala] class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
     extends NumericRange(start, end, step, false) {
     override def copy(start: T, end: T, step: T): Exclusive[T] =
       NumericRange(start, end, step)
