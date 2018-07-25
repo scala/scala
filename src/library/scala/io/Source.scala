@@ -207,7 +207,7 @@ abstract class Source extends Iterator[Char] with Closeable {
 
   private def lineNum(line: Int): String = (getLines() drop (line - 1) take 1).mkString
 
-  class LineIterator extends AbstractIterator[String] with Iterator[String] {
+  private class LineIterator extends AbstractIterator[String] with Iterator[String] {
     private[this] val sb = new StringBuilder
 
     lazy val iter: BufferedIterator[Char] = Source.this.iter.buffered
@@ -248,7 +248,7 @@ abstract class Source extends Iterator[Char] with Closeable {
    */
   def next(): Char = positioner.next()
 
-  class Positioner(encoder: Position) {
+  private[io] class Positioner(encoder: Position) {
     def this() = this(RelaxedPosition)
     /** the last character returned by next. */
     var ch: Char = _
