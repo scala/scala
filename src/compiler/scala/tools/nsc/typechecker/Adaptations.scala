@@ -72,13 +72,13 @@ trait Adaptations {
           || t.symbol.name == nme.NE
         )
       }
-      @inline def msg(what: String): String = s"adaptation of an empty argument list by appending () is $what"
+      @inline def msg(what: String): String = s"adaptation of an empty argument list by inserting () $what"
       @inline def noAdaptation = {
-        context.error(t.pos, adaptWarningMessage(msg("unsupported"), showAdaptation = false))
+        context.error(t.pos, adaptWarningMessage(msg("has been removed"), showAdaptation = false))
         false // drop adaptation
       }
       @inline def deprecatedAdaptation = {
-        val text = s"${msg("deprecated")}: ${
+        val text = s"${msg("is deprecated")}: ${
           if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
           else "this is unlikely to be what you want"
         }"

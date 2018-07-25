@@ -868,6 +868,7 @@ self =>
       }
       def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
       val arguments = right match {
+        case Parens(Nil)  => Literal(Constant(())) :: Nil
         case Parens(args) => mkNamed(args)
         case _            => right :: Nil
       }

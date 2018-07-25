@@ -1207,7 +1207,7 @@ trait Implicits {
      */
     def searchImplicit(implicitInfoss: Infoss, isLocalToCallsite: Boolean): SearchResult =
       if (implicitInfoss.forall(_.isEmpty)) SearchFailure
-      else new ImplicitComputation(implicitInfoss, isLocalToCallsite) findBest()
+      else new ImplicitComputation(implicitInfoss, isLocalToCallsite).findBest()
 
     /** Produce an implicit info map, i.e. a map from the class symbols C of all parts of this type to
      *  the implicit infos in the companion objects of these class symbols C.

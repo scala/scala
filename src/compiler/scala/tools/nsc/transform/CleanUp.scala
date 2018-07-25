@@ -259,7 +259,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               // reflective method call machinery
               val invokeName  = MethodClass.tpe member nme.invoke_                                  // scala.reflect.Method.invoke(...)
               def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))     // cache Symbol
-              def lookup      = Apply(cache, List(qual1() GETCLASS()))                                // get Method object from cache
+              def lookup      = Apply(cache, List(qual1().GETCLASS()))                                // get Method object from cache
               def invokeArgs  = ArrayValue(TypeTree(ObjectTpe), params)                       // args for invocation
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
@@ -299,7 +299,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
              * so we have to generate both kinds of code.
              */
             def genArrayCallWithTest =
-              IF ((qual1() GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
+              IF (qual1().GETCLASS() DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
 
             localTyper typed (
               if (isMaybeBoxed && isJavaValueMethod) genValueCallWithTest

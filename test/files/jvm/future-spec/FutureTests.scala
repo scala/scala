@@ -41,8 +41,7 @@ class FutureTests extends MinimalScalaTest {
       val ms = new concurrent.TrieMap[Throwable, Unit]
       implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(), {
         t =>
-        val u = ()
-        ms += (t -> u)
+        ms += (t -> ())
       })
 
       class ThrowableTest(m: String) extends Throwable(m)

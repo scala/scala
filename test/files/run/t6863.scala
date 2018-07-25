@@ -2,12 +2,10 @@
 
 /** Make sure that when a variable is captured its initialization expression is handled properly */
 object Test {
-  // This is a workaround for x == (())
-  val u = ()
 
   def lazyVal() = {
-  	// internally lazy vals become vars which are initialized with "_", so they need to be tested just like vars do
-  	lazy val x = "42"
+    // internally lazy vals become vars which are initialized with "_", so they need to be tested just like vars do
+    lazy val x = "42"
     assert({ () => x }.apply == "42")
   }
   def ident() = {
@@ -29,7 +27,7 @@ object Test {
     assert({ () => x }.apply == "42")
   }
   def select() = {
-    object Foo{val bar = "42"}
+    object Foo { val bar = "42" }
     var x = Foo.bar
     assert({ () => x }.apply == "42")
   }
@@ -40,15 +38,15 @@ object Test {
   def assign() = {
     var y = 1
     var x = y = 42
-    assert({ () => x}.apply == u)
+    assert({ () => x}.apply == ())
   }
   def valDef() = {
-    var x = {val y = 42}
-    assert({ () => x}.apply == u)
+    var x = { val y = 42 }
+    assert({ () => x}.apply == ())
   }
   def `return`(): String = {
     var x = if (true) return "42" else ()
-    assert({ () => x}.apply == u)
+    assert({ () => x}.apply == ())
     "42"
   }
   def tryFinally() = {
@@ -60,16 +58,16 @@ object Test {
     assert({ () => x }.apply == "42")
   }
   def `if`() = {
-  	var x = if (true) ()
-    assert({ () => x }.apply == u)
+    var x = if (true) ()
+    assert({ () => x }.apply == ())
   }
   def ifElse() = {
-    var x = if(true) "42" else "43"
+    var x = if (true) "42" else "43"
     assert({ () => x }.apply == "42")
   }
   def matchCase() = {
     var x = 100 match {
-       case 100 => "42"
+      case 100 => "42"
       case _ => "43"
     }
     assert({ () => x }.apply == "42")
@@ -90,13 +88,13 @@ object Test {
   def nested() = {
     var x = {
       val y = 42
-        if(true) try "42" catch {case _: Throwable => "43"}
-        else "44"
+      if (true) try "42" catch { case _: Throwable => "43" }
+      else "44"
     }
     assert({ () => x }.apply == "42")
   }
   def main(args: Array[String]): Unit = {
-  	lazyVal()
+    lazyVal()
     ident()
     apply()
     literal()
@@ -116,4 +114,3 @@ object Test {
     nested()
   }
 }
-

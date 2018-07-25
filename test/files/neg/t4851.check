@@ -1,10 +1,10 @@
-S.scala:4: warning: adaptation of an empty argument list by appending () is deprecated: leaky (Object-receiving) target makes this especially dangerous
+S.scala:4: warning: adaptation of an empty argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous
         signature: J(x: Any): J
   given arguments: <none>
  after adaptation: new J((): Unit)
   val x1 = new J
            ^
-S.scala:5: warning: adaptation of an empty argument list by appending () is deprecated: leaky (Object-receiving) target makes this especially dangerous
+S.scala:5: warning: adaptation of an empty argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous
         signature: J(x: Any): J
   given arguments: <none>
  after adaptation: new J((): Unit)
@@ -28,13 +28,13 @@ S.scala:9: warning: adapted the argument list to the expected 3-tuple: add addit
  after adaptation: new Some((1, 2, 3): (Int, Int, Int))
   val y2 = new Some(1, 2, 3)
            ^
-S.scala:11: warning: adaptation of an empty argument list by appending () is deprecated: this is unlikely to be what you want
+S.scala:11: warning: adaptation of an empty argument list by inserting () is deprecated: this is unlikely to be what you want
         signature: J2(x: T): J2[T]
   given arguments: <none>
  after adaptation: new J2((): Unit)
   val z1 = new J2
            ^
-S.scala:12: warning: adaptation of an empty argument list by appending () is deprecated: this is unlikely to be what you want
+S.scala:12: warning: adaptation of an empty argument list by inserting () is deprecated: this is unlikely to be what you want
         signature: J2(x: T): J2[T]
   given arguments: <none>
  after adaptation: new J2((): Unit)

@@ -1,14 +1,14 @@
-t8035-removed.scala:4: error: adaptation of an empty argument list by appending () is unsupported
+t8035-removed.scala:4: error: adaptation of an empty argument list by inserting () has been removed
         signature: SetOps.apply(elem: A): Boolean
   given arguments: <none>
   List(1,2,3).toSet()
                    ^
-t8035-removed.scala:7: error: adaptation of an empty argument list by appending () is unsupported
+t8035-removed.scala:7: error: adaptation of an empty argument list by inserting () has been removed
         signature: A(x: T): Foo.A[T]
   given arguments: <none>
   new A
   ^
-t8035-removed.scala:11: error: adaptation of an empty argument list by appending () is unsupported
+t8035-removed.scala:11: error: adaptation of an empty argument list by inserting () has been removed
         signature: Format.format(x$1: Any): String
   given arguments: <none>
   sdf.format()

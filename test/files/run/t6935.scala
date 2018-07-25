@@ -11,8 +11,6 @@ object Test {
     val buf = bytes.toByteArray
     val in = new ObjectInputStream(new ByteArrayInputStream(buf))
     val actual = in.readObject()
-    // This is a workaround for actual == (())
-    val unit = ()
-    assert(actual == unit)
+    assert(actual == ())
   }
 }
