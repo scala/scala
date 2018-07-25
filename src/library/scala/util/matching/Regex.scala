@@ -713,7 +713,7 @@ object Regex {
   }
 
   /** Provides information about a successful match. */
-  class Match(val source: CharSequence,
+  final class Match (val source: CharSequence,
               protected[matching] val matcher: Matcher,
               val groupNames: Seq[String]) extends MatchData {
 
@@ -790,7 +790,7 @@ object Regex {
    *
    *  @see [[java.util.regex.Matcher]]
    */
-  class MatchIterator(val source: CharSequence, val regex: Regex, val groupNames: Seq[String])
+  final class MatchIterator(val source: CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
 
     protected[Regex] val matcher = regex.pattern.matcher(source)
