@@ -26,7 +26,7 @@ class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, s
   def hasNext = bp < buf.length
 
   def next(): Char = {
-    val buf = this.buf.unsafeArray
+    val buf = this.buf
     if(!hasNext) {
       ch = SU
       return SU  // there is an endless stream of SU's at the end

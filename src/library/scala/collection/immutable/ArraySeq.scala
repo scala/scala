@@ -36,7 +36,7 @@ sealed abstract class ArraySeq[+A]
     * the expected immutability. Its element type does not have to be equal to the element type of this ArraySeq.
     * A primitive ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an
     * array of a supertype or subtype of the element type. */
-  def unsafeArray: Array[_]
+  private[immutable] def unsafeArray: Array[_]
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
 
@@ -220,7 +220,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }).asInstanceOf[ArraySeq[T]]
 
   @SerialVersionUID(3L)
-  final class ofRef[T <: AnyRef](val unsafeArray: Array[T]) extends ArraySeq[T] {
+  final class ofRef[T <: AnyRef](private[immutable] val unsafeArray: Array[T]) extends ArraySeq[T] {
     lazy val elemTag = ClassTag[T](unsafeArray.getClass.getComponentType)
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -233,7 +233,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofByte(val unsafeArray: Array[Byte]) extends ArraySeq[Byte] {
+  final class ofByte(private[immutable] val unsafeArray: Array[Byte]) extends ArraySeq[Byte] {
     protected def elemTag = ClassTag.Byte
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -246,7 +246,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofShort(val unsafeArray: Array[Short]) extends ArraySeq[Short] {
+  final class ofShort(private[immutable] val unsafeArray: Array[Short]) extends ArraySeq[Short] {
     protected def elemTag = ClassTag.Short
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -259,7 +259,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofChar(val unsafeArray: Array[Char]) extends ArraySeq[Char] {
+  final class ofChar(private[immutable] val unsafeArray: Array[Char]) extends ArraySeq[Char] {
     protected def elemTag = ClassTag.Char
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -275,7 +275,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofInt(val unsafeArray: Array[Int]) extends ArraySeq[Int] {
+  final class ofInt(private[immutable] val unsafeArray: Array[Int]) extends ArraySeq[Int] {
     protected def elemTag = ClassTag.Int
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -288,7 +288,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofLong(val unsafeArray: Array[Long]) extends ArraySeq[Long] {
+  final class ofLong(private[immutable] val unsafeArray: Array[Long]) extends ArraySeq[Long] {
     protected def elemTag = ClassTag.Long
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -301,7 +301,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofFloat(val unsafeArray: Array[Float]) extends ArraySeq[Float] {
+  final class ofFloat(private[immutable] val unsafeArray: Array[Float]) extends ArraySeq[Float] {
     protected def elemTag = ClassTag.Float
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -314,7 +314,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofDouble(val unsafeArray: Array[Double]) extends ArraySeq[Double] {
+  final class ofDouble(private[immutable] val unsafeArray: Array[Double]) extends ArraySeq[Double] {
     protected def elemTag = ClassTag.Double
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -327,7 +327,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofBoolean(val unsafeArray: Array[Boolean]) extends ArraySeq[Boolean] {
+  final class ofBoolean(private[immutable] val unsafeArray: Array[Boolean]) extends ArraySeq[Boolean] {
     protected def elemTag = ClassTag.Boolean
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
@@ -340,7 +340,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   }
 
   @SerialVersionUID(3L)
-  final class ofUnit(val unsafeArray: Array[Unit]) extends ArraySeq[Unit] {
+  final class ofUnit(private[immutable] val unsafeArray: Array[Unit]) extends ArraySeq[Unit] {
     protected def elemTag = ClassTag.Unit
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
