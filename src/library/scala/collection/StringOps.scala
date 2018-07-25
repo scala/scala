@@ -49,7 +49,7 @@ object StringOps {
   }
 
   /** A lazy filtered string. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
-  class WithFilter(p: Char => Boolean, s: String) {
+  class WithFilter private[StringOps](p: Char => Boolean, s: String) {
 
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.

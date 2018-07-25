@@ -45,7 +45,7 @@ object ArrayOps {
   }
 
   /** A lazy filtered array. No filtering is applied until one of `foreach`, `map` or `flatMap` is called. */
-  class WithFilter[A](p: A => Boolean, xs: Array[A]) {
+  class WithFilter[A] private[ArrayOps](p: A => Boolean, xs: Array[A]) {
 
     /** Apply `f` to each element for its side effects.
       * Note: [U] parameter needed to help scalac's type inference.
