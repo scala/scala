@@ -179,6 +179,8 @@ sealed class NumericRange[T](
       override def apply(idx: Int): A = fm(underlyingRange(idx))
       override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
 
+      override lazy val last = fm(underlyingRange.last)
+
       override def toString = {
         def simpleOf(x: Any): String = x.getClass.getName.split("\\.").last
         val stepped = simpleOf(underlyingRange.step)
