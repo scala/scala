@@ -389,7 +389,7 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val isByNamePt: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val isByNamePt: Boolean = false, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
