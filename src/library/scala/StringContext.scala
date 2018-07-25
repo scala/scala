@@ -160,7 +160,7 @@ object StringContext {
    *  @param  str   The offending string
    *  @param  index   The index of the offending backslash character in `str`.
    */
-  class InvalidEscapeException(str: String, val index: Int) extends IllegalArgumentException(
+  class InvalidEscapeException private[scala] (str: String, val index: Int) extends IllegalArgumentException(
     s"""invalid escape ${
       require(index >= 0 && index < str.length)
       val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
