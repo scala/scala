@@ -105,32 +105,90 @@ private[hashing] class MurmurHash3 {
     h = mixLast(h, c)
     finalizeHash(h, n)
   }
-  /** Compute a hash that depends on the order of its arguments.
-   */
-  final def orderedHash(xs: IterableOnce[Any], seed: Int): Int = {
-    var n = 0
-    var h = seed
-    xs.iterator foreach { x =>
-      h = mix(h, x.##)
-      n += 1
-    }
-    finalizeHash(h, n)
-  }
 
-  /** Compute the hash of an array.
-   */
-  final def arrayHash[@specialized T](a: Array[T], seed: Int): Int = {
+  /** Compute a hash that depends on the order of its arguments. Potential range
+    * hashes are recognized to produce a hash that is compatible with rangeHash.
+    */
+  final def orderedHash(xs: IterableOnce[Any], seed: Int): Int = {
+    val it = xs.iterator
     var h = seed
-    var i = 0
-    while (i < a.length) {
-      h = mix(h, a(i).##)
+    if(!it.hasNext) return finalizeHash(h, 0)
+    val x0 = it.next()
+    if(!it.hasNext) return finalizeHash(mix(h, x0.##), 1)
+    val x1 = it.next()
+
+    val initial = x0.##
+    h = mix(h, initial)
+    val h0 = h
+    var prev = x1.##
+    val rangeDiff = prev - initial
+    var i = 2
+    while (it.hasNext) {
+      h = mix(h, prev)
+      val hash = it.next().##
+      if(rangeDiff != hash - prev) {
+        h = mix(h, hash)
+        i += 1
+        while (it.hasNext) {
+          h = mix(h, it.next().##)
+          i += 1
+        }
+        return finalizeHash(h, i)
+      }
+      prev = hash
       i += 1
     }
-    finalizeHash(h, a.length)
+    avalanche(mix(mix(h0, rangeDiff), prev))
+
   }
 
+  /** Compute the hash of an array. Potential range hashes are recognized to produce a
+    * hash that is compatible with rangeHash.
+    */
+  final def arrayHash[@specialized T](a: Array[T], seed: Int): Int = {
+    var h = seed
+    val l = a.length
+    l match {
+      case 0 =>
+        finalizeHash(h, 0)
+      case 1 =>
+        finalizeHash(mix(h, a(0).##), 1)
+      case _ =>
+        val initial = a(0).##
+        h = mix(h, initial)
+        val h0 = h
+        var prev = a(1).##
+        val rangeDiff = prev - initial
+        var i = 2
+        while (i < l) {
+          h = mix(h, prev)
+          val hash = a(i).##
+          if(rangeDiff != hash - prev) {
+            h = mix(h, hash)
+            i += 1
+            while (i < l) {
+              h = mix(h, a(i).##)
+              i += 1
+            }
+            return finalizeHash(h, l)
+          }
+          prev = hash
+          i += 1
+        }
+        avalanche(mix(mix(h0, rangeDiff), prev))
+    }
+  }
+
+  /** Compute the hash of a Range with at least 2 elements. Ranges with fewer
+    * elements need to use seqHash instead. The `last` parameter must be the
+    * actual last element produced by a Range, not the nominal `end`.
+    */
+  final def rangeHash(start: Int, step: Int, last: Int, seed: Int): Int =
+    avalanche(mix(mix(mix(seed, start), step), last))
+
   /** Compute the hash of a byte array. Faster than arrayHash, because
-   *  it hashes 4 bytes at once.
+   *  it hashes 4 bytes at once. Note that the result is not compatible with
+   *  arrayHash!
    */
   final def bytesHash(data: Array[Byte], seed: Int): Int = {
     var len = data.length
@@ -163,18 +221,76 @@ private[hashing] class MurmurHash3 {
     finalizeHash(h, data.length)
   }
 
+  /** Compute the hash of an IndexedSeq. Potential range hashes are recognized to produce a
+    * hash that is compatible with rangeHash.
+    */
+  final def indexedSeqHash(a: scala.collection.IndexedSeq[Any], seed: Int): Int = {
+    var h = seed
+    val l = a.length
+    l match {
+      case 0 =>
+        finalizeHash(h, 0)
+      case 1 =>
+        finalizeHash(mix(h, a(0).##), 1)
+      case _ =>
+        val initial = a(0).##
+        h = mix(h, initial)
+        val h0 = h
+        var prev = a(1).##
+        val rangeDiff = prev - initial
+        var i = 2
+        while (i < l) {
+          h = mix(h, prev)
+          val hash = a(i).##
+          if(rangeDiff != hash - prev) {
+            h = mix(h, hash)
+            i += 1
+            while (i < l) {
+              h = mix(h, a(i).##)
+              i += 1
+            }
+            return finalizeHash(h, l)
+          }
+          prev = hash
+          i += 1
+        }
+        avalanche(mix(mix(h0, rangeDiff), prev))
+    }
+  }
+
+  /** Compute the hash of a List. Potential range hashes are recognized to produce a
+    * hash that is compatible with rangeHash.
+    */
   final def listHash(xs: scala.collection.immutable.List[_], seed: Int): Int = {
     var n = 0
     var h = seed
+    var rangeState = 0 // 0 = no data, 1 = first elem read, 2 = has valid diff, 3 = invalid
+    var rangeDiff = 0
+    var prev = 0
+    var initial = 0
     var elems = xs
     while (!elems.isEmpty) {
       val head = elems.head
       val tail = elems.tail
-      h = mix(h, head.##)
+      val hash = head.##
+      h = mix(h, hash)
+      rangeState match {
+        case 0 =>
+          initial = hash
+          rangeState = 1
+        case 1 =>
+          rangeDiff = hash - prev
+          rangeState = 2
+        case 2 =>
+          if(rangeDiff != hash - prev) rangeState = 3
+        case _ =>
+      }
+      prev = hash
       n += 1
       elems = tail
     }
-    finalizeHash(h, n)
+    if(rangeState == 2) rangeHash(initial, rangeDiff, prev, seed)
+    else finalizeHash(h, n)
   }
 }
 
@@ -215,12 +331,14 @@ object MurmurHash3 extends MurmurHash3 {
   def productHash(x: Product): Int                = productHash(x, productSeed)
   def stringHash(x: String): Int                  = stringHash(x, stringSeed)
   def unorderedHash(xs: IterableOnce[Any]): Int   = unorderedHash(xs, traversableSeed)
+  def rangeHash(start: Int, step: Int, last: Int): Int = rangeHash(start, step, last, seqSeed)
 
   private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int = arrayHash(a, seqSeed)
 
   /** To offer some potential for optimization.
    */
   def seqHash(xs: scala.collection.Seq[_]): Int    = xs match {
+    case xs: scala.collection.IndexedSeq[_] => indexedSeqHash(xs, seqSeed)
     case xs: List[_] => listHash(xs, seqSeed)
     case xs => orderedHash(xs, seqSeed)
   }
@@ -266,17 +384,6 @@ object MurmurHash3 extends MurmurHash3 {
       h = mix(h, elems.head.##)
       n += 1
       elems = elems.tail
-    }
-    finalizeHash(h, n)
-  }
-
-  def indexedSeqHash(xs: scala.collection.IndexedSeq[_], seed: Int): Int = {
-    var n = 0
-    var h = seed
-    val len = xs.length
-    while (n < len) {
-      h = mix(h, xs(n).##)
-      n += 1
     }
     finalizeHash(h, n)
   }
