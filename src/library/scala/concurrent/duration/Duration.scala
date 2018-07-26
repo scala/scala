@@ -693,7 +693,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    *
    * @throws ArithmeticException if the factor is 0
    */
- def div(divisor: Long) = this / divisor
+  def div(divisor: Long) = this / divisor
 
   /**
    * Return the product of this duration and the given integer factor.
