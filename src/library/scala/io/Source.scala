@@ -227,7 +227,7 @@ abstract class Source extends Iterator[Char] with Closeable {
       }
     }
     def hasNext = iter.hasNext
-    def next = {
+    def next() = {
       sb.clear()
       while (getc()) { }
       sb.toString

@@ -31,8 +31,8 @@ object IsSeqLike {
         protected[this] def coll: String = s
         protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = coll.mkString
         def iterableFactory: IterableFactory[Seq] = Seq
-        protected[this] def newSpecificBuilder(): mutable.Builder[Char, String] = new StringBuilder
-        def iterator(): Iterator[Char] = s.iterator()
+        protected[this] def newSpecificBuilder: mutable.Builder[Char, String] = new StringBuilder
+        def iterator: Iterator[Char] = s.iterator
       }
     }
 

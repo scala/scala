@@ -115,7 +115,7 @@ final class BigInt(val bigInteger: BigInteger)
 {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
-    if (isValidLong) unifiedPrimitiveHashcode()
+    if (isValidLong) unifiedPrimitiveHashcode
     else bigInteger.##
 
   /** Compares this BigInt with the specified value for equality.

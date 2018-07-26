@@ -115,8 +115,8 @@ object IsIterableLike {
         protected[this] def coll: String = s
         protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = coll.mkString
         def iterableFactory: IterableFactory[Iterable] = Iterable
-        protected[this] def newSpecificBuilder(): mutable.Builder[Char, String] = new StringBuilder
-        def iterator(): Iterator[Char] = s.iterator()
+        protected[this] def newSpecificBuilder: mutable.Builder[Char, String] = new StringBuilder
+        def iterator: Iterator[Char] = s.iterator
       }
     }
 

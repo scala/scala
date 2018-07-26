@@ -21,7 +21,7 @@ trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
     ret
   }
   def clear() = underlying.clear()
-  def enqueue = underlying.enqueue
+  def enqueue() = underlying.enqueue()
   def isEnqueued = underlying.isEnqueued
   def self = underlying
 }

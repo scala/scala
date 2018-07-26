@@ -16,12 +16,12 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
   protected def num = scala.math.Numeric.CharIsIntegral
   protected def ord = scala.math.Ordering.Char
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self.toFloat
-  override def longValue()   = self.toLong
-  override def intValue()    = self.toInt
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self.toFloat
+  override def longValue   = self.toLong
+  override def intValue    = self.toInt
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   override def isValidChar   = true
 

@@ -13,12 +13,12 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   protected def num: Fractional[Float] = scala.math.Numeric.FloatIsFractional
   protected def ord: Ordering[Float]   = scala.math.Ordering.Float.TotalOrdering
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self
-  override def longValue()   = self.toLong
-  override def intValue()    = self.toInt
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self
+  override def longValue   = self.toLong
+  override def intValue    = self.toInt
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   override def isWhole = {
     val l = self.toLong

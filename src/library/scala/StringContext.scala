@@ -232,7 +232,7 @@ object StringContext {
     val ai = args.iterator
     val bldr = new JLSBuilder(process(pi.next()))
     while (ai.hasNext) {
-      bldr append ai.next
+      bldr append ai.next()
       bldr append process(pi.next())
     }
     bldr.toString
