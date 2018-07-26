@@ -32,7 +32,7 @@ object Hashing {
     def hash(x: T) = x.##
   }
 
-  implicit def default[T] = new Default[T]
+  implicit def default[T]: Default[T] = new Default[T]
 
   def fromFunction[T](f: T => Int) = new Hashing[T] {
     def hash(x: T) = f(x)

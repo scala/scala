@@ -429,8 +429,8 @@ object Predef extends LowPriorityImplicits {
 
   // views --------------------------------------------------------------
 
-  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2))                           = new runtime.Tuple2Zipped.Ops(x)
-  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3))                   = new runtime.Tuple3Zipped.Ops(x)
+  implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2)): runtime.Tuple2Zipped.Ops[T1, T2]             = new runtime.Tuple2Zipped.Ops(x)
+  implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3)): runtime.Tuple3Zipped.Ops[T1, T2, T3] = new runtime.Tuple3Zipped.Ops(x)
 
   // Not specialized anymore since 2.13 but we still need separate methods
   // to avoid https://github.com/scala/bug/issues/10746
@@ -756,14 +756,14 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
    *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
    *  because maybe loading Predef has side effects!
    */
-  @inline implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
-  @inline implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
-  @inline implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
-  @inline implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
-  @inline implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
-  @inline implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
-  @inline implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
-  @inline implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
+  @inline implicit def byteWrapper(x: Byte): runtime.RichByte          = new runtime.RichByte(x)
+  @inline implicit def shortWrapper(x: Short): runtime.RichShort       = new runtime.RichShort(x)
+  @inline implicit def intWrapper(x: Int): runtime.RichInt             = new runtime.RichInt(x)
+  @inline implicit def charWrapper(c: Char): runtime.RichChar          = new runtime.RichChar(c)
+  @inline implicit def longWrapper(x: Long): runtime.RichLong          = new runtime.RichLong(x)
+  @inline implicit def floatWrapper(x: Float): runtime.RichFloat       = new runtime.RichFloat(x)
+  @inline implicit def doubleWrapper(x: Double): runtime.RichDouble    = new runtime.RichDouble(x)
+  @inline implicit def booleanWrapper(x: Boolean): runtime.RichBoolean = new runtime.RichBoolean(x)
 
   /** @group conversions-array-to-wrapped-array */
   implicit def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =
