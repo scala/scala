@@ -609,10 +609,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val rhsAtComputer = rhs.changeOwner(lazySym -> computerSym)
 
       val computer = mkAccessor(computerSym)(gen.mkSynchronized(Ident(holderSym))(
-        refineLiteral(
-          If(initialized, getValue,
-            if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
-            else Apply(initialize, rhsAtComputer :: Nil)))))
+        If(initialized, getValue,
+          if (isUnit) Block(rhsAtComputer :: Nil, Apply(initialize, Nil))
+          else refineLiteral(Apply(initialize, rhsAtComputer :: Nil)))))
 
       val accessor = mkAccessor(lazySym)(
         refineLiteral(
