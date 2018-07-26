@@ -130,13 +130,6 @@ import ProcessBuilder.{Sink, Source}
   * Note: though it is not shown above, the equivalent of a shell's `;` would be
   * `###`. The reason for this name is that `;` is a reserved token in Scala.
   *
-  * Note: the `lines` method, though deprecated, may conflict with the `StringLike`
-  * method of the same name.  To avoid this, one may wish to call the builders in
-  * `Process` instead of importing `scala.sys.process._`.  The example above would be
-  * {{{
-  * import scala.sys.process.Process
-  * Process("find src -name *.scala -exec grep null {} ;") #| Process("xargs test -z") #&& Process("echo null-free") #|| Process("echo null detected") !
-  * }}}
   */
 trait ProcessBuilder extends Source with Sink {
   /** Starts the process represented by this builder, blocks until it exits, and

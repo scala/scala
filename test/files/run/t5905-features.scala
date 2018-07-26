@@ -1,3 +1,5 @@
+// scalac: -nowarn
+//
 
 import tools.partest.DirectTest
 

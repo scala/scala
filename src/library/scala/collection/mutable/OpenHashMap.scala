@@ -143,6 +143,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     if (firstDeletedIndex == -1) index else firstDeletedIndex
   }
 
+  // TODO refactor `put` to extract `findOrAddEntry` and implement this in terms of that to avoid Some boxing.
   override def update(key: Key, value: Value): Unit = put(key, value)
 
   @deprecatedOverriding("addOne should not be overridden in order to maintain consistency with put.", "2.11.0")
@@ -279,13 +280,13 @@ class OpenHashMap[Key, Value](initialSize : Int)
     table.foreach(entry => if (entry != null && entry.value != None) f(entry))
   }
 
-  def transform(f : (Key, Value) => Value): this.type = {
+  override def mapValuesInPlace(f : (Key, Value) => Value): this.type = {
     foreachUndeletedEntry(entry => entry.value = Some(f(entry.key, entry.value.get)))
     this
   }
 
-  override def filterInPlace(f : ((Key, Value)) => Boolean): this.type = {
-    foreachUndeletedEntry(entry => if (!f((entry.key, entry.value.get))) deleteSlot(entry))
+  override def filterInPlace(f : (Key, Value) => Boolean): this.type = {
+    foreachUndeletedEntry(entry => if (!f(entry.key, entry.value.get)) deleteSlot(entry))
     this
   }
 

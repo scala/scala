@@ -1367,7 +1367,7 @@ It follows that:
   - it must be possible to derive a fully-defined type `U` from `S` by inferring any unknown type parameters of `C`.
 
 Finally, we impose some implementation restrictions (these may be lifted in future releases):
-  - `C` must not be nested or local (it must not capture its environment, as that results in a zero-argument constructor)
+  - `C` must not be nested or local (it must not capture its environment, as that results in a nonzero-argument constructor)
   - `C`'s constructor must not have an implicit argument list (this simplifies type inference);
   - `C` must not declare a self type (this simplifies type inference);
   - `C` must not be `@specialized`.

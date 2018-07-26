@@ -9,6 +9,7 @@ package opt
 
 import scala.annotation.{tailrec, switch}
 
+import scala.PartialFunction.cond
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
@@ -119,7 +120,12 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
-  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
+  // cross-jdk
+  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean =
+    methodNode.visibleAnnotations != null &&
+    methodNode.visibleAnnotations.stream.filter(ann =>
+      ann.desc == "Lsun/reflect/CallerSensitive;" || ann.desc == "Ljdk/internal/reflect/CallerSensitive;"
+    ).findFirst.isPresent
 
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & ACC_FINAL) != 0
 
@@ -311,7 +317,7 @@ object BytecodeUtils {
    */
   def newLabelNode: LabelNode = {
     val label = new Label
-    val labelNode = new LabelNode(label)
+    val labelNode = new LabelNode1(label)
     label.info = labelNode
     labelNode
   }

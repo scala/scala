@@ -73,4 +73,6 @@ class ListTest {
     assertSame(ls, List.apply(ls: _*))
     assertSame(ls, List.from(ls))
   }
+
+  @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 }

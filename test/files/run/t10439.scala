@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 object Test {
   private var s: String = _
 

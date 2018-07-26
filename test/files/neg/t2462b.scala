@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 package test
 
 import scala.annotation.implicitNotFound

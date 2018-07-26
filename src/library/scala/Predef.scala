@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2018, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -8,13 +8,10 @@
 
 package scala
 
-import scala.language.{ higherKinds, implicitConversions }
+import scala.language.{higherKinds, implicitConversions}
 
-import scala.collection.StringOps
-import scala.collection.{ mutable, immutable, ArrayOps }
-import scala.collection.immutable.WrappedString
-import scala.annotation.{ elidable, implicitNotFound }
-import scala.annotation.elidable.ASSERTION
+import scala.collection.{mutable, immutable, ArrayOps, StringOps}, immutable.WrappedString
+import scala.annotation.{elidable, implicitNotFound}, elidable.ASSERTION
 import scala.annotation.meta.companionMethod
 
 /** The `Predef` object provides definitions that are accessible in all Scala
@@ -139,10 +136,12 @@ object Predef extends LowPriorityImplicits {
    */
   @inline def valueOf[T](implicit vt: ValueOf[T]): T = vt.value
 
-  /** The `String` type in Scala has methods that come either from the underlying
-   *  Java String (see the documentation corresponding to your Java version, for
-   *  example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]]) or
-   *  are added implicitly through [[scala.collection.immutable.StringOps]].
+  /** The `String` type in Scala has all the methods of the underlying
+   *  `java.lang.String`, of which it is just an alias.
+   *  (See the documentation corresponding to your Java version,
+   *  for example [[http://docs.oracle.com/javase/8/docs/api/java/lang/String.html]].)
+   *  In addition, extension methods in [[scala.collection.StringOps]]
+   *  are added implicitly through the conversion [[augmentString]].
    *  @group aliases
    */
   type String        = java.lang.String
@@ -376,7 +375,7 @@ object Predef extends LowPriorityImplicits {
     def length: Int                                     = sequenceOfChars.length
     def charAt(index: Int): Char                        = sequenceOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
-    override def toString                               = sequenceOfChars mkString ""
+    override def toString                               = sequenceOfChars.mkString
   }
 
   /** @group implicit-classes-char */
@@ -384,7 +383,7 @@ object Predef extends LowPriorityImplicits {
     def length: Int                                     = arrayOfChars.length
     def charAt(index: Int): Char                        = arrayOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
-    override def toString                               = arrayOfChars mkString ""
+    override def toString                               = arrayOfChars.mkString
   }
 
   /** @group conversions-string */
@@ -746,7 +745,6 @@ object Predef extends LowPriorityImplicits {
 // compiled copy on the classpath.
 private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2 {
   import mutable.ArraySeq
-  //import immutable.WrappedString
 
   /** We prefer the java.lang.* boxed types to these wrappers in
    *  any potential conflicts.  Conflicts do exist because the wrappers

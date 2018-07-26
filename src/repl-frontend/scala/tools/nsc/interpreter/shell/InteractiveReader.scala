@@ -86,11 +86,11 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
     var help = f"// Entering paste mode (ctrl-D to finish)%n%n"
 
     val text =
-      try Iterator.continually(in.readLine(help))
-                  .takeWhile { x => help = ""
-                               x != null && running }
-                  .mkString(EOL)
-                  .trim
+      try
+        Iterator.continually(in.readLine(help)).takeWhile { x =>
+          help = ""
+          x != null && running
+        }.mkString(EOL).trim
       catch { case ie: InterruptedException => "" } // TODO let the exception bubble up, or at least signal the interrupt happened?
 
     val next =
@@ -103,6 +103,7 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
   def start(): Unit = result.synchronized {
     require(thread == null, "Already started")
     thread = new Thread(this)
+    thread.setDaemon(true)
     running = true
     thread.start()
   }

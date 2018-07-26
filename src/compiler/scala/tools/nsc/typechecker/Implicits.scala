@@ -90,7 +90,9 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
-    val search = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos)
+    val dpt = if (isView) pt else dropByName(pt)
+    val isByName = dpt ne pt
+    val search = new ImplicitSearch(tree, dpt, isView, isByName, implicitSearchContext, pos)
     pluginsNotifyImplicitSearch(search)
     val result = search.bestImplicit
     pluginsNotifyImplicitSearchResult(result)
@@ -117,7 +119,7 @@ trait Implicits {
       if (context.owner.hasTransOwner(s))
         context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}")
     }
-    result
+    implicitSearchContext.emitImplicitDictionary(search.pos, result)
   }
 
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
@@ -152,7 +154,7 @@ trait Implicits {
     val tvars = tpars map (TypeVar untouchable _)
     val tpSubsted = tp.subst(tpars, tvars)
 
-    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false))
+    val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, false, context.makeImplicit(reportAmbiguousErrors = false))
 
     search.allImplicitsPoly(tvars)
   }
@@ -291,11 +293,16 @@ trait Implicits {
     private def isView_=(value: Boolean): Unit = _isView = value
 
     private[this] var _isView: Boolean = false
+
+    def isByName: Boolean = _isByName
+    private def isByName_=(value: Boolean): Unit = _isByName = value
+    private[this] var _isByName: Boolean = false
   }
   object OpenImplicit {
-    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean): OpenImplicit = {
+    def apply(info: ImplicitInfo, pt: Type, tree: Tree, isView: Boolean, isByName: Boolean): OpenImplicit = {
       val result = new OpenImplicit(info, pt, tree)
       result.isView = isView
+      result.isByName = isByName
       result
     }
   }
@@ -382,7 +389,7 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+  class ImplicitSearch(val tree: Tree, val pt: Type, val isView: Boolean, val isByNamePt: Boolean, val context0: Context, val pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
     val searchId = implicitSearchId()
     private def typingLog(what: String, msg: => String) = {
       if (printingOk(tree))
@@ -450,21 +457,6 @@ trait Implicits {
      *  if one or both are intersection types with a pair of overlapping parent types.
      */
     private def dominates(dtor: Type, dted: Type): Boolean = {
-      def core(tp: Type): Type = tp.dealiasWiden match {
-        case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
-        case AnnotatedType(annots, tp)          => core(tp)
-        case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case TypeRef(pre, sym, args)            => typeRef(pre, sym, args.map(core))
-        case _                                  => tp
-      }
-      def stripped(tp: Type): Type = {
-        // `t.typeSymbol` returns the symbol of the normalized type. If that normalized type
-        // is a `PolyType`, the symbol of the result type is collected. This is precisely
-        // what we require for scala/bug#5318.
-        val syms = for (t <- tp; if t.typeSymbol.isTypeParameter) yield t.typeSymbol
-        deriveTypeWithWildcards(syms.distinct)(tp)
-      }
       def complexity(tp: Type): Int = tp.dealias match {
         case NoPrefix                => 0
         case SingleType(pre, sym)    => if (sym.hasPackageFlag) 0 else complexity(tp.dealiasWiden)
@@ -481,6 +473,43 @@ trait Implicits {
       val dtor1 = stripped(core(dtor))
       val dted1 = stripped(core(dted))
       overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
+    }
+
+    private def core(tp: Type): Type = tp.dealiasWiden match {
+      case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
+      case AnnotatedType(annots, tp)          => core(tp)
+      case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+      case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+      case TypeRef(pre, sym, args)            => typeRef(pre, sym, args.map(core))
+      case _                                  => tp
+    }
+
+    private def stripped(tp: Type): Type = {
+      // `t.typeSymbol` returns the symbol of the normalized type. If that normalized type
+      // is a `PolyType`, the symbol of the result type is collected. This is precisely
+      // what we require for scala/bug#5318.
+      val syms = for (t <- tp; if t.typeSymbol.isTypeParameter) yield t.typeSymbol
+      deriveTypeWithWildcards(syms.distinct)(tp)
+    }
+
+    private def allSymbols(tp: Type): Set[Symbol] = {
+      @tailrec
+      def loop(tps: List[Type], acc: Set[Symbol]): Set[Symbol] = tps match {
+        case Nil => acc
+        case hd :: tl =>
+          def hdSym(syms: Set[Symbol]) = {
+            val sym = hd.typeSymbol
+            if(sym != NoSymbol) syms + sym else syms
+          }
+          hd.dealias match {
+            case SingleType(pre, sym)    => loop(pre :: hd.dealiasWiden :: tl, hdSym(acc + sym))
+            case ThisType(sym)           => loop(tl, hdSym(acc + sym))
+            case TypeRef(pre, sym, args) => loop(pre :: args ++ tl, hdSym(acc + sym))
+            case RefinedType(parents, _) => loop(parents ++ tl, hdSym(acc))
+            case _ => loop(tl, hdSym(acc))
+          }
+        }
+      loop(List(tp), Set())
     }
 
     /** The expected type with all undetermined type parameters replaced with wildcards. */
@@ -507,28 +536,71 @@ trait Implicits {
       // otherwise, the macro writer could check `c.openMacros` and `c.openImplicits` and do `c.abort` when expansions are deemed to be divergent
       // upon receiving `c.abort` the typechecker will decide that the corresponding implicit search has failed
       // which will fail the entire stack of implicit searches, producing a nice error message provided by the programmer
-      val existsDominatedImplicit = tree != EmptyTree && context.openImplicits.exists {
-        case OpenImplicit(nfo, tp, tree1) => !nfo.sym.isMacro && tree1.symbol == tree.symbol && dominates(pt, tp)
-      }
+      val existsDominatedImplicit: Boolean =
+        if(tree == EmptyTree) false
+        else {
+          lazy val spt = stripped(core(pt))
+          lazy val sptSyms = allSymbols(spt)
+          // Are all the symbols of the stripped core of pt contained in the stripped core of tp?
+          def coversPt(tp: Type): Boolean = {
+            val stp = stripped(core(tp))
+            (stp =:= spt) || (sptSyms == allSymbols(stp))
+          }
 
-        if(existsDominatedImplicit) {
-          //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
-          DivergentSearchFailure
-        } else {
-         try {
-           context.openImplicits = OpenImplicit(info, pt, tree, isView) :: context.openImplicits
-           // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
-           val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
-           if (result.isDivergent) {
-             //println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
-             if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
-               DivergingImplicitExpansionError(tree, pt, info.sym)(context)
-           }
-           result
-         } finally {
-           context.openImplicits = context.openImplicits.tail
-         }
-       }
+          @tailrec
+          def loop(ois: List[OpenImplicit], belowByName: Boolean): Boolean = {
+            ois match {
+              case Nil => false
+              case (hd@OpenImplicit(info1, tp, tree1)) :: tl =>
+                (if (!info1.sym.isMacro && tree1.symbol == tree.symbol) {
+                  if(belowByName && (tp =:= pt)) Some(false) // if there is a byname argument between tp and pt we can tie the knot
+                  else if (dominates(pt, tp) && coversPt(tp)) Some(true)
+                  else None
+                } else None) match {
+                  case Some(res) => res
+                  case None => loop(tl, hd.isByName || belowByName)
+                }
+            }
+          }
+          loop(context.openImplicits, this.isByNamePt)
+        }
+
+      if(existsDominatedImplicit) {
+        //println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
+        DivergentSearchFailure
+      } else {
+        val ref = context.refByNameImplicit(pt)
+        if(ref != EmptyTree)
+          new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
+        else {
+          val recursiveImplicit: Option[OpenImplicit] =
+            if(tree == EmptyTree) None
+            else context.openImplicits find {
+              case oi @ OpenImplicit(info, tp, tree1) =>
+                (oi.isByName || isByNamePt) && oi.pt <:< pt
+            }
+
+          recursiveImplicit match {
+            case Some(rec) =>
+              val ref = atPos(pos.focus)(context.linkByNameImplicit(rec.pt))
+              new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
+            case None =>
+              try {
+                context.openImplicits = OpenImplicit(info, pt, tree, isView, isByNamePt) :: context.openImplicits
+                //println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
+                val result = typedImplicit0(info, ptChecked, isLocalToCallsite)
+                if (result.isDivergent) {
+                  //println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
+                  if (context.openImplicits.tail.isEmpty && !pt.isErroneous)
+                    DivergingImplicitExpansionError(tree, pt, info.sym)(context)
+                  result
+                } else context.defineByNameImplicit(pt, result)
+              } finally {
+                context.openImplicits = context.openImplicits.tail
+              }
+          }
+        }
+      }
     }
 
     /** Does type `tp` match expected type `pt`
@@ -646,7 +718,7 @@ trait Implicits {
             val impossible = if ((sym1 eq sym2) && (args1 ne Nil)) !corresponds3(sym1.typeParams, args1, args2) {(tparam, arg1, arg2) =>
               if (tparam.isCovariant) isPlausiblySubType(arg1, arg2) else isPlausiblySubType(arg2, arg1)
             } else {
-              ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
+              (sym2.isClass && !(sym1 isWeakSubClass sym2))
             }
             impossible
           case RefinedType(parents, decls) =>

@@ -26,19 +26,18 @@ import java.lang.{IndexOutOfBoundsException, IllegalArgumentException}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
+class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   extends AbstractBuffer[A]
-    with IndexedSeq[A]
+    with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with IndexedOptimizedBuffer[A]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 
   def this() = this(new Array[AnyRef](16), 0)
 
-  def this(initSize: Int) = this(new Array[AnyRef](initSize), 0)
+  def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
 
-  protected var array: Array[AnyRef] = initElems
-  protected var size0 = initSize
+  protected var array: Array[AnyRef] = initialElements
+  protected var size0 = initialSize
 
   /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit =
@@ -63,9 +62,9 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     array(n).asInstanceOf[A]
   }
 
-  def update(n: Int, elem: A): Unit = {
-    checkWithinBounds(n, n + 1)
-    array(n) = elem.asInstanceOf[AnyRef]
+  def update(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
+    checkWithinBounds(index, index + 1)
+    array(index) = elem.asInstanceOf[AnyRef]
   }
 
   def length = size0
@@ -96,12 +95,12 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     this
   }
 
-  def insert(idx: Int, elem: A): Unit = {
-    checkWithinBounds(idx, idx)
+  def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
+    checkWithinBounds(index, index)
     ensureSize(size0 + 1)
-    Array.copy(array, idx, array, idx + 1, size0 - idx)
+    Array.copy(array, index, array, index + 1, size0 - index)
     size0 += 1
-    this(idx) = elem
+    this(index) = elem
   }
 
   def prepend(elem: A): this.type = {
@@ -109,55 +108,74 @@ class ArrayBuffer[A] private (initElems: Array[AnyRef], initSize: Int)
     this
   }
 
-  def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    checkWithinBounds(idx, idx)
+  def insertAll(@deprecatedName("n", "2.13.0") index: Int, elems: IterableOnce[A]): Unit = {
+    checkWithinBounds(index, index)
     elems match {
       case elems: collection.Iterable[A] =>
         val elemsLength = elems.size
         ensureSize(length + elemsLength)
-        Array.copy(array, idx, array, idx + elemsLength, size0 - idx)
+        Array.copy(array, index, array, index + elemsLength, size0 - index)
         size0 = size0 + elemsLength
         elems match {
           case elems: ArrayBuffer[_] =>
-            Array.copy(elems.array, 0, array, idx, elemsLength)
+            Array.copy(elems.array, 0, array, index, elemsLength)
           case _ =>
             var i = 0
             val it = elems.iterator
             while (i < elemsLength) {
-              this(idx + i) = it.next()
+              this(index + i) = it.next()
               i += 1
             }
         }
       case _ =>
-        insertAll(idx, ArrayBuffer.from(elems))
+        insertAll(index, ArrayBuffer.from(elems))
     }
   }
 
-  def remove(idx: Int): A = {
-    checkWithinBounds(idx, idx + 1)
-    val res = this(idx)
-    Array.copy(array, idx + 1, array, idx, size0 - (idx + 1))
+  def remove(@deprecatedName("n", "2.13.0") index: Int): A = {
+    checkWithinBounds(index, index + 1)
+    val res = this(index)
+    Array.copy(array, index + 1, array, index, size0 - (index + 1))
     reduceToSize(size0 - 1)
     res
   }
 
-  def remove(idx: Int, count: Int): Unit =
+  def remove(@deprecatedName("n", "2.13.0") index: Int, count: Int): Unit =
     if (count > 0) {
-      checkWithinBounds(idx, idx + count)
-      Array.copy(array, idx + count, array, idx, size0 - (idx + count))
+      checkWithinBounds(index, index + count)
+      Array.copy(array, index + count, array, index, size0 - (index + count))
       reduceToSize(size0 - count)
     } else if (count < 0) {
       throw new IllegalArgumentException("removing negative number of elements: " + count)
     }
 
+  @deprecated("Use 'this' instance instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def result(): this.type = this
+
+  @deprecated("Use 'new GrowableBuilder(this).mapResult(f)' instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def mapResult[NewTo](f: (ArrayBuffer[A]) ⇒ NewTo): Builder[A, NewTo] = new GrowableBuilder(this).mapResult(f)
+
   override protected[this] def stringPrefix = "ArrayBuffer"
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
 
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
     val l = scala.math.min(scala.math.min(len, length), xs.length-start)
     if(l > 0) Array.copy(array, 0, xs, start, l)
     xs
+  }
+
+  /** Sorts this $coll in place according to an Ordering.
+    *
+    * @see [[scala.collection.mutable.IndexedSeqOps.sortInPlace]]
+    * @param  ord the ordering to be used to compare elements.
+    * @return modified input $coll sorted according to the ordering `ord`.
+    */
+  override def sortInPlace[B >: A]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    this
   }
 }
 
@@ -229,4 +247,5 @@ object RefArrayUtils {
       i += 1
     }
   }
+
 }

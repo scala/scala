@@ -17,27 +17,11 @@ trait Set[A]
   * @define Coll `mutable.Set`
   */
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
-  extends IterableOps[A, CC, C]
-    with collection.SetOps[A, CC, C]
+  extends collection.SetOps[A, CC, C]
     with Cloneable[C]
     with Growable[A]
     with Shrinkable[A] {
 
-  def mapInPlace(f: A => A): this.type = {
-    val toAdd = Set[A]()
-    for (elem <- this) {
-      toAdd += f(elem)
-    }
-    coll.clear()
-    coll ++= toAdd
-    this
-  }
-
-  /**
-    * @return The reference of the contained element that is equal to `elem`, if found, otherwise `None`
-    * @param elem The element to get.
-    */
-  def get(elem: A): Option[A]
 
   def add(elem: A): Boolean =
     !contains(elem) && {
@@ -71,40 +55,19 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result += elem)
 
-  def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
-    val toAdd = Set[A]()
-    val toRemove = Set[A]()
-    toRemove ++= this
+  @deprecated("Use filterInPlace instead", "2.13.0")
+  @inline final def retain(p: A => Boolean): Unit = filterInPlace(p)
 
-    for (elem <- this){
-      for (mapped <- f(elem).iterator)
-        if(contains(mapped)) {
-          toRemove -= mapped 
-        } else  {
-          toAdd += mapped 
-        }
-    }
-    coll --= toRemove
-    coll ++= toAdd 
-    this
-  }
-
-  def filterInPlace(p: A => Boolean): this.type = {
-    val toRemove = Set[A]()
-    for (elem <- this)
-      if (!p(elem)) toRemove += elem
-    for (elem <- toRemove)
-      coll -= elem
-    this
-  }
-
-  /** Retains only those elements for which the predicate
-    *  `p` returns `true`.
-    *
-    * @param p  The test predicate
+  /** Removes all elements from the set for which do not satisfy a predicate.
+    *  @param  p  the predicate used to test elements. Only elements for
+    *             which `p` returns `true` are retained in the set; all others
+    *             are removed.
     */
-  @deprecated("Use .filterInPlace instead of .retain", "2.13.0")
-  @`inline` final def retain(p: A => Boolean): this.type = filterInPlace(p)
+  def filterInPlace(p: A => Boolean): this.type = {
+    for (elem <- this.toList) // scala/bug#7269 toList avoids ConcurrentModificationException
+      if (!p(elem)) this -= elem
+    this
+  }
 
   override def clone(): C = empty ++= toIterable
 

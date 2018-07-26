@@ -28,7 +28,8 @@ import scala.collection.immutable.List
 class ListMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
+    with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]] {
 
   override def mapFactory: MapFactory[ListMap] = ListMap
 

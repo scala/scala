@@ -203,9 +203,6 @@ private[collection] trait Wrappers {
     override def remove(elem: A): Boolean = underlying remove elem
     override def clear() = underlying.clear()
 
-    //TODO Should Set.get be supported? There is no efficient way to return the canonical element from a Java Set
-    def get(elem: A): Option[A] = if(underlying.contains(elem)) Some(elem) else None
-
     override def empty = JSetWrapper(new ju.HashSet[A])
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
     // expose clone methods.  Generically, they're protected.

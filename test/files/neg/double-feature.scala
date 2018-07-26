@@ -1,3 +1,5 @@
+// scalac: -feature -Xfatal-warnings
+//
 
 object Test {
   trait T

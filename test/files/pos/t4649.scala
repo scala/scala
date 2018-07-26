@@ -1,3 +1,6 @@
+
+// scalac: -Xfatal-warnings
+//
 object Test {
   // @annotation.tailrec
   def lazyFilter[E](s: LazyList[E], p: E => Boolean): LazyList[E] = s match {

@@ -968,7 +968,6 @@ trait Infer extends Checkable {
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
             methTypeArgs(fn, undetparams, formals, restpe, argtpes, pt)
-          enhanceBounds(okparams, okargs, leftUndet)
 
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)
@@ -982,7 +981,7 @@ trait Infer extends Checkable {
                 val xs1 = treeSubst.typeMap mapOver xs
                 if (xs ne xs1)
                   new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
-
+                enhanceBounds(okparams, okargs, xs1)
                 xs1
             }
           } else Nil

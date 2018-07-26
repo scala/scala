@@ -148,7 +148,7 @@ root> partest --help
 ```
 
 If you're fixing a bug in the compiler, you would typically start with Partest;
-If you're fixing a bug or implementing new features in the the library, consider using JUnit and/or ScalaCheck.
+If you're fixing a bug or implementing new features in the library, consider using JUnit and/or ScalaCheck.
 
 #### exploring with REPL
 

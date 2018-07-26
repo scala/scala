@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 trait Foo {
   @transient protected var load = 1
   @transient protected var a = 12

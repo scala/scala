@@ -1,7 +1,6 @@
 package scala.reflect
 package quasiquotes
 
-import java.util.UUID.randomUUID
 import scala.collection.mutable
 
 /** Emulates hole support (see Holes.scala) in the quasiquote parser (see Parsers.scala).
@@ -20,7 +19,6 @@ trait Placeholders { self: Quasiquotes =>
   lazy val posMap = mutable.LinkedHashMap[Position, (Int, Int)]()
   lazy val code = {
     val sb = new StringBuilder()
-    val sessionSuffix = randomUUID().toString.replace("-", "").substring(0, 8) + "$"
 
     def appendPart(value: String, pos: Position) = {
       val start = sb.length
@@ -30,7 +28,7 @@ trait Placeholders { self: Quasiquotes =>
     }
 
     def appendHole(tree: Tree, rank: Rank) = {
-      val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX + sessionSuffix))
+      val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX))
       sb.append(placeholderName)
       val holeTree =
         if (method != nme.unapply) tree

@@ -28,7 +28,7 @@ trait TypeComparers {
     //
     //         I added a tests to show that we detect the cycle: neg/t8146-no-finitary*
 
-    override def toString = tp1+" <:<? "+tp2
+    override def toString = tp1.toString+" <:<? "+tp2
   }
 
   private var _subsametypeRecursions: Int = 0

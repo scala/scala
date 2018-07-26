@@ -1,3 +1,5 @@
+// scalac: -deprecation -Xfatal-warnings
+//
 abstract class Foo {
   def bar {}
   def baz

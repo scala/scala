@@ -22,7 +22,8 @@ package mutable
  */
 class LinkedHashSet[A]
   extends AbstractSet[A]
-    with SetOps[A, LinkedHashSet, LinkedHashSet[A]] {
+    with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
+    with StrictOptimizedIterableOps[A, LinkedHashSet, LinkedHashSet[A]] {
 
   override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
 
@@ -52,11 +53,6 @@ class LinkedHashSet[A]
         }
       }
     }
-
-  def get(elem: A): Option[A] = {
-    val entry = table.findEntry(elem)
-    if (entry != null) Some(entry.key) else None
-  }
 
   override def size: Int = table.tableSize
   override def knownSize: Int = size

@@ -423,7 +423,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         // afterOwnPhase, so traits receive trait setters for vals (needs to be at finest grain to avoid looping)
         val synthInSubclass =
-          clazz.mixinClasses.flatMap(mixin => afterOwnPhase{mixin.info}.decls.toList.filter(accessorImplementedInSubclass))
+          clazz.mixinClasses.flatMap(mixin => afterOwnPhase(mixin.info).decls.toList.filter(accessorImplementedInSubclass))
 
         // mixin field accessors --
         // invariant: (accessorsMaybeNeedingImpl, mixedInAccessorAndFields).zipped.forall(case (acc, clone :: _) => `clone` is clone of `acc` case _ => true)
@@ -679,14 +679,14 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         synthAccessorInClass.expandLazyClassMember(lazyVar, getter, rhs)
       }
 
-      (afterOwnPhase { clazz.info.decls }.toList) filter checkAndClearNeedsTrees map {
+      afterOwnPhase(clazz.info.decls).toList.filter(checkAndClearNeedsTrees).map {
         case module if module hasAllFlags (MODULE | METHOD) => moduleAccessorBody(module)
         case getter if getter hasAllFlags (LAZY | METHOD)   => superLazy(getter)
         case setter if setter.isSetter                      => setterBody(setter)
         case getter if getter.hasFlag(ACCESSOR)             => getterBody(getter)
         case field  if !(field hasFlag METHOD)              => mkTypedValDef(field) // vals/vars and module vars (cannot have flags PACKAGE | JAVA since those never receive NEEDS_TREES)
         case _ => EmptyTree
-      } filterNot (_ == EmptyTree) // there will likely be many EmptyTrees, but perhaps no thicket blocks that need expanding
+      }.filterNot(_ == EmptyTree) // there will likely be many EmptyTrees, but perhaps no thicket blocks that need expanding
     }
 
     def rhsAtOwner(stat: ValOrDefDef, newOwner: Symbol): Tree =

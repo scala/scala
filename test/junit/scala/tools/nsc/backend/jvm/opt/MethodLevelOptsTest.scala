@@ -158,7 +158,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = ignoreDeprecations)
     assertSameCode(getMethod(c, "t"), List(
       IntOp(BIPUSH, 23), IntOp(NEWARRAY, 5), Op(POP), VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
   }
@@ -173,7 +173,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = ignoreDeprecations)
     assertSameCode(getMethod(c, "t"), List(
       TypeOp(NEW, "java/lang/Integer"), Ldc(LDC, "nono"), Invoke(INVOKESPECIAL, "java/lang/Integer", "<init>", "(Ljava/lang/String;)V", false),
       VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))

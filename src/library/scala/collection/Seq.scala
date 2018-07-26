@@ -181,7 +181,9 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
   // overrides of this method
-  @`inline` final override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  // TODO https://github.com/scala/bug/issues/10853 Uncomment final
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  @`inline` /*final*/ override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -434,7 +436,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
   def permutations: Iterator[C] =
-    if (isEmpty) Iterator(coll)
+    if (isEmpty) Iterator.single(coll)
     else new PermutationsItr
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
@@ -851,9 +853,12 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return a `Found` value containing the index corresponding to the element in the
     *         sequence, or the `InsertionPoint` where the element would be inserted if
     *         the element is not in the sequence.
+    * 
+    * @note if `to <= from`, the search space is empty, and an `InsertionPoint` at `from`
+    *       is returned
     */
-  def search[B >: A](elem: B, from: Int, to: Int) (implicit ord: Ordering[B]): SearchResult =
-    linearSearch(view.slice(from, to), elem, from)(ord)
+  def search[B >: A](elem: B, from: Int, to: Int) (implicit ord: Ordering[B]): SearchResult = 
+    linearSearch(view.slice(from, to), elem, math.max(0, from))(ord)
 
   private[this] def linearSearch[B >: A](c: View[A], elem: B, offset: Int)
                                         (implicit ord: Ordering[B]): SearchResult = {

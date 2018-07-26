@@ -50,7 +50,9 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedSeqView.Slice(this, from, until))
 
-  override def lengthCompare(len: Int): Int = length - len
+  override def last: A = apply(length - 1)
+
+  override def lengthCompare(len: Int): Int = Integer.compare(length, len)
 
   final override def knownSize: Int = length
 
@@ -63,8 +65,11 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
   @tailrec
   private[this] def binarySearch[B >: A](elem: B, from: Int, to: Int)
                                         (implicit ord: Ordering[B]): SearchResult = {
-    if (to == from) InsertionPoint(from) else {
-      val idx = from+(to-from-1)/2
+    if (from < 0) binarySearch(elem, 0, to)
+    else if (to > length) binarySearch(elem, from, length)
+    else if (to <= from) InsertionPoint(from)
+    else {
+      val idx = from + (to - from - 1) / 2
       math.signum(ord.compare(elem, apply(idx))) match {
         case -1 => binarySearch(elem, from, idx)(ord)
         case  1 => binarySearch(elem, idx + 1, to)(ord)

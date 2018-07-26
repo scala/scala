@@ -107,7 +107,7 @@ object DisplayReporter {
 
   /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
   private def splitting(msg: String, explaining: Boolean): String =
-    if (msg.indexOf("\n----") > 0) {
+    if (msg != null && msg.indexOf("\n----") > 0) {
       val (err, exp) = msg.lines.span(!_.startsWith("----"))
       if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
     } else {

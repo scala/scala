@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.13
+//
 class C {
   def f1(x: Unit): Int = 0
   def f2(y: Unit): Int = 0

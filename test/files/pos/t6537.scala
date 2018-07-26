@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 package tester
 
 object PatMatWarning {

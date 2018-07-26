@@ -1,10 +1,10 @@
-t10678.scala:4: warning: Using `<:` for `extends` is deprecated
+t10678.scala:6: warning: Using `<:` for `extends` is deprecated
 trait U <: T
         ^
-t10678.scala:6: error: ';' expected but '<:' found.
+t10678.scala:8: error: ';' expected but '<:' found.
 class C <: T {
         ^
-t10678.scala:9: error: ';' expected but '<:' found.
+t10678.scala:11: error: ';' expected but '<:' found.
 object O <: T {
          ^
 one warning found

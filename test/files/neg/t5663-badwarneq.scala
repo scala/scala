@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 
 // alias
 trait Thingy

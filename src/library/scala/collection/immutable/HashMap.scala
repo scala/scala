@@ -3,7 +3,7 @@ package collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
+import collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import collection.Hashing.{computeHash, keepBits}
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import java.lang.{Integer, String, System}
@@ -29,7 +29,8 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 sealed abstract class HashMap[K, +V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
+    with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]] {
 
   import HashMap.{bufferSize, liftMerger, Merger, MergeFunction, nullToEmpty}
 

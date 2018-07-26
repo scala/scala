@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.12
+//
 object Test {
   trait NT[X]
   trait W[W, A] extends NT[Int]

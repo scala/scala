@@ -48,4 +48,6 @@ class VectorTest {
     assertSame(m, Vector.from(m))
     assertSame(m, Vector.apply(m: _*))
   }
+
+  @Test def checkSearch: Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 }

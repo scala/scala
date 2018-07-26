@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 trait T {
   private var s: String = _
   def getS: String = {

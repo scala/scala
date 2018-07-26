@@ -1,3 +1,5 @@
+// scalac: -Xlint -Xfatal-warnings
+//
 
 trait G {
   val c: Char = '\u000a'   // disallowed!

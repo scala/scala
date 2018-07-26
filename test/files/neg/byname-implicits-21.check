@@ -1,0 +1,5 @@
+byname-implicits-21.scala:20: error: diverging implicit expansion for type Test.Foo[Test.A[Unit]]
+starting with method fooGen in object Foo
+  implicitly[Foo[A[Unit]]]
+            ^
+one error found

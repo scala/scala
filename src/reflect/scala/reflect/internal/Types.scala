@@ -1594,7 +1594,7 @@ trait Types
     val period = tpe.baseClassesPeriod
     if (period == currentPeriod) {
       if (force && breakCycles) {
-        def what = tpe.typeSymbol + " in " + tpe.typeSymbol.owner.fullNameString
+        def what = tpe.typeSymbol.toString + " in " + tpe.typeSymbol.owner.fullNameString
         val bcs  = computeBaseClasses(tpe)
         tpe.baseClassesCache = bcs
         warning(s"Breaking cycle in base class computation of $what ($bcs)")
@@ -2445,7 +2445,7 @@ trait Types
       s"$lstr ${sym.decodedName} $rstr"
     }
     private def customToString = sym match {
-      case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
       case ByNameParamClass   => "=> " + args.head
       case _                  =>
         if (isFunctionTypeDirect(this)) {
@@ -2489,7 +2489,7 @@ trait Types
       else if (sym.isPackageClass || sym.isPackageObjectOrClass)
         sym.skipPackageObject.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
-        tpnme.dropSingletonName(sym.name) + "."
+        tpnme.dropSingletonName(sym.name).toString + "."
       else
         super.prefixString
     )
@@ -2884,10 +2884,10 @@ trait Types
 
     override def nameAndArgsString: String = underlying match {
       case TypeRef(_, sym, args) if !settings.debug && isRepresentableWithWildcards =>
-        sym.name + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
+        sym.name.toString + wildcardArgsString(quantified.toSet, args).mkString("[", ",", "]")
       case TypeRef(_, sym, args) =>
-        sym.name + args.mkString("[", ",", "]") + existentialClauses
-      case _ => underlying.typeSymbol.name + existentialClauses
+        sym.name.toString + args.mkString("[", ",", "]") + existentialClauses
+      case _ => underlying.typeSymbol.name.toString + existentialClauses
     }
 
     private def existentialClauses = {
@@ -3558,7 +3558,7 @@ trait Types
 
     override def isTrivial: Boolean = underlying.isTrivial && annotations.forall(_.isTrivial)
 
-    override def safeToString = annotations.mkString(underlying + " @", " @", "")
+    override def safeToString = annotations.mkString(underlying.toString + " @", " @", "")
 
     override def filterAnnotations(p: AnnotationInfo => Boolean): Type = {
       val (yes, no) = annotations partition p
@@ -3649,7 +3649,7 @@ trait Types
    *  at the end of it.
    */
   case class RepeatedType(tp: Type) extends Type {
-    override def safeToString: String = tp + ": _*"
+    override def safeToString: String = tp.toString + ": _*"
     // TODO is this needed? We only seem to get here in ContainsCollector in error message generation
     // override def mapOver(map: TypeMap): Type = map.apply(tp)
   }
@@ -3879,7 +3879,7 @@ trait Types
     if (false && isDefinitionsInitialized) {
       assert(isUseableAsTypeArgs(args), {
         val tapp_s = s"""$tycon[${args mkString ", "}]"""
-        val arg_s  = args filterNot isUseableAsTypeArg map (t => t + "/" + t.getClass) mkString ", "
+        val arg_s  = args filterNot isUseableAsTypeArg map (t => t.toString + "/" + t.getClass) mkString ", "
         s"$tapp_s includes illegal type argument $arg_s"
       })
     }

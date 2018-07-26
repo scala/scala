@@ -1,3 +1,5 @@
+// scalac: -Xelide-below WARNING -deprecation
+//
 import annotation._
 import elidable._
 

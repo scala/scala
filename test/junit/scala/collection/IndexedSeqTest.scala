@@ -39,6 +39,12 @@ abstract class IndexedTest[T, E] {
     }
   }
 
+  /** check that lengthCompare compares values correctly */
+  @Test def checkLengthCompare(): Unit = {
+    val test = underTest(size)
+    assert(lengthCompare(test, Int.MinValue) > 0)
+  }
+
   /**
     * check simple equallity of the initial data.
     * More a test of the infra that we use in this est than a full test of equallity
@@ -231,6 +237,8 @@ abstract class IndexedTest[T, E] {
   //the length of underTest
   def length(underTest: T): Int
 
+  def lengthCompare(underTest: T, len: Int): Int
+
   //the value at index i of underTest
   def get(underTest: T, i: Int): E
 
@@ -316,6 +324,8 @@ package IndexedTestImpl {
                                val TYPE: Class[_]) extends IndexedTest[Array[E], E]{
     override final def length(underTest: Array[E]) = underTest.length
 
+    override final def lengthCompare(underTest: Array[E], len: Int): Int = underTest.lengthCompare(len)
+
     override def get(underTest: Array[E], i: Int) = underTest(i)
 
     override def slice(underTest: Array[E], from: Int, to: Int) = underTest.slice(from, to)
@@ -347,6 +357,8 @@ package IndexedTestImpl {
     import mutable.ArraySeq
     override final def length(underTest: ArraySeq[E]) = underTest.length
 
+    override final def lengthCompare(underTest: ArraySeq[E], len: Int): Int = underTest.lengthCompare(len)
+
     override def get(underTest: ArraySeq[E], i: Int) = underTest(i)
 
     override def slice(underTest: ArraySeq[E], from: Int, to: Int) = underTest.slice(from, to)
@@ -376,6 +388,8 @@ package IndexedTestImpl {
 
   abstract class MutableIndexedSeqTest[T <: mutable.Seq[E], E] extends IndexedTest[T, E]   with DataProvider[E]{
     override final def length(underTest: T) = underTest.length
+
+    override final def lengthCompare(underTest: T, len: Int): Int = underTest.lengthCompare(len)
 
     override def get(underTest: T, i: Int) = underTest(i)
 
@@ -407,6 +421,8 @@ package IndexedTestImpl {
   abstract class ImmutableIndexedSeqTest[T <: SeqOps[E, Seq, T], E] extends IndexedTest[T, E]   with DataProvider[E] {
     override final def length(underTest: T) = underTest.length
 
+    override final def lengthCompare(underTest: T, len: Int): Int = underTest.lengthCompare(len)
+
     override def get(underTest: T, i: Int) = underTest(i)
 
     override def slice(underTest: T, from: Int, to: Int) = underTest.slice(from, to)
@@ -427,6 +443,8 @@ package IndexedTestImpl {
 
   abstract class StringOpsBaseTest extends IndexedTest[StringOps, Char] with DataProvider[Char]  {
     override final def length(underTest: StringOps) = underTest.size
+
+    override final def lengthCompare(underTest: StringOps, len: Int): Int = underTest.lengthCompare(len)
 
     override def get(underTest: StringOps, i: Int) = underTest(i)
 

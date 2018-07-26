@@ -98,7 +98,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     intp.reporter.withoutTruncating { intp.reporter.printMessage(msg) }
   }
 
-
   import scala.tools.nsc.interpreter.ReplStrings.{words, string2codeQuoted}
 
   def welcome = enversion(welcomeString)
@@ -108,8 +107,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     replinfo(s"[info] started at ${new java.util.Date}")
     if (!welcome.isEmpty) echo(welcome)
   }
-
-
 
   def history = in.history
 
@@ -980,7 +977,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     val firstLine =
       SplashLoop.readLine(in, prompt) {
         if (intp eq null) createInterpreter(interpreterSettings)
-        intp.reporter.withoutPrintingResults {
+        intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
           intp.initializeCompiler()
           interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
@@ -997,7 +994,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           if (doCompletion)
             in.initCompletion(newCompleter())
 
-        }
+        })
       }.orNull // null is used by readLine to signal EOF (`loop` will exit)
 
     // start full loop (if initialization was successful)

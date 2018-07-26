@@ -101,6 +101,18 @@ trait IterableFactory[+CC[_]] extends Serializable {
     */
   def iterate[A](start: A, len: Int)(f: A => A): CC[A] = from(new View.Iterate(start, len)(f))
 
+  /** Produces a $coll that uses a function `f` to produce elements of type `A`
+    * and update an internal state of type `S`.
+    *
+    * @param init State initial value
+    * @param f    Computes the next element (or returns `None` to signal
+    *             the end of the collection)
+    * @tparam A   Type of the elements
+    * @tparam S   Type of the internal state
+    * @return a $coll that produces elements using `f` until `f` returns `None`
+    */
+  def unfold[A, S](init: S)(f: S => Option[(A, S)]): CC[A] = from(new View.Unfold(init)(f))
+
   /** Produces a $coll containing a sequence of increasing of integers.
     *
     *  @param start the first element of the $coll
@@ -223,6 +235,15 @@ trait IterableFactory[+CC[_]] extends Serializable {
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]] @uncheckedVariance] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
+  /** Concatenates all argument collections into a single $coll.
+   *
+   *  @param xss the collections that are to be concatenated.
+   *  @return the concatenation of all the collections.
+   */
+  def concat[A](xss: Iterable[A]*): CC[A] = {
+    from(xss.foldLeft(View.empty[A])(_ ++ _))
+  }
+
   implicit def iterableFactory[A]: Factory[A, CC[A]] = IterableFactory.toFactory(this)
 }
 
@@ -295,6 +316,16 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
       b += f(i)
       i += 1
     }
+    b.result()
+  }
+
+  override def concat[A](xss: Iterable[A]*): CC[A] = {
+    val b = newBuilder[A]
+    val knownSizes = xss.view.map(_.knownSize)
+    if (knownSizes forall (_ >= 0)) {
+      b.sizeHint(knownSizes.sum)
+    }
+    for (xs <- xss) b ++= xs
     b.result()
   }
 
@@ -408,6 +439,27 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
     */
   def tabulate[A : Ev](n: Int)(f: Int => A): CC[A] = from(new View.Tabulate(n)(f))
 
+  /** Produces a $coll containing repeated applications of a function to a start value.
+    *
+    *  @param start the start value of the $coll
+    *  @param len   the number of elements contained in the $coll
+    *  @param f     the function that's repeatedly applied
+    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
+    */
+  def iterate[A : Ev](start: A, len: Int)(f: A => A): CC[A] = from(new View.Iterate(start, len)(f))
+
+  /** Produces a $coll that uses a function `f` to produce elements of type `A`
+    * and update an internal state of type `S`.
+    *
+    * @param init State initial value
+    * @param f    Computes the next element (or returns `None` to signal
+    *             the end of the collection)
+    * @tparam A   Type of the elements
+    * @tparam S   Type of the internal state
+    * @return a $coll that produces elements using `f` until `f` returns `None`
+    */
+  def unfold[A : Ev, S](init: S)(f: S => Option[(A, S)]): CC[A] = from(new View.Unfold(init)(f))
+
   def newBuilder[A : Ev]: Builder[A, CC[A]]
 
   implicit def evidenceIterableFactory[A : Ev]: Factory[A, CC[A]] = EvidenceIterableFactory.toFactory(this)
@@ -464,15 +516,6 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
 
   @`inline` private[this] implicit def ccClassTag[X]: ClassTag[CC[X]] =
     ClassTag.AnyRef.asInstanceOf[ClassTag[CC[X]]] // Good enough for boxed vs primitive arrays
-
-  /** Produces a $coll containing repeated applications of a function to a start value.
-    *
-    *  @param start the start value of the $coll
-    *  @param len   the number of elements contained in the $coll
-    *  @param f     the function that's repeatedly applied
-    *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
-    */
-  def iterate[A : ClassTag](start: A, len: Int)(f: A => A): CC[A] = from(new View.Iterate(start, len)(f))
 
   /** Produces a $coll containing a sequence of increasing of integers.
     *
@@ -591,6 +634,7 @@ object ClassTagIterableFactory {
     def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder(ClassTag.Any).asInstanceOf[Builder[A, CC[A]]]
     override def apply[A](elems: A*): CC[A] = delegate.apply[Any](elems: _*)(ClassTag.Any).asInstanceOf[CC[A]]
     override def iterate[A](start: A, len: Int)(f: A => A): CC[A] = delegate.iterate[A](start, len)(f)(ClassTag.Any.asInstanceOf[ClassTag[A]])
+    override def unfold[A, S](init: S)(f: S => Option[(A, S)]): CC[A] = delegate.unfold[A, S](init)(f)(ClassTag.Any.asInstanceOf[ClassTag[A]])
     override def range[A](start: A, end: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end)(i, ClassTag.Any.asInstanceOf[ClassTag[A]])
     override def range[A](start: A, end: A, step: A)(implicit i: Integral[A]): CC[A] = delegate.range[A](start, end, step)(i, ClassTag.Any.asInstanceOf[ClassTag[A]])
     override def fill[A](n: Int)(elem: => A): CC[A] = delegate.fill[Any](n)(elem)(ClassTag.Any).asInstanceOf[CC[A]]

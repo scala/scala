@@ -92,7 +92,7 @@ Java platform, the following annotations have a standard meaning.
     Deprecated warnings are suppressed in code that belongs itself to a definition
     that is labeled deprecated.
 
-  * `@deprecatedName(name: <symbollit>)`<br/>
+  * `@deprecatedName(name: <stringlit>, since: <stringlit>)`<br/>
     Marks a formal parameter name as deprecated. Invocations of this entity
     using named parameter syntax referring to the deprecated parameter name cause a deprecation warning.
 

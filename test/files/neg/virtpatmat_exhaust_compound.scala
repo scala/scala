@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 sealed trait Base
 case object O1 extends Base
 case object O2 extends Base {

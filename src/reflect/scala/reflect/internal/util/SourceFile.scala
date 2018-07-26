@@ -23,7 +23,7 @@ abstract class SourceFile {
   def length : Int
   def lineCount: Int
   def position(offset: Int): Position = {
-    assert(offset < length, file + ": " + offset + " >= " + length)
+    assert(offset < length, file.toString + ": " + offset + " >= " + length)
     Position.offset(this, offset)
   }
 

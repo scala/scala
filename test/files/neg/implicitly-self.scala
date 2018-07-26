@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -Ywarn-self-implicit
+//
 
 trait TC[T] { def ix: Int }
 

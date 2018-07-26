@@ -1,13 +1,13 @@
-unchecked-refinement.scala:17: warning: abstract type U in type pattern Foo[U,U,V] is unchecked since it is eliminated by erasure
+unchecked-refinement.scala:19: warning: abstract type U in type pattern Foo[U,U,V] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Foo[U, U, V] if b       => ()
                          ^
-unchecked-refinement.scala:19: warning: non-variable type argument Any in type pattern Foo[Any,U,V] is unchecked since it is eliminated by erasure
+unchecked-refinement.scala:21: warning: non-variable type argument Any in type pattern Foo[Any,U,V] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Foo[Any, U, V] if b     => ()
                          ^
-unchecked-refinement.scala:23: warning: a pattern match on a refinement type is unchecked
+unchecked-refinement.scala:25: warning: a pattern match on a refinement type is unchecked
     /* nowarn - todo */ case x: AnyRef { def bippy: Int } if b => x.bippy  // this could/should do an instance check and not warn
                                 ^
-unchecked-refinement.scala:24: warning: a pattern match on a refinement type is unchecked
+unchecked-refinement.scala:26: warning: a pattern match on a refinement type is unchecked
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
                                 ^
 warning: there was one feature warning; re-run with -feature for details

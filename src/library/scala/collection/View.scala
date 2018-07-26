@@ -125,6 +125,14 @@ object View extends IterableFactory[View] {
     override def isEmpty: Boolean = len <= 0
   }
 
+  /** A view that uses a function `f` to produce elements of type `A` and update
+    * an internal state `S`.
+    */
+  @SerialVersionUID(3L)
+  class Unfold[A, S](initial: S)(f: S => Option[(A, S)]) extends AbstractView[A] {
+    def iterator: Iterator[A] = Iterator.unfold(initial)(f)
+  }
+
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
   type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
   
@@ -333,19 +341,8 @@ object View extends IterableFactory[View] {
 
   @SerialVersionUID(3L)
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
-    def iterator: Iterator[A] = new AbstractIterator[A] {
-      private[this] var i = 0
-      private[this] val it = underlying.iterator
-      def next(): A = {
-        val a =
-          if (it.hasNext) it.next()
-          else if (i < len) elem
-          else Iterator.empty.next()
-        i += 1
-        a
-      }
-      def hasNext: Boolean = it.hasNext || i < len
-    }
+    def iterator: Iterator[A] = underlying.iterator.padTo(len, elem)
+
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
     override def isEmpty: Boolean = underlying.isEmpty && len <= 0
   }

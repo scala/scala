@@ -1,5 +1,6 @@
 import scala.reflect.macros.blackbox.{Context => BlackboxContext}
 import scala.reflect.macros.whitebox.{Context => WhiteboxContext}
+import language.experimental.macros
 
 class Logger {
   def error1(message: String) = macro Impls.error1

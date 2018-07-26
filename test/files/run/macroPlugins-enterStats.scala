@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 import scala.tools.partest._
 import scala.tools.nsc._
 
