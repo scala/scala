@@ -328,7 +328,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   override def ++ [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] = concat(that)
 
   def collect[V2](pf: PartialFunction[(Int, T), (Int, V2)]): IntMap[V2] =
-    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+    strictOptimizedCollect(IntMap.newBuilder[V2], pf)
 
   /**
     * Updates the map, using the provided function to resolve conflicts if the key is already present.

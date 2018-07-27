@@ -646,10 +646,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     fromIterable(new View.FlatMap(this, asIterable))
 
   def collect[B](pf: PartialFunction[A, B]): CC[B] =
-    flatMap { a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty
-    }
+    fromIterable(new View.Collect(this, pf))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
