@@ -52,9 +52,15 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def last: A = apply(length - 1)
 
-  override def lengthCompare(len: Int): Int = Integer.compare(length, len)
+  override final def lengthCompare(len: Int): Int = Integer.compare(length, len)
 
   final override def knownSize: Int = length
+
+  override final def sizeCompare(that: Iterable[_]): Int = {
+    val res = that.sizeCompare(length)
+    // can't just invert the result, because `-Int.MinValue == Int.MinValue`
+    if (res == Int.MinValue) 1 else -res
+  }
 
   override def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
     binarySearch(elem, 0, length)(ord)
