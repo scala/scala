@@ -1,5 +1,5 @@
 class A {
-  implicit def compareComparables[T](x: T)(implicit ord: Ordering[T]) = new ord.Ops(x)
+  implicit def compareComparables[T](x: T)(implicit ord: Ordering[T]) = new ord.OrderingOps(x)
 
   class Bippy
   implicit val bippyOrdering = new Ordering[Bippy] { def compare(x: Bippy, y: Bippy) = util.Random.nextInt }
