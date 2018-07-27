@@ -161,7 +161,7 @@ object Exception {
 
   def mkThrowableCatcher[T](isDef: Throwable => Boolean, f: Throwable => T) = mkCatcher(isDef, f)
 
-  implicit def throwableSubtypeToCatcher[Ex <: Throwable: ClassTag, T](pf: PartialFunction[Ex, T]) =
+  implicit def throwableSubtypeToCatcher[Ex <: Throwable: ClassTag, T](pf: PartialFunction[Ex, T]): Catcher[T] =
     mkCatcher(pf.isDefinedAt _, pf.apply _)
 
   /** !!! Not at all sure of every factor which goes into this,
