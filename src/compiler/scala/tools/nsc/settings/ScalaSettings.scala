@@ -202,7 +202,7 @@ trait ScalaSettings extends AbsScalaSettings
                        .withPostSetHook(bs => if (bs) imports.value = Nil)
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
                        .withPostSetHook(bs => if (bs && !noimports) imports.value = "java.lang" :: "scala" :: Nil)
-  val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom preamble imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
+  val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom root imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
   sm"""|Specify a list of packages and objects to import from as "root" imports.
        |Root imports form the root context in which all Scala source is evaluated.
        |The names supplied to `-Yimports` must be fully-qualified.
