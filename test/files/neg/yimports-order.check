@@ -1,0 +1,10 @@
+yimports-order.scala:9: error: not found: value Map
+      def f() = Map("hello" -> "world")
+                ^
+yimports-order.scala:9: error: value -> is not a member of String
+      def f() = Map("hello" -> "world")
+                            ^
+yimports-order.scala:10: error: not found: value println
+      def g() = println(f())
+                ^
+three errors found
