@@ -1,3 +1,4 @@
+// scalac: -Yimports:hello.world.minidef
 
 class C {
   val v: Numb = Magic

@@ -1,4 +1,5 @@
-
+// scalac: -Yimports:scala,scala.Predef
+//
 import Predef.{any2stringadd => _, _}
 
 class classic {

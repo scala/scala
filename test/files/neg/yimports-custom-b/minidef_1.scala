@@ -1,3 +1,4 @@
+// scalac: -Yimports:scala
 
 package hello.world
 
