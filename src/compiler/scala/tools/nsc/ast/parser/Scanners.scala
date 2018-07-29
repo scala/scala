@@ -13,13 +13,12 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.tools.nsc.util.{ CharArrayReader, CharArrayReaderData }
+import scala.tools.nsc.util.{CharArrayReader, CharArrayReaderData}
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
-import scala.annotation.{ switch, tailrec }
-import scala.collection.mutable
-import mutable.{ ListBuffer, ArrayBuffer }
+import scala.annotation.{switch, tailrec}
+import scala.collection.mutable, mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 import scala.language.postfixOps
 
@@ -923,11 +922,11 @@ trait Scanners extends ScannersCommon {
      *  if one is present.
      */
     protected def getFraction(): Unit = {
-      token = DOUBLELIT
-      while ('0' <= ch && ch <= '9') {
+      while ('0' <= ch && ch <= '9' || isNumberSeparator(ch)) {
         putChar(ch)
         nextChar()
       }
+      checkNoTrailingSeparator()
       if (ch == 'e' || ch == 'E') {
         val lookahead = lookaheadReader
         lookahead.nextChar()
@@ -941,10 +940,11 @@ trait Scanners extends ScannersCommon {
             putChar(ch)
             nextChar()
           }
-          while ('0' <= ch && ch <= '9') {
+          while ('0' <= ch && ch <= '9' || isNumberSeparator(ch)) {
             putChar(ch)
             nextChar()
           }
+          checkNoTrailingSeparator()
         }
         token = DOUBLELIT
       }
@@ -956,7 +956,8 @@ trait Scanners extends ScannersCommon {
         putChar(ch)
         nextChar()
         token = FLOATLIT
-      }
+      } else
+        token = DOUBLELIT
       checkNoLetter()
       setStrVal()
     }
@@ -992,16 +993,20 @@ trait Scanners extends ScannersCommon {
           @tailrec def convert(value: Long, i: Int): Long =
             if (i >= len) value
             else {
-              val d = digit2int(strVal charAt i, base)
-              if (d < 0)
-                malformed
-              else if (value < 0 ||
-                  limit / (base / divider) < value ||
-                  limit - (d / divider) < value * (base / divider) &&
-                  !(negated && limit == value * base - 1 + d))
-                tooBig
-              else
-                convert(value * base + d, i + 1)
+              val c = strVal.charAt(i)
+              if (isNumberSeparator(c)) convert(value, i + 1)
+              else {
+                val d = digit2int(c, base)
+                if (d < 0)
+                  malformed
+                else if (value < 0 ||
+                    limit / (base / divider) < value ||
+                    limit - (d / divider) < value * (base / divider) &&
+                    !(negated && limit == value * base - 1 + d))
+                  tooBig
+                else
+                  convert(value * base + d, i + 1)
+              }
             }
           val result = convert(0, 0)
           if (base == 8) malformed else if (negated) -result else result
@@ -1017,11 +1022,12 @@ trait Scanners extends ScannersCommon {
     /** Convert current strVal, base to float value.
      */
     def floatVal(negated: Boolean): Float = {
+      val text = removeNumberSeparators(strVal)
       try {
-        val value: Float = java.lang.Float.parseFloat(strVal)
+        val value: Float = java.lang.Float.parseFloat(text)
         if (value > Float.MaxValue)
           syntaxError("floating point number too large")
-        if (value == 0.0f && !zeroFloat.pattern.matcher(strVal).matches)
+        if (value == 0.0f && !zeroFloat.pattern.matcher(text).matches)
           syntaxError("floating point number too small")
         if (negated) -value else value
       } catch {
@@ -1036,11 +1042,12 @@ trait Scanners extends ScannersCommon {
     /** Convert current strVal, base to double value.
      */
     def doubleVal(negated: Boolean): Double = {
+      val text = removeNumberSeparators(strVal)
       try {
-        val value: Double = java.lang.Double.parseDouble(strVal)
+        val value: Double = java.lang.Double.parseDouble(text)
         if (value > Double.MaxValue)
           syntaxError("double precision floating point number too large")
-        if (value == 0.0d && !zeroFloat.pattern.matcher(strVal).matches)
+        if (value == 0.0d && !zeroFloat.pattern.matcher(text).matches)
           syntaxError("double precision floating point number too small")
         if (negated) -value else value
       } catch {
@@ -1057,6 +1064,18 @@ trait Scanners extends ScannersCommon {
         syntaxError("Invalid literal number")
     }
 
+    @inline private def isNumberSeparator(c: Char): Boolean = c == '_' //|| c == '\''
+
+    @inline private def removeNumberSeparators(s: String): String =
+      if (s.indexOf('_') > 0) s.replaceAllLiterally("_", "") /*.replaceAll("'","")*/ else s
+
+    // disallow trailing numeric separator char, but let lexing limp along
+    def checkNoTrailingSeparator(): Unit =
+      if (cbuf.nonEmpty && isNumberSeparator(cbuf.last)) {
+        syntaxError(offset + cbuf.length - 1, "trailing separator is not allowed")
+        cbuf.setLength(cbuf.length - 1)
+      }
+
     /** Read a number into strVal.
      *
      *  The `base` can be 8, 10 or 16, where base 8 flags a leading zero.
@@ -1065,21 +1084,21 @@ trait Scanners extends ScannersCommon {
     protected def getNumber(): Unit = {
       // consume digits of a radix
       def consumeDigits(radix: Int): Unit =
-        while (digit2int(ch, radix) >= 0) {
+        while (isNumberSeparator(ch) || digit2int(ch, radix) >= 0) {
           putChar(ch)
           nextChar()
         }
-      // adding decimal point is always OK because `Double valueOf "0."` is OK
+      // at dot with digit following
       def restOfNonIntegralNumber(): Unit = {
         putChar('.')
-        if (ch == '.') nextChar()
+        nextChar()
         getFraction()
       }
       // after int: 5e7f, 42L, 42.toDouble but not 42b. Repair 0d.
       def restOfNumber(): Unit = {
         ch match {
           case 'e' | 'E' | 'f' | 'F' |
-               'd' | 'D' => if (cbuf.isEmpty) putChar('0'); restOfNonIntegralNumber()
+               'd' | 'D' => if (cbuf.isEmpty) putChar('0'); getFraction()
           case 'l' | 'L' => token = LONGLIT ; setStrVal() ; nextChar()
           case _         => token = INTLIT  ; setStrVal() ; checkNoLetter()
         }
@@ -1087,6 +1106,8 @@ trait Scanners extends ScannersCommon {
 
       // consume leading digits, provisionally an Int
       consumeDigits(if (base == 16) 16 else 10)
+
+      checkNoTrailingSeparator()
 
       val detectedFloat: Boolean = base != 16 && ch == '.' && isDigit(lookaheadReader.getc)
       if (detectedFloat) restOfNonIntegralNumber() else restOfNumber()
@@ -1372,7 +1393,7 @@ trait Scanners extends ScannersCommon {
       var lineCount = 1
       var lastOffset = 0
       var indent = 0
-      val oldBalance = scala.collection.mutable.Map[Int, Int]()
+      val oldBalance = mutable.Map[Int, Int]()
       def markBalance() = for ((k, v) <- balance) oldBalance(k) = v
       markBalance()
 
