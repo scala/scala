@@ -94,7 +94,7 @@ object Test {
       1.0000001f)
     check_success("3.4028235E38f == Float.MaxValue", 3.4028235E38f, Float.MaxValue)
     check_success("1.asInstanceOf[Float] == 1.0", 1.asInstanceOf[Float], 1.0f)
-    check_success("1l.asInstanceOf[Float] == 1.0", 1l.asInstanceOf[Float], 1.0f)
+    check_success("1L.asInstanceOf[Float] == 1.0", 1L.asInstanceOf[Float], 1.0f)
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0)

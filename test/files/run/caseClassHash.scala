@@ -5,7 +5,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     val foo1 = mkFoo[Double](5.0d)
-    val foo2 = mkFoo[Long](5l)
+    val foo2 = mkFoo[Long](5L)
 
     List(foo1, foo2, foo1.##, foo2.##, foo1 == foo2) foreach println
 

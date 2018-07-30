@@ -9,7 +9,7 @@ object Test extends App {
 
     val Some(f) = o.getClass.getDeclaredFields.find(_.getName == "serialVersionUID")
     f.setAccessible(true)
-    assert(f.getLong(null) == 0l)
+    assert(f.getLong(null) == 0L)
   }
 
   def testIndyLambda(o: AnyRef, sp: Boolean = false) = {

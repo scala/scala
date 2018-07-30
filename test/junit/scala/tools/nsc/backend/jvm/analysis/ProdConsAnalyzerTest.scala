@@ -223,7 +223,7 @@ class ProdConsAnalyzerTest extends BytecodeTesting {
 
   @Test
   def copyingInsns(): Unit = {
-    val m = compileAsmMethod("def f = 0l.asInstanceOf[Int]")
+    val m = compileAsmMethod("def f = 0L.asInstanceOf[Int]")
     val a = new ProdConsAnalyzer(m, "C")
 
     val cnst = findInstr(m, "LCONST_0")

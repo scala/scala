@@ -1,6 +1,4 @@
-
-/* This took me literally all day.
- */
+// scalac: -Ywarn-octal-literal -Xfatal-warnings -deprecation
 trait RejectedLiterals {
 
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
@@ -16,6 +14,7 @@ trait RejectedLiterals {
   def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
 
   def noHexFloat: Double = { 0x1.2 }     // line 16: ';' expected but double literal found.
+
 }
 
 trait Braceless {
@@ -44,4 +43,11 @@ trait MoreSadness {
   def tooHuge: Float     = { 3.4028236E38f } // floating point number too large
 
   def twoHuge: Double    = { 1.7976931348623159e308 } // double precision floating point number too large
+}
+
+trait Lengthy {
+
+  def bad = 1l
+
+  def worse = 123l
 }
