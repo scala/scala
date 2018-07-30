@@ -7,7 +7,7 @@ trait StripMarginInterpolator {
   def stringContext: StringContext
 
   /**
-   * A safe combination of [[scala.collection.immutable.StringLike#stripMargin]]
+   * A safe combination of [[scala.collection.StringOps#stripMargin]]
    * and [[scala.StringContext#raw]].
    *
    * The margin of each line is defined by whitespace leading up to a '|' character.
@@ -27,7 +27,7 @@ trait StripMarginInterpolator {
    * }}}
    */
   final def sm(args: Any*): String = {
-    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringOps#isLineBreak
     def stripTrailingPart(s: String) = {
       val (pre, post) = s.span(c => !isLineBreak(c))
       pre + post.stripMargin

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 // negatives
 package foo1 {
   object Foo {  // companion is trait

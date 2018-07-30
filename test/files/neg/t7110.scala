@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object Test {
   try { ??? } // warn
 

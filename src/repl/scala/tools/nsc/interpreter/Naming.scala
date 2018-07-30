@@ -33,11 +33,15 @@ object Naming {
       cleaned map (ch => if (ch.isWhitespace || ch == ESC) ch else if (ch < 32) '?' else ch)
   }
 
+  // Uncompiled regex pattern to detect `line` package and members
+  // `read`, `eval`, `print`, for purposes of filtering output and stack traces.
+  //
   // The two name forms this is catching are the two sides of this assignment:
   //
   // $line3.$read.$iw.$iw.Bippy =
   //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-  lazy val lineRegex = {
+  //
+  lazy val lineRegex: String = {
     val sn = sessionNames
     val members = List(sn.read, sn.eval, sn.print) map Regex.quote mkString("(?:", "|", ")")
     Regex.quote(sn.line) + """\d+[./]""" + members + """[$.]"""

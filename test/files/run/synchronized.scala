@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 /*
  * filter: inliner warnings;
  */

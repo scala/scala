@@ -22,7 +22,7 @@ import scala.annotation.meta._
   *  developers distinguish deprecations coming from different libraries:
   *
   *  {{{
-  *  def inc(x: Int, @deprecatedName('y, "FooLib 12.0") n: Int): Int = x + n
+  *  def inc(x: Int, @deprecatedName("y", "FooLib 12.0") n: Int): Int = x + n
   *  inc(1, y = 2)
   *  }}}
   *  will produce the following warning:
@@ -38,4 +38,7 @@ import scala.annotation.meta._
   *  @see    [[scala.deprecatedOverriding]]
   */
 @param
-class deprecatedName(name: Symbol = Symbol("<none>"), since: String = "") extends scala.annotation.StaticAnnotation
+class deprecatedName(name: String = "<none>", since: String = "") extends scala.annotation.StaticAnnotation {
+  @deprecated("The parameter name should be a String, not a symbol.", "2.13.0") def this(name: Symbol, since: String) = this(name.name, since)
+  @deprecated("The parameter name should be a String, not a symbol.", "2.13.0") def this(name: Symbol) = this(name.name, "")
+}

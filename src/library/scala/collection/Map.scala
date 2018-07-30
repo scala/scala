@@ -3,6 +3,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
+import scala.collection.mutable.StringBuilder
 import scala.language.{higherKinds, implicitConversions}
 import scala.util.hashing.MurmurHash3
 
@@ -254,10 +255,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =
-    flatMap { a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty
-    }
+    mapFactory.from(new View.Collect(toIterable, pf))
 
   /** Builds a new map by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.
@@ -281,18 +279,22 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
 
-  override def mkString(start: String, sep: String, end: String): String =
-    iterator.map { case (k, v) => s"$k -> $v" }.mkString(start, sep, end)
+  override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    iterator.map { case (k, v) => s"$k -> $v" }.addString(sb, start, sep, end)
 
-  // these dummy overrides are necessary for disambiguation
-  override def mkString(sep: String): String = super.mkString(sep)
-  override def mkString: String = super.mkString
-
-  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
-  def + [V1 >: V](kv: (K, V1)): CC[K, V1] = mapFactory.from(new View.Appended(toIterable, kv))
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
+  def + [V1 >: V](kv: (K, V1)): CC[K, V1] =
+    mapFactory.from(new View.Appended(toIterable, kv))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+  def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] =
+    mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+
+  @deprecated("Consider requiring an immutable Map.", "2.13.0")
+  @`inline` def -- (keys: IterableOnce[K]): C = {
+    lazy val keysSet = keys.toSet
+    fromSpecificIterable(this.filterKeys(k => !keysSet.contains(k)))
+  }
 }
 
 object MapOps {

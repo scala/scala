@@ -1,1 +1,3 @@
+// scalac: -deprecation -Xexperimental
+//
 wibble

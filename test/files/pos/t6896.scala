@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object TooManyMains {
   def main(args: Array[String]): Unit = {
     println("Hello, World!")

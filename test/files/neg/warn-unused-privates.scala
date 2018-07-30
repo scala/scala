@@ -1,3 +1,5 @@
+// scalac: -Ywarn-unused -Xfatal-warnings
+//
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
   private def bippy(x: Int): Int      = bippy(x)  // TODO: could warn
@@ -19,6 +21,8 @@ class B1(msg: String) extends A(msg)
 class B2(msg0: String) extends A(msg0)
 class B3(msg0: String) extends A("msg")
 
+trait Bing
+
 /*** Early defs warnings disabled primarily due to scala/bug#6595.
  *   The test case is here to assure we aren't issuing false positives;
  *   the ones labelled "warn" don't warn.
@@ -31,7 +35,7 @@ class Boppy extends {
   final val himinline     = him
   private val hum: String = "jkl"       // warn
   final val ding = hmm.length
-} with Mutable {
+} with Bing {
   val dinger = hom
   private val hummer = "def" // warn
 

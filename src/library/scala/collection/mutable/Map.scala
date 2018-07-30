@@ -126,50 +126,38 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 
   override def clone(): C = empty ++= toIterable
 
-  def mapInPlace(f: ((K, V)) => (K, V)): this.type = {
-    val toAdd = Map[K, V]()
-    for (elem <- this) {
-        toAdd += f(elem)
-    }
-    coll.clear()
-    coll ++= toAdd
-    this
-  }
-
-  def flatMapInPlace(f: ((K, V)) => IterableOnce[(K, V)]): this.type = {
-    val toAdd = Map[K, V]()
-    val toKeep = Map[K, V]()
-    for (elem <- this) {
-      for ((k,v) <- f(elem).iterator){
-        if (contains(k) && this(k) == v) {
-          toKeep += ((k,v)) 
-        } else {
-          toAdd += ((k,v)) 
-        }
-      }
-    }
-    coll.clear()
-    coll ++= toKeep
-    coll ++= toAdd
-    this
-  }
-
-  def filterInPlace(p: ((K, V)) => Boolean): this.type = {
-    val toRemove = Set[K]()
-    for (elem <- this)
-      if (!p(elem)) toRemove += elem._1
-    for (elem <- toRemove)
-      coll -= elem
-    this
-  }
+  @deprecated("Use filterInPlace instead", "2.13.0")
+  @inline final def retain(p: (K, V) => Boolean): this.type = filterInPlace(p)
 
   /** Retains only those mappings for which the predicate
     *  `p` returns `true`.
     *
     * @param p  The test predicate
     */
-  @deprecated("Use .filterInPlace instead of .retain", "2.13.0")
-  @`inline` final def retain(p: (K, V) => Boolean): this.type = filterInPlace(p.tupled)
+  def filterInPlace(p: (K, V) => Boolean): this.type = {
+    for ((k, v) <- this.toList) // scala/bug#7269 toList avoids ConcurrentModificationException
+      if (!p(k, v)) this -= k
+
+    this
+  }
+
+  @deprecated("Use mapValuesInPlace instead", "2.13.0")
+  @inline final def transform(f: (K, V) => V): this.type = mapValuesInPlace(f)
+
+  /** Applies a transformation function to all values contained in this map.
+    * The transformation function produces new values from existing keys
+    * associated values.
+    *
+    * @param f  the transformation to apply
+    * @return   the map itself.
+    */
+  def mapValuesInPlace(f: (K, V) => V): this.type = {
+    iterator foreach {
+      case (key, value) => update(key, f(key, value))
+    }
+    this
+  }
+
 }
 
 /**

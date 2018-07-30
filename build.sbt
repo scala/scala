@@ -57,8 +57,7 @@ val partestDependencies =  Seq(
   "methvsfield" -> "be8454d5e7751b063ade201c225dcedefd252775",
   "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
 ).map(bootstrapDep("test/files/lib")) ++ Seq(
-  bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test",
-  bootstrapDep("test/files/speclib")("instrumented" -> "d015eff38243f1c2edb44ac3b6a0ce99bc5656db") % "test"
+  bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test"
 )
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
@@ -158,7 +157,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     // END: Copy/pasted from SBT
   },
   fork in run := true,
-  //scalacOptions += "-Xlint:-nullary-override,-by-name-right-associative,-inaccessible,_",
+  //scalacOptions += "-Xlint:-nullary-override,-inaccessible,_",
   //scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
@@ -552,6 +551,36 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
     libraryDependencies += testInterfaceDep
   )
 
+// An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
+lazy val specLib = project.in(file("test") / "instrumented")
+  .dependsOn(library, reflect, compiler)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    sourceGenerators in Compile += Def.task {
+      import scala.collection.JavaConverters._
+      val srcBase = (sourceDirectories in Compile in library).value.head / "scala/runtime"
+      val targetBase = (sourceManaged in Compile).value / "scala/runtime"
+      def patch(srcFile: String, patchFile: String): File = try {
+        val p = difflib.DiffUtils.parseUnifiedDiff(IO.readLines(baseDirectory.value / patchFile).asJava)
+        val r = difflib.DiffUtils.patch(IO.readLines(srcBase / srcFile).asJava, p)
+        val target = targetBase / srcFile
+        IO.writeLines(target, r.asScala)
+        target
+      } catch { case ex: Exception =>
+        streams.value.log.error(s"Error patching $srcFile: $ex")
+        throw ex
+      }
+      IO.createDirectory(targetBase)
+      Seq(
+        patch("BoxesRunTime.java", "boxes.patch"),
+        patch("ScalaRunTime.scala", "srt.patch")
+      )
+    }.taskValue
+  )
+
 // The scala version used by the benchmark suites, leave undefined to use the ambient version.")
 def benchmarkScalaVersion = System.getProperty("benchmark.scala.version", "")
 
@@ -613,11 +642,11 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
 
 lazy val osgiTestFelix = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestFelix"),
-  "org.apache.felix" % "org.apache.felix.framework" % "5.0.1")
+  "org.apache.felix" % "org.apache.felix.framework" % "5.6.10")
 
 lazy val osgiTestEclipse = osgiTestProject(
   project.in(file(".") / "target" / "osgiTestEclipse"),
-  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.10.100.v20150521-1310")
+  "org.eclipse.tycho" % "org.eclipse.osgi" % "3.13.0.v20180226-1711")
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
@@ -629,7 +658,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     fork in Test := true,
     parallelExecution in Test := false,
     libraryDependencies ++= {
-      val paxExamVersion = "4.5.0" // Last version which supports Java 6
+      val paxExamVersion = "4.11.0" // Last version which supports Java 9+
       Seq(
         junitDep,
         junitInterfaceDep,
@@ -645,6 +674,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
       )
     },
     Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
+    Keys.testOnly in Test := (Keys.testOnly in Test).dependsOn(packageBin in Compile).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
@@ -702,9 +732,9 @@ lazy val test = project
     testOptions in IntegrationTest += Tests.Setup { () =>
       val cp = (dependencyClasspath in Test).value
       val baseDir = (baseDirectory in ThisBuild).value
-      // Copy code.jar and instrumented.jar (resolved in the otherwise unused scope "test") to the location where partest expects them
+      // Copy code.jar (resolved in the otherwise unused scope "test") and instrumented.jar (from specLib) to the location where partest expects them
       copyBootstrapJar(cp, baseDir, "test/files/codelib", "code")
-      copyBootstrapJar(cp, baseDir, "test/files/speclib", "instrumented")
+      IO.copyFile((packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2, baseDir / "test/files/speclib/instrumented.jar")
     },
     definedTests in IntegrationTest += new sbt.TestDefinition(
       "partest",

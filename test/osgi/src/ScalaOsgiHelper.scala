@@ -20,7 +20,11 @@ trait ScalaOsgiHelper {
 
   def standardOptions: Array[exam.Option]  = {
     val bundles = (allBundleFiles map makeBundle)
-    bundles ++ Array[exam.Option](junitBundles())
+    bundles ++ Array[exam.Option](junitBundles(), bootDelegationPackages(
+      "sun.*",
+      "com.sun.*",
+      "jdk.*"
+    ))
     // to change the local repo used (for some operations, but not all -- which is why I didn't bother):
     // systemProperty("org.ops4j.pax.url.mvn.localRepository").value(sys.props("maven.repo.local")))
   }

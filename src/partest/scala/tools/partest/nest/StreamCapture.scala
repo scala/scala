@@ -41,7 +41,12 @@ object StreamCapture {
   def withExtraProperties[A](extra: Map[String, String])(action: => A): A = {
     val saved = System.getProperties()
     val modified = new java.util.Properties()
-    modified.putAll(saved)
+    // on Java 9, we need to cast our way around this:
+    // src/main/scala/scala/tools/partest/nest/StreamCapture.scala:44: ambiguous reference to overloaded definition,
+    // both method putAll in class Properties of type (x$1: java.util.Map[_, _])Unit
+    // and  method putAll in class Hashtable of type (x$1: java.util.Map[_ <: Object, _ <: Object])Unit
+    // match argument types (java.util.Properties)
+    (modified: java.util.Hashtable[AnyRef, AnyRef]).putAll(saved)
     extra.foreach { case (k, v) => modified.setProperty(k, v) }
     // Trying to avoid other threads seeing the new properties object prior to the new entries
     // https://github.com/scala/scala/pull/6391#issuecomment-371346171

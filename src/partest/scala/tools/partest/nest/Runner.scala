@@ -57,7 +57,7 @@ trait TestInfo {
 }
 
 /** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: NestUI) extends TestInfo {
+class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestInfo {
   private val stopwatch = new Stopwatch()
 
   import suiteRunner.{fileManager => fm, _}
@@ -71,11 +71,10 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
   def isEnumeratedTest = false
 
   private var _lastState: TestState = null
-  private val _transcript = new TestTranscript(nestUI.color)
+  private val _transcript = new TestTranscript
 
   def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
   def setLastState(s: TestState)  = _lastState = s
-  def transcript: List[String]    = _transcript.fail ++ logFile.fileLines
   def pushTranscript(msg: String) = _transcript add msg
 
   val parentFile = testFile.getParentFile
@@ -93,7 +92,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
 
   def showCrashInfo(t: Throwable): Unit = {
     System.err.println(s"Crashed running test $testIdent: " + t)
-    if (!nestUI.terse)
+    if (!suiteRunner.terse)
       System.err.println(stackTraceString(t))
   }
   protected def crashHandler: PartialFunction[Throwable, TestState] = {
@@ -106,10 +105,10 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
   }
 
   def genPass()                   = Pass(testFile)
-  def genFail(reason: String)     = Fail(testFile, reason, _transcript.fail.toArray)
+  def genFail(reason: String)     = Fail(testFile, reason, transcript.toArray)
   def genSkip(reason: String)     = Skip(testFile, reason)
-  def genTimeout()                = Fail(testFile, "timed out", _transcript.fail.toArray)
-  def genCrash(caught: Throwable) = Crash(testFile, caught, _transcript.fail.toArray)
+  def genTimeout()                = Fail(testFile, "timed out", transcript.toArray)
+  def genCrash(caught: Throwable) = Crash(testFile, caught, transcript.toArray)
   def genUpdated()                = Updated(testFile)
 
   private def workerError(msg: String): Unit = System.err.println("Error: " + msg)
@@ -157,7 +156,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     val argsFile  = testFile changeExtension "javaopts"
     val javaopts = readOptionsFile(argsFile)
     if (javaopts.nonEmpty)
-      nestUI.verbose(s"Found javaopts file '$argsFile', using options: '${javaopts.mkString(",")}'")
+      suiteRunner.verbose(s"Found javaopts file '$argsFile', using options: '${javaopts.mkString(",")}'")
 
     // Note! As this currently functions, suiteRunner.javaOpts must precede argString
     // because when an option is repeated to java only the last one wins.
@@ -186,7 +185,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
 
   def propertyOptions(fork: Boolean): List[(String, String)] = {
     val testFullPath = testFile.getAbsolutePath
-    val extras =   if (nestUI.debug) List("partest.debug" -> "true") else Nil
+    val extras =   if (suiteRunner.debug) List("partest.debug" -> "true") else Nil
     val immutablePropsToCheck = List[(String, String)](
       "file.encoding" -> "UTF-8",
       "user.language" -> "en",
@@ -229,11 +228,11 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
       try p.exitValue
       catch {
         case e: InterruptedException =>
-          nestUI.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
+          suiteRunner.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
           p.destroy
           nonzero
         case t: Throwable =>
-          nestUI.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
+          suiteRunner.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
           p.destroy
           throw t
       }
@@ -309,7 +308,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
   }
 
   def fail(what: Any) = {
-    nestUI.verbose("scalac: compilation of "+what+" failed\n")
+    suiteRunner.verbose("scalac: compilation of "+what+" failed\n")
     false
   }
 
@@ -322,18 +321,22 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
    *  A missing flag evaluates the same as true.
    */
   def filteredCheck: Seq[String] = {
-    import scala.util.Properties.{javaVersion, isAvian}
-    // use lines in block so labeled? Default to sorry, Charlie.
-    def retainOn(expr: String) = {
-      val f = expr.trim
-      val allArgs = suiteRunner.scalacExtraArgs ++ suiteRunner.scalacOpts.split(' ')
-      def flagWasSet(f: String) = allArgs contains f
-      val (invert, token) =
-        if (f startsWith "!") (true, f drop 1) else (false, f)
+    import scala.util.Properties.{javaSpecVersion, isAvian}
+    import scala.tools.nsc.settings.ScalaVersion
+    // use lines in block with this label?
+    def retainOn(expr0: String) = {
+      val expr = expr0.trim
+      def flagWasSet(f: String) = {
+        val allArgs = suiteRunner.scalacExtraArgs ++ suiteRunner.scalacOpts.split(' ')
+        allArgs contains f
+      }
+      val (invert, token) = if (expr startsWith "!") (true, expr drop 1) else (false, expr)
+      val javaN = raw"java(\d+)(\+)?".r
       val cond = token.trim match {
-        case "java8"  => javaVersion startsWith "1.8"
-        case "java7"  => javaVersion startsWith "1.7"
-        case "java6"  => javaVersion startsWith "1.6"
+        case javaN(v, up) =>
+          val required = ScalaVersion(if (v.toInt <= 8) s"1.$v" else v)
+          val current  = ScalaVersion(javaSpecVersion)
+          if (up != null) current >= required else current == required
         case "avian"  => isAvian
         case "true"   => true
         case "-optimise" | "-optimize"
@@ -411,7 +414,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     )
 
     def masters    = {
-      val files = List(new File(parentFile, "filters"), new File(PathSettings.srcDir.path, "filters"))
+      val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
       files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
     }
     val filters    = toolArgs("filter", split = false) ++ masters
@@ -426,8 +429,8 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     )
 
     logFile.mapInPlace(canonicalize)(lineFilter)
-    if (nestUI.verbose && elisions.nonEmpty) {
-      import nestUI.color._
+    if (suiteRunner.verbose && elisions.nonEmpty) {
+      import suiteRunner.log._
       val emdash = bold(yellow("--"))
       pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
     }
@@ -445,7 +448,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     pushTranscript(s"diff $checkFile $logFile")
     nextTestAction(updating) {
       case Some(true)  =>
-        nestUI.verbose("Updating checkfile " + checkFile)
+        suiteRunner.verbose("Updating checkfile " + checkFile)
         checkFile writeAll file2String(logFile)
         genUpdated()
       case Some(false) =>
@@ -595,7 +598,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
   }
 
   def extraClasspath = kind match {
-    case "specialized"  => List(PathSettings.srcSpecLib.fold(sys.error, identity))
+    case "specialized"  => List(suiteRunner.pathSettings.srcSpecLib.fold(sys.error, identity))
     case _              => Nil
   }
   def extraJavaOptions = kind match {
@@ -608,7 +611,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     val prompt = "\nnsc> "
     val (swr, wr) = newTestWriters()
 
-    nestUI.verbose(s"$this running test $fileBase")
+    suiteRunner.verbose(s"$this running test $fileBase")
     val dir = parentFile
     val resFile = new File(dir, fileBase + ".res")
 
@@ -616,7 +619,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
     val sourcedir  = logFile.getParentFile.getAbsoluteFile
     val sourcepath = sourcedir.getAbsolutePath+File.separator
-    nestUI.verbose("sourcepath: "+sourcepath)
+    suiteRunner.verbose("sourcepath: "+sourcepath)
 
     val argList = List(
       "-d", outDir.getAbsoluteFile.getPath,
@@ -638,9 +641,9 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
     object compiler extends Global(command.settings, reporter)
 
     def resCompile(line: String): Boolean = {
-      // NestUI.verbose("compiling "+line)
+      // suiteRunner.verbose("compiling "+line)
       val cmdArgs = (line split ' ').toList map (fs => new File(dir, fs).getAbsolutePath)
-      // NestUI.verbose("cmdArgs: "+cmdArgs)
+      // suiteRunner.verbose("cmdArgs: "+cmdArgs)
       val sett = new Settings(workerError)
       sett.sourcepath.value = sourcepath
       val command = new CompilerCommand(cmdArgs, sett)
@@ -744,10 +747,20 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner, val nestUI: Ne
   def cleanup(): Unit = {
     if (lastState.isOk)
       logFile.delete()
-    if (!nestUI.debug)
+    if (!suiteRunner.debug)
       Directory(outDir).deleteRecursively()
   }
 
+  // Colorize prompts according to pass/fail
+  def transcript: List[String] = {
+    import suiteRunner.log._
+    def pass(s: String) = bold(green("% ")) + s
+    def fail(s: String) = bold(red("% ")) + s
+    _transcript.toList match {
+      case Nil  => Nil
+      case xs   => (xs.init map pass) :+ fail(xs.last)
+    }
+  }
 }
 
 /** Loads `library.properties` from the jar. */
@@ -808,20 +821,10 @@ object Output {
   }
 }
 
-class TestTranscript(color: Colors) {
-  private val buf = ListBuffer[String]()
+final class TestTranscript {
+  private[this] val buf = ListBuffer[String]()
 
   def add(action: String): this.type = { buf += action ; this }
   def append(text: String): Unit = { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
-
-  // Colorize prompts according to pass/fail
-  def fail: List[String] = {
-    import color._
-    def pass(s: String) = bold(green("% ")) + s
-    def fail(s: String) = bold(red("% ")) + s
-    buf.toList match {
-      case Nil  => Nil
-      case xs   => (xs.init map pass) :+ fail(xs.last)
-    }
-  }
+  def toList = buf.toList
 }

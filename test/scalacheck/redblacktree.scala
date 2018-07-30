@@ -178,7 +178,7 @@ object TestRange extends RedBlackTreeTest with RedBlackTreeInvariants  {
   override type ModifyParm = (Option[Int], Option[Int])
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = for {
     from <- choose(0, iterator(tree).size)
-    to <- choose(0, iterator(tree).size) suchThat (from <=)
+    to <- choose(0, iterator(tree).size) suchThat (from <= _)
     optionalFrom <- oneOf(Some(from), None, Some(from)) // Double Some(n) to get around a bug
     optionalTo <- oneOf(Some(to), None, Some(to)) // Double Some(n) to get around a bug
   } yield (optionalFrom, optionalTo)
@@ -200,8 +200,8 @@ object TestRange extends RedBlackTreeTest with RedBlackTreeInvariants  {
     val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
     val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
     val filteredTree = (keysIterator(tree)
-      .filter(key => from forall (key >=))
-      .filter(key => to forall (key <))
+      .filter(key => from forall (key >= _))
+      .filter(key => to forall (key < _))
       .toList)
     filteredTree == keysIterator(newTree).toList
   }

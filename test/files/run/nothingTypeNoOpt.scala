@@ -1,3 +1,5 @@
+// scalac: -opt:l:none
+//
 // See comment in BCodeBodyBuilder
 
 // -target:jvm-1.6 -opt:l:none

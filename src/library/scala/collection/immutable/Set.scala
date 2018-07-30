@@ -54,6 +54,18 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
+
+  /** Creates a new $coll from this $coll by removing all elements of another
+    *  collection.
+    *
+    *  @param that the collection containing the elements to remove.
+    *  @return a new $coll with the given elements removed, omitting duplicates.
+    */
+  def removeAll(that: IterableOnce[A]): C = that.iterator.foldLeft[C](coll)(_ - _)
+
+  /** Alias for removeAll */
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  override /*final*/ def -- (that: IterableOnce[A]): C = removeAll(that)
 }
 
 /**

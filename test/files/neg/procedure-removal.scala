@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.14
+//
 abstract class Foo {
   def bar {}
   def baz

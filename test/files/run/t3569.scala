@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 object Test {
   final val bippy1 = 1
   final lazy val bippy2 = 2

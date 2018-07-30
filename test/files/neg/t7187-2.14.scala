@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.14
+//
 class EtaExpand214 {
   def m1 = 1
   def m2() = 1

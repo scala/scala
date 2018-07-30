@@ -1,3 +1,5 @@
+import language.higherKinds
+
 object Test {
   class TcHk[F[_]]
   trait Foo { type T }

@@ -38,11 +38,13 @@ final class HashSet[A]
     this
   }
 
+  override def add(elem: A): Boolean = table.addElem(elem)
+
+  override def remove(elem: A): Boolean = table.removeElem(elem)
+
   def clear(): Unit = table.clearTable()
 
   def contains(elem: A): Boolean = table.containsElem(elem)
-
-  def get(elem: A): Option[A] = table.findEntry(elem)
 
   override def knownSize: Int = table.size
 

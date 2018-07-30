@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 import scala.collection.IterableOnceExtensionMethods
 
 // collections-strawman issue #467

@@ -1,8 +1,7 @@
 package scala
 package collection.mutable
 
-import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
-
+import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
@@ -22,7 +21,8 @@ import java.lang.String
 class HashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
+    with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]] {
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
@@ -72,6 +72,11 @@ class HashMap[K, V]
     val e = table.findOrAddEntry(key, value)
     if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
+  }
+
+  override def update(key: K, value: V): Unit = {
+    val e = table.findOrAddEntry(key, value)
+    if (e ne null) e.value = value
   }
 
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {

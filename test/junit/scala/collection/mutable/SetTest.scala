@@ -19,7 +19,6 @@ class SetTest {
     override def empty = new MySet(self.empty)
     def iterator = self.iterator
     def contains(elem: String) = self.contains(elem)
-    def get(elem: String): Option[String] = self.get(elem)
     def clear(): Unit = self.clear()
   }
 
@@ -28,27 +27,5 @@ class SetTest {
     val s = new MySet(Set("EXPOSEDNODE", "CONNECTABLE"))
     s.clear()
     assertEquals(new MySet(Set()), s)
-  }
-
-  @Test
-  def flatMapInPlace(): Unit = {
-    val s = Set(1, 2)
-    val tens = s.flatMapInPlace(e => Set(e, e + 10))
-    assert(tens == Set(1, 11, 2, 12))
-  }
-
-  @Test
-  def flatMapInPlaceAddOne(): Unit = {
-    val s = Set(1, 2, 3)
-    val ss = s.flatMapInPlace(e => Set(e + 1, e + 2))
-    assert(ss == Set(2, 3, 4, 5))
-  }
-
-  @Test // From strawman collection #509
-  def flatMapInPlace_dropElements(): Unit = {
-    val set = Set(1)
-    val empty = Set.empty[Int]
-    val fmip = set.flatMapInPlace(_ => empty)
-    assert(fmip.size == 0)
   }
 }

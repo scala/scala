@@ -1,3 +1,6 @@
+
+// scalac: -Xsource:2.13
+
 object Test {
 
   // Data types

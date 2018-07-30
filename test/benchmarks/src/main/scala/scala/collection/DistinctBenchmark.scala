@@ -15,7 +15,7 @@ class DistinctBenchmark {
   @Param(Array("0", "1", "2", "5", "10", "20", "50", "100", "1000"))
   var size: Int = _
 
-  @Param(Array("List", "Vector"))
+  @Param(Array("List", "Vector", "ListBuffer"))
   var collectionType: String = _
 
   var distinctDataSet: Seq[String] = null
@@ -36,6 +36,7 @@ class DistinctBenchmark {
     val adjustCollectionType: (Seq[String] => Seq[String]) = collectionType match {
       case "List" => (col: Seq[String]) => col.toList
       case "Vector" => (col: Seq[String]) => col.toVector
+      case "ListBuffer" => (col: Seq[String]) => mutable.ListBuffer.from(col)
     }
 
     distinctDataSet = adjustCollectionType(b1.result())

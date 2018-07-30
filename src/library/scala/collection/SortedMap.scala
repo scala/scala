@@ -166,10 +166,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit @implicitNotFound(SortedMapOps.ordMsg) ordering: Ordering[K2]): CC[K2, V2] =
-    flatMap { kv =>
-      if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
-      else View.Empty
-    }
+    sortedMapFactory.from(new View.Collect(toIterable, pf))
 
   override def concat[V2 >: V](xs: Iterable[(K, V2)]): CC[K, V2] = sortedMapFactory.from(new View.Concat(toIterable, xs))
 
@@ -186,7 +183,7 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 }
 
 object SortedMapOps {
-  private final val ordMsg = "No implicit Ordering[${K2}] found to build a SortedMap[${K2}, ${V2}]. You may want to upcast to a Map[${K}, ${V}] first by calling `unsorted`."
+  private[collection] final val ordMsg = "No implicit Ordering[${K2}] found to build a SortedMap[${K2}, ${V2}]. You may want to upcast to a Map[${K}, ${V}] first by calling `unsorted`."
 
   /** Specializes `MapWithFilter` for sorted Map collections
     *

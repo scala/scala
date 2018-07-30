@@ -1,10 +1,12 @@
 package scala
 package collection
 
+import java.lang.Math.{min, max}
+
 import mutable.ArrayBuilder
 import immutable.Range
 import scala.reflect.ClassTag
-import scala.math.{max, min, Ordering}
+import scala.math.Ordering
 import scala.Predef.{ // unimport all array-related implicit conversions to avoid triggering them accidentally
   genericArrayOps => _,
   booleanArrayOps => _,
@@ -219,7 +221,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *        x >  0       if this.length >  len
     *   }}}
     */
-  def lengthCompare(len: Int): Int = xs.length - len
+  def lengthCompare(len: Int): Int = Integer.compare(xs.length, len)
 
   /** Selects an interval of elements. The returned array is made up
     * of all elements `x` which satisfy the invariant:
@@ -234,24 +236,20 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           of this array.
     */
   def slice(from: Int, until: Int): Array[A] = {
+    import java.util.Arrays.copyOfRange
     val lo = max(from, 0)
-    val hi = min(max(until, 0), xs.length)
-    val len = max(hi - lo, 0)
-    if(len > 0) {
+    val hi = min(until, xs.length)
+    if (hi > lo) {
       ((xs: Array[_]) match {
-        case x: Array[AnyRef]     => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Int]        => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Double]     => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Long]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Float]      => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Char]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Byte]       => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Short]      => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Boolean]    => java.util.Arrays.copyOfRange(x, lo, hi)
-        case x: Array[Unit]       =>
-          val res = new Array[Unit](len)
-          Array.copy(xs, lo, res, 0, len)
-          res
+        case x: Array[AnyRef]     => copyOfRange(x, lo, hi)
+        case x: Array[Int]        => copyOfRange(x, lo, hi)
+        case x: Array[Double]     => copyOfRange(x, lo, hi)
+        case x: Array[Long]       => copyOfRange(x, lo, hi)
+        case x: Array[Float]      => copyOfRange(x, lo, hi)
+        case x: Array[Char]       => copyOfRange(x, lo, hi)
+        case x: Array[Byte]       => copyOfRange(x, lo, hi)
+        case x: Array[Short]      => copyOfRange(x, lo, hi)
+        case x: Array[Boolean]    => copyOfRange(x, lo, hi)
       }).asInstanceOf[Array[A]]
     } else new Array[A](0)
   }
@@ -282,13 +280,13 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Array[A] => Array[A]): Iterator[Array[A]] =
-    Iterator.iterate(xs)(f).takeWhile(x => x.length != 0) ++ Iterator(Array.empty[A])
+    Iterator.iterate(xs)(f).takeWhile(x => x.length != 0) ++ Iterator.single(Array.empty[A])
 
   /** An array containing the first `n` elements of this array. */
-  def take(n: Int): Array[A] = slice(0, min(n, xs.length))
+  def take(n: Int): Array[A] = slice(0, n)
 
   /** The rest of the array without its `n` first elements. */
-  def drop(n: Int): Array[A] = slice(min(n, xs.length), xs.length)
+  def drop(n: Int): Array[A] = slice(n, xs.length)
 
   /** An array containing the last `n` elements of this array. */
   def takeRight(n: Int): Array[A] = drop(xs.length - max(n, 0))
@@ -533,7 +531,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           to `elem`, or `-1`, if none exists.
     */
   def lastIndexOf[B >: A](elem: B, end: Int = xs.length - 1): Int = {
-    var i = math.min(end, xs.length-1)
+    var i = min(end, xs.length-1)
     while(i >= 0) {
       if(elem == xs(i)) return i
       i -= 1
@@ -548,7 +546,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *           or `-1`, if none exists.
     */
   def lastIndexWhere(p: A => Boolean, end: Int = xs.length - 1): Int = {
-    var i = math.min(end, xs.length-1)
+    var i = min(end, xs.length-1)
     while(i >= 0) {
       if(p(xs(i))) return i
       i -= 1
@@ -869,7 +867,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
   /** Finds the first element of the $coll for which the given partial function is defined, and applies the
     * partial function to it. */
-  def collectFirst[B : ClassTag](f: PartialFunction[A, B]): Option[B] = {
+  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = {
     var i = 0
     var matched = true
     def d(x: A): B = {
@@ -1266,7 +1264,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @tparam B      the type of the elements of the array.
     */
   def copyToArray[B >: A](dest: Array[B], start: Int, len: Int = Int.MaxValue): dest.type = {
-    Array.copy(xs, 0, dest, start, math.min(xs.length, math.min(dest.length-start, len)))
+    Array.copy(xs, 0, dest, start, min(xs.length, min(dest.length-start, len)))
     dest
   }
 

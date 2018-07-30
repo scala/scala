@@ -898,7 +898,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isDeprecated           = hasAnnotation(DeprecatedAttr)
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
-    def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0 orElse Some(nme.NO_NAME))
+    def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (ann => ann.symbolArg(0).orElse(ann.stringArg(0).map(newTermName)).orElse(Some(nme.NO_NAME)))
     def deprecatedParamVersion = getAnnotation(DeprecatedNameAttr) flatMap (_ stringArg 1)
     def hasDeprecatedInheritanceAnnotation
                                = hasAnnotation(DeprecatedInheritanceAttr)
@@ -2580,7 +2580,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (the initial Name) before falling back on id, which varies depending
      *  on exactly when a symbol is loaded.
      */
-    final def sealedSortName: String = initName + "#" + id
+    final def sealedSortName: String = initName.toString + "#" + id
 
     /** String representation of symbol's definition key word */
     final def keyString: String =

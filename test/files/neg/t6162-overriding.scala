@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -deprecation
+//
 package scala.t6162
 
 class Bar {

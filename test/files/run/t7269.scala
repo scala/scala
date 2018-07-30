@@ -10,7 +10,7 @@ object Test extends App {
     assert(11 == mapS.size)
 
     // ConcurrentModificationException thrown in the following line
-    mapS.filterInPlace({ case (i, str) => i % 2 == 0 })
+    mapS.filterInPlace((i, str) => i % 2 == 0)
     assert(6 == mapS.size)
   }
 

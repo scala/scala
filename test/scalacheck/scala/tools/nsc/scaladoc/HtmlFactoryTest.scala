@@ -18,7 +18,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   import scala.tools.nsc.doc.{DocFactory, Settings}
 
   def createFactory: DocFactory = {
-    val settings = new Settings({Console.err.println(_)})
+    val settings = new Settings(Console.err.println)
     settings.scaladocQuietRun = true
     settings.nowarn.value = true
     SettingsUtil.configureClassAndSourcePath(settings)

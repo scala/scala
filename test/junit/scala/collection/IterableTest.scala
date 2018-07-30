@@ -3,7 +3,9 @@ package scala.collection
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.collection.immutable.{ArraySeq, List, Range}
+
+import scala.collection.immutable.{ArraySeq, List, Range, Vector}
+import scala.language.higherKinds
 import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
@@ -17,6 +19,22 @@ class IterableTest {
   @Test
   def flattenTest: Unit = {
     f(List(ArraySeq(1, 2, 3)), List(1, 2, 3))
+  }
+
+  @Test
+  def concatTest: Unit = {
+    val seq = Seq.concat(Seq(1, 2, 3), Iterable(4, 5, 6))
+    assert(seq == Seq(1, 2, 3, 4, 5, 6))
+
+    val vector = Vector.concat(Seq(1, 2, 3), Iterable(4, 5, 6))
+    assert(vector == Vector(1, 2, 3, 4, 5, 6))
+
+    val set = Set.concat(Seq(1, 2, 3), Iterable(3, 4, 5))
+    assert(set == Set(1, 2, 3, 4, 5))
+
+    val iterator = Iterator.concat(Seq(1, 2, 3), Seq(4, 5, 6))
+    assert(iterator.toSeq == Seq(1, 2, 3, 4, 5, 6))
+    assert(iterator.isEmpty)
   }
 
   @Test
@@ -40,6 +58,34 @@ class IterableTest {
     val xs = Seq('a', 'b', 'b', 'c', 'a', 'a', 'a', 'b')
     val expected = Map('a' -> 4, 'b' -> 3, 'c' -> 1)
     Assert.assertEquals(expected, occurrences(xs))
+  }
+
+  @Test
+  def sizeCompareInt(): Unit = {
+    val seq = Seq(1, 2, 3)
+    assert(seq.sizeCompare(2) > 0)
+    assert(seq.sizeCompare(3) == 0)
+    assert(seq.sizeCompare(4) < 0)
+  }
+
+  @Test
+  def sizeCompareIterable(): Unit = {
+    def check[I1[X] <: Iterable[X], I2[X] <: Iterable[X]]
+    (f1: IterableFactory[I1], f2: IterableFactory[I2]): Unit = {
+      val it = f1(1, 2, 3)
+      assert(it.sizeCompare(f2(1, 2)) > 0)
+      assert(it.sizeCompare(f2(1, 2, 3)) == 0)
+      assert(it.sizeCompare(f2(1, 2, 3, 4)) < 0)
+    }
+
+    // factories for `Seq`s with known and unknown size
+    val known: IterableFactory[IndexedSeq] = Vector
+    val unknown: IterableFactory[LinearSeq] = List
+
+    check(known, known)
+    check(known, unknown)
+    check(unknown, known)
+    check(unknown, unknown)
   }
 
   @Test def copyToArray(): Unit = {

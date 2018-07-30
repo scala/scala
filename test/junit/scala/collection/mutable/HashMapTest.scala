@@ -49,52 +49,6 @@ class HashMapTest {
   }
 
   @Test
-  def mapInPlace_addOneToAll(): Unit = {
-    val hm = mutable.HashMap[Int, Int]()
-    hm.put(1, 1)
-    hm.put(2, 2)
-    hm.put(3, 3)
-    hm.mapInPlace{ case (k, v) => (k, v + 1) }
-    assertEquals(List((1, 2), (2, 3), (3, 4)), hm.toList.sortBy(_._1))
-  }
-
-  @Test
-  def mapInPlace_reducedToOneKey(): Unit = {
-    val hm = mutable.HashMap[Int, Int]()
-    hm.put(1, 1)
-    hm.put(2, 2)
-    hm.put(3, 3)
-    hm.mapInPlace{ case (_, v) => (1, v + 1) }
-    assert(hm.size == 1)
-    assert(hm.toList.head._2 > 1)
-  }
-
-  @Test
-  def flatMapInPlace(): Unit = {
-    val hm = mutable.HashMap(1 -> 1, 2 -> 2)
-    val fmip = hm.flatMapInPlace { case (k, v) => HashMap(k * 2 -> v * 2) }
-    assert(fmip.size == 2)
-    assert(fmip == HashMap(2 -> 2, 4 -> 4))
-  }
-
-  @Test
-  def flatMapInPlace_reducedToOneKey(): Unit = {
-    val hm = mutable.HashMap(1 -> 1, 2 -> 2, 3->3)
-    val fmip = hm.flatMapInPlace { case (_, v) => HashMap(1 -> v) }
-    assert(fmip.size == 1)
-    assert(fmip.contains(1))
-    assert(fmip(1) == 1 || fmip(1) == 2 || fmip(1) == 3)
-  }
-
-  @Test // From collection/strawman #509
-  def flatMapInPlace_dropElements(): Unit = {
-    val hm = mutable.HashMap(1 -> 1)
-    val empty = mutable.HashMap.empty[Int, Int]
-    val fmip = hm.flatMapInPlace(_ => empty)
-    assert(fmip.size == 0)
-  }
-
-  @Test
   def customGet(): Unit = {
     val gotItAll = new mutable.HashMap[String, String] {
       override def get(key: String): Option[String] = Some(key)

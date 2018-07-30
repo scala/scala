@@ -24,11 +24,10 @@ import java.util.Arrays
   *  @define willNotTerminateInf
   */
 @SerialVersionUID(3L)
-abstract class ArraySeq[T]
+sealed abstract class ArraySeq[T]
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
-    with IndexedOptimizedSeq[T]
     with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]] {
 
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
@@ -48,7 +47,7 @@ abstract class ArraySeq[T]
   def elemTag: ClassTag[_]
 
   /** Update element at given index */
-  def update(index: Int, elem: T): Unit
+  def update(@deprecatedName("idx", "2.13.0") index: Int, elem: T): Unit
 
   /** The underlying array. Its element type does not have to be equal to the element type of this ArraySeq. A primitive
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
@@ -60,7 +59,7 @@ abstract class ArraySeq[T]
   /** Clones this object, including the underlying Array. */
   override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]
 
-  override def copyToArray[B >: T](xs: Array[B], start: Int = 0): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: T](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
 
   override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): xs.type = {
     val l = scala.math.min(scala.math.min(len, length), xs.length-start)
@@ -75,6 +74,11 @@ abstract class ArraySeq[T]
       false
     case _ =>
       super.equals(other)
+  }
+
+  override def sortInPlace[B >: T]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    this
   }
 }
 
@@ -179,6 +183,27 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     override def equals(that: Any) = that match {
       case that: ofChar => Arrays.equals(array, that.array)
       case _ => super.equals(that)
+    }
+
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+      val jsb = sb.underlying
+      if (start.length != 0) jsb.append(start)
+      val len = array.length
+      if (len != 0) {
+        if (sep.isEmpty) jsb.append(array)
+        else {
+          jsb.ensureCapacity(jsb.length + len + end.length + (len - 1) * sep.length)
+          jsb.append(array(0))
+          var i = 1
+          while (i < len) {
+            jsb.append(sep)
+            jsb.append(array(i))
+            i += i
+          }
+        }
+      }
+      if (end.length != 0) jsb.append(end)
+      sb
     }
   }
 

@@ -60,6 +60,9 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     * @param start The lower-bound (inclusive) of the iterator
     */
   def iteratorFrom(start: A): Iterator[A]
+  
+  @deprecated("Use `iteratorFrom` instead.", "2.13.0")
+  @`inline` def keysIteratorFrom(start: A): Iterator[A] = iteratorFrom(start)
 
   def firstKey: A = head
   def lastKey: A = last
@@ -132,10 +135,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                The order of the elements is preserved.
     */
   def collect[B](pf: scala.PartialFunction[A, B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
-    flatMap(a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty)
-
+    sortedFromIterable(new View.Collect(toIterable, pf))
 }
 
 object SortedSetOps {

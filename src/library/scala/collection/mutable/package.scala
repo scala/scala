@@ -20,4 +20,10 @@ package object mutable {
 
   @deprecated("GrowingBuilder has been renamed to GrowableBuilder", "2.13.0")
   type GrowingBuilder[Elem, To <: Growable[Elem]] = GrowableBuilder[Elem, To]
+
+  @deprecated("IndexedOptimizedSeq has been renamed to IndexedSeq", "2.13.0")
+  type IndexedOptimizedSeq[A] = IndexedSeq[A]
+
+  @deprecated("IndexedOptimizedBuffer has been renamed to IndexedBuffer", "2.13.0")
+  type IndexedOptimizedBuffer[A] = IndexedBuffer[A]
 }

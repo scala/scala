@@ -19,12 +19,31 @@ trait Buffer[A]
     */
   def prepend(elem: A): this.type
 
+  /** Appends the given elements to this buffer.
+    *
+    *  @param elem  the element to append.
+    */
   @`inline` final def append(elem: A): this.type = addOne(elem)
+
+  @deprecated("Use appendAll instead", "2.13.0")
+  @`inline` final def append(elems: A*): this.type = addAll(elems)
+
+  /** Appends the elements contained in a iterable object to this buffer.
+    *  @param xs  the iterable object containing the elements to append.
+    */
+  @`inline` final def appendAll(xs: IterableOnce[A]): this.type = addAll(xs)
+
 
   /** Alias for `prepend` */
   @`inline` final def +=: (elem: A): this.type = prepend(elem)
 
   def prependAll(elems: IterableOnce[A]): this.type = { insertAll(0, elems); this }
+
+  @deprecated("Use prependAll instead", "2.13.0")
+  @`inline` final def prepend(elems: A*): this.type = prependAll(elems)
+
+  /** Alias for `prependAll` */
+  @inline final def ++=:(elems: IterableOnce[A]): this.type = prependAll(elems)
 
   /** Inserts a new element at a given index into this buffer.
     *
@@ -137,7 +156,11 @@ trait Buffer[A]
   override protected[this] def stringPrefix = "Buffer"
 }
 
-trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
+trait IndexedBuffer[A] extends IndexedSeq[A]
+  with IndexedSeqOps[A, IndexedBuffer, IndexedBuffer[A]]
+  with Buffer[A] {
+
+  override def iterableFactory: SeqFactory[IndexedBuffer] = IndexedBuffer
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
     // There's scope for a better implementation which copies elements in place.
@@ -183,6 +206,9 @@ trait IndexedOptimizedBuffer[A] extends IndexedOptimizedSeq[A] with Buffer[A] {
 
 @SerialVersionUID(3L)
 object Buffer extends SeqFactory.Delegate[Buffer](ArrayBuffer)
+
+@SerialVersionUID(3L)
+object IndexedBuffer extends SeqFactory.Delegate[IndexedBuffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)

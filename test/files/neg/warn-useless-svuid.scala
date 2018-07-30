@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 @SerialVersionUID(1L)
 class X
 

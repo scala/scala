@@ -22,11 +22,11 @@ package scala
  *
  *  The language features are:
  *   - [[dynamics            `dynamics`]]            enables defining calls rewriting using the [[scala.Dynamic `Dynamic`]] trait
- *   - [[postfixOps          `postfixOps`]]          enables postfix operators
- *   - [[reflectiveCalls     `reflectiveCalls`]]     enables using structural types
- *   - [[implicitConversions `implicitConversions`]] enables defining implicit methods and members
- *   - [[higherKinds         `higherKinds`]]         enables writing higher-kinded types
  *   - [[existentials        `existentials`]]        enables writing existential types
+ *   - [[higherKinds         `higherKinds`]]         enables writing higher-kinded types
+ *   - [[implicitConversions `implicitConversions`]] enables defining implicit methods and members
+ *   - [[postfixOps          `postfixOps`]]          enables postfix operators (not recommended)
+ *   - [[reflectiveCalls     `reflectiveCalls`]]     enables using structural types
  *   - [[experimental        `experimental`]]        contains newer features that have not yet been tested in production
  *
  *  @groupname production   Language Features
@@ -37,10 +37,11 @@ object language {
 
   import languageFeature._
 
-  /** Where enabled, direct or indirect subclasses of trait scala.Dynamic can
-   *  be defined. Unless dynamics is enabled, a definition of a class, trait,
-   *  or object that has Dynamic as a base trait is rejected. Dynamic member
-   *  selection of existing subclasses of trait Dynamic are unaffected;
+  /** Only where this feature is enabled, can direct or indirect subclasses of trait scala.Dynamic
+   *  be defined. If `dynamics` is not enabled, a definition of a class, trait,
+   *  or object that has `Dynamic` as a base trait is rejected by the compiler.
+   *
+   *  Selections of dynamic members of existing subclasses of trait `Dynamic` are unaffected;
    *  they can be used anywhere.
    *
    *  '''Why introduce the feature?''' To enable flexible DSLs and convenient interfacing
@@ -54,19 +55,28 @@ object language {
    */
   implicit lazy val dynamics: dynamics = languageFeature.dynamics
 
-  /** Only where enabled, postfix operator notation `(expr op)` will be allowed.
+  /** Only where this feature is enabled, is postfix operator notation `(expr op)` permitted.
+   *  If `postfixOps` is not enabled, an expression using postfix notation is rejected by the compiler.
    *
-   *  '''Why keep the feature?''' Several DSLs written in Scala need the notation.
+   *  '''Why keep the feature?''' Postfix notation is preserved for backward
+   *  compatibility only. Historically, several DSLs written in Scala need the notation.
    *
    *  '''Why control it?''' Postfix operators interact poorly with semicolon inference.
-   *   Most programmers avoid them for this reason.
+   *   Most programmers avoid them for this reason alone. Postfix syntax is
+   *   associated with an abuse of infix notation, `a op1 b op2 c op3`,
+   *   that can be harder to read than ordinary method invocation with judicious
+   *   use of parentheses. It is recommended not to enable this feature except for
+   *   legacy code.
    *
    *  @group production
    */
   implicit lazy val postfixOps: postfixOps = languageFeature.postfixOps
 
-  /** Only where enabled, accesses to members of structural types that need
-   *  reflection are supported. Reminder: A structural type is a type of the form
+  /** Where this feature is enabled, accesses to members of structural types that need
+   *  reflection are supported. If `reflectiveCalls` is not enabled, an expression
+   *  requiring reflection will trigger a warning from the compiler.
+   *
+   *  A structural type is a type of the form
    *  `Parents { Decls }` where `Decls` contains declarations of new members that do
    *  not override any member in `Parents`. To access one of these members, a
    *  reflective call is needed.
@@ -83,8 +93,11 @@ object language {
    */
   implicit lazy val reflectiveCalls: reflectiveCalls = languageFeature.reflectiveCalls
 
-  /** Only where enabled, definitions of implicit conversions are allowed. An
-   *  implicit conversion is an implicit value of unary function type `A => B`,
+  /** Where this feature is enabled, definitions of implicit conversions are allowed.
+   *  If `implicitConversions` is not enabled, the definition of an implicit
+   *  conversion will trigger a warning from the compiler.
+   *
+   *  An implicit conversion is an implicit value of unary function type `A => B`,
    *  or an implicit method that has in its first parameter section a single,
    *  non-implicit parameter. Examples:
    *
@@ -94,8 +107,8 @@ object language {
    *     implicit def listToX(xs: List[T])(implicit f: T => X): X = ...
    *  }}}
    *
-   *  implicit values of other types are not affected, and neither are implicit
-   *  classes.
+   *  Implicit classes and implicit values of other types are not governed by this
+   *  language feature.
    *
    *  '''Why keep the feature?''' Implicit conversions are central to many aspects
    *  of Scala’s core libraries.
@@ -110,7 +123,9 @@ object language {
    */
   implicit lazy val implicitConversions: implicitConversions = languageFeature.implicitConversions
 
-  /** Only where this flag is enabled, higher-kinded types can be written.
+  /** Where this feature is enabled, higher-kinded types can be written.
+   *  If `higherKinds` is not enabled, a higher-kinded type such as `F[A]`
+   *  will trigger a warning from the compiler.
    *
    *  '''Why keep the feature?''' Higher-kinded types enable the definition of very general
    *  abstractions such as functor, monad, or arrow. A significant set of advanced
@@ -133,9 +148,12 @@ object language {
    */
   implicit lazy val higherKinds: higherKinds = languageFeature.higherKinds
 
-  /** Only where enabled, existential types that cannot be expressed as wildcard
+  /** Where this feature is enabled, existential types that cannot be expressed as wildcard
    *  types can be written and are allowed in inferred types of values or return
-   *  types of methods. Existential types with wildcard type syntax such as `List[_]`,
+   *  types of methods. If `existentials` is not enabled, those cases will trigger
+   *  a warning from the compiler.
+   *
+   *  Existential types with wildcard type syntax such as `List[_]`,
    *  or `Map[String, _]` are not affected.
    *
    *  '''Why keep the feature?''' Existential types are needed to make sense of Java’s wildcard
@@ -151,8 +169,8 @@ object language {
    */
   implicit lazy val existentials: existentials = languageFeature.existentials
 
-  /** The experimental object contains features that have been recently added but have not
-   *  been thoroughly tested in production yet.
+  /** The experimental object contains features that are known to have unstable API or
+   *  behavior that may change in future releases.
    *
    *  Experimental features '''may undergo API changes''' in future releases, so production
    *  code should not rely on them.
@@ -167,8 +185,11 @@ object language {
 
     import languageFeature.experimental._
 
-    /** Where enabled, macro definitions are allowed. Macro implementations and
-     *  macro applications are unaffected; they can be used anywhere.
+    /** Only where this feature is enabled, are macro definitions allowed.
+     *  If `macros` is not enabled, macro definitions are rejected by the compiler.
+     *
+     *  Macro implementations and macro applications are not governed by this
+     *  language feature; they can be used anywhere.
      *
      *  '''Why introduce the feature?''' Macros promise to make the language more regular,
      *  replacing ad-hoc language constructs with a general powerful abstraction

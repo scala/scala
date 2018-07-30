@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object Foo extends App{
   'f' match {
     case 'o'|'c'|'b' => println("Oooo");

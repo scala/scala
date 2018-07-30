@@ -1,16 +1,16 @@
-warn-useless-svuid.scala:2: warning: @SerialVersionUID has no effect on non-serializable classes
+warn-useless-svuid.scala:4: warning: @SerialVersionUID has no effect on non-serializable classes
 class X
       ^
-warn-useless-svuid.scala:5: warning: @SerialVersionUID has no effect on non-serializable classes
+warn-useless-svuid.scala:7: warning: @SerialVersionUID has no effect on non-serializable classes
 class Y extends X
       ^
-warn-useless-svuid.scala:17: warning: @SerialVersionUID has no effect on traits
+warn-useless-svuid.scala:19: warning: @SerialVersionUID has no effect on traits
 trait T
       ^
-warn-useless-svuid.scala:20: warning: @SerialVersionUID has no effect on traits
+warn-useless-svuid.scala:22: warning: @SerialVersionUID has no effect on traits
 trait U extends scala.Serializable
       ^
-warn-useless-svuid.scala:23: warning: @SerialVersionUID has no effect on traits
+warn-useless-svuid.scala:25: warning: @SerialVersionUID has no effect on traits
 trait V extends java.io.Serializable
       ^
 error: No warnings can be incurred under -Xfatal-warnings.

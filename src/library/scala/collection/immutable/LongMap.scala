@@ -230,7 +230,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
-  final def foreachKey(f: Long => Unit): Unit = this match {
+  final def foreachKey[U](f: Long => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachKey(f); right.foreachKey(f) }
     case LongMap.Tip(key, _) => f(key)
     case LongMap.Nil =>
@@ -247,7 +247,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     *
     * @param f The loop body
     */
-  final def foreachValue(f: T => Unit): Unit = this match {
+  final def foreachValue[U](f: T => U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreachValue(f); right.foreachValue(f) }
     case LongMap.Tip(_, value) => f(value)
     case LongMap.Nil =>
@@ -479,7 +479,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   override def ++ [V1 >: T](that: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(that)
 
   def collect[V2](pf: PartialFunction[(Long, T), (Long, V2)]): LongMap[V2] =
-    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+    strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[T](LongMap), this)
 }

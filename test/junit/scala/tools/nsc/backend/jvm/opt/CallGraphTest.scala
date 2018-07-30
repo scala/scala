@@ -12,6 +12,7 @@ import scala.collection.immutable.IntMap
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.testing.AssertUtil._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 
@@ -46,7 +47,7 @@ class CallGraphTest extends BytecodeTesting {
       val callee = callsite.callee.get
       assert(callee.callee == target)
       assert(callee.calleeDeclarationClass == calleeDeclClass)
-      assert(callee.safeToInline == safeToInline)
+      assertEquals("safeToInline", safeToInline, callee.safeToInline)
       assert(callee.annotatedInline == atInline)
       assert(callee.annotatedNoInline == atNoInline)
       assert(callsite.argInfos == argInfos)
@@ -202,9 +203,9 @@ class CallGraphTest extends BytecodeTesting {
 
     compileClasses(code)
     def callIn(m: String) = callGraph.callsites.find(_._1.name == m).get._2.values.head
-    assertEquals(callIn("t1").argInfos.toList, List((1, FunctionLiteral)))
-    assertEquals(callIn("t2").argInfos.toList, List((1, ForwardedParam(2))))
-    assertEquals(callIn("t3").argInfos.toList, List((1, FunctionLiteral)))
-    assertEquals(callIn("t4").argInfos.toList, Nil)
+    assertEquals(List((1, FunctionLiteral)),   callIn("t1").argInfos.toList)
+    assertEquals(List((1, ForwardedParam(2))), callIn("t2").argInfos.toList)
+    assertEquals(List((1, FunctionLiteral)),   callIn("t3").argInfos.toList)
+    assertEquals(Nil,                          callIn("t4").argInfos.toList)
   }
 }

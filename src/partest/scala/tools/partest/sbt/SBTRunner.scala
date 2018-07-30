@@ -35,7 +35,7 @@ class SBTRunner(config: RunnerSpec.Config,
   }
 
   // Enable colors if there's an explicit override or all loggers support them
-  override protected val colorEnabled = {
+  override val log = new ConsoleLog({
     val ptOverride = defs.collect { case ("partest.colors", v) => v.toBoolean }.lastOption
     ptOverride.getOrElse {
       val sbtOverride1 = sys.props.get("sbt.log.format").map(_.toBoolean)
@@ -44,7 +44,7 @@ class SBTRunner(config: RunnerSpec.Config,
         loggers.forall(_.ansiCodesSupported())
       }
     }
-  }
+  })
 
   override val javaOpts = {
     val l = defs.collect { case ("partest.java_opts", v) => v }
@@ -65,7 +65,7 @@ class SBTRunner(config: RunnerSpec.Config,
   override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {
     synchronized {
       eventHandler.handle(new Event {
-        def fullyQualifiedName: String = scala.tools.partest.nest.PathSettings.testRoot.name + "/" + testSourcePath
+        def fullyQualifiedName: String = pathSettings.testRoot.name + "/" + testSourcePath
         def fingerprint: Fingerprint = partestFingerprint
         def selector: Selector = new TestSelector(testFile.testIdent)
         val (status, throwable) = makeStatus(result)

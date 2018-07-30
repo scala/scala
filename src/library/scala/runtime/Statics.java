@@ -114,4 +114,7 @@ public final class Statics {
 
     return x.hashCode();
   }
+
+  /** Used as a marker object to return from PartialFunctions */
+  public static final Object pfMarker = new Object();
 }

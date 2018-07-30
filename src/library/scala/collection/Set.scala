@@ -101,6 +101,8 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
     *  ListSet(1,2,3).subsets => {{1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
     *
+    *  $willForceEvaluation
+    *
     *  @author Eastsun
     */
   private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends AbstractIterator[C] {
@@ -153,8 +155,8 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   /** Alias for `diff` */
   @`inline` final def &~ (that: Set[A]): C = this diff that
 
-  @deprecated("Use &~ or diff instead of --", "2.13.0")
-  @`inline` final def -- (that: Set[A]): C = diff(that)
+  @deprecated("Consider requiring an immutable Set", "2.13.0")
+  def -- (that: IterableOnce[A]): C = fromSpecificIterable(coll.toSet.removeAll(that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A): C = diff(Set(elem))
@@ -192,10 +194,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @return  a new set consisting of all elements that are in this
     *  set or in the given set `that`.
     */
-  @`inline` final def union(that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def union(that: Set[A]): C = concat(that)
 
   /** Alias for `union` */
-  @`inline` final def | (that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def | (that: Set[A]): C = concat(that)
 
   /** The empty set of the same type as this set
     * @return  an empty set of type `C`.

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 import scala.tools.nsc._
 
 trait Foo {

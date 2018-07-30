@@ -1,4 +1,4 @@
-t1215.scala:2: error: value += is not a member of Int
+t1215.scala:4: error: value += is not a member of Int
   Expression does not convert to assignment because receiver is not assignable.
   val x = 1 += 1
             ^

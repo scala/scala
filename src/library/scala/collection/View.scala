@@ -119,6 +119,14 @@ object View extends IterableFactory[View] {
     override def knownSize: Int = 0 max len
   }
 
+  /** A view that uses a function `f` to produce elements of type `A` and update
+    * an internal state `S`.
+    */
+  @SerialVersionUID(3L)
+  class Unfold[A, S](initial: S)(f: S => Option[(A, S)]) extends AbstractView[A] {
+    def iterator: Iterator[A] = Iterator.unfold(initial)(f)
+  }
+
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
   type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
   
@@ -209,6 +217,12 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class FlatMap[A, B](underlying: SomeIterableOps[A], f: A => IterableOnce[B]) extends AbstractView[B] {
     def iterator = underlying.iterator.flatMap(f)
+  }
+
+  /** A view that collects elements of the underlying collection. */
+  @SerialVersionUID(3L)
+  class Collect[+A, B](underlying: SomeIterableOps[A], pf: PartialFunction[A, B]) extends AbstractView[B] {
+    def iterator = underlying.iterator.collect(pf)
   }
 
   /** A view that concatenates elements of the prefix collection or iterator with the elements
@@ -302,19 +316,8 @@ object View extends IterableFactory[View] {
 
   @SerialVersionUID(3L)
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
-    def iterator: Iterator[A] = new AbstractIterator[A] {
-      private[this] var i = 0
-      private[this] val it = underlying.iterator
-      def next(): A = {
-        val a =
-          if (it.hasNext) it.next()
-          else if (i < len) elem
-          else Iterator.empty.next()
-        i += 1
-        a
-      }
-      def hasNext: Boolean = it.hasNext || i < len
-    }
+    def iterator: Iterator[A] = underlying.iterator.padTo(len, elem)
+
     override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
   }
 

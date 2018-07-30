@@ -1,14 +1,14 @@
-no-predef.scala:2: error: type mismatch;
+no-predef.scala:4: error: type mismatch;
  found   : Long (in scala)
  required: Long (in java.lang)
   def f1 = 5L: java.lang.Long
            ^
-no-predef.scala:3: error: type mismatch;
+no-predef.scala:5: error: type mismatch;
  found   : Long (in java.lang)
  required: Long (in scala)
   def f2 = new java.lang.Long(5) : Long
            ^
-no-predef.scala:4: error: value map is not a member of String
+no-predef.scala:6: error: value map is not a member of String
   def f3 = "abc" map (_ + 1)
                  ^
 three errors found

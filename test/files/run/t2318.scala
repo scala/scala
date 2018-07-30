@@ -1,6 +1,8 @@
+// filter: WARNING.*
+// for now, ignore warnings due to reflective invocation
 import java.security._
 
-import scala.language.{ reflectiveCalls }
+import scala.language.reflectiveCalls
 
 object Test {
   trait Bar { def bar: Unit }

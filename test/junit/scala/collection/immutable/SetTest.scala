@@ -78,4 +78,24 @@ class SetTest {
     val mapseta = any(mapset)
     assert(mapset eq mapseta)
   }
+
+  @Test
+  def testRemoveAll(): Unit = {
+    val s0 = Set(1, 2, 3) -- List(1, 2)
+    assertEquals(Set(3), s0)
+
+    val s1 = Set(1, 2, 3) -- List(1, 2, 3)
+    assertEquals(Set(), s1)
+
+    val s2 = Set(1, 2, 3) -- List(1, 2, 2, 3, 4)
+    assertEquals(Set(), s2)
+
+    // deprecated
+    val s3 = collection.Set(1, 2, 3) -- List(2, 3)
+    assertEquals(Set(1), s3)
+
+    // deprecated
+    val s4 = collection.mutable.Set(1, 2, 3) -- List(2, 3)
+    assertEquals(Set(1), s4)
+  }
 }

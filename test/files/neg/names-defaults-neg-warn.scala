@@ -1,9 +1,11 @@
+// scalac: -deprecation -Xfatal-warnings
+//
 object Test extends App {
   object deprNam2 {
-    def f(@deprecatedName('s) x: String) = 1
+    def f(@deprecatedName("s") x: String) = 1
     def f(s: Object) = 2
 
-    def g(@deprecatedName('x) s: Object) = 3
+    def g(@deprecatedName("x") s: Object) = 3
     def g(s: String) = 4
   }
 

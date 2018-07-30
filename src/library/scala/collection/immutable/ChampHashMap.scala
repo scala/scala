@@ -2,14 +2,13 @@ package scala
 package collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
-import collection.Hashing.computeHash
-import scala.annotation.unchecked.{uncheckedVariance => uV}
 import java.lang.Integer.bitCount
 import java.lang.System.arraycopy
 
+import scala.annotation.unchecked.{uncheckedVariance => uV}
+import scala.collection.Hashing.computeHash
 import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 
 /** This class implements immutable maps using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
@@ -26,7 +25,8 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNode[K, V], private val cachedJavaKeySetHashCode: Int, private val cachedSize: Int)
   extends AbstractMap[K, V]
     with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable /* ChampHashMap */, ChampHashMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, ChampHashMap[K, V]]
+    with StrictOptimizedMapOps[K, V, ChampHashMap, ChampHashMap[K, V]] {
 
   override def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
 
@@ -164,8 +164,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K,
 
 private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any]) extends MapNode[K, V] {
 
-  import Node._
   import MapNode._
+  import Node._
 
   /*
   assert(checkInvariantContentIsWellTyped())

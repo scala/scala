@@ -47,7 +47,8 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
 class LinkedHashMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
+    with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]] {
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
@@ -93,6 +94,11 @@ class LinkedHashMap[K, V]
     val e = table.findOrAddEntry(key, value)
     if (e eq null) None
     else { val v = e.value; e.value = value; Some(v) }
+  }
+
+  override def update(key: K, value: V): Unit = {
+    val e = table.findOrAddEntry(key, value)
+    if (e ne null) e.value = value
   }
 
   override def remove(key: K): Option[V] = {

@@ -83,12 +83,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** size and mask of hash tables
      *  todo: make hashtables grow?
      */
-    private val HASHSIZE = 0x80
-    private val HASHMASK = 0x7f
+    private final val HASHSIZE = 0x80
+    private final val HASHMASK = 0x7f
 
     /** the threshold number of entries from which a hashtable is constructed.
      */
-    private val MIN_HASH = 8
+    private final val MIN_HASH = 8
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = newScopeWith(this.toList: _*)
@@ -419,8 +419,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
-    override def mkString(start: String, sep: String, end: String) =
-      toList.map(_.defString).mkString(start, sep, end)
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String) =
+      toList.map(_.defString).addString(sb, start, sep, end)
 
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
   }

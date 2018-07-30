@@ -114,7 +114,7 @@ trait TypeDebugging {
     }
     def ptTypeParam(td: TypeDef): String = {
       val TypeDef(_, name, tparams, rhs) = td
-      name + ptTypeParams(tparams) + ptTree(rhs)
+      name.toString + ptTypeParams(tparams) + ptTree(rhs)
     }
     def ptTypeParams(tparams: List[TypeDef]): String = str brackets (tparams map ptTypeParam)
 

@@ -3,8 +3,9 @@ package collection
 
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
-import scala.math.{Ordering, Numeric}
+import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
+import java.lang.{StringBuilder => JStringBuilder}
 import scala.collection.mutable.StringBuilder
 
 /**
@@ -26,6 +27,9 @@ import scala.collection.mutable.StringBuilder
   *
   *    Note: will not terminate for infinite-sized collections.
   *
+  * @define willForceEvaluation
+  *    Note: Even when applied to a view or a lazy collection it will always force the elements.
+  *
   * @define coll collection
   */
 trait IterableOnce[+A] extends Any {
@@ -37,6 +41,72 @@ trait IterableOnce[+A] extends Any {
 }
 
 final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) extends AnyVal {
+  @deprecated("Use .iterator.withFilter(...) instead", "2.13.0")
+  def withFilter(f: A => Boolean): Iterator[A] = it.iterator.withFilter(f)
+
+  @deprecated("Use .iterator.reduceLeftOption(...) instead", "2.13.0")
+  def reduceLeftOption(f: (A, A) => A): Option[A] = it.iterator.reduceLeftOption(f)
+
+  @deprecated("Use .iterator.min instead", "2.13.0")
+  def min(implicit ord: Ordering[A]): A = it.iterator.min
+
+  @deprecated("Use .iterator.nonEmpty instead", "2.13.0")
+  def nonEmpty: Boolean = it.iterator.nonEmpty
+
+  @deprecated("Use .iterator.max instead", "2.13.0")
+  def max(implicit ord: Ordering[A]): A = it.iterator.max
+
+  @deprecated("Use .iterator.reduceRight(...) instead", "2.13.0")
+  def reduceRight(f: (A, A) => A): A = it.iterator.reduceRight(f)
+
+  @deprecated("Use .iterator.maxBy(...) instead", "2.13.0")
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = it.iterator.maxBy(f)
+
+  @deprecated("Use .iterator.reduceLeft(...) instead", "2.13.0")
+  def reduceLeft(f: (A, A) => A) = it.iterator.reduceLeft(f)
+
+  @deprecated("Use .iterator.sum instead", "2.13.0")
+  def sum(implicit num: Numeric[A]): A = it.iterator.sum
+
+  @deprecated("Use .iterator.product instead", "2.13.0")
+  def product(implicit num: Numeric[A]): A = it.iterator.product
+
+  @deprecated("Use .iterator.count(...) instead", "2.13.0")
+  def count(f: A => Boolean): Int = it.iterator.count(f)
+
+  @deprecated("Use .iterator.reduceOption(...) instead", "2.13.0")
+  def reduceOption(f: (A, A) => A): Option[A] = it.iterator.reduceOption(f)
+
+  @deprecated("Use .iterator.minBy(...) instead", "2.13.0")
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = it.iterator.minBy(f)
+
+  @deprecated("Use .iterator.size instead", "2.13.0")
+  def size: Int = it.iterator.size
+
+  @deprecated("Use .iterator.forall(...) instead", "2.13.0")
+  def forall(f: A => Boolean): Boolean = it.iterator.forall(f)
+
+  @deprecated("Use .iterator.collectFirst(...) instead", "2.13.0")
+  def collectFirst[B](f: PartialFunction[A, B]): Option[B] = it.iterator.collectFirst(f)
+
+  @deprecated("Use .iterator.filter(...) instead", "2.13.0")
+  def filter(f: A => Boolean): Iterator[A] = it.iterator.filter(f)
+
+  @deprecated("Use .iterator.exists(...) instead", "2.13.0")
+  def exists(f: A => Boolean): Boolean = it.iterator.exists(f)
+
+  @deprecated("Use .iterator.copyToBuffer(...) instead", "2.13.0")
+  def copyToBuffer(dest: mutable.Buffer[A]): Unit = it.iterator.copyToBuffer(dest)
+
+  @deprecated("Use .iterator.reduce(...) instead", "2.13.0")
+  def reduce(f: (A, A) => A): A = it.iterator.reduce(f)
+
+  @deprecated("Use .iterator.reduceRightOption(...) instead", "2.13.0")
+  def reduceRightOption(f: (A, A) => A): Option[A] = it.iterator.reduceRightOption(f)
+
+  @deprecated("Use .iterator.toIndexedSeq instead", "2.13.0")
+  def toIndexedSeq: IndexedSeq[A] = it.iterator.toIndexedSeq
+
   @deprecated("Use .iterator.foreach(...) instead", "2.13.0")
   @`inline` def foreach[U](f: A => U): Unit = it match {
     case it: Iterable[A] => it.foreach(f)
@@ -354,6 +424,16 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def knownSize: Int = -1
 
+  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
+  @`inline` final def hasDefiniteSize = knownSize >= 0
+
+  /** Tests whether this $coll can be repeatedly traversed.  Always
+   *  true for Iterables and false for Iterators unless overridden.
+   *
+   *  @return   `true` if it is repeatedly traversable, `false` otherwise.
+   */
+  def isTraversableAgain: Boolean = false
+
   /** Apply `f` to each element for its side effects
     *  Note: [U] parameter needed to help scalac's type inference.
     */
@@ -485,6 +565,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
     */
+  @deprecated("Use foldLeft instead", "2.13.0")
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.
@@ -624,6 +705,22 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
   /** Copy elements to an array.
+   *
+   *  Fills the given array `xs` starting at index `start` with values of this $coll.
+   *
+   *  Copying will stop once either all the elements of this $coll have been copied,
+   *  or the end of the array is reached.
+   *
+   *  @param  xs     the array to fill.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @usecase def copyToArray(xs: Array[A]): Unit
+   *
+   *  $willNotTerminateInf
+   */
+  def copyToArray[B >: A](xs: Array[B]): xs.type = copyToArray(xs, 0)
+
+  /** Copy elements to an array.
     *
     *  Fills the given array `xs` starting at index `start` with values of this $coll.
     *
@@ -638,10 +735,12 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  $willNotTerminateInf
     */
-  def copyToArray[B >: A](xs: Array[B], start: Int = 0): xs.type = {
+
+  def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = {
+    val xsLen = xs.length
     val it = iterator
     var i = start
-    while (i < xs.length && it.hasNext) {
+    while (i < xsLen && it.hasNext) {
       xs(i) = it.next()
       i += 1
     }
@@ -909,7 +1008,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
     // Presumably the fastest way to get in and out of a partial function is for a sentinel function to return itself
     // (Tested to be lower-overhead than runWith.  Would be better yet to not need to (formally) allocate it)
-    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any]{ def apply(a: A) = this }
+    val sentinel: scala.Function1[A, Any] = new scala.runtime.AbstractFunction1[A, Any] {
+      def apply(a: A) = this
+    }
     val it = iterator
     while (it.hasNext) {
       val x = pf.applyOrElse(it.next(), sentinel)
@@ -918,8 +1019,34 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     None
   }
 
+  @deprecated("`aggregate` is not relevant for sequential collections. Use `foldLeft(z)(seqop)` instead.", "2.13.0")
+  def aggregate[B](z: => B)(seqop: (B, A) => B, combop: (B, B) => B): B = foldLeft(z)(seqop)
+
+  /** Tests whether every element of this collection's iterator relates to the
+   *  corresponding element of another collection by satisfying a test predicate.
+   *
+   *  @param   that    the other collection
+   *  @param   p       the test predicate, which relates elements from both collections
+   *  @tparam  B       the type of the elements of `that`
+   *  @return          `true` if both collections have the same length and
+   *                   `p(x, y)` is `true` for all corresponding elements `x` of this iterator
+   *                   and `y` of `that`, otherwise `false`
+   */
+  def corresponds[B](that: IterableOnce[B])(p: (A, B) => Boolean): Boolean = {
+    val a = iterator
+    val b = that.iterator
+
+    while (a.hasNext && b.hasNext) {
+      if (!p(a.next(), b.next())) return false
+    }
+
+    a.hasNext == b.hasNext
+  }
+
   /** Displays all elements of this $coll in a string using start, end, and
     *  separator strings.
+    *
+    * Delegates to addString, which can be overridden.
     *
     *  @param start the starting string.
     *  @param sep   the separator string.
@@ -932,10 +1059,13 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
     */
-  def mkString(start: String, sep: String, end: String): String =
-    addString(new StringBuilder(), start, sep, end).toString
+  final def mkString(start: String, sep: String, end: String): String =
+    if (isEmpty) start + end
+    else addString(new StringBuilder(), start, sep, end).result
 
   /** Displays all elements of this $coll in a string using a separator string.
+    *
+    * Delegates to addString, which can be overridden.
     *
     *  @param sep   the separator string.
     *  @return      a string representation of this $coll. In the resulting string
@@ -944,16 +1074,18 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @example  `List(1, 2, 3).mkString("|") = "1|2|3"`
     */
-  def mkString(sep: String): String = mkString("", sep, "")
+  @inline final def mkString(sep: String): String = mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
+    *
+    * Delegates to addString, which can be overridden.
     *
     *  @return a string representation of this $coll. In the resulting string
     *          the string representations (w.r.t. the method `toString`)
     *          of all elements of this $coll follow each other without any
     *          separator string.
     */
-  def mkString: String = mkString("")
+  @inline final def mkString: String = mkString("")
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
     *  The written text begins with the string `start` and ends with the string `end`.
@@ -979,17 +1111,18 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param end   the ending string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder, start: String, sep: String, end: String): b.type = {
-    b.append(start)
+  def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    val jsb = b.underlying
+    if (start.length != 0) jsb.append(start)
     val it = iterator
     if (it.hasNext) {
-      b.append(it.next)
+      jsb.append(it.next)
       while (it.hasNext) {
-        b.append(sep)
-        b.append(it.next)
+        jsb.append(sep)
+        jsb.append(it.next)
       }
     }
-    b.append(end)
+    if (end.length != 0) jsb.append(end)
     b
   }
 
@@ -1014,7 +1147,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param sep   the separator string.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
+  @inline final def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
 
   /** Appends all elements of this $coll to a string builder.
     *  The written text consists of the string representations (w.r.t. the method
@@ -1036,7 +1169,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  b    the string builder to which elements are appended.
     *  @return      the string builder `b` to which elements were appended.
     */
-  def addString(b: StringBuilder): StringBuilder = addString(b, "")
+  @inline final def addString(b: StringBuilder): StringBuilder = addString(b, "")
 
   /** Given a collection factory `factory`, convert this collection to the appropriate
     * representation for the current element type `A`. Example uses:
@@ -1066,11 +1199,11 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
-  @deprecated("Use Stream.from(it) instead of it.toStream", "2.13.0")
-  @`inline` final def toStream: immutable.Stream[A] = immutable.Stream.from(this)
+  @deprecated("Use .to(LazyList) instead of .toStream", "2.13.0")
+  @`inline` final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
-  @deprecated("Use ArrayBuffer.from(it) instead of it.toBuffer", "2.13.0")
-  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.ArrayBuffer.from(this)
+  @deprecated("Use .to(Buffer) instead of .toBuffer", "2.13.0")
+  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = to(mutable.Buffer)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =

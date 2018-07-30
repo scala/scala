@@ -39,4 +39,7 @@ class VectorTest {
       assertEquals(els, prefix.toList ++: suffix)
     }
   }
+
+  @Test def checkSearch: Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+  
 }

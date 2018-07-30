@@ -188,10 +188,10 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         bitmapSyms
       }
 
-      fields groupBy bitmapCategory flatMap {
+      fields.groupBy(bitmapCategory).flatMap {
         case (category, fields) if category != nme.NO_NAME && fields.nonEmpty => allocateBitmaps(fields, category): Iterable[Symbol]
         case _ => Nil
-      } toList
+      }.toList
     }
 
     def slowPathFor(lzyVal: Symbol): Symbol = _slowPathFor(lzyVal)

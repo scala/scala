@@ -172,8 +172,9 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     last
   }
 
+  /** $willForceEvaluation */
   override def tails: Iterator[C] =
-    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator(newSpecificBuilder.result())
+    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator.single(newSpecificBuilder.result())
 }
 
 trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {

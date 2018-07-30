@@ -1,3 +1,5 @@
+// scalac: -Ywarn-dead-code -Xfatal-warnings
+//
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 

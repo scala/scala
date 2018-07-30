@@ -19,8 +19,7 @@ import scala.reflect.{ ClassTag, classTag }
 class MutableSettings(val errorFn: String => Unit)
               extends scala.reflect.internal.settings.MutableSettings
                  with AbsSettings
-                 with ScalaSettings
-                 with Mutable {
+                 with ScalaSettings {
   type ResultOfTryToSet = List[String]
 
   def withErrorFn(errorFn: String => Unit): MutableSettings = {
@@ -357,7 +356,7 @@ class MutableSettings(val errorFn: String => Unit)
   /** A base class for settings of all types.
    *  Subclasses each define a `value` field of the appropriate type.
    */
-  abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
+  abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
     /** Will be called after this Setting is set for any extra work. */
     private var _postSetHook: this.type => Unit = (x: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)
