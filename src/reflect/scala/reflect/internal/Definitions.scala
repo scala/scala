@@ -108,7 +108,7 @@ trait Definitions extends api.StandardDefinitions {
     )
 
     /** Is symbol a numeric value class? */
-    def isNumericValueClass(sym: Symbol) = ScalaNumericValueClasses contains sym
+    def isNumericValueClass(sym: Symbol) = ScalaNumericValueClassesSet contains sym
 
     def isGetClass(sym: Symbol) = (
          sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabilize`.
@@ -151,6 +151,26 @@ trait Definitions extends api.StandardDefinitions {
       FloatClass,
       DoubleClass
     )
+    lazy val ScalaValueClassesSet: SymbolSet = new SymbolSet(ScalaValueClasses)
+    lazy val ScalaNumericValueClassesSet: SymbolSet = new SymbolSet(ScalaNumericValueClasses)
+    final class SymbolSet(syms: List[Symbol]) {
+      private[this] val ids: Array[Symbol] = syms.toArray
+      private[this] val commonOwner = syms.map(_.rawowner).distinct match {
+        case common :: Nil => common
+        case _ => null
+      }
+      final def contains(sym: Symbol): Boolean = {
+        if (commonOwner != null && (commonOwner ne sym.rawowner))
+          return false
+        val array = ids
+        var i = 0
+        while (i < array.length) {
+          if (array(i) eq sym) return true
+          i += 1
+        }
+        false
+      }
+    }
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
     def underlyingOfValueClass(clazz: Symbol): Type =
@@ -566,6 +586,8 @@ trait Definitions extends api.StandardDefinitions {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
       val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      private val symSet = new SymbolSet(seq.toList)
+      def contains(sym: Symbol): Boolean = symSet.contains(sym)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {
         val arity = args.length
@@ -604,9 +626,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
+    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -1376,7 +1398,7 @@ trait Definitions extends api.StandardDefinitions {
     private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
-    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
+    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClassesSet contains sym
     def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
