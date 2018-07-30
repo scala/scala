@@ -1075,12 +1075,15 @@ trait Scanners extends ScannersCommon {
         if (ch == '.') nextChar()
         getFraction()
       }
+      // 1l is an acknowledged bad practice
+      def lintel(): Unit =
+        if (ch == 'l' && settings.warnLiteralSyntax) deprecationWarning(offset + cbuf.length, "Lowercase for long is ill-advised.", since="2.13.0")
       // after int: 5e7f, 42L, 42.toDouble but not 42b. Repair 0d.
       def restOfNumber(): Unit = {
         ch match {
           case 'e' | 'E' | 'f' | 'F' |
                'd' | 'D' => if (cbuf.isEmpty) putChar('0'); restOfNonIntegralNumber()
-          case 'l' | 'L' => token = LONGLIT ; setStrVal() ; nextChar()
+          case 'l' | 'L' => lintel() ; token = LONGLIT ; setStrVal() ; nextChar()
           case _         => token = INTLIT  ; setStrVal() ; checkNoLetter()
         }
       }
