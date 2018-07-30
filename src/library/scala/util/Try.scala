@@ -264,12 +264,12 @@ final case class Success[+T](value: T) extends Try[T] {
     try {
       val v = pf.applyOrElse(value, ((x: T) => marker).asInstanceOf[Function[T, U]])
       if (marker ne v.asInstanceOf[AnyRef]) Success(v)
-      else Failure(new NoSuchElementException("Predicate does not hold for " + value))
+      else Failure(new Success.UnsatisfiedPredicateException(value))
     } catch { case NonFatal(e) => Failure(e) }
   }
   override def filter(p: T => Boolean): Try[T] =
     try {
-      if (p(value)) this else Failure(new NoSuchElementException("Predicate does not hold for " + value))
+      if (p(value)) this else Failure(new Success.UnsatisfiedPredicateException(value))
     } catch { case NonFatal(e) => Failure(e) }
   override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = this
   override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
@@ -278,4 +278,9 @@ final case class Success[+T](value: T) extends Try[T] {
   override def toEither: Either[Throwable, T] = Right(value)
   override def fold[U](fa: Throwable => U, fb: T => U): U =
     try { fb(value) } catch { case NonFatal(e) => fa(e) }
+
+}
+
+object Success {
+  class UnsatisfiedPredicateException[T] private[Success] (val value: T) extends RuntimeException("Predicate does not hold", null, false, false)
 }

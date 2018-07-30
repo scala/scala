@@ -48,7 +48,7 @@ trait TryStandard {
     val n = t.filter(x => x < 0)
     n match {
       case Success(v) => assert(false)
-      case Failure(e: NoSuchElementException) => assert(true)
+      case Failure(e: Success.UnsatisfiedPredicateException[_]) => ()
       case _          => assert(false)
     }
   }
