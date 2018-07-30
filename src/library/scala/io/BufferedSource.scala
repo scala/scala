@@ -34,7 +34,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     bufferedReader()
   }
 
-  override lazy val iter = (
+  override val iter = (
     Iterator
     continually (codec wrap charReader.read())
     takeWhile (_ != -1)
