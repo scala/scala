@@ -31,6 +31,8 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
     sym -> new FastTrackEntry(pf, isBlackbox = true)
   private def makeWhitebox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
     sym -> new FastTrackEntry(pf, isBlackbox = false)
+  private implicit def context2ChainingMacros(c0: MacroContext): ChainingMacros { val c: c0.type } =
+    new { val c: c0.type = c0 } with ChainingMacros
 
   final class FastTrackEntry(pf: PartialFunction[Applied, MacroContext => Tree], val isBlackbox: Boolean) extends (MacroArgs => Any) {
     def validate(tree: Tree) = pf isDefinedAt Applied(tree)
@@ -52,6 +54,8 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
       makeBlackbox(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
       makeBlackbox(            StringContext_f) { case _                                          => _.interpolate },
       makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
+      makeBlackbox(            ChainingOps_tap) { case _                                          => _.tap },
+      makeBlackbox(           ChainingOps_pipe) { case _                                          => _.pipe },
       makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
       makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
     )
