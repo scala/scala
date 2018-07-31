@@ -36,7 +36,9 @@ trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator: Iterator[A]
 
-  /** @return The number of elements of this $coll if it can be computed in O(1) time, otherwise -1 */
+  /** @return The number of elements in this $coll, if it can be cheaply computed,
+    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
+    */
   def knownSize: Int
 }
 
@@ -419,9 +421,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /////////////////////////////////////////////////////////////// Concrete methods based on iterator
 
-  /** The number of elements in this $coll, if it can be cheaply computed,
-    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
-    */
   def knownSize: Int = -1
 
   @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
