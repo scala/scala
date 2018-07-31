@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.generic.Clearable
-import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
