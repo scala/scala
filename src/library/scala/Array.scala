@@ -571,11 +571,6 @@ object Array {
  *  @define willNotTerminateInf
  *  @define collectExample
  *  @define undefinedorder
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is either `Array[B]` if an ClassTag is available for B or `ArraySeq[B]` otherwise.
- *  @define zipthatinfo $thatinfo
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the result class `That` from the current
- *    representation type `Repr` and the new element type `B`.
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
 
