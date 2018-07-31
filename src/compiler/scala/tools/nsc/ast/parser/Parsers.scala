@@ -712,6 +712,8 @@ self =>
       case _ => false
     })
 
+    def isSimpleTypeIntro: Boolean = isTypeIntroToken(in.token)
+
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
     def isCaseDefEnd = in.token == RBRACE || in.token == CASE || in.token == EOF
@@ -880,12 +882,6 @@ self =>
     }
 
     /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
-
-    /** Modes for infix types. */
-    object InfixMode extends Enumeration {
-      val FirstOp, LeftOp, RightOp = Value
-    }
-
     var opstack: List[OpInfo] = Nil
 
     @deprecated("Use `scala.reflect.internal.Precedence`", "2.11.0")
@@ -956,7 +952,51 @@ self =>
       loop(top)
     }
 
-/* -------- IDENTIFIERS AND LITERALS ------------------------------------------- */
+    /* --------- TYPE STACK --------------------------------------- */
+    sealed trait TypeHistory {
+      val tree : Tree
+      def apply(rhsTHO : TypeHistoryOp) : TypeHistory
+      protected def mkOpTree(rhsTHO : TypeHistoryOp) : Tree = {
+        atPos(rhsTHO.tree.pos.start, rhsTHO.opOffset) {
+          AppliedTypeTree(rhsTHO.opTree, List(tree, rhsTHO.tree))
+        }
+      }
+    }
+    case class TypeHistoryIdent(tree: Tree) extends TypeHistory {
+      def apply(rhsTHO : TypeHistoryOp) : TypeHistory = TypeHistoryIdent(mkOpTree(rhsTHO))
+    }
+    case class TypeHistoryOp(tree : Tree, opTree : Tree, opName: TermName, opOffset : Offset) extends TypeHistory {
+      val precedence = Precedence(opName.toString)
+      val leftAssoc = nme.isLeftAssoc(opName)
+      def apply(rhsTHO : TypeHistoryOp) : TypeHistoryOp = TypeHistoryOp(mkOpTree(rhsTHO), opTree, opName, opOffset)
+    }
+
+    implicit class TypeHistoryList(thList : List[TypeHistory]) {
+      protected def reduceHistoryHead() : List[TypeHistory] = {
+        val rhsTHO = thList.head.asInstanceOf[TypeHistoryOp]
+        val lhsTH = thList(1)
+        lhsTH(rhsTHO) :: thList.drop(2)
+      }
+      def addHistory(newTHO : TypeHistoryOp) : List[TypeHistory] = {
+        val canReduce = if (thList.length < 2) false else {
+          val headTHO = thList.head.asInstanceOf[TypeHistoryOp]
+          if (newTHO.precedence < headTHO.precedence) true
+          else if (newTHO.precedence == headTHO.precedence && headTHO.leftAssoc) {
+            checkAssoc(newTHO.opOffset, newTHO.opName, headTHO.leftAssoc)
+            true
+          }
+          else false
+        }
+        if (canReduce) thList.reduceHistoryHead().addHistory(newTHO)
+        else newTHO :: thList
+      }
+      def reduceHistoryToTree() : Tree = {
+        if (thList.length == 1) thList.head.tree
+        else thList.reduceHistoryHead().reduceHistoryToTree()
+      }
+    }
+
+    /* -------- IDENTIFIERS AND LITERALS ------------------------------------------- */
 
     /** Methods which implicitly propagate the context in which they were
      *  called: either in a pattern context or not.  Formerly, this was
@@ -988,8 +1028,7 @@ self =>
               compoundTypeRest(
                 annotTypeRest(
                   simpleTypeRest(
-                    tuple))),
-              InfixMode.FirstOp
+                    tuple)))
             )
           }
         }
@@ -1017,7 +1056,7 @@ self =>
         val start = in.offset
         val t =
           if (in.token == LPAREN) tupleInfixType(start)
-          else infixType(InfixMode.FirstOp)
+          else infixType()
 
         in.token match {
           case ARROW    => atPos(start, in.skipToken()) { makeFunctionTypeTree(List(t), typ()) }
@@ -1119,39 +1158,41 @@ self =>
         }
       }
 
-      def infixTypeRest(t: Tree, mode: InfixMode.Value): Tree = {
+      def infixTypeRest(initialTree : Tree) : Tree = infixTypeRest(List(TypeHistoryIdent(initialTree)))
+      def infixTypeRest(thList : List[TypeHistory]): Tree = {
         // Detect postfix star for repeated args.
         // Only RPAREN can follow, but accept COMMA and EQUALS for error's sake.
         // Take RBRACE as a paren typo.
         def checkRepeatedParam = if (isRawStar) {
           lookingAhead (in.token match {
-            case RPAREN | COMMA | EQUALS | RBRACE => t
+            case RPAREN | COMMA | EQUALS | RBRACE => thList.reduceHistoryToTree()
             case _                                => EmptyTree
           })
         } else EmptyTree
         def asInfix = {
           val opOffset  = in.offset
-          val leftAssoc = nme.isLeftAssoc(in.name)
-          if (mode != InfixMode.FirstOp)
-            checkAssoc(opOffset, in.name, leftAssoc = mode == InfixMode.LeftOp)
-          val tycon = atPos(opOffset) { Ident(identForType()) }
+          val opName = in.name
+          val opTree = atPos(opOffset) { Ident(identForType()) }
           newLineOptWhenFollowing(isTypeIntroToken)
-          def mkOp(t1: Tree) = atPos(t.pos.start, opOffset) { AppliedTypeTree(tycon, List(t, t1)) }
-          if (leftAssoc)
-            infixTypeRest(mkOp(compoundType()), InfixMode.LeftOp)
-          else
-            mkOp(infixType(InfixMode.RightOp))
+
+          val compTree = compoundType()
+          val newTHO = TypeHistoryOp(compTree, opTree, opName, opOffset)
+          infixTypeRest(thList.addHistory(newTHO))
         }
+
+        //infixTypeRest Body
+        //A type Ident can be followed by a repeated parameter star (e.g., (i : Int*))
+        //or an infix expression (e.g., (i : Int*String))
         if (isIdent) checkRepeatedParam orElse asInfix
-        else t
+        else thList.reduceHistoryToTree()
       }
 
       /** {{{
        *  InfixType ::= CompoundType {id [nl] CompoundType}
        *  }}}
        */
-      def infixType(mode: InfixMode.Value): Tree =
-        placeholderTypeBoundary { infixTypeRest(compoundType(), mode) }
+      def infixType(): Tree =
+        placeholderTypeBoundary { infixTypeRest(compoundType()) }
 
       /** {{{
        *  Types ::= Type {`,' Type}
@@ -2142,7 +2183,7 @@ self =>
      *  they are all initiated from non-pattern context.
      */
     def typ(): Tree      = outPattern.typ()
-    def startInfixType() = outPattern.infixType(InfixMode.FirstOp)
+    def startInfixType() = outPattern.infixType()
     def startAnnotType() = outPattern.annotType()
     def exprTypeArgs()   = outPattern.typeArgs()
     def exprSimpleType() = outPattern.simpleType()
