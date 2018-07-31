@@ -7,7 +7,7 @@ retrieved 202 members
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
-[inaccessible] protected def unifiedPrimitiveHashcode(): Int
+[inaccessible] protected def unifiedPrimitiveHashcode: Int
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def !=(x: Byte): Boolean
@@ -159,7 +159,7 @@ def toString(): String
 def unary_+: Int
 def unary_-: Int
 def unary_~: Int
-def underlying(): AnyRef
+def underlying: AnyRef
 def until(end: Int): scala.collection.immutable.Range
 def until(end: Int, step: Int): scala.collection.immutable.Range
 def until(end: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
@@ -188,7 +188,7 @@ override def isValidByte: Boolean
 override def isValidChar: Boolean
 override def isValidInt: Boolean
 override def isValidShort: Boolean
-override def isWhole(): Boolean
+override def isWhole: Boolean
 override def max(that: Double): Double
 override def max(that: Float): Float
 override def max(that: Int): Int

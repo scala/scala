@@ -13,12 +13,12 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   protected def num = scala.math.Numeric.LongIsIntegral
   protected def ord = scala.math.Ordering.Long
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self.toFloat
-  override def longValue()   = self
-  override def intValue()    = self.toInt
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self.toFloat
+  override def longValue   = self
+  override def intValue    = self.toInt
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   override def isValidByte  = self.toByte.toLong == self
   override def isValidShort = self.toShort.toLong == self

@@ -393,7 +393,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     val matchIterator = findAllIn(source)
     new AbstractIterator[Match] {
       def hasNext = matchIterator.hasNext
-      def next: Match = {
+      def next(): Match = {
         matchIterator.next()
         new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
       }
@@ -854,14 +854,14 @@ object Regex {
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
-      def next = { self.next(); new Match(source, matcher, groupNames).force }
+      def next() = { self.next(); new Match(source, matcher, groupNames).force }
     }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support. */
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
-      def next = { self.next(); new Match(source, matcher, groupNames).force }
+      def next() = { self.next(); new Match(source, matcher, groupNames).force }
     }
   }
 

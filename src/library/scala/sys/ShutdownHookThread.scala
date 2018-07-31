@@ -29,7 +29,7 @@ object ShutdownHookThread {
    *  given code.
    */
   def apply(body: => Unit): ShutdownHookThread = {
-    val t = new ShutdownHookThread(() => body, hookName)
+    val t = new ShutdownHookThread(() => body, hookName())
     Runtime.getRuntime addShutdownHook t
     t
   }

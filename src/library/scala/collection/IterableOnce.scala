@@ -1061,7 +1061,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   final def mkString(start: String, sep: String, end: String): String =
     if (isEmpty) start + end
-    else addString(new StringBuilder(), start, sep, end).result
+    else addString(new StringBuilder(), start, sep, end).result()
 
   /** Displays all elements of this $coll in a string using a separator string.
     *
@@ -1116,10 +1116,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (start.length != 0) jsb.append(start)
     val it = iterator
     if (it.hasNext) {
-      jsb.append(it.next)
+      jsb.append(it.next())
       while (it.hasNext) {
         jsb.append(sep)
-        jsb.append(it.next)
+        jsb.append(it.next())
       }
     }
     if (end.length != 0) jsb.append(end)
