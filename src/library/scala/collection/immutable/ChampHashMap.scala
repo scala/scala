@@ -58,6 +58,8 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
 
   def get(key: K): Option[V] = rootNode.get(key, computeHash(key), 0)
 
+  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = rootNode.getOrElse(key, computeHash(key), 0, default)
+
   def updated[V1 >: V](key: K, value: V1): ChampHashMap[K, V1] = {
     val keyHash = computeHash(key)
     val newRootNodeSource = rootNode.updated(key, value, keyHash, 0)
@@ -130,9 +132,9 @@ private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K,
   final def get: MapNode[K, V] = this
 
   def get(key: K, hash: Int, shift: Int): Option[V]
+  def getOrElse[V1 >: V](key: K, hash: Int, shift: Int, f: => V1): V1
 
-  def containsKey(key: K, hash: Int, shift: Int): Boolean =
-    this.get(key, hash, shift).isDefined
+  def containsKey(key: K, hash: Int, shift: Int): Boolean
 
   def updated[V1 >: V](key: K, value: V1, hash: Int, shift: Int): MapNodeSource[K, V1]
 
@@ -211,6 +213,22 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
     }
 
     None
+  }
+  def getOrElse[V1 >: V](key: K, keyHash: Int, shift: Int, f: => V1): V1 = {
+    val mask = maskFrom(keyHash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val key0 = this.getKey(index)
+      return if (key == key0) this.getValue(index) else f
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      return this.getNode(index).getOrElse(key, keyHash, shift + BitPartitionSize, f)
+    }
+    f
   }
 
   override def containsKey(key: K, keyHash: Int, shift: Int): Boolean = {
@@ -517,6 +535,14 @@ private class HashCollisionMapNode[K, +V](val hash: Int, val content: Vector[(K,
 
   def get(key: K, hash: Int, shift: Int): Option[V] =
     if (this.hash == hash) content.find(key == _._1).map(_._2) else None
+  def getOrElse[V1 >: V](key: K, hash: Int, shift: Int, f: => V1): V1 = {
+    if (this.hash == hash) {
+      content.find(key == _._1) match {
+        case Some(pair) => pair._2
+        case None => f
+      }
+    } else f
+  }
 
   override def containsKey(key: K, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.exists(key == _._1)

@@ -53,4 +53,17 @@ class HashMapTest {
     assertEquals("a", m2(1))
     assertEquals(0, m2(3))
   }
+
+  @Test
+  def testGetOrElse: Unit = {
+    val m1 = HashMap(1 -> "a", 2 -> "b")
+    assertEquals("a", m1.getOrElse(1, ???))
+    assertEquals("c", m1.getOrElse(3, "c"))
+
+    class Collider { override def hashCode = 0 }
+    val a, b, c = new Collider
+    val m2 = HashMap(a -> "a", b -> "b")
+    assertEquals("a", m2.getOrElse(a, ???))
+    assertEquals("c", m2.getOrElse(c, "c"))
+  }
 }
