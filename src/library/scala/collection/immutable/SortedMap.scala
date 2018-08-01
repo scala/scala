@@ -11,6 +11,8 @@ trait SortedMap[K, +V]
     with collection.SortedMap[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
 
+  override def unsorted: Map[K, V] = this
+
   override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
   /** The same map with a given default function.
@@ -40,6 +42,8 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
   extends MapOps[K, V, Map, C]
      with collection.SortedMapOps[K, V, CC, C] { self =>
     protected def coll: C with CC[K, V]
+
+    def unsorted: Map[K, V]
 
     override def keySet: SortedSet[K] = new ImmutableKeySortedSet
 
