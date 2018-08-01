@@ -28,11 +28,12 @@ trait Seq[+A]
     */
   def canEqual(that: Any): Boolean = true
 
-  override def equals(o: scala.Any): Boolean =
+  override def equals(o: scala.Any): Boolean = this.eq(o.asInstanceOf[AnyRef]) || (
     o match {
       case it: Seq[A] => (it canEqual this) && sameElements(it)
       case _ => false
     }
+  )
 
   override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
 
@@ -699,8 +700,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
-  def sameElements[B >: A](that: IterableOnce[B]): Boolean =
-    iterator.sameElements(that)
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
+    val thisKnownSize = knownSize
+    val knownSizeDifference = thisKnownSize != -1 && {
+      val thatKnownSize = that.knownSize
+      thatKnownSize != -1 && thisKnownSize != thatKnownSize
+    }
+    !knownSizeDifference && iterator.sameElements(that)
+  }
 
   /** Tests whether every element of this $coll relates to the
     * corresponding element of another sequence by satisfying a test predicate.
