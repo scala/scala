@@ -83,6 +83,8 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   override def size: Int = _size + (extraKeys+1)/2
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = size == 0
   override def empty: LongMap[V] = new LongMap()
 
   private def imbalanced: Boolean =
@@ -402,6 +404,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
       ans
     }
   }
+
+  // TODO PERF override these for efficiency. See immutable.LongMap for how to organize the code.
+  override def keysIterator: Iterator[Long] = super.keysIterator
+  override def valuesIterator: Iterator[V] = super.valuesIterator
 
   override def foreach[U](f: ((Long,V)) => U): Unit = {
     if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))

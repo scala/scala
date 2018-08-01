@@ -21,11 +21,13 @@ import scala.language.implicitConversions
  */
 trait ZippedIterable3[+El1, +El2, +El3] extends Any {
   def iterator: Iterator[(El1, El2, El3)]
+  def isEmpty: Boolean
 }
 object ZippedIterable3 {
   implicit def zippedIterable3ToIterable[El1, El2, El3](zz: ZippedIterable3[El1, El2, El3]): Iterable[(El1, El2, El3)] = {
     new scala.collection.AbstractIterable[(El1, El2, El3)] {
       def iterator: Iterator[(El1, El2, El3)] = zz.iterator
+      override def isEmpty: Boolean = zz.isEmpty
     }
   }
 }
@@ -111,7 +113,7 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
     !exists((x, y, z) => !p(x, y, z))
 
   def iterator: Iterator[(El1, El2, El3)] = coll1.iterator.zip(coll2.iterator).zip(coll3.iterator).map { case ((a, b), c) => (a, b, c)}
-
+  override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator

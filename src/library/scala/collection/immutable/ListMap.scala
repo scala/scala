@@ -52,6 +52,7 @@ sealed class ListMap[K, +V]
 
   override def isEmpty: Boolean = true
 
+  override def knownSize: Int = 0
   def get(key: K): Option[V] = None
 
   def updated[B1 >: V](key: K, value: B1): ListMap[K, B1] = new Node[B1](key, value)
@@ -87,7 +88,7 @@ sealed class ListMap[K, +V]
       else sizeInternal(cur.next, acc + 1)
 
     override def isEmpty: Boolean = false
-
+    override def knownSize: Int = -1
     @throws[NoSuchElementException]
     override def apply(k: K): V1 = applyInternal(this, k)
 

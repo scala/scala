@@ -1,7 +1,7 @@
 package scala
 package collection.mutable
 
-import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
+import scala.collection.{AbstractIterator, Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
@@ -38,7 +38,22 @@ class HashMap[K, V]
       def createNewEntry(key: K, value: V): Entry = new Entry(key, value)
     }
 
-  def iterator: Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
+  override def isEmpty: Boolean = table.size == 0
+  override def knownSize: Int = table.size
+
+  def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(e => (e.key, e.value))
+  }
+
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(_.key)
+  }
+  override def valuesIterator: Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(_.value)
+  }
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)

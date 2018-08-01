@@ -245,7 +245,6 @@ sealed abstract class List[+A]
       h
     }
   }
-
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
     if (this eq Nil) Nil else {
       var rest = this
@@ -380,6 +379,21 @@ sealed abstract class List[+A]
       these = these.tail
     }
     None
+  }
+
+  override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
+    case that: LinearSeq[B] =>
+      var i = this
+      var j = that
+      while (!(i.isEmpty || j.isEmpty)) {
+        if (!p(i.head, j.head))
+          return false
+        i = i.tail
+        j = j.tail
+      }
+      i.isEmpty && j.isEmpty
+    case _ =>
+      super.corresponds(that)(p)
   }
 
   override protected[this] def className = "List"
@@ -559,6 +573,7 @@ case object Nil extends List[Nothing] {
   override def last: Nothing = throw new NoSuchElementException("last of empty list")
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
   override def knownSize: Int = 0
+  override def iterator: Iterator[Nothing] = Iterator.empty
 }
 
 /**
@@ -571,6 +586,7 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll
+    case _ if coll.knownSize == 0 => empty[B]
     case _ => ListBuffer.from(coll).toList
   }
 

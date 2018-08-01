@@ -83,7 +83,8 @@ class LinkedHashMap[K, V]
 
   override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
-
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = table.tableSize == 0
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)
     if (e == null) None

@@ -117,6 +117,9 @@ object IsIterableLike {
         def iterableFactory: IterableFactory[Iterable] = Iterable
         protected[this] def newSpecificBuilder: mutable.Builder[Char, String] = new StringBuilder
         def iterator: Iterator[Char] = s.iterator
+        override def isEmpty: Boolean = s.isEmpty
+        override def knownSize: Int = s.length
+        override def size: Int = s.length
       }
     }
 
@@ -130,6 +133,9 @@ object IsIterableLike {
         def iterableFactory: IterableFactory[Iterable] = Iterable
         protected def newSpecificBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder
         def iterator: Iterator[A] = a.iterator
+        override def isEmpty: Boolean = a.length == 0
+        override def knownSize: Int = a.length
+        override def size: Int = a.length
       }
     }
 

@@ -49,6 +49,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     if (isEmpty) Iterator.empty
     else new MapValueIterator[K, V](rootNode)
   }
+
   protected[immutable] def reverseIterator: Iterator[(K, V)] = {
     if (isEmpty) Iterator.empty
     else new MapKeyValueTupleReverseIterator[K, V](rootNode)
@@ -82,6 +83,11 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     if (newRootNode ne rootNode)
       ChampHashMap(newRootNode, cachedJavaKeySetHashCode - keyHash, cachedSize - 1)
     else this
+  }
+
+  override def concat[V1 >: V](that: scala.Iterable[(K, V1)]): ChampHashMap[K, V1] = {
+    // TODO PERF We could avoid recomputing entry hash's when `that` is another `ChampHashMap`
+    super.concat(that)
   }
 
   override def tail: ChampHashMap[K, V] = this - head._1

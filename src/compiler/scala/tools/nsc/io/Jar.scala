@@ -77,6 +77,7 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
     Iterator continually in.getNextJarEntry() takeWhile (_ != null) foreach f
   }
   override def iterator: Iterator[JarEntry] = this.toList.iterator
+  override def isEmpty: Boolean = iterator.isEmpty
   override def toString = "" + file
 }
 

@@ -86,6 +86,8 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   override protected def newSpecificBuilder: Builder[(K, V), AnyRefMap[K,V]] = new AnyRefMapBuilder
 
   override def size: Int = _size
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = _size == 0
   override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)
 
   private def imbalanced: Boolean =
@@ -299,7 +301,17 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     this
   }
 
-  def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
+  def iterator: Iterator[(K, V)] = new AnyRefMapIterator[(K, V)] {
+    protected def nextResult(k: K, v: V) = (k, v)
+  }
+  override def keysIterator: Iterator[K] = new AnyRefMapIterator[K] {
+    protected def nextResult(k: K, v: V) = k
+  }
+  override def valuesIterator: Iterator[V] = new AnyRefMapIterator[V] {
+    protected def nextResult(k: K, v: V) = v
+  }
+
+  private abstract class AnyRefMapIterator[A] extends AbstractIterator[A] {
     private[this] val hz = _hashes
     private[this] val kz = _keys
     private[this] val vz = _values
@@ -316,15 +328,18 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
       true
     }
 
-    def next(): (K, V) = {
+    def next(): A = {
       if (hasNext) {
-        val ans = (kz(index).asInstanceOf[K], vz(index).asInstanceOf[V])
+        val ans = nextResult(kz(index).asInstanceOf[K], vz(index).asInstanceOf[V])
         index += 1
         ans
       }
       else throw new NoSuchElementException("next")
     }
+
+    protected def nextResult(k: K, v: V): A
   }
+
 
   override def foreach[U](f: ((K,V)) => U): Unit = {
     var i = 0

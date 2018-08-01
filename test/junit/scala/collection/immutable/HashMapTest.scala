@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertSame}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -52,6 +52,14 @@ class HashMapTest {
     val m2 = m1.withDefaultValue(0)
     assertEquals("a", m2(1))
     assertEquals(0, m2(3))
+  }
+
+  @Test
+  def factoryReuse(): Unit = {
+    assertSame(ChampHashMap.empty, ChampHashMap.empty)
+    assertSame(ChampHashMap.empty, ChampHashMap())
+    val m = ChampHashMap("a" -> "a")
+    assertSame(m, ChampHashMap.from(m))
   }
 
   @Test

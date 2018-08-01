@@ -73,6 +73,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   resarr.p_size0 += 1                  // we do not use array(0)
   def length: Int = resarr.length - 1  // adjust length accordingly
   override def size: Int = length
+  override def knownSize: Int = length
   override def isEmpty: Boolean = resarr.p_size0 < 2
 
   override protected def fromSpecificIterable(coll: scala.collection.Iterable[A]): PriorityQueue[A] = PriorityQueue.from(coll)

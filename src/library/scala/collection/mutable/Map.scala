@@ -175,7 +175,8 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
     override def default(key: K): V = defaultValue(key)
 
     def iterator: scala.collection.Iterator[(K, V)] = underlying.iterator
-
+    override def isEmpty: Boolean = underlying.isEmpty
+    override def knownSize: Int = underlying.knownSize
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
     override def clear(): Unit = underlying.clear()

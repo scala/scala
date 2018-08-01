@@ -170,7 +170,8 @@ object HashSet extends IterableFactory[HashSet] {
   private object EmptyHashSet extends HashSet[Any] {
 
     def iterator: Iterator[Any] = Iterator.empty
-
+    override def isEmpty: Boolean = true
+    override def knownSize: Int = 0
     override def foreach[U](f: Any => U): Unit = ()
 
     override def head: Any = throw new NoSuchElementException("Empty Set")
@@ -214,7 +215,8 @@ object HashSet extends IterableFactory[HashSet] {
   }
 
   private[immutable] final class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
-
+    override def isEmpty: Boolean = false
+    override def knownSize: Int = 1
     def iterator: Iterator[A] = Iterator.single(key)
 
     override def foreach[U](f: A => U): Unit = f(key)
@@ -295,7 +297,7 @@ object HashSet extends IterableFactory[HashSet] {
   }
 
   private[immutable] final class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A]) extends LeafHashSet[A] {
-
+    override def isEmpty: Boolean = false
     override def size = ks.size
 
     def iterator: Iterator[A] = ks.iterator
@@ -498,9 +500,9 @@ object HashSet extends IterableFactory[HashSet] {
     assert(Integer.bitCount(bitmap) == elems.length)
     // assertion has to remain disabled until SI-6197 is solved
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
-
     override def size = size0
-
+    override def isEmpty: Boolean = false
+    override def knownSize: Int = size
     def iterator: Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }

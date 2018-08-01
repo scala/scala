@@ -174,6 +174,8 @@ object HashMap extends MapFactory[HashMap] {
 
   private object EmptyHashMap extends HashMap[Any, Nothing] {
 
+    override def isEmpty: Boolean = true
+    override def knownSize: Int = 0
     protected def updated0[V1 >: Nothing](key: Any, hash: Int, level: Int, value: V1, kv: (Any, V1), merger: Merger[Any, V1]): HashMap[Any, V1] =
       new HashMap.HashMap1(key, hash, value, kv)
 
@@ -204,14 +206,14 @@ object HashMap extends MapFactory[HashMap] {
   }
 
   final class HashMap1[K, +V](private[collection] val key: K, private[collection] val hash: Int, private[collection] val value: V, private[collection] var kv: (K, V@uV)) extends HashMap[K, V] {
-
+    override def isEmpty: Boolean = false
     def iterator: Iterator[(K, V)] = Iterator.single(ensurePair)
 
     def get0(key: K, hash: Int, level: Int): Option[V] =
       if (hash == this.hash && key == this.key) Some(value) else None
 
     override def size = 1
-
+    override def knownSize: Int = 1
     private[collection] def getKey = key
     private[collection] def getHash = hash
     private[collection] def computeHashFor(k: K) = computeHash(k)
@@ -260,7 +262,7 @@ object HashMap extends MapFactory[HashMap] {
     // assert(kvs.size > 1)
 
     override def size: Int = kvs.size
-
+    override def isEmpty: Boolean = false
     protected def get0(key: K, hash: Int, level: Int): Option[V] =
       if (hash == this.hash) kvs.get(key) else None
 
@@ -336,7 +338,8 @@ object HashMap extends MapFactory[HashMap] {
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieMap[_,_]]))
 
     override def size: Int = size0
-
+    override def isEmpty: Boolean = false
+    override def knownSize: Int = size
     protected def get0(key: K, hash: Int, level: Int): Option[V] = {
       // Note: this code is duplicated with `contains0`
       val index = (hash >>> level) & 0x1f

@@ -2,9 +2,7 @@ package scala
 package collection.mutable
 
 import scala.annotation.tailrec
-import collection.AbstractIterator
-import collection.Iterator
-
+import collection.{AbstractIterator, Iterator}
 import java.lang.String
 
 /**

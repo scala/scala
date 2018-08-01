@@ -6,6 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
+import scala.collection.immutable.List.empty
 
 /**
   * This class implements immutable sets using a list-based data structure. List set iterators and
@@ -36,6 +37,7 @@ sealed class ListSet[A]
   override protected[this] def className: String = "ListSet"
 
   override def size: Int = 0
+  override def knownSize: Int = 0
   override def isEmpty: Boolean = true
 
   def contains(elem: A): Boolean = false
@@ -64,7 +66,7 @@ sealed class ListSet[A]
   protected class Node(override protected val elem: A) extends ListSet[A] {
 
     override def size = sizeInternal(this, 0)
-
+    override def knownSize: Int = -1
     @tailrec private[this] def sizeInternal(n: ListSet[A], acc: Int): Int =
       if (n.isEmpty) acc
       else sizeInternal(n.next, acc + 1)
@@ -110,10 +112,13 @@ object ListSet extends IterableFactory[ListSet] {
   def from[E](it: scala.collection.IterableOnce[E]): ListSet[E] =
     it match {
       case ls: ListSet[E] => ls
+      case _ if it.knownSize == 0 => empty[E]
       case _ => (newBuilder[E] ++= it).result()
     }
 
-  private object EmptyListSet extends ListSet[Any]
+  private object EmptyListSet extends ListSet[Any] {
+    override def knownSize: Int = 0
+  }
   private[collection] def emptyInstance: ListSet[Any] = EmptyListSet
 
   def empty[A]: ListSet[A] = EmptyListSet.asInstanceOf[ListSet[A]]

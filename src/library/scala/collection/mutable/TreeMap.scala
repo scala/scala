@@ -34,13 +34,35 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     */
   def this()(implicit ord: Ordering[K]) = this(RB.Tree.empty)(ord)
 
-  def iterator: Iterator[(K, V)] = RB.iterator(tree)
+  def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else RB.iterator(tree)
+  }
 
-  def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else RB.keysIterator(tree, None)
+  }
 
-  def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
+  override def valuesIterator: Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else RB.valuesIterator(tree, None)
+  }
 
-  override def valuesIteratorFrom(start: K): Iterator[V] = RB.valuesIterator(tree, Some(start))
+  def keysIteratorFrom(start: K): Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else RB.keysIterator(tree, Some(start))
+  }
+
+  def iteratorFrom(start: K): Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else RB.iterator(tree, Some(start))
+  }
+
+  override def valuesIteratorFrom(start: K): Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else RB.valuesIterator(tree, Some(start))
+  }
 
   def addOne(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }
 
@@ -69,7 +91,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 
   override def size: Int = RB.size(tree)
-
+  override def knownSize: Int = size
   override def isEmpty: Boolean = RB.isEmpty(tree)
 
   override def contains(key: K): Boolean = RB.contains(tree, key)
@@ -132,13 +154,15 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 
     override def get(key: K) = if (isInsideViewBounds(key)) RB.get(tree, key) else None
 
-    override def iterator = RB.iterator(tree, from, until)
-    override def keysIteratorFrom(start: K) = RB.keysIterator(tree, pickLowerBound(Some(start)), until)
-    override def iteratorFrom(start: K) = RB.iterator(tree, pickLowerBound(Some(start)), until)
-    override def valuesIteratorFrom(start: K) = RB.valuesIterator(tree, pickLowerBound(Some(start)), until)
-
-    override def size = iterator.length
-    override def isEmpty = !iterator.hasNext
+    override def iterator = if (RB.size(tree) == 0) Iterator.empty else RB.iterator(tree, from, until)
+    override def keysIterator: Iterator[K] = if (RB.size(tree) == 0) Iterator.empty else RB.keysIterator(tree, from, until)
+    override def valuesIterator: Iterator[V] = if (RB.size(tree) == 0) Iterator.empty else RB.valuesIterator(tree, from, until)
+    override def keysIteratorFrom(start: K) = if (RB.size(tree) == 0) Iterator.empty else RB.keysIterator(tree, pickLowerBound(Some(start)), until)
+    override def iteratorFrom(start: K) = if (RB.size(tree) == 0) Iterator.empty else RB.iterator(tree, pickLowerBound(Some(start)), until)
+    override def valuesIteratorFrom(start: K) = if (RB.size(tree) == 0) Iterator.empty else RB.valuesIterator(tree, pickLowerBound(Some(start)), until)
+    override def size = if (RB.size(tree) == 0) 0 else iterator.length
+    override def knownSize: Int = if (RB.size(tree) == 0) 0 else -1
+    override def isEmpty = RB.size(tree) == 0 || !iterator.hasNext
     override def contains(key: K) = isInsideViewBounds(key) && RB.contains(tree, key)
 
     override def head = headOption.get

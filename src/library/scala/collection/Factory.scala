@@ -90,7 +90,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
     * @param elems  the elements of the created $coll
     * @return a new $coll with elements `elems`
     */
-  def apply[A](elems: A*): CC[A] = from(new View.Elems(elems: _*))
+  def apply[A](elems: A*): CC[A] = from(elems)
 
   /** Produces a $coll containing repeated applications of a function to a start value.
     *
@@ -344,7 +344,7 @@ trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
   */
 trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   def empty: C
-  def apply(xs: A*): C = fromSpecific(new View.Elems(xs: _*))
+  def apply(xs: A*): C = fromSpecific(xs)
   def fill(n: Int)(elem: => A): C = fromSpecific(new View.Fill(n)(elem))
   def newBuilder: Builder[A, C]
 
@@ -423,7 +423,7 @@ trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
 
   def empty[A : Ev]: CC[A]
 
-  def apply[A : Ev](xs: A*): CC[A] = from(new View.Elems(xs: _*))
+  def apply[A : Ev](xs: A*): CC[A] = from(xs)
 
   /** Produces a $coll containing the results of some element computation a number of times.
     *  @param   n  the number of elements contained in the $coll.

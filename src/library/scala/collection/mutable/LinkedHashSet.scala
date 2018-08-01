@@ -55,7 +55,8 @@ class LinkedHashSet[A]
     }
 
   override def size: Int = table.tableSize
-
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = size == 0
   def contains(elem: A): Boolean = table.findEntry(elem) ne null
 
   def addOne(elem: A): this.type = {

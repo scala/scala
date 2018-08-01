@@ -931,9 +931,10 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     insertifhc(k, hc, v, INode.KEY_PRESENT)
   }
 
-  def iterator: Iterator[(K, V)] =
+  def iterator: Iterator[(K, V)] = {
     if (nonReadOnly) readOnlySnapshot().iterator
     else new TrieMapIterator(0, this)
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   //
@@ -970,7 +971,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   override def size: Int =
     if (nonReadOnly) readOnlySnapshot().size
     else cachedSize()
-
+  override def isEmpty: Boolean = size == 0
   override protected[this] def className = "TrieMap"
 
 }

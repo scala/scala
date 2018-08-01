@@ -152,6 +152,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     def iterator: Iterator[K] = MapOps.this.keysIterator
     def contains(key: K): Boolean = MapOps.this.contains(key)
     override def size: Int = MapOps.this.size
+    override def knownSize: Int = MapOps.this.knownSize
+    override def isEmpty: Boolean = MapOps.this.isEmpty
   }
 
   /** Collects all keys of this map in an iterable collection.
