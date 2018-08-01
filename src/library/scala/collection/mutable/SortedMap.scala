@@ -12,6 +12,8 @@ trait SortedMap[K, V]
     with Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
 
+  override def unsorted: Map[K, V] = this
+
   override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
   /** The same sorted map with a given default function.
@@ -39,7 +41,10 @@ trait SortedMap[K, V]
 
 trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends collection.SortedMapOps[K, V, CC, C]
-    with MapOps[K, V, Map, C]
+    with MapOps[K, V, Map, C] {
+
+  def unsorted: Map[K, V]
+}
 
 @SerialVersionUID(3L)
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {

@@ -25,6 +25,8 @@ sealed abstract class BitSet
     with StrictOptimizedIterableOps[Int, Set, BitSet]
     with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet] {
 
+  override def unsorted: Set[Int] = this
+
   def bitSetFactory = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)

@@ -39,6 +39,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def bitSetFactory = BitSet
 
+  override def unsorted: Set[Int] = this
+
   protected[collection] final def nwords: Int = elems.length
 
   protected[collection] final def word(idx: Int): Long =

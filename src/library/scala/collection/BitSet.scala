@@ -24,6 +24,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override protected def newSpecificBuilder: Builder[Int, BitSetC] = bitSetFactory.newBuilder
   override def empty: BitSetC = bitSetFactory.empty
   override protected[this] def stringPrefix = "BitSet"
+  override def unsorted: Set[Int] = this
 }
 
 @SerialVersionUID(3L)
@@ -72,6 +73,8 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   import BitSetOps._
 
   def bitSetFactory: SpecificIterableFactory[Int, BitSetC]
+
+  def unsorted: Set[Int]
 
   /**
     * Type alias to `C`. It is used to provide a default implementation of the `fromSpecificIterable`

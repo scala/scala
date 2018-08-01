@@ -10,6 +10,8 @@ trait SortedSet[A]
      with collection.SortedSet[A]
      with SortedSetOps[A, SortedSet, SortedSet[A]] {
 
+  override def unsorted: Set[A] = this
+
   override def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
 }
 
@@ -19,7 +21,10 @@ trait SortedSet[A]
   */
 trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
-     with collection.SortedSetOps[A, CC, C]
+     with collection.SortedSetOps[A, CC, C] {
+
+  def unsorted: Set[A]
+}
 
 /**
   * $factoryInfo
