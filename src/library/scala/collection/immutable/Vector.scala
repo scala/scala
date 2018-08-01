@@ -58,13 +58,6 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
  *
  *  @define Coll `Vector`
  *  @define coll vector
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `Vector[B]` because an implicit of type `CanBuildFrom[Vector, B, That]`
- *    is defined in object `Vector`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `Vector`.
  *  @define orderDependent
  *  @define orderDependentFold
  *  @define mayNotTerminateInf

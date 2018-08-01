@@ -30,15 +30,16 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
+    with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
   override def sortedMapFactory = TreeMap
 
-  def iterator: collection.Iterator[(K, V)] = RB.iterator(tree)
+  def iterator: Iterator[(K, V)] = RB.iterator(tree)
 
-  def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
+  def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
 
   def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
 
@@ -153,7 +154,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
 
-  def from[K : Ordering, V](it: collection.IterableOnce[(K, V)]): TreeMap[K, V] =
+  def from[K : Ordering, V](it: IterableOnce[(K, V)]): TreeMap[K, V] =
     it match {
       case tm: TreeMap[K, V] => tm
       case _ => (newBuilder[K, V] ++= it).result()

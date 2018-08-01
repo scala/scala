@@ -1051,7 +1051,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def indices: Range = Range(0, s.length)
 
   /** Iterator can be used only once */
-  def iterator(): Iterator[Char] = new StringIterator(s)
+  def iterator: Iterator[Char] = new StringIterator(s)
 
   /** Tests whether the string is not empty. */
   @`inline` def nonEmpty: Boolean = !s.isEmpty
@@ -1065,7 +1065,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @return  an iterator yielding the chars of this string in reversed order
     */
-  def reverseIterator(): Iterator[Char] = new ReverseIterator(s)
+  def reverseIterator: Iterator[Char] = new ReverseIterator(s)
 
   /** Creates a non-strict filter of this string.
     *

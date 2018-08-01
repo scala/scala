@@ -228,6 +228,88 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /** A view over the elements of this collection. */
   def view: View[A] = View.fromIteratorProvider(() => iterator)
 
+  /** Compares the size of this $coll to a test value.
+    *
+    *   @param   otherSize the test value that gets compared with the size.
+    *   @return  A value `x` where
+    *   {{{
+    *        x <  0       if this.size <  otherSize
+    *        x == 0       if this.size == otherSize
+    *        x >  0       if this.size >  otherSize
+    *   }}}
+    *  The method as implemented here does not call `size` directly; its running time
+    *  is `O(size min _size)` instead of `O(size)`. The method should be overwritten
+    *  if computing `size` is cheap.
+    */
+  def sizeCompare(otherSize: Int): Int = {
+    if (otherSize < 0) 1
+    else {
+      val known = knownSize
+      if (known >= 0) Integer.compare(known, otherSize)
+      else {
+        var i = 0
+        val it = iterator
+        while (it.hasNext) {
+          if (i == otherSize) return if (it.hasNext) 1 else 0
+          it.next()
+          i += 1
+        }
+        i - otherSize
+      }
+    }
+  }
+
+  /** Returns a value class containing operations for comparing the size of this $coll to a test value.
+    *
+    * These operations are implemented in terms of [[sizeCompare(Int) `sizeCompare(Int)`]], and
+    * allow the following more readable usages:
+    *
+    * {{{
+    * this.sizeIs < size     // this.sizeCompare(size) < 0
+    * this.sizeIs <= size    // this.sizeCompare(size) <= 0
+    * this.sizeIs == size    // this.sizeCompare(size) == 0
+    * this.sizeIs != size    // this.sizeCompare(size) != 0
+    * this.sizeIs >= size    // this.sizeCompare(size) >= 0
+    * this.sizeIs > size     // this.sizeCompare(size) > 0
+    * }}}
+    */
+  @inline final def sizeIs: IterableOps.SizeCompareOps = new IterableOps.SizeCompareOps(this)
+
+  /** Compares the size of this $coll to the size of another `Iterable`.
+    *
+    *   @param   that the `Iterable` whose size is compared with this $coll's size.
+    *   {{{
+    *        x <  0       if this.size <  that.size
+    *        x == 0       if this.size == that.size
+    *        x >  0       if this.size >  that.size
+    *   }}}
+    *  The method as implemented here does not call `size` directly; its running time
+    *  is `O(this.size min that.size)` instead of `O(this.size + that.size)`.
+    *  The method should be overwritten if computing `size` is cheap.
+    */
+  def sizeCompare(that: Iterable[_]): Int = {
+    val thatKnownSize = that.knownSize
+
+    if (thatKnownSize >= 0) this sizeCompare thatKnownSize
+    else {
+      val thisKnownSize = this.knownSize
+
+      if (thisKnownSize >= 0) {
+        val res = that sizeCompare thisKnownSize
+        // can't just invert the result, because `-Int.MinValue == Int.MinValue`
+        if (res == Int.MinValue) 1 else -res
+      } else {
+        val thisIt = this.iterator
+        val thatIt = that.iterator
+        while (thisIt.hasNext && thatIt.hasNext) {
+          thisIt.next()
+          thatIt.next()
+        }
+        java.lang.Boolean.compare(thisIt.hasNext, thatIt.hasNext)
+      }
+    }
+  }
+
   /** A view over a slice of the elements of this collection. */
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
   @`inline` final def view(from: Int, until: Int): View[A] = view.slice(from, until)
@@ -564,10 +646,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     fromIterable(new View.FlatMap(this, asIterable))
 
   def collect[B](pf: PartialFunction[A, B]): CC[B] =
-    flatMap { a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty
-    }
+    fromIterable(new View.Collect(this, pf))
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -689,6 +768,26 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 }
 
 object IterableOps {
+
+  /** Operations for comparing the size of a collection to a test value.
+    *
+    * These operations are implemented in terms of
+    * [[scala.collection.IterableOps.sizeCompare(Int) `sizeCompare(Int)`]].
+    */
+  final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
+    /** Tests if the size of the collection is less than some value. */
+    @inline def <(size: Int): Boolean = it.sizeCompare(size) < 0
+    /** Tests if the size of the collection is less than or equal to some value. */
+    @inline def <=(size: Int): Boolean = it.sizeCompare(size) <= 0
+    /** Tests if the size of the collection is equal to some value. */
+    @inline def ==(size: Int): Boolean = it.sizeCompare(size) == 0
+    /** Tests if the size of the collection is not equal to some value. */
+    @inline def !=(size: Int): Boolean = it.sizeCompare(size) != 0
+    /** Tests if the size of the collection is greater than or equal to some value. */
+    @inline def >=(size: Int): Boolean = it.sizeCompare(size) >= 0
+    /** Tests if the size of the collection is greater than some value. */
+    @inline def >(size: Int): Boolean = it.sizeCompare(size) > 0
+  }
 
   /** A trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
     * of trait `Iterable`.

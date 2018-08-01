@@ -20,5 +20,5 @@ trait Reference[+T <: AnyRef] extends Function0[T] {
   override def toString = get.map(_.toString).getOrElse("<deleted>")
   def clear(): Unit
   def enqueue(): Boolean
-  def isEnqueued(): Boolean
+  def isEnqueued: Boolean
 }

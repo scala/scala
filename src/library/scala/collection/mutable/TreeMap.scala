@@ -1,9 +1,8 @@
 package scala
-package collection.mutable
+package collection
+package mutable
 
-import collection.{Iterator, SortedMapFactory, StrictOptimizedIterableOps, StrictOptimizedSortedMapOps}
 import collection.mutable.{RedBlackTree => RB}
-import java.lang.String
 
 /**
   * A mutable sorted map implemented using a mutable red-black tree as underlying data structure.
@@ -23,6 +22,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
+    with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   override def sortedMapFactory = TreeMap
@@ -202,7 +202,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
 @SerialVersionUID(3L)
 object TreeMap extends SortedMapFactory[TreeMap] {
 
-  def from[K : Ordering, V](it: collection.IterableOnce[(K, V)]): TreeMap[K, V] =
+  def from[K : Ordering, V](it: IterableOnce[(K, V)]): TreeMap[K, V] =
     Growable.from(empty[K, V], it)
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap[K, V]()

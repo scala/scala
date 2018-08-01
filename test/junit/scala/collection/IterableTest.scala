@@ -3,7 +3,9 @@ package scala.collection
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.collection.immutable.{ArraySeq, List, Range}
+
+import scala.collection.immutable.{ArraySeq, List, Range, Vector}
+import scala.language.higherKinds
 import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
@@ -56,6 +58,34 @@ class IterableTest {
     val xs = Seq('a', 'b', 'b', 'c', 'a', 'a', 'a', 'b')
     val expected = Map('a' -> 4, 'b' -> 3, 'c' -> 1)
     Assert.assertEquals(expected, occurrences(xs))
+  }
+
+  @Test
+  def sizeCompareInt(): Unit = {
+    val seq = Seq(1, 2, 3)
+    assert(seq.sizeCompare(2) > 0)
+    assert(seq.sizeCompare(3) == 0)
+    assert(seq.sizeCompare(4) < 0)
+  }
+
+  @Test
+  def sizeCompareIterable(): Unit = {
+    def check[I1[X] <: Iterable[X], I2[X] <: Iterable[X]]
+    (f1: IterableFactory[I1], f2: IterableFactory[I2]): Unit = {
+      val it = f1(1, 2, 3)
+      assert(it.sizeCompare(f2(1, 2)) > 0)
+      assert(it.sizeCompare(f2(1, 2, 3)) == 0)
+      assert(it.sizeCompare(f2(1, 2, 3, 4)) < 0)
+    }
+
+    // factories for `Seq`s with known and unknown size
+    val known: IterableFactory[IndexedSeq] = Vector
+    val unknown: IterableFactory[LinearSeq] = List
+
+    check(known, known)
+    check(known, unknown)
+    check(unknown, known)
+    check(unknown, unknown)
   }
 
   @Test def copyToArray(): Unit = {

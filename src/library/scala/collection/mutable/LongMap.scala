@@ -532,7 +532,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def flatMap[V2](f: ((Long, V)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
   def collect[V2](pf: PartialFunction[(Long, V), (Long, V2)]): LongMap[V2] =
-    flatMap(kv => if (pf.isDefinedAt(kv)) new View.Single(pf(kv)) else View.Empty)
+    strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[V](LongMap), this)
 

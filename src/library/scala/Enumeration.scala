@@ -249,9 +249,9 @@ abstract class Enumeration (initial: Int) extends Serializable {
       catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }
 
     protected def readResolve(): AnyRef = {
-      val enum = thisenum.readResolve().asInstanceOf[Enumeration]
-      if (enum.vmap == null) this
-      else enum.vmap(i)
+      val enumeration = thisenum.readResolve().asInstanceOf[Enumeration]
+      if (enumeration.vmap == null) this
+      else enumeration.vmap(i)
     }
   }
 

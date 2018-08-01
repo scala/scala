@@ -661,6 +661,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def indices: Range = Range(0, length)
 
+  override final def sizeCompare(_size: Int): Int = lengthCompare(_size)
+
   /** Compares the length of this $coll to a test value.
     *
     *   @param   len   the test value that gets compared with the length.
@@ -674,23 +676,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  is `O(length min len)` instead of `O(length)`. The method should be overwritten
     *  if computing `length` is cheap.
     */
-  def lengthCompare(len: Int): Int = {
-    if (len < 0) 1
-    else {
-      val known = knownSize
-      if (known >= 0) Integer.compare(known, len)
-      else {
-        var i = 0
-        val it = iterator
-        while (it.hasNext) {
-          if (i == len) return if (it.hasNext) 1 else 0
-          it.next()
-          i += 1
-        }
-        i - len
-      }
-    }
-  }
+  def lengthCompare(len: Int): Int = super.sizeCompare(len)
 
   /** Returns a value class containing operations for comparing the length of this $coll to a test value.
     *
@@ -706,7 +692,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * this.lengthIs > len     // this.lengthCompare(len) > 0
     * }}}
     */
-  @inline final def lengthIs: SeqOps.LengthCompareOps = new SeqOps.LengthCompareOps(this)
+  @inline final def lengthIs: IterableOps.SizeCompareOps = new IterableOps.SizeCompareOps(this)
 
   override def isEmpty: Boolean = lengthCompare(0) == 0
 
@@ -1035,7 +1021,7 @@ object SeqOps {
    *  @param  wlen Just in case we're only IndexedSeq and not IndexedSeqOptimized
    *  @return KMP jump table for target sequence
    */
- private def kmpJumpTable[B](Wopt: IndexedSeqView[B], wlen: Int) = {
+  private def kmpJumpTable[B](Wopt: IndexedSeqView[B], wlen: Int) = {
     val arr = new Array[Int](wlen)
     var pos = 2
     var cnd = 0

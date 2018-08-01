@@ -257,10 +257,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *                The order of the elements is preserved.
     */
   def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =
-    flatMap { a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty
-    }
+    mapFactory.from(new View.Collect(toIterable, pf))
 
   /** Builds a new map by applying a function to all elements of this $coll
     *  and using the elements of the resulting collections.

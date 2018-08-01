@@ -135,10 +135,7 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     *                The order of the elements is preserved.
     */
   def collect[B](pf: scala.PartialFunction[A, B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
-    flatMap(a =>
-      if (pf.isDefinedAt(a)) new View.Single(pf(a))
-      else View.Empty)
-
+    sortedFromIterable(new View.Collect(toIterable, pf))
 }
 
 object SortedSetOps {

@@ -135,7 +135,7 @@ object View extends IterableFactory[View] {
 
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
   type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
-  
+
   /** A view that filters an underlying collection. */
   @SerialVersionUID(3L)
   class Filter[A](val underlying: SomeIterableOps[A], val p: A => Boolean, val isFlipped: Boolean) extends AbstractView[A] {
@@ -188,8 +188,10 @@ object View extends IterableFactory[View] {
   class Drop[A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
     def iterator = underlying.iterator.drop(n)
     protected val normN = n max 0
-    override def knownSize =
-      if (underlying.knownSize >= 0) (underlying.knownSize - normN) max 0 else -1
+    override def knownSize = {
+      val size = underlying.knownSize
+      if (size >= 0) (size - normN) max 0 else -1
+    }
     override def isEmpty: Boolean = iterator.isEmpty
   }
 
@@ -205,8 +207,10 @@ object View extends IterableFactory[View] {
   class Take[+A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
     def iterator = underlying.iterator.take(n)
     protected val normN = n max 0
-    override def knownSize =
-      if (underlying.knownSize >= 0) underlying.knownSize min normN else -1
+    override def knownSize = {
+      val size = underlying.knownSize
+      if (size >= 0) size min normN else -1
+    }
     override def isEmpty: Boolean = iterator.isEmpty
   }
 
@@ -220,8 +224,10 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class ScanLeft[+A, +B](underlying: SomeIterableOps[A], z: B, op: (B, A) => B) extends AbstractView[B] {
     def iterator: Iterator[B] = underlying.iterator.scanLeft(z)(op)
-    override def knownSize: Int =
-      if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
+    override def knownSize: Int = {
+      val size = underlying.knownSize
+      if (size >= 0) size + 1 else -1
+    }
     override def isEmpty: Boolean = iterator.isEmpty
   }
 
@@ -241,15 +247,27 @@ object View extends IterableFactory[View] {
     override def isEmpty: Boolean = iterator.isEmpty
   }
 
+  /** A view that collects elements of the underlying collection. */
+  @SerialVersionUID(3L)
+  class Collect[+A, B](underlying: SomeIterableOps[A], pf: PartialFunction[A, B]) extends AbstractView[B] {
+    def iterator = underlying.iterator.collect(pf)
+  }
+
   /** A view that concatenates elements of the prefix collection or iterator with the elements
    *  of the suffix collection or iterator.
    */
   @SerialVersionUID(3L)
   class Concat[A](prefix: SomeIterableOps[A], suffix: SomeIterableOps[A]) extends AbstractView[A] {
     def iterator = prefix.iterator ++ suffix.iterator
-    override def knownSize =
-      if (prefix.knownSize >= 0 && suffix.knownSize >= 0) prefix.knownSize + suffix.knownSize
+    override def knownSize = {
+      val prefixSize = prefix.knownSize
+      if (prefixSize >= 0) {
+        val suffixSize = suffix.knownSize
+        if (suffixSize >= 0) prefixSize + suffixSize
+        else -1
+      }
       else -1
+    }
     override def isEmpty: Boolean = prefix.isEmpty && suffix.isEmpty
   }
 
@@ -284,7 +302,10 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class Appended[A](underlying: SomeIterableOps[A], elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new Concat(underlying, new View.Single(elem)).iterator
-    override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
+    override def knownSize: Int = {
+      val size = underlying.knownSize
+      if (size >= 0) size + 1 else -1
+    }
     override def isEmpty: Boolean = false
   }
 
@@ -292,7 +313,10 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class Prepended[+A](elem: A, underlying: SomeIterableOps[A]) extends AbstractView[A] {
     def iterator: Iterator[A] = new Concat(new View.Single(elem), underlying).iterator
-    override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize + 1 else -1
+    override def knownSize: Int = {
+      val size = underlying.knownSize
+      if (size >= 0) size + 1 else -1
+    }
     override def isEmpty: Boolean = false
   }
 
@@ -343,7 +367,10 @@ object View extends IterableFactory[View] {
   class PadTo[A](underlying: SomeIterableOps[A], len: Int, elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = underlying.iterator.padTo(len, elem)
 
-    override def knownSize: Int = if (underlying.knownSize >= 0) underlying.knownSize max len else -1
+    override def knownSize: Int = {
+      val size = underlying.knownSize
+      if (size >= 0) size max len else -1
+    }
     override def isEmpty: Boolean = underlying.isEmpty && len <= 0
   }
 

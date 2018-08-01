@@ -20,7 +20,7 @@ trait StdAttachments {
 
   /** Loads underlying MacroExpanderAttachment from a macro expandee or returns a default value for that attachment.
    */
- def macroExpanderAttachment(tree: Tree): MacroExpanderAttachment =
+  def macroExpanderAttachment(tree: Tree): MacroExpanderAttachment =
     tree.attachments.get[MacroExpanderAttachment] getOrElse {
       tree match {
         case Apply(fn, _) if tree.isInstanceOf[ApplyToImplicitArgs] => macroExpanderAttachment(fn)

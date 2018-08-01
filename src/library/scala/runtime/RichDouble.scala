@@ -13,12 +13,12 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   protected def num: Fractional[Double] = scala.math.Numeric.DoubleIsFractional
   protected def ord: Ordering[Double]   = scala.math.Ordering.Double.TotalOrdering
 
-  override def doubleValue() = self
-  override def floatValue()  = self.toFloat
-  override def longValue()   = self.toLong
-  override def intValue()    = self.toInt
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self
+  override def floatValue  = self.toFloat
+  override def longValue   = self.toLong
+  override def intValue    = self.toInt
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   override def isWhole = {
     val l = self.toLong

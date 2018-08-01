@@ -447,10 +447,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)]): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.FlatMap(toIterable, f))
   def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K with AnyRef, V), (K2, V2)]): AnyRefMap[K2, V2] =
-    flatMap { kv: (K with AnyRef, V) =>
-      if (pf.isDefinedAt(kv)) new View.Single(pf(kv))
-      else View.Empty
-    }
+    strictOptimizedCollect(AnyRefMap.newBuilder[K2, V2], pf)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
 

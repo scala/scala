@@ -17,12 +17,12 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   protected def num = scala.math.Numeric.IntIsIntegral
   protected def ord = scala.math.Ordering.Int
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self.toFloat
-  override def longValue()   = self.toLong
-  override def intValue()    = self
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self.toFloat
+  override def longValue   = self.toLong
+  override def intValue    = self
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   /** Returns `'''true'''` if this number has no decimal component.
     * Always `'''true'''` for `RichInt`.

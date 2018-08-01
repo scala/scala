@@ -103,9 +103,6 @@ object Option {
  *  @define willNotTerminateInf
  *  @define collectExample
  *  @define undefinedorder
- *  @define thatinfo the class of the returned collection. In the standard library configuration, `That` is `Iterable[B]`
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the result class `That` from the current
- *    representation type `Repr` and the new element type `B`.
  */
 @SerialVersionUID(-114498752079829388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 sealed abstract class Option[+A] extends Product with Serializable {

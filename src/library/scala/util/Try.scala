@@ -9,6 +9,7 @@
 package scala
 package util
 
+import scala.runtime.Statics
 import scala.util.control.NonFatal
 
 /**
@@ -225,10 +226,20 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
   override def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
   override def collect[U](pf: PartialFunction[T, U]): Try[U] = this.asInstanceOf[Try[U]]
   override def filter(p: T => Boolean): Try[T] = this
-  override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] =
-    try { if (pf isDefinedAt exception) Success(pf(exception)) else this } catch { case NonFatal(e) => Failure(e) }
-  override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] =
-    try { if (pf isDefinedAt exception) pf(exception) else this } catch { case NonFatal(e) => Failure(e) }
+  override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = {
+    val marker = Statics.pfMarker
+    try {
+      val v = pf.applyOrElse(exception, ((x: Throwable) => marker).asInstanceOf[Function[Throwable, U]])
+      if (marker ne v.asInstanceOf[AnyRef]) Success(v) else this
+    } catch { case NonFatal(e) => Failure(e) }
+  }
+  override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = {
+    val marker = Statics.pfMarker
+    try {
+      val v = pf.applyOrElse(exception, ((x: Throwable) => marker).asInstanceOf[Function[Throwable, Try[U]]])
+      if (marker ne v.asInstanceOf[AnyRef]) v else this
+    } catch { case NonFatal(e) => Failure(e) }
+  }
   override def failed: Try[Throwable] = Success(exception)
   override def toOption: Option[T] = None
   override def toEither: Either[Throwable, T] = Left(exception)
@@ -248,11 +259,14 @@ final case class Success[+T](value: T) extends Try[T] {
   override def foreach[U](f: T => U): Unit = f(value)
   override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this flatMap s
   override def map[U](f: T => U): Try[U] = Try[U](f(value))
-  override def collect[U](pf: PartialFunction[T, U]): Try[U] =
+  override def collect[U](pf: PartialFunction[T, U]): Try[U] = {
+    val marker = Statics.pfMarker
     try {
-      if (pf isDefinedAt value) Success(pf(value))
+      val v = pf.applyOrElse(value, ((x: T) => marker).asInstanceOf[Function[T, U]])
+      if (marker ne v.asInstanceOf[AnyRef]) Success(v)
       else Failure(new NoSuchElementException("Predicate does not hold for " + value))
     } catch { case NonFatal(e) => Failure(e) }
+  }
   override def filter(p: T => Boolean): Try[T] =
     try {
       if (p(value)) this else Failure(new NoSuchElementException("Predicate does not hold for " + value))

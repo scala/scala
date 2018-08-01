@@ -14,12 +14,12 @@ final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[B
   protected def num = scala.math.Numeric.ByteIsIntegral
   protected def ord = scala.math.Ordering.Byte
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self.toFloat
-  override def longValue()   = self.toLong
-  override def intValue()    = self.toInt
-  override def byteValue()   = self
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self.toFloat
+  override def longValue   = self.toLong
+  override def intValue    = self.toInt
+  override def byteValue   = self
+  override def shortValue  = self.toShort
 
   override def isValidByte   = true
 

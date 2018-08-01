@@ -125,7 +125,7 @@ object BigDecimal {
   /** Constructs a `BigDecimal` that exactly represents the number
    *  specified in base 10 in a character array.
    */
- def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
+  def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
 
 
   /** Constructs a `BigDecimal` using the java BigDecimal static
@@ -394,7 +394,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *  with large exponents.
    */
   override def hashCode(): Int = {
-    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode
+    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode()
     computedHashCode
   }
 
@@ -466,7 +466,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     catch { case _: ArithmeticException => false }
   }
 
-  def isWhole() = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
+  def isWhole = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
 
   def underlying = bigDecimal
 
@@ -547,11 +547,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
-  def signum: Int = this.bigDecimal.signum()
+  def signum: Int = this.bigDecimal.signum
 
   /** Returns the precision of this `BigDecimal`.
    */
-  def precision: Int = this.bigDecimal.precision()
+  def precision: Int = this.bigDecimal.precision
 
   /** Returns a BigDecimal rounded according to the supplied MathContext settings, but
    *  preserving its own MathContext for future operations.
@@ -569,7 +569,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Returns the scale of this `BigDecimal`.
    */
-  def scale: Int = this.bigDecimal.scale()
+  def scale: Int = this.bigDecimal.scale
 
   /** Returns the size of an ulp, a unit in the last place, of this BigDecimal.
    */
@@ -697,20 +697,20 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Converts this `BigDecimal` to a scala.BigInt.
    */
-  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+  def toBigInt: BigInt = new BigInt(this.bigDecimal.toBigInteger)
 
   /** Converts this `BigDecimal` to a scala.BigInt if it
    *  can be done losslessly, returning Some(BigInt) or None.
    */
-  def toBigIntExact(): Option[BigInt] =
-    if (isWhole()) {
-      try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
+  def toBigIntExact: Option[BigInt] =
+    if (isWhole) {
+      try Some(new BigInt(this.bigDecimal.toBigIntegerExact))
       catch { case _: ArithmeticException => None }
     }
     else None
 
   /** Returns the decimal String representation of this BigDecimal.
    */
-  override def toString(): String = this.bigDecimal.toString()
+  override def toString: String = this.bigDecimal.toString
 
 }
