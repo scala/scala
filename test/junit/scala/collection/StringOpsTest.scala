@@ -1,5 +1,6 @@
 package scala.collection
 
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -23,5 +24,11 @@ class StringOpsTest {
 
   @Test def toArray(): Unit = {
     assert("".toArray[Any].length == 0) // should not throw
+  }
+
+  @Test def *(): Unit = {
+    assertEquals("aaa", "a" * 3)
+    assertEquals("", "a" * 0)
+    assertEquals("", "a" * -1)
   }
 }

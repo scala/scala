@@ -563,13 +563,17 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Return the current string concatenated `n` times.
     */
   def *(n: Int): String = {
-    val sb = new JStringBuilder(s.length * n)
-    var i = 0
-    while (i < n) {
-      sb.append(s)
-      i += 1
+    if (n <= 0) {
+      ""
+    } else {
+      val sb = new JStringBuilder(s.length * n)
+      var i = 0
+      while (i < n) {
+        sb.append(s)
+        i += 1
+      }
+      sb.toString
     }
-    sb.toString
   }
 
   @inline private[this] def isLineBreak(c: Char) = c == LF || c == FF
