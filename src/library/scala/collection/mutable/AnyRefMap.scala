@@ -441,12 +441,12 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     this
   }
 
-  // The `K with AnyRef` parameter type is necessary to distinguish these methods from the base methods they overload (not override)
-  def map[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => (K2, V2)): AnyRefMap[K2, V2] =
+  // The implicit dummy parameter is necessary to distinguish these methods from the base methods they overload (not override)
+  def map[K2 <: AnyRef, V2](f: ((K, V)) => (K2, V2))(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.Map(toIterable, f))
-  def flatMap[K2 <: AnyRef, V2](f: ((K with AnyRef, V)) => IterableOnce[(K2, V2)]): AnyRefMap[K2, V2] =
+  def flatMap[K2 <: AnyRef, V2](f: ((K, V)) => IterableOnce[(K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     AnyRefMap.from(new View.FlatMap(toIterable, f))
-  def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K with AnyRef, V), (K2, V2)]): AnyRefMap[K2, V2] =
+  def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     strictOptimizedCollect(AnyRefMap.newBuilder[K2, V2], pf)
 
   override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
