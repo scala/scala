@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import scala.reflect.io.{Directory, File, Path}
+import scala.reflect.io.{Directory, File}
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import scala.util.control.NonFatal

@@ -272,7 +272,7 @@ abstract class Erasure extends InfoTransform
               case _ =>
                 boxedSig(tp)
             }
-          def classSig: Unit = {
+          def classSig(): Unit = {
             markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
             if (needsJavaSig(preRebound, Nil)) {
