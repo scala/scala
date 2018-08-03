@@ -3000,9 +3000,14 @@ self =>
     def template(): (List[Tree], ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
+        val braceOffset = in.offset
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
+          val advice =
+            if (settings.isScala214) "use trait parameters instead."
+            else "they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits."
+          deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
