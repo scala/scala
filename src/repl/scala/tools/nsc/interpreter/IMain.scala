@@ -846,25 +846,27 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       // The symbol defined by the last member handler
       val resValSym = value
 
-      val extractionCode =
-        lineRep.packaged(stringFromWriter { code =>
-          // first line evaluates object to make sure constructor is run
-          // initial "" so later code can uniformly be: + etc
-          code.println(s"""
-             |object ${lineRep.evalName} {
-             |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
-             |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
-             |    $fullAccessPath
-             |    ( "" """.stripMargin) // the result extraction code will emit code to append strings to this initial ""
-
-          contributors map (_.resultExtractionCode(this)) foreach code.println
-
-          code.println("""
-             |    )
-             |  }
-             |}
-             """.stripMargin)
-        })
+      val extractionCode = stringFromWriter { code =>
+        code.println(s"""
+           |${lineRep.packageDecl} {
+           |object ${lineRep.evalName} {
+           |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
+           |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
+           |    $fullAccessPath
+           |""".stripMargin)
+        if (contributors.lengthCompare(1) > 0) {
+          code.println("val sb = new _root_.scala.StringBuilder")
+          contributors foreach (x => code.println(s"""sb.append("" ${x.resultExtractionCode(this)})"""))
+          code.println("sb.toString")
+        } else {
+          code.print(""""" """) // start with empty string
+          contributors foreach (x => code.print(x.resultExtractionCode(this)))
+          code.println()
+        }
+        code.println(s"""
+           |  }
+           |}}""".stripMargin)
+        }
 
       showCode(extractionCode)
 

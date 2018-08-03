@@ -1012,6 +1012,25 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): Repl = repl.intp
 
+  def testConfig(settings: Settings) =
+    new ShellConfig {
+      private val delegate = ShellConfig(settings)
+
+      val filesToPaste: List[String] = delegate.filesToPaste
+      val filesToLoad: List[String] = delegate.filesToLoad
+      val batchText: String = delegate.batchText
+      val batchMode: Boolean = delegate.batchMode
+      val doCompletion: Boolean = delegate.doCompletion
+      val haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
+
+      // No truncated output, because the result changes on Windows because of line endings
+      override val maxPrintString = {
+        val p = sys.Prop[Int]("wtf")
+        p.set("0")
+        p
+      }
+    }
+
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
@@ -1043,7 +1062,7 @@ object ILoop {
           }
         }
 
-        val config = ShellConfig(settings)
+        val config = testConfig(settings)
         val repl = new ILoop(config, input, output) {
           // remove welcome message as it has versioning info (for reproducible test results),
           override def welcome = ""
