@@ -94,9 +94,6 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
   def arrayManifest: ClassManifest[Array[T]] =
     ClassManifest.classType[Array[T]](arrayClass[T](runtimeClass), this)
 
-  override def newArray(len: Int): Array[T] =
-    java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
-
   @deprecated("use wrap.newArray instead", "2.10.0")
   def newArray2(len: Int): Array[Array[T]] =
     java.lang.reflect.Array.newInstance(arrayClass[T](runtimeClass), len)

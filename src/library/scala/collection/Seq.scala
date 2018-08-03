@@ -83,11 +83,6 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** The length (number of elements) of the $coll. `size` is an alias for `length` in `Seq` collections. */
   def length: Int
 
-  /**
-    * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
-    */
-  def toSeq: immutable.Seq[A]
-
   /** A copy of the $coll with an element prepended.
     *
     * Also, the original $coll is not modified, so you will want to capture the result.
