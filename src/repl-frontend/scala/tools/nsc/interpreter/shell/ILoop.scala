@@ -659,15 +659,17 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def loadCommand(arg: String): Result = {
-    def run(file: String, verbose: Boolean) = withFile(file) { f =>
+    import scala.tools.cmd.CommandLineParser
+    def run(file: String, args: List[String], verbose: Boolean) = withFile(file) { f =>
+      intp.interpret(s"val args: Array[String] = ${ args.map("\"" + _ + "\"").mkString("Array(", ",", ")") }")
       interpretAllFrom(f, verbose)
       Result recording s":load $arg"
     } getOrElse Result.default
 
-    words(arg) match {
-      case "-v" :: file :: Nil => run(file, verbose = true)
-      case file :: Nil         => run(file, verbose = false)
-      case _                   => echo("usage: :load -v file") ; Result.default
+    CommandLineParser.tokenize(arg) match {
+      case "-v" :: file :: rest => run(file, rest, verbose = true)
+      case file :: rest         => run(file, rest, verbose = false)
+      case _                    => echo("usage: :load -v file") ; Result.default
     }
   }
 
