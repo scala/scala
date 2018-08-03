@@ -48,13 +48,14 @@ class ConsoleLog(colorEnabled: Boolean) {
   def echoMixed(msg: String)   = echo(bold(yellow(msg)))
   def echoWarning(msg: String) = echo(bold(red(msg)))
 
-  def printDot(): Unit = {
+  def printDot(): Unit = printProgress(".")
+  def printEx(): Unit  = printProgress(_failure + "X" + _default)
+  private def printProgress(icon: String): Unit =
     if (dotCount >= DotWidth) {
-      outline("\n.")
+      outline("\n" + icon)
       dotCount = 1
     } else {
-      outline(".")
+      outline(icon)
       dotCount += 1
     }
-  }
 }
