@@ -1618,7 +1618,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     }
 
     private val hotCounters =
-      List(statistics.retainedCount, statistics.retainedByType, statistics.nodeByType)
+      List(statistics.retainedCount, statistics.retainedByType)
     private val parserStats = {
       import statistics.treeNodeCount
       if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters

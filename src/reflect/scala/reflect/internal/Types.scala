@@ -4149,7 +4149,6 @@ trait Types
   final def howManyUniqueTypes: Int = if (uniques == null) 0 else uniques.size
 
   protected def unique[T <: Type](tp: T): T =  {
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
       // JZ: We used to register this as a perRunCache so it would be cleared eagerly at

@@ -666,12 +666,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def silent[T](op: Typer => T,
                   reportAmbiguousErrors: Boolean = context.ambiguousErrors,
                   newtree: Tree = context.tree): SilentResult[T] = {
-      val rawTypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(rawTypeFailed) else null
       val findMemberStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(findMemberFailed) else null
       val subtypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeFailed) else null
       val failedSilentStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedSilentNanos) else null
       def stopStats() = {
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeFailed, rawTypeStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberFailed, findMemberStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeFailed, subtypeStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedSilentNanos, failedSilentStart)
@@ -5869,7 +5867,6 @@ trait TypersStats {
   val typedIdentCount     = newCounter("#typechecked identifiers")
   val typedSelectCount    = newCounter("#typechecked selections")
   val typedApplyCount     = newCounter("#typechecked applications")
-  val rawTypeFailed       = newSubCounter ("  of which in failed", rawTypeCount)
   val subtypeFailed       = newSubCounter("  of which in failed", subtypeCount)
   val findMemberFailed    = newSubCounter("  of which in failed", findMemberCount)
   val failedSilentNanos   = newSubTimer("time spent in failed", typerNanos)

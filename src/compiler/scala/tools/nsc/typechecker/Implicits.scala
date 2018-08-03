@@ -83,7 +83,6 @@ trait Implicits {
     // Note that the isInvalidConversionTarget seems to make a lot more sense right here, before all the
     // work is performed, than at the point where it presently exists.
     val shouldPrint     = printTypings && !context.undetparams.isEmpty
-    val rawTypeStart    = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(rawTypeImpl) else null
     val findMemberStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(findMemberImpl) else null
     val subtypeStart    = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeImpl) else null
     val start           = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(implicitNanos) else null
@@ -107,7 +106,6 @@ trait Implicits {
     context.undetparams = ((context.undetparams ++ result.undetparams) filterNot result.subst.from.contains).distinct
 
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(implicitNanos, start)
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeImpl, rawTypeStart)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberImpl, findMemberStart)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
@@ -1829,7 +1827,6 @@ trait Implicits {
 trait ImplicitsStats {
   self: TypesStats with Statistics =>
 
-  val rawTypeImpl         = newSubCounter ("  of which in implicits", rawTypeCount)
   val subtypeImpl         = newSubCounter("  of which in implicit", subtypeCount)
   val findMemberImpl      = newSubCounter("  of which in implicit", findMemberCount)
   val subtypeAppInfos     = newSubCounter("  of which in app impl", subtypeCount)
