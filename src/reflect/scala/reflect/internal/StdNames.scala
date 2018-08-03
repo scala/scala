@@ -597,6 +597,10 @@ trait StdNames {
     }
 
     val ??? = encode("???")
+    val =:= = encode("=:=")
+    val <:< = encode("<:<")
+
+    val DummyImplicit: NameType    = "DummyImplicit"
 
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"

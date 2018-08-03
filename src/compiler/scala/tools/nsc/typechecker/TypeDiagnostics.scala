@@ -698,10 +698,14 @@ trait TypeDiagnostics {
           val opc = new overridingPairs.Cursor(classOf(m))
           opc.iterator.exists(pair => pair.low == m)
         }
+        import PartialFunction._
         def isConvention(p: Symbol): Boolean = {
-          (p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main") ||
-            (p.tpe =:= typeOf[scala.Predef.DummyImplicit])
-        }
+          val ds = currentRun.runDefinitions
+          import ds._ ; (
+            p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
+          ||
+            p.isImplicit && cond(p.tpe.typeSymbol) { case Predef_=:= | Predef_<:< | Predef_Dummy => true }
+        )}
         def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
