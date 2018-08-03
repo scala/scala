@@ -20,7 +20,8 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
-  def error(msg: String) = globalError(msg)
+  @deprecated("deprecated now", since="now")
+  def error(msg: String) = reporter.error(NoPosition, msg)
 
   // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
   protected def PerRunReporting = new PerRunReporting

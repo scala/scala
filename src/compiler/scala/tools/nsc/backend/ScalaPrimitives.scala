@@ -443,7 +443,7 @@ abstract class ScalaPrimitives {
   def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val alts = (cls.info member method).alternatives
     if (alts.isEmpty)
-      inform(s"Unknown primitive method $cls.$method")
+      reporter.echo(s"Unknown primitive method $cls.$method")
     else alts foreach (s =>
       addPrimitive(s,
         if (code != ADD) code

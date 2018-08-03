@@ -179,7 +179,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
        */
 
       case tp =>
-        warning(tp.typeSymbol.pos,
+        reporter.warning(tp.typeSymbol.pos,
           s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
             "If possible, please file a bug on https://github.com/scala/bug/issues.")
 

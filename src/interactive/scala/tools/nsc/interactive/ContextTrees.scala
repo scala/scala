@@ -163,7 +163,7 @@ trait ContextTrees { self: Global =>
               if ((lopos precedes cpos) && (cpos precedes hipos))
                 contexts.insert(hi, new ContextTree(cpos, context))
               else
-                inform("internal error? skewed positions: "+lopos+" !< "+cpos+" !< "+hipos)
+                reporter.echo("internal error? skewed positions: "+lopos+" !< "+cpos+" !< "+hipos)
             }
           }
           loop(0, hi)

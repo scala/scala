@@ -285,7 +285,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   @inline final def devWarning(pos: Position, msg: => String): Unit = {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
     if (isDeveloper)
-      warning(pos, "!!! " + msg)
+      reporter.warning(pos, "!!! " + msg)
     else
       log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
@@ -298,7 +298,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef): Unit = {
     if (shouldLogAtThisPhase)
-      inform(s"[log $globalPhase$atPhaseStackMessage] $msg")
+      reporter.echo(s"[log $globalPhase$atPhaseStackMessage] $msg")
   }
 
   @inline final override def debuglog(msg: => String): Unit = {
@@ -308,7 +308,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
   @deprecated("Renamed to reportThrowable", "2.10.1")
   def logThrowable(t: Throwable): Unit = reportThrowable(t)
-  def reportThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
+  def reportThrowable(t: Throwable): Unit = reporter.error(NoPosition, throwableAsString(t))
   override def throwableAsString(t: Throwable) = util.stackTraceString(t)
 
 // ------------ File interface -----------------------------------------
@@ -320,10 +320,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       try Some(Charset.forName(name))
       catch {
         case _: IllegalCharsetNameException =>
-          globalError(s"illegal charset name '$name'")
+          reporter.error(NoPosition, s"illegal charset name '$name'")
           None
         case _: UnsupportedCharsetException =>
-          globalError(s"unsupported charset '$name'")
+          reporter.error(NoPosition, s"unsupported charset '$name'")
           None
       }
 
@@ -337,7 +337,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
       catch { case ex: Throwable =>
-        globalError("exception while trying to instantiate source reader '" + name + "'")
+        reporter.error(NoPosition, "exception while trying to instantiate source reader '" + name + "'")
         None
       }
     }
@@ -401,7 +401,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         lastSeenSourceFile = unit.source
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
-        inform("[running phase " + name + " on " + unit + "]")
+        reporter.echo("[running phase " + name + " on " + unit + "]")
       if (!cancelled(unit)) {
         currentRun.informUnitStarting(this, unit)
         try withCurrentUnitNoLog(unit)(task)
@@ -671,7 +671,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
       def isEnabled(q: String) = enabled exists (_.phaseName == q)
       val (satisfied, unhappy) = enabled partition (_.requires forall isEnabled)
-      unhappy foreach (u => globalError(s"Phase '${u.phaseName}' requires: ${u.requires filterNot isEnabled}"))
+      unhappy foreach (u => reporter.error(NoPosition, s"Phase '${u.phaseName}' requires: ${u.requires filterNot isEnabled}"))
       satisfied   // they're happy now, but they may need an unhappy phase that was booted
     }
     computeInternalPhases()             // Global.scala
@@ -1060,7 +1060,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   def echoPhaseSummary(ph: Phase) = {
     /* Only output a summary message under debug if we aren't echoing each file. */
     if (settings.debug && !(settings.verbose || currentRun.size < 5))
-      inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
+      reporter.echo("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
   def newSourceFile(code: String, filename: String = "<console>") =
@@ -1164,7 +1164,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         def unstoppable(pd: SubComponent) = {
           val stoppable = stopPhase(pd.phaseName)
           if (stoppable && pd.initial) {
-            globalError(s"Cannot stop before initial phase '${pd.phaseName}'.")
+            reporter.error(NoPosition, s"Cannot stop before initial phase '${pd.phaseName}'.")
             true
           } else
             !stoppable
@@ -1173,7 +1173,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         def skippable(pd: SubComponent) = {
           val skippable = skipPhase(pd.phaseName)
           if (skippable && (pd.initial || pd.terminal)) {
-            globalError(s"Cannot skip an initial or terminal phase '${pd.phaseName}'.")
+            reporter.error(NoPosition, s"Cannot skip an initial or terminal phase '${pd.phaseName}'.")
             false
           } else
             skippable || !pd.enabled
@@ -1204,9 +1204,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
             if (including) first.iterator count (setting containsPhase _)
             else phaseDescriptors count (setting contains _.phaseName)
           )
-          if (count == 0) warning(s"'$p' specifies no phase")
-          if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
-          if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
+          if (count == 0) reporter.warning(NoPosition, s"'$p' specifies no phase")
+          if (count > 1 && !isSpecial(p)) reporter.warning(NoPosition, s"'$p' selects $count phases")
+          if (!including && isSpecial(p)) reporter.error(NoPosition, s"-Yskip and -Ystop values must name phases: '$p'")
           setting.clear()
         }
       }
@@ -1359,7 +1359,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       val canCheck = toCheck.checkable
       val fmt      = if (canCheck) "[Now checking: %s]" else "[Not checkable: %s]"
 
-      inform(fmt format toCheck.name)
+      reporter.echo(fmt format toCheck.name)
 
       if (canCheck) {
         phase = globalPhase
@@ -1392,11 +1392,11 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       val global: Global.this.type = Global.this
       lazy val trackers = currentRun.units.toList map (x => SymbolTracker(x))
       def snapshot() = {
-        inform("\n[[symbol layout at end of " + phase + "]]")
+        reporter.echo("\n[[symbol layout at end of " + phase + "]]")
         exitingPhase(phase) {
           trackers foreach { t =>
             t.snapshot()
-            inform(t.show("Heading from " + phase.prev.name + " to " + phase.name))
+            reporter.echo(t.show("Heading from " + phase.prev.name + " to " + phase.name))
           }
         }
       }
@@ -1510,9 +1510,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       if (timePhases) {
         statistics.stopTimer(totalCompileTime, startTotal)
         informTime("total", totalCompileTime.nanos)
-        inform("*** Cumulative timers for phases")
+        reporter.echo("*** Cumulative timers for phases")
         for (q <- statistics.allQuantities if q.phases == List(GlobalPhaseName))
-          inform(q.line)
+          reporter.echo(q.line)
       }
 
       // Clear any sets or maps created via perRunCaches.
@@ -1539,7 +1539,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
       catch {
         case ex: InterruptedException => reporter.cancelled = true
-        case ex: IOException => globalError(ex.getMessage())
+        case ex: IOException => reporter.error(NoPosition, ex.getMessage())
       }
     }
 
@@ -1549,13 +1549,13 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         val snap = profiler.beforePhase(Global.InitPhase)
 
         val sources: List[SourceFile] =
-          if (settings.script.isSetByUser && filenames.size > 1) returning(Nil)(_ => globalError("can only compile one script at a time"))
+          if (settings.script.isSetByUser && filenames.size > 1) returning(Nil)(_ => reporter.error(NoPosition, "can only compile one script at a time"))
           else filenames map getSourceFile
 
         profiler.afterPhase(Global.InitPhase, snap)
         compileSources(sources)
       }
-      catch { case ex: IOException => globalError(ex.getMessage()) }
+      catch { case ex: IOException => reporter.error(NoPosition, ex.getMessage()) }
     }
 
     /** If this compilation is scripted, convert the source to a script source. */
@@ -1603,7 +1603,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     }
 
     final def printStatisticsFor(phase: Phase) = {
-      inform("*** Cumulative statistics at phase " + phase)
+      reporter.echo("*** Cumulative statistics at phase " + phase)
 
       if (settings.YhotStatisticsEnabled) {
         // High overhead, only enable retained stats under hot stats
@@ -1620,7 +1620,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         if (phase.name == "parser") parserStats
         else if (settings.YhotStatisticsEnabled) statistics.allQuantities
         else statistics.allQuantities.filterNot(q => hotCounters.contains(q))
-      for (q <- quants if q.showAt(phase.name)) inform(q.line)
+      for (q <- quants if q.showAt(phase.name)) reporter.echo(q.line)
     }
   } // class Run
 
@@ -1659,7 +1659,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         if (declsOnly) decls(sym).mkString("Declarations:\n  ", "\n  ", "")
         else members(sym).mkString("Members (excluding Any/AnyRef unless overridden):\n  ", "\n  ", "")
 
-      inform(List(name, baseClasses, contents) mkString "\n\n")
+      reporter.echo(List(name, baseClasses, contents) mkString "\n\n")
     }
   }
 

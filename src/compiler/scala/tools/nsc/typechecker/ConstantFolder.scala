@@ -58,7 +58,7 @@ abstract class ConstantFolder {
     } catch {
       case e: ArithmeticException =>
         if (settings.warnConstant)
-          warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
+          reporter.warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
         tree
     }
   }

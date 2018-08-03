@@ -270,7 +270,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     docTemplatesCache += (sym -> this)
 
     if (settings.verbose)
-      inform("Creating doc template for " + sym)
+      reporter.echo("Creating doc template for " + sym)
 
     override def linkTarget: DocTemplateImpl = this
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot

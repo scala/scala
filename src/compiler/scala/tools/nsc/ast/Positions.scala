@@ -16,8 +16,8 @@ trait Positions extends scala.reflect.internal.Positions {
           if (!c.canHaveAttrs) ()
           else if (c.pos == NoPosition) {
             reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
-            inform("parent: " + treeSymStatus(t))
-            inform(" child: " + treeSymStatus(c) + "\n")
+            reporter.echo("parent: " + treeSymStatus(t))
+            reporter.echo(" child: " + treeSymStatus(c) + "\n")
           }
         }
       }

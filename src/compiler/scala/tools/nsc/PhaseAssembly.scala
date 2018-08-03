@@ -184,7 +184,7 @@ trait PhaseAssembly {
           edges -= edge
           edge.frm.after -= edge
           if (edge.frm.phaseobj exists (lsc => !lsc.head.internal))
-            warning(msg)
+            reporter.warning(NoPosition, msg)
         }
       }
     }
@@ -242,7 +242,7 @@ trait PhaseAssembly {
               val tonode = graph.getNodeByPhase(phsname)
               graph.softConnectNodes(fromnode, tonode)
             } else {
-              globalError("[phase assembly, after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
+              reporter.error(NoPosition, "[phase assembly, after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
             }
           }
           for (phsname <- phs.runsBefore) {
@@ -250,7 +250,7 @@ trait PhaseAssembly {
               val tonode = graph.getNodeByPhase(phsname)
               graph.softConnectNodes(tonode, fromnode)
             } else {
-              globalError("[phase assembly, before dependency on parser phase not allowed: " + phsname + " => "+ fromnode.phasename + "]")
+              reporter.error(NoPosition, "[phase assembly, before dependency on parser phase not allowed: " + phsname + " => "+ fromnode.phasename + "]")
             }
           }
         case Some(phsname) =>
@@ -258,7 +258,7 @@ trait PhaseAssembly {
             val tonode = graph.getNodeByPhase(phsname)
             graph.hardConnectNodes(fromnode, tonode)
           } else {
-            globalError("[phase assembly, right after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
+            reporter.error(NoPosition, "[phase assembly, right after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
           }
       }
     }

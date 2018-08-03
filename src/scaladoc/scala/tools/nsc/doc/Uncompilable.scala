@@ -15,7 +15,7 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, DocComment, NoSymbol }
+  import global.{reporter, newTypeName, newTermName, Symbol, DocComment, NoPosition, NoSymbol}
   import global.definitions.AnyRefClass
   import global.rootMirror.RootClass
 
@@ -29,7 +29,7 @@ trait Uncompilable {
   lazy val pairs = files flatMap { f =>
     val comments = docPairs(f.slurp())
     if (settings.verbose)
-      inform("Found %d doc comments in parse-only file %s: %s".format(comments.size, f, comments.map(_._1).mkString(", ")))
+      reporter.echo("Found %d doc comments in parse-only file %s: %s".format(comments.size, f, comments.map(_._1).mkString(", ")))
 
     comments
   }
@@ -38,10 +38,10 @@ trait Uncompilable {
   def templates = symbols filter (x => x.isClass || x.isTrait || x == AnyRefClass/* which is now a type alias */) toSet
   def comments = {
     if (settings.debug || settings.verbose)
-      inform("Found %d uncompilable files: %s".format(files.size, files mkString ", "))
+      reporter.echo("Found %d uncompilable files: %s".format(files.size, files mkString ", "))
 
     if (pairs.isEmpty)
-      warning("no doc comments read from " + settings.docUncompilable.value)
+      reporter.warning(NoPosition, "no doc comments read from " + settings.docUncompilable.value)
 
     pairs
   }

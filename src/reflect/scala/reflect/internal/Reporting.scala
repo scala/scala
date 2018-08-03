@@ -45,28 +45,18 @@ trait Reporting { self : Positions =>
 
   def supplementErrorMessage(errorMessage: String) = currentRun.reporting.supplementErrorMessage(errorMessage)
 
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def inform(msg: String): Unit      = inform(NoPosition, msg)
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def warning(msg: String): Unit     = warning(NoPosition, msg)
-  // globalError(msg: String) used to abort -- not sure that was a good idea, so I made it more regular
-  // (couldn't find any uses that relied on old behavior)
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def globalError(msg: String): Unit = globalError(NoPosition, msg)
+  // used by sbt of a certain vintage
+  @deprecated("use reporter.echo", "2.13.0")
+  def inform(msg: String): Unit      = reporter.echo(NoPosition, msg)
+  @deprecated("use reporter.warning", "2.13.0")
+  def warning(msg: String): Unit     = reporter.warning(NoPosition, msg)
 
   def abort(msg: String): Nothing = {
     val augmented = supplementErrorMessage(msg)
     // Needs to call error to make sure the compile fails.
-    globalError(augmented)
+    reporter.error(NoPosition, augmented)
     throw new FatalError(augmented)
   }
-
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def inform(pos: Position, msg: String)      = reporter.echo(pos, msg)
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def warning(pos: Position, msg: String)     = reporter.warning(pos, msg)
-  @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
-  def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
 }
 
 import util.Position

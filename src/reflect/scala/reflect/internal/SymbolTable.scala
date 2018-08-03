@@ -67,7 +67,7 @@ abstract class SymbolTable extends macros.Universe
   protected def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
 
-  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
+  def informProgress(msg: String)          = if (settings.verbose) reporter.echo("[" + msg + "]")
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def shouldLogAtThisPhase = false

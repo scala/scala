@@ -47,7 +47,7 @@ abstract class SymbolLoaders {
 
   protected def signalError(root: Symbol, ex: Throwable): Unit = {
     if (settings.debug) ex.printStackTrace()
-    globalError(ex.getMessage() match {
+    reporter.error(NoPosition, ex.getMessage() match {
       case null => "i/o error while loading " + root.name
       case msg  => "error while loading " + root.name + ", " + msg
     })
@@ -97,14 +97,14 @@ abstract class SymbolLoaders {
           s"$root contains object and package with same name: $name\none of them needs to be removed from classpath"
         )
       else if (settings.termConflict.value == "package") {
-        warning(
+        reporter.warning(NoPosition,
           "Resolving package/object name conflict in favor of package " +
           preExisting.fullName + ".  The object will be inaccessible."
         )
         root.info.decls.unlink(preExisting)
       }
       else {
-        warning(
+        reporter.warning(NoPosition,
           "Resolving package/object name conflict in favor of object " +
           preExisting.fullName + ".  The package will be inaccessible."
         )
@@ -173,10 +173,10 @@ abstract class SymbolLoaders {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
-        if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
+        if (settings.verbose) reporter.echo("[symloader] picked up newer source file for " + src.path)
         enterToplevelsFromSource(owner, classRep.name, src)
       case (None, Some(src)) =>
-        if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
+        if (settings.verbose) reporter.echo("[symloader] no class, picked up source file for " + src.path)
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
         enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _))

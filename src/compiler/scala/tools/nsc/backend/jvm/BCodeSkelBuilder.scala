@@ -405,7 +405,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val loc = Local(tk, sym.javaSimpleName.toString, nxtIdx, sym.isSynthetic)
         val existing = slots.put(sym, loc)
         if (existing.isDefined)
-          globalError(sym.pos, "attempt to create duplicate local var.")
+          reporter.error(sym.pos, "attempt to create duplicate local var.")
         assert(tk.size > 0, "makeLocal called for a symbol whose type is Unit.")
         nxtIdx += tk.size
         loc
@@ -635,7 +635,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
           rhs match {
             case Return(_) | Block(_, Return(_)) | Throw(_) | Block(_, Throw(_)) => ()
             case EmptyTree =>
-              globalError("Concrete method has no definition: " + dd + (
+              reporter.error(NoPosition, "Concrete method has no definition: " + dd + (
                 if (settings.debug) "(found: " + methSymbol.owner.info.decls.toList.mkString(", ") + ")"
                 else ""))
             case _ =>
