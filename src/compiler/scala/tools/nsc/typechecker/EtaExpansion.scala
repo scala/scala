@@ -7,6 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.FreshNameCreator
 import symtab.Flags._
 
 /** This trait ...
@@ -38,12 +39,12 @@ trait EtaExpansion { self: Analyzer =>
     *   - typedEta (when type checking a method value, `m _`).
     *
     **/
-  def etaExpand(unit: CompilationUnit, tree: Tree, typer: Typer): Tree = {
+  def etaExpand(unit: CompilationUnit, tree: Tree, owner: Symbol)(implicit creator: FreshNameCreator): Tree = {
     val tpe = tree.tpe
     var cnt = 0 // for NoPosition
     def freshName() = {
       cnt += 1
-      freshTermName("eta$" + (cnt - 1) + "$")(typer.fresh)
+      freshTermName("eta$" + (cnt - 1) + "$")
     }
     val defs = new ListBuffer[Tree]
 
@@ -56,16 +57,16 @@ trait EtaExpansion { self: Analyzer =>
         else {
           val vname: Name = freshName()
           // Problem with ticket #2351 here
-          val valSym = typer.context.owner.newValue(vname.toTermName, tree.pos.focus, SYNTHETIC)
+          val valSym = owner.newValue(vname.toTermName, tree.pos.focus, SYNTHETIC)
           defs += atPos(tree.pos) {
             val rhs = if (byName) {
               val funSym = valSym.newAnonymousFunctionValue(tree.pos.focus)
-              val tree1 = tree.changeOwner(typer.context.owner -> funSym)
+              val tree1 = tree.changeOwner(owner -> funSym)
               val funType = definitions.functionType(Nil, tree1.tpe)
               funSym.setInfo(funType)
               Function(List(), tree1).setSymbol(funSym).setType(funType)
             } else {
-              tree.changeOwner(typer.context.owner -> valSym)
+              tree.changeOwner(owner -> valSym)
             }
             valSym.setInfo(rhs.tpe)
             ValDef(valSym, rhs)
