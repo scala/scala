@@ -267,4 +267,12 @@ class IterableTest {
     val foo = new Foo
     Assert.assertEquals("Fu()", foo.toString)
   }
+
+  @Test
+  def overrideNewBuilder: Unit = {
+    class Foo[+A] extends Iterable[A] {
+      def iterator = Iterator.empty[A]
+      override protected[this] def newBuilder: mutable.Builder[A, Seq[A]] = ???
+    }
+  }
 }

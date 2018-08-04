@@ -26,6 +26,10 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
   protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]
 
+  @deprecated("Use newSpecificBuilder instead", "2.13.0")
+  @deprecatedOverriding("Override newSpecificBuilder instead", "2.13.0")
+  @inline protected[this] def newBuilder: Builder[A, IterableCC[A]] = newSpecificBuilder
+
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
     *       return an `IterableFactory[IterableCC]`. The implementation in `Iterable` only returns
