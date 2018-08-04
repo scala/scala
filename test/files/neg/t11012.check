@@ -1,0 +1,12 @@
+t11012.scala:8: warning: class A is deprecated: class!
+@A class C
+         ^
+t11012.scala:10: warning: constructor B in class B is deprecated: constructor!
+@B class D   // should warn
+         ^
+t11012.scala:13: warning: constructor B in class B is deprecated: constructor!
+  def foo = new B
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

@@ -1396,6 +1396,8 @@ abstract class RefChecks extends Transform {
         annots.foreach { ann =>
           checkTypeRef(ann.tpe, tree, skipBounds = false)
           checkTypeRefBounds(ann.tpe, tree)
+          if (ann.original != null && ann.original.hasExistingSymbol)
+            checkUndesiredProperties(ann.original.symbol, tree.pos)
         }
 
         annots
