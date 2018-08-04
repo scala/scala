@@ -11,7 +11,6 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.immutable.List.empty
 import scala.collection.mutable.{Builder, ListBuffer}
 
 /** `Queue` objects implement data structures that allow to

@@ -5,7 +5,6 @@ package collection
 import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
-import scala.runtime.Statics
 
 /**
   * Trait that overrides sorted set operations to take advantage of strict builders.

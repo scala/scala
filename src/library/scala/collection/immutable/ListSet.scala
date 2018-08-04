@@ -6,7 +6,6 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
-import scala.collection.immutable.List.empty
 
 /**
   * This class implements immutable sets using a list-based data structure. List set iterators and
