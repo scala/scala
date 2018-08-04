@@ -11,8 +11,7 @@ import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections.distinctBy
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration.Duration
+import scala.util.{Try, Success, Failure}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS

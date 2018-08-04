@@ -9,22 +9,18 @@ import java.io.{Console => _, _}
 import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
 import java.nio.file.{Files, StandardOpenOption}
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.sys.process.{Process, ProcessLogger}
-import scala.tools.nsc.Properties.{isWin, javaHome, javaVmInfo, javaVmName, javaVmVersion, propOrEmpty, versionMsg}
+import scala.tools.nsc.Properties.{isWin, propOrEmpty}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
-import scala.util.{Failure, Success, Try}
 import ClassPath.join
-import TestState.{Crash, Fail, Pass, Skip, Uninitialized, Updated}
+import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.control.ControlThrowable
@@ -625,7 +621,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     // res/t687.res depends on ignoring its compilation failure
     // and just looking at the diff, so I made them all do that
     // because this is long enough.
-    val res = Output.withRedirected(logWriter)(try loop() finally resReader.close())
+    /*val res =*/ Output.withRedirected(logWriter)(try loop() finally resReader.close())
 
     /*res andAlso*/ diffIsOk
   }
