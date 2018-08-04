@@ -339,7 +339,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      * the entries must be stable. If any are garbage collected during validation
      * then an assertion may inappropriately fire.
      */
-    def fullyValidate: Unit = {
+    def fullyValidate(): Unit = {
       var computedCount = 0
       var bucket = 0
       while (bucket < table.size) {
