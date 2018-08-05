@@ -9,8 +9,6 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, 
 
 import scala.tools.testing.AssertUtil.assertThrows
 
-
-
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */
 class PriorityQueueTest {
@@ -49,6 +47,7 @@ class PriorityQueueTest {
   }
   @Test
   def lastOfEmptyThrowsException(): Unit = {
+    assert(List(1,2,3,4,5).contains(collection.mutable.PriorityQueue[Int](1,2,3,4,5).last))
     assertThrows[NoSuchElementException](collection.mutable.PriorityQueue[Int]().last)
   }
 }
