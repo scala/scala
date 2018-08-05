@@ -5,7 +5,9 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+
 import scala.tools.testing.AssertUtil
+import scala.tools.testing.AssertUtil.assertThrows
 
 /* Test for scala/bug#9043 */
 @RunWith(classOf[JUnit4])
@@ -307,4 +309,10 @@ class ArrayBufferTest {
 
     assertEquals(builder.result(), "4,3,2,1")
   }
+
+  @Test
+  def emptyIteratorDropOneMustBeEmpty: Unit = {
+    assertThrows[NoSuchElementException](new ArrayBuffer[Int].iterator.drop(1).next())
+  }
+
 }
