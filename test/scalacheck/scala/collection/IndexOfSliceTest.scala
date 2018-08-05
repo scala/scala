@@ -20,7 +20,7 @@ object IndexOfSliceTest extends Properties("indexOfSlice") {
 
   property("indexOfSlice(Nil) == 0") =
     forAll(genDifferentSeqs) { seq: Seq[Int] =>
-      seq.indexOfSlice(Nil) == 0 && seq.indexOfSlice(LazyList.Empty) == 0
+      seq.indexOfSlice(Nil) == 0 && seq.indexOfSlice(LazyList.empty) == 0
     }
 
   property("indexOfSlice(Nil, from = size + 1) == -1") =

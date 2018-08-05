@@ -76,7 +76,7 @@ class LazyListTest {
       if (shouldThrow && n == 5) throw new RuntimeException("n == 5") else n > 5
     }
 
-    assertEquals(true, Try { wf.map(identity) }.isFailure) // throws on n == 5
+    assertEquals(true, Try { wf.map(identity).length }.isFailure) // throws on n == 5
 
     shouldThrow = false                              // won't throw next time
 
@@ -101,12 +101,12 @@ class LazyListTest {
 
   @Test // scala/bug#9134
   def filter_map_properly_lazy_in_tail: Unit = {
-    assertLazyListOpLazyInTail(_.filter(_ % 2 == 0).map(identity), List(1, 2))
+    assertLazyListOpLazyInTail(_.filter(_ % 2 == 0).map(identity), List(1))
   }
 
   @Test // scala/bug#9134
   def withFilter_map_properly_lazy_in_tail: Unit = {
-    assertLazyListOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1, 2))
+    assertLazyListOpLazyInTail(_.withFilter(_ % 2 == 0).map(identity), List(1))
   }
 
   @Test // scala/bug#6881
@@ -135,13 +135,13 @@ class LazyListTest {
 
   @Test
   def testEmptyLazyListToString(): Unit = {
-    assertEquals("LazyList()", LazyList.Empty.toString)
+    assertEquals("LazyList()", LazyList.empty.force.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadAndTailBothAreNotEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
-    assertEquals("LazyList(_, ?)", l.toString)
+    assertEquals("LazyList(?)", l.toString)
   }
 
   @Test
@@ -156,7 +156,7 @@ class LazyListTest {
     val l = LazyList(1, 2, 3, 4, 5)
     l.head
     l.tail
-    assertEquals("LazyList(1, _, ?)", l.toString)
+    assertEquals("LazyList(1, ?)", l.toString)
   }
 
   @Test
@@ -171,21 +171,21 @@ class LazyListTest {
   def testLazyListToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail
-    assertEquals("LazyList(_, _, ?)", l.toString)
+    assertEquals("LazyList(_, ?)", l.toString)
   }
 
   @Test
-  def testLazyListToStringWhendHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
+  def testLazyListToStringWhenHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.head
     assertEquals("LazyList(_, 2, ?)", l.toString)
   }
 
   @Test
-  def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailIsEvaluated = {
+  def testLazyListToStringWhenHeadIsNotEvaluatedAndTailTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.tail
-    assertEquals("LazyList(_, _, _, ?)", l.toString)
+    assertEquals("LazyList(_, _, ?)", l.toString)
   }
 
   @Test
@@ -197,15 +197,19 @@ class LazyListTest {
 
   @Test
   def testLazyListToStringWhenLazyListIsForcedToList: Unit = {
-    val l = 1 #:: 2 #:: 3 #:: 4 #:: LazyList.Empty
+    val l = 1 #:: 2 #:: 3 #:: 4 #:: LazyList.empty
     l.toList
     assertEquals("LazyList(1, 2, 3, 4)", l.toString)
   }
 
   @Test
-  def testLazyListToStringWhenStreamIsEmpty: Unit = {
-    val l = LazyList.empty
-    assertEquals("LazyList()", l.toString)
+  def testLazyListToStringWhenLazyListIsEmpty: Unit = {
+    // cached empty
+    val l1 = LazyList.empty
+    assertEquals("LazyList()", l1.toString)
+    // non-cached empty
+    val l2 = LazyList.unfold(0)(_ => None)
+    assertEquals("LazyList(?)", l2.toString)
   }
 
   @Test
@@ -218,17 +222,17 @@ class LazyListTest {
   @Test
   def testLazyListToStringWhenLazyListHasCyclicReference: Unit = {
     lazy val cyc: LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
-    assertEquals("LazyList(_, ?)", cyc.toString)
+    assertEquals("LazyList(?)", cyc.toString)
     cyc.head
     assertEquals("LazyList(1, ?)", cyc.toString)
     cyc.tail
-    assertEquals("LazyList(1, _, ?)", cyc.toString)
+    assertEquals("LazyList(1, ?)", cyc.toString)
     cyc.tail.head
     assertEquals("LazyList(1, 2, ?)", cyc.toString)
     cyc.tail.tail.head
     assertEquals("LazyList(1, 2, 3, ?)", cyc.toString)
     cyc.tail.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, 4, ?)", cyc.toString)
+    assertEquals("LazyList(1, 2, 3, 4, ...)", cyc.toString)
     cyc.tail.tail.tail.tail.head
     assertEquals("LazyList(1, 2, 3, 4, ...)", cyc.toString)
   }

@@ -8,7 +8,7 @@ f1: (b: Boolean)scala.util.Either[Int,Int]
 scala> def f2(b: Boolean) = if (b) Nil else 1 :: Nil
 f2: (b: Boolean)List[Int]
 
-scala> def f3(b: Boolean) = if (b) LazyList.Empty else new LazyList.Cons(1, LazyList.Empty)
+scala> def f3(b: Boolean) = if (b) LazyList.empty else LazyList.cons(1, LazyList.empty)
 f3: (b: Boolean)scala.collection.immutable.LazyList[Int]
 
 scala> def f4(b: Boolean) = if (b) Success(1) else Failure(new Exception(""))

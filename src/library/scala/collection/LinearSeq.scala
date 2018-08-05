@@ -50,21 +50,6 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
 
   override def isDefinedAt(x: Int): Boolean = x >= 0 && lengthCompare(x) > 0
 
-  // Optimized version of `drop` that avoids copying
-  override def drop(n: Int): C = {
-    @tailrec def loop(n: Int, s: C): C =
-      if (n <= 0 || s.isEmpty) s
-      else loop(n - 1, s.tail)
-    loop(n, coll)
-  }
-
-  override def dropWhile(p: A => Boolean): C = {
-    @tailrec def loop(s: C): C =
-      if (s.nonEmpty && p(s.head)) loop(s.tail)
-      else s
-    loop(coll)
-  }
-
   // `apply` is defined in terms of `drop`, which is in turn defined in
   //  terms of `tail`.
   @throws[IndexOutOfBoundsException]
@@ -183,6 +168,21 @@ trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]
     private[this] var current: Iterable[A] = toIterable
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
+  }
+
+  // Optimized version of `drop` that avoids copying
+  override def drop(n: Int): C = {
+    @tailrec def loop(n: Int, s: C): C =
+      if (n <= 0 || s.isEmpty) s
+      else loop(n - 1, s.tail)
+    loop(n, coll)
+  }
+
+  override def dropWhile(p: A => Boolean): C = {
+    @tailrec def loop(s: C): C =
+      if (s.nonEmpty && p(s.head)) loop(s.tail)
+      else s
+    loop(coll)
   }
 }
 

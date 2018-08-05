@@ -112,8 +112,8 @@ x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = LazyList(_, ?)
-y = LazyList(_, ?)
+x = LazyList(?)
+y = LazyList(?)
 x equals y: true, y equals x: true
 
 x = TreeMap(42 -> FortyTwo)
