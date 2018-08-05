@@ -26,10 +26,12 @@ object IndexedSeqView {
     private[this] var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size
-    def next(): A = {
+    def next(): A = try {
       val r = self.apply(current)
       current += 1
       r
+    } catch {
+      case _: IndexOutOfBoundsException => throw new NoSuchElementException("last of empty iterator")
     }
   }
 

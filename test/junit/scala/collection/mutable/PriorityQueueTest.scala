@@ -3,8 +3,13 @@ package scala.collection.mutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+
 import scala.collection.mutable
-import java.io.{ObjectInputStream, ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+
+import scala.tools.testing.AssertUtil.assertThrows
+
+
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */
@@ -41,5 +46,9 @@ class PriorityQueueTest {
     val deserializedPriorityQueue = objectInputStream.readObject().asInstanceOf[PriorityQueue[Int]]
     //correct sequencing is also tested here:
     assert(deserializedPriorityQueue.dequeueAll == elements.sorted.reverse)
+  }
+  @Test
+  def lastOfEmptyThrowsException(): Unit = {
+    assertThrows[NoSuchElementException](collection.mutable.PriorityQueue[Int]().last)
   }
 }

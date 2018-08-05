@@ -210,7 +210,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
 final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
   @throws[ArrayIndexOutOfBoundsException]
-  def apply(n: Int) = array(n).asInstanceOf[A]
+  def apply(n: Int) = if (n < length) array(n).asInstanceOf[A] else throw new IndexOutOfBoundsException(n.toString)
   override protected[this] def className = "ArrayBufferView"
 }
 
