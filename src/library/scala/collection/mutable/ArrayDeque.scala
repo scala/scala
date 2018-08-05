@@ -138,6 +138,7 @@ class ArrayDeque[A] protected (
         copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
         array2(idx) = elem.asInstanceOf[AnyRef]
         copySliceToArray(srcStart = idx, dest = array2, destStart = idx + 1, maxItems = n)
+        reset(array = array2, start = 0, end = finalLength)
       } else if (n <= idx * 2) {
         var i = n - 1
         while(i >= idx) {
