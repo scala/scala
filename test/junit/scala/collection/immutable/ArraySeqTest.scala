@@ -63,6 +63,11 @@ class ArraySeqTest {
     a.toArray.update(0, 100)
     assertEquals(a, List(1,2,3))
   }
+  @Test
+  def copyToArrayReturnsNonNegative(): Unit = {
+    val a = ArraySeq(1,2,3)
+    assertEquals(a.copyToArray(Array(1,1,2), 0, -1), 0)
+  }
 
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
     assertEquals(array, array.slice(-1, 4))

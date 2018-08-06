@@ -14,9 +14,9 @@ class ArrayDequeTest {
 
     def apply[U](f: Buffer[Int] => U) = {
       //println(s"Before: [buffer1=${buffer}; buffer2=${buffer2}]")
-      assert(f(buffer) == f(buffer2))
-      assert(buffer == buffer2)
-      assert(buffer.reverse == buffer2.reverse)
+      assertEquals(f(buffer), f(buffer2))
+      assertEquals(buffer, buffer2)
+      assertEquals(buffer.reverse, buffer2.reverse)
     }
 
     apply(_ += (1, 2, 3, 4, 5))
@@ -40,15 +40,15 @@ class ArrayDequeTest {
     apply(_.addAll(collection.immutable.Vector.tabulate(10)(identity)))
 
     (-100 to 100) foreach {i =>
-      assert(buffer.splitAt(i) == buffer2.splitAt(i))
+      assertEquals(buffer.splitAt(i), buffer2.splitAt(i))
     }
 
     for {
       i <- -100 to 100
       j <- -100 to 100
     } {
-      assert(buffer.slice(i, j) == buffer2.slice(i, j))
-      if (i > 0 && j > 0) assert(List.from(buffer.sliding(i, j)) == List.from(buffer2.sliding(i, j)))
+      assertEquals(buffer.slice(i, j), buffer2.slice(i, j))
+      if (i > 0 && j > 0) assertEquals(List.from(buffer.sliding(i, j)), List.from(buffer2.sliding(i, j)))
     }
   }
 
@@ -64,5 +64,11 @@ class ArrayDequeTest {
 
     xs.insert(0, 0)
     assertEquals(Queue(0), xs)
+  }
+
+  @Test
+  def copyToArrayOutOfBounds: Unit = {
+    val target = Array[Int]()
+    assertEquals(0, collection.mutable.ArrayDeque(1, 2).copyToArray(target, 1, 0))
   }
 }

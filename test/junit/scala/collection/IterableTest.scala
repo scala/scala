@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
 import scala.language.higherKinds
 import scala.tools.testing.AssertUtil._
+import org.junit.Assert.assertEquals
 
 @RunWith(classOf[JUnit4])
 class IterableTest {
@@ -57,7 +58,7 @@ class IterableTest {
 
     val xs = Seq('a', 'b', 'b', 'c', 'a', 'a', 'a', 'b')
     val expected = Map('a' -> 4, 'b' -> 3, 'c' -> 1)
-    Assert.assertEquals(expected, occurrences(xs))
+    assertEquals(expected, occurrences(xs))
   }
 
   @Test
@@ -89,54 +90,46 @@ class IterableTest {
   }
 
   @Test def copyToArray(): Unit = {
-    def check(a: Array[Int], start: Int, end: Int) = {
+    def check(a: Array[Int], copyToArray: Array[Int] => Int, elemsWritten: Int, start: Int, end: Int) = {
+
+      assertEquals(copyToArray(a), elemsWritten)
+
       var i = 0
       while (i < start) {
-        assert(a(i) == 0)
+        assertEquals(a(i),0)
         i += 1
       }
       while (i < a.length && i < end) {
-        assert(a(i) == i - start)
+        assertEquals(a(i), i - start)
         i += 1
       }
       while (i < a.length) {
-        assert(a(i) == 0)
+        assertEquals(a(i), 0)
         i += 1
       }
     }
 
     val far = 100000
     val l = Iterable.from(Range(0, 100))
-    check(l.copyToArray(new Array(100)),
-      0, far)
-    check(l.copyToArray(new Array(10)),
-      0, far)
-    check(l.copyToArray(new Array(1000)),
-      0, 100)
+    check(new Array(100), l.copyToArray(_), 100, 0, far)
+    check(new Array(10), l.copyToArray(_), 10, 0, far)
+    check(new Array(100), l.copyToArray(_), 100, 0, 100)
 
-    check(l.copyToArray(new Array(100), 5),
-      5, 105)
-    check(l.copyToArray(new Array(10), 5),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5),
-      5, 105)
+    check(new Array(100), l.copyToArray(_, 5), 95, 5, 105)
+    check(new Array(10), l.copyToArray(_, 5), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5), 100, 5, 105)
 
-    check(l.copyToArray(new Array(100), 5, 50),
-      5, 55)
-    check(l.copyToArray(new Array(10), 5, 50),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5, 50),
-      5, 55)
+    check(new Array(100), l.copyToArray(_, 5, 50), 50, 5, 55)
+    check(new Array(10), l.copyToArray(_, 5, 50), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5, 50), 50, 5, 55)
 
-    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1))
-    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1, 10))
+    assertThrows[ArrayIndexOutOfBoundsException]( l.copyToArray(new Array(10), -1))
+    assertThrows[ArrayIndexOutOfBoundsException]( l.copyToArray(new Array(10), -1, 10))
+    assertEquals(l.copyToArray(new Array(10), 1, -1), 0)
 
-    check(l.copyToArray(new Array(10), 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 10, 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 0, -1),
-      0, 0)
+    check(new Array(10), l.copyToArray(_, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 10, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 0, -1), 0, 0, 0)
   }
 
   @Test
@@ -267,4 +260,5 @@ class IterableTest {
     val foo = new Foo
     Assert.assertEquals("Fu()", foo.toString)
   }
+
 }

@@ -59,12 +59,14 @@ sealed abstract class ArraySeq[T]
   /** Clones this object, including the underlying Array. */
   override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]
 
-  override def copyToArray[B >: T](xs: Array[B], start: Int): xs.type = copyToArray[B](xs, start, length)
+  override def copyToArray[B >: T](xs: Array[B], start: Int): Int = copyToArray[B](xs, start, length)
 
-  override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): xs.type = {
-    val l = scala.math.min(scala.math.min(len, length), xs.length-start)
-    if(l > 0) Array.copy(array, 0, xs, start, l)
-    xs
+  override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
+    if(copied > 0) {
+      Array.copy(array, 0, xs, start, copied)
+    }
+    copied
   }
 
   override protected[this] def writeReplace(): AnyRef = this

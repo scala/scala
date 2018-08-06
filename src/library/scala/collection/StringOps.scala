@@ -1141,16 +1141,14 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def filterNot(pred: Char => Boolean): String = filter(c => !pred(c))
 
   /** Copy chars of this string to an array.
-    * Fills the given array `xs` starting at index `start` with at most `len` chars.
-    * Copying will stop once either the entire string has been copied,
-    * or the end of the array is reached or `len` chars have been copied.
+    * Fills the given array `xs` starting at index 0.
+    * Copying will stop once either the entire string has been copied
+    * or the end of the array is reached
     *
     *  @param  xs     the array to fill.
-    *  @param  start  the starting index.
-    *  @param  len    the maximal number of elements to copy.
     */
-  def copyToArray(xs: Array[Char], start: Int, len: Int): Unit =
-    s.getChars(0, min(min(s.length, len), xs.length-start), xs, start)
+  @`inline` def copyToArray(xs: Array[Char]): Int =
+    copyToArray(xs, 0, Int.MaxValue)
 
   /** Copy chars of this string to an array.
     * Fills the given array `xs` starting at index `start`.
@@ -1159,10 +1157,26 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @param  xs     the array to fill.
     *  @param  start  the starting index.
+    */
+  @`inline` def copyToArray(xs: Array[Char], start: Int): Int =
+    copyToArray(xs, start, Int.MaxValue)
+
+  /** Copy chars of this string to an array.
+    * Fills the given array `xs` starting at index `start` with at most `len` chars.
+    * Copying will stop once either the entire string has been copied,
+    * or the end of the array is reached or `len` chars have been copied.
+    *
+    *  @param  xs     the array to fill.
+    *  @param  start  the starting index.
     *  @param  len    the maximal number of elements to copy.
     */
-  @`inline` def copyToArray(xs: Array[Char], start: Int): Unit =
-    copyToArray(xs, start, Int.MaxValue)
+  def copyToArray(xs: Array[Char], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(s.length, xs.length, start, len)
+    if (copied > 0) {
+      s.getChars(0, copied, xs, start)
+    }
+    copied
+  }
 
   /** Finds index of the first char satisfying some predicate after or at some start index.
     *

@@ -1263,13 +1263,20 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @param  len    the maximal number of elements to copy.
     *  @tparam B      the type of the elements of the array.
     */
-  def copyToArray[B >: A](dest: Array[B], start: Int, len: Int = Int.MaxValue): dest.type = {
-    Array.copy(xs, 0, dest, start, min(xs.length, min(dest.length-start, len)))
-    dest
+  def copyToArray[B >: A](dest: Array[B], start: Int, len: Int = Int.MaxValue): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(xs.length, dest.length, start, len)
+    if (copied > 0) {
+      Array.copy(xs, 0, dest, start, copied)
+    }
+    copied
   }
 
   /** Create a copy of this array with the specified element type. */
-  def toArray[B >: A: ClassTag]: Array[B] = copyToArray(new Array[B](xs.length), 0)
+  def toArray[B >: A: ClassTag]: Array[B] = {
+    val destination = new Array[B](xs.length)
+    copyToArray(destination, 0)
+    destination
+  }
 
   /** Counts the number of elements in this array which satisfy a predicate */
   def count(p: A => Boolean): Int = {

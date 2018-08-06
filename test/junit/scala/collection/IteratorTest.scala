@@ -428,54 +428,46 @@ class IteratorTest {
   }
 
   @Test def copyToArray(): Unit = {
-    def check(a: Array[Int], start: Int, end: Int) = {
+    def check(a: Array[Int], copyTo: Array[Int] => Int, elemsWritten: Int, start: Int, end: Int): Unit = {
+
+      val copied = copyTo(a)
+      assertEquals(elemsWritten, copied)
+
       var i = 0
       while (i < start) {
-        assert(a(i) == 0)
+        assertEquals(a(i), 0)
         i += 1
       }
       while (i < a.length && i < end) {
-        assert(a(i) == i - start)
+        assertEquals(a(i), i - start)
         i += 1
       }
       while (i < a.length) {
-        assert(a(i) == 0)
+        assertEquals(a(i), 0)
         i += 1
       }
     }
 
     val far = 100000
     def l = Iterable.from(Range(0, 100)).iterator
-    check(l.copyToArray(new Array(100)),
-      0, far)
-    check(l.copyToArray(new Array(10)),
-      0, far)
-    check(l.copyToArray(new Array(1000)),
-      0, 100)
+    check(new Array(100), l.copyToArray(_), 100, 0, far)
+    check(new Array(10), l.copyToArray(_), 10, 0, far)
+    check(new Array(1000), l.copyToArray(_), 100, 0, 100)
 
-    check(l.copyToArray(new Array(100), 5),
-      5, 105)
-    check(l.copyToArray(new Array(10), 5),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5),
-      5, 105)
+    check(new Array(100), l.copyToArray(_, 5), 95, 5, 105)
+    check(new Array(10), l.copyToArray(_, 5), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5), 100, 5, 105)
 
-    check(l.copyToArray(new Array(100), 5, 50),
-      5, 55)
-    check(l.copyToArray(new Array(10), 5, 50),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5, 50),
-      5, 55)
+    check(new Array(100), l.copyToArray(_, 5, 50), 50, 5, 55)
+    check(new Array(10), l.copyToArray(_, 5, 50), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5, 50), 50, 5, 55)
 
     assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1))
     assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1, 10))
 
-    check(l.copyToArray(new Array(10), 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 10, 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 0, -1),
-      0, 0)
+    check(new Array(10), l.copyToArray(_, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 10, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 0, -1), 0, 0, 0)
   }
 
   // scala/bug#10709
