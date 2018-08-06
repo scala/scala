@@ -73,6 +73,9 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
+    override def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+      underlying.concat(suffix).withDefault(defaultValue)
+
     override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 

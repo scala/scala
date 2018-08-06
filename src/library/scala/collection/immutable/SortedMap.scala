@@ -96,8 +96,10 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
     override def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =
       new WithDefault[K, V1](underlying.updated(key, value), defaultValue)
 
-    override def remove(key: K): WithDefault[K, V] =
-      new WithDefault[K, V](underlying.remove(key), defaultValue)
+    override def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+      new WithDefault( underlying.concat(xs) , defaultValue)
+
+    override def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
