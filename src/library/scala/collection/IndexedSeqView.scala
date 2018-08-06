@@ -26,11 +26,12 @@ object IndexedSeqView {
     private[this] var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size
-    def next(): A = {
-      val r = self.apply(current)
-      current += 1
-      r
-    }
+    def next(): A =
+      if (hasNext) {
+        val r = self.apply(current)
+        current += 1
+        r
+      } else Iterator.empty.next()
   }
 
   /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
