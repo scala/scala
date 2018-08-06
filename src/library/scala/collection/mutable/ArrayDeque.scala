@@ -367,6 +367,43 @@ class ArrayDeque[A] protected (
     elems.result()
   }
 
+  /** Returns the first element which satisfies the given predicate after or at some start index
+    * and removes this element from the collections
+    *
+    *  @param p   the predicate used for choosing the first element
+    *  @param from the start index
+    *  @return the first element of the queue for which p yields true
+    */
+  def removeFirst(p: A => Boolean, from: Int = 0): Option[A] = {
+    val i = indexWhere(p, from)
+    if (i < 0) None else Some(remove(i))
+  }
+
+  /** Returns all elements in this collection which satisfy the given predicate
+    * and removes those elements from this collections.
+    *
+    *  @param p   the predicate used for choosing elements
+    *  @return    a sequence of all elements in the queue for which
+    *             p yields true.
+    */
+  def removeAll(p: A => Boolean): scala.collection.immutable.Seq[A] = {
+    val res = scala.collection.immutable.Seq.newBuilder[A]
+    var i, j = 0
+    while (i < size) {
+      if (p(this(i))) {
+        res += this(i)
+      } else {
+        if (i != j) {
+          this(j) = this(i)
+        }
+        j += 1
+      }
+      i += 1
+    }
+    if (i != j) takeInPlace(j)
+    res.result()
+  }
+
   override def reverse: IterableCC[A] = {
     val n = length
     val arr = ArrayDeque.alloc(n)
@@ -399,7 +436,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * clears this buffer and shrinks to @param size
+    * Clears this buffer and shrinks to @param size
     *
     * @param size
     * @return
