@@ -806,13 +806,36 @@ trait Infer extends Checkable {
         case _                                                              => onRight
       }
     }
+
     private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = tpe1 match {
       case PolyType(tparams1, rtpe1) =>
         isAsSpecificValueType(rtpe1, tpe2, undef1 ::: tparams1, undef2)
       case _                         =>
         tpe2 match {
           case PolyType(tparams2, rtpe2) => isAsSpecificValueType(tpe1, rtpe2, undef1, undef2 ::: tparams2)
-          case _                         => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
+          case _ if !settings.isScala300 => existentialAbstraction(undef1, tpe1) <:< existentialAbstraction(undef2, tpe2)
+          case _                         =>
+            // Backport of fix for https://github.com/scala/bug/issues/2509
+            // from Dotty https://github.com/lampepfl/dotty/commit/89540268e6c49fb92b9ca61249e46bb59981bf5a
+            //
+            // Note that as of https://github.com/lampepfl/dotty/commit/b9f3084205bc9fcbd2a5181d3f0e539e2a20253a
+            // Dotty flips variances throughout, not just at the top level. We follow that behaviour here.
+
+            val e1 = existentialAbstraction(undef1, tpe1)
+            val e2 = existentialAbstraction(undef2, tpe2)
+
+            val flip = new TypeMap(trackVariance = true) {
+              def apply(tp: Type): Type = tp match {
+                case TypeRef(pre, sym, args) if variance > 0 && sym.typeParams.exists(_.isContravariant) =>
+                  mapOver(TypeRef(pre, sym.flipped, args))
+                case _ =>
+                  mapOver(tp)
+              }
+            }
+
+            val bt = e1.baseType(e2.typeSymbol)
+            val lhs = if(bt != NoType) bt else e1
+            flip(lhs) <:< flip(e2)
         }
     }
 

@@ -2017,6 +2017,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Internal method to clone a symbol's implementation with the given flags and no info. */
     def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeOfClonedSymbol
 
+    def flipped: Symbol = this
+
 // ------ access to related symbols --------------------------------------------------
 
     /** The next enclosing class. */
@@ -3383,6 +3385,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         clone.thisSym setName thisSym.name
       }
       clone.associatedFile = _associatedFile
+      clone
+    }
+
+    override lazy val flipped: ClassSymbol = {
+      val clone = cloneSymbol(owner)
+      clone.rawInfo.typeParams.foreach { sym =>
+        if (sym.isContravariant) sym.resetFlag(Flag.CONTRAVARIANT).setFlag(Flag.COVARIANT)
+      }
       clone
     }
 
