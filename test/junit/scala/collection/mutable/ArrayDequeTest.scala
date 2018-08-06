@@ -71,4 +71,11 @@ class ArrayDequeTest {
     val target = Array[Int]()
     assertEquals(0, collection.mutable.ArrayDeque(1, 2).copyToArray(target, 1, 0))
   }
+
+  @Test
+  def insertsWhenResizeIsNeeded: Unit = {
+    val arrayDeque = ArrayDeque.from(Array.range(0, 15))
+    arrayDeque.insert(1, -1)
+    assertEquals(ArrayDeque(0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), arrayDeque)
+  }
 }
