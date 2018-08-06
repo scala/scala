@@ -19,7 +19,6 @@ trait DiagramFactory extends DiagramDirectiveParser {
   this: ModelFactory with ModelFactoryTypeSupport with DiagramFactory with CommentFactory with TreeFactory =>
 
   import this.global.definitions._
-  import this.global._
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
   def aggregationNode(text: String) =

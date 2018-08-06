@@ -5,8 +5,8 @@
 package scala.tools.partest
 package nest
 
-import scala.tools.nsc.io.{ Path, File, Directory }
-import scala.tools.nsc.Properties.{ propOrNone }
+import scala.tools.nsc.io.{Directory, File}
+import scala.tools.nsc.Properties.propOrNone
 
 /** Get current value for path settings.
   * Default values are read from system properties `partest.srcdir` and `partest.root`.

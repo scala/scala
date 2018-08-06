@@ -4,7 +4,6 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.immutable.List.empty
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.language.higherKinds
 
