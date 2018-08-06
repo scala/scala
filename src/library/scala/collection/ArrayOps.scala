@@ -848,7 +848,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `pf` to each element on which it is defined and collecting the results.
     *                The order of the elements is preserved.
     */
-  def collect[B : ClassTag](f: PartialFunction[A, B]): Array[B] = {
+  def collect[B : ClassTag](pf: PartialFunction[A, B]): Array[B] = {
     var i = 0
     var matched = true
     def d(x: A): B = {
@@ -858,7 +858,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val b = ArrayBuilder.make[B]
     while(i < xs.length) {
       matched = true
-      val v = f.applyOrElse(xs(i), d)
+      val v = pf.applyOrElse(xs(i), d)
       if(matched) b += v
       i += 1
     }
