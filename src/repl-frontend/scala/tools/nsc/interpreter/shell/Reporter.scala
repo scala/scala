@@ -150,7 +150,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
   def printMessage(posIn: Position, msg: String): Unit = {
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
-    else if (posIn.source.file.name == "<console>" && posIn.line == 1 && posIn.source.content.indexOf("\n") == -1) {
+    else if (posIn.source.file.name == "<console>" && posIn.line == 1) {
       // If there's only one line of input, and it's already printed on the console (as indicated by the position's source file name),
       // reuse that line in our error output, and suppress the line number (since we know it's `1`)
       // NOTE: see e.g. test/files/run/repl-colon-type.scala, where the error refers to a line that's not on the screen
