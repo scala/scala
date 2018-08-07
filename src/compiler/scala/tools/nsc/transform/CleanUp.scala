@@ -472,10 +472,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
-      case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
+      case Apply(appMeth, Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(_, _))) :: Nil) :: _ :: Nil)
       if wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
         super.transform(arg)
-      case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
+      case Apply(appMeth, elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
