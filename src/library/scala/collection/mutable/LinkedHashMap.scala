@@ -46,6 +46,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  */
 class LinkedHashMap[K, V]
   extends AbstractMap[K, V]
+    with SeqMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
     with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]] {
