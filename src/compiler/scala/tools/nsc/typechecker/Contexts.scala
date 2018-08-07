@@ -909,7 +909,7 @@ trait Contexts { self: Analyzer =>
 
     /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
     private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
-      val imports = this.imports
+      val firstImport = this.firstImport
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
@@ -922,13 +922,14 @@ trait Contexts { self: Analyzer =>
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
-        assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
-        Some(collectImplicitImports(imports.head))
+        if (isDeveloper)
+          assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
+        Some(collectImplicitImports(firstImport.get))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
         val pre = owner.packageObject.typeOfThis
         Some(collectImplicits(pre.implicitMembers, pre))
-      } else Some(Nil)
+      } else SomeNil
     }
 
     //
@@ -1525,6 +1526,7 @@ trait Contexts { self: Analyzer =>
 
   type ImportType = global.ImportType
   val ImportType = global.ImportType
+  private final val SomeNil = Some(Nil)
 }
 
 object ContextMode {
