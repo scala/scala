@@ -492,12 +492,11 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   /** Finds index of first occurrence of some value in this array after or at some start index.
     *
     *  @param   elem   the element value to search for.
-    *  @tparam  B      the type of the element `elem`.
     *  @param   from   the start index
     *  @return  the index `>= from` of the first element of this array that is equal (as determined by `==`)
     *           to `elem`, or `-1`, if none exists.
     */
-  def indexOf[B >: A](elem: B, from: Int = 0): Int = {
+  def indexOf(elem: A, from: Int = 0): Int = {
     var i = from
     while(i < xs.length) {
       if(elem == xs(i)) return i
@@ -526,11 +525,10 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @param   elem   the element value to search for.
     *  @param   end    the end index.
-    *  @tparam  B      the type of the element `elem`.
     *  @return  the index `<= end` of the last element of this array that is equal (as determined by `==`)
     *           to `elem`, or `-1`, if none exists.
     */
-  def lastIndexOf[B >: A](elem: B, end: Int = xs.length - 1): Int = {
+  def lastIndexOf(elem: A, end: Int = xs.length - 1): Int = {
     var i = min(end, xs.length-1)
     while(i >= 0) {
       if(elem == xs(i)) return i
@@ -1030,7 +1028,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return     `true` if this array has an element that is equal (as
     *              determined by `==`) to `elem`, `false` otherwise.
     */
-  def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
+  def contains(elem: A): Boolean = exists (_ == elem)
 
   /** Returns a copy of this array with patched values.
     * Patching at negative indices is the same as patching starting at 0.
