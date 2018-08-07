@@ -902,14 +902,19 @@ trait Definitions extends api.StandardDefinitions {
           }
         }
       }
+      def isVolatileTypeRef(tr: TypeRef) = {
+        val dealised = tr.dealias
+        if (dealised ne tr) isVolatile(dealised)
+        else if (tr.sym.isAbstractType) isVolatileAbstractType
+        else false
+      }
 
       tp match {
         case ThisType(_)                              => false
         case SingleType(_, sym)                       => isVolatile(tp.underlying) && (sym.hasVolatileType || !sym.isStable)
         case NullaryMethodType(restpe)                => isVolatile(restpe)
         case PolyType(_, restpe)                      => isVolatile(restpe)
-        case TypeRef(_, _, _) if tp ne tp.dealias     => isVolatile(tp.dealias)
-        case TypeRef(_, sym, _) if sym.isAbstractType => isVolatileAbstractType
+        case tr: TypeRef                              => isVolatileTypeRef(tr)
         case RefinedType(_, _)                        => isVolatileRefinedType
         case TypeVar(origin, _)                       => isVolatile(origin)
         case _: SimpleTypeProxy                       => isVolatile(tp.underlying)
