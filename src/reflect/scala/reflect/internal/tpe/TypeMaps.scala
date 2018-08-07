@@ -130,8 +130,8 @@ private[internal] trait TypeMaps {
       */
     protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
       @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
-        case Nil     => true
         case x :: xs => (x.info eq applyToSymbolInfo(x)) && loop(xs)
+        case _       => true
       }
       loop(origSyms)
     }
