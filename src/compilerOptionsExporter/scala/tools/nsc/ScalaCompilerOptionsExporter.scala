@@ -152,5 +152,7 @@ object ScalaCompilerOptionsExporter {
     mapper
       .writer(new DefaultPrettyPrinter())
       .writeValue(writer, source)
+    // TODO: println can be deleted if write can write to file
+    println(writer.toString)
   }
 }
