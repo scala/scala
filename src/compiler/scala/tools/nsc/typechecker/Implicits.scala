@@ -995,26 +995,7 @@ trait Implicits {
      *                             enclosing scope, and so on.
      */
     class ImplicitComputation(iss: Infoss, isLocalToCallsite: Boolean) {
-      abstract class Shadower {
-        def addInfos(infos: Infos): Unit
-        def isShadowed(name: Name): Boolean
-      }
-      private val shadower: Shadower = {
-        /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
-        final class LocalShadower extends Shadower {
-          val shadowed = util.HashSet[Name](512)
-          def addInfos(infos: Infos): Unit = {
-            infos.foreach(i => shadowed.addEntry(i.name))
-          }
-          def isShadowed(name: Name) = shadowed(name)
-        }
-        /** Used for the implicits of expected type, when no shadowing checks are needed. */
-        object NoShadower extends Shadower {
-          def addInfos(infos: Infos): Unit = {}
-          def isShadowed(name: Name) = false
-        }
-        if (isLocalToCallsite) new LocalShadower else NoShadower
-      }
+      private val shadower: Shadower = if (isLocalToCallsite) new LocalShadower else NoShadower
 
       private var best: SearchResult = SearchFailure
 
@@ -1823,6 +1804,25 @@ trait Implicits {
           Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not $where.")
       }
     }
+  }
+
+  private abstract class Shadower {
+    def addInfos(infos: Infos): Unit
+    def isShadowed(name: Name): Boolean
+  }
+
+  /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
+  private final class LocalShadower extends Shadower {
+    val shadowed = util.HashSet[Name](512)
+    def addInfos(infos: Infos): Unit = {
+      infos.foreach(i => shadowed.addEntry(i.name))
+    }
+    def isShadowed(name: Name) = shadowed(name)
+  }
+  /** Used for the implicits of expected type, when no shadowing checks are needed. */
+  private object NoShadower extends Shadower {
+    def addInfos(infos: Infos): Unit = {}
+    def isShadowed(name: Name) = false
   }
 }
 
