@@ -212,6 +212,7 @@ class IterableTest {
     Assert.assertEquals(baselist.reverse, checklist)
   }
 
+  @Test
   def unzip(): Unit = {
     val zipped = Seq((1, 'a'), (2, 'b'), (3, 'c'))
     val (s1, s2) = zipped.unzip
@@ -259,6 +260,16 @@ class IterableTest {
     }
     val foo = new Foo
     Assert.assertEquals("Fu()", foo.toString)
+  }
+
+  @Test
+  def partitionWith: Unit = {
+    val (left, right) = Seq(1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionWith {
+      case i: Int => Left(i)
+      case s: String => Right(s)
+    }
+    Assert.assertEquals(left, Seq(1, 2, 3, 4 ,5))
+    Assert.assertEquals(right, Seq("1", "2", "3", "4" ,"5"))
   }
 
 }
