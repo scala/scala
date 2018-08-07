@@ -4697,9 +4697,9 @@ trait Types
       case tp :: Nil => tp
       case TypeRef(_, sym, _) :: rest =>
         val pres = tps map (_.prefix) // prefix normalizes automatically
-      val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
+        val pre = if (variance.isPositive) lub(pres, depth) else glb(pres, depth)
         val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
-      val capturedParams = new ListBuffer[Symbol]
+        val capturedParams = new ListBuffer[Symbol]
         try {
           if (sym == ArrayClass && phase.erasedTypes) {
             // special treatment for lubs of array types after erasure:
@@ -4736,19 +4736,28 @@ trait Types
                   NoType
                 }
                 else {
-                  if (tparam.variance == variance) lub(as, depth.decr)
-                  else if (tparam.variance == variance.flip) glb(as, depth.decr)
+                  val hktParams = tparam.initialize.typeParams
+                  val hktArgs = hktParams.map(_.typeConstructor)
+                  def applyHK(tp: Type) = appliedType(tp, hktArgs)
+                  def bindHK(tp: Type) = typeFun(hktParams, tp)
+                  // Make `as` well-kinded by binding higher-order type params of `tparam`
+                  // (so that the type arguments in `as` have the same kind as the type parameter `tparam`).
+                  val asKinded = if (hktParams.isEmpty) as else as.map(a => bindHK(applyHK(a)))
+
+                  if (tparam.variance == variance) lub(asKinded, depth.decr)
+                  else if (tparam.variance == variance.flip) glb(asKinded, depth.decr)
                   else {
-                    val l = lub(as, depth.decr)
-                    val g = glb(as, depth.decr)
+                    val l = lub(asKinded, depth.decr)
+                    val g = glb(asKinded, depth.decr)
                     if (l <:< g) l
-                    else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                    else {
+                      // @M this has issues with f-bounds, see #2251
+                      // Martin: Not sure there is a good way to fix it. For the moment we
                       // just err on the conservative side, i.e. with a bound that is too high.
-                      // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
                       capturedParamIds += 1
                       val capturedParamId = capturedParamIds
-
-                      val qvar = commonOwner(as).freshExistential("", capturedParamId) setInfo TypeBounds(g, l)
+                      val bounds = if (hktParams.isEmpty) TypeBounds(g, l) else bindHK(TypeBounds(applyHK(g), applyHK(l)))
+                      val qvar = commonOwner(as).freshExistential("", capturedParamId) setInfo bounds
                       capturedParams += qvar
                       qvar.tpe
                     }
