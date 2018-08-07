@@ -825,8 +825,9 @@ abstract class Erasure extends InfoTransform
         case Ident(_) | Select(_, _) =>
           if (tree1.symbol.isOverloaded) {
             val first = tree1.symbol.alternatives.head
+            val firstTpe = first.tpe
             val sym1 = tree1.symbol.filter {
-              alt => alt == first || !(first.tpe looselyMatches alt.tpe)
+              alt => alt == first || !(firstTpe looselyMatches alt.tpe)
             }
             if (tree.symbol ne sym1) {
               tree1 setSymbol sym1 setType sym1.tpe
