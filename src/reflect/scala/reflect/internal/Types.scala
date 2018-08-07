@@ -880,24 +880,15 @@ trait Types
     /** Same as matches, except that non-method types are always assumed to match. */
     def looselyMatches(that: Type): Boolean = matchesType(this, that, alwaysMatchSimple = true)
 
-    /** The shortest sorted upwards closed array of types that contains
-     *  this type as first element.
-     *
-     *  A list or array of types ts is upwards closed if
-     *
-     *    for all t in ts:
-     *      for all typerefs p.s[args] such that t <: p.s[args]
-     *      there exists a typeref p'.s[args'] in ts such that
-     *      t <: p'.s['args] <: p.s[args],
-     *
-     *      and
-     *
-     *      for all singleton types p.s such that t <: p.s
-     *      there exists a singleton type p'.s in ts such that
-     *      t <: p'.s <: p.s
-     *
-     *  Sorting is with respect to Symbol.isLess() on type symbols.
-     */
+    /** The base type sequence of T is the smallest set of (potentially existentially quantified)
+      * class types Ti, so that for each supertype T' (T <:< T'),
+      * there is a Ti so that T <:< Ti <:< T'.
+      *
+      * This is also known as the upward closed set of the partially ordered set of
+      * class types under Symbol#isLess (a refinement of Symbol#isSubclass).
+      *
+      * See "Base Types and Member Definitions" in spec/03-types.md.
+      */
     def baseTypeSeq: BaseTypeSeq = baseTypeSingletonSeq(this)
 
     /** The maximum depth (@see typeDepth)
@@ -931,7 +922,10 @@ trait Types
     def trimPrefix(str: String) = str stripPrefix objectPrefix stripPrefix packagePrefix
 
     /** The string representation of this type used as a prefix */
-    def prefixString = trimPrefix(toString) + "#"
+    def prefixString = {
+      val pre = trimPrefix(toString)
+      if (isShowAsInfixType) s"($pre)#" else pre + "#"
+    }
 
    /** Convert toString avoiding infinite recursions by cutting off
      *  after `maxToStringRecursions` recursion levels. Uses `safeToString`
@@ -1088,7 +1082,8 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-  override def boundSyms: Set[Symbol] = emptySymbolSet}
+    override def boundSyms: Set[Symbol] = emptySymbolSet
+ }
 
   /** A base class for types that represent a single value
    *  (single-types and this-types).
@@ -1096,11 +1091,8 @@ trait Types
   abstract class SingletonType extends SubType with SimpleTypeProxy with SingletonTypeApi {
     def supertype = underlying
     override def isTrivial = false
-    override def widen: Type = underlying.widen
-    override def baseTypeSeq: BaseTypeSeq = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(singletonBaseTypeSeqCount)
-      underlying.baseTypeSeq prepend this
-    }
+// Spec: "The base types of a singleton type `$p$.type` are the base types of the type of $p$."
+//    override def baseTypeSeq: BaseTypeSeq = underlying.baseTypeSeq
     override def isHigherKinded = false // singleton type classifies objects, thus must be kind *
     override def safeToString: String = {
       // Avoiding printing Predef.type and scala.package.type as "type",
@@ -2144,6 +2136,7 @@ trait Types
     override def decls       = relativeInfo.decls
     override def bounds      = relativeInfo.bounds
 
+    // TODO: this deviates from the spec "The base types of an abstract type are the base types of its upper bound."
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = bounds.hi.baseTypeSeq prepend this
     override protected[Types] def parentsImpl: List[Type] = relativeInfo.parents
 

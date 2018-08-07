@@ -1,0 +1,15 @@
+[[syntax trees at end of                   pickler]] // newSource1.scala
+package <empty> {
+  import anns._;
+  abstract trait Foo extends AnyRef with Int @anns.TypeAnn_0(value = "b") @anns.TypeAnn_0(value = "a") => String @anns.TypeAnn_0(value = "y") @anns.TypeAnn_0(value = "x") {
+    type Meh = Any @anns.TypeAnn_0(value = "q") @anns.TypeAnn_0(value = "p")
+  }
+}
+
+[[syntax trees at end of                 refchecks]] // newSource1.scala
+package <empty> {
+  abstract trait Foo extends AnyRef with Int @anns.TypeAnn_0.Anns(value = [anns.TypeAnn_0(value = "b"), anns.TypeAnn_0(value = "a")]) => String @anns.TypeAnn_0.Anns(value = [anns.TypeAnn_0(value = "y"), anns.TypeAnn_0(value = "x")]) {
+    type Meh = Any @anns.TypeAnn_0.Anns(value = [anns.TypeAnn_0(value = "q"), anns.TypeAnn_0(value = "p")])
+  }
+}
+

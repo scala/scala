@@ -177,6 +177,8 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           TermName(m.getName) -> toAnnotArg(m.getReturnType -> m.invoke(jann))
         )
       )
+
+      override def transformArgs(f: List[Tree] => List[Tree]) = this
     }
 
     def reflect[T: ClassTag](obj: T): InstanceMirror = new JavaInstanceMirror(obj)

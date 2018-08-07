@@ -2,7 +2,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.reflect.ClassTag
-import scala.reflect.internal.{NoPhase, Phase, SomePhase}
+import scala.reflect.internal.{NoPhase, Phase, Reporter, SomePhase}
 import scala.reflect.internal.util.Statistics
 import scala.tools.util.PathResolver
 import util.ClassPath
@@ -81,7 +81,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def erasurePhase: scala.reflect.internal.Phase = SomePhase
 
   // Members declared in scala.reflect.internal.Reporting
-  def reporter = new scala.reflect.internal.Reporter {
+  def reporter = new Reporter {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 

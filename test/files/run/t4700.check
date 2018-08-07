@@ -41,4 +41,10 @@ foo: (Int && String) &: Boolean
 scala> def foo: Int && (Boolean &: String) = ???
 foo: Int && (Boolean &: String)
 
+scala> trait ^[A, B] { type T } /* scala/bug#10937 */
+defined trait $up
+
+scala> def x[A, B] : (A ^ B)#T = ???
+x: [A, B]=> (A ^ B)#T
+
 scala> :quit

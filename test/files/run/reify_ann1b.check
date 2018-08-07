@@ -1,28 +1,28 @@
 {
-  @new ann(bar = "1a") @new ann(bar = "1b") class C[@new ann(bar = "2a") @new ann(bar = "2b") T] extends AnyRef {
-    @new ann(bar = "3a") @new ann(bar = "3b") <paramaccessor> private[this] val x: T @ann(bar = "4a") @ann(bar = "4b") = _;
-    def <init>(@new ann(bar = "3a") @new ann(bar = "3b") x: T @ann(bar = "4a") @ann(bar = "4b")) = {
+  @new ann0(bar = "1a") @new ann1(bar = "1b") class C[@new ann0(bar = "2a") @new ann1(bar = "2b") T] extends AnyRef {
+    @new ann0(bar = "3a") @new ann1(bar = "3b") <paramaccessor> private[this] val x: T @ann0(bar = "4a") @ann1(bar = "4b") = _;
+    def <init>(@new ann0(bar = "3a") @new ann1(bar = "3b") x: T @ann0(bar = "4a") @ann1(bar = "4b")) = {
       super.<init>();
       ()
     };
-    @new ann(bar = "5a") @new ann(bar = "5b") def f(x: Int @ann(bar = "6a") @ann(bar = "6b")) = {
-      @new ann(bar = "7a") @new ann(bar = "7b") val r = x.$plus(3): @ann(bar = "8a"): @ann(bar = "8b");
-      val s = (4: Int @ann(bar = "9a") @ann(bar = "9b"));
+    @new ann0(bar = "5a") @new ann1(bar = "5b") def f(x: Int @ann0(bar = "6a") @ann1(bar = "6b")) = {
+      @new ann0(bar = "7a") @new ann1(bar = "7b") val r = x.$plus(3): @ann0(bar = "8a"): @ann1(bar = "8b");
+      val s = (4: Int @ann0(bar = "9a") @ann1(bar = "9b"));
       r.$plus(s)
     }
   };
   ()
 }
 {
-  @ann(bar = "1a") @ann(bar = "1b") class C[@ann(bar = "2a") @ann(bar = "2b") T] extends AnyRef {
-    @ann(bar = "3a") @ann(bar = "3b") <paramaccessor> private[this] val x: T @ann(bar = "4b") @ann(bar = "4a") = _;
-    def <init>(@ann(bar = "3a") @ann(bar = "3b") x: T @ann(bar = "4b") @ann(bar = "4a")): C[T] = {
+  @ann0(bar = "1a") @ann1(bar = "1b") class C[@ann0(bar = "2a") @ann1(bar = "2b") T] extends AnyRef {
+    @ann0(bar = "3a") @ann1(bar = "3b") <paramaccessor> private[this] val x: T @ann1(bar = "4b") @ann0(bar = "4a") = _;
+    def <init>(@ann0(bar = "3a") @ann1(bar = "3b") x: T @ann1(bar = "4b") @ann0(bar = "4a")): C[T] = {
       C.super.<init>();
       ()
     };
-    @ann(bar = "5a") @ann(bar = "5b") def f(x: Int @ann(bar = "6b") @ann(bar = "6a")): Int = {
-      @ann(bar = "7a") @ann(bar = "7b") val r: Int @ann(bar = "8b") @ann(bar = "8a") = ((x.+(3): Int @ann(bar = "8a")): Int @ann(bar = "8b") @ann(bar = "8a"));
-      val s: Int @ann(bar = "9b") @ann(bar = "9a") = (4: Int @ann(bar = "9b") @ann(bar = "9a"));
+    @ann0(bar = "5a") @ann1(bar = "5b") def f(x: Int @ann1(bar = "6b") @ann0(bar = "6a")): Int = {
+      @ann0(bar = "7a") @ann1(bar = "7b") val r: Int @ann1(bar = "8b") @ann0(bar = "8a") = ((x.+(3): Int @ann0(bar = "8a")): Int @ann1(bar = "8b") @ann0(bar = "8a"));
+      val s: Int @ann1(bar = "9b") @ann0(bar = "9a") = (4: Int @ann1(bar = "9b") @ann0(bar = "9a"));
       r.+(s)
     }
   };

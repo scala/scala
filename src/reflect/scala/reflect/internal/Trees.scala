@@ -9,6 +9,7 @@ package internal
 
 import Flags._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
 import util.{Statistics, StatisticsStatics}
 
@@ -150,13 +151,17 @@ trait Trees extends api.Trees {
       })
 
     override def children: List[Tree] = {
-      def subtrees(x: Any): List[Tree] = x match {
-        case EmptyTree   => Nil
-        case t: Tree     => List(t)
-        case xs: List[_] => xs flatMap subtrees
-        case _           => Nil
+      var builder: ListBuffer[Tree] = null
+      def subtrees(x: Any): Unit = x match {
+        case EmptyTree =>
+        case t: Tree =>
+          if (builder eq null) builder = new ListBuffer[Tree]
+          builder += t
+        case xs: List[_] => xs foreach subtrees
+        case _ =>
       }
-      productIterator.toList flatMap subtrees
+      productIterator foreach subtrees
+      if (builder eq null) Nil else builder.result()
     }
 
     def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)

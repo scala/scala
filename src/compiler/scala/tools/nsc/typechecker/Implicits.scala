@@ -402,10 +402,12 @@ trait Implicits {
     /** The type parameters to instantiate */
     val undetParams = if (isView) Nil else context.outer.undetparams
     val wildPt = approximate(pt)
-    private val ptFunctionArity: Int = {
-      val dealiased = pt.dealiasWiden
+    private[this] def functionArityOf(tp: Type): Int = {
+      val dealiased = tp.dealiasWiden
       if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1 else -1
     }
+    private val cachedPtFunctionArity: Int = functionArityOf(pt)
+    final def functionArity(tp: Type): Int = if (tp eq pt) cachedPtFunctionArity else functionArityOf(tp)
 
     private val stableRunDefsForImport = currentRun.runDefinitions
     import stableRunDefsForImport._
@@ -661,6 +663,7 @@ trait Implicits {
               if (sym.isAliasType) loop(tp, pt.dealias)
               else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
               else {
+                val ptFunctionArity = functionArity(pt)
                 ptFunctionArity > 0 && hasLength(params, ptFunctionArity) && {
                   var ps = params
                   var as = args
@@ -1177,11 +1180,12 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
+      val isScala213 = settings.isScala213
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.
        */
-      def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
+      def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
           val infos1 = infoMap.get(sym).getOrElse(Nil)
           if(!infos1.exists(pre =:= _.pre.prefix)) {
@@ -1201,9 +1205,9 @@ trait Implicits {
                   infos1.filter(_.dependsOnPrefix) ++ infos.filter(_.dependsOnPrefix)
                 }
               if(mergedInfos.isEmpty)
-                infoMap += (sym -> List(SearchedPrefixImplicitInfo(pre)))
+                infoMap(sym) = List(SearchedPrefixImplicitInfo(pre))
               else
-                infoMap += (sym -> mergedInfos)
+                infoMap(sym) = mergedInfos
             }
             // Only strip annotations on the infrequent path
             val bts = (if(infos1.isEmpty) tp else tp.map(_.withoutAnnotations)).baseTypeSeq
@@ -1224,14 +1228,11 @@ trait Implicits {
        * @param pending  The set of static symbols for which we are currently trying to collect their parts
        *                 in order to cache them in infoMapCache
        */
-      def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]): Unit = {
-        if (seen(tp))
-          return
-        seen += tp
-        tp match {
+      def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]): Unit = {
+        if (seen add tp) tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isClass && !sym.isRoot &&
-                (settings.isScala213 || !sym.isAnonOrRefinementClass)) {
+                (isScala213 || !sym.isAnonOrRefinementClass)) {
               if (sym.isStatic && !(pending contains sym))
                 infoMap ++= {
                   infoMapCache get sym match {
@@ -1254,7 +1255,7 @@ trait Implicits {
               //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.bounds.hi)
 
-              if(settings.isScala213) {
+              if (isScala213) {
                 //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
                 args foreach getParts
 

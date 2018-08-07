@@ -1391,17 +1391,45 @@ abstract class RefChecks extends Transform {
       }
     }
 
-    private def checkAnnotations(tpes: List[Type], tree: Tree) = tpes foreach { tp =>
-      checkTypeRef(tp, tree, skipBounds = false)
-      checkTypeRefBounds(tp, tree)
-    }
-    private def doTypeTraversal(tree: Tree)(f: Type => Unit) = if (!inPattern) tree.tpe foreach f
-
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
-      def applyChecks(annots: List[AnnotationInfo]) = {
-        checkAnnotations(annots map (_.atp), tree)
-        transformTrees(annots flatMap (_.args))
+      def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = {
+        annots.foreach { ann =>
+          checkTypeRef(ann.tpe, tree, skipBounds = false)
+          checkTypeRefBounds(ann.tpe, tree)
+        }
+
+        annots
+          .map(_.transformArgs(transformTrees))
+          .groupBy(_.symbol)
+          .flatMap((groupRepeatableAnnotations _).tupled)
+          .toList
       }
+
+      // assumes non-empty `anns`
+      def groupRepeatableAnnotations(sym: Symbol, anns: List[AnnotationInfo]): List[AnnotationInfo] =
+        if (!sym.isJavaDefined) anns else anns match {
+          case single :: Nil => anns
+          case multiple      =>
+            sym.getAnnotation(AnnotationRepeatableAttr) match {
+              case Some(repeatable) =>
+                repeatable.assocs.collectFirst {
+                  case (nme.value, LiteralAnnotArg(Constant(c: Type))) => c
+                } match {
+                  case Some(container) =>
+                    val assocs = List(
+                      nme.value -> ArrayAnnotArg(multiple.map(NestedAnnotArg(_)).toArray)
+                    )
+                    AnnotationInfo(container, args = Nil, assocs = assocs) :: Nil
+                  case None =>
+                    devWarning(s"@Repeatable $sym had no containing class")
+                    multiple
+                }
+
+              case None =>
+                reporter.error(tree.pos, s"$sym may not appear multiple times on ${tree.symbol}")
+                multiple
+            }
+        }
 
       def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { level =>
         if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred) {
@@ -1414,7 +1442,7 @@ abstract class RefChecks extends Transform {
       tree match {
         case m: MemberDef =>
           val sym = m.symbol
-          applyChecks(sym.annotations)
+          sym.setAnnotations(applyChecks(sym.annotations))
 
           // validate implicitNotFoundMessage and implicitAmbiguousMessage
           if (settings.lintImplicitNotFound) {
@@ -1441,11 +1469,12 @@ abstract class RefChecks extends Transform {
             }
           }
 
-          doTypeTraversal(tree) {
-            case tp @ AnnotatedType(annots, _)  =>
-              applyChecks(annots)
-            case tp =>
-          }
+          if (!inPattern)
+            tree.setType(tree.tpe map {
+              case AnnotatedType(anns, ul) =>
+                AnnotatedType(applyChecks(anns), ul)
+              case tp => tp
+            })
         case _ =>
       }
     }
@@ -1706,7 +1735,7 @@ abstract class RefChecks extends Transform {
             var skipBounds = false
             // check all bounds, except those that are existential type parameters
             // or those within typed annotated with @uncheckedBounds
-            doTypeTraversal(tree) {
+            if (!inPattern) tree.tpe foreach {
               case tp @ ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
               case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>

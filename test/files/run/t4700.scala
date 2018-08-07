@@ -17,6 +17,8 @@ object Test extends ReplTest {
     |def foo: Int &: Boolean &: String = ???
     |def foo: (Int && String) &: Boolean = ???
     |def foo: Int && (Boolean &: String) = ???
+    |trait ^[A, B] { type T } /* scala/bug#10937 */
+    |def x[A, B] : (A ^ B)#T = ???
     |""".stripMargin
 }
 
