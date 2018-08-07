@@ -60,6 +60,8 @@ object ScalaCompilerOptionsExporter {
   }
 
   def main(args: Array[String]): Unit = {
+    val writer = new java.io.StringWriter(2000)
+
     val runtimeMirror = scala.reflect.runtime.currentMirror
 
     val settings = new scala.tools.nsc.Settings(s => ())
@@ -147,9 +149,8 @@ object ScalaCompilerOptionsExporter {
       .registerModule(DefaultScalaModule)
       .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
 
-    val yaml = mapper
+    mapper
       .writer(new DefaultPrettyPrinter())
-      .writeValueAsString(source)
-    println(yaml)
+      .writeValue(writer, source)
   }
 }

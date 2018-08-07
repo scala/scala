@@ -422,7 +422,7 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
-lazy val exporter = configureAsSubproject(project)
+lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
   .dependsOn(compiler, reflect, library)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
@@ -953,7 +953,7 @@ lazy val root: Project = (project in file("."))
         .withRecompileOnMacroDef(false) //     // macros in library+reflect are hard-wired to implementations with `FastTrack`.
     }
   )
-  .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
+  .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
@@ -1149,7 +1149,9 @@ intellij := {
       moduleDeps(scalacheck, config = Test).value,
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
-      moduleDeps(testP).value)
+      moduleDeps(testP).value,
+      moduleDeps(compilerOptionsExporter).value
+    )
   }
 
   def moduleDep(name: String, jars: Seq[File]) = {
