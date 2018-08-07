@@ -342,8 +342,8 @@ object ClassfileConstants {
       case JAVA_ACC_FINAL      => FINAL
       case JAVA_ACC_SYNTHETIC  => SYNTHETIC | ARTIFACT  // maybe should be just artifact?
       case JAVA_ACC_STATIC     => STATIC
-      case JAVA_ACC_ABSTRACT   => if (isAnnotation) 0L else if (isClass) ABSTRACT else DEFERRED
-      case JAVA_ACC_INTERFACE  => if (isAnnotation) 0L else TRAIT | INTERFACE | ABSTRACT
+      case JAVA_ACC_ABSTRACT   => if (isClass) ABSTRACT else DEFERRED
+      case JAVA_ACC_INTERFACE  => TRAIT | INTERFACE | ABSTRACT
       case JAVA_ACC_ENUM       => JAVA_ENUM
       case JAVA_ACC_ANNOTATION => JAVA_ANNOTATION
       case _                   => 0L

@@ -379,6 +379,7 @@ trait Contexts { self: Analyzer =>
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+    def inAnnotation                          = this(TypingAnnotation)
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
@@ -512,6 +513,7 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+    @inline final def withinAnnotation[T](op: => T): T                     = withMode(enabled = TypingAnnotation)(op)
 
     @inline final def withSuppressDeadArgWarning[T](suppress: Boolean)(op: => T): T =
       if (suppress) withMode(enabled = SuppressDeadArgWarning)(op) else withMode(disabled = SuppressDeadArgWarning)(op)
@@ -1756,6 +1758,11 @@ object ContextMode {
   /** Were default arguments used? */
   final val DiagUsedDefaults: ContextMode         = 1 << 18
 
+  /** Are we currently typing the core or args of an annotation?
+    * When set, Java annotations may be instantiated directly.
+    */
+  final val TypingAnnotation: ContextMode         = 1 << 19
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1781,7 +1788,8 @@ object ContextMode {
     SecondTry              -> "SecondTry",
     TypeConstructorAllowed -> "TypeConstructorAllowed",
     DiagUsedDefaults       -> "DiagUsedDefaults",
-    SuppressDeadArgWarning -> "SuppressDeadArgWarning"
+    SuppressDeadArgWarning -> "SuppressDeadArgWarning",
+    TypingAnnotation       -> "TypingAnnotation",
   )
 }
 

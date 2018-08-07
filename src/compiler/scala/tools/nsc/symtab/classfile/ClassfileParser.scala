@@ -476,11 +476,9 @@ abstract class ClassfileParser {
       val sflags = jflags.toScalaFlags // includes JAVA
 
       def parseParents(): List[Type] = raiseLoaderLevel {
-        val superType = if (jflags.isAnnotation) { u2; AnnotationClass.tpe }
-                        else pool.getSuperClass(u2).tpe_*
+        val superType = pool.getSuperClass(u2).tpe_*
         val ifaceCount = u2
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
-        if (jflags.isAnnotation) ifaces ::= StaticAnnotationClass.tpe
+        val ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
         superType :: ifaces
       }
 
@@ -518,7 +516,7 @@ abstract class ClassfileParser {
         val needsConstructor = (
              !sawPrivateConstructor
           && !(instanceScope containsName nme.CONSTRUCTOR)
-          && (sflags & INTERFACE) == 0
+          && ((sflags & INTERFACE) == 0 || (sflags | JAVA_ANNOTATION) != 0)
         )
         if (needsConstructor)
           instanceScope enter clazz.newClassConstructor(NoPosition)
