@@ -116,7 +116,7 @@ object PickleFormat {
  *   len is remaining length after `len`.
  */
   val MajorVersion = 5
-  val MinorVersion = 1
+  val MinorVersion = 2
 
   final val TERMname = 1
   final val TYPEname = 2
@@ -155,7 +155,7 @@ object PickleFormat {
   final val LITERALnull = 34
   final val LITERALclass = 35
   final val LITERALenum = 36
-  final val LITERALsymbol = 37
+  final val LITERALsymbol = 37 // TODO: Never pickled, to be dropped once we have a STARR that does not emit it.
   final val SYMANNOT = 40
   final val CHILDREN = 41
   final val ANNOTATEDtpe = 42

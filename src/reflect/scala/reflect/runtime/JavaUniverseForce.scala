@@ -222,7 +222,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SerializableTpe
     definitions.StringTpe
     definitions.ThrowableTpe
-    definitions.SymbolTpe
     definitions.ConstantTrue
     definitions.ConstantFalse
     definitions.ConstantNull

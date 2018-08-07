@@ -280,8 +280,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def symbolArg(index: Int) = argAtIndex(index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)
-      case Literal(Constant(s: scala.Symbol)) =>
-        newTermName(s.name)
     }
 
     // !!! when annotation arguments are not literals, but any sort of
