@@ -43,6 +43,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
   private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
   private lazy val caseObjectSymbols = Object_equals :: caseSymbols
+  private lazy val stringPlus        = getMemberMethod(StringClass, nme.PLUS)
   private def symbolsToSynthesize(clazz: Symbol): List[Symbol] = {
     if (clazz.isCase) {
       if (clazz.isDerivedValueClass) caseValueSymbols
@@ -196,6 +197,41 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
+    /* The toString method for case classes.
+     * e.g.
+     *   case class A()
+     *   A().toString // "A()"
+     *
+     *   case class B(i: Int)
+     *   B(1).toString // "B(i=1)"
+     *
+     *   case class C(i: Int, j: Int, k: Int)
+     *   C(1,2,3).toString // "C(i=1, j=2, k=3)"
+     */
+    def toStringCaseClassMethod: Tree = createMethod(nme.toString_, Nil, StringTpe) { m =>
+      def applyStringPlus(left: Tree, right: Tree): Tree = Apply(Select(left, stringPlus), List(right))
+      def selectAccessorAsString(accessor: Symbol): Tree = Apply(Select(Select(mkThis, accessor), Any_toString),Nil)
+
+      accessors match {
+        case Seq() => LIT(clazz.name.decode + "()")
+        case Seq(single) =>
+          applyStringPlus(
+            applyStringPlus(LIT(clazz.name.decode + "(" + single.name.decode + "="), selectAccessorAsString(single)),
+            LIT(")")
+          )
+        case head +: tail =>
+          val headString: Tree =
+            applyStringPlus(LIT(clazz.name.decode + "(" + head.name.decode + "="), selectAccessorAsString(head))
+
+          val tailStrings: Seq[Tree] =
+            tail.map(acc => applyStringPlus(LIT(", " + acc.name.decode + "="), selectAccessorAsString(acc)))
+
+          val combined = applyStringPlus(headString, tailStrings.reduceLeft(applyStringPlus))
+
+          applyStringPlus(combined, LIT(")"))
+      }
+    }
+
     /* The equality method for case classes.
      * 0 args:
      *   def equals(that: Any) = that.isInstanceOf[this.C] && that.asInstanceOf[this.C].canEqual(this)
@@ -301,7 +337,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def caseClassMethods = productMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
-      Object_toString -> (() => forwardToRuntime(Object_toString)),
+      Object_toString -> (() => toStringCaseClassMethod),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
 
