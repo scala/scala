@@ -102,4 +102,14 @@ class HashMapTest {
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
+
+  @Test
+  def canMergeHashMapCollision1WithCorrectMerege() {
+    case class A(k: Int) { override def hashCode = 0 }
+    val m1 = HashMap(A(0) -> 2, A(1) -> 2)
+    val m2 = HashMap(A(0) -> 1, A(1) -> 1)
+    val merged = m1.merged(m2) { case ((k, l), (_, r)) => k -> (l - r) }
+    val expected = HashMap(A(0) -> 1, A(1) -> 1)
+    assertEquals(merged, expected)
+  }
 }

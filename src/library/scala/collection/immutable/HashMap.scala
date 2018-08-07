@@ -312,7 +312,7 @@ object HashMap extends MapFactory[HashMap] {
     protected def merge0[V1 >: V](that: HashMap[K, V1], level: Int, merger: Merger[K, V1]): HashMap[K, V1] = {
       // this can be made more efficient by passing the entire ListMap at once
       var m = that
-      for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger)
+      for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger.invert)
       m
     }
 
