@@ -108,10 +108,14 @@ trait ContextTrees { self: Global =>
    */
   def addContext(contexts: Contexts, context: Context): Unit = {
     val cpos = context.tree.pos
-    if (cpos.isTransparent)
-      for (t <- context.tree.children flatMap solidDescendants)
-        addContext(contexts, context, t.pos)
-    else
+    if (cpos.isTransparent) {
+      val traverser = new ChildSolidDescendantsCollector() {
+        override def traverseSolidChild(t: Tree): Unit = {
+          addContext(contexts, context, t.pos)
+        }
+      }
+      traverser.apply(context.tree)
+    } else
       addContext(contexts, context, cpos)
   }
 
