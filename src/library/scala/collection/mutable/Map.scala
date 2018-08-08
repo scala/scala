@@ -55,8 +55,11 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C]
     with Cloneable[C]
+    with Builder[(K, V), C]
     with Growable[(K, V)]
     with Shrinkable[K] {
+
+  def result(): C = coll
 
   @deprecated("Use - or remove on an immutable Map", "2.13.0")
   /* final */ def - (key: K): C = clone() -= key
