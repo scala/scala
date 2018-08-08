@@ -389,6 +389,12 @@ class UsingTest {
     val npe = Using(null: AutoCloseable)(_ => "test").failed.get
     assertThrowableClass[NullPointerException](npe)
   }
+
+  @Test
+  def safeUsingCatchesOpeningException(): Unit = {
+    val ex = Using({ throw new RuntimeException }: AutoCloseable)(_ => "test").failed.get
+    assertThrowableClass[RuntimeException](ex)
+  }
 }
 
 object UsingTest {
