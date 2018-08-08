@@ -1106,8 +1106,8 @@ trait Implicits {
       // the pt for views can have embedded unification type variables, BoundedWildcardTypes or
       // Nothings which can't be solved for. Rather than attempt to patch things up later we
       // just skip those cases altogether.
-      lazy val wildPtIsInstantiable =
-        !wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
+      lazy val wildPtNotInstantiable =
+        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
 
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
@@ -1124,7 +1124,7 @@ trait Implicits {
 
           val savedInfos = undetParams.map(_.info)
           val typedFirstPending = try {
-            if(!wildPtIsInstantiable || matchesPtInst(firstPending))
+            if(wildPtNotInstantiable || matchesPtInst(firstPending))
               typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
             else SearchFailure
           } finally {
