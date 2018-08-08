@@ -43,7 +43,8 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def excl(elem: A): C
 
   /** Alias for `excl` */
-  /* @`inline` final */ override def - (elem: A): C = excl(elem)
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /*@`inline` final*/ override def - (elem: A): C = excl(elem)
 
   override def concat(that: collection.Iterable[A]): C = {
     var result: C = coll

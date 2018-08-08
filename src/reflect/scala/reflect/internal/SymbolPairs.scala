@@ -35,7 +35,7 @@ abstract class SymbolPairs {
    *  when viewed from IterableClass.
    */
   def sameInBaseClass(baseClass: Symbol)(tp1: Type, tp2: Type) =
-    (tp1 baseType baseClass) =:= (tp2 baseType baseClass)
+    tp1.baseType(baseClass).typeSymbol == tp2.baseType(baseClass).typeSymbol
 
   final case class SymbolPair(base: Symbol, low: Symbol, high: Symbol) {
     private[this] val self  = base.thisType
@@ -125,7 +125,7 @@ abstract class SymbolPairs {
      *     i = index(p)
      *     j = index(b)
      *     p isSubClass b
-     *     p.baseType(b) == self.baseType(b)
+     *     p.baseType(b).typeSymbol == self.baseType(b).typeSymbol
      */
     private val subParents = new Array[BitSet](size)
 
