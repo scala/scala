@@ -11,7 +11,7 @@ package <empty>{<empty>.type} {
         case 0{Int(0)} => a{A}
         case 1{Int(1)} => b{A with C}
         case _{Int} => throw new MatchError{MatchError}{(obj: Any)MatchError}(x1{Int}){MatchError}{Nothing}
-      }{Any}
+      }{A}
     }{A}
   }
 }
