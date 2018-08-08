@@ -5,7 +5,7 @@ class D extends C
 class E extends D
 
 class Inv[T](override val toString: String)
-class Con[-T](override val toString: String)
+class Contra[-T](override val toString: String)
 class Cov[+T](override val toString: String)
 
 object InvTest {
@@ -15,10 +15,10 @@ object InvTest {
   implicit val d : Inv[D] = new Inv[D]("Inv[D]")
   implicit val e : Inv[E] = new Inv[E]("Inv[E]")
 }
-object ConTest {
-  implicit val a : Con[A] = new Con[A]("Con[A]")
-  implicit val c : Con[C] = new Con[C]("Con[C]")
-  implicit val e : Con[E] = new Con[E]("Con[E]")
+object ContraTest {
+  implicit val a : Contra[A] = new Contra[A]("Contra[A]")
+  implicit val c : Contra[C] = new Contra[C]("Contra[C]")
+  implicit val e : Contra[E] = new Contra[E]("Contra[E]")
 }
 object CovTest {
   implicit val a : Cov[A] = new Cov[A]("Cov[A]")
@@ -38,13 +38,13 @@ object Test {
     ) mkString " ")
   }
   def f1(): Unit = {
-    import ConTest._
+    import ContraTest._
     println(List(
-      implicitly[Con[A]],
-      implicitly[Con[B]],
-      implicitly[Con[C]],
-      implicitly[Con[D]],
-      implicitly[Con[E]]
+      implicitly[Contra[A]],
+      implicitly[Contra[B]],
+      implicitly[Contra[C]],
+      implicitly[Contra[D]],
+      implicitly[Contra[E]]
     ) mkString " ")
   }
   def f2(): Unit = {
@@ -70,13 +70,13 @@ object Test {
 Previously:
 
 Inv[A] Inv[B] Inv[C] Inv[D] Inv[E]
-Con[A] Con[A] Con[A] Con[A] Con[A]
+Contra[A] Contra[A] Contra[A] Contra[A] Contra[A]
 Cov[E] Cov[E] Cov[E] Cov[E] Cov[E]
 
 Currently (and in Dotty):
 
 Inv[A] Inv[B] Inv[C] Inv[D] Inv[E]
-Con[A] Con[A] Con[C] Con[C] Con[E]
+Contra[A] Contra[A] Contra[C] Contra[C] Contra[E]
 Cov[E] Cov[E] Cov[E] Cov[E] Cov[E]
 
 Note that @paulp thinks that f2 should produce,
