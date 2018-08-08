@@ -5,11 +5,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.control.{ControlThrowable, NonFatal}
 
 /** A utility for performing automatic resource management. It can be used to perform an
-  * operation using resources, after which it will close the resources, in reverse order
-  * of their creation. The resource opening, operation, and resource closing are wrapped
+  * operation using resources, after which it will release the resources, in reverse order
+  * of their creation. The resource opening, operation, and resource releasing are wrapped
   * in a `Try`.
   *
-  * If more than one exception is thrown by the operation and closing resources,
+  * If more than one exception is thrown by the operation and releasing resources,
   * the exception thrown ''first'' is returned within the `Try`, with the other exceptions
   * [[java.lang.Throwable.addSuppressed(Throwable) added as suppressed exceptions]]
   * to the one thrown first. This is the case ''unless'' a later exception is
@@ -39,10 +39,10 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * }
   * }}}
   */
-final class Using[R](resource: => R) {
+final class Using[R] private(resource: => R) {
   private[this] val used = new AtomicBoolean(false)
 
-  /** Performs an operation using a resource, and then closes the resource,
+  /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception.
     *
     * @param f the operation to perform
@@ -50,12 +50,12 @@ final class Using[R](resource: => R) {
     * @tparam A the return type of the operation
     * @throws java.lang.IllegalStateException if the resource has already been used
     * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by closing the resource
+    *         an exception if one was thrown by the operation or by releasing the resource
     */
   @throws[IllegalStateException]("if the resource has already been used")
   @inline def apply[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = map(f)
 
-  /** Performs an operation using a resource, and then closes the resource,
+  /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception.
     *
     * @param f the operation to perform
@@ -63,13 +63,13 @@ final class Using[R](resource: => R) {
     * @tparam A the return type of the operation
     * @throws java.lang.IllegalStateException if the resource has already been used
     * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by closing the resource
+    *         an exception if one was thrown by the operation or by releasing the resource
     */
   @throws[IllegalStateException]("if the resource has already been used")
   def map[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = Try { useWith(f) }
 
   /** Performs an operation which returns a [[scala.util.Try `Try`]] using a resource,
-    * and then closes the resource, even if the operation throws an exception.
+    * and then releases the resource, even if the operation throws an exception.
     *
     * @param f the `Try`-returning operation to perform
     * @param r an implicit [[Using.Resource]]
@@ -77,12 +77,12 @@ final class Using[R](resource: => R) {
     * @throws java.lang.IllegalStateException if the resource has already been used
     * @return the result of the inner operation, or a [[scala.util.Try `Try`]]
     *         containing an exception if one was thrown by the operation or by
-    *         closing the resource
+    *         releasing the resource
     */
   @throws[IllegalStateException]("if the resource has already been used")
   def flatMap[A](f: R => Try[A])(implicit r: Using.Resource[R]): Try[A] =
     map {
-      r => f(r).get // otherwise inner Failure will be lost on exceptional close
+      r => f(r).get // otherwise inner Failure will be lost on exceptional release
     }
 
   @inline private[this] def useWith[A](f: R => A)(implicit r: Using.Resource[R]): A =
@@ -92,7 +92,7 @@ final class Using[R](resource: => R) {
 
 /** @define recommendUsing                   It is highly recommended to use the `Using` construct,
   *                                          which safely wraps resource usage and management in a `Try`.
-  * @define multiResourceSuppressionBehavior If more than one exception is thrown by the operation and closing resources,
+  * @define multiResourceSuppressionBehavior If more than one exception is thrown by the operation and releasing resources,
   *                                          the exception thrown ''first'' is thrown, with the other exceptions
   *                                          [[java.lang.Throwable.addSuppressed(Throwable) added as suppressed exceptions]]
   *                                          to the one thrown first. This is the case ''unless'' a later exception is
@@ -110,19 +110,19 @@ object Using {
     */
   def apply[R](resource: => R): Using[R] = new Using(resource)
 
-  /** Performs an operation using a resource, and then closes the resource,
+  /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception. This method behaves similarly
     * to Java's try-with-resources.
     *
     * $recommendUsing
     *
-    * If both the operation and closing the resource throw exceptions, the one thrown
-    * when closing the resource is
+    * If both the operation and releasing the resource throw exceptions, the one thrown
+    * when releasing the resource is
     * [[java.lang.Throwable.addSuppressed(Throwable) added as a suppressed exception]]
-    * to the one thrown by the operation, ''unless'' the exception thrown when closing
+    * to the one thrown by the operation, ''unless'' the exception thrown when releasing
     * the resource is [[scala.util.control.NonFatal fatal]], and the one thrown by the
     * operation is not. In that case, the exception thrown by the operation is added
-    * as a suppressed exception to the one thrown when closing the resource. If an
+    * as a suppressed exception to the one thrown when releasing the resource. If an
     * exception is a [[scala.util.control.ControlThrowable ControlThrowable]], no
     * exception will be added to it as a suppressed exception.
     *
@@ -131,7 +131,7 @@ object Using {
     * @tparam R the type of the resource
     * @tparam A the return type of the operation
     * @return the result of the operation, if neither the operation nor
-    *         closing the resource throws
+    *         releasing the resource throws
     */
   def resource[R: Resource, A](resource: R)(body: R => A): A = {
     if (resource == null) throw new NullPointerException("null resource")
@@ -149,11 +149,11 @@ object Using {
         primary = t
         null.asInstanceOf[A] // compiler doesn't know `finally` will throw
     } finally {
-      if (primary eq null) implicitly[Resource[R]].close(resource)
+      if (primary eq null) implicitly[Resource[R]].release(resource)
       else {
         var toThrow = primary
         try {
-          implicitly[Resource[R]].close(resource)
+          implicitly[Resource[R]].release(resource)
         } catch {
           case other: Throwable =>
             if (NonFatal(primary) && !NonFatal(other)) {
@@ -171,7 +171,7 @@ object Using {
     }
   }
 
-  /** Performs an operation using two resources, and then closes the resources
+  /** Performs an operation using two resources, and then releases the resources
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
@@ -186,7 +186,7 @@ object Using {
     * @tparam R2 the type of the second resource
     * @tparam A  the return type of the operation
     * @return the result of the operation, if neither the operation nor
-    *         closing the resources throws
+    *         releasing the resources throws
     */
   def resources[R1: Resource, R2: Resource, A](
       resource1: R1,
@@ -199,7 +199,7 @@ object Using {
       }
     }
 
-  /** Performs an operation using three resources, and then closes the resources
+  /** Performs an operation using three resources, and then releases the resources
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
@@ -216,7 +216,7 @@ object Using {
     * @tparam R3 the type of the third resource
     * @tparam A  the return type of the operation
     * @return the result of the operation, if neither the operation nor
-    *         closing the resources throws
+    *         releasing the resources throws
     */
   def resources[R1: Resource, R2: Resource, R3: Resource, A](
       resource1: R1,
@@ -232,7 +232,7 @@ object Using {
       }
     }
 
-  /** Performs an operation using four resources, and then closes the resources
+  /** Performs an operation using four resources, and then releases the resources
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
@@ -251,7 +251,7 @@ object Using {
     * @tparam R4 the type of the fourth resource
     * @tparam A  the return type of the operation
     * @return the result of the operation, if neither the operation nor
-    *         closing the resources throws
+    *         releasing the resources throws
     */
   def resources[R1: Resource, R2: Resource, R3: Resource, R4: Resource, A](
       resource1: R1,
@@ -270,12 +270,12 @@ object Using {
       }
     }
 
-  /** A typeclass describing a resource which can be closed.
+  /** A typeclass describing a resource which can be released.
     *
     * @tparam R the type of the resource
     */
   trait Resource[R] {
-    def close(resource: R): Unit
+    def release(resource: R): Unit
   }
 
   object Resource {
