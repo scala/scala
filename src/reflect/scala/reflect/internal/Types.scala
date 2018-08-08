@@ -4669,7 +4669,7 @@ trait Types
         case tv@TypeVar(_, constr) =>
           if (tv.instValid) stripType(constr.inst)
           else if (tv.untouchable) stripped += tv
-          else abort("trying to do lub/glb of typevar " + tv)
+          else {} // ignore when this happens (neg/t10514.scala) -- don't abort("trying to do lub/glb of typevar " + tv)
         case tp => stripped += tp
       }
       ts foreach stripType
