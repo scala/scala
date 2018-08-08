@@ -38,7 +38,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   import definitions._
   import CODE._
 
-  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement, Product_iterator, Product_canEqual)
+  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement, Product_productElementName, Product_iterator, Product_canEqual)
   private lazy val valueSymbols      = List(Any_hashCode, Any_equals)
   private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
   private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
@@ -117,11 +117,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       )
     }
 
-    /* Common code for productElement and (currently disabled) productElementName */
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
-    // def productElementNameMethod = perElementMethod(nme.productElementName, StringTpe)(x => LIT(x.name.toString))
+    def productElementNameMethod = {
+      val constrParamAccessors = clazz.constrParamAccessors
+      createSwitchMethod(nme.productElementName, constrParamAccessors.indices, StringTpe)(idx => LIT(constrParamAccessors(idx).name.dropLocal.decode))
+    }
 
     var syntheticCanEqual = false
 
@@ -248,14 +250,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     // methods for both classes and objects
     def productMethods = {
       List(
-        Product_productPrefix   -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
-        Product_productArity    -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement  -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
-        Product_iterator        -> (() => productIteratorMethod),
-        Product_canEqual        -> (() => canEqualMethod)
-        // This is disabled pending a reimplementation which doesn't add any
-        // weight to case classes (i.e. inspects the bytecode.)
-        // Product_productElementName  -> (() => productElementNameMethod(accessors)),
+        Product_productPrefix       -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
+        Product_productArity        -> (() => constantNullary(nme.productArity, arity)),
+        Product_productElement      -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
+        Product_productElementName  -> (() => productElementNameMethod),
+        Product_iterator            -> (() => productIteratorMethod),
+        Product_canEqual            -> (() => canEqualMethod)
       )
     }
 

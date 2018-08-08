@@ -771,6 +771,7 @@ trait StdNames {
     val prefix : NameType              = "prefix"
     val productArity: NameType         = "productArity"
     val productElement: NameType       = "productElement"
+    val productElementName: NameType   = "productElementName"
     val productIterator: NameType      = "productIterator"
     val productPrefix: NameType        = "productPrefix"
     val raw_ : NameType                = "raw"
