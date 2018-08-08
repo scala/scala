@@ -21,10 +21,12 @@ import scala.language.implicitConversions
  *  @define collectExample
  *  @define willNotTerminateInf
  */
+@deprecated("Use scala.collection.LazyZip2.", "2.13.0")
 trait ZippedIterable2[+El1, +El2] extends Any {
   def iterator: Iterator[(El1, El2)]
   def isEmpty: Boolean
 }
+@deprecated("Use scala.collection.LazyZip2.", "2.13.0")
 object ZippedIterable2 {
   implicit def zippedIterable2ToIterable[El1, El2](zz: ZippedIterable2[El1, El2]): Iterable[(El1, El2)] = {
     new scala.collection.AbstractIterable[(El1, El2)] {
@@ -34,6 +36,7 @@ object ZippedIterable2 {
   }
 }
 
+@deprecated("Use scala.collection.LazyZip2.", "2.13.0")
 final class Tuple2Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2]](private val colls: (It1, It2)) extends AnyVal with ZippedIterable2[El1, El2] {
   private def coll1 = colls._1
   private def coll2 = colls._2
@@ -118,6 +121,7 @@ final class Tuple2Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2]](p
   override def toString = s"($coll1, $coll2).zipped"
 }
 
+@deprecated("Use scala.collection.LazyZip2.", "2.13.0")
 object Tuple2Zipped {
   final class Ops[T1, T2](private val x: (T1, T2)) extends AnyVal {
     def invert[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], That]

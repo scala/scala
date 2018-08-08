@@ -25,7 +25,7 @@ class ArraySortingTest {
     java.util.Arrays.sort(test)
     scala.util.Sorting.quickSort(cant)(CanOrder)
     assert( test(6) == 1 )
-    assert( (test,cant).zipped.forall(_ == _.i) )
+    assert( test.toIterable.lazyZip(cant).forall(_ == _.i) )
   }
 
   @Test

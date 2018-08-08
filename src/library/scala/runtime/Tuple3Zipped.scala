@@ -19,10 +19,12 @@ import scala.language.implicitConversions
  *  @define collectExample
  *  @define willNotTerminateInf
  */
+@deprecated("Use scala.collection.LazyZip3.", "2.13.0")
 trait ZippedIterable3[+El1, +El2, +El3] extends Any {
   def iterator: Iterator[(El1, El2, El3)]
   def isEmpty: Boolean
 }
+@deprecated("Use scala.collection.LazyZip3.", "2.13.0")
 object ZippedIterable3 {
   implicit def zippedIterable3ToIterable[El1, El2, El3](zz: ZippedIterable3[El1, El2, El3]): Iterable[(El1, El2, El3)] = {
     new scala.collection.AbstractIterable[(El1, El2, El3)] {
@@ -32,6 +34,7 @@ object ZippedIterable3 {
   }
 }
 
+@deprecated("Use scala.collection.LazyZip3.", "2.13.0")
 final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], El3, It3 <: Iterable[El3]](private val colls: (It1, It2, It3))
         extends AnyVal with ZippedIterable3[El1, El2, El3] {
 
@@ -129,6 +132,7 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
   override def toString = s"($coll1, $coll2, $coll3).zipped"
 }
 
+@deprecated("Use scala.collection.LazyZip3.", "2.13.0")
 object Tuple3Zipped {
   final class Ops[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
     def invert[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], El3, It3 <: Iterable[El3], That]

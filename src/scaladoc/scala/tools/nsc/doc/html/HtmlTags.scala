@@ -32,7 +32,7 @@ object HtmlTags {
     def attribValues = productIterator.toList
 
     def attribs: Seq[(String, String)] = {
-      (attribNames, attribValues).zipped.collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toSeq
+      attribNames.lazyZip(attribValues).collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toSeq
     }
   }
 

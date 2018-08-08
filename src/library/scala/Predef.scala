@@ -429,7 +429,9 @@ object Predef extends LowPriorityImplicits {
 
   // views --------------------------------------------------------------
 
+  @deprecated("Use xs.lazyZip(ys).", "2.13.0")
   implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2)): runtime.Tuple2Zipped.Ops[T1, T2]             = new runtime.Tuple2Zipped.Ops(x)
+  @deprecated("Use xs.lazyZip(ys).lazyZip(zs).", "2.13.0")
   implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3)): runtime.Tuple3Zipped.Ops[T1, T2, T3] = new runtime.Tuple3Zipped.Ops(x)
 
   // Not specialized anymore since 2.13 but we still need separate methods
