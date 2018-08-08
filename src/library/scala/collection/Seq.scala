@@ -105,7 +105,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *    @return a new $coll consisting of `value` followed
     *            by all elements of this $coll.
     */
-  def prepended[B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, this))
+  def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new View.Prepended(elem, this))
 
   /** Alias for `prepended`.
     *
@@ -135,7 +135,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return a new $coll consisting of
     *         all elements of this $coll followed by `value`.
     */
-  def appended[B >: A](elem: B): CC[B] = fromIterable(new View.Appended(this, elem))
+  def appended[B >: A](elem: B): CC[B] = iterableFactory.from(new View.Appended(this, elem))
 
   /** Alias for `appended`
     *
@@ -156,10 +156,13 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
-  def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, this))
+  def prependedAll[B >: A](prefix: IterableOnce[B]): CC[B] = iterableFactory.from(prefix match {
+    case prefix: Iterable[B] => new View.Concat(prefix, this)
+    case _ => prefix.iterator ++ iterator
+  })
 
   /** Alias for `prependedAll` */
-  @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependedAll(prefix)
+  @`inline` final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependedAll(prefix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -170,16 +173,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = super.concat(suffix)
+  def appendedAll[B >: A](suffix: IterableOnce[B]): CC[B] = super.concat(suffix)
 
   /** Alias for `appendedAll` */
-  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  @`inline` final def :++ [B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
   // overrides of this method
   // TODO https://github.com/scala/bug/issues/10853 Uncomment final
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  @`inline` /*final*/ override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  @`inline` /*final*/ override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -207,7 +210,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
     */
-  def distinctBy[B](f: A => B): C = fromSpecificIterable(new View.DistinctBy(this, f))
+  def distinctBy[B](f: A => B): C = fromSpecific(new View.DistinctBy(this, f))
 
   /** Returns new $coll with elements in reversed order.
    *
@@ -215,7 +218,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *
    *  @return A new $coll with all elements of this $coll in reversed order.
    */
-  def reverse: C = fromSpecificIterable(reversed)
+  def reverse: C = fromSpecific(reversed)
 
   /** An iterator yielding elements in reversed order.
    *
@@ -281,7 +284,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
-  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(new View.PadTo(this, len, elem))
+  def padTo[B >: A](len: Int, elem: B): CC[B] = iterableFactory.from(new View.PadTo(this, len, elem))
 
   /** Computes length of longest segment whose elements all satisfy some predicate.
     *
@@ -424,7 +427,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
 
   @deprecated("Use .reverseIterator.map(f).to(...) instead of .reverseMap(f)", "2.13.0")
-  def reverseMap[B](f: A => B): CC[B] = fromIterable(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
+  def reverseMap[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
 
   /** Iterates over distinct permutations.
     *
@@ -736,7 +739,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
-    //TODO diff and intersect could have efficient lazy implementations if fromSpecificIterable accepted an IterableOnce, i.e. it guaranteed doing only a single traversal
+    //TODO make diff and intersect use efficient lazy implementations now that fromSpecific accepts an IterableOnce
     val b = newSpecificBuilder
     for (x <- this) {
       val ox = occ(x)  // Avoid multiple map lookups
@@ -785,7 +788,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                   by all the elements of `other`.
     */
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
-    fromIterable(new View.Patched(this, from, other, replaced))
+    iterableFactory.from(new View.Patched(this, from, other, replaced))
 
   /** A copy of this $coll with one single replaced element.
     *  @param  index  the position of the replacement
@@ -794,7 +797,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
-  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
+  def updated[B >: A](index: Int, elem: B): CC[B] = iterableFactory.from(new View.Updated(this, index, elem))
 
   private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }

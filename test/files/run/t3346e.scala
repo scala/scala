@@ -36,13 +36,13 @@ class QuickSort[Coll](a: Coll) {
 class FilterMap[Repr](a: Repr) {
   def filterMap[A, B, That](f: A => Option[B])(implicit ev0: Repr => IterableOps[A, Iterable, _],
                                                bf: BuildFrom[Repr, B, That]): That = {
-    bf.fromSpecificIterable(a)(a.flatMap(e => f(e).toSeq))
+    bf.fromSpecific(a)(a.flatMap(e => f(e).toSeq))
   }
 }
 
 class FilterMapFixed[A, Repr <% IterableOps[A, Iterable, _]](a: Repr) {
   def filterMap2[B, That](f: A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That = {
-    bf.fromSpecificIterable(a)(a.flatMap(e => f(e).toSeq))
+    bf.fromSpecific(a)(a.flatMap(e => f(e).toSeq))
   }
 }
 

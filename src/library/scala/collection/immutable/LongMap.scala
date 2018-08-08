@@ -91,7 +91,7 @@ object LongMap {
 
   implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (Long, V), LongMap[V]]]
   private[this] object ToBuildFrom extends BuildFrom[Any, (Long, AnyRef), LongMap[AnyRef]] {
-    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, AnyRef)]) = LongMap.from(it)
+    def fromSpecific(from: Any)(it: IterableOnce[(Long, AnyRef)]) = LongMap.from(it)
     def newBuilder(from: Any) = LongMap.newBuilder[AnyRef]
   }
 
@@ -180,7 +180,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   with MapOps[Long, T, Map, LongMap[T]]
   with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]] {
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, T)] @uncheckedVariance): LongMap[T] = {
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder
     b.sizeHint(coll)
@@ -473,7 +473,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
 
   def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
-  override def concat[V1 >: T](that: scala.collection.Iterable[(Long, V1)]): LongMap[V1] =
+  override def concat[V1 >: T](that: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] =
     super.concat(that).asInstanceOf[LongMap[V1]] // Already has corect type but not declared as such
 
   override def ++ [V1 >: T](that: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(that)

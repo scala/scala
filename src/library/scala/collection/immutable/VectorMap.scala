@@ -2,11 +2,8 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.annotation.unchecked.{uncheckedVariance => uV}
-import scala.collection.immutable.Map.useBaseline
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
   *

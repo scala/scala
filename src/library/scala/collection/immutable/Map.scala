@@ -108,7 +108,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def transform[W](f: (K, V) => W): CC[K, W] = map { case (k, v) => (k, f(k, v)) }
 
-  override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
+  override def concat [V1 >: V](that: collection.IterableOnce[(K, V1)]): CC[K, V1] = {
     var result: CC[K, V1] = coll
     val it = that.iterator
     while (it.hasNext) result = result + it.next()
@@ -154,7 +154,7 @@ object Map extends MapFactory[Map] {
 
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
-    override def concat [V2 >: V](xs: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+    override def concat [V2 >: V](xs: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
       new WithDefault(underlying.concat(xs), defaultValue)
 
     def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
@@ -164,7 +164,7 @@ object Map extends MapFactory[Map] {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected def fromSpecificIterable(coll: collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
+    override protected def fromSpecific(coll: collection.IterableOnce[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =

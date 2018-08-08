@@ -13,7 +13,7 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
-  override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
+  override protected def fromSpecific(coll: IterableOnce[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
   override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
 
   /**
@@ -80,7 +80,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def view: MapView[K, V] = new MapView.Id(this)
 
   /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
     * and `newSpecificBuilder` operations.
     *
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
@@ -144,7 +144,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class KeySet extends AbstractSet[K] with GenKeySet {
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
+    def diff(that: Set[K]): Set[K] = fromSpecific(view.filterNot(that))
   }
 
   /** A generic trait that is reused by keyset implementations */
@@ -278,7 +278,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(new View.Concat(toIterable, suffix))
+  def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): CC[K, V2] = mapFactory.from(suffix match {
+    case it: Iterable[(K, V2)] => new View.Concat(toIterable, it)
+    case _ => iterator.concat(suffix.iterator)
+  })
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
@@ -297,7 +300,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
     lazy val keysSet = keys.toSet
-    fromSpecificIterable(this.view.filterKeys(k => !keysSet.contains(k)))
+    fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 }
 

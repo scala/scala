@@ -94,7 +94,7 @@ object IntMap {
 
   implicit def toBuildFrom[V](factory: IntMap.type): BuildFrom[Any, (Int, V), IntMap[V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (Int, V), IntMap[V]]]
   private[this] object ToBuildFrom extends BuildFrom[Any, (Int, AnyRef), IntMap[AnyRef]] {
-    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Int, AnyRef)]) = IntMap.from(it)
+    def fromSpecific(from: Any)(it: IterableOnce[(Int, AnyRef)]) = IntMap.from(it)
     def newBuilder(from: Any) = IntMap.newBuilder[AnyRef]
   }
 
@@ -184,9 +184,9 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   with MapOps[Int, T, Map, IntMap[T]]
   with StrictOptimizedIterableOps[(Int, T), Iterable, IntMap[T]] {
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Int, T) @uncheckedVariance]): IntMap[T] =
-    intMapFromIterable[T](coll)
-  protected def intMapFromIterable[V2](coll: scala.collection.Iterable[(Int, V2)]): IntMap[V2] = {
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[(Int, T) @uncheckedVariance]): IntMap[T] =
+    intMapFrom[T](coll)
+  protected def intMapFrom[V2](coll: scala.collection.IterableOnce[(Int, V2)]): IntMap[V2] = {
     val b = IntMap.newBuilder[V2]
     b.sizeHint(coll)
     b.addAll(coll)
@@ -318,11 +318,11 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil => IntMap.Tip(key, value)
   }
 
-  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFromIterable(new View.Map(toIterable, f))
+  def map[V2](f: ((Int, T)) => (Int, V2)): IntMap[V2] = intMapFrom(new View.Map(toIterable, f))
 
-  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFromIterable(new View.FlatMap(toIterable, f))
+  def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFrom(new View.FlatMap(toIterable, f))
 
-  override def concat[V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] =
+  override def concat[V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] =
     super.concat(that).asInstanceOf[IntMap[V1]] // Already has corect type but not declared as such
 
   override def ++ [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] = concat(that)

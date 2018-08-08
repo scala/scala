@@ -4,7 +4,7 @@ package collection.immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
-import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, View}
+import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory}
 import scala.collection.IterableOnce
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
@@ -39,7 +39,7 @@ sealed abstract class ArraySeq[+A]
     * array of a supertype or subtype of the element type. */
   def unsafeArray: Array[_]
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
 
   override protected def newSpecificBuilder: Builder[A, ArraySeq[A]] @uncheckedVariance = ArraySeq.newBuilder[A](elemTag.asInstanceOf[ClassTag[A]])
 
@@ -69,7 +69,7 @@ sealed abstract class ArraySeq[+A]
     ArraySeq.unsafeWrapArray(dest).asInstanceOf[ArraySeq[B]]
   }
 
-  override def appendedAll[B >: A](suffix: collection.Iterable[B]): ArraySeq[B] = {
+  override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): ArraySeq[B] = {
     val b = ArrayBuilder.make[Any]
     val k = suffix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
@@ -78,7 +78,7 @@ sealed abstract class ArraySeq[+A]
     ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
   }
 
-  override def prependedAll[B >: A](prefix: collection.Iterable[B]): ArraySeq[B] = {
+  override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): ArraySeq[B] = {
     val b = ArrayBuilder.make[Any]
     val k = prefix.knownSize
     if(k >= 0) b.sizeHint(k + unsafeArray.length)
@@ -88,14 +88,14 @@ sealed abstract class ArraySeq[+A]
     ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
   }
 
-  override def zip[B](that: collection.Iterable[B]): ArraySeq[(A, B)] =
+  override def zip[B](that: collection.IterableOnce[B]): ArraySeq[(A, B)] =
     that match {
       case bs: ArraySeq[B] =>
         ArraySeq.tabulate(length min bs.length) { i =>
           (apply(i), bs(i))
         }
       case _ =>
-        fromIterable(new View.Zip(toIterable, that))
+        strictOptimizedZip[B, ArraySeq[(A, B)]](that, iterableFactory.newBuilder)
     }
 
   override def take(n: Int): ArraySeq[A] =

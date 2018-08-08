@@ -8,7 +8,7 @@ it has 6 unimplemented members.
 
   // Members declared in scala.collection.IterableOps
   protected def coll: List[String] = ???
-  protected def fromSpecificIterable(coll: Iterable[String]): List[String] = ???
+  protected def fromSpecific(coll: scala.collection.IterableOnce[String]): List[String] = ???
   def iterableFactory: scala.collection.IterableFactory[[X]List[X]] = ???
   protected def newSpecificBuilder: scala.collection.mutable.Builder[String,List[String]] = ???
   def toIterable: Iterable[String] = ???

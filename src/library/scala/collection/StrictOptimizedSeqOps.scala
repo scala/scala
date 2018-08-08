@@ -42,10 +42,10 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def appendedAll[B >: A](suffix: Iterable[B]): CC[B] =
+  override def appendedAll[B >: A](suffix: IterableOnce[B]): CC[B] =
     strictOptimizedConcat(suffix, iterableFactory.newBuilder)
 
-  override def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = {
+  override def prependedAll[B >: A](prefix: IterableOnce[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     b ++= prefix
     b ++= this

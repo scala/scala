@@ -10,7 +10,7 @@ object Test extends App {
   def testIterableOps = {
     class FilterMapImpl[A, Repr](r: Repr, it: IterableOps[A, Iterable, _]) {
       final def filterMap[B, That](f: A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That =
-        bf.fromSpecificIterable(r)(it.flatMap(f(_).toSeq))
+        bf.fromSpecific(r)(it.flatMap(f(_).toSeq))
     }
     implicit def filterMap[Repr, A](r: Repr)(implicit fr: IsIterableLike[Repr]): FilterMapImpl[fr.A, Repr] =
       new FilterMapImpl[fr.A, Repr](r, fr.conversion(r))

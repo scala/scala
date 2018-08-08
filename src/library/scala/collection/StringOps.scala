@@ -235,7 +235,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return       a new collection which contains all chars
     *                of this String followed by all elements of `suffix`.
     */
-  def concat[B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] = {
+  def concat[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = suffix.knownSize
     b.sizeHint(s.length + (if(k >= 0) k else 16))
@@ -344,7 +344,7 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def +: (c: Char): String = prepended(c)
 
   /** A copy of the String with all elements from a collection prepended */
-  def prependedAll[B >: Char](prefix: Iterable[B]): immutable.IndexedSeq[B] = {
+  def prependedAll[B >: Char](prefix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = prefix.knownSize
     b.sizeHint(s.length + (if(k >= 0) k else 16))
@@ -354,7 +354,7 @@ final class StringOps(private val s: String) extends AnyVal {
   }
 
   /** Alias for `prependedAll` */
-  @`inline` def ++: [B >: Char] (prefix: Iterable[B]): immutable.IndexedSeq[B] = prependedAll(prefix)
+  @`inline` def ++: [B >: Char] (prefix: IterableOnce[B]): immutable.IndexedSeq[B] = prependedAll(prefix)
 
   /** A copy of the String with another String prepended */
   def prependedAll(prefix: String): String = prefix + s
@@ -382,11 +382,11 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def :+ (c: Char): String = appended(c)
 
   /** A copy of the String with all elements from a collection appended */
-  @`inline` def appendedAll[B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] =
+  @`inline` def appendedAll[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
   /** Alias for `appendedAll` */
-  @`inline` def :++ [B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] =
+  @`inline` def :++ [B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
   /** A copy of the String with another String appended */

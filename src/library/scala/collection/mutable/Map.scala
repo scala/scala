@@ -194,12 +194,12 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
 
-    override def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): WithDefault[K, V2] =
+    override def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
       underlying.concat(suffix).withDefault(defaultValue)
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected def fromSpecific(coll: scala.collection.IterableOnce[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] =

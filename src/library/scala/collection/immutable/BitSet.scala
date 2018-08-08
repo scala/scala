@@ -65,7 +65,7 @@ sealed abstract class BitSet
     super[StrictOptimizedSortedSetOps].collect(pf)
 
   // necessary for disambiguation
-  override def zip[B](that: scala.Iterable[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
+  override def zip[B](that: scala.IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
     super.zip(that)
 
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)

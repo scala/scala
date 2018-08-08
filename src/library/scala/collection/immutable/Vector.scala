@@ -164,27 +164,31 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendedAll[B >: A](suffix: collection.Iterable[B]): Vector[B] = {
+  override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): Vector[B] = {
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
     if (suffix.isEmpty) this
     else {
-      suffix.size match {
-        // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
-        case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
-          var v: Vector[B] = this
-          for (x <- suffix) v = v :+ x
-          v
-        case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
-          var v = suffix.asInstanceOf[Vector[B]]
-          val ri = this.reverseIterator
-          while (ri.hasNext) v = ri.next() +: v
-          v
+      suffix match {
+        case suffix: collection.Iterable[B] =>
+          suffix.size match {
+            // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+            case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
+              var v: Vector[B] = this
+              for (x <- suffix) v = v :+ x
+              v
+            case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
+              var v = suffix.asInstanceOf[Vector[B]]
+              val ri = this.reverseIterator
+              while (ri.hasNext) v = ri.next() +: v
+              v
+            case _ => super.appendedAll(suffix)
+          }
         case _ => super.appendedAll(suffix)
       }
     }
   }
 
-  override def prependedAll[B >: A](prefix: collection.Iterable[B]): Vector[B] = {
+  override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): Vector[B] = {
     // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
     // has a small number of elements compared to the other, then we add them using `:+` or `+:` in a loop
     import Vector.{Log2ConcatFaster, TinyAppendFaster}
