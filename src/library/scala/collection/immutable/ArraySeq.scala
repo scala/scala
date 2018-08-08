@@ -9,7 +9,7 @@ import scala.collection.IterableOnce
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.hashing.MurmurHash3
 import scala.reflect.ClassTag
-import scala.runtime.ScalaRunTime
+import scala.runtime.{BoxesRunTime, ScalaRunTime}
 import java.util.Arrays
 
 /**
@@ -229,8 +229,11 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): T = unsafeArray(i)
     override def hashCode = MurmurHash3.arrayHash(unsafeArray, MurmurHash3.seqSeed)
-    override def equals(that: Any) = that match {
-      case that: ofRef[_] => Arrays.equals(unsafeArray.asInstanceOf[Array[AnyRef]], that.unsafeArray.asInstanceOf[Array[AnyRef]])
+    override def equals(that: Any): Boolean = that match {
+      case that: ofRef[_] =>
+        BoxesRunTime.arraysEquals(
+          this.unsafeArray.asInstanceOf[Array[AnyRef]],
+          that.unsafeArray.asInstanceOf[Array[AnyRef]])
       case _ => super.equals(that)
     }
   }
