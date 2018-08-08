@@ -6,3 +6,7 @@ class VaClass {
   @varargs def vt[T](a: Int, b: T*) = println(a + b.length)
   @varargs def vt1[T](a: Int, b: T*): T = b.head
 }
+object VaClass {
+  // scala/bug#11057
+  @varargs def vip(i: Int*) = i.head
+}

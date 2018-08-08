@@ -799,9 +799,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       // Before erasure * to exclude bridge methods. Excluding them by flag doesn't work, because then
       // the method from the base class that the bridge overrides is included (scala/bug#10812).
-      // * using `exitingPickler` (not `enteringErasure`) because erasure enters bridges in traversal,
+      // * Using `exitingUncurry` (not `enteringErasure`) because erasure enters bridges in traversal,
       //   not in the InfoTransform, so it actually modifies the type from the previous phase.
-      val members = exitingPickler(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
+      //   Uncurry adds java varargs, which need to be included in the mirror class.
+      val members = exitingUncurry(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
       for (m <- members) {
         val excl = m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
           { val o = m.owner; (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass) } ||
