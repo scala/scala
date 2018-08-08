@@ -77,7 +77,7 @@ trait Commands {
   def destroySut(sut: Sut): Unit
 
   /** The precondition for the initial state, when no commands yet have
-   *  run. This is used by ScalaCheck when command sequences are shrinked
+   *  run. This is used by ScalaCheck when command sequences are shrunk
    *  and the first state might differ from what is returned from
    *  [[genInitialState]]. */
   def initialPreCondition(state: State): Boolean

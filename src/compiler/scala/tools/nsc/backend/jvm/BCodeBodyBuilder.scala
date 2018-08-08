@@ -568,7 +568,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             }
           }
 
-          // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not jsut ALOAD_0)
+          // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not just ALOAD_0)
           genLoad(superQual)
           genLoadArguments(args, paramTKs(app))
           generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos, sup.tpe.typeSymbol)

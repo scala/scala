@@ -528,7 +528,7 @@ trait Solving extends Logic {
       *
       * See also [[https://en.wikipedia.org/wiki/DPLL_algorithm]].
       *
-      * This implementation uses a `List` to reify the seach stack, thus making
+      * This implementation uses a `List` to reify the search stack, thus making
       * it run in constant stack space. The stack is composed of pairs of
       * `(remaining clauses, variable assignments)`, and depth-first search
       * is achieved by using a stack rather than a queue.
