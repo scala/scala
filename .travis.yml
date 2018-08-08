@@ -2,7 +2,9 @@
 sudo: required
 
 language: scala
-jdk: openjdk8
+jdk:
+- openjdk8
+- openjdk10
 
 cache:
   directories:
