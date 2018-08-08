@@ -8,24 +8,6 @@
 **           ^
 */
 class S1() {
-  def foo[T <: this.type](x: T) = x
-  def f = foo[this.type](this)
+    def foo[T <: this.type](x: T) = x;
+    foo[this.type](this);
 }
-
-class S2() {
-  def foo[T <: this.type](x: T) = x
-  def f = foo(this)
-}
-/*
- *
-$ scalac -d /tmp test/files/pos/S1.scala 
-test/files/pos/S1.scala:17: error: inferred type arguments [S2] do not conform to method foo's type parameter bounds [T <: S2.this.type]
-  def f = foo(this)
-          ^
-test/files/pos/S1.scala:17: error: type mismatch;
- found   : S2
- required: T
-  def f = foo(this)
-              ^
-two errors found
- */
