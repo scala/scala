@@ -44,6 +44,10 @@ trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], 
     with MapOps[K, V, Map, C] {
 
   def unsorted: Map[K, V]
+
+  @deprecated("Use m.clone().addOne((k,v)) instead of m.updated(k, v)", "2.13.0")
+  override def updated[V1 >: V](key: K, value: V1): CC[K, V1] =
+    clone().asInstanceOf[CC[K, V1]].addOne((key, value))
 }
 
 @SerialVersionUID(3L)

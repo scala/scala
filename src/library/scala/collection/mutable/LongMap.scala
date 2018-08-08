@@ -452,12 +452,9 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
 
   override def ++ [V1 >: V](xs: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(xs)
 
-  @deprecated("Use LongMap.from(m).add(k,v) instead of m.updated(k, v)", "2.13.0")
-  def updated[V1 >: V](key: Long, value: V1): LongMap[V1] = {
-    val lm = clone().asInstanceOf[LongMap[V1]]
-    lm += (key, value)
-    lm
-  }
+  @deprecated("Use m.clone().addOne(k,v) instead of m.updated(k, v)", "2.13.0")
+  override def updated[V1 >: V](key: Long, value: V1): LongMap[V1] =
+    clone().asInstanceOf[LongMap[V1]].addOne(key, value)
 
   /** Applies a function to all keys of this map. */
   def foreachKey[A](f: Long => A): Unit = {
