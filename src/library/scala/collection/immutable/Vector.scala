@@ -144,7 +144,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   override def head: A = {
-    if (isEmpty) throw new UnsupportedOperationException("empty.head")
+    if (isEmpty) throw new NoSuchElementException("empty.head")
     apply(0)
   }
 
