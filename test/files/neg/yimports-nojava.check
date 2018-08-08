@@ -1,0 +1,7 @@
+yimports-nojava.scala:5: error: not found: type Integer
+  def g() = new Integer(42)
+                ^
+yimports-nojava.scala:6: error: not found: value Thread
+  def sleep() = Thread.sleep(42000L)
+                ^
+two errors found

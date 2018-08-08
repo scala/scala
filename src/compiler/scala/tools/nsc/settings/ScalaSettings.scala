@@ -15,6 +15,7 @@ import scala.language.existentials
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings
@@ -201,7 +202,30 @@ trait ScalaSettings extends AbsScalaSettings
   val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
+                       .withPostSetHook(bs => if (bs) imports.value = Nil)
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
+                       .withPostSetHook(bs => if (bs && !noimports) imports.value = "java.lang" :: "scala" :: Nil)
+  val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom root imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
+  sm"""|Specify a list of packages and objects to import from as "root" imports.
+       |Root imports form the root context in which all Scala source is evaluated.
+       |The names supplied to `-Yimports` must be fully-qualified.
+       |
+       |For example, the default scala.Predef results in an `import scala.Predef._`.
+       |Ordinary access and scoping rules apply. Root imports increase the scoping
+       |depth, so that later root imports shadow earlier ones. In addition,
+       |names bound by root imports have lowest binding precedence, so that they
+       |cannot induce ambiguities in user code, where definitions and imports
+       |always have a higher precedence. Root imports are imports of last resort.
+       |
+       |By convention, an explicit import from a root import object such as
+       |Predef disables that root import for the current source file. The import
+       |is disabled when the import expression is compiled, so, also by convention,
+       |the import should be placed early in source code order. The textual name
+       |in the import does not need to match the value of `-Yimports`; the import
+       |works in the usual way, subject to renames and name binding precedence.
+       |
+    """
+  ))
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")
   val XshowtreesCompact

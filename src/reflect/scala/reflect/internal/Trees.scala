@@ -1307,17 +1307,6 @@ trait Trees extends api.Trees {
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from Printers.
-  def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
-    case Ident(Id)                                          => true
-    case Select(Ident(nme.scala_), Id)                      => true
-    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
-    case _                                                  => false
-  }
-  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
-   */
-  def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
-
   // --- modifiers implementation ---------------------------------------
 
   /** @param privateWithin the qualifier for a private (a type name)
