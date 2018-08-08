@@ -134,6 +134,8 @@ object Using {
     *         closing the resource throws
     */
   def resource[R: Resource, A](resource: R)(body: R => A): A = {
+    if (resource == null) throw new NullPointerException("null resource")
+
     @inline def safeAddSuppressed(t: Throwable, suppressed: Throwable): Unit = {
       // don't `addSuppressed` to something which is a `ControlThrowable`
       if (!t.isInstanceOf[ControlThrowable]) t.addSuppressed(suppressed)

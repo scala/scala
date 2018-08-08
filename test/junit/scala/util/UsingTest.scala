@@ -375,6 +375,20 @@ class UsingTest {
     }
     assertEquals(res, scala.util.Success(3))
   }
+
+  /* misc */
+
+  @Test
+  def usingDisallowsNull(): Unit = {
+    val npe = catchThrowable(Using.resource(null: AutoCloseable)(_ => "test"))
+    assertThrowableClass[NullPointerException](npe)
+  }
+
+  @Test
+  def safeUsingDisallowsNull(): Unit = {
+    val npe = Using(null: AutoCloseable)(_ => "test").failed.get
+    assertThrowableClass[NullPointerException](npe)
+  }
 }
 
 object UsingTest {
@@ -426,17 +440,17 @@ object UsingTest {
   }
 
   object UseWrapped {
-    def apply(resource: => CustomResource, t: String => Throwable): Throwable =
+    def apply(resource: => BaseResource, t: String => Throwable): Throwable =
       Using(resource)(opThrowing(t)).failed.get
 
-    def catching(resource: => CustomResource, t: String => Throwable): Throwable =
+    def catching(resource: => BaseResource, t: String => Throwable): Throwable =
       catchThrowable(Using(resource)(opThrowing(t)))
   }
 
-  def use(resource: CustomResource, t: String => Throwable): Throwable =
+  def use(resource: BaseResource, t: String => Throwable): Throwable =
     catchThrowable(Using.resource(resource)(opThrowing(t)))
 
-  private def opThrowing(t: String => Throwable): CustomResource => Nothing =
+  private def opThrowing(t: String => Throwable): BaseResource => Nothing =
     r => {
       r.identity("test")
       throw t("exception using resource")
