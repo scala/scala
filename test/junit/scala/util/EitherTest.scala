@@ -1,6 +1,7 @@
 package scala.util
 
-import org.junit.{ Assert, Test }
+import org.junit.Assert._
+import org.junit.Test
 
 class EitherTest {
 
@@ -13,9 +14,34 @@ class EitherTest {
     val flatrl: Either[String, Int] = rl.flatten
     val flatrr: Either[String, Int] = rr.flatten
 
-    Assert.assertEquals(Left("pancake"), flatl)
-    Assert.assertEquals(Left("flounder"), flatrl)
-    Assert.assertEquals(Right(7), flatrr)
-    
+    assertEquals(Left("pancake"), flatl)
+    assertEquals(Left("flounder"), flatrl)
+    assertEquals(Right(7), flatrr)
+  }
+
+  @Test
+  def testLeftUp: Unit = {
+
+    def rightSumOrLeftEmpty(l: List[Int]) =
+      l.foldLeft(Left("empty").up[Int]) {
+        case (Left(_), i) => Right(i)
+        case (Right(s), i) => Right(s + i)
+      }
+
+    assertEquals(rightSumOrLeftEmpty(List(1, 2, 3)), Right(6))
+    assertEquals(rightSumOrLeftEmpty(Nil), Left("empty"))
+  }
+
+  @Test
+  def testRightUp: Unit = {
+
+    def leftSumOrRightEmpty(l: List[Int]) =
+      l.foldLeft(Right("empty").up[Int]) {
+        case (Right(_), i) => Left(i)
+        case (Left(s), i) => Left(s + i)
+      }
+
+    assertEquals(leftSumOrRightEmpty(List(1, 2, 3)), Left(6))
+    assertEquals(leftSumOrRightEmpty(Nil), Right("empty"))
   }
 }
