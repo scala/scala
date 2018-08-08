@@ -165,7 +165,7 @@ class ArrayDeque[A] protected (
     val n = length
     if (idx == 0) {
       prependAll(elems)
-    } else if (idx == n - 1) {
+    } else if (idx == n) {
       addAll(elems)
     } else {
       // Get both an iterator and the length of the source (by copying the source to an IndexedSeq if needed)
