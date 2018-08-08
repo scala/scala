@@ -128,7 +128,7 @@ object Test {
   /** Test parameters used by the check methods. Default
    *  parameters are defined by [[Test.Parameters.default]]. */
   object Parameters {
-    /** Default test parameters. Can be overriden if you need to
+    /** Default test parameters. Can be overridden if you need to
      *  tweak the parameters:
      *
      *  {{{

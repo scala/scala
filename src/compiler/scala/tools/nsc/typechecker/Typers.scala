@@ -4172,7 +4172,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     //
-    // START: applyDynamic suport
+    // START: applyDynamic support
     //
     import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
 
@@ -5963,10 +5963,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     for (sym <- classes) {
       for ((ownAcc, superAcc) <- superConstructorCalls.getOrElse(sym, Nil)) {
-        // We have a corresponding paramter in the super class.
+        // We have a corresponding parameter in the super class.
         val superClazz = sym.superClass
         val alias = (
-          superAcc.initialize.alias // Is the param accessor is an alias for a field further up  the class heirarchy?
+          superAcc.initialize.alias // Is the param accessor is an alias for a field further up  the class hierarchy?
             orElse (superAcc getterIn superAcc.owner) // otherwise, lookup the accessor for the super
             filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias) // the accessor must be public
           )
