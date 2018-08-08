@@ -467,7 +467,8 @@ class ArrayDeque[A] protected (
   override def sliding(window: Int, step: Int): Iterator[IterableCC[A]] = {
     require(window > 0 && step > 0, s"window=$window and step=$step, but both must be positive")
     val lag = if (window > step) window - step else 0
-    Iterator.range(start = 0, end = length - lag, step = step).map(i => slice(i, i + window))
+    if (length <= window) Iterator.single(slice(0, length))
+    else Iterator.range(start = 0, end = length - lag, step = step).map(i => slice(i, i + window))
   }
 
   override def grouped(n: Int): Iterator[IterableCC[A]] = sliding(n, n)
