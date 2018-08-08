@@ -45,12 +45,12 @@ class TrieMapTest {
 
   @Test
   def filterKeys(): Unit = {
-    check(List(("k", "v")))(_.filterKeys(_ => true))
+    check(List(("k", "v")))(_.view.filterKeys(_ => true))
   }
 
   @Test
   def mapValues(): Unit = {
-    check(List(("k", "v")))(_.mapValues(x => x))
+    check(List(("k", "v")))(_.view.mapValues(x => x))
   }
 
   @Test

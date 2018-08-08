@@ -29,7 +29,7 @@ trait SymbolTables {
     def symAliases(sym: Symbol): List[TermName] =
       symName(sym) match {
         case name if name.isEmpty => Nil
-        case _ => (aliases.distinct groupBy (_._1) mapValues (_ map (_._2)))(sym)
+        case _ => (aliases.distinct.groupMap(_._1)(_._2))(sym)
       }
 
     def symBinding(sym: Symbol): Tree =

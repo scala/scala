@@ -1211,7 +1211,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       bldr += elem
       i += 1
     }
-    m.mapValues(_.result()).toMap
+    m.view.mapValues(_.result()).toMap
   }
 
   /**
@@ -1243,7 +1243,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       bldr += f(elem)
       i += 1
     }
-    m.mapValues(_.result()).toMap
+    m.view.mapValues(_.result()).toMap
   }
 
   @`inline` final def toSeq: immutable.Seq[A] = toIndexedSeq

@@ -9,10 +9,23 @@ trait MapView[K, +V]
 
   override def view: MapView[K, V] = this
 
+  /** Filters this map by retaining only keys satisfying a predicate.
+    *  @param  p   the predicate used to test keys
+    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
+    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
+    */
+  override def filterKeys(p: K => Boolean): MapView[K, V] = new MapView.FilterKeys(this, p)
+
+  /** Transforms this map by applying a function to every retrieved value.
+    *  @param  f   the function used to transform values of this map.
+    *  @return a map view which maps every key of this map
+    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
+    */
+  override def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
+
   def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] = new MapView.MapViewMapFactory[K, V]
 
   def empty: View[(K, V)] = View.Empty
-
 }
 
 object MapView {

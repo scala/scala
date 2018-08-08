@@ -23,14 +23,14 @@ object Test {
     assert(m.values.drop(5).iterator.toList == expvals.drop(5))
 
     val pred = (x: String) => x.length < 6
-    val filtered = m.filterKeys(pred)
+    val filtered = m.view.filterKeys(pred)
     assert(filtered.drop(0).map(_._1).toList == expected.filter(pred))
     assert(filtered.drop(1).map(_._1).toList == expected.filter(pred).drop(1))
     assert(filtered.drop(2).map(_._1).toList == expected.filter(pred).drop(2))
     assert(filtered.drop(3).map(_._1).toList == expected.filter(pred).drop(3))
     assert(filtered.drop(4).map(_._1).toList == expected.filter(pred).drop(4))
 
-    val mapped = m.mapValues(-_)
+    val mapped = m.view.mapValues(-_)
     assert(mapped.drop(0).map(_._1).toList == expected)
     assert(mapped.drop(1).map(_._1).toList == expected.drop(1))
     assert(mapped.drop(2).map(_._1).toList == expected.drop(2))

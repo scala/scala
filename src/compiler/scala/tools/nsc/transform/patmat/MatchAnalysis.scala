@@ -626,7 +626,7 @@ trait MatchAnalysis extends MatchApproximation {
     // returns a mapping from variable to
     // equal and notEqual symbols
     def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
-      model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
+      model.toSeq.groupBy(_._1.variable).view.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
