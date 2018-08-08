@@ -29,7 +29,7 @@ import scala.math.Ordering
   *  @example {{{
   *  val pq = collection.mutable.PriorityQueue(1, 2, 5, 3, 7)
   *  println(pq)                  // elements probably not in order
-  *  println(pq.clone.dequeueAll) // prints Vector(7, 5, 3, 2, 1)
+  *  println(pq.clone.dequeueAll) // prints ArraySeq(7, 5, 3, 2, 1)
   *  }}}
   *
   *  @tparam A    type of the elements in this priority queue.
@@ -219,12 +219,13 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
-  def dequeueAll[A1 >: A]: Seq[A1] = {
-    val b = new ArrayBuffer[A1](size)
+  def dequeueAll[A1 >: A]: immutable.Seq[A1] = {
+    val b = ArrayBuilder.make[Any]
+    b.sizeHint(size)
     while (nonEmpty) {
       b += dequeue()
     }
-    b
+    immutable.ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[immutable.ArraySeq[A1]]
   }
 
   /** Returns the element with the highest priority in the queue,
