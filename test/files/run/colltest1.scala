@@ -188,7 +188,7 @@ object Test extends App {
     assert(m.keySet == m.keysIterator.toList.toSet, s"${m.keySet.toList}!=${m.keysIterator.toList.toSet}")
     val m1 = empty ++ m
     val ks = m.keySet
-    val mm = m.filterKeys(k => !ks(k))
+    val mm = m.view.filterKeys(k => !ks(k))
     assert(mm.isEmpty, mm)
     def m3 = empty ++ m1
     assert(m1 == m3)

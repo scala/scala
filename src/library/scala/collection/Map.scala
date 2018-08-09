@@ -193,6 +193,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
     *          the predicate `p`. The resulting map wraps the original map without copying any elements.
     */
+  @deprecated("Use .view.filterKeys(f). A future version will include a strict version of this method (for now, .view.filterKeys(p).toMap).", "2.13.0")
   def filterKeys(p: K => Boolean): MapView[K, V] = new MapView.FilterKeys(this, p)
 
   /** Transforms this map by applying a function to every retrieved value.
@@ -200,6 +201,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return a map view which maps every key of this map
     *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
     */
+  @deprecated("Use .view.mapValues(f). A future version will include a strict version of this method (for now, .view.mapValues(f).toMap).", "2.13.0")
   def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
   /** Defines the default value computation for the map,
@@ -295,7 +297,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
     lazy val keysSet = keys.toSet
-    fromSpecificIterable(this.filterKeys(k => !keysSet.contains(k)))
+    fromSpecificIterable(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 }
 

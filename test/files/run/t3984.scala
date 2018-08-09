@@ -39,7 +39,7 @@ object MapBug {
     assert(im == mm)
     val x = IH(6,4)
     im = im - x
-    mm = mm.filterKeys(k => k != x).to(MutMap)
+    mm = mm.view.filterKeys(k => k != x).to(MutMap)
     assert(im == mm)
   }
 }

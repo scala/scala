@@ -539,7 +539,7 @@ class SetMapConsistencyTest {
     import scala.tools.testing.AssertUtil._
     type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
-    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
+    val m = map.view.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
     assert{ (m contains 0) && (m get 0).nonEmpty }
     // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
     // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions

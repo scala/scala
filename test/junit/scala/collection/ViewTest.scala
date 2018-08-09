@@ -34,7 +34,7 @@ class ViewTest {
   def mapView(): Unit = {
     val xs = immutable.Map(1 -> "a", 2 -> "b")
     assertEquals("a", xs.view(1))
-    val ys = xs.mapValues(s => s.toUpperCase)
+    val ys = xs.view.mapValues(_.toUpperCase)
     assertTrue(ys.contains(1))
     assertEquals("B", ys(2))
   }

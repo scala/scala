@@ -73,13 +73,11 @@ trait TraceSymbolActivity {
     sym.name.decode + "#" + sym.id
   }
 
-  private def freq[T, U](xs: scala.collection.Iterable[T])(fn: T => U): List[(U, Int)] = {
-    val ys = xs groupBy fn mapValues (_.size)
-    ys.toList sortBy (-_._2)
-  }
+  private def freq[T, U](xs: collection.Iterable[T])(fn: T => U): List[(U, Int)] =
+    xs.groupMapReduce(fn)(_ => 1)(_ + _).toList.sortBy(-_._2)
 
-  private def showMapFreq[T](xs: scala.collection.Map[T, Iterable[_]])(showFn: T => String): Unit = {
-    xs.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
+  private def showMapFreq[T](xs: collection.Map[T, Iterable[_]])(showFn: T => String): Unit = {
+    xs.view.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
       show(size, showFn(k))
     }
     println("\n")

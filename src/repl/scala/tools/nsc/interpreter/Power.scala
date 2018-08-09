@@ -226,7 +226,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     def pp(f: Seq[T] => Seq[T]): Unit =
       pretty.prettify(f(value)).iterator foreach (StringPrettifier show _)
 
-    def freq[U](p: T => U) = (value.toSeq groupBy p mapValues (_.size)).toList sortBy (-_._2) map (_.swap)
+    def freq[U](p: T => U) = value.groupMapReduce(p)(_ => 1)(_ + _).toList sortBy (-_._2) map (_.swap)
 
     def >>(implicit ord: Ordering[T]): Unit      = pp(_.sorted)
     def >!(): Unit                               = pp(_.distinct)

@@ -469,7 +469,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
         // invert the map to see which fields can be nulled for each non-transient lazy val
         for ((field, users) <- singleUseFields; lazyFld <- users) map(lazyFld) += field
 
-        map.mapValues(_.toList sortBy (_.id)).toMap
+        map.view.mapValues(_.toList.sortBy(_.id)).toMap
       }
     }
 

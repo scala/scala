@@ -137,5 +137,5 @@ final class Mode private (val bits: Int) extends AnyVal {
 
   override def toString =
     if (this == NOmode) "NOmode"
-    else (modeNameMap filterKeys inAll).values.toList.sorted mkString "-"
+    else modeNameMap.view.filterKeys(inAll).values.toList.sorted.mkString("-")
 }

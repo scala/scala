@@ -1394,8 +1394,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *               for which `f(x)` equals `k`.
     *
     */
-  @deprecated("Use `new WrappedString(s).groupBy(...).mapValues(_.self)` instead of `s.groupBy(...)`", "2.13.0")
-  def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).mapValues(_.self).toMap
+  @deprecated("Use `new WrappedString(s).groupBy(...).view.mapValues(_.self)` instead of `s.groupBy(...)`", "2.13.0")
+  def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).view.mapValues(_.self).toMap
 
   /** Groups chars in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in grouped.)

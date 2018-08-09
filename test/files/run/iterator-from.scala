@@ -64,7 +64,7 @@ object Test extends App {
 
     val treeMap = immutable.TreeMap(keyValues:_*)
     testMap(treeMap, keyValues)
-    testMap(treeMap.filterKeys(_ % 2 == 0).to(SortedMap), keyValues  filter (_._1 % 2 == 0))
-    testMap(treeMap.mapValues(_ + 1).to(SortedMap), keyValues map {case (k,v) => (k, v + 1)})
+    testMap(treeMap.view.filterKeys(_ % 2 == 0).to(SortedMap), keyValues  filter (_._1 % 2 == 0))
+    testMap(treeMap.view.mapValues(_ + 1).to(SortedMap), keyValues map {case (k,v) => (k, v + 1)})
   }
 }

@@ -165,7 +165,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Reduce the given environment to contain mappings only for type variables in tps. */
     def restrict(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv =
-      env.filterKeys(tps).toMap
+      env.view.filterKeys(tps).toMap
 
     /** Is the given environment a valid specialization for sym?
      *  It is valid if each binding is from a @specialized type parameter in sym (or its owner)

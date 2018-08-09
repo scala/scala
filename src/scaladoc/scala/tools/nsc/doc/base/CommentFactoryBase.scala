@@ -332,7 +332,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, site))} toSeq: _*)
+          tagsWithoutDiagram.view.mapValues(_.map(parseWikiAtSymbol(_, pos, site))).to(mutable.Map)
 
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
