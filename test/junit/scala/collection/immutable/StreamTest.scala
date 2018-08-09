@@ -258,10 +258,30 @@ class StreamTest {
 
   @Test
   def t09791: Unit = {
+    // updated tests
     val x = Stream.continually("*").updated(0, "new value")
     assertEquals(List("new value", "*", "*", "*", "*", "*", "*", "*", "*", "*"), x.take(10).toList)
 
     val y = Stream.continually("*").updated(4, "new value")
     assertEquals(List("*", "*", "*", "*", "new value", "*", "*", "*", "*", "*"), y.take(10).toList)
+
+    // patch tests
+
+    // doesn't matter what we put for 'replaced' arg, since the stream is infinite
+    assertEquals(List("new", "value", "!", "*", "*", "*", "*", "*", "*", "*"),
+      Stream.continually("*").patch(0, List("new", "value", "!"), 0).take(10).toList)
+
+    assertEquals(List("new", "value", "!", "*", "*", "*", "*", "*", "*", "*"),
+      Stream.continually("*").patch(0, List("new", "value", "!"), 2).take(10).toList)
+
+    assertEquals(List("*", "new", "value", "!", "*", "*", "*", "*", "*", "*"),
+      Stream.continually("*").patch(1, List("new", "value", "!"), 2).take(10).toList)
+
+    // actually test 'replaced'
+    assertEquals(List("*", "new", "_", "_", "_", "!", "*", "*", "*", "*"),
+      Stream.continually("*")
+        .patch(1, List("new", "value", "!"), 2)
+        .patch(2, List("_", "_", "_"), 1)
+        .take(10).toList)
   }
 }
