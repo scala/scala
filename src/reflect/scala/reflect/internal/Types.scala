@@ -1943,6 +1943,7 @@ trait Types
                                          // (this can happen only for erroneous programs).
       }
 
+    // TODO should we pull this out to reduce memory footprint of ClassInfoType?
     private object enterRefs extends TypeMap {
       private var tparam: Symbol = _
 
@@ -2496,13 +2497,23 @@ trait Types
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
       else  {
+        // It's not clear which owner we should use (we don't know the context we're in),
+        // but pos/t10762 shows it can't be the class (`sym`) that owns the type params,
+        // as that will confuse ASF during separate compilation.
+        //
+        // During pickling, a pickle-local symbol (the type param) that has a non-pickle-local owner (the class),
+        // will get a new owner (the pickle root, a class) assigned to it by localizedOwner.
+        // This causes spurious recompilation, as well as confusion in ASF.
+        // Thus, use a pickle-local term symbol owner and avoid this whole owner-rejiggering.
+        val pickleLocalOwner = sym.newLocalDummy(sym.pos)
+
         // Since we're going to lose the information denoted by the prefix when pulling the type params
         // out for use as binders in the PolyType, we must eagerly rewrite their infos using relativize
         // to preserve that knowledge.
-        val denotedTpars = cloneSymbolsAndModify(tpars, relativize)
+        val denotedLocallyOwnedTpars = cloneSymbolsAtOwnerAndModify(tpars, pickleLocalOwner, relativize)
 
         // @PP: use typeConstructor! #3343, #4018, #4347.
-        PolyType(denotedTpars, TypeRef(pre, sym, denotedTpars map (_.typeConstructor)))
+        PolyType(denotedLocallyOwnedTpars, TypeRef(pre, sym, denotedLocallyOwnedTpars map (_.typeConstructor)))
       }
     }
 

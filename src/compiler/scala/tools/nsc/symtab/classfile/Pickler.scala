@@ -96,15 +96,16 @@ abstract class Pickler extends SubComponent {
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
 
-    /** Returns usually symbol's owner, but picks classfile root instead
-     *  for existentially bound variables that have a non-local owner.
-     *  Question: Should this be done for refinement class symbols as well?
-     *
-     *  Note: tree pickling also finds its way here; e.g. in scala/bug#7501 the pickling
-     *  of trees in annotation arguments considers the parameter symbol of a method
-     *  called in such a tree as "local". The condition `sym.isValueParameter` was
-     *  added to fix that bug, but there may be a better way.
-     */
+    /** Usually `sym.owner`, except when `sym` is pickle-local, while `sym.owner` is not.
+      *
+      * In the latter case, the alternative owner is the pickle root,
+      * or a non-class owner of root (so that term-owned parameters remain term-owned).
+      *
+      * Note: tree pickling also finds its way here; e.g. in scala/bug#7501 the pickling
+      * of trees in annotation arguments considers the parameter symbol of a method
+      * called in such a tree as "local". The condition `sym.isValueParameter` was
+      * added to fix that bug, but there may be a better way.
+      */
     private def localizedOwner(sym: Symbol) =
       if (isLocalToPickle(sym) && !isRootSym(sym) && !isLocalToPickle(sym.owner))
         // don't use a class as the localized owner for type parameters that are not owned by a class: those are not instantiated by asSeenFrom
