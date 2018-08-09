@@ -80,4 +80,10 @@ class ArraySeqTest {
   }
   
   @Test def checkSearch: Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+
+  @Test
+  def testCooperativeEquality(): Unit = {
+    assertEquals(ArraySeq(1, 2, 3), ArraySeq(1L, 2L, 3L))
+    assertEquals(ArraySeq(1, 2) :+ 3, ArraySeq(1L, 2L) :+ 3L) // :+ makes it an ArraySeq.ofRef
+  }
 }

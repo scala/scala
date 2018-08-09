@@ -3,7 +3,7 @@ package mutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.runtime.ScalaRunTime
+import scala.runtime.{BoxesRunTime, ScalaRunTime}
 import scala.reflect.ClassTag
 import scala.util.hashing.MurmurHash3
 import java.util.Arrays
@@ -140,11 +140,14 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] {
     lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
-    def apply(index: Int): T = array(index).asInstanceOf[T]
+    def apply(index: Int): T = array(index)
     def update(index: Int, elem: T): Unit = { array(index) = elem }
     override def hashCode = MurmurHash3.arraySeqHash(array)
     override def equals(that: Any) = that match {
-      case that: ofRef[_] => Arrays.equals(array.asInstanceOf[Array[AnyRef]], that.array.asInstanceOf[Array[AnyRef]])
+      case that: ofRef[_] =>
+        BoxesRunTime.arraysEquals(
+          this.array.asInstanceOf[Array[AnyRef]],
+          that.array.asInstanceOf[Array[AnyRef]])
       case _ => super.equals(that)
     }
   }

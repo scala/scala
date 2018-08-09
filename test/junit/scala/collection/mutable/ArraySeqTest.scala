@@ -39,6 +39,12 @@ class ArraySeqTest {
     arr.sortInPlace()
     assertEquals(ArraySeq.make(Array[Int](1, 2, 3)), arr)
   }
+
+  @Test
+  def testCooperativeEquality(): Unit = {
+    assertEquals(ArraySeq(1, 2, 3), ArraySeq(1L, 2L, 3L))
+    assertEquals(ArraySeq(1, 2) :+ 3, ArraySeq(1L, 2L) :+ 3L) // :+ makes it an ArraySeq.ofRef
+  }
 }
 
 /*
