@@ -280,7 +280,7 @@ object Using {
   }
 
   object Resource {
-    /** An implicit `Resource` for [[java.lang.AutoCloseable `AutoClosable`s]]. */
+    /** An implicit `Resource` for [[java.lang.AutoCloseable `AutoCloseable`s]]. */
     implicit val autoCloseableResource: Resource[AutoCloseable] = (resource: AutoCloseable) => resource.close()
   }
 
