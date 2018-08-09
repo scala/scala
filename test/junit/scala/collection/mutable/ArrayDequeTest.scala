@@ -78,4 +78,20 @@ class ArrayDequeTest {
     arrayDeque.insert(1, -1)
     assertEquals(ArrayDeque(0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), arrayDeque)
   }
+
+  @Test
+  def insertAll: Unit = {
+    var a = ArrayDeque(0, 1)
+    a.insertAll(1, Seq(2))
+    assertEquals(ArrayDeque(0, 2, 1), a)
+    a = ArrayDeque(0, 1)
+    a.insertAll(2, Seq(2))
+    assertEquals(ArrayDeque(0, 1, 2), a)
+    var q = Queue(0, 1)
+    q.patchInPlace(1, Seq(2), 0)
+    assertEquals(Queue(0, 2, 1), q)
+    q = Queue(0, 1)
+    q.patchInPlace(2, Seq(2), 0)
+    assertEquals(Queue(0, 1, 2), q)
+  }
 }
