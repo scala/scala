@@ -4284,10 +4284,13 @@ trait Types
 
   /** A function implementing `tp1` matches `tp2`. */
   final def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
-    def matchesQuantified(tparams1: List[Symbol], tparams2: List[Symbol], res1: Type, res2: Type): Boolean = (
-      sameLength(tparams1, tparams2) &&
-      matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
-    )
+    def matchesQuantified(tparams1: List[Symbol], tparams2: List[Symbol], res1: Type, res2: Type): Boolean = {
+      if (!sameLength(tparams1, tparams2)) {
+        lastTry
+      } else {
+        matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
+      }
+    }
     def lastTry =
       tp2 match {
         case ExistentialType(_, res2) if alwaysMatchSimple =>
