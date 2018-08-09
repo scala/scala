@@ -234,17 +234,6 @@ tested version during CI validation.
 
 ## Nightly builds
 
-The Scala CI builds nightly download releases (including all modules) and publishes
-them to the following locations:
-  - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/?C=M;O=D)
-  - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/?C=M;O=D)
-
-The CI also publishes nightly API docs:
-  - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/api/?C=M;O=D)
-    - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.12.x/api/2.12.x/)
-  - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/?C=M;O=D)
-    - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/2.13.x/)
-
 Using a nightly build in sbt is explained in
 [this Stack Overflow answer](http://stackoverflow.com/questions/40622878)
 
