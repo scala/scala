@@ -38,7 +38,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   import definitions._
   import CODE._
 
-  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement, Product_productElementName, Product_iterator, Product_canEqual)
+  private lazy val productSymbols    = List(Product_productPrefix, Product_productArity, Product_productElement) ::: Product_productElementName.toOption.toList ::: List(Product_iterator, Product_canEqual)
   private lazy val valueSymbols      = List(Any_hashCode, Any_equals)
   private lazy val caseSymbols       = List(Object_hashCode, Object_toString) ::: productSymbols
   private lazy val caseValueSymbols  = Any_toString :: valueSymbols ::: productSymbols
@@ -248,16 +248,24 @@ trait SyntheticMethods extends ast.TreeDSL {
     ****/
 
     // methods for both classes and objects
-    def productMethods = {
+    def productMethods: List[(Symbol, () => Tree)] = {
+      def elementName: List[(Symbol, () => Tree)] = Product_productElementName match {
+        case NoSymbol => Nil
+        case sym => (sym, () => productElementNameMethod) :: Nil
+      }
       List(
-        Product_productPrefix       -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
-        Product_productArity        -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement      -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
-        Product_productElementName  -> (() => productElementNameMethod),
-        Product_iterator            -> (() => productIteratorMethod),
-        Product_canEqual            -> (() => canEqualMethod)
+        List(
+          Product_productPrefix       -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
+          Product_productArity        -> (() => constantNullary(nme.productArity, arity)),
+          Product_productElement      -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect))
+        ),
+        elementName,
+        List(
+          Product_iterator            -> (() => productIteratorMethod),
+          Product_canEqual            -> (() => canEqualMethod)
+        )
       )
-    }
+    }.flatten
 
     def hashcodeImplementation(sym: Symbol): Tree = {
       sym.tpe.finalResultType.typeSymbol match {
