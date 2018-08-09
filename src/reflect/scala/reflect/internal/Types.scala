@@ -3426,8 +3426,8 @@ trait Types
         checkSubtype(tp, origin)
       else if (instValid)  // type var is already set
         checkSubtype(tp, inst)
-      else isRelatable(tp) && {
-        unifySimple || unifyFull(tp) || (
+      else unrelatable(tp) match {
+        case Nil => unifySimple || unifyFull(tp) || (
           // only look harder if our gaze is oriented toward Any
           isLowerBound && (
             (tp.parents exists unifyFull) || (
@@ -3437,6 +3437,11 @@ trait Types
             )
           )
         )
+
+        case skolems =>
+          registerBound(existentialTransform(skolems, tp) {
+            existentialAbstraction(_, _, flipVariance = !isLowerBound)
+          }, isLowerBound = isLowerBound, isNumericBound = isNumericBound)
       }
     }
 
@@ -3468,9 +3473,8 @@ trait Types
       registerBound(HasTypeMember(sym.name.toTypeName, tp), isLowerBound = false)
     }
 
-    private def isSkolemAboveLevel(tp: Type) = tp.typeSymbol match {
-      case ts: TypeSkolem => ts.level > level
-      case _              => false
+    private def unrelatable(tp: Type): List[TypeSkolem] = tp.collect {
+      case TypeRef(_, ts: TypeSkolem, _) if ts.level > level => ts
     }
 
 
@@ -3478,7 +3482,7 @@ trait Types
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
       */
-    def isRelatable(tp: Type) = !(tp exists isSkolemAboveLevel)
+    def isRelatable(tp: Type) = unrelatable(tp).isEmpty
 
     override def normalize: Type = (
       if (instValid) inst
@@ -3959,11 +3963,13 @@ trait Types
    *  indirectly referenced by type `tpe1`. If there are no remaining type
    *  parameters, simply returns result type `tpe`.
    */
-  def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
+  def existentialAbstraction(tparams: List[Symbol], tpe0: Type, flipVariance: Boolean = false): Type =
     if (tparams.isEmpty) tpe0
     else {
       val tpe      = normalizeAliases(tpe0)
-      val tpe1     = new ExistentialExtrapolation(tparams) extrapolate tpe
+      val extrapolation = new ExistentialExtrapolation(tparams)
+      if (flipVariance) extrapolation.variance = Contravariant
+      val tpe1     = extrapolation extrapolate tpe
       var tparams0 = tparams
       var tparams1 = tparams0 filter tpe1.contains
 
