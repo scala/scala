@@ -140,7 +140,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
   final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] {
     lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
-    def apply(index: Int): T = array(index).asInstanceOf[T]
+    def apply(index: Int): T = array(index)
     def update(index: Int, elem: T): Unit = { array(index) = elem }
     override def hashCode = MurmurHash3.arraySeqHash(array)
     override def equals(that: Any) = that match {
