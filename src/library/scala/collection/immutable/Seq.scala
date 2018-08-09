@@ -35,6 +35,8 @@ trait IndexedSeq[+A] extends Seq[A]
   final override def toIndexedSeq: IndexedSeq[A] = this
 
   override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
+
+  override def view: IndexedSeqView[A] = IndexedSeqView.id(this)
 }
 
 @SerialVersionUID(3L)
