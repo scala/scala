@@ -240,7 +240,7 @@ trait PatternTypers {
       // as instantiateTypeVar's bounds would end up there
       val ctorContext = context.makeNewScope(tree, context.owner)
       freeVars foreach ctorContext.scope.enter
-      newTyper(ctorContext).infer.inferConstructorInstance(tree1, caseClass.typeParams, ptSafe)
+      newTyper(ctorContext).infer.inferConstructorInstance(tree1, caseClass, caseClassType, ptSafe)
 
       // simplify types without losing safety,
       // so that we get rid of unnecessary type slack, and so that error messages don't unnecessarily refer to skolems

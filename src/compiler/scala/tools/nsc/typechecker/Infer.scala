@@ -1018,36 +1018,44 @@ trait Infer extends Checkable {
      *  `tree` in pattern, given prototype `pt`.
      *
      *  @param tree        the constructor that needs to be instantiated
-     *  @param undetparams the undetermined type parameters
+     *  @param caseClass   the case class symbol (owner of the constructor)
      *  @param pt0         the expected result type of the instance
      */
-    def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type): Unit = {
+    def inferConstructorInstance(tree: Tree, caseClass: Symbol, pre: Type, pt0: Type): Unit = {
       val pt       = abstractTypesToBounds(pt0)
       val ptparams = freeTypeParamsOfTerms(pt)
       val ctorTp   = tree.tpe
       val resTp    = ctorTp.finalResultType
+      val ctorParamTps = ctorTp.paramTypes
 
-      debuglog("infer constr inst "+ tree +"/"+ undetparams +"/ pt= "+ pt +" pt0= "+ pt0 +" resTp: "+ resTp)
+      val origParams = caseClass.typeParams
+      val clonedParams = cloneSymbolsAndModify(origParams, _.asSeenFrom(pre, caseClass))
+
+      // look at the argument types of the primary constructor corresponding to the pattern
+      lazy val variances =
+        clonedParams map (if (ctorParamTps.isEmpty) varianceInType(ctorTp) else varianceInTypes(ctorParamTps))
+
+      // no need to recompute for approximated pt
+      lazy val lubDepthPt = lubDepth(resTp :: pt :: Nil)
 
       /* Compute type arguments for undetermined params */
       def inferFor(pt: Type): Option[List[Type]] = {
-        val tvars   = undetparams map freshVar
-        val resTpV  = resTp.instantiateTypeParams(undetparams, tvars)
+        val tvars   = clonedParams map freshVar
+        val resTpV  = resTp.instantiateTypeParams(origParams, tvars)
+
+        debuglog(s"inferConstructorInstance(${tree.tpe}, $caseClass, $pre, $pt0) from $resTpV <:< $pt under $clonedParams")
 
         if (resTpV <:< pt) {
           try {
             // debuglog("TVARS "+ (tvars map (_.constr)))
-            // look at the argument types of the primary constructor corresponding to the pattern
-            val variances  =
-              if (ctorTp.paramTypes.isEmpty) undetparams map varianceInType(ctorTp)
-              else undetparams map varianceInTypes(ctorTp.paramTypes)
 
             // Note: this is the only place where solvedTypes (or, indirectly, solve) is called
             // with upper = true.
-            val targs = solvedTypes(tvars, undetparams, variances, upper = true, lubDepth(resTp :: pt :: Nil))
+            val targs = solvedTypes(tvars, clonedParams, variances, upper = true, lubDepthPt)
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
+            debuglog(s"solved: $targs")
             Some(targs)
           } catch ifNoInstance { msg =>
             debuglog("NO INST "+ ((tvars, tvars map (_.constr))))
@@ -1063,8 +1071,7 @@ trait Infer extends Checkable {
       def inferForApproxPt =
         if (isFullyDefined(pt)) {
           inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
-            val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
-            val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
+            val resTpInst  = resTp.instantiateTypeParams(origParams, targs)
             val ptvars     =
               ptparams map {
                 // since instantiateTypeVar wants to modify the skolem that corresponds to the method's type parameter,
@@ -1086,11 +1093,11 @@ trait Infer extends Checkable {
 
       inferFor(pt) orElse inferForApproxPt match {
         case Some(targs) =>
-          new TreeTypeSubstituter(undetparams, targs).traverse(tree)
-          notifyUndetparamsInferred(undetparams, targs)
+          new TreeTypeSubstituter(origParams, targs).traverse(tree)
+          notifyUndetparamsInferred(origParams, targs)
         case _ =>
           def not = if (isFullyDefined(pt)) "" else "not "
-          devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$undetparams, pt=$pt (${not}fully defined)")
+          devWarning(s"failed inferConstructorInstance for $tree: ${tree.tpe} undet=$clonedParams, pt=$pt (${not}fully defined)")
           ConstrInstantiationError(tree, resTp, pt)
       }
     }
@@ -1164,6 +1171,7 @@ trait Infer extends Checkable {
     }
 
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
+//      debuglog(s"inferTypedPattern($tree0, $pattp, $pt0, $canRemedy)")
       val pt        = abstractTypesToBounds(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
       val tpparams  = freeTypeParamsOfTerms(pattp)

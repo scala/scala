@@ -2332,7 +2332,8 @@ trait Types
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
       else {
-        val tparsAtNonClass = cloneSymbolsAtOwner(tpars, sym.newLocalDummy(sym.pos))
+        val tparsAtNonClass = cloneSymbolsAtOwnerAndModify(tpars, sym.newLocalDummy(sym.pos), _.asSeenFrom(pre, sym.owner))
+        debuglog(s"tparsAtNonClass ${tparsAtNonClass.map(_.info)}")
         PolyType(tparsAtNonClass, copyTypeRef(this, pre, sym, tparsAtNonClass map (_.typeConstructor)))
       }
     }
