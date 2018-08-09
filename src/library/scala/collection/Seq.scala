@@ -162,7 +162,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   })
 
   /** Alias for `prependedAll` */
-  @`inline` final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependedAll(prefix)
+  @`inline` override final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependedAll(prefix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing

@@ -166,6 +166,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   protected def coll: C
 
+  @deprecated("Use coll instead of repr in a collection implementation, use the collection value itself from the outside", "2.13.0")
+  final def repr: C = coll
+
   /**
     * Defines how to turn a given `Iterable[A]` into a collection of type `C`.
     *
@@ -809,6 +812,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     val it = Iterator.iterate(toIterable)(f).takeWhile(x => !x.isEmpty)
     (it ++ Iterator.single(Iterable.empty)).map(fromSpecific)
   }
+
+  @deprecated("Use xs ++ ys instead of ys ++: xs for xs of type Iterable", "2.13.0")
+  def ++:[B >: A](that: IterableOnce[B]): IterableCC[B] =
+    (iterableFactory.from(that).asInstanceOf[Iterable[B]] ++ coll.asInstanceOf[Iterable[B]]).asInstanceOf[IterableCC[B]]
+    // These casts are needed because C and CC do not have the proper constraints.
+    // Adding those constraints would require a lot of boilerplate in many classes.
 }
 
 object IterableOps {
