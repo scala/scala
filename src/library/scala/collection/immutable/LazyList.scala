@@ -512,15 +512,15 @@ sealed private[immutable] trait LazyListFactory[+CC[+X] <: LinearSeq[X] with Laz
   protected def newCons[T](hd: => T, tl: => CC[T] @uncheckedVariance): CC[T]
 
   private[immutable] def withFilter[A](l: CC[A] @uncheckedVariance, p: A => Boolean): collection.WithFilter[A, CC] =
-    new WithFilter[A](l, p)
+    new WithFilter[A](() => l, p)
 
-  private[this] final class WithFilter[A](l: CC[A] @uncheckedVariance, p: A => Boolean) extends collection.WithFilter[A, CC] {
+  private[this] final class WithFilter[A](l: () => CC[A], p: A => Boolean) extends collection.WithFilter[A, CC] {
     private[this] var s = l                                                // set to null to allow GC after filtered
-    private[this] lazy val filtered: CC[A] = { val f = s.filter(p); s = null.asInstanceOf[CC[A]]; f } // don't set to null if throw during filter
+    private[this] lazy val filtered: CC[A] = { val f = s().filter(p); s = null; f } // don't set to null if throw during filter
     def map[B](f: A => B): CC[B] = filtered.map(f)
     def flatMap[B](f: A => IterableOnce[B]): CC[B] = filtered.flatMap(f)
     def foreach[U](f: A => U): Unit = filtered.foreach(f)
-    def withFilter(q: A => Boolean): collection.WithFilter[A, CC] = new WithFilter(filtered, q)
+    def withFilter(q: A => Boolean): collection.WithFilter[A, CC] = new WithFilter(() => filtered, q)
   }
 
   /** An infinite LazyList that repeatedly applies a given function to a start value.
