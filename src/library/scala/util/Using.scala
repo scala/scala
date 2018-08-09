@@ -275,6 +275,7 @@ object Using {
     * @tparam R the type of the resource
     */
   trait Resource[-R] {
+    /** Releases the specified resource. */
     def release(resource: R): Unit
   }
 
