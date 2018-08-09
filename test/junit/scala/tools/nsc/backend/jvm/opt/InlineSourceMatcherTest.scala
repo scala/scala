@@ -27,7 +27,7 @@ class InlineSourceMatcherTest extends BytecodeTesting {
     val es = m.entries
     assertEquals(es.length, expect.length)
 
-    for ((a, e) <- (es, expect).zipped) {
+    for ((a, e) <- es.lazyZip(expect)) {
       assertEquals(a.pattern.pattern, e.regex)
       assertEquals(a.negated, e.negated)
       assertEquals(a.terminal, e.terminal)

@@ -1125,9 +1125,8 @@ trait ContextErrors {
       private[scala] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean) = {
         if (explaintypes) {
           val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
-          (targs, bounds).zipped foreach ((targ, bound) => explainTypes(bound.lo, targ))
-          (targs, bounds).zipped foreach ((targ, bound) => explainTypes(targ, bound.hi))
-          ()
+          targs.lazyZip(bounds).foreach((targ, bound) => explainTypes(bound.lo, targ))
+          targs.lazyZip(bounds).foreach((targ, bound) => explainTypes(targ, bound.hi))
         }
 
         prefix + "type arguments " + targs.mkString("[", ",", "]") +

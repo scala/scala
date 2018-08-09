@@ -148,7 +148,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
       def emitVars = storedBinders.nonEmpty
 
-      private lazy val (stored, substed) = (subPatBinders, subPatRefs).zipped.partition{ case (sym, _) => storedBinders(sym) }
+      private lazy val (stored, substed) = subPatBinders.lazyZip(subPatRefs).partition{ case (sym, _) => storedBinders(sym) }
 
       protected lazy val localSubstitution: Substitution = if (!emitVars) Substitution(subPatBinders, subPatRefs)
         else {

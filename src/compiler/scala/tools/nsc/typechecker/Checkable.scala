@@ -86,7 +86,7 @@ trait Checkable {
       if (tps1.size != tps2.size)
         devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
 
-      (tps1, tps2).zipped foreach (_ =:= _)
+      tps1.lazyZip(tps2).foreach(_ =:= _)
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
       // figure it out. It seems there is more work to do if I

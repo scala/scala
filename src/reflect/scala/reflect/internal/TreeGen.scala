@@ -711,7 +711,7 @@ abstract class TreeGen {
         val rhss = valeqs map { case ValEq(_, rhs) => rhs }
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
-        val pdefs = (defpats, rhss).zipped flatMap mkPatDef
+        val pdefs = defpats.lazyZip(rhss).flatMap(mkPatDef)
         val ids = (defpat1 :: defpats) map makeValue
         val rhs1 = mkFor(
           List(ValFrom(defpat1, rhs).setPos(t.pos)),

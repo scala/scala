@@ -303,7 +303,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
           // debug.patmat ("normalize subst: "+ normalize)
 
           val okSubst = Substitution(unboundFrom.toList, unboundTo.toList) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
-          pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
+          pointsToBound ++= okSubst.from.lazyZip(okSubst.to).collect { case (f, t) if pointsToBound.exists(sym => t.exists(_.symbol == sym)) => f }
           // debug.patmat("pointsToBound: "+ pointsToBound)
 
           accumSubst >>= okSubst

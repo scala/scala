@@ -1208,8 +1208,8 @@ abstract class RefChecks extends Transform {
           reporter.error(tree0.pos, ex.getMessage())
           if (settings.explaintypes) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
-            (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
-            (argtps, bounds).zipped map ((targ, bound) => explainTypes(targ, bound.hi))
+            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(bound.lo, targ))
+            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(targ, bound.hi))
             ()
           }
       }
