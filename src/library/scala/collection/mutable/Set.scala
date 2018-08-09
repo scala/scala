@@ -19,9 +19,11 @@ trait Set[A]
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends collection.SetOps[A, CC, C]
     with Cloneable[C]
+    with Builder[A, C]
     with Growable[A]
     with Shrinkable[A] {
 
+  def result(): C = coll
 
   def add(elem: A): Boolean =
     !contains(elem) && {
