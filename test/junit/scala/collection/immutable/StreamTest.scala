@@ -255,4 +255,13 @@ class StreamTest {
     }.iterator.take(3).toList
     assertEquals(2, value)
   }
+
+  @Test
+  def t09791: Unit = {
+    val x = Stream.continually("*").updated(0, "new value")
+    assertEquals(List("new value", "*", "*", "*", "*", "*", "*", "*", "*", "*"), x.take(10).toList)
+
+    val y = Stream.continually("*").updated(4, "new value")
+    assertEquals(List("*", "*", "*", "*", "new value", "*", "*", "*", "*", "*"), y.take(10).toList)
+  }
 }
