@@ -274,15 +274,13 @@ object Using {
     *
     * @tparam R the type of the resource
     */
-  trait Resource[R] {
+  trait Resource[-R] {
     def release(resource: R): Unit
   }
 
   object Resource {
-    private[this] val autoCloseableResource: Resource[AutoCloseable] = (resource: AutoCloseable) => resource.close()
-
-    /** Returns an implicit `Resource` for [[java.lang.AutoCloseable `AutoClosable`s]]. */
-    implicit def AutoClosable[C <: AutoCloseable]: Resource[C] = autoCloseableResource.asInstanceOf[Resource[C]]
+    /** An implicit `Resource` for [[java.lang.AutoCloseable `AutoClosable`s]]. */
+    implicit val autoCloseableResource: Resource[AutoCloseable] = (resource: AutoCloseable) => resource.close()
   }
 
 }
