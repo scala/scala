@@ -3040,38 +3040,6 @@ trait Types
 
     def precludesWidening(tp: Type) = tp.isStable || tp.typeSymbol.isSubClass(SingletonClass)
 
-    /** Create a new TypeConstraint based on the given symbol.
-     */
-    private def deriveConstraint(tparam: Symbol): TypeConstraint = {
-      /** Must force the type parameter's info at this point
-       *  or things don't end well for higher-order type params.
-       *  See scala/bug#5359.
-       */
-      val bounds  = tparam.info.bounds
-
-      /* We can seed the type constraint with the type parameter
-       * bounds as long as the types are concrete.  This should lower
-       * the complexity of the search even if it doesn't improve
-       * any results.
-       */
-      val constr =
-        if (!isPastTyper) {
-          // Test for typer phase is questionable, however, if it isn't present bounds will be created
-          // during patmat and this causes an SOE compiling test/files/pos/t9018.scala. TypeVars are
-          // Supposed to have been eliminated by the typer anyway, so it's unclear why we reach this
-          // point during patmat.
-          val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
-
-          if (exclude) new TypeConstraint
-          else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(
-            new TypeConstraint(bounds))
-        }
-        else new TypeConstraint
-
-      if (precludesWidening(bounds.hi)) constr.stopWidening()
-
-      constr
-    }
     def untouchable(tparam: Symbol): TypeVar                 = createTypeVar(tparam, untouchable = true)
     def apply(tparam: Symbol): TypeVar                       = createTypeVar(tparam, untouchable = false)
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
@@ -3101,8 +3069,15 @@ trait Types
         tv
       )
     }
-    private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar =
-      createTypeVar(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams, untouchable)
+    private def createTypeVar(tparam: Symbol, untouchable: Boolean): TypeVar = {
+      val constr = new TypeConstraint
+      if (precludesWidening(tparam.info.bounds.hi)) {
+        constr.stopWidening()
+        constr.addHiBound(SingletonClass.typeConstructor) // TODO: why do we need the additional hi-bound? see sip23-widen
+      }
+
+      createTypeVar(tparam.typeConstructor, constr, Nil, tparam.typeParams, untouchable)
+    }
   }
 
   /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
