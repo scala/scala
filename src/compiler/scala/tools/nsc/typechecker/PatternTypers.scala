@@ -224,13 +224,16 @@ trait PatternTypers {
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
       val variantToSkolem     = new VariantToSkolemMap
-      val caseClassType       = tree.tpe.prefix memberType caseClass
-      val caseConstructorType = caseClassType memberType caseClass.primaryConstructor
+      // tree.tpe points to the case class companion, so we can't use it as the prefix for the case class ctor
+      // Note that we need to use a *-kinded type (`caseClass.tpe_*`)
+      // ASF can now use caseClassType as the ThisType for caseClass (and up to outer classes)
+      val caseClassType       = caseClass.tpe_*.asSeenFrom(tree.tpe.prefix, caseClass.owner)
+      val caseConstructorType = caseClassType memberInfo caseClass.primaryConstructor
       val tree1               = TypeTree(caseConstructorType) setOriginal tree
 
       // have to open up the existential and put the skolems in scope
       // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
-      val ptSafe   = logResult(s"case constructor from (${tree.summaryString}, $caseClassType, $ptIn)")(variantToSkolem(ptIn))
+      val ptSafe   = variantToSkolem(ptIn)
       val freeVars = variantToSkolem.skolems
 
       // use "tree" for the context, not context.tree: don't make another CaseDef context,
