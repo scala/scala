@@ -1396,8 +1396,9 @@ abstract class RefChecks extends Transform {
         annots.foreach { ann =>
           checkTypeRef(ann.tpe, tree, skipBounds = false)
           checkTypeRefBounds(ann.tpe, tree)
+          if (ann.original != null && ann.original.hasExistingSymbol)
+            checkUndesiredProperties(ann.original.symbol, tree.pos)
         }
-
         annots
           .map(_.transformArgs(transformTrees))
           .groupBy(_.symbol)
@@ -1407,7 +1408,8 @@ abstract class RefChecks extends Transform {
 
       // assumes non-empty `anns`
       def groupRepeatableAnnotations(sym: Symbol, anns: List[AnnotationInfo]): List[AnnotationInfo] =
-        if (!sym.isJavaDefined) anns else anns match {
+        if (!sym.isJavaDefined) anns
+        else anns match {
           case single :: Nil => anns
           case multiple      =>
             sym.getAnnotation(AnnotationRepeatableAttr) match {
@@ -1424,7 +1426,6 @@ abstract class RefChecks extends Transform {
                     devWarning(s"@Repeatable $sym had no containing class")
                     multiple
                 }
-
               case None =>
                 reporter.error(tree.pos, s"$sym may not appear multiple times on ${tree.symbol}")
                 multiple
@@ -1459,7 +1460,6 @@ abstract class RefChecks extends Transform {
             if (sym.isTrait) warn("traits")
             else if (!sym.isSerializable) warn("non-serializable classes")
           }
-
         case tpt@TypeTree() =>
           if (tpt.original != null) {
             tpt.original foreach {
@@ -1468,7 +1468,6 @@ abstract class RefChecks extends Transform {
               case _ =>
             }
           }
-
           if (!inPattern)
             tree.setType(tree.tpe map {
               case AnnotatedType(anns, ul) =>
