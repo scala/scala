@@ -257,4 +257,21 @@ class LazyZipOpsTest {
 
     assertEquals(Map(1 -> (1, 1, "a", "foo"), 2 -> (2, 2, "b", "bar")), res)
   }
+
+  @Test
+  def lazyZipArray: Unit = {
+    val a = Array(1,2,3).lazyZip(List(4,5,6)).map(_ + _)
+    val at: Array[Int] = a
+    assertArrayEquals(Array(5, 7, 9), at)
+  }
+
+  @Test
+  def lazyZipString: Unit = {
+    val v = "abc".lazyZip(List(1,2,3)).map((a, b) => a.toInt + b.toInt)
+    val vt: IndexedSeq[Int] = v
+    assertEquals(Vector(98, 100, 102), vt)
+    val s = "abc".lazyZip(List(1,2,3)).map((a, b) => (a.toInt + b.toInt).toChar)
+    val st: String = s
+    assertEquals("bdf", st)
+  }
 }

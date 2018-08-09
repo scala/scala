@@ -81,6 +81,25 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
     *            by all elements separated by commas and enclosed in parentheses.
     */
   override def toString = mkString(className + "(", ", ", ")")
+
+  /** Analogous to `zip` except that the elements in each collection are not consumed until a strict operation is
+    * invoked on the returned `LazyZip2` decorator.
+    *
+    * Calls to `lazyZip` can be chained to support higher arities (up to 4) without incurring the expense of
+    * constructing and deconstructing intermediary tuples.
+    *
+    * {{{
+    *    val xs = List(1, 2, 3)
+    *    val res = (xs lazyZip xs lazyZip xs lazyZip xs).map((a, b, c, d) => a + b + c + d)
+    *    // res == List(4, 8, 12)
+    * }}}
+    *
+    * @param that the iterable providing the second element of each eventual pair
+    * @tparam B   the type of the second element in each eventual pair
+    * @return a decorator `LazyZip2` that allows strict operations to be performed on the lazily evaluated pairs
+    *         or chained calls to `lazyZip`. Implicit conversion to `Iterable[(A, B)]` is also supported.
+    */
+  def lazyZip[B](that: Iterable[B]): LazyZip2[A, B, this.type] = new LazyZip2(this, this, that)
 }
 
 /** Base trait for Iterable operations
@@ -846,9 +865,7 @@ object IterableOps {
 }
 
 @SerialVersionUID(3L)
-object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
-  implicit def toLazyZipOps[A, CC[X] <: Iterable[X]](that: CC[A]): LazyZipOps[A, CC[A]] = new LazyZipOps(that)
-}
+object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
