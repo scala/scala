@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.{assertEquals, assertSame}
+import org.junit.Assert.assertSame
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4

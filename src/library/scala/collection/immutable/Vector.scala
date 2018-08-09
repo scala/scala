@@ -70,6 +70,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def iterableFactory: SeqFactory[Vector] = Vector
 
+  override def view: IndexedSeqView[A] = IndexedSeqView.previouslyEvaluated(this)
+
   private[immutable] var dirty = false
 
   def length: Int = endIndex - startIndex

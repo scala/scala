@@ -1454,7 +1454,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
 
-case class StringView(s: String) extends AbstractIndexedSeqView[Char] {
+case class StringView(s: String) extends immutable.AbstractIndexedSeqView[Char] {
   def length = s.length
   @throws[StringIndexOutOfBoundsException]
   def apply(n: Int) = s.charAt(n)
