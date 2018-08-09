@@ -4,7 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 class ChainingOpsTest {
-  import scala.util.chainingOps._
+  import scala.util.chaining._
 
   @Test
   def testAnyTap: Unit = {

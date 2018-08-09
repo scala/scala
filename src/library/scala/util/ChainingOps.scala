@@ -33,6 +33,9 @@ final class ChainingOps[A](val self: A) extends AnyVal {
    *    // i == 24
    *    }}}
    *
+   * Note: `(1 - 2 - 3).pipe(times6)` may have a small amount of overhead at
+   * runtime compared to the equivalent  `{ val temp = 1 - 2 - 3; times6(temp) }`.
+   *
    *  @param f      the function to apply to the value.
    *  @tparam B     the result type of the function `f`.
    *  @return       a new value resulting from applying the given function
