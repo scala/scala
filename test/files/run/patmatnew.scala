@@ -314,9 +314,9 @@ object Test {
 
   // unapply for LazyLists
   object TestLazyList {
-    def sum(stream: LazyList[Int]): Int =
-      stream match {
-        case LazyList.Empty => 0
+    def sum(lazyList: LazyList[Int]): Int =
+      lazyList match {
+        case ll if ll.isEmpty => 0
         case LazyList.cons(hd, tl) => hd + sum(tl)
       }
 

@@ -4,9 +4,9 @@
 -------------------
 IndexedSeq.from -> LazyList.from -> iterator  <iterator>                     22 23 24 25
 IndexedSeq.from -> LazyList.from -> view      View(?)                        22 23 24 25
-IndexedSeq.from -> iterator -> LazyList.from  LazyList(_, ?)                 22 23 24 25
+IndexedSeq.from -> iterator -> LazyList.from  LazyList(?)                    22 23 24 25
 IndexedSeq.from -> iterator -> view           View(?)                        22 23 24 25
-IndexedSeq.from -> view -> LazyList.from      LazyList(_, ?)                 22 23 24 25
+IndexedSeq.from -> view -> LazyList.from      LazyList(?)                    22 23 24 25
 IndexedSeq.from -> view -> iterator           <iterator>                     22 23 24 25
 LazyList.from -> IndexedSeq.from -> iterator  <iterator>                     22 23 24 25
 LazyList.from -> IndexedSeq.from -> view      View(?)                        22 23 24 25
@@ -14,27 +14,27 @@ LazyList.from -> iterator -> IndexedSeq.from  Vector(22, 23, 24, 25)         22 
 LazyList.from -> iterator -> view             View(?)                        22 23 24 25
 LazyList.from -> view -> IndexedSeq.from      Vector(22, 23, 24, 25)         22 23 24 25
 LazyList.from -> view -> iterator             <iterator>                     22 23 24 25
-iterator -> IndexedSeq.from -> LazyList.from  LazyList(_, ?)                 22 23 24 25
+iterator -> IndexedSeq.from -> LazyList.from  LazyList(?)                    22 23 24 25
 iterator -> IndexedSeq.from -> view           View(?)                        22 23 24 25
 iterator -> LazyList.from -> IndexedSeq.from  Vector(22, 23, 24, 25)         22 23 24 25
 iterator -> LazyList.from -> view             View(?)                        22 23 24 25
 iterator -> view -> IndexedSeq.from           Vector(22, 23, 24, 25)         22 23 24 25
-iterator -> view -> LazyList.from             LazyList(_, ?)                 22 23 24 25
-view -> IndexedSeq.from -> LazyList.from      LazyList(_, ?)                 22 23 24 25
+iterator -> view -> LazyList.from             LazyList(?)                    22 23 24 25
+view -> IndexedSeq.from -> LazyList.from      LazyList(?)                    22 23 24 25
 view -> IndexedSeq.from -> iterator           <iterator>                     22 23 24 25
 view -> LazyList.from -> IndexedSeq.from      Vector(22, 23, 24, 25)         22 23 24 25
 view -> LazyList.from -> iterator             <iterator>                     22 23 24 25
 view -> iterator -> IndexedSeq.from           Vector(22, 23, 24, 25)         22 23 24 25
-view -> iterator -> LazyList.from             LazyList(_, ?)                 22 23 24 25
+view -> iterator -> LazyList.from             LazyList(?)                    22 23 24 25
 
 ** take 20 -> drop 10 -> slice(1, 5) **
 
 -------------------
 IndexedSeq.from -> LazyList.from -> iterator  <iterator>                     12 13 14 15
 IndexedSeq.from -> LazyList.from -> view      View(?)                        12 13 14 15
-IndexedSeq.from -> iterator -> LazyList.from  LazyList(_, ?)                 12 13 14 15
+IndexedSeq.from -> iterator -> LazyList.from  LazyList(?)                    12 13 14 15
 IndexedSeq.from -> iterator -> view           View(?)                        12 13 14 15
-IndexedSeq.from -> view -> LazyList.from      LazyList(_, ?)                 12 13 14 15
+IndexedSeq.from -> view -> LazyList.from      LazyList(?)                    12 13 14 15
 IndexedSeq.from -> view -> iterator           <iterator>                     12 13 14 15
 LazyList.from -> IndexedSeq.from -> iterator  <iterator>                     12 13 14 15
 LazyList.from -> IndexedSeq.from -> view      View(?)                        12 13 14 15
@@ -42,27 +42,27 @@ LazyList.from -> iterator -> IndexedSeq.from  Vector(12, 13, 14, 15)         12 
 LazyList.from -> iterator -> view             View(?)                        12 13 14 15
 LazyList.from -> view -> IndexedSeq.from      Vector(12, 13, 14, 15)         12 13 14 15
 LazyList.from -> view -> iterator             <iterator>                     12 13 14 15
-iterator -> IndexedSeq.from -> LazyList.from  LazyList(_, ?)                 12 13 14 15
+iterator -> IndexedSeq.from -> LazyList.from  LazyList(?)                    12 13 14 15
 iterator -> IndexedSeq.from -> view           View(?)                        12 13 14 15
 iterator -> LazyList.from -> IndexedSeq.from  Vector(12, 13, 14, 15)         12 13 14 15
 iterator -> LazyList.from -> view             View(?)                        12 13 14 15
 iterator -> view -> IndexedSeq.from           Vector(12, 13, 14, 15)         12 13 14 15
-iterator -> view -> LazyList.from             LazyList(_, ?)                 12 13 14 15
-view -> IndexedSeq.from -> LazyList.from      LazyList(_, ?)                 12 13 14 15
+iterator -> view -> LazyList.from             LazyList(?)                    12 13 14 15
+view -> IndexedSeq.from -> LazyList.from      LazyList(?)                    12 13 14 15
 view -> IndexedSeq.from -> iterator           <iterator>                     12 13 14 15
 view -> LazyList.from -> IndexedSeq.from      Vector(12, 13, 14, 15)         12 13 14 15
 view -> LazyList.from -> iterator             <iterator>                     12 13 14 15
 view -> iterator -> IndexedSeq.from           Vector(12, 13, 14, 15)         12 13 14 15
-view -> iterator -> LazyList.from             LazyList(_, ?)                 12 13 14 15
+view -> iterator -> LazyList.from             LazyList(?)                    12 13 14 15
 
 ** slice(20, 40) -> drop 10 -> take 5 **
 
 -------------------
 IndexedSeq.from -> LazyList.from -> iterator  <iterator>                     31 32 33 34 35
 IndexedSeq.from -> LazyList.from -> view      View(?)                        31 32 33 34 35
-IndexedSeq.from -> iterator -> LazyList.from  LazyList(_, ?)                 31 32 33 34 35
+IndexedSeq.from -> iterator -> LazyList.from  LazyList(?)                    31 32 33 34 35
 IndexedSeq.from -> iterator -> view           View(?)                        31 32 33 34 35
-IndexedSeq.from -> view -> LazyList.from      LazyList(_, ?)                 31 32 33 34 35
+IndexedSeq.from -> view -> LazyList.from      LazyList(?)                    31 32 33 34 35
 IndexedSeq.from -> view -> iterator           <iterator>                     31 32 33 34 35
 LazyList.from -> IndexedSeq.from -> iterator  <iterator>                     31 32 33 34 35
 LazyList.from -> IndexedSeq.from -> view      View(?)                        31 32 33 34 35
@@ -70,27 +70,27 @@ LazyList.from -> iterator -> IndexedSeq.from  Vector(31, 32, 33, 34, 35)     31 
 LazyList.from -> iterator -> view             View(?)                        31 32 33 34 35
 LazyList.from -> view -> IndexedSeq.from      Vector(31, 32, 33, 34, 35)     31 32 33 34 35
 LazyList.from -> view -> iterator             <iterator>                     31 32 33 34 35
-iterator -> IndexedSeq.from -> LazyList.from  LazyList(_, ?)                 31 32 33 34 35
+iterator -> IndexedSeq.from -> LazyList.from  LazyList(?)                    31 32 33 34 35
 iterator -> IndexedSeq.from -> view           View(?)                        31 32 33 34 35
 iterator -> LazyList.from -> IndexedSeq.from  Vector(31, 32, 33, 34, 35)     31 32 33 34 35
 iterator -> LazyList.from -> view             View(?)                        31 32 33 34 35
 iterator -> view -> IndexedSeq.from           Vector(31, 32, 33, 34, 35)     31 32 33 34 35
-iterator -> view -> LazyList.from             LazyList(_, ?)                 31 32 33 34 35
-view -> IndexedSeq.from -> LazyList.from      LazyList(_, ?)                 31 32 33 34 35
+iterator -> view -> LazyList.from             LazyList(?)                    31 32 33 34 35
+view -> IndexedSeq.from -> LazyList.from      LazyList(?)                    31 32 33 34 35
 view -> IndexedSeq.from -> iterator           <iterator>                     31 32 33 34 35
 view -> LazyList.from -> IndexedSeq.from      Vector(31, 32, 33, 34, 35)     31 32 33 34 35
 view -> LazyList.from -> iterator             <iterator>                     31 32 33 34 35
 view -> iterator -> IndexedSeq.from           Vector(31, 32, 33, 34, 35)     31 32 33 34 35
-view -> iterator -> LazyList.from             LazyList(_, ?)                 31 32 33 34 35
+view -> iterator -> LazyList.from             LazyList(?)                    31 32 33 34 35
 
 ** slice(20, 40) -> take 10 -> drop 5 **
 
 -------------------
 IndexedSeq.from -> LazyList.from -> iterator  <iterator>                     26 27 28 29 30
 IndexedSeq.from -> LazyList.from -> view      View(?)                        26 27 28 29 30
-IndexedSeq.from -> iterator -> LazyList.from  LazyList(_, ?)                 26 27 28 29 30
+IndexedSeq.from -> iterator -> LazyList.from  LazyList(?)                    26 27 28 29 30
 IndexedSeq.from -> iterator -> view           View(?)                        26 27 28 29 30
-IndexedSeq.from -> view -> LazyList.from      LazyList(_, ?)                 26 27 28 29 30
+IndexedSeq.from -> view -> LazyList.from      LazyList(?)                    26 27 28 29 30
 IndexedSeq.from -> view -> iterator           <iterator>                     26 27 28 29 30
 LazyList.from -> IndexedSeq.from -> iterator  <iterator>                     26 27 28 29 30
 LazyList.from -> IndexedSeq.from -> view      View(?)                        26 27 28 29 30
@@ -98,15 +98,15 @@ LazyList.from -> iterator -> IndexedSeq.from  Vector(26, 27, 28, 29, 30)     26 
 LazyList.from -> iterator -> view             View(?)                        26 27 28 29 30
 LazyList.from -> view -> IndexedSeq.from      Vector(26, 27, 28, 29, 30)     26 27 28 29 30
 LazyList.from -> view -> iterator             <iterator>                     26 27 28 29 30
-iterator -> IndexedSeq.from -> LazyList.from  LazyList(_, ?)                 26 27 28 29 30
+iterator -> IndexedSeq.from -> LazyList.from  LazyList(?)                    26 27 28 29 30
 iterator -> IndexedSeq.from -> view           View(?)                        26 27 28 29 30
 iterator -> LazyList.from -> IndexedSeq.from  Vector(26, 27, 28, 29, 30)     26 27 28 29 30
 iterator -> LazyList.from -> view             View(?)                        26 27 28 29 30
 iterator -> view -> IndexedSeq.from           Vector(26, 27, 28, 29, 30)     26 27 28 29 30
-iterator -> view -> LazyList.from             LazyList(_, ?)                 26 27 28 29 30
-view -> IndexedSeq.from -> LazyList.from      LazyList(_, ?)                 26 27 28 29 30
+iterator -> view -> LazyList.from             LazyList(?)                    26 27 28 29 30
+view -> IndexedSeq.from -> LazyList.from      LazyList(?)                    26 27 28 29 30
 view -> IndexedSeq.from -> iterator           <iterator>                     26 27 28 29 30
 view -> LazyList.from -> IndexedSeq.from      Vector(26, 27, 28, 29, 30)     26 27 28 29 30
 view -> LazyList.from -> iterator             <iterator>                     26 27 28 29 30
 view -> iterator -> IndexedSeq.from           Vector(26, 27, 28, 29, 30)     26 27 28 29 30
-view -> iterator -> LazyList.from             LazyList(_, ?)                 26 27 28 29 30
+view -> iterator -> LazyList.from             LazyList(?)                    26 27 28 29 30
