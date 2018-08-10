@@ -3,7 +3,10 @@ package scala.util
 import org.junit.Assert._
 import org.junit.Test
 
-class ChainingOpsTest {
+import scala.tools.reflect.ToolBoxError
+import scala.tools.testing.RunTesting
+
+class ChainingOpsTest extends RunTesting {
   import scala.util.chaining._
 
   @Test
@@ -27,4 +30,7 @@ class ChainingOpsTest {
 
     assertEquals(24, result)
   }
+
+  @Test(expected = classOf[ToolBoxError]) def testNoSelf: Unit =
+    runner.run("import scala.util.chaining._; Nil.self")
 }
