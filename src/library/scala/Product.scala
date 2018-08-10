@@ -62,10 +62,5 @@ trait Product extends Any with Equals {
 
   /** An iterator over the names of all the elements of this product.
    */
-  def productElementNames: Iterator[String] = new scala.collection.AbstractIterator[String] {
-    private[this] var c: Int = 0
-    private[this] val cmax = productArity
-    def hasNext = c < cmax
-    def next() = { val result = productElementName(c); c += 1; result }
-  }
+  def productElementNames: Iterator[String] = (0 until productArity).iterator map productElementName
 }
