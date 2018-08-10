@@ -198,20 +198,6 @@ public final class BoxesRunTime
         }
     }
 
-    public static boolean arraysEquals(Object[] xs, Object[] ys) {
-        if (xs == ys)
-            return true;
-        if (xs.length != ys.length)
-            return false;
-
-        int len = xs.length;
-        for (int i = 0; i < len; i++) {
-            if (!equals(xs[i], ys[i]))
-                return false;
-        }
-        return true;
-    }
-
     private static int unboxCharOrInt(Object arg1, int code) {
       if (code == CHAR)
         return ((java.lang.Character) arg1).charValue();

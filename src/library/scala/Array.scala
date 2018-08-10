@@ -499,6 +499,22 @@ object Array {
     b.result()
   }
 
+  def equals(xs: Array[AnyRef], ys: Array[AnyRef]): Boolean = {
+    if (xs eq ys)
+      return true
+    if (xs.length != ys.length)
+      return false
+
+    val len = xs.length
+    var i = 0
+    while (i < len) {
+      if (xs(i) != ys(i))
+        return false
+      i += 1
+    }
+    true
+  }
+
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
    *
    *  @param x the selector value
