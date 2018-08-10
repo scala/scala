@@ -197,7 +197,8 @@ class ChampMapSmokeTest {
     var map: ChampHashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V1")
     assertEquals(1, map.size)
     map = map + mkTuple(O1, "O1_V2")
-    assertSameEqHash(emptyMap + mkTuple(O1, "O1_V2"), map)
+    val expected: ChampHashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V2")
+    assertSameEqHash(expected, map)
   }
 
   @Test def testCachedSizeAndHashCodeCollision(): Unit = {
