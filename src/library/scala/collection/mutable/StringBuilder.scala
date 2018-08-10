@@ -158,7 +158,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     */
   def appendAll(xs: IterableOnce[Char]): StringBuilder = {
     xs match {
-      case x: WrappedString => underlying append x.self
+      case x: WrappedString => underlying append x.toString
       case x: ArraySeq.ofChar => underlying append x.array
       case x: StringBuilder => underlying append x.underlying
       case _ =>
