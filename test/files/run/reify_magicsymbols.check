@@ -9,5 +9,4 @@ List[AnyRef]
 List[Null]
 List[Nothing]
 AnyRef{def foo(x: Int): Int}
-Int* => Unit
 (=> Int) => Unit

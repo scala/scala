@@ -17,8 +17,8 @@ object Test {
     fun3(1)()
     fun4(1)()
 
-    val f: (String, Int*) => Unit = m(2, 3)
-    f("", 5, 6)
+    val f: (String, Seq[Int]) => Unit = m(2, 3)
+    f("", Seq(5, 6))
   }
 
   def foo(s: => String)(dummy: Int) = () => println(s)

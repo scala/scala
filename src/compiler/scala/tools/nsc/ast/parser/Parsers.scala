@@ -1019,7 +1019,7 @@ self =>
        *  Type ::= InfixType `=>' Type
        *         | `(' [`=>' Type] `)' `=>' Type
        *         | InfixType [ExistentialClause]
-       *  ExistentialClause ::= forSome `{' ExistentialDcl {semi ExistentialDcl}} `}'
+       *  ExistentialClause ::= forSome `{' ExistentialDcl {semi ExistentialDcl} `}'
        *  ExistentialDcl    ::= type TypeDcl | val ValDcl
        *  }}}
        */
@@ -2134,7 +2134,7 @@ self =>
     /** The implementation of the context sensitive methods for parsing outside of patterns. */
     object outPattern extends PatternContextSensitive {
       def argType(): Tree = typ()
-      def functionArgType(): Tree = paramType(useStartAsPosition = true)
+      def functionArgType(): Tree = paramType(repeatedParameterOK = false, useStartAsPosition = true)
     }
     /** The implementation for parsing inside of patterns at points where sequences are allowed. */
     object seqOK extends SeqContextSensitive {
@@ -2366,8 +2366,8 @@ self =>
      *  ParamType ::= Type | `=>' Type | Type `*'
      *  }}}
      */
-    def paramType(): Tree = paramType(useStartAsPosition = false)
-    def paramType(useStartAsPosition: Boolean): Tree = {
+    def paramType(): Tree = paramType(repeatedParameterOK = true, useStartAsPosition = false)
+    def paramType(repeatedParameterOK: Boolean, useStartAsPosition: Boolean): Tree = {
       val start = in.offset
       in.token match {
         case ARROW  =>
@@ -2377,7 +2377,8 @@ self =>
           val t = typ()
           if (isRawStar) {
             in.nextToken()
-            if (useStartAsPosition) atPos(start)(repeatedApplication(t))
+            if (!repeatedParameterOK) { syntaxError("repeated parameters are only allowed in method signatures; use Seq instead", skipIt = false) ; t }
+            else if (useStartAsPosition) atPos(start)(repeatedApplication(t))
             else atPos(t.pos.start, t.pos.point)(repeatedApplication(t))
           }
           else t
