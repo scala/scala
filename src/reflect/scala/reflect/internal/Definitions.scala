@@ -454,7 +454,8 @@ trait Definitions extends api.StandardDefinitions {
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
 
     // collections classes
-    private[this] lazy val isNewCollections = getClassIfDefined("scala.collection.IterableOnce") != NoSymbol
+    private[this] lazy val _isNewCollections = getClassIfDefined("scala.collection.IterableOnce") != NoSymbol
+    private[scala] def isNewCollections = _isNewCollections
     lazy val ConsClass              = requiredClass[scala.collection.immutable.::[_]]
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
