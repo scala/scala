@@ -332,8 +332,6 @@ object MapOps {
   */
 @SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](immutable.Map) {
-  implicit def toLazyZipOps[K, V, CC[X, Y] <: Iterable[(X, Y)]](that: CC[K, V]): LazyZipOps[(K, V), CC[K, V]] = new LazyZipOps(that)
-
   private val DefaultSentinel: AnyRef = new AnyRef
 }
 
