@@ -125,7 +125,7 @@ private[immutable] object MapNode {
 
 }
 
-private[immutable] abstract class MapNodeSource[K, +V] {
+private[immutable] trait MapNodeSource[K, +V] {
   def get: MapNode[K, V]
 }
 
@@ -134,7 +134,7 @@ private final class Replaced[K, V](node: MapNode[K, V @uV]) extends MapNodeSourc
   def get = value
 }
 
-private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K, V] with Node[MapNode[K, V @uV]] {
+private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] with MapNodeSource[K, V] {
   final def get: MapNode[K, V] = this
 
   def get(key: K, hash: Int, shift: Int): Option[V]
@@ -165,7 +165,6 @@ private[immutable] sealed abstract class MapNode[K, +V] extends MapNodeSource[K,
   def sizePredicate: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
-
 }
 
 private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, val content: Array[Any], val hashes: Array[Int]) extends MapNode[K, V] {
@@ -502,25 +501,6 @@ private class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: Int, va
 
     val dstHashes = insertElement(hashes, dataIxNew, hash)
     new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap ^ bitpos, dst, dstHashes)
-  }
-
-  private def removeElement(as: Array[Int], ix: Int): Array[Int] = {
-    if (ix < 0) throw new ArrayIndexOutOfBoundsException
-    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
-    val result = new Array[Int](as.length - 1)
-    arraycopy(as, 0, result, 0, ix)
-    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
-    result
-  }
-
-  private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
-    if (ix < 0) throw new ArrayIndexOutOfBoundsException
-    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
-    val result = new Array[Int](as.length + 1)
-    arraycopy(as, 0, result, 0, ix)
-    result(ix) = elem
-    arraycopy(as, ix, result, ix + 1, as.length - ix)
-    result
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
