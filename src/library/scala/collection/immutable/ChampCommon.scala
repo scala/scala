@@ -45,6 +45,8 @@ private[immutable] abstract class Node[T <: Node[T]] {
 
   def getPayload(index: Int): Any
 
+  def getHash(index: Int): Int
+
   def sizePredicate: Int
 
   protected final def removeElement(as: Array[Int], ix: Int): Array[Int] = {

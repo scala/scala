@@ -5,9 +5,11 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import mutable.{Builder, ImmutableBuilder}
-import Hashing.computeHash
+import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
+
+import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
@@ -39,11 +41,16 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
-  def contains(element: A): Boolean = rootNode.contains(element, computeHash(element), 0)
+  def contains(element: A): Boolean = {
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    rootNode.contains(element, elementUnimprovedHash, elementHash, 0)
+  }
 
   def incl(element: A): ChampHashSet[A] = {
-    val elementHash = computeHash(element)
-    val newRootNode = rootNode.updated(element, elementHash, 0)
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    val newRootNode = rootNode.updated(element, elementUnimprovedHash, elementHash, 0)
 
     if (newRootNode ne rootNode)
       ChampHashSet(newRootNode, cachedJavaHashCode + elementHash, cachedSize + 1)
@@ -51,8 +58,9 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
   }
 
   def excl(element: A): ChampHashSet[A] = {
-    val elementHash = computeHash(element)
-    val newRootNode = rootNode.removed(element, elementHash, 0)
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    val newRootNode = rootNode.removed(element, elementUnimprovedHash, elementHash, 0)
 
     if (rootNode ne newRootNode)
       ChampHashSet(newRootNode, cachedJavaHashCode - elementHash, cachedSize - 1)
@@ -85,6 +93,13 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     }
 
   override protected[this] def className = "ChampHashSet"
+
+  override def hashCode(): Int = {
+    val it = new SetHashIterator(rootNode)
+    val hash = MurmurHash3.unorderedHash(it, MurmurHash3.setSeed)
+    //assert(hash == super.hashCode())
+    hash
+  }
 }
 
 private[immutable] final object SetNode {
@@ -100,11 +115,11 @@ private[immutable] final object SetNode {
 
 private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
-  def contains(element: A, hash: Int, shift: Int): Boolean
+  def contains(element: A, originalHash: Int, hash: Int, shift: Int): Boolean
 
-  def updated(element: A, hash: Int, shift: Int): SetNode[A]
+  def updated(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A]
 
-  def removed(element: A, hash: Int, shift: Int): SetNode[A]
+  def removed(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A]
 
   def hasNodes: Boolean
 
@@ -126,7 +141,7 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
 }
 
-private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, val content: Array[Any], val hashes: Array[Int]) extends SetNode[A] {
+private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, val content: Array[Any], val originalHashes: Array[Int]) extends SetNode[A] {
 
   import Node._
   import SetNode._
@@ -154,27 +169,29 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
   def getPayload(index: Int) =
     content(TupleLength * index).asInstanceOf[A]
 
+  override def getHash(index: Int): Int = originalHashes(index)
+
   def getNode(index: Int) =
     content(content.length - 1 - index).asInstanceOf[SetNode[A]]
 
-  def contains(element: A, elementHash: Int, shift: Int): Boolean = {
+  def contains(element: A, originalHash: Int, elementHash: Int, shift: Int): Boolean = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      return hashes(index) == elementHash && element == this.getPayload(index)
+      return originalHashes(index) == originalHash && element == this.getPayload(index)
     }
 
     if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
-      return this.getNode(index).contains(element, elementHash, shift + BitPartitionSize)
+      return this.getNode(index).contains(element, originalHash, elementHash, shift + BitPartitionSize)
     }
 
     false
   }
 
-  def updated(element: A, elementHash: Int, shift: Int): SetNode[A] = {
+  def updated(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -182,10 +199,12 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val index = indexFrom(dataMap, mask, bitpos)
       val element0 = this.getPayload(index)
 
-      if (element0 == element) {
+      if (element0.asInstanceOf[AnyRef] == element.asInstanceOf[AnyRef]) {
         return this
       } else {
-        val subNodeNew = mergeTwoKeyValPairs(element0, computeHash(element0), element, elementHash, shift + BitPartitionSize)
+        val element0UnimprovedHash = element0.##
+        val element0Hash = improve(element0UnimprovedHash)
+        val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
         return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
       }
     }
@@ -194,7 +213,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.updated(element, elementHash, shift + BitPartitionSize)
+      val subNodeNew = subNode.updated(element, originalHash, elementHash, shift + BitPartitionSize)
       if (subNode eq subNodeNew) {
         return this
       } else {
@@ -202,10 +221,10 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       }
     }
 
-    copyAndInsertValue(bitpos, element, elementHash)
+    copyAndInsertValue(bitpos, element, originalHash, elementHash)
   }
 
-  def removed(element: A, elementHash: Int, shift: Int): SetNode[A] = {
+  def removed(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -221,9 +240,9 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(elementHash, 0))
           if (index == 0)
-            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(1)), Array(hashes(1)))
+            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(1)), Array(originalHashes(1)))
           else
-            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(0)), Array(hashes(0)))
+            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(0)), Array(originalHashes(0)))
         }
         else return copyAndRemoveValue(bitpos)
       } else return this
@@ -233,7 +252,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.removed(element, elementHash, shift + BitPartitionSize)
+      val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
       if (subNodeNew eq subNode) return this
@@ -255,11 +274,11 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     this
   }
 
-  def mergeTwoKeyValPairs(key0: A, keyHash0: Int, key1: A, keyHash1: Int, shift: Int): SetNode[A] = {
+  def mergeTwoKeyValPairs(key0: A, originalKeyHash0: Int, keyHash0: Int, key1: A, originalKeyHash1: Int, keyHash1: Int, shift: Int): SetNode[A] = {
     // assert(key0 != key1)
 
     if (shift >= HashCodeLength) {
-      new HashCollisionSetNode[A](keyHash0, Vector(key0, key1))
+      new HashCollisionSetNode[A](originalKeyHash0, keyHash0, Vector(key0, key1))
     } else {
       val mask0 = maskFrom(keyHash0, shift)
       val mask1 = maskFrom(keyHash1, shift)
@@ -269,14 +288,14 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
         val dataMap = bitposFrom(mask0) | bitposFrom(mask1)
 
         if (mask0 < mask1) {
-          new BitmapIndexedSetNode[A](dataMap, 0, Array(key0, key1), Array(keyHash0, keyHash1))
+          new BitmapIndexedSetNode[A](dataMap, 0, Array(key0, key1), Array(originalKeyHash0, originalKeyHash1))
         } else {
-          new BitmapIndexedSetNode[A](dataMap, 0, Array(key1, key0), Array(keyHash1, keyHash0))
+          new BitmapIndexedSetNode[A](dataMap, 0, Array(key1, key0), Array(originalKeyHash1, originalKeyHash0))
         }
       } else {
         // identical prefixes, payload must be disambiguated deeper in the trie
         val nodeMap = bitposFrom(mask0)
-        val node = mergeTwoKeyValPairs(key0, keyHash0, key1, keyHash1, shift + BitPartitionSize)
+        val node = mergeTwoKeyValPairs(key0, originalKeyHash0, keyHash0, key1, originalKeyHash1, keyHash1, shift + BitPartitionSize)
 
         new BitmapIndexedSetNode[A](0, nodeMap, Array(node), Array())
       }
@@ -311,10 +330,10 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
     dst(idx) = newNode
-    new BitmapIndexedSetNode[A](dataMap, nodeMap, dst, hashes)
+    new BitmapIndexedSetNode[A](dataMap, nodeMap, dst, originalHashes)
   }
 
-  def copyAndInsertValue(bitpos: Int, key: A, elementHash: Int) = {
+  def copyAndInsertValue(bitpos: Int, key: A, originalHash: Int, elementHash: Int) = {
     val dataIx = dataIndex(bitpos)
     val idx = TupleLength * dataIx
 
@@ -325,7 +344,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     arraycopy(src, 0, dst, 0, idx)
     dst(idx) = key
     arraycopy(src, idx, dst, idx + 1, src.length - idx)
-    val dstHashes = insertElement(hashes, dataIx, elementHash)
+    val dstHashes = insertElement(originalHashes, dataIx, originalHash)
 
     new BitmapIndexedSetNode[A](dataMap | bitpos, nodeMap, dst, dstHashes)
   }
@@ -340,7 +359,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     // copy 'src' and remove 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, idx)
     arraycopy(src, idx + 1, dst, idx, src.length - idx - 1)
-    val dstHashes = removeElement(hashes, dataIx)
+    val dstHashes = removeElement(originalHashes, dataIx)
     new BitmapIndexedSetNode[A](dataMap ^ bitpos, nodeMap, dst, dstHashes)
   }
 
@@ -359,7 +378,7 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     arraycopy(src, idxOld + 1, dst, idxOld, idxNew - idxOld)
     dst(idxNew) = node
     arraycopy(src, idxNew + 1, dst, idxNew + 1, src.length - idxNew - 1)
-    val dstHashes = removeElement(hashes, dataIx)
+    val dstHashes = removeElement(originalHashes, dataIx)
     new BitmapIndexedSetNode[A](dataMap ^ bitpos, nodeMap | bitpos, dst, dstHashes)
   }
 
@@ -378,11 +397,8 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
     dst(idxNew) = node.getPayload(0)
     arraycopy(src, idxNew, dst, idxNew + 1, idxOld - idxNew)
     arraycopy(src, idxOld + 1, dst, idxOld + 1, src.length - idxOld - 1)
-    val hash = node match {
-      case bitnode: BitmapIndexedSetNode[_] => bitnode.hashes(0)
-      case collision: HashCollisionSetNode[_] => collision.hash
-    }
-    val dstHashes = insertElement(hashes, dataIxNew, hash)
+    val hash = node.getHash(0)
+    val dstHashes = insertElement(originalHashes, dataIxNew, hash)
     new BitmapIndexedSetNode[A](dataMap | bitpos, nodeMap ^ bitpos, dst, dstHashes)
   }
 
@@ -427,7 +443,9 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
               // Data x Node
               val payload = this.getPayload(indexFrom(this.dataMap, bitpos))
               val subNode = that.getNode(indexFrom(node.nodeMap, bitpos))
-              subNode.contains(payload, computeHash(payload), shift + BitPartitionSize);
+              val elementUnimprovedHash = payload.##
+              val elementHash = improve(elementUnimprovedHash)
+              subNode.contains(payload, elementUnimprovedHash, elementHash, shift + BitPartitionSize)
             }
           } else {
             // Node x Node
@@ -450,7 +468,8 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
         (this eq node) ||
           (this.nodeMap == node.nodeMap) &&
             (this.dataMap == node.dataMap) &&
-            deepContentEquality(this.content, node.content, content.length)
+             java.util.Arrays.equals(this.originalHashes, node.originalHashes) &&
+              deepContentEquality(this.content, node.content, content.length)
       case _ => false
     }
 
@@ -475,20 +494,20 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 
 }
 
-private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A]) extends SetNode[A] {
+private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, val content: Vector[A]) extends SetNode[A] {
 
   import Node._
 
   require(content.size >= 2)
 
-  def contains(element: A, hash: Int, shift: Int): Boolean =
+  def contains(element: A, originalHash: Int, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.contains(element)
 
-  def updated(element: A, hash: Int, shift: Int): SetNode[A] =
-    if (this.contains(element, hash, shift)) {
+  def updated(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A] =
+    if (this.contains(element, originalHash, hash, shift)) {
       this
     } else {
-      new HashCollisionSetNode[A](hash, content.appended(element))
+      new HashCollisionSetNode[A](originalHash, hash, content.appended(element))
     }
 
   /**
@@ -498,16 +517,16 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
     * singleton element and a hash-prefix for trie level 0. This node will be then a) either become
     * the new root, or b) unwrapped and inlined deeper in the trie.
     */
-  def removed(element: A, hash: Int, shift: Int): SetNode[A] =
-    if (!this.contains(element, hash, shift)) {
+  def removed(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A] =
+    if (!this.contains(element, originalHash, hash, shift)) {
       this
     } else {
       val updatedContent = content.filterNot(element0 => element0 == element)
       // assert(updatedContent.size == content.size - 1)
 
       updatedContent.size match {
-        case 1 => new BitmapIndexedSetNode[A](bitposFrom(maskFrom(hash, 0)), 0, updatedContent.toArray, Array(hash))
-        case _ => new HashCollisionSetNode[A](hash, updatedContent)
+        case 1 => new BitmapIndexedSetNode[A](bitposFrom(maskFrom(hash, 0)), 0, updatedContent.toArray, Array(originalHash))
+        case _ => new HashCollisionSetNode[A](originalHash, hash, updatedContent)
       }
     }
 
@@ -523,6 +542,8 @@ private final class HashCollisionSetNode[A](val hash: Int, val content: Vector[A
   def payloadArity: Int = content.size
 
   def getPayload(index: Int): A = content(index)
+
+  override def getHash(index: Int): Int = originalHash
 
   def sizePredicate: Int = SizeMoreThanOne
 
@@ -579,6 +600,23 @@ private final class SetReverseIterator[A](rootNode: SetNode[A])
   }
 
 }
+
+private final class SetHashIterator[A](rootNode: SetNode[A])
+  extends ChampBaseIterator[SetNode[A]](rootNode) with Iterator[AnyRef] {
+  private[this] var hash = 0
+  override def hashCode(): Int = hash
+
+  def next(): AnyRef = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    hash = currentValueNode.getHash(currentValueCursor)
+    currentValueCursor += 1
+    this
+  }
+
+}
+
 
 /**
   * $factoryInfo

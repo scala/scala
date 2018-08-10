@@ -261,4 +261,8 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
     set2 = set2 +  mkTuple(O1, "O1_V2")
     assertSameEqHash(set1 + mkTuple(O1, "O1_V2"), set2)
   }
+
+  @Test def hashCodeCheck(): Unit = {
+    assertEquals(-1075495872, collection.immutable.ChampHashSet(1).hashCode())
+  }
 }

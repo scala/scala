@@ -262,4 +262,8 @@ class ChampMapSmokeTest {
     val map = emptyMap[Any, Any].updated(k0, 0).updated(k1, null)
     assertEquals(Some(null), map.get(k1))
   }
+
+  @Test def hashCodeCheck(): Unit = {
+    assertEquals(359703249, collection.immutable.ChampHashMap(1 -> 2).hashCode())
+  }
 }
