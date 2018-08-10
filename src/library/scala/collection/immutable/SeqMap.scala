@@ -52,7 +52,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  final class SeqMap1[K, +V](key1: K, value1: V) extends SeqMap[K,V] with Serializable {
+  private final class SeqMap1[K, +V](key1: K, value1: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
@@ -73,7 +73,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  final class SeqMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends SeqMap[K,V] with Serializable {
+  private final class SeqMap2[K, +V](key1: K, value1: V, key2: K, value2: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def apply(key: K) =
@@ -104,7 +104,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  class SeqMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends SeqMap[K,V] with Serializable {
+  private class SeqMap3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def apply(key: K) =
@@ -140,7 +140,7 @@ object SeqMap extends MapFactory[SeqMap] {
   }
 
   @SerialVersionUID(3L)
-  final class SeqMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends SeqMap[K,V] with Serializable {
+  private final class SeqMap4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends SeqMap[K,V] with Serializable {
     override def size: Int = 4
     override def knownSize: Int = 4
     override def apply(key: K) =
