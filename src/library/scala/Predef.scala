@@ -83,7 +83,7 @@ import scala.annotation.meta.companionMethod
  *
  * @groupname conversions-string String Conversions
  * @groupprio conversions-string 60
- * @groupdesc conversions-string Conversions to and from String and StringOps.
+ * @groupdesc conversions-string Conversions from String to StringOps or WrappedString.
  *
  * @groupname implicit-classes-any Implicit Classes
  * @groupprio implicit-classes-any 70
