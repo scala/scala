@@ -23,7 +23,7 @@ package scala
  *  @since   1.0
  */
 trait Proxy extends Any {
-  def self: Any
+  protected def self: Any
 
   override def hashCode: Int = self.hashCode
   override def equals(that: Any): Boolean = that match {
@@ -39,6 +39,6 @@ object Proxy {
   /** A proxy which exposes the type it is proxying for via a type parameter.
    */
   trait Typed[T] extends Any with Proxy {
-    def self: T
+    protected def self: T
   }
 }

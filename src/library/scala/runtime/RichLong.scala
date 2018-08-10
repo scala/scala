@@ -9,7 +9,7 @@
 package scala
 package runtime
 
-final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
+final class RichLong(protected val self: Long) extends AnyVal with IntegralProxy[Long] {
   protected def num = scala.math.Numeric.LongIsIntegral
   protected def ord = scala.math.Ordering.Long
 
