@@ -279,10 +279,9 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
       if (key0 == key) {
         val value0 = this.getValue(index)
         return (
-          if (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef])
-            // TODO should we also check that `key0 eq key` in addition to being ==
+          if ((key0.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) && (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]))
             this
-          else copyAndSetValue(bitpos, value)
+          else copyAndSetValue(bitpos, key, value)
         )
       } else {
         val value0 = this.getValue(index)
@@ -405,16 +404,17 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
   def nodeIndex(bitpos: Int) = bitCount(nodeMap & (bitpos - 1))
 
-  def copyAndSetValue[V1 >: V](bitpos: Int, newValue: V1): MapNode[K, V1] = {
+  def copyAndSetValue[V1 >: V](bitpos: Int, newKey: K, newValue: V1): MapNode[K, V1] = {
     val dataIx = dataIndex(bitpos)
-    val idx = TupleLength * dataIx + 1
+    val idx = TupleLength * dataIx
 
     val src = this.content
     val dst = new Array[Any](src.length)
 
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
-    dst(idx) = newValue
+    dst(idx) = newKey
+    dst(idx + 1) = newValue
     new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, originalHashes, size)
   }
 
