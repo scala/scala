@@ -64,4 +64,8 @@ object WrappedString extends SpecificIterableFactory[Char, WrappedString] {
   val empty: WrappedString = new WrappedString("")
   def newBuilder: Builder[Char, WrappedString] =
     new StringBuilder().mapResult(x => new WrappedString(x))
+
+  implicit class UnwrapOp(private val value: WrappedString) extends AnyVal {
+    def unwrap: String = value.self
+  }
 }
