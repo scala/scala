@@ -1,13 +1,7 @@
-t8923.scala:9: error: 3 more arguments than can be applied to method apply: (v1: Seq[Int])Int in trait Function1
-  def f() = Other.total(1, 2, 3, 4)
-                           ^
-t8923.scala:13: error: 3 more arguments than can be applied to method apply: (v1: Seq[Int])Int in trait Function1
-    total(1, 2, 3, 4)
-             ^
-t8923.scala:18: error: too many arguments (3) for method apply: (v1: Seq[A])A in trait Function1
-  def f() = Other.heady(1, 2, 3)
-                           ^
-t8923.scala:22: error: too many arguments (3) for method apply: (v1: Seq[A])A in trait Function1
-    heady(1, 2, 3)
-             ^
-four errors found
+t8923.scala:3: error: repeated parameters are only allowed in method signatures; use Seq instead
+  def total: (Int*) => Int = _.sum
+                  ^
+t8923.scala:5: error: repeated parameters are only allowed in method signatures; use Seq instead
+  def heady[A]: (A*) => A = _.head
+                   ^
+two errors found
