@@ -650,6 +650,43 @@ trait Implicits {
        }
      }
 
+    private def matchesPtInst(info: ImplicitInfo): Boolean = {
+      def isViewLike = pt match {
+        case Function1(_, _) => true
+        case _ => false
+      }
+
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
+      info.tpe match {
+        case PolyType(tparams, restpe) =>
+          try {
+            val allUndetparams = (undetParams ++ tparams).distinct
+            val tvars = allUndetparams map freshVar
+            val tp = ApproximateDependentMap(restpe)
+            val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+            if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
+              if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
+              false
+            } else if(!isView && !isViewLike) {
+              // we can't usefully prune views any further because we would need to type an application
+              // of the view to the term as is done in the computation of itree2 in typedImplicit1.
+              tvars.foreach(_.constr.stopWideningIfPrecluded)
+              val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
+              val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(allUndetparams, tvars, targs)
+              val remainingUndet = allUndetparams diff okParams
+              val tpSubst = deriveTypeWithWildcards(remainingUndet)(tp.instantiateTypeParams(okParams, okArgs))
+              if(!matchesPt(tpSubst, wildPt, remainingUndet)) {
+                if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
+                false
+              } else true
+            } else true
+          } catch {
+            case _: NoInstance => false
+          }
+        case _ => true
+      }
+    }
+
     /** Capturing the overlap between isPlausiblyCompatible and normSubType.
      *  This is a faithful translation of the code which was there, but it
      *  seems likely the methods are intended to be even more similar than
@@ -1065,6 +1102,13 @@ trait Implicits {
        *   - find the most likely one
        *   - if it matches, forget about all others it improves upon
        */
+
+      // the pt for views can have embedded unification type variables, BoundedWildcardTypes or
+      // Nothings which can't be solved for. Rather than attempt to patch things up later we
+      // just skip those cases altogether.
+      lazy val wildPtNotInstantiable =
+        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
+
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
         case firstPending :: otherPending =>
@@ -1080,7 +1124,9 @@ trait Implicits {
 
           val savedInfos = undetParams.map(_.info)
           val typedFirstPending = try {
-            typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+            if(wildPtNotInstantiable || matchesPtInst(firstPending))
+              typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+            else SearchFailure
           } finally {
             foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
           }
@@ -1804,4 +1850,10 @@ trait ImplicitsStats {
   val matchesPtNanos      = newSubTimer  ("  matchesPT", typerNanos)
   val implicitCacheAccs   = newCounter   ("implicit cache accesses", "typer")
   val implicitCacheHits   = newSubCounter("implicit cache hits", implicitCacheAccs)
+
+  val matchesPtInstCalls  = newCounter   ("implicits instantiated for pruning")
+  val matchesPtInstMismatch1
+                          = newSubCounter("  immediate mismatches", matchesPtInstCalls)
+  val matchesPtInstMismatch2
+                          = newSubCounter("  instantiated mismatches", matchesPtInstCalls)
 }
