@@ -16,6 +16,8 @@ class ChainingOpsTest {
     assertEquals(List(1, 2, 3), result)
   }
 
+  @Test def testAnyValTap: Unit = assertEquals(42.tap(x => x), 42)
+
   @Test
   def testAnyPipe: Unit = {
     val times6 = (_: Int) * 6
