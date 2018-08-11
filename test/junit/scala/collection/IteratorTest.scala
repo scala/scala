@@ -362,6 +362,11 @@ class IteratorTest {
   }
 
   @Test
+  def emptyKnownSize(): Unit = {
+    assertEquals(0, Iterator.empty.knownSize)
+  }
+
+  @Test
   def mkString: Unit = {
     val it = List("a", null, "b", null, "c", null).iterator
 
