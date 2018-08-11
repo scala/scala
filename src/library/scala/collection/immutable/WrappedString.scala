@@ -17,7 +17,7 @@ import mutable.{Builder, StringBuilder}
   *  @define Coll `WrappedString`
   *  @define coll wrapped string
   */
-final class WrappedString(val self: String) extends AbstractSeq[Char] with IndexedSeq[Char]
+final class WrappedString(private val self: String) extends AbstractSeq[Char] with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, WrappedString] {
 
   def apply(i: Int): Char = self.charAt(i)
@@ -64,4 +64,8 @@ object WrappedString extends SpecificIterableFactory[Char, WrappedString] {
   val empty: WrappedString = new WrappedString("")
   def newBuilder: Builder[Char, WrappedString] =
     new StringBuilder().mapResult(x => new WrappedString(x))
+
+  implicit class UnwrapOp(private val value: WrappedString) extends AnyVal {
+    def unwrap: String = value.self
+  }
 }
