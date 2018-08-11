@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.immutable.Seq
 import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnit4])
@@ -44,6 +45,13 @@ class ArraySeqTest {
   def testCooperativeEquality(): Unit = {
     assertEquals(ArraySeq(1, 2, 3), ArraySeq(1L, 2L, 3L))
     assertEquals(ArraySeq(1, 2) :+ 3, ArraySeq(1L, 2L) :+ 3L) // :+ makes it an ArraySeq.ofRef
+  }
+
+  @Test
+  def t10690(): Unit = {
+    val x = Seq[Byte](10)
+    val y = Array[Byte](10).toSeq
+    assertEquals(x.hashCode(), y.hashCode())
   }
 }
 

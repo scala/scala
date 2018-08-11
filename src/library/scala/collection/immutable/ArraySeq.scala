@@ -244,7 +244,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     def length: Int = unsafeArray.length
     @throws[ArrayIndexOutOfBoundsException]
     def apply(i: Int): Byte = unsafeArray(i)
-    override def hashCode = MurmurHash3.byteArraySeqHash(unsafeArray)
+    override def hashCode = MurmurHash3.arraySeqHash(unsafeArray)
     override def equals(that: Any) = that match {
       case that: ofByte => Arrays.equals(unsafeArray, that.unsafeArray)
       case _ => super.equals(that)

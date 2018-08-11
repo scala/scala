@@ -86,4 +86,11 @@ class ArraySeqTest {
     assertEquals(ArraySeq(1, 2, 3), ArraySeq(1L, 2L, 3L))
     assertEquals(ArraySeq(1, 2) :+ 3, ArraySeq(1L, 2L) :+ 3L) // :+ makes it an ArraySeq.ofRef
   }
+
+  @Test
+  def t10690(): Unit = {
+    val x = Seq[Byte](10)
+    val y = Array[Byte](10).toSeq
+    assertEquals(x.hashCode(), y.hashCode())
+  }
 }
