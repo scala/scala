@@ -13,7 +13,7 @@ package process
 import processInternal._
 import Process._
 import java.io.{ FileInputStream, FileOutputStream }
-import BasicIO.{ Uncloseable, Streamed }
+import BasicIO.{ LazilyListed, Streamed, Uncloseable }
 import Uncloseable.protect
 
 private[process] trait ProcessBuilderImpl {
@@ -155,11 +155,11 @@ private[process] trait ProcessBuilderImpl {
       log: Option[ProcessLogger],
       capacity: Integer
     ): LazyList[String] = {
-      val streamed = Streamed[String](nonZeroException, capacity)
-      val process  = run(BasicIO(withInput, streamed.process, log))
+      val lazilyListed = LazilyListed[String](nonZeroException, capacity)
+      val process      = run(BasicIO(withInput, lazilyListed.process, log))
 
-      Spawn(streamed done process.exitValue())
-      streamed.stream()
+      Spawn(lazilyListed done process.exitValue())
+      lazilyListed.lazyList
     }
 
     private[this] def lineStream(
@@ -172,7 +172,7 @@ private[process] trait ProcessBuilderImpl {
       val process  = run(BasicIO(withInput, streamed.process, log))
 
       Spawn(streamed done process.exitValue())
-      streamed.stream() to Stream
+      streamed.stream()
     }
 
     private[this] def runBuffered(log: ProcessLogger, connectInput: Boolean) =
