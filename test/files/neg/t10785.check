@@ -1,0 +1,6 @@
+t10785.scala:6: error: type mismatch;
+ found   : String
+ required: scala.util.Either[?,?]
+    y <- 1 + x
+      ^
+one error found
