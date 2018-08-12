@@ -205,28 +205,15 @@ private[internal] trait TypeMaps {
       else
         args mapConserve this
       )
+
     /** Applies this map to the symbol's info, setting variance = Invariant
       *  if necessary when the symbol is an alias.
       */
     private def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
-      if (trackVariance && !variance.isInvariant && sym.isAliasType)
+      if (!variance.isInvariant && sym.isAliasType)
         withVariance(Invariant)(this(info))
       else
         this(info)
-    }
-
-    /** The index of the first symbol in `origSyms` which would have its info
-      * transformed by this type map.
-      */
-    private def firstChangedSymbol(origSyms: List[Symbol]): Int = {
-      @tailrec def loop(i: Int, syms: List[Symbol]): Int = syms match {
-        case x :: xs =>
-          val info = x.info
-          if (applyToSymbolInfo(x, info) eq info) loop(i+1, xs)
-          else i
-        case _ => -1
-      }
-      loop(0, origSyms)
     }
 
     /** Map this function over given scope */
@@ -239,16 +226,26 @@ private[internal] trait TypeMaps {
 
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
-      val firstChange = firstChangedSymbol(origSyms)
-      // fast path in case nothing changes due to map
-      if (firstChange < 0) origSyms
-      else {
-        // map is not the identity --> do cloning properly
-        val cloned = cloneSymbols(origSyms)
-        // but we don't need to run the map again on the unchanged symbols
-        cloned.drop(firstChange).foreach(_ modifyInfo this)
-        cloned
+      val applyToSymbolInfo =
+        if (!trackVariance)
+          (sym: Symbol, info: Type) => this(info)
+        else
+          (sym: Symbol, info: Type) => this.applyToSymbolInfo(sym, info)
+      //TODO remove above's val when merging with #7318
+
+      var changed = false
+      val newInfos = mapList(origSyms) {sym =>
+        val info = sym.info
+        val newInfo = applyToSymbolInfo(sym, info)
+        if (newInfo ne info) changed = true
+        newInfo
       }
+      if (changed) {
+        //since map is not the identity for origSyms, we do cloning properly
+        val clones = mapList(origSyms)(_.cloneSymbol)
+        map2Conserve(clones, newInfos)((clone, info) => clone.setInfo(info.cloneInfo(clone)))
+        mapList(clones)(_.substInfo(origSyms, clones))
+      } else origSyms
     }
 
     def mapOver(annot: AnnotationInfo): AnnotationInfo = {
@@ -804,7 +801,8 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `substSym` method. */
-  class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
+  class SubstSymMap(from: List[Symbol], to: List[Symbol], but: Option[Symbol]) extends SubstMap(from, to) {
+    def this(from: List[Symbol], to: List[Symbol]) = this(from, to, None)
     def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
 
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
@@ -814,7 +812,7 @@ private[internal] trait TypeMaps {
     @tailrec private def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol = (
       if (from.isEmpty) sym
       // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(sym, from))
-      else if (matches(from.head, sym)) to.head
+      else if (!but.contains(to.head) && matches(from.head, sym)) to.head
       else subst(sym, from.tail, to.tail)
       )
     private def substFor(sym: Symbol) = subst(sym, from, to)

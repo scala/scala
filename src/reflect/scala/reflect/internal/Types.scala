@@ -742,9 +742,9 @@ trait Types
      * first, as otherwise symbols will immediately get rebound in typeRef to the old
      * symbol.
      */
-    def substSym(from: List[Symbol], to: List[Symbol]): Type =
+    def substSym(from: List[Symbol], to: List[Symbol], but: Option[Symbol] = None): Type =
       if ((from eq to) || from.isEmpty) this
-      else new SubstSymMap(from, to) apply this
+      else new SubstSymMap(from, to, but) apply this
 
     /** Substitute all occurrences of `ThisType(from)` in this type by `to`.
      *

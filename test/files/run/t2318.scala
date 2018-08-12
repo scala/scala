@@ -5,6 +5,7 @@ import scala.language.{ reflectiveCalls }
 object Test {
   trait Bar { def bar: Unit }
 
+  val forcePreloadBoxedUnit = scala.runtime.BoxedUnit.UNIT //Avoid parasiting ClassCircularityError, at least in Windows
   object Mgr extends SecurityManager {
     override def checkPermission(perm: Permission) = perm match {
       case _: java.lang.RuntimePermission                                                   => ()

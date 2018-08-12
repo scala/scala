@@ -1562,7 +1562,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       */
     def substInfo(syms0: List[Symbol], syms1: List[Symbol]): this.type =
       if (syms0.isEmpty) this
-      else modifyInfo(_.substSym(syms0, syms1))
+      else modifyInfo(_.substSym(syms0, syms1, Some(this)))
 
     def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info atOwner this)
 
