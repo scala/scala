@@ -1,7 +1,8 @@
-package scala.collection
+package scala.collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.{AbstractIterator, AnyConstr, IterableFactory, IterableOps}
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.LazyList
 
@@ -12,7 +13,7 @@ import scala.collection.immutable.LazyList
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
+trait View[+A] extends collection.View[A] with IterableOps[A, View, View[A]] {
 
   override def view: View[A] = this
 
@@ -21,9 +22,6 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   override def toString: String = stringPrefix + "(?)"
 
   override protected[this] def stringPrefix: String = "View"
-
-  @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
-  @`inline` def force: IndexedSeq[A] = toIndexedSeq
 
   override protected[this] def writeReplace(): AnyRef = this
 }
@@ -35,6 +33,7 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   */
 @SerialVersionUID(3L)
 object View extends IterableFactory[View] {
+  type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
 
   /**
     * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
@@ -133,9 +132,6 @@ object View extends IterableFactory[View] {
     def iterator: Iterator[A] = Iterator.unfold(initial)(f)
   }
 
-  /** An `IterableOps` whose collection type and collection type constructor are unknown */
-  type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
-
   /** A view that filters an underlying collection. */
   @SerialVersionUID(3L)
   class Filter[A](val underlying: SomeIterableOps[A], val p: A => Boolean, val isFlipped: Boolean) extends AbstractView[A] {
@@ -165,13 +161,13 @@ object View extends IterableFactory[View] {
   class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) extends Serializable {
 
     /** The view consisting of all elements of the underlying collection
-     *  that satisfy `p`.
-     */
+      *  that satisfy `p`.
+      */
     val first = new Partitioned(this, true)
 
     /** The view consisting of all elements of the underlying collection
-     *  that do not satisfy `p`.
-     */
+      *  that do not satisfy `p`.
+      */
     val second = new Partitioned(this, false)
   }
 
@@ -226,26 +222,26 @@ object View extends IterableFactory[View] {
 
   @SerialVersionUID(3L)
   class RightPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A2] {
-      def iterator = new AbstractIterator[A2] {
-        private val self = partitionWith.underlying.iterator
-        private var hd: A2 = _
-        private var hdDefined: Boolean = false
-        def hasNext = hdDefined || {
-          def findNext(): Boolean =
-            if (self.hasNext) {
-              f(self.next()) match {
-                case Left(_) => findNext()
-                case Right(a2) => hd = a2; hdDefined = true; true
-              }
-            } else false
-          findNext()
-        }
-        def next() =
-          if (hasNext) {
-            hdDefined = false
-            hd
-          } else Iterator.empty.next()
+    def iterator = new AbstractIterator[A2] {
+      private val self = partitionWith.underlying.iterator
+      private var hd: A2 = _
+      private var hdDefined: Boolean = false
+      def hasNext = hdDefined || {
+        def findNext(): Boolean =
+          if (self.hasNext) {
+            f(self.next()) match {
+              case Left(_) => findNext()
+              case Right(a2) => hd = a2; hdDefined = true; true
+            }
+          } else false
+        findNext()
       }
+      def next() =
+        if (hasNext) {
+          hdDefined = false
+          hd
+        } else Iterator.empty.next()
+    }
   }
 
   /** A view that drops leading elements of the underlying collection. */
@@ -319,8 +315,8 @@ object View extends IterableFactory[View] {
   }
 
   /** A view that concatenates elements of the prefix collection or iterator with the elements
-   *  of the suffix collection or iterator.
-   */
+    *  of the suffix collection or iterator.
+    */
   @SerialVersionUID(3L)
   class Concat[A](prefix: SomeIterableOps[A], suffix: SomeIterableOps[A]) extends AbstractView[A] {
     def iterator = prefix.iterator ++ suffix.iterator

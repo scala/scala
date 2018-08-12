@@ -1,10 +1,10 @@
 package scala.collection.immutable
 
-import scala.collection.{AnyConstr, SeqView, View}
+import scala.collection.AnyConstr
 import scala.language.higherKinds
 
 /** An IndexedSeqView whose underlying collections are immutable */
-trait IndexedSeqView[+A] extends collection.IndexedSeqView[A] with IndexedSeqOps[A, View, View[A]] { self =>
+trait IndexedSeqView[+A] extends collection.IndexedSeqView[A] with IndexedSeqOps[A, View, View[A]] with SeqView[A] { self =>
 
   override def view: IndexedSeqView[A] = this
 

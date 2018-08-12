@@ -95,7 +95,7 @@ sealed abstract class ArraySeq[+A]
           (apply(i), bs(i))
         }
       case _ =>
-        fromIterable(new View.Zip(toIterable, that))
+        fromIterable(new collection.View.Zip(toIterable, that))
     }
 
   override def take(n: Int): ArraySeq[A] =

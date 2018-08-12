@@ -8,10 +8,12 @@ import org.junit.runners.JUnit4
 import scala.annotation.tailrec
 import scala.collection.View
 import scala.collection.immutable.IndexedSeqView.Slice
+import scala.collection.mutable.ListBuffer
 import scala.tools.testing.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 class IndexedSeqViewTest {
+
   @Test
   def foo: Unit = {
     assertEquals(Seq(3, 4, 5), Vector(1, 2, 3, 4, 5).view.drop(2).toSeq)
