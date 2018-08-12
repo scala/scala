@@ -16,11 +16,11 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
   override def view: View[A] = this
 
-  override def iterableFactory = View
+  override def iterableFactory: IterableFactory[View] = View
 
-  override def toString = stringPrefix + "(?)"
+  override def toString: String  = stringPrefix + "(?)"
 
-  override protected[this] def stringPrefix = "View"
+  override protected[this] def stringPrefix: String = "View"
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
   @`inline` def force: IndexedSeq[A] = toIndexedSeq
