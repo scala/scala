@@ -10,7 +10,7 @@ package xsbt
 import java.io.File
 import java.util.Optional
 
-import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
+import scala.reflect.internal.util.{ FakePos, NoPosition, Position, RangePosition }
 // Left for compatibility
 import Compat._
 
@@ -24,7 +24,13 @@ private object DelegatingReporter {
                      lineContent0: String,
                      offset0: Option[Int],
                      pointer0: Option[Int],
-                     pointerSpace0: Option[String])
+                     pointerSpace0: Option[String],
+                     startOffset0: Option[Int],
+                     endOffset0: Option[Int],
+                     startLine0: Option[Int],
+                     startColumn0: Option[Int],
+                     endLine0: Option[Int],
+                     endColumn0: Option[Int])
       extends xsbti.Position {
     val line = o2oi(line0)
     val lineContent = lineContent0
@@ -33,6 +39,12 @@ private object DelegatingReporter {
     val sourceFile = o2jo(sourceFile0)
     val pointer = o2oi(pointer0)
     val pointerSpace = o2jo(pointerSpace0)
+    override val startOffset = o2oi(startOffset0)
+    override val endOffset = o2oi(endOffset0)
+    override val startLine = o2oi(startLine0)
+    override val startColumn = o2oi(startColumn0)
+    override val endLine = o2oi(endLine0)
+    override val endColumn = o2oi(endColumn0)
     override def toString =
       (sourcePath0, line0) match {
         case (Some(s), Some(l)) => s + ":" + l
@@ -42,7 +54,8 @@ private object DelegatingReporter {
   }
 
   object PositionImpl {
-    def empty: PositionImpl = new PositionImpl(None, None, None, "", None, None, None)
+    def empty: PositionImpl =
+      new PositionImpl(None, None, None, "", None, None, None, None, None, None, None, None, None)
   }
 
   import java.lang.{ Integer => I }
@@ -76,18 +89,39 @@ private object DelegatingReporter {
       val line = pos.line
       val lineContent = pos.lineContent.stripLineEnd
       val offset = pos.point
-      val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
+
+      // Same logic as Position#line
+      def lineOf(offset: Int) = src.offsetToLine(offset) + 1
+      def columnOf(offset: Int) = offset - src.lineToOffset(src.offsetToLine(offset))
+
+      val pointer = columnOf(offset)
       val pointerSpace = lineContent.toList.take(pointer).map {
         case '\t' => '\t'
         case _    => ' '
       }
-      new PositionImpl(Option(sourcePath),
-                       Option(sourceFile),
-                       Option(line),
-                       lineContent,
-                       Option(offset),
-                       Option(pointer),
-                       Option(pointerSpace.mkString))
+
+      val startOffset = if (pos.isRange) Some(pos.start) else None
+      val endOffset = if (pos.isRange) Some(pos.end) else None
+      val startLine = if (pos.isRange) Some(lineOf(pos.start)) else None
+      val startColumn = if (pos.isRange) Some(columnOf(pos.start)) else None
+      val endLine = if (pos.isRange) Some(lineOf(pos.end)) else None
+      val endColumn = if (pos.isRange) Some(columnOf(pos.end)) else None
+
+      new PositionImpl(
+        Option(sourcePath),
+        Option(sourceFile),
+        Option(line),
+        lineContent,
+        Option(offset),
+        Option(pointer),
+        Option(pointerSpace.mkString),
+        startOffset,
+        endOffset,
+        startLine,
+        startColumn,
+        endLine,
+        endColumn
+      )
     }
 
     cleanPos(dirtyPos) match {
