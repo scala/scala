@@ -668,13 +668,7 @@ object HashSet extends IterableFactory[HashSet] {
     }
 
   def newBuilder[A]: SetBuilder[A, HashSet[A]] =
-    new SetBuilder[A, HashSet[A]](empty) {
-      def addOne(element: A): this.type = {
-        elems = elems + element
-        this
-      }
-      override protected def isCompatibleType(value: IterableOnce[A]): Boolean = value.isInstanceOf[ChampHashSet[A]]
-    }
+    new SetBuilder[A, HashSet[A]](empty)
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:
