@@ -15,16 +15,6 @@ import scala.tools.testing.AssertUtil.assertThrows
 class IndexedSeqViewTest {
 
 
-  @Test
-  def d: Unit = {
-    val lb = ListBuffer(1,2,3)
-    val v = collection.immutable.View.from(lb)
-//    val p = new collection.immutable.View.Prepended(0, lb)
-
-    lb += 1
-
-    println(v.toVector)
-  }
 
   @Test
   def foo: Unit = {

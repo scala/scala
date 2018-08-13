@@ -2,7 +2,7 @@ package scala.collection.immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.{AbstractIterator, AnyConstr, IterableFactory, IterableOps}
+import scala.collection.{AbstractIterator, AnyConstr, IterableFactory}
 import scala.collection.mutable.{ArrayBuffer, Builder}
 
 
@@ -57,7 +57,9 @@ object View extends IterableFactory[View] {
   def from[E](it: IterableOnce[E]): View[E] = it match {
     case it: View[E]     => it
     case it: Iterable[E] => View.fromIteratorProvider(() => it.iterator)
-    case _               => LazyList.from(it).view
+    case _               =>
+      val iterable = it.iterator.to(Iterable)
+      View.fromIteratorProvider(() => iterable.iterator)
   }
 
   def empty[A]: View[A] = Empty
