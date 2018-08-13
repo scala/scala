@@ -5,6 +5,8 @@ import scala.collection.immutable.List
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.collection.{SeqFactory, mutable}
+
 class ArrayDequeTest {
 
   @Test
@@ -94,4 +96,32 @@ class ArrayDequeTest {
     q.patchInPlace(2, Seq(2), 0)
     assertEquals(Queue(0, 1, 2), q)
   }
+
+  @Test
+  def sliding: Unit = ArrayDequeTest.genericSlidingTest(ArrayDeque, "ArrayDeque")
+}
+
+object ArrayDequeTest {
+
+  // tests scala/bug#11047
+  def genericSlidingTest(factory: SeqFactory[ArrayDeque], collectionName: String): Unit =
+    for {
+      i <- 1 to 40
+
+      range = 0 until i
+      iterable = collection.Iterable.from(range)
+      other = factory.from(range)
+
+      j <- 1 to 40
+      k <- 1 to 40
+
+      iterableSliding = iterable.sliding(j,k).to(Seq)
+      otherSliding = other.sliding(j, k).to(Seq)
+    }
+      assert(iterableSliding == otherSliding,
+        s"""Iterable.from($range)).sliding($j,$k) differs from $collectionName.from($range)).sliding($j,$k)
+           |Iterable yielded: $iterableSliding
+           |$collectionName yielded: $otherSliding
+       """.stripMargin
+      )
 }
