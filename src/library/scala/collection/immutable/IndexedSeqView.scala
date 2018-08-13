@@ -8,6 +8,8 @@ trait IndexedSeqView[+A] extends collection.IndexedSeqView[A] with IndexedSeqOps
 
   override def view: IndexedSeqView[A] = this
 
+  iterableFactory
+
   def prependedBy[B >: A](prefix: IndexedSeq[B]): IndexedSeqView[B] = IndexedSeqView.prependedBy(this, prefix)
   override def prepended[B >: A](elem: B): IndexedSeqView[B] = IndexedSeqView.prepended(this, elem)
   override def take(n: Int): IndexedSeqView[A] = IndexedSeqView.take(this, n)

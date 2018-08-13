@@ -1,9 +1,10 @@
-package scala.collection.immutable
+package scala.collection.mutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.{AbstractIterator, AnyConstr, IterableFactory, IterableOps}
 import scala.collection.mutable.{ArrayBuffer, Builder}
+import scala.collection.immutable.LazyList
 
 
 /** Views are collections whose transformation operations are non strict: the resulting elements
@@ -12,7 +13,7 @@ import scala.collection.mutable.{ArrayBuffer, Builder}
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with collection.View[A] {
+trait View[+A] extends collection.View[A] with IterableOps[A, View, View[A]] {
 
   override def view: View[A] = this
 
@@ -56,8 +57,7 @@ object View extends IterableFactory[View] {
     */
   def from[E](it: IterableOnce[E]): View[E] = it match {
     case it: View[E]     => it
-    case it: Iterable[E] => View.fromIteratorProvider(() => it.iterator)
-    case _               => LazyList.from(it).view
+    case it => View.fromIteratorProvider(() => it.iterator)
   }
 
   def empty[A]: View[A] = Empty

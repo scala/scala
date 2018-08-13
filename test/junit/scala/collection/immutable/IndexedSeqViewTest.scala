@@ -14,6 +14,18 @@ import scala.tools.testing.AssertUtil.assertThrows
 @RunWith(classOf[JUnit4])
 class IndexedSeqViewTest {
 
+
+  @Test
+  def d: Unit = {
+    val lb = ListBuffer(1,2,3)
+    val v = collection.immutable.View.from(lb)
+//    val p = new collection.immutable.View.Prepended(0, lb)
+
+    lb += 1
+
+    println(v.toVector)
+  }
+
   @Test
   def foo: Unit = {
     assertEquals(Seq(3, 4, 5), Vector(1, 2, 3, 4, 5).view.drop(2).toSeq)

@@ -1,6 +1,7 @@
 package scala.collection.immutable
 
 import scala.collection.IterableFactory
+import scala.language.higherKinds
 
 /** A trait for collections that are guaranteed immutable.
   *
@@ -21,10 +22,13 @@ import scala.collection.IterableFactory
   * @define Coll `immutable.Iterable`
   */
 trait Iterable[+A] extends collection.Iterable[A]
-                      with collection.IterableOps[A, Iterable, Iterable[A]] {
+                      with IterableOps[A, Iterable, Iterable[A]] {
 
   override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
 @SerialVersionUID(3L)
 object Iterable extends IterableFactory.Delegate[Iterable](List)
+
+
+trait IterableOps[+A, +CC[_], +C] extends collection.IterableOps[A, CC, C]
