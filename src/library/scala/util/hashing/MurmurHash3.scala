@@ -205,15 +205,14 @@ object MurmurHash3 extends MurmurHash3 {
   final val mapSeed         = "Map".hashCode
   final val setSeed         = "Set".hashCode
 
-  def arrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, arraySeed)
-  def bytesHash(data: Array[Byte]): Int            = bytesHash(data, arraySeed)
-  def orderedHash(xs: IterableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
-  def productHash(x: Product): Int                 = productHash(x, productSeed)
-  def stringHash(x: String): Int                   = stringHash(x, stringSeed)
-  def unorderedHash(xs: IterableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
+  def arrayHash[@specialized T](a: Array[T]): Int = arrayHash(a, arraySeed)
+  def bytesHash(data: Array[Byte]): Int           = bytesHash(data, arraySeed)
+  def orderedHash(xs: IterableOnce[Any]): Int     = orderedHash(xs, symmetricSeed)
+  def productHash(x: Product): Int                = productHash(x, productSeed)
+  def stringHash(x: String): Int                  = stringHash(x, stringSeed)
+  def unorderedHash(xs: IterableOnce[Any]): Int   = unorderedHash(xs, traversableSeed)
 
-  private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int  = arrayHash(a, seqSeed)
-  private[scala] def byteArraySeqHash(data: Array[Byte]): Int        = bytesHash(data, seqSeed)
+  private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int = arrayHash(a, seqSeed)
 
   /** To offer some potential for optimization.
    */

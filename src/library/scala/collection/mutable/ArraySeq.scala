@@ -158,7 +158,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     def length: Int = array.length
     def apply(index: Int): Byte = array(index)
     def update(index: Int, elem: Byte): Unit = { array(index) = elem }
-    override def hashCode = MurmurHash3.byteArraySeqHash(array)
+    override def hashCode = MurmurHash3.arraySeqHash(array)
     override def equals(that: Any) = that match {
       case that: ofByte => Arrays.equals(array, that.array)
       case _ => super.equals(that)
