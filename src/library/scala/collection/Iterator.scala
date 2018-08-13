@@ -876,6 +876,7 @@ object Iterator extends IterableFactory[Iterator] {
   private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
+    override def knownSize: Int = 0
   }
 
   /** Creates a target $coll from an existing source collection
