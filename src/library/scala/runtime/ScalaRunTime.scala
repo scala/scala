@@ -9,7 +9,7 @@
 package scala
 package runtime
 
-import scala.collection.{ AbstractIterator, AnyConstr, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View }
+import scala.collection.{ AbstractIterator, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View }
 import scala.collection.generic.IsIterableLike
 import scala.collection.immutable.{ NumericRange, ArraySeq }
 import scala.collection.mutable.StringBuilder
@@ -198,7 +198,7 @@ object ScalaRunTime {
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
+      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, Any, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }

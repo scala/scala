@@ -73,7 +73,7 @@ trait Map[K, +V]
   */
 // Note: the upper bound constraint on CC is useful only to
 // erase CC to IterableOps instead of Object
-trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
+trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, Any, _], +C]
   extends IterableOps[(K, V), Iterable, C]
     with PartialFunction[K, V] {
 
@@ -310,7 +310,7 @@ object MapOps {
     *
     * @define coll map collection
     */
-  class WithFilter[K, +V, +IterableCC[_], +CC[_, _] <: IterableOps[_, AnyConstr, _]](
+  class WithFilter[K, +V, +IterableCC[_], +CC[_, _] <: IterableOps[_, Any, _]](
     self: MapOps[K, V, CC, _] with IterableOps[(K, V), IterableCC, _],
     p: ((K, V)) => Boolean
   ) extends IterableOps.WithFilter[(K, V), IterableCC](self, p) {

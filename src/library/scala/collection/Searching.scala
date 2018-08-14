@@ -23,7 +23,7 @@ object Searching {
   case class InsertionPoint(insertionPoint: Int) extends SearchResult
 
   @deprecated("Search methods are defined directly on SeqOps and do not require scala.collection.Searching any more", "2.13.0")
-  class SearchImpl[Repr, A](private val coll: SeqOps[A, AnyConstr, _]) extends AnyVal
+  class SearchImpl[Repr, A](private val coll: SeqOps[A, Any, _]) extends AnyVal
 
   @deprecated("Search methods are defined directly on SeqOps and do not require scala.collection.Searching any more", "2.13.0")
   implicit def search[Repr, A](coll: Repr)(implicit fr: IsSeqLike[Repr]): SearchImpl[Repr, fr.A] =

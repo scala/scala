@@ -40,7 +40,7 @@ object IndexedSeqView {
   }
 
   /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
-  type SomeIndexedSeqOps[A] = IndexedSeqOps[A, AnyConstr, _]
+  type SomeIndexedSeqOps[A] = IndexedSeqOps[A, Any, _]
 
   @SerialVersionUID(3L)
   class Id[+A](underlying: SomeIndexedSeqOps[A])

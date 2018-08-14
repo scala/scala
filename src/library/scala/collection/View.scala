@@ -134,7 +134,7 @@ object View extends IterableFactory[View] {
   }
 
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
-  type SomeIterableOps[A] = IterableOps[A, AnyConstr, _]
+  type SomeIterableOps[A] = IterableOps[A, Any, _]
 
   /** A view that filters an underlying collection. */
   @SerialVersionUID(3L)

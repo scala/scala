@@ -41,13 +41,6 @@ package object collection {
   @deprecated("Gen* collection types have been removed", "2.13.0")
   val GenMap = Map
 
-  /** Needed to circumvent a difficulty between dotty and scalac concerning
-   *  the right top type for a type parameter of kind * -> *.
-   *  In Scalac, we can provide `Any`, as `Any` is kind-polymorphic. In dotty this is not allowed.
-   *  In dotty, we can provide `[X] => Any`. But Scalac does not know lambda syntax.
-   */
-  type AnyConstr[X] = Any
-
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
     /** Splits a sequence into head :+ tail.

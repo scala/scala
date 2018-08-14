@@ -827,7 +827,7 @@ object IterableOps {
     * These operations are implemented in terms of
     * [[scala.collection.IterableOps.sizeCompare(Int) `sizeCompare(Int)`]].
     */
-  final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
+  final class SizeCompareOps private[collection](val it: IterableOps[_, Any, _]) extends AnyVal {
     /** Tests if the size of the collection is less than some value. */
     @inline def <(size: Int): Boolean = it.sizeCompare(size) < 0
     /** Tests if the size of the collection is less than or equal to some value. */

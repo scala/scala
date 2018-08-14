@@ -10,7 +10,7 @@ import scala.language.higherKinds
   * @tparam CC Collection type constructor
   * @tparam C  Collection type
   */
-trait StrictOptimizedMapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
+trait StrictOptimizedMapOps[K, +V, +CC[_, _] <: IterableOps[_, Any, _], +C]
   extends MapOps[K, V, CC, C]
     with StrictOptimizedIterableOps[(K, V), Iterable, C] {
 

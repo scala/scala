@@ -1,18 +1,18 @@
 import scala.language.implicitConversions
 import scala.math.Ordering
-import collection.{AnyConstr, BuildFrom, Iterable, IterableOps, SeqOps}
+import collection.{BuildFrom, Iterable, IterableOps, SeqOps}
 import collection.immutable.BitSet
 
 class QuickSort[Coll](a: Coll) {
   //should be able to sort only something with defined order (someting like a Seq)
-  def quickSort[T](implicit ev0: Coll => SeqOps[T, AnyConstr, Iterable[T]],
+  def quickSort[T](implicit ev0: Coll => SeqOps[T, Any, Iterable[T]],
                    bf: BuildFrom[Coll, T, Coll],
                    n: Ordering[T]): Coll = {
     quickSortAnything(ev0, bf, n)
   }
 
   //we can even sort a Set, if we really want to
-  def quickSortAnything[T](implicit ev0: Coll => IterableOps[T, AnyConstr, Iterable[T]],
+  def quickSortAnything[T](implicit ev0: Coll => IterableOps[T, Any, Iterable[T]],
                            bf: BuildFrom[Coll, T, Coll],
                            n: Ordering[T]): Coll = {
     import n._

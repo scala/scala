@@ -918,7 +918,7 @@ object SeqOps {
     * These operations are implemented in terms of
     * [[scala.collection.SeqOps.lengthCompare(Int) `lengthCompare(Int)`]].
     */
-  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, AnyConstr, _]) extends AnyVal {
+  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, Any, _]) extends AnyVal {
     /** Tests if the length of the collection is less than some value. */
     @inline def <(len: Int): Boolean = seq.lengthCompare(len) < 0
     /** Tests if the length of the collection is less than or equal to some value. */
