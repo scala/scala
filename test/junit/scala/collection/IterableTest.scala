@@ -40,6 +40,9 @@ class IterableTest {
     assertEquals(Seq(1,2,3,4,5,6), Seq(1,2,3).concat(Seq(4,5,6)))
     assertEquals(Seq(1,2,3,4,5,6), Seq(1,2,3).concat(Iterator(4,5,6)))
     assertEquals(Seq(1,2,3,4,5,6), Seq.from(Iterator(1,2,3).concat(Iterator(4,5,6))))
+
+    assertEquals(Iterable(1,2,3), Iterable(1) ++: Iterable(2,3))
+    assertEquals(Iterable(1,2,3), Iterator(1) ++: Iterable(2,3))
   }
 
   @Test
