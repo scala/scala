@@ -12,7 +12,26 @@ package runtime
 import scala.collection.immutable
 import scala.math.ScalaNumericAnyConversions
 import immutable.NumericRange
-import Proxy.Typed
+import RuntimeProxy.Typed
+
+private[runtime] trait RuntimeProxy extends Any {
+  protected def self: Any
+
+  override def hashCode: Int = self.hashCode
+  override def equals(that: Any): Boolean = that match {
+    case null  => false
+    case _     =>
+      val x = that.asInstanceOf[AnyRef]
+      (x eq this.asInstanceOf[AnyRef]) || (x eq self.asInstanceOf[AnyRef]) || (x equals self)
+  }
+  override def toString = "" + self
+}
+
+object RuntimeProxy {
+  private[runtime] trait Typed[T] extends Any with RuntimeProxy {
+    protected def self: T
+  }
+}
 
 /** Base classes for the Rich* wrappers of the primitive types.
  *  As with all classes in scala.runtime.*, this is not a supported API.

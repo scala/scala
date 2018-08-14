@@ -4,6 +4,7 @@ askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
 retrieved 202 members
+[inaccessible] private[this] val self: Double
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
@@ -198,5 +199,4 @@ override def min(that: Float): Float
 override def min(that: Int): Int
 override def min(that: Long): Long
 override def signum: Int
-private[this] val self: Double
 ================================================================================
