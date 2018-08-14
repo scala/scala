@@ -13,7 +13,6 @@
 package scala.tools.nsc
 package fsc
 
-//import scala.tools.nsc.{AbstractScriptRunner, ScriptRunner, GenericRunnerSettings, Settings}
 import scala.reflect.io.Path
 import scala.util.control.NonFatal
 

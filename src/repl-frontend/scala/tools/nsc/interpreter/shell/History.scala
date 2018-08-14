@@ -12,8 +12,7 @@
 
 package scala.tools.nsc.interpreter.shell
 
-/** An implementation-agnostic history interface which makes no
- *  reference to the jline classes.  Very sparse right now.
+/** Support for adding to history and retrieving it.
  */
 trait History {
   def historicize(text: String): Boolean = false

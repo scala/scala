@@ -14,24 +14,14 @@ package scala.tools.nsc.interpreter.shell
 
 import scala.util.control.NonFatal
 import scala.tools.nsc.interpreter.Repl
-import scala.tools.nsc.interpreter.jline
 import scala.tools.nsc.interpreter.Naming
 
-class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
+/** Completion for the REPL.
+ */
+class ReplCompletion(intp: Repl, val accumulator: Accumulator) extends Completion {
   import ReplCompletion._
 
-  private[this] var _partialInput: String = ""
-  override def partialInput: String = _partialInput
-  override def withPartialInput[T](code: String)(body: => T): T = {
-    val saved = partialInput
-    _partialInput = code
-    try body finally _partialInput = saved
-  }
-
-  def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] = None
-
   def complete(buffer: String, cursor: Int): CompletionResult = {
-    shellCompletion(buffer, cursor) getOrElse {
       // special case for:
       //
       // scala> 1
@@ -40,20 +30,19 @@ class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
         if (Parsed.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
         else buffer
 
-      // prepend `partialInput` for multi-line input.
-      val bufferWithMultiLine = partialInput + bufferWithVar
+      val bufferWithMultiLine = accumulator.toString + bufferWithVar
       val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
       codeCompletion(bufferWithMultiLine, cursor1)
-    }
   }
 
   private var lastRequest = NoRequest
   private var tabCount = 0
 
-  def resetVerbosity(): Unit = { tabCount = 0 ; lastRequest = NoRequest }
+  def reset(): Unit = { tabCount = 0 ; lastRequest = NoRequest }
 
   // A convenience for testing
   def complete(before: String, after: String = ""): CompletionResult = complete(before + after, before.length)
+
   private def codeCompletion(buf: String, cursor: Int): CompletionResult = {
     require(cursor >= 0 && cursor <= buf.length)
 

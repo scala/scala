@@ -44,7 +44,9 @@ val junitDep          = "junit"                          % "junit"              
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.9"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
-val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
+val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
+val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % versionProps("jansi.version")
+val jnaDep            = "net.java.dev.jna"               % "jna"                              % versionProps("jna.version")
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
@@ -165,6 +167,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
   //maxErrors := 10,
+  maxErrors := 10,
   setIncOptions,
   apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
@@ -417,7 +420,7 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies += asmDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies ++= Seq(jlineDep),
+    libraryDependencies ++= Seq(jlineDep, jansiDep, jnaDep),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -492,7 +495,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= Seq(jlineDep, jansiDep, jnaDep),
     name := "scala-repl-frontend"
   )
   .settings(
@@ -832,7 +835,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
     }.taskValue,
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= Seq(jlineDep, jansiDep, jnaDep),
     apiURL := None,
     fixPom(
       "/project/name" -> <name>Scala Distribution Artifacts</name>,
@@ -963,7 +966,7 @@ lazy val distDependencies = Seq(replFrontend, compiler, library, reflect, scalap
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
-    libraryDependencies ++= Seq(jlineDep),
+    libraryDependencies ++= Seq(jlineDep, jansiDep, jnaDep),
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
       val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
@@ -978,7 +981,13 @@ lazy val dist = (project in file("dist"))
     packageBin in Compile := {
       val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
       val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
-      val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
+      val jansiJAR = findJar((dependencyClasspath in Compile).value, jansiDep).get.data
+      val jnaJAR   = findJar((dependencyClasspath in Compile).value, jnaDep).get.data
+      val mappings = Seq(
+        (jlineJAR, targetDir / "jline.jar"),
+        (jansiJAR, targetDir / "jansi.jar"),
+        (jnaJAR, targetDir / "jna.jar"),
+      )
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },

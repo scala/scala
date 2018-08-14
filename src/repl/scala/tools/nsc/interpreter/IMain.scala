@@ -462,6 +462,27 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     case _                                                      => tp
   }
 
+  // parseStats, returning status but no trees
+  def parseString(line: String): Result = parse(line).fold(e => e, _ => Success)
+
+  def tokenize(line: String): List[TokenData] = {
+    import collection.mutable.ListBuffer
+    val u = newUnitScanner(newCompilationUnit(line))
+    u.init()
+    val b = ListBuffer.empty[Int]
+    while (u.token != 0) {
+      b += u.lastOffset
+      b += u.token
+      b += u.offset
+      u.nextToken()
+    }
+    b += u.lastOffset
+    b.drop(1).grouped(3).flatMap(triple => triple.toList match {
+      case List(token, start, end) => Some(TokenData(token, start, end))
+      case _ => println(s"Skipping token ${scala.runtime.ScalaRunTime.stringOf(triple)}") ; None
+    }).toList
+  }
+
   /**
     *  Interpret one line of input. All feedback, including parse errors
     *  and evaluation results, are printed via the supplied compiler's

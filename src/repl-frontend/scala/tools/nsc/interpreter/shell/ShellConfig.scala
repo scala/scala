@@ -62,6 +62,8 @@ trait ShellConfig {
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = Properties.coloredOutputEnabled
 
+  val historyFile = s"$userHome/.scala_history"
+
   private val info  = bool("scala.repl.info")
   private val debug = bool("scala.repl.debug")
   private val trace = bool("scala.repl.trace")
@@ -93,6 +95,11 @@ trait ShellConfig {
 
   // Prompt for continued input, will be right-adjusted to width of the primary prompt
   val continueString = Prop[String]("scala.repl.continue").option getOrElse "| "
+  val continueText   = {
+    val text   = enversion(continueString)
+    val margin = promptText.linesIterator.toList.last.length - text.length
+    if (margin > 0) " " * margin + text else text
+  }
 
   // What to display at REPL startup.
   val welcomeString  = Prop[String]("scala.repl.welcome").option match {
@@ -109,6 +116,9 @@ trait ShellConfig {
    *  currently mutually exclusive.
    */
   val format = Prop[String]("scala.repl.format")
+  val isPaged: Boolean  = format.isSet && csv(format.get, "paged")
+  val isAcross: Boolean = format.isSet && csv(format.get, "across")
+  private def csv(p: String, v: String) = p.split(",").contains(v)
 
   val replAutorunCode = Prop[File]("scala.repl.autoruncode")
   val powerInitCode   = Prop[File]("scala.repl.power.initcode")
@@ -124,11 +134,11 @@ trait ShellConfig {
   def repltrace(msg: => String)  = if (isReplTrace) echo(msg)
 
   def isReplPower: Boolean = power
-  def isPaged: Boolean     = format.isSet && csv(format.get, "paged")
-  def isAcross: Boolean    = format.isSet && csv(format.get, "across")
 
-  private def csv(p: String, v: String) = p split "," contains v
   private def echo(msg: => String) =
-    try Console println msg
-    catch { case x: AssertionError => Console.println("Assertion error printing debugging output: " + x) }
+    try Console.println(msg)
+    catch {
+      case e: AssertionError =>
+        Console.println(s"Assertion error printing debugging output: $e")
+    }
 }

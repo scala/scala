@@ -23,15 +23,16 @@ class CompletionTest {
   private def setup(sources: SourceFile*): Completion = {
     val intp = newIMain()
     intp.compileSources(sources: _*)
-    val completer = new ReplCompletion(intp)
+    val completer = new ReplCompletion(intp, new Accumulator)
     completer
   }
 
-  private def interpretLines(lines: String*): (Completion, Repl) = {
+  private def interpretLines(lines: String*): (Completion, Repl, Accumulator) = {
     val intp = newIMain()
-    lines foreach intp.interpret
-    val completer = new ReplCompletion(intp)
-    (completer, intp)
+    lines.foreach(intp.interpret)
+    val acc = new Accumulator
+    val completer = new ReplCompletion(intp, acc)
+    (completer, intp, acc)
   }
 
   implicit class BeforeAfterCompletion(completion: Completion) {
@@ -130,7 +131,7 @@ class CompletionTest {
 
   @Test
   def previousLineCompletions(): Unit = {
-    val (completer, intp) = interpretLines(
+    val (completer, intp, _) = interpretLines(
       "class C { val x_y_z = 42 }",
       "object O { type T = Int }")
 
@@ -138,7 +139,7 @@ class CompletionTest {
     checkExact(completer, "(1 : O.T).toCha")("toChar")
 
     intp.interpret("case class X_y_z()")
-    val completer1 = new ReplCompletion(intp)
+    val completer1 = new ReplCompletion(intp, new Accumulator)
     checkExact(completer1, "new X_y_")("X_y_z")
     checkExact(completer1, "X_y_")("X_y_z")
     checkExact(completer1, "X_y_z.app")("apply")
@@ -146,17 +147,16 @@ class CompletionTest {
 
   @Test
   def previousResultInvocation(): Unit = {
-    val (completer, _) = interpretLines("1 + 1")
+    val (completer, _, _) = interpretLines("1 + 1")
 
     checkExact(completer, ".toCha")("toChar")
   }
 
   @Test
   def multiLineInvocation(): Unit = {
-    val (completer, _) = interpretLines()
-    completer.withPartialInput("class C {") {
-      checkExact(completer, "1 + 1.toCha")("toChar")
-    }
+    val (completer, _, accumulator) = interpretLines()
+    accumulator += "class C {"
+    checkExact(completer, "1 + 1.toCha")("toChar")
   }
 
   @Test
