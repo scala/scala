@@ -1,7 +1,7 @@
 package scala.collection
 package generic
 
-import IsMapLike.Tupled
+import IsMap.Tupled
 import scala.collection.immutable.{IntMap, LongMap}
 import scala.language.higherKinds
 
@@ -12,10 +12,10 @@ import scala.language.higherKinds
   *
   * This type enables simple enrichment of `Map`s with extension methods.
   *
-  * @see [[scala.collection.generic.IsIterableLike]]
+  * @see [[scala.collection.generic.IsIterable]]
   * @tparam Repr Collection type (e.g. `Map[Int, String]`)
   */
-trait IsMapLike[Repr] extends IsIterableLike[Repr] {
+trait IsMap[Repr] extends IsIterable[Repr] {
 
   /** The type of keys */
   type K
@@ -35,7 +35,7 @@ trait IsMapLike[Repr] extends IsIterableLike[Repr] {
 
 }
 
-object IsMapLike {
+object IsMap {
 
   /** Convenient type level function that takes a unary type constructor `F[_]`
     * and returns a binary type constructor that tuples its parameters and passes
@@ -46,8 +46,8 @@ object IsMapLike {
   type Tupled[F[+_]] = { type Ap[X, Y] = F[(X, Y)] }
 
   // Map collections
-  implicit def mapOpsIsMapLike[CC0[X, Y] <: MapOps[X, Y, Tupled[Iterable]#Ap, CC0[X, Y]], K0, V0]: IsMapLike[CC0[K0, V0]] { type K = K0; type V = V0; type C = CC0[K, V] } =
-    new IsMapLike[CC0[K0, V0]] {
+  implicit def mapOpsIsMap[CC0[X, Y] <: MapOps[X, Y, Tupled[Iterable]#Ap, CC0[X, Y]], K0, V0]: IsMap[CC0[K0, V0]] { type K = K0; type V = V0; type C = CC0[K, V] } =
+    new IsMap[CC0[K0, V0]] {
       type K = K0
       type V = V0
       type C = CC0[K0, V0]
@@ -55,26 +55,26 @@ object IsMapLike {
     }
 
   // MapView
-  implicit def mapViewIsMapLike[CC0[X, Y] <: MapView[X, Y], K0, V0]: IsMapLike[CC0[K0, V0]] { type K = K0; type V = V0; type C = View[(K0, V0)] } =
-    new IsMapLike[CC0[K0, V0]] {
+  implicit def mapViewIsMap[CC0[X, Y] <: MapView[X, Y], K0, V0]: IsMap[CC0[K0, V0]] { type K = K0; type V = V0; type C = View[(K0, V0)] } =
+    new IsMap[CC0[K0, V0]] {
       type K = K0
       type V = V0
       type C = View[(K, V)]
       def apply(c: CC0[K0, V0]): MapOps[K0, V0, Tupled[Iterable]#Ap, View[(K0, V0)]] = c
     }
 
-  // AnyRefMap has stricter bounds than the ones used by the mapOpsIsMapLike definition
-  implicit def anyRefMapIsMapLike[K0 <: AnyRef, V0]: IsMapLike[mutable.AnyRefMap[K0, V0]] { type K = K0; type V = V0; type C = mutable.AnyRefMap[K0, V0] } =
-    new IsMapLike[mutable.AnyRefMap[K0, V0]] {
+  // AnyRefMap has stricter bounds than the ones used by the mapOpsIsMap definition
+  implicit def anyRefMapIsMap[K0 <: AnyRef, V0]: IsMap[mutable.AnyRefMap[K0, V0]] { type K = K0; type V = V0; type C = mutable.AnyRefMap[K0, V0] } =
+    new IsMap[mutable.AnyRefMap[K0, V0]] {
       type K = K0
       type V = V0
       type C = mutable.AnyRefMap[K0, V0]
       def apply(c: mutable.AnyRefMap[K0, V0]): MapOps[K0, V0, Tupled[Iterable]#Ap, mutable.AnyRefMap[K0, V0]] = c
     }
 
-  // IntMap takes one type parameter only whereas mapOpsIsMapLike uses a parameter CC0 with two type parameters
-  implicit def intMapIsMapLike[V0]: IsMapLike[IntMap[V0]] { type K = Int; type V = V0; type C = IntMap[V0] } =
-    new IsMapLike[IntMap[V0]] {
+  // IntMap takes one type parameter only whereas mapOpsIsMap uses a parameter CC0 with two type parameters
+  implicit def intMapIsMap[V0]: IsMap[IntMap[V0]] { type K = Int; type V = V0; type C = IntMap[V0] } =
+    new IsMap[IntMap[V0]] {
       type K = Int
       type V = V0
       type C = IntMap[V0]
@@ -82,8 +82,8 @@ object IsMapLike {
     }
 
   // LongMap is in a similar situation as IntMap
-  implicit def longMapIsMapLike[V0]: IsMapLike[LongMap[V0]] { type K = Long; type V = V0; type C = LongMap[V0] } =
-    new IsMapLike[LongMap[V0]] {
+  implicit def longMapIsMap[V0]: IsMap[LongMap[V0]] { type K = Long; type V = V0; type C = LongMap[V0] } =
+    new IsMap[LongMap[V0]] {
       type K = Long
       type V = V0
       type C = LongMap[V0]
@@ -91,8 +91,8 @@ object IsMapLike {
     }
 
   // mutable.LongMap is in a similar situation as LongMap and IntMap
-  implicit def mutableLongMapIsMapLike[V0]: IsMapLike[mutable.LongMap[V0]] { type K = Long; type V = V0; type C = mutable.LongMap[V0] } =
-    new IsMapLike[mutable.LongMap[V0]] {
+  implicit def mutableLongMapIsMap[V0]: IsMap[mutable.LongMap[V0]] { type K = Long; type V = V0; type C = mutable.LongMap[V0] } =
+    new IsMap[mutable.LongMap[V0]] {
       type K = Long
       type V = V0
       type C = mutable.LongMap[V0]

@@ -12,7 +12,7 @@ import scala.language.higherKinds
  *  extension methods that work both on collection types and on `String`s (`String`s
  *  do not extend `Iterable`, but can be converted to `Iterable`)
  *
- * `IsIterableLike` provides three members:
+ * `IsIterable` provides three members:
  *
  *  1. type member `A`, which represents the element type of the target `Iterable[A]`
  *  1. type member `C`, which represents the type returned by transformation operations that preserve the collection’s elements type
@@ -20,7 +20,7 @@ import scala.language.higherKinds
  *
  * ===Usage===
  *
- * One must provide `IsIterableLike` as an implicit parameter type of an implicit
+ * One must provide `IsIterable` as an implicit parameter type of an implicit
  * conversion. Its usage is shown below. Our objective in the following example
  * is to provide a generic extension method `mapReduce` to any type that extends
  * or can be converted to `Iterable`. In our example, this includes
@@ -28,9 +28,9 @@ import scala.language.higherKinds
  *
  * {{{
  *    import scala.collection.{Iterable, IterableOps}
- *    import scala.collection.generic.IsIterableLike
+ *    import scala.collection.generic.IsIterable
  *
- *    class ExtensionMethods[Repr, I <: IsIterableLike[Repr]](coll: Repr, it: I) {
+ *    class ExtensionMethods[Repr, I <: IsIterable[Repr]](coll: Repr, it: I) {
  *      def mapReduce[B](mapper: it.A => B)(reducer: (B, B) => B): B = {
  *        val iter = it(coll).iterator
  *        var res = mapper(iter.next())
@@ -40,7 +40,7 @@ import scala.language.higherKinds
  *      }
  *    }
  *
- *    implicit def withExtensions[Repr](coll: Repr)(implicit it: IsIterableLike[Repr]): ExtensionMethods[Repr, it.type] =
+ *    implicit def withExtensions[Repr](coll: Repr)(implicit it: IsIterable[Repr]): ExtensionMethods[Repr, it.type] =
  *      new ExtensionMethods(coll, it)
  *
  *  // See it in action!
@@ -52,54 +52,54 @@ import scala.language.higherKinds
  * `mapReduce` extension method.
  *
  * Note that `ExtensionMethods` takes a constructor argument `coll` of type `Repr`, where
- * `Repr` represents (typically) the collection type, and an argument `it` of a subtype of `IsIterableLike[Repr]`.
+ * `Repr` represents (typically) the collection type, and an argument `it` of a subtype of `IsIterable[Repr]`.
  * The body of the method starts by converting the `coll` argument to an `IterableOps` in order to
  * call the `iterator` method on it.
  * The remaining of the implementation is straightforward.
  *
  * The `withExtensions` implicit conversion makes the `mapReduce` operation available
- * on any type `Repr` for which it exists an implicit `IsIterableLike[Repr]` instance.
+ * on any type `Repr` for which it exists an implicit `IsIterable[Repr]` instance.
  * Note how we keep track of the precise type of the implicit `it` argument by using the
- * `it.type` singleton type, rather than the wider `IsIterableLike[Repr]` type. We do that
+ * `it.type` singleton type, rather than the wider `IsIterable[Repr]` type. We do that
  * so that the information carried by the type members `A` and `C` of the `it` argument
  * is not lost.
  *
  * When the `mapReduce` method is called on some type of which it is not
  * a member, implicit search is triggered. Because implicit conversion
  * `withExtensions` is generic, it will be applied as long as an implicit
- * value of type `IsIterableLike[Repr]` can be found. Given that the
- * `IsIterableLike` companion object contains implicit members that return values of type
- * `IsIterableLike`, this requirement is typically satisfied, and the chain
+ * value of type `IsIterable[Repr]` can be found. Given that the
+ * `IsIterable` companion object contains implicit members that return values of type
+ * `IsIterable`, this requirement is typically satisfied, and the chain
  * of interactions described in the previous paragraph is set into action.
- * (See the `IsIterableLike` companion object, which contains a precise
+ * (See the `IsIterable` companion object, which contains a precise
  * specification of the available implicits.)
  *
  * ''Note'': Currently, it's not possible to combine the implicit conversion and
  * the class with the extension methods into an implicit class due to
  * limitations of type inference.
  *
- * ===Implementing `IsIterableLike` for New Types===
+ * ===Implementing `IsIterable` for New Types===
  *
- * One must simply provide an implicit value of type `IsIterableLike`
+ * One must simply provide an implicit value of type `IsIterable`
  * specific to the new type, or an implicit conversion which returns an
- * instance of `IsIterableLike` specific to the new type.
+ * instance of `IsIterable` specific to the new type.
  *
- * Below is an example of an implementation of the `IsIterableLike` trait
+ * Below is an example of an implementation of the `IsIterable` trait
  * where the `Repr` type is `Range`.
  *
  *{{{
- * implicit val rangeRepr: IsIterableLike[Range] { type A = Int; type C = IndexedSeq[Int] } =
- *   new IsIterableLike[Range] {
+ * implicit val rangeRepr: IsIterable[Range] { type A = Int; type C = IndexedSeq[Int] } =
+ *   new IsIterable[Range] {
  *     type A = Int
  *     type C = IndexedSeq[Int]
  *     def apply(coll: Range): IterableOps[Int, IndexedSeq, IndexedSeq[Int]] = coll
  *   }
  *}}}
  *
- * (Note that in practice the `IsIterableLike[Range]` instance is already provided by
- * the standard library, and it is defined as an `IsSeqLike[Range]` instance)
+ * (Note that in practice the `IsIterable[Range]` instance is already provided by
+ * the standard library, and it is defined as an `IsSeq[Range]` instance)
  */
-trait IsIterableLike[Repr] extends IsIterableOnce[Repr] {
+trait IsIterable[Repr] extends IsIterableOnce[Repr] {
 
   /** The type returned by transformation operations that preserve the same elements
     * type (e.g. `filter`, `take`).
@@ -117,11 +117,11 @@ trait IsIterableLike[Repr] extends IsIterableOnce[Repr] {
 
 }
 
-object IsIterableLike extends IsIterableLikeLowPriority {
+object IsIterable extends IsIterableLowPriority {
 
   // Straightforward case: IterableOps subclasses
-  implicit def iterableOpsIsIterableLike[A0, CC0[X] <: IterableOps[X, Iterable, CC0[X]]]: IsIterableLike[CC0[A0]] { type A = A0; type C = CC0[A0] } =
-    new IsIterableLike[CC0[A0]] {
+  implicit def iterableOpsIsIterable[A0, CC0[X] <: IterableOps[X, Iterable, CC0[X]]]: IsIterable[CC0[A0]] { type A = A0; type C = CC0[A0] } =
+    new IsIterable[CC0[A0]] {
       type A = A0
       type C = CC0[A0]
       def apply(coll: CC0[A]): IterableOps[A, Iterable, C] = coll
@@ -130,8 +130,8 @@ object IsIterableLike extends IsIterableLikeLowPriority {
   // The `BitSet` type can not be unified with the `CC0` parameter of
   // the above definition because it does not take a type parameter.
   // Hence the need for a separate case:
-  implicit def bitSetOpsIsIterableLike[C0 <: BitSet with BitSetOps[C0]]: IsIterableLike[C0] { type A = Int; type C = C0 } =
-    new IsIterableLike[C0] {
+  implicit def bitSetOpsIsIterable[C0 <: BitSet with BitSetOps[C0]]: IsIterable[C0] { type A = Int; type C = C0 } =
+    new IsIterable[C0] {
       type A = Int
       type C = C0
       def apply(coll: C0): IterableOps[Int, Iterable, C0] = coll
@@ -139,16 +139,16 @@ object IsIterableLike extends IsIterableLikeLowPriority {
 
 }
 
-trait IsIterableLikeLowPriority {
+trait IsIterableLowPriority {
 
-  // Makes `IsSeqLike` instances visible in `IsIterableLike` companion
-  implicit def isSeqLikeIsIterableLike[Repr](implicit
-    isSeqLike: IsSeqLike[Repr]
-  ): IsIterableLike[Repr] { type A = isSeqLike.A; type C = isSeqLike.C } = isSeqLike
+  // Makes `IsSeq` instances visible in `IsIterable` companion
+  implicit def isSeqLikeIsIterable[Repr](implicit
+    isSeqLike: IsSeq[Repr]
+  ): IsIterable[Repr] { type A = isSeqLike.A; type C = isSeqLike.C } = isSeqLike
 
-  // Makes `IsMapLike` instances visible in `IsIterableLike` companion
-  implicit def isMapLikeIsIterableLike[Repr](implicit
-    isMapLike: IsMapLike[Repr]
-  ): IsIterableLike[Repr] { type A = isMapLike.A; type C = isMapLike.C } = isMapLike
+  // Makes `IsMap` instances visible in `IsIterable` companion
+  implicit def isMapLikeIsIterable[Repr](implicit
+    isMapLike: IsMap[Repr]
+  ): IsIterable[Repr] { type A = isMapLike.A; type C = isMapLike.C } = isMapLike
 
 }

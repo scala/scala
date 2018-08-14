@@ -64,9 +64,9 @@ object IsIterableOnce extends IsIterableOnceLowPriority {
 
 trait IsIterableOnceLowPriority {
 
-  // Makes `IsIterableLike` instance visible in `IsIterableOnce` companion
+  // Makes `IsIterable` instance visible in `IsIterableOnce` companion
   implicit def isIterableLikeIsIterableOnce[Repr](implicit
-    isIterableLike: IsIterableLike[Repr]
+    isIterableLike: IsIterable[Repr]
   ): IsIterableOnce[Repr] { type A = isIterableLike.A } = isIterableLike
 
 }

@@ -12,9 +12,9 @@ import scala.language.higherKinds
   * can make full use of the mechanics of the Scala collections framework in
   * their implementation.
   *
-  * @see [[scala.collection.generic.IsIterableLike]]
+  * @see [[scala.collection.generic.IsIterable]]
   */
-trait IsSeqLike[Repr] extends IsIterableLike[Repr] {
+trait IsSeq[Repr] extends IsIterable[Repr] {
 
   @deprecated("'conversion' is now a method named 'apply'", "2.13.0")
   override val conversion: Repr => SeqOps[A, Iterable, C] = apply(_)
@@ -28,28 +28,28 @@ trait IsSeqLike[Repr] extends IsIterableLike[Repr] {
   def apply(coll: Repr): SeqOps[A, Iterable, C]
 }
 
-object IsSeqLike {
+object IsSeq {
   import scala.language.higherKinds
 
-  private val seqOpsIsSeqLikeVal: IsSeqLike[Seq[Any]] =
-    new IsSeqLike[Seq[Any]] {
+  private val seqOpsIsSeqVal: IsSeq[Seq[Any]] =
+    new IsSeq[Seq[Any]] {
       type A = Any
       type C = Any
       def apply(coll: Seq[Any]): SeqOps[Any, Iterable, Any] = coll
     }
 
-  implicit def seqOpsIsSeqLike[CC0[X] <: SeqOps[X, Iterable, CC0[X]], A0]: IsSeqLike[CC0[A0]] { type A = A0; type C = CC0[A0] } =
-    seqOpsIsSeqLikeVal.asInstanceOf[IsSeqLike[CC0[A0]] { type A = A0; type C = CC0[A0] }]
+  implicit def seqOpsIsSeq[CC0[X] <: SeqOps[X, Iterable, CC0[X]], A0]: IsSeq[CC0[A0]] { type A = A0; type C = CC0[A0] } =
+    seqOpsIsSeqVal.asInstanceOf[IsSeq[CC0[A0]] { type A = A0; type C = CC0[A0] }]
 
-  implicit def seqViewIsSeqLike[CC0[X] <: SeqView[X], A0]: IsSeqLike[CC0[A0]] { type A = A0; type C = View[A0] } =
-    new IsSeqLike[CC0[A0]] {
+  implicit def seqViewIsSeq[CC0[X] <: SeqView[X], A0]: IsSeq[CC0[A0]] { type A = A0; type C = View[A0] } =
+    new IsSeq[CC0[A0]] {
       type A = A0
       type C = View[A]
       def apply(coll: CC0[A0]): SeqOps[A0, View, View[A0]] = coll
     }
 
-  implicit val stringIsSeqLike: IsSeqLike[String] { type A = Char; type C = String } =
-    new IsSeqLike[String] {
+  implicit val stringIsSeq: IsSeq[String] { type A = Char; type C = String } =
+    new IsSeq[String] {
       type A = Char
       type C = String
       def apply(s: String): SeqOps[Char, immutable.IndexedSeq, String] =
@@ -65,15 +65,15 @@ object IsSeqLike {
         }
     }
 
-  implicit val stringViewIsSeqLike: IsSeqLike[StringView] { type A = Char; type C = View[Char] } =
-    new IsSeqLike[StringView] {
+  implicit val stringViewIsSeq: IsSeq[StringView] { type A = Char; type C = View[Char] } =
+    new IsSeq[StringView] {
       type A = Char
       type C = View[Char]
       def apply(coll: StringView): SeqOps[Char, View, View[Char]] = coll
     }
 
-  implicit def arrayIsSeqLike[A0 : ClassTag]: IsSeqLike[Array[A0]] { type A = A0; type C = Array[A0] } =
-    new IsSeqLike[Array[A0]] {
+  implicit def arrayIsSeq[A0 : ClassTag]: IsSeq[Array[A0]] { type A = A0; type C = Array[A0] } =
+    new IsSeq[Array[A0]] {
       type A = A0
       type C = Array[A0]
       def apply(a: Array[A0]): SeqOps[A0, Seq, Array[A0]] =
@@ -90,10 +90,10 @@ object IsSeqLike {
     }
 
   // `Range` can not be unified with the `CC0` parameter of the
-  // `seqOpsIsSeqLike` definition because it does not take a type parameter.
+  // `seqOpsIsSeq` definition because it does not take a type parameter.
   // Hence the need for a separate case:
-  implicit def rangeIsSeqLike[C0 <: Range]: IsSeqLike[C0] { type A = Int; type C = immutable.IndexedSeq[Int] } =
-    new IsSeqLike[C0] {
+  implicit def rangeIsSeq[C0 <: Range]: IsSeq[C0] { type A = Int; type C = immutable.IndexedSeq[Int] } =
+    new IsSeq[C0] {
       type A = Int
       type C = immutable.IndexedSeq[Int]
       def apply(coll: C0): SeqOps[Int, Seq, immutable.IndexedSeq[Int]] = coll

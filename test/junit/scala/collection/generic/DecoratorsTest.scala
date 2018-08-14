@@ -36,9 +36,9 @@ class DecoratorsTest {
 
   @Test
   def iterableDecorator: Unit = {
-    implicit def IterableDecorator[Repr](coll: Repr)(implicit it: IsIterableLike[Repr]): IterableDecorator[Repr, it.type] =
+    implicit def IterableDecorator[Repr](coll: Repr)(implicit it: IsIterable[Repr]): IterableDecorator[Repr, it.type] =
       new IterableDecorator(coll)(it)
-    class IterableDecorator[Repr, I <: IsIterableLike[Repr]](coll: Repr)(implicit val it: I) {
+    class IterableDecorator[Repr, I <: IsIterable[Repr]](coll: Repr)(implicit val it: I) {
       final def filterMap[B, That](f: it.A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That =
         bf.fromSpecific(coll)(it(coll).flatMap(f(_)))
     }
@@ -97,9 +97,9 @@ class DecoratorsTest {
   @Test
   def seqDecorator: Unit = {
     // Taken from https://github.com/scala/collection-strawman/pull/286
-    implicit def SeqDecorator[Repr](coll: Repr)(implicit seq: IsSeqLike[Repr]): SeqDecorator[Repr, seq.type] =
+    implicit def SeqDecorator[Repr](coll: Repr)(implicit seq: IsSeq[Repr]): SeqDecorator[Repr, seq.type] =
       new SeqDecorator(coll)(seq)
-    class SeqDecorator[Repr, S <: IsSeqLike[Repr]](coll: Repr)(implicit val seq: S) {
+    class SeqDecorator[Repr, S <: IsSeq[Repr]](coll: Repr)(implicit val seq: S) {
       def groupedWith[Group, That](p: seq.A => Boolean)(implicit
         group: BuildFrom[Repr, seq.A, Group],
         bf: BuildFrom[Repr, Group, That]
@@ -159,10 +159,10 @@ class DecoratorsTest {
   @Test
   def mapDecorator: Unit = {
 
-    implicit def MapDecorator[Repr](coll: Repr)(implicit map: IsMapLike[Repr]): MapDecorator[Repr, map.type] =
+    implicit def MapDecorator[Repr](coll: Repr)(implicit map: IsMap[Repr]): MapDecorator[Repr, map.type] =
       new MapDecorator(coll)(map)
 
-    class MapDecorator[C, M <: IsMapLike[C]](coll: C)(implicit val map: M) {
+    class MapDecorator[C, M <: IsMap[C]](coll: C)(implicit val map: M) {
       def leftOuterJoin[W, That](other: Map[map.K, W])(implicit bf: BuildFrom[C, (map.K, (map.V, Option[W])), That]): That = {
         val b = bf.newBuilder(coll)
         for ((k, v) <- map(coll)) {

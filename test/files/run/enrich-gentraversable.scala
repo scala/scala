@@ -3,7 +3,7 @@ import scala.language.implicitConversions
 import scala.language.postfixOps
 
 object Test extends App {
-  import scala.collection.generic.IsIterableLike
+  import scala.collection.generic.IsIterable
   import scala.collection.{BuildFrom, Iterable, IterableOps, View}
   import scala.collection.immutable.TreeMap
 
@@ -13,7 +13,7 @@ object Test extends App {
       final def filterMap[B, That](f: A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That =
         bf.fromSpecific(r)(it.flatMap(f(_)))
     }
-    implicit def filterMap[Repr](r: Repr)(implicit fr: IsIterableLike[Repr]): FilterMapImpl[fr.A, Repr] =
+    implicit def filterMap[Repr](r: Repr)(implicit fr: IsIterable[Repr]): FilterMapImpl[fr.A, Repr] =
       new FilterMapImpl[fr.A, Repr](r, fr(r))
 
     val l = List(1, 2, 3, 4, 5)
