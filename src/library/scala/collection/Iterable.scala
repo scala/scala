@@ -23,7 +23,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
   protected def coll: this.type = this
 
-  protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
+  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
   protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]
 
   /**
@@ -139,7 +139,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
 
   /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
     * and `newSpecificBuilder` operations.
     *
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
@@ -178,12 +178,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *       `Iterable[A]` obtained from `this` collection (as it is the case in the
     *       implementations of operations where we use a `View[A]`), it is safe.
     */
-  protected def fromSpecificIterable(coll: Iterable[A @uncheckedVariance]): C
-
-  /** Similar to `fromSpecificIterable`, but for a (possibly) different type of element.
-    * Note that the return type is now `CC[E]`.
-    */
-  @`inline` final protected def fromIterable[E](it: Iterable[E]): CC[E] = iterableFactory.from(it)
+  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): C
 
   /**
     * @return The companion object of this ${coll}, providing various factory methods.
@@ -199,7 +194,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *
     * Note that in the case of lazy collections (e.g. [[View]] or [[immutable.LazyList]]),
     * it is possible to implement this method but the resulting `Builder` will break laziness.
-    * As a consequence, operations should preferably be implemented with `fromSpecificIterable`
+    * As a consequence, operations should preferably be implemented with `fromSpecific`
     * instead of this method.
     *
     * @note As witnessed by the `@uncheckedVariance` annotation, using this method might
@@ -386,12 +381,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       if (i != headSize)
         fail
     }
-    fromIterable(bs.map(_.result()))
+    iterableFactory.from(bs.map(_.result()))
   }
 
-  def filter(pred: A => Boolean): C = fromSpecificIterable(new View.Filter(this, pred, isFlipped = false))
+  def filter(pred: A => Boolean): C = fromSpecific(new View.Filter(this, pred, isFlipped = false))
 
-  def filterNot(pred: A => Boolean): C = fromSpecificIterable(new View.Filter(this, pred, isFlipped = true))
+  def filterNot(pred: A => Boolean): C = fromSpecific(new View.Filter(this, pred, isFlipped = true))
 
   /** Creates a non-strict filter of this $coll.
     *
@@ -418,7 +413,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def partition(p: A => Boolean): (C, C) = {
     val pn = new View.Partition(this, p)
-    (fromSpecificIterable(pn.first), fromSpecificIterable(pn.second))
+    (fromSpecific(pn.first), fromSpecific(pn.second))
   }
 
   /** Splits this $coll into two at a given position.
@@ -432,7 +427,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def splitAt(n: Int): (C, C) = (take(n), drop(n))
 
-  def take(n: Int): C = fromSpecificIterable(new View.Take(this, n))
+  def take(n: Int): C = fromSpecific(new View.Take(this, n))
 
   /** A collection containing the last `n` elements of this collection.
     * $willForceEvaluation
@@ -450,11 +445,11 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     b.result()
   }
 
-  def takeWhile(p: A => Boolean): C = fromSpecificIterable(new View.TakeWhile(this, p))
+  def takeWhile(p: A => Boolean): C = fromSpecific(new View.TakeWhile(this, p))
 
   def span(p: A => Boolean): (C, C) = (takeWhile(p), dropWhile(p))
 
-  def drop(n: Int): C = fromSpecificIterable(new View.Drop(this, n))
+  def drop(n: Int): C = fromSpecific(new View.Drop(this, n))
 
   /** The rest of the collection without its `n` last elements. For
     *  linear, immutable collections this should avoid making a copy.
@@ -472,7 +467,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     b.result()
   }
 
-  def dropWhile(p: A => Boolean): C = fromSpecificIterable(new View.DropWhile(this, p))
+  def dropWhile(p: A => Boolean): C = fromSpecific(new View.DropWhile(this, p))
 
   /** Partitions elements in fixed size ${coll}s.
    *  @see [[scala.collection.Iterator]], method `grouped`
@@ -482,7 +477,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
    *          last will be less than size `size` if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[C] =
-    iterator.grouped(size).map(fromSpecificIterable)
+    iterator.grouped(size).map(fromSpecific)
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in `grouped`.)
@@ -508,7 +503,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *          if there are fewer than `size` elements remaining to be grouped.
     */
   def sliding(size: Int, step: Int): Iterator[C] =
-    iterator.sliding(size, step).map(fromSpecificIterable)
+    iterator.sliding(size, step).map(fromSpecific)
 
   /** The rest of the collection without its first element. */
   def tail: C = {
@@ -523,7 +518,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   }
 
   def slice(from: Int, until: Int): C =
-    fromSpecificIterable(new View.Drop(new View.Take(this, until), from))
+    fromSpecific(new View.Drop(new View.Take(this, until), from))
 
   /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
     *
@@ -630,7 +625,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @deprecated("Use scanLeft instead", "2.13.0")
   def scan[B >: A](z: B)(op: (B, B) => B): CC[B] = scanLeft(z)(op)
 
-  def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = fromIterable(new View.ScanLeft(this, z, op))
+  def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = iterableFactory.from(new View.ScanLeft(this, z, op))
 
   /** Produces a collection containing cumulative results of applying the operator going right to left.
     *  The head of the collection is the last cumulative result.
@@ -654,18 +649,18 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
       acc = op(x, acc)
       scanned ::= acc
     }
-    fromIterable(scanned)
+    iterableFactory.from(scanned)
   }
 
-  def map[B](f: A => B): CC[B] = fromIterable(new View.Map(this, f))
+  def map[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(this, f))
 
-  def flatMap[B](f: A => IterableOnce[B]): CC[B] = fromIterable(new View.FlatMap(this, f))
+  def flatMap[B](f: A => IterableOnce[B]): CC[B] = iterableFactory.from(new View.FlatMap(this, f))
 
   def flatten[B](implicit asIterable: A => IterableOnce[B]): CC[B] =
-    fromIterable(new View.FlatMap(this, asIterable))
+    iterableFactory.from(new View.FlatMap(this, asIterable))
 
   def collect[B](pf: PartialFunction[A, B]): CC[B] =
-    fromIterable(new View.Collect(this, pf))
+    iterableFactory.from(new View.Collect(this, pf))
 
   /** A pair of ${coll}s, first, consisting of the values that are produced by `f` applied to this $coll elements contained in [[scala.util.Left]] and, second,
     *  all the values contained in [[scala.util.Right]].
@@ -689,7 +684,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
     val mp = new View.PartitionWith(this, f)
-    (fromIterable(mp.left), fromIterable(mp.right))
+    (iterableFactory.from(mp.left), iterableFactory.from(mp.right))
   }
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
@@ -701,10 +696,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[B >: A](suffix: Iterable[B]): CC[B] = fromIterable(new View.Concat(this, suffix))
+  def concat[B >: A](suffix: IterableOnce[B]): CC[B] = iterableFactory.from(suffix match {
+    case xs: Iterable[B] => new View.Concat(this, xs)
+    case xs => iterator ++ suffix.iterator
+  })
 
   /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: Iterable[B]): CC[B] = concat(suffix)
+  @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.
@@ -715,10 +713,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return        a new $coll containing pairs consisting of corresponding elements of this $coll and `that`.
     *                 The length of the returned collection is the minimum of the lengths of this $coll and `that`.
     */
-  def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] = fromIterable(new View.Zip(this, that))
-  // sound bcs of VarianceNote
+  def zip[B](that: IterableOnce[B]): CC[(A @uncheckedVariance, B)] = iterableFactory.from(that match { // sound bcs of VarianceNote
+    case that: Iterable[B] => new View.Zip(this, that)
+    case _ => iterator.zip(that)
+  })
 
-  def zipWithIndex: CC[(A @uncheckedVariance, Int)] = fromIterable(new View.ZipWithIndex(this))
+  def zipWithIndex: CC[(A @uncheckedVariance, Int)] = iterableFactory.from(new View.ZipWithIndex(this))
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.
@@ -734,7 +734,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
     *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
     */
-  def zipAll[A1 >: A, B](that: Iterable[B], thisElem: A1, thatElem: B): CC[(A1, B)] = fromIterable(new View.ZipAll(this, that, thisElem, thatElem))
+  def zipAll[A1 >: A, B](that: Iterable[B], thisElem: A1, thatElem: B): CC[(A1, B)] = iterableFactory.from(new View.ZipAll(this, that, thisElem, thatElem))
 
   /** Converts this $coll of pairs into two collections of the first and second
     *  half of each pair.
@@ -757,7 +757,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
     val unzipped = new View.Unzip(this)
-    (fromIterable(unzipped.first), fromIterable(unzipped.second))
+    (iterableFactory.from(unzipped.first), iterableFactory.from(unzipped.second))
   }
 
   /** Converts this $coll of triples into three collections of the first, second,
@@ -783,7 +783,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
     val unzipped = new View.Unzip3(this)
-    (fromIterable(unzipped.first), fromIterable(unzipped.second), fromIterable(unzipped.third))
+    (iterableFactory.from(unzipped.first), iterableFactory.from(unzipped.second), iterableFactory.from(unzipped.third))
   }
 
   /** Iterates over the tails of this $coll. The first value will be this
@@ -807,7 +807,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   // A helper for tails and inits.
   private[this] def iterateUntilEmpty(f: Iterable[A] => Iterable[A]): Iterator[C] = {
     val it = Iterator.iterate(toIterable)(f).takeWhile(x => !x.isEmpty)
-    (it ++ Iterator.single(Iterable.empty)).map(fromSpecificIterable)
+    (it ++ Iterator.single(Iterable.empty)).map(fromSpecific)
   }
 }
 

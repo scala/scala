@@ -62,7 +62,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   private[collection] def lastPtr_=(last: Unrolled[T]) = lastptr = last
   private[collection] def size_=(s: Int) = sz = s
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]) = UnrolledBuffer.from(coll)
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[T]) = UnrolledBuffer.from(coll)
   override protected def newSpecificBuilder: Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
 
   override def iterableFactory: SeqFactory[UnrolledBuffer] = UnrolledBuffer.untagged

@@ -15,7 +15,7 @@ class FactoriesTest {
   @Test def buildFromUsesSourceCollectionFactory(): Unit = {
 
     def cloneCollection[A, C](xs: Iterable[A])(implicit bf: BuildFrom[xs.type, A, C]): C =
-      bf.fromSpecificIterable(xs)(xs)
+      bf.fromSpecific(xs)(xs)
 
     Assert.assertEquals("ArrayBuffer", cloneCollection(seq).collectionClassName)
   }

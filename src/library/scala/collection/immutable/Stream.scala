@@ -185,9 +185,15 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
       else prefix.lazyAppendedAll(nonEmptyPrefix.tail.flatMap(f))
     }
 
-  override final def zip[B](that: collection.Iterable[B]): Stream[(A, B)] =
+  override final def zip[B](that: collection.IterableOnce[B]): Stream[(A, B)] =
     if (this.isEmpty || that.isEmpty) iterableFactory.empty
-    else cons[(A, B)]((this.head, that.head), this.tail.zip(that.tail))
+    else {
+      val thatIterable = that match {
+        case that: collection.Iterable[B] => that
+        case _ => LazyList.from(that)
+      }
+      cons[(A, B)]((this.head, thatIterable.head), this.tail.zip(thatIterable.tail))
+    }
 
   override final def zipWithIndex: Stream[(A, Int)] = this.zip(LazyList.from(0))
 

@@ -267,7 +267,7 @@ object IterableFactory {
 
   implicit def toBuildFrom[A, CC[_]](factory: IterableFactory[CC]): BuildFrom[Any, A, CC[A]] =
     new BuildFrom[Any, A, CC[A]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[A]) = factory.from(it)
+      def fromSpecific(from: Any)(it: IterableOnce[A]) = factory.from(it)
       def newBuilder(from: Any) = factory.newBuilder
     }
 
@@ -394,7 +394,7 @@ object MapFactory {
 
   implicit def toBuildFrom[K, V, CC[_, _]](factory: MapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] =
     new BuildFrom[Any, (K, V), CC[K, V]] {
-      def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
+      def fromSpecific(from: Any)(it: IterableOnce[(K, V)]) = factory.from(it)
       def newBuilder(from: Any) = factory.newBuilder[K, V]
     }
 
@@ -486,7 +486,7 @@ object EvidenceIterableFactory {
 
   implicit def toBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]): BuildFrom[Any, A, CC[A]] = new EvidenceIterableFactoryToBuildFrom(factory)
   private class EvidenceIterableFactoryToBuildFrom[Ev[_], A: Ev, CC[_]](factory: EvidenceIterableFactory[CC, Ev]) extends BuildFrom[Any, A, CC[A]] {
-    def fromSpecificIterable(from: Any)(it: Iterable[A]): CC[A] = factory.from[A](it)
+    def fromSpecific(from: Any)(it: IterableOnce[A]): CC[A] = factory.from[A](it)
     def newBuilder(from: Any): Builder[A, CC[A]] = factory.newBuilder[A]
   }
 
@@ -733,7 +733,7 @@ object SortedMapFactory {
 
   implicit def toBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]): BuildFrom[Any, (K, V), CC[K, V]] = new SortedMapFactoryToBuildFrom(factory)
   private class SortedMapFactoryToBuildFrom[K : Ordering, V, CC[_, _]](factory: SortedMapFactory[CC]) extends BuildFrom[Any, (K, V), CC[K, V]] {
-    def fromSpecificIterable(from: Any)(it: Iterable[(K, V)]) = factory.from(it)
+    def fromSpecific(from: Any)(it: IterableOnce[(K, V)]) = factory.from(it)
     def newBuilder(from: Any) = factory.newBuilder[K, V]
   }
 

@@ -29,7 +29,7 @@ object IsSeqLike {
         def apply(i: Int): Char = s.charAt(i)
         def toIterable: Iterable[Char] = new immutable.WrappedString(s)
         protected[this] def coll: String = s
-        protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = coll.mkString
+        protected[this] def fromSpecific(coll: IterableOnce[Char]): String = coll.mkString
         def iterableFactory: IterableFactory[Seq] = Seq
         protected[this] def newSpecificBuilder: mutable.Builder[Char, String] = new StringBuilder
         def iterator: Iterator[Char] = s.iterator

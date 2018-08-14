@@ -4,7 +4,7 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.mutable.Builder
 
 /**
   * A generic trait for ordered immutable maps. Concrete classes have to provide

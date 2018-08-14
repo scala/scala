@@ -349,7 +349,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   override def prepended[B >: A](elem: B): LazyList[B] = newLL(sCons(elem, this))
 
-  override def prependedAll[B >: A](prefix: scala.Iterable[B]): LazyList[B] =
+  override def prependedAll[B >: A](prefix: scala.IterableOnce[B]): LazyList[B] =
     newLL {
       if (prefix.isEmpty) state
       else stateFromIteratorConcatSuffix(prefix.iterator)(state)
@@ -394,10 +394,16 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       else stateFromIteratorConcatSuffix(it)(tail.flatMapTrampoline(f))
     }
 
-  override def zip[B](that: collection.Iterable[B]): LazyList[(A, B)] =
+  override def zip[B](that: collection.IterableOnce[B]): LazyList[(A, B)] =
     newLL {
       if (this.isEmpty || that.isEmpty) State.Empty
-      else sCons[(A, B)]((this.head, that.head), this.tail.zip(that.tail))
+      else {
+        val thatIterable = that match {
+          case that: collection.Iterable[B] => that
+          case _ => LazyList.from(that)
+        }
+        sCons[(A, B)]((this.head, thatIterable.head), this.tail.zip(thatIterable.tail))
+      }
     }
 
   override def zipWithIndex: LazyList[(A, Int)] = this.zip(LazyList.from(0))

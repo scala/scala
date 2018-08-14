@@ -75,7 +75,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     mask = m; _size = sz; _vacant = vc; _hashes = hz; _keys = kz; _values = vz
   }
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): AnyRefMap[K,V] = {
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[(K, V)]): AnyRefMap[K,V] = {
     var sz = coll.knownSize
     if(sz < 0) sz = 4
     val arm = new AnyRefMap[K, V](sz * 2)
@@ -373,7 +373,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): AnyRefMap[K, V1] = AnyRefMap.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
-  override def concat[V2 >: V](xs: scala.collection.Iterable[(K, V2)]): AnyRefMap[K, V2] = {
+  override def concat[V2 >: V](xs: scala.collection.IterableOnce[(K, V2)]): AnyRefMap[K, V2] = {
     val arm = clone().asInstanceOf[AnyRefMap[K, V2]]
     xs.foreach(kv => arm += kv)
     arm
@@ -547,7 +547,7 @@ object AnyRefMap {
 
   implicit def toBuildFrom[K <: AnyRef, V](factory: AnyRefMap.type): BuildFrom[Any, (K, V), AnyRefMap[K, V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (K, V), AnyRefMap[K, V]]]
   private[this] object ToBuildFrom extends BuildFrom[Any, (AnyRef, AnyRef), AnyRefMap[AnyRef, AnyRef]] {
-    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(AnyRef, AnyRef)]) = AnyRefMap.from(it)
+    def fromSpecific(from: Any)(it: IterableOnce[(AnyRef, AnyRef)]) = AnyRefMap.from(it)
     def newBuilder(from: Any) = AnyRefMap.newBuilder[AnyRef, AnyRef]
   }
 

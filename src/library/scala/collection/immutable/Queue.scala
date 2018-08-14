@@ -99,7 +99,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   override def appended[B >: A](elem: B): Queue[B] = enqueue(elem)
 
-  override def appendedAll[B >: A](that: scala.collection.Iterable[B]): Queue[B] = {
+  override def appendedAll[B >: A](that: scala.collection.IterableOnce[B]): Queue[B] = {
     val newIn = that match {
       case that: Queue[B] => that.in ++ (that.out reverse_::: this.in)
       case _ => ListBuffer.from(that).toList reverse_::: this.in

@@ -23,7 +23,7 @@ trait StrictOptimizedSortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[
   override def flatMap[B](f: A => IterableOnce[B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =
     strictOptimizedFlatMap(sortedIterableFactory.newBuilder, f)
 
-  override def zip[B](that: Iterable[B])(implicit @implicitNotFound(SortedSetOps.zipOrdMsg) ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] =
+  override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(SortedSetOps.zipOrdMsg) ev: Ordering[(A @uncheckedVariance, B)]): CC[(A @uncheckedVariance, B)] =
     strictOptimizedZip(that, sortedIterableFactory.newBuilder[(A, B)])
 
   override def collect[B](pf: PartialFunction[A, B])(implicit @implicitNotFound(SortedSetOps.ordMsg) ev: Ordering[B]): CC[B] =

@@ -296,18 +296,18 @@ abstract class Enumeration (initial: Int) extends Serializable {
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
 
-    override protected def fromSpecificIterable(coll: Iterable[Value]) = ValueSet.fromSpecific(coll)
+    override protected def fromSpecific(coll: IterableOnce[Value]) = ValueSet.fromSpecific(coll)
     override protected def newSpecificBuilder = ValueSet.newBuilder
 
-    def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
-    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
+    def map(f: Value => Value): ValueSet = fromSpecific(new View.Map(toIterable, f))
+    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecific(new View.FlatMap(toIterable, f))
 
     // necessary for disambiguation:
     override def map[B](f: Value => B)(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].map[B](f)
     override def flatMap[B](f: Value => IterableOnce[B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].flatMap[B](f)
-    override def zip[B](that: Iterable[B])(implicit @implicitNotFound(ValueSet.zipOrdMsg) ev: Ordering[(Value, B)]): SortedIterableCC[(Value, B)] =
+    override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(ValueSet.zipOrdMsg) ev: Ordering[(Value, B)]): SortedIterableCC[(Value, B)] =
       super[SortedSet].zip[B](that)
     override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].collect[B](pf)

@@ -57,7 +57,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   // Methods required to make this an IndexedSeq:
   def apply(i: Int): Char = underlying.charAt(i)
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[Char]): StringBuilder =
     new StringBuilder() appendAll coll
 
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =

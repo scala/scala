@@ -71,7 +71,7 @@ it has 7 unimplemented members.
 
   // Members declared in scala.collection.IterableOps
   protected def coll: List[(Set[Int], String)] = ???
-  protected def fromSpecificIterable(coll: Iterable[(Set[Int], String)]): List[(Set[Int], String)] = ???
+  protected def fromSpecific(coll: scala.collection.IterableOnce[(Set[Int], String)]): List[(Set[Int], String)] = ???
   def iterableFactory: scala.collection.IterableFactory[[X]List[X]] = ???
   protected def newSpecificBuilder: scala.collection.mutable.Builder[(Set[Int], String),List[(Set[Int], String)]] = ???
   def toIterable: Iterable[(Set[Int], String)] = ???

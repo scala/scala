@@ -113,7 +113,7 @@ object IsIterableLike {
       val conversion: String => IterableOps[Char, Iterable, String] = s => new IterableOps[Char, Iterable, String] {
         def toIterable: Iterable[Char] = new immutable.WrappedString(s)
         protected[this] def coll: String = s
-        protected[this] def fromSpecificIterable(coll: Iterable[Char]): String = coll.mkString
+        protected[this] def fromSpecific(coll: IterableOnce[Char]): String = coll.mkString
         def iterableFactory: IterableFactory[Iterable] = Iterable
         protected[this] def newSpecificBuilder: mutable.Builder[Char, String] = new StringBuilder
         def iterator: Iterator[Char] = s.iterator
@@ -129,7 +129,7 @@ object IsIterableLike {
       val conversion: Array[A] => IterableOps[A, Iterable, Array[A]] = a => new IterableOps[A, Iterable, Array[A]] {
         def toIterable: Iterable[A] = mutable.ArraySeq.make(a)
         protected def coll: Array[A] = a
-        protected def fromSpecificIterable(coll: Iterable[A]): Array[A] = Array.from(coll)
+        protected def fromSpecific(coll: IterableOnce[A]): Array[A] = Array.from(coll)
         def iterableFactory: IterableFactory[Iterable] = Iterable
         protected def newSpecificBuilder: mutable.Builder[A, Array[A]] = Array.newBuilder
         def iterator: Iterator[A] = a.iterator

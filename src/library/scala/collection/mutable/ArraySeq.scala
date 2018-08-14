@@ -32,7 +32,7 @@ sealed abstract class ArraySeq[T]
 
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[T]): ArraySeq[T] = {
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[T]): ArraySeq[T] = {
     val b = ArrayBuilder.make(elemTag).asInstanceOf[ArrayBuilder[T]]
     val s = coll.knownSize
     if(s > 0) b.sizeHint(s)

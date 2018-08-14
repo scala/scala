@@ -108,7 +108,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def concat[B >: A](suffix: Iterable[B]): CC[B] =
+  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] =
     strictOptimizedConcat(suffix, iterableFactory.newBuilder[B])
 
   /**
@@ -118,7 +118,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @tparam C2 Type of the resulting collection (e.g. `List[Int]`)
     * @return The resulting collection
     */
-  @inline protected[this] final def strictOptimizedConcat[B >: A, C2](that: Iterable[B], b: mutable.Builder[B, C2]): C2 = {
+  @inline protected[this] final def strictOptimizedConcat[B >: A, C2](that: IterableOnce[B], b: mutable.Builder[B, C2]): C2 = {
     val it1 = iterator
     val it2 = that.iterator
     b ++= it1
@@ -165,7 +165,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] =
+  override def zip[B](that: IterableOnce[B]): CC[(A @uncheckedVariance, B)] =
     strictOptimizedZip(that, iterableFactory.newBuilder[(A, B)])
 
   /**
@@ -175,7 +175,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @tparam C2 Type of the resulting collection (e.g. `List[(Int, String)]`)
     * @return The resulting collection
     */
-  @inline protected[this] final def strictOptimizedZip[B, C2](that: Iterable[B], b: mutable.Builder[(A, B), C2]): C2 = {
+  @inline protected[this] final def strictOptimizedZip[B, C2](that: IterableOnce[B], b: mutable.Builder[(A, B), C2]): C2 = {
     val it1 = iterator
     val it2 = that.iterator
     while (it1.hasNext && it2.hasNext) {

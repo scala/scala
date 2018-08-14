@@ -11,7 +11,7 @@ trait StrictOptimizedSetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends SetOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
-  override def concat(that: Iterable[A]): C =
+  override def concat(that: IterableOnce[A]): C =
     strictOptimizedConcat(that, newSpecificBuilder)
 
 }
