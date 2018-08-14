@@ -277,27 +277,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
       case t if t.hasSymbolField =>
         val symbol = t.symbol
         if (symbol != rootMirror.RootPackage) {
-          /* When a case class is defined with no companion, the companion is synthesized by the
-           * compiler and every object creation of that case class is proxied to the synthesized
-           * apply method of the newly synthesized companion. From this perspective, if we have
-           * a `case class A(x: Int)` and a use site `A(1)`, `ExtractUsedNames` will extract the
-           * name to the apply method in `A(1)` and mark it as used.
-           *
-           * However, this is wrong. When the user changes the signature of the case class, only
-           * the signature of the case class constructor changes and this change is not propagated
-           * to the apply signature (`ExtractAPI` traverses trees, and the synthesized module has
-           * no trees as it is added in namer). Therefore, when we compare changed names in the
-           * old and new API, Zinc concludes that only references to `A;<init>;` must be recompiled
-           * and since the use site that contained `A(1)` had no such reference, then it's ignored.
-           *
-           * To fix this problem, we protect ourselves from this point of indirection and extract
-           * the proper name of the case class constructor iff the companion case class is indeed
-           * synthesized by the compiler. Note that when the user defines `object A` alongside the
-           * definition of `A`, Zinc does the right thing.
-           */
-          if (symbol.isCaseApplyOrUnapply && symbol.name == nme.apply && symbol.owner.isSynthetic) {
-            addSymbol(getNamesOfEnclosingScope, symbol.owner.companionClass.primaryConstructor)
-          } else addSymbol(getNamesOfEnclosingScope, t.symbol)
+          addSymbol(getNamesOfEnclosingScope, t.symbol)
         }
 
         val tpe = t.tpe
