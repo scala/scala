@@ -24,10 +24,28 @@ class ViewTest {
 
   @Test
   def seqView(): Unit = {
-    val xs = List(1, 2, 3).view
-    assertEquals(List(3, 2, 1), xs.reverse.to(List))
-    assertEquals(2, xs(1))
-//    assertEquals(xs, xs.reverse.reverse.to(List)) doesn’t compile
+    val xs = List(1, 2, 3)
+    assertEquals(xs.reverse, xs.view.reverse.toSeq)
+    assertEquals(2, xs.view(1))
+    val v1 = xs.view.reverse.reverse
+    val v1t: SeqView[Int] = v1
+    assertEquals(xs, v1t.toSeq)
+    val v2 = xs.view.concat(xs)
+    val v2t: SeqView[Int] = v2
+    assertEquals(xs.concat(xs), v2t.toSeq)
+  }
+
+  @Test
+  def indexedSeqView(): Unit = {
+    val xs = Vector(1, 2, 3)
+    assertEquals(xs.reverse, xs.view.reverse.toSeq)
+    assertEquals(2, xs.view(1))
+    val v1 = xs.view.reverse.reverse
+    val v1t: IndexedSeqView[Int] = v1
+    assertEquals(xs, v1t.toSeq)
+    val v2 = xs.view.concat(xs)
+    val v2t: IndexedSeqView[Int] = v2
+    assertEquals(xs.concat(xs), v2t.toSeq)
   }
 
   @Test

@@ -365,7 +365,7 @@ object View extends IterableFactory[View] {
 
   /** A view that appends an element to its elements */
   @SerialVersionUID(3L)
-  class Appended[A](underlying: SomeIterableOps[A], elem: A) extends AbstractView[A] {
+  class Appended[+A](underlying: SomeIterableOps[A], elem: A) extends AbstractView[A] {
     def iterator: Iterator[A] = new Concat(underlying, new View.Single(elem)).iterator
     override def knownSize: Int = {
       val size = underlying.knownSize
