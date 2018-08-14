@@ -928,9 +928,7 @@ trait Definitions extends api.StandardDefinitions {
     // For name-based pattern matching, derive the "element type" (type argument of Option/Seq)
     // from the relevant part of the signature of various members (get/head/apply/drop)
     def elementTypeFromGet(tp: Type)   = typeArgOfBaseTypeOr(tp, OptionClass)(resultOfMatchingMethod(tp, nme.get)())
-    def elementTypeFromHead(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.head)())
     def elementTypeFromApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
-    def elementTypeFromDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
     def resultOfIsEmpty(tp: Type)      = resultOfMatchingMethod(tp, nme.isEmpty)()
 
     // scala/bug#8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
@@ -1544,7 +1542,6 @@ trait Definitions extends api.StandardDefinitions {
       lazy val arrayCloneMethod       = getMemberMethod(ScalaRunTimeModule, nme.array_clone)
       lazy val ensureAccessibleMethod = getMemberMethod(ScalaRunTimeModule, nme.ensureAccessible)
       lazy val arrayClassMethod       = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
-      lazy val traversableDropMethod  = getMemberMethod(ScalaRunTimeModule, nme.drop)
       lazy val wrapVarargsRefArrayMethod = getMemberMethod(getWrapVarargsArrayModule, nme.wrapRefArray)
 
       lazy val GroupOfSpecializable = getMemberClass(SpecializableModule, tpnme.Group)

@@ -520,8 +520,16 @@ object Array {
    *  @param x the selector value
    *  @return  sequence wrapped in a [[scala.Some]], if `x` is an Array, otherwise `None`
    */
-  def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
-    Some(ArraySeq.unsafeWrapArray[T](x))
+  def unapplySeq[T](x: Array[T]): UnapplySeqWrapper[T] = new UnapplySeqWrapper(x)
+
+  final class UnapplySeqWrapper[T](private val a: Array[T]) extends AnyVal {
+    def isEmpty: Boolean = false
+    def get: UnapplySeqWrapper[T] = this
+    def lengthCompare(len: Int): Int = a.lengthCompare(len)
+    def apply(i: Int): T = a(i)
+    def drop(n: Int): scala.Seq[T] = ArraySeq.unsafeWrapArray(a.drop(n)) // clones the array, also if n == 0
+    def toSeq: scala.Seq[T] = a.toSeq // clones the array
+  }
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
