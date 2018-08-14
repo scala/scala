@@ -4,12 +4,12 @@ object Test extends App {
 
   def test1(): Unit = {
     // test that a HashTrieMap with one leaf element is not created!
-    val x = HashMap.empty + (1->1) + (2->2)
+    val x = OldHashMap.empty + (1->1) + (2->2)
     if(x.getClass.getSimpleName != "HashTrieMap")
       println("A hash map containing two non-colliding values should be a HashTrieMap")
 
     val y = x - 1
-    if(y.getClass.getSimpleName != "HashMap1")
+    if(y.getClass.getSimpleName != "OldHashMap1")
       println("A hash map containing one element should always use HashMap1")
   }
 
@@ -18,20 +18,20 @@ object Test extends App {
     case class Collision(value:Int) { override def hashCode = 0 }
 
     // create a set that should have a collison
-    val x = HashMap.empty + (Collision(0)->0) + (Collision(1) ->0)
-    if(x.getClass.getSimpleName != "HashMapCollision1")
-      println("HashMap of size >1 with collisions should use HashMapCollision")
+    val x = OldHashMap.empty + (Collision(0)->0) + (Collision(1) ->0)
+    if(x.getClass.getSimpleName != "OldHashMapCollision1")
+      println("OldHashMap of size >1 with collisions should use OldHashMapCollision")
 
     // remove the collision again by removing all but one element
     val y = x - Collision(0)
-    if(y.getClass.getSimpleName != "HashMap1")
-      println("HashMap of size 1 should use HashMap1" + y.getClass)
+    if(y.getClass.getSimpleName != "OldHashMap1")
+      println("OldHashMap of size 1 should use OldHashMap1" + y.getClass)
   }
   def test3(): Unit = {
     // finds an int x such that improved(x) differs in the first bit to improved(0),
     // which is the worst case for the HashTrieSet
     def findWorstCaseInts(): Unit = {
-      // copy of improve from HashSet
+      // copy of improve from OldHashSet
       def improve(hcode: Int) = {
         var h: Int = hcode + ~(hcode << 9)
         h = h ^ (h >>> 14)
@@ -63,9 +63,9 @@ object Test extends App {
     val c = Collision(h1,0)->0
 
     // create a HashSetCollision1
-    val x = HashMap(a) + b
-    if(x.getClass.getSimpleName != "HashMapCollision1")
-      println("x should be a HashMapCollision")
+    val x = OldHashMap(a) + b
+    if(x.getClass.getSimpleName != "OldHashMapCollision1")
+      println("x should be a OldHashMapCollision")
     StructureTests.validate(x)
     //StructureTests.printStructure(x)
     require(x.size==2 && x.contains(a._1) && x.contains(b._1))
@@ -79,7 +79,7 @@ object Test extends App {
     require(y.size==3 && y.contains(a._1) && y.contains(b._1) && y.contains(c._1))
 
     // go from a HashSet1 directly to a HashTrieSet with maximum depth
-    val z = HashMap(a) + c
+    val z = OldHashMap(a) + c
     if(y.getClass.getSimpleName != "HashTrieMap")
       println("y should be a HashTrieMap")
     StructureTests.validate(z)
@@ -94,28 +94,28 @@ object Test extends App {
 
 package scala.collection.immutable {
   object StructureTests {
-    def printStructure(x:HashMap[_,_], prefix:String=""): Unit = {
+    def printStructure(x:OldHashMap[_,_], prefix:String=""): Unit = {
       x match {
-        case m:HashMap.HashTrieMap[_,_] =>
+        case m:OldHashMap.HashTrieMap[_,_] =>
           println(prefix+m.getClass.getSimpleName + " " + m.size)
           m.elems.foreach(child => printStructure(child, prefix + "  "))
-        case m:HashMap.HashMapCollision1[_,_] =>
+        case m:OldHashMap.OldHashMapCollision1[_,_] =>
           println(prefix+m.getClass.getSimpleName + " " + m.kvs.size)
-        case m:HashMap.HashMap1[_,_] =>
+        case m:OldHashMap.OldHashMap1[_,_] =>
           println(prefix+m.getClass.getSimpleName + " " + m.head)
         case _ =>
           println(prefix+"empty")
       }
     }
 
-    def validate(x:HashMap[_,_]): Unit = {
+    def validate(x:OldHashMap[_,_]): Unit = {
       x match {
-        case m:HashMap.HashTrieMap[_,_] =>
-          require(m.elems.size>1 || (m.elems.size==1 && m.elems(0).isInstanceOf[HashMap.HashTrieMap[_,_]]))
+        case m:OldHashMap.HashTrieMap[_,_] =>
+          require(m.elems.size>1 || (m.elems.size==1 && m.elems(0).isInstanceOf[OldHashMap.HashTrieMap[_,_]]))
           m.elems.foreach(validate _)
-        case m:HashMap.HashMapCollision1[_,_] =>
+        case m:OldHashMap.OldHashMapCollision1[_,_] =>
           require(m.kvs.size>1)
-        case m:HashMap.HashMap1[_,_] =>
+        case m:OldHashMap.OldHashMap1[_,_] =>
         case _ =>
       }
     }

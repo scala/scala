@@ -4,7 +4,7 @@ package collection
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.collection.mutable.StringBuilder
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */

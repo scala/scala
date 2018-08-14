@@ -1,9 +1,9 @@
-import scala.collection.immutable.HashMap;
+import scala.collection.immutable.OldHashMap;
 
 public class Test {
 
   void foo() {
-    new HashMap.HashTrieMap<String, String>(0, new HashMap[0], 0);
+    new OldHashMap.HashTrieMap<String, String>(0, new OldHashMap[0], 0);
   }
 }
 

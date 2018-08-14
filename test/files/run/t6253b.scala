@@ -1,4 +1,4 @@
-import scala.collection.immutable.HashSet
+import scala.collection.immutable.{OldHashSet => HashSet}
 
 object Test extends App {
 

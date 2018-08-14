@@ -3,12 +3,12 @@ import scala.collection.immutable._
 object Test extends App {
 
   // test that a HashTrieSet with one leaf element is not created!
-  val x = HashSet.empty + 1 + 2
+  val x = OldHashSet.empty + 1 + 2
   if(x.getClass.getSimpleName != "HashTrieSet")
     println("A hash set containing two non-colliding values should be a HashTrieSet")
 
   val y = x - 1
-  if(y.getClass.getSimpleName != "HashSet1")
+  if(y.getClass.getSimpleName != "OldHashSet1")
     println("A hash set containing one element should always use HashSet1")
 
   // it is pretty hard to test that the case where a HashTrieSet has one element which

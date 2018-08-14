@@ -19,17 +19,19 @@ import scala.util.hashing.MurmurHash3
   *
   *  @author  Michael J. Steindorfer
   *  @since   2.13
-  *  @define Coll `immutable.ChampHashMap`
+  *  @define Coll `immutable.HashMap`
   *  @define coll immutable champ hash map
   */
 
-final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNode[K, V], private val cachedJavaKeySetHashCode: Int)
+final class HashMap[K, +V] private[immutable] (private val rootNode: MapNode[K, V], private val cachedJavaKeySetHashCode: Int)
   extends AbstractMap[K, V]
-    with MapOps[K, V, ChampHashMap, ChampHashMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, ChampHashMap[K, V]]
-    with StrictOptimizedMapOps[K, V, ChampHashMap, ChampHashMap[K, V]] {
+    with MapOps[K, V, HashMap, HashMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
+    with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]] {
 
-  override def mapFactory: MapFactory[ChampHashMap] = ChampHashMap
+  def this() = this(MapNode.empty, 0)
+
+  override def mapFactory: MapFactory[HashMap] = HashMap
 
   override def knownSize: Int = rootNode.size
 
@@ -74,7 +76,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     rootNode.getOrElse(key, keyUnimprovedHash, keyHash, 0, default)
   }
 
-  def updated[V1 >: V](key: K, value: V1): ChampHashMap[K, V1] = {
+  def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
 
@@ -83,30 +85,30 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     if (newRootNode ne rootNode) {
       val replaced = rootNode.size == newRootNode.size
       val newCachedJavaKeySetHashCode = cachedJavaKeySetHashCode + (if (replaced) 0 else keyHash)
-      ChampHashMap(newRootNode.get, newCachedJavaKeySetHashCode)
+      HashMap(newRootNode.get, newCachedJavaKeySetHashCode)
     } else
       this
   }
 
-  def remove(key: K): ChampHashMap[K, V] = {
+  def remove(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
 
     val newRootNode = rootNode.removed(key, keyUnimprovedHash, keyHash, 0)
 
     if (newRootNode ne rootNode)
-      ChampHashMap(newRootNode, cachedJavaKeySetHashCode - keyHash)
+      HashMap(newRootNode, cachedJavaKeySetHashCode - keyHash)
     else this
   }
 
-  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): ChampHashMap[K, V1] = {
-    // TODO PERF We could avoid recomputing entry hash's when `that` is another `ChampHashMap`
+  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = {
+    // TODO PERF We could avoid recomputing entry hash's when `that` is another `HashMap`
     super.concat(that)
   }
 
-  override def tail: ChampHashMap[K, V] = this - head._1
+  override def tail: HashMap[K, V] = this - head._1
 
-  override def init: ChampHashMap[K, V] = this - last._1
+  override def init: HashMap[K, V] = this - last._1
 
   override def head: (K, V) = iterator.next()
 
@@ -116,7 +118,7 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
 
   override def equals(that: Any): Boolean =
     that match {
-      case map: ChampHashMap[K, V] =>
+      case map: HashMap[K, V] =>
         (this eq map) ||
           (this.size == map.size) &&
             (this.cachedJavaKeySetHashCode == map.cachedJavaKeySetHashCode) &&
@@ -130,7 +132,21 @@ final class ChampHashMap[K, +V] private[immutable] (private val rootNode: MapNod
     // assert(hash == super.hashCode())
     hash
   }
-  override protected[this] def className = "ChampHashMap"
+
+  override protected[this] def className = "HashMap"
+
+  private type MergeFunction[A1, B1] = ((A1, B1), (A1, B1)) => (A1, B1)
+
+  //TODO optimize (https://github.com/scala/bug/issues/11077)
+  def merged[V1 >: V](that: HashMap[K, V1])(mergef: MergeFunction[K, V1]): HashMap[K, V1] = {
+    val thisKeys = this.keySet
+    if(mergef eq null)
+      that.removeAll(thisKeys) ++ this
+    else {
+      val thatKeys = that.keySet
+      that.removeAll(thisKeys) ++ this.removeAll(thatKeys) ++ thisKeys.intersect(thatKeys).map { case k => mergef((k, this(k)), (k, that(k))) }
+    }
+  }
 }
 
 private[immutable] object MapNode {
@@ -726,28 +742,28 @@ private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
 /**
   * $factoryInfo
   *
-  * @define Coll `immutable.ChampHashMap`
+  * @define Coll `immutable.HashMap`
   * @define coll immutable champ hash map
   */
 @SerialVersionUID(3L)
-object ChampHashMap extends MapFactory[ChampHashMap] {
+object HashMap extends MapFactory[HashMap] {
 
-  private[ChampHashMap] def apply[K, V](rootNode: MapNode[K, V], cachedJavaHashCode: Int) =
-    new ChampHashMap[K, V](rootNode, cachedJavaHashCode)
+  private[HashMap] def apply[K, V](rootNode: MapNode[K, V], cachedJavaHashCode: Int) =
+    new HashMap[K, V](rootNode, cachedJavaHashCode)
 
-  private final val EmptyMap = new ChampHashMap(MapNode.empty, 0)
+  private final val EmptyMap = new HashMap(MapNode.empty, 0)
 
-  def empty[K, V]: ChampHashMap[K, V] =
-    EmptyMap.asInstanceOf[ChampHashMap[K, V]]
+  def empty[K, V]: HashMap[K, V] =
+    EmptyMap.asInstanceOf[HashMap[K, V]]
 
-  def from[K, V](source: collection.IterableOnce[(K, V)]): ChampHashMap[K, V] =
+  def from[K, V](source: collection.IterableOnce[(K, V)]): HashMap[K, V] =
     source match {
-      case hs: ChampHashMap[K, V] => hs
+      case hs: HashMap[K, V] => hs
       case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), ChampHashMap[K, V]] =
-    new ImmutableBuilder[(K, V), ChampHashMap[K, V]](empty) {
+  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
+    new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
       def addOne(element: (K, V)): this.type = {
         elems = elems + element
         this

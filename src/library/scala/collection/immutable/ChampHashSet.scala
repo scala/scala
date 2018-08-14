@@ -18,15 +18,15 @@ import scala.util.hashing.MurmurHash3
   *
   *  @author  Michael J. Steindorfer
   *  @since   2.13
-  *  @define Coll `immutable.ChampHashSet`
+  *  @define Coll `immutable.HashSet`
   *  @define coll immutable champ hash set
   */
-final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int)
+final class HashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int)
   extends AbstractSet[A]
-    with SetOps[A, ChampHashSet, ChampHashSet[A]]
-    with StrictOptimizedIterableOps[A, ChampHashSet, ChampHashSet[A]] {
+    with SetOps[A, HashSet, HashSet[A]]
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
-  override def iterableFactory: IterableFactory[ChampHashSet] = ChampHashSet
+  override def iterableFactory: IterableFactory[HashSet] = HashSet
 
   override def knownSize: Int = rootNode.size
 
@@ -47,30 +47,30 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
     rootNode.contains(element, elementUnimprovedHash, elementHash, 0)
   }
 
-  def incl(element: A): ChampHashSet[A] = {
+  def incl(element: A): HashSet[A] = {
     val elementUnimprovedHash = element.##
     val elementHash = improve(elementUnimprovedHash)
     val newRootNode = rootNode.updated(element, elementUnimprovedHash, elementHash, 0)
 
     if (newRootNode ne rootNode) {
       val newCachedJavaHashCode = cachedJavaHashCode + (if (newRootNode.size == rootNode.size) 0 else elementHash)
-      ChampHashSet(newRootNode, newCachedJavaHashCode)
+      HashSet(newRootNode, newCachedJavaHashCode)
     } else this
   }
 
-  def excl(element: A): ChampHashSet[A] = {
+  def excl(element: A): HashSet[A] = {
     val elementUnimprovedHash = element.##
     val elementHash = improve(elementUnimprovedHash)
     val newRootNode = rootNode.removed(element, elementUnimprovedHash, elementHash, 0)
 
     if (rootNode ne newRootNode)
-      ChampHashSet(newRootNode, cachedJavaHashCode - elementHash)
+      HashSet(newRootNode, cachedJavaHashCode - elementHash)
     else this
   }
 
-  override def tail: ChampHashSet[A] = this - head
+  override def tail: HashSet[A] = this - head
 
-  override def init: ChampHashSet[A] = this - last
+  override def init: HashSet[A] = this - last
 
   override def head: A = iterator.next()
 
@@ -79,13 +79,13 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
   override def foreach[U](f: A => U): Unit = rootNode.foreach(f)
 
   def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
-    case set: ChampHashSet[A] => rootNode.subsetOf(set.rootNode, 0)
+    case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
     case _ => super.subsetOf(that)
   }
 
   override def equals(that: Any): Boolean =
     that match {
-      case set: ChampHashSet[A] =>
+      case set: HashSet[A] =>
         (this eq set) ||
           (this.size == set.size) &&
             (this.cachedJavaHashCode == set.cachedJavaHashCode) &&
@@ -93,7 +93,7 @@ final class ChampHashSet[A] private[immutable] (val rootNode: SetNode[A], val ca
       case _ => super.equals(that)
     }
 
-  override protected[this] def className = "ChampHashSet"
+  override protected[this] def className = "HashSet"
 
   override def hashCode(): Int = {
     val it = new SetHashIterator(rootNode)
@@ -646,29 +646,29 @@ private final class SetHashIterator[A](rootNode: SetNode[A])
 /**
   * $factoryInfo
   *
-  * @define Coll `immutable.ChampHashSet`
+  * @define Coll `immutable.HashSet`
   * @define coll immutable champ hash set
   */
 @SerialVersionUID(3L)
-object ChampHashSet extends IterableFactory[ChampHashSet] {
+object HashSet extends IterableFactory[HashSet] {
 
-  private[ChampHashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int) =
-    new ChampHashSet[A](rootNode, cachedJavaHashCode)
+  private[HashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int) =
+    new HashSet[A](rootNode, cachedJavaHashCode)
 
-  private final val EmptySet = new ChampHashSet(SetNode.empty, 0)
+  private final val EmptySet = new HashSet(SetNode.empty, 0)
 
-  def empty[A]: ChampHashSet[A] =
-    EmptySet.asInstanceOf[ChampHashSet[A]]
+  def empty[A]: HashSet[A] =
+    EmptySet.asInstanceOf[HashSet[A]]
 
-  def from[A](source: collection.IterableOnce[A]): ChampHashSet[A] =
+  def from[A](source: collection.IterableOnce[A]): HashSet[A] =
     source match {
-      case hs: ChampHashSet[A] => hs
+      case hs: HashSet[A] => hs
       case _ if source.knownSize == 0 => empty[A]
       case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A]: Builder[A, ChampHashSet[A]] =
-    new ImmutableBuilder[A, ChampHashSet[A]](empty) {
+  def newBuilder[A]: Builder[A, HashSet[A]] =
+    new ImmutableBuilder[A, HashSet[A]](empty) {
       def addOne(element: A): this.type = {
         elems = elems + element
         this
