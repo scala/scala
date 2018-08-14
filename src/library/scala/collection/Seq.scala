@@ -323,7 +323,18 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def indexWhere(p: A => Boolean, from: Int = 0): Int = iterator.indexWhere(p, from)
+  def indexWhere(p: A => Boolean, from: Int): Int = iterator.indexWhere(p, from)
+
+  /** Finds index of the first element satisfying some predicate.
+    *
+    *  $mayNotTerminateInf
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return  the index `>= 0` of the first element of this $coll that satisfies the predicate `p`,
+    *           or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override indexWhere(p, from) instead - indexWhere(p) calls indexWhere(p, 0)", "2.13.0")
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
 
   /** Finds index of first occurrence of some value in this $coll after or at some start index.
     *
@@ -333,7 +344,17 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that is equal (as determined by `==`)
     *           to `elem`, or `-1`, if none exists.
     */
-  def indexOf[B >: A](elem: B, from: Int = 0): Int = indexWhere(elem == _, from)
+  def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem == _, from)
+
+  /** Finds index of first occurrence of some value in this $coll.
+    *
+    *  @param   elem   the element value to search for.
+    *  @tparam  B      the type of the element `elem`.
+    *  @return  the index `>= 0` of the first element of this $coll that is equal (as determined by `==`)
+    *           to `elem`, or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override indexOf(elem, from) instead - indexOf(elem) calls indexOf(elem, 0)", "2.13.0")
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Finds index of last occurrence of some value in this $coll before or at a given end index.
     *
@@ -351,12 +372,21 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def lastIndexWhere(p: A => Boolean, end: Int = length - 1): Int = {
+  def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
     val it = reverseIterator
     while (it.hasNext && { val elem = it.next(); (i > end || !p(elem)) }) i -= 1
     i
   }
+
+  /** Finds index of last element satisfying some predicate.
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
+    *           or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override lastIndexWhere(p, end) instead - lastIndexWhere(p) calls lastIndexWhere(p, Int.MaxValue)", "2.13.0")
+  def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, Int.MaxValue)
 
   /** Finds first index after or at a start index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -366,7 +396,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
   // TODO Should be implemented in a way that preserves laziness
-  def indexOfSlice[B >: A](that: Seq[B], from: Int = 0): Int =
+  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
     if (that.isEmpty && from == 0) 0
     else {
       val l = knownSize
@@ -392,13 +422,22 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       }
     }
 
+  /** Finds first index where this $coll contains a given sequence as a slice.
+    *  $mayNotTerminateInf
+    *  @param  that    the sequence to test
+    *  @return  the first index `>= 0` such that the elements of this $coll starting at this index
+    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    */
+  @deprecatedOverriding("Override indexOfSlice(that, from) instead - indexOfSlice(that) calls indexOfSlice(that, 0)", "2.13.0")
+  def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
+
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
    *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int = length - 1): Int = {
+  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = {
     val l = length
     val tl = that.length
     val clippedL = math.min(l-tl, end)
@@ -408,6 +447,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else if (l < tl) -1
     else SeqOps.kmpSearch(toSeq, 0, clippedL+tl, that, 0, tl, forward = false)
   }
+
+  /** Finds last index where this $coll contains a given sequence as a slice.
+    *  @param  that    the sequence to test
+    *  @return  the last index such that the elements of this $coll starting at this index
+    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    */
+  @deprecatedOverriding("Override lastIndexOfSlice(that, end) instead - lastIndexOfSlice(that) calls lastIndexOfSlice(that, Int.MaxValue)", "2.13.0")
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, Int.MaxValue)
 
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
