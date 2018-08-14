@@ -1,12 +1,12 @@
 package scala.tools.nsc
 
-import scala.reflect.runtime.universe._
-import collection.JavaConverters._
 import com.fasterxml.jackson.annotation._
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.{YAMLFactory, YAMLGenerator}
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+
+import scala.reflect.runtime.universe._
 
 object ScalaCompilerOptionsExporter {
 
