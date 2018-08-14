@@ -15,4 +15,6 @@ package scala
  *  @author  Martin Odersky
  *  @since   2.5
  */
+// TODO: remove in 2.14
+@deprecated("will be removed in a future release", since = "2.12.7")
 final class UninitializedError extends RuntimeException("uninitialized value")
