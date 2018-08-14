@@ -108,8 +108,10 @@ sealed abstract class Range(
   /** The last element of this range.  This method will return the correct value
     *  even if there are too many elements to iterate over.
     */
-  final override def last: Int = if (isEmpty) Nil.head else lastElement
-  final override def head: Int = if (isEmpty) Nil.head else start
+  final override def last: Int =
+    if (isEmpty) throw Range.emptyRangeError("last") else lastElement
+  final override def head: Int =
+    if (isEmpty) throw Range.emptyRangeError("head") else start
 
   /** Creates a new range containing all the elements of this range except the last one.
     *
@@ -117,12 +119,8 @@ sealed abstract class Range(
     *
     *  @return  a new range consisting of all the elements of this range except the last one.
     */
-  final override def init: Range = {
-    if (isEmpty)
-      Nil.init
-
-    dropRight(1)
-  }
+  final override def init: Range =
+    if (isEmpty) throw Range.emptyRangeError("init") else dropRight(1)
 
   /** Creates a new range containing all the elements of this range except the first one.
     *
@@ -131,8 +129,7 @@ sealed abstract class Range(
     *  @return  a new range consisting of all the elements of this range except the first one.
     */
   final override def tail: Range = {
-    if (isEmpty)
-      Nil.tail
+    if (isEmpty) throw Range.emptyRangeError("tail")
     if (numRangeElements == 1) newEmptyRange(end)
     else if(isInclusive) new Range.Inclusive(start + step, end, step)
     else new Range.Exclusive(start + step, end, step)
@@ -581,6 +578,8 @@ object Range {
     def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
   }
 
+  private def emptyRangeError(what: String): Throwable =
+    new NoSuchElementException(what + " on empty Range")
 }
 
 /**
