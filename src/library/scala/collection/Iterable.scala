@@ -411,7 +411,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  all elements that do not. Interesting because it splits a collection in two.
     *
     *  The default implementation provided here needs to traverse the collection twice.
-    *  Strict collections have an overridden version of `partition` in `Buildable`,
+    *  Strict collections have an overridden version of `partition` in `StrictOptimizedIterableOps`,
     *  which requires only a single traversal.
     */
   def partition(p: A => Boolean): (C, C) = {
