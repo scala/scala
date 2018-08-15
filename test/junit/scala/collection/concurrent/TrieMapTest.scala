@@ -1,6 +1,9 @@
 package scala.collection.concurrent
 
-import org.junit.{Assert, Test}
+import org.junit.Test
+import org.junit.Assert.assertEquals
+
+import scala.collection.immutable.TreeMap
 import scala.util.hashing.Hashing
 
 class TrieMapTest {
@@ -9,8 +12,8 @@ class TrieMapTest {
     val m = TrieMap[String, String]()
     val values = f(m)
     m.put("k", "v")
-    Assert.assertEquals(Nil, values.toList)
-    Assert.assertEquals(result2, f(m).toList)
+    assertEquals(Nil, values.toList)
+    assertEquals(result2, f(m).toList)
   }
 
   @Test
@@ -59,11 +62,22 @@ class TrieMapTest {
     val e = new Equiv[Int] { def equiv(x: Int, y: Int) = (x % 8) == (y % 8) }
     val xs = new TrieMap[Int, String](h, e)
     xs.put(0, "zero")
-    Assert.assertEquals(Some("zero"), xs.get(0))
-    Assert.assertEquals(Some("zero"), xs.get(8)) // 8 and 0 are equivalent keys according to our custom equiv
+    assertEquals(Some("zero"), xs.get(0))
+    assertEquals(Some("zero"), xs.get(8)) // 8 and 0 are equivalent keys according to our custom equiv
     xs.put(4, "four") // 4 and 0 have the same hash according to our custom hashing, but they
     // are different keys (collision)
-    Assert.assertEquals(Some("zero"), xs.get(8))
-    Assert.assertEquals(Some("four"), xs.get(4))
+    assertEquals(Some("zero"), xs.get(8))
+    assertEquals(Some("four"), xs.get(4))
+  }
+
+  @Test
+  def nullValues_t10765: Unit = {
+    val trieMap = TreeMap[String, String]("a" -> null)
+    assertEquals(null, trieMap("a"))
+    assertEquals(Some(null), trieMap.get("a"))
+    assertEquals(true, trieMap.contains("a"))
+    assertEquals(1, trieMap.size)
+    assertEquals(true, trieMap.iterator.hasNext)
+    assertEquals(("a", null), trieMap.iterator.next())
   }
 }
