@@ -20,28 +20,29 @@ import scala.annotation.tailrec
   *  @author  Martin Odersky
   *  @author  Tiark Rompf
   *  @since   2.3
-  *  @define Coll `immutable.HashSet`
+  *  @define Coll `immutable.OldHashSet`
   *  @define coll immutable hash set
   */
-sealed abstract class HashSet[A]
+@deprecated("Use the new CHAMP-based HashSet; OldHashSet is provided for compatibility only", "2.13.0")
+sealed abstract class OldHashSet[A]
   extends AbstractSet[A]
-    with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
+    with SetOps[A, OldHashSet, OldHashSet[A]]
+    with StrictOptimizedIterableOps[A, OldHashSet, OldHashSet[A]] {
 
-  import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
+  import OldHashSet.{bufferSize, LeafOldHashSet, nullToEmpty}
 
-  override protected[this] def className: String = "HashSet"
+  override protected[this] def className: String = "OldHashSet"
 
-  override def iterableFactory = HashSet
+  override def iterableFactory = OldHashSet
 
   def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
 
-  def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
+  def incl(elem: A): OldHashSet[A] = updated0(elem, computeHash(elem), 0)
 
-  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
+  def excl(elem: A): OldHashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
 
   override def subsetOf(that: collection.Set[A]): Boolean = that match {
-    case that:HashSet[A] =>
+    case that:OldHashSet[A] =>
       // call the specialized implementation with a level of 0 since both this and that are top-level hash sets
       subsetOf0(that, 0)
     case _ =>
@@ -49,80 +50,80 @@ sealed abstract class HashSet[A]
       super.subsetOf(that)
   }
 
-  override def concat(that: collection.IterableOnce[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size + that.size))
+  override def concat(that: collection.IterableOnce[A]): OldHashSet[A] = that match {
+    case that: OldHashSet[A] =>
+      val buffer = new Array[OldHashSet[A]](bufferSize(this.size + that.size))
       nullToEmpty(union0(that, 0, buffer, 0))
     case _ => super.concat(that)
   }
 
-  override def intersect(that: collection.Set[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size min that.size))
+  override def intersect(that: collection.Set[A]): OldHashSet[A] = that match {
+    case that: OldHashSet[A] =>
+      val buffer = new Array[OldHashSet[A]](bufferSize(this.size min that.size))
       nullToEmpty(intersect0(that, 0, buffer, 0))
     case _ => super.intersect(that)
   }
 
-  override def diff(that: collection.Set[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size))
+  override def diff(that: collection.Set[A]): OldHashSet[A] = that match {
+    case that: OldHashSet[A] =>
+      val buffer = new Array[OldHashSet[A]](bufferSize(this.size))
       nullToEmpty(diff0(that, 0, buffer, 0))
     case _ => super.diff(that)
   }
 
   override def filter(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
+    val buffer = new Array[OldHashSet[A]](bufferSize(size))
     nullToEmpty(filter0(p, false, 0, buffer, 0))
   }
 
   override def filterNot(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
+    val buffer = new Array[OldHashSet[A]](bufferSize(size))
     nullToEmpty(filter0(p, true, 0, buffer, 0))
   }
 
-  override def tail: HashSet[A] = this - head
+  override def tail: OldHashSet[A] = this - head
 
-  override def init: HashSet[A] = this - last
+  override def init: OldHashSet[A] = this - last
 
   protected def get0(key: A, hash: Int, level: Int): Boolean
 
-  protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
+  protected def updated0(key: A, hash: Int, level: Int): OldHashSet[A]
 
-  protected def removed0(key: A, hash: Int, level: Int): HashSet[A]
+  protected def removed0(key: A, hash: Int, level: Int): OldHashSet[A]
 
-  protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A]
 
   /**
-    * A specialized implementation of subsetOf for when both this and that are HashSet[A] and we can take advantage
-    * of the tree structure of both operands and the precalculated hashcodes of the HashSet1 instances.
+    * A specialized implementation of subsetOf for when both this and that are OldHashSet[A] and we can take advantage
+    * of the tree structure of both operands and the precalculated hashcodes of the OldHashSet1 instances.
     * @param that the other set
     * @param level the level of this and that hashset
     *              The purpose of level is to keep track of how deep we are in the tree.
     *              We need this information for when we arrive at a leaf and have to call get0 on that
-    *              The value of level is 0 for a top-level HashSet and grows in increments of 5
+    *              The value of level is 0 for a top-level OldHashSet and grows in increments of 5
     * @return true if all elements of this set are contained in that set
     */
-  protected def subsetOf0(that: HashSet[A], level: Int): Boolean
+  protected def subsetOf0(that: OldHashSet[A], level: Int): Boolean
 
   /**
-    * Union with a leaf HashSet at a given level.
-    * @param that a leaf HashSet
+    * Union with a leaf OldHashSet at a given level.
+    * @param that a leaf OldHashSet
     * @param level the depth in the tree. We need this when we have to create a branch node on top of this and that
     * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
-    *         HashSet but needs to be stored at the correct depth
+    *         OldHashSet but needs to be stored at the correct depth
     */
-  private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A]
+  private[immutable] def union0(that: LeafOldHashSet[A], level: Int): OldHashSet[A]
 
   /**
-    * Union with a HashSet at a given level
-    * @param that a HashSet
+    * Union with a OldHashSet at a given level
+    * @param that a OldHashSet
     * @param level the depth in the tree. We need to keep track of the level to know how deep we are in the tree
     * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
     * @param offset0 the first offset into the buffer in which we are allowed to write
     * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
-    *         HashSet but needs to be stored at the correct depth
+    *         OldHashSet but needs to be stored at the correct depth
     */
-  protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def union0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A]
 
   /**
     * Intersection with another hash set at a given level
@@ -130,9 +131,9 @@ sealed abstract class HashSet[A]
     * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
     * @param offset0 the first offset into the buffer in which we are allowed to write
     * @return The intersection of this and that at the given level. Unless level is zero, the result is not a
-    *         self-contained HashSet but needs to be stored at the correct depth
+    *         self-contained OldHashSet but needs to be stored at the correct depth
     */
-  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def intersect0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A]
 
   /**
     * Diff with another hash set at a given level
@@ -140,34 +141,34 @@ sealed abstract class HashSet[A]
     * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
     * @param offset0 the first offset into the buffer in which we are allowed to write
     * @return The diff of this and that at the given level. Unless level is zero, the result is not a
-    *         self-contained HashSet but needs to be stored at the correct depth
+    *         self-contained OldHashSet but needs to be stored at the correct depth
     */
-  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  protected def diff0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A]
 
 }
 
 /**
   * $factoryInfo
-  * @define Coll `immutable.HashSet`
+  * @define Coll `immutable.OldHashSet`
   * @define coll immutable hash set
   */
 @SerialVersionUID(3L)
-object HashSet extends IterableFactory[HashSet] {
+object OldHashSet extends IterableFactory[OldHashSet] {
 
-  def from[A](it: collection.IterableOnce[A]): HashSet[A] =
+  def from[A](it: collection.IterableOnce[A]): OldHashSet[A] =
     it match {
-      case hs: HashSet[A] => hs
+      case hs: OldHashSet[A] => hs
       case _ => (newBuilder[A] ++= it).result()
     }
 
-  def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
+  def empty[A]: OldHashSet[A] = EmptyOldHashSet.asInstanceOf[OldHashSet[A]]
 
-  def newBuilder[A]: Builder[A, HashSet[A]] =
-    new ImmutableBuilder[A, HashSet[A]](empty) {
+  def newBuilder[A]: Builder[A, OldHashSet[A]] =
+    new ImmutableBuilder[A, OldHashSet[A]](empty) {
       def addOne(elem: A): this.type = { elems = elems + elem; this }
     }
 
-  private object EmptyHashSet extends HashSet[Any] {
+  private object EmptyOldHashSet extends OldHashSet[Any] {
 
     def iterator: Iterator[Any] = Iterator.empty
     override def isEmpty: Boolean = true
@@ -178,43 +179,43 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def headOption: None.type = None
 
-    override def tail: HashSet[Any] = throw new NoSuchElementException("Empty Set")
+    override def tail: OldHashSet[Any] = throw new NoSuchElementException("Empty Set")
 
-    override def init: HashSet[Any] = throw new NoSuchElementException("Empty Set")
+    override def init: OldHashSet[Any] = throw new NoSuchElementException("Empty Set")
 
     override def size: Int = 0
 
     protected def get0(elem: Any, hash: Int, level: Int) = false
 
-    protected def subsetOf0(that: HashSet[Any], level: Int): Boolean = {
+    protected def subsetOf0(that: OldHashSet[Any], level: Int): Boolean = {
       // returns true because the empty set is a subset of all sets
       true
     }
 
-    protected def updated0(elem: Any, hash: Int, level: Int) = new HashSet1(elem, hash)
+    protected def updated0(elem: Any, hash: Int, level: Int) = new OldHashSet1(elem, hash)
 
     protected def removed0(key: Any, hash: Int, level: Int) = this
 
-    private[immutable] def union0(that: LeafHashSet[Any], level: Int): HashSet[Any] = that
+    private[immutable] def union0(that: LeafOldHashSet[Any], level: Int): OldHashSet[Any] = that
 
-    protected def union0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = that
+    protected def union0(that: OldHashSet[Any], level: Int, buffer: Array[OldHashSet[Any]], offset0: Int): OldHashSet[Any] = that
 
-    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def intersect0(that: OldHashSet[Any], level: Int, buffer: Array[OldHashSet[Any]], offset0: Int): OldHashSet[Any] = null
 
-    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def diff0(that: OldHashSet[Any], level: Int, buffer: Array[OldHashSet[Any]], offset0: Int): OldHashSet[Any] = null
 
-    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
+    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[OldHashSet[Any]], offset0: Int): OldHashSet[Any] = null
 
   }
 
   /**
-    * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
+    * Common superclass of OldHashSet1 and OldHashSetCollision1, which are the two possible leaves of the Trie
     */
-  private[HashSet] sealed abstract class LeafHashSet[A] extends HashSet[A] {
-    private[HashSet] def hash:Int
+  private[OldHashSet] sealed abstract class LeafOldHashSet[A] extends OldHashSet[A] {
+    private[OldHashSet] def hash:Int
   }
 
-  private[immutable] final class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
+  private[immutable] final class OldHashSet1[A](private[OldHashSet] val key: A, private[OldHashSet] val hash: Int) extends LeafOldHashSet[A] {
     override def isEmpty: Boolean = false
     override def knownSize: Int = 1
     def iterator: Iterator[A] = Iterator.single(key)
@@ -225,11 +226,11 @@ object HashSet extends IterableFactory[HashSet] {
 
     override def headOption: Some[A] = Some(key)
 
-    override def tail: HashSet[A] = HashSet.empty[A]
+    override def tail: OldHashSet[A] = OldHashSet.empty[A]
 
     override def last: A = key
 
-    override def init: HashSet[A] = HashSet.empty[A]
+    override def init: OldHashSet[A] = OldHashSet.empty[A]
 
     override def size: Int = 1
 
@@ -240,63 +241,63 @@ object HashSet extends IterableFactory[HashSet] {
       if (hash == this.hash && key == this.key) this
       else {
         if (hash != this.hash) {
-          makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
+          makeHashTrieSet(this.hash, this, hash, new OldHashSet1(key, hash), level)
         } else {
           // 32-bit hash collision (rare, but not impossible)
-          new HashSetCollision1(hash, ListSet.empty + this.key + key)
+          new OldHashSetCollision1(hash, ListSet.empty + this.key + key)
         }
       }
 
     protected def removed0(key: A, hash: Int, level: Int) =
       if (hash == this.hash && key == this.key) null else this
 
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = {
+    protected def subsetOf0(that: OldHashSet[A], level: Int): Boolean = {
       // check if that contains this.key
       // we use get0 with our key and hash at the correct level instead of calling contains,
-      // which would not work since that might not be a top-level HashSet
+      // which would not work since that might not be a top-level OldHashSet
       // and in any case would be inefficient because it would require recalculating the hash code
       that.get0(key, hash, level)
     }
 
-    private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A] = that match {
+    private[immutable] def union0(that: LeafOldHashSet[A], level: Int): OldHashSet[A] = that match {
       case that if that.hash != this.hash =>
         // different hash code, so there is no need to investigate further.
         // Just create a branch node containing the two.
         makeHashTrieSet(this.hash, this, that.hash, that, level)
-      case that: HashSet1[A] =>
+      case that: OldHashSet1[A] =>
         if (this.key == that.key) {
           this
         } else {
           // 32-bit hash collision (rare, but not impossible)
-          new HashSetCollision1[A](hash, ListSet.empty + this.key + that.key)
+          new OldHashSetCollision1[A](hash, ListSet.empty + this.key + that.key)
         }
-      case that: HashSetCollision1[A] =>
+      case that: OldHashSetCollision1[A] =>
         val ks1 = that.ks + key
         // Could use eq check (faster) if ListSet was guaranteed to return itself
         if (ks1.size == that.ks.size) {
           that
         } else {
-          new HashSetCollision1[A](hash, ks1)
+          new OldHashSetCollision1[A](hash, ks1)
         }
     }
 
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
+    protected def union0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) = {
       // switch to the Leaf version of union
       // we can exchange the arguments because union is symmetrical
       that.union0(this, level)
     }
 
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
+    protected def intersect0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) =
       if (that.get0(key, hash, level)) this else null
 
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
+    protected def diff0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) =
       if (that.get0(key, hash, level)) null else this
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] =
       if (negate ^ p(key)) this else null
   }
 
-  private[immutable] final class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A]) extends LeafHashSet[A] {
+  private[immutable] final class OldHashSetCollision1[A](private[OldHashSet] val hash: Int, val ks: ListSet[A]) extends LeafOldHashSet[A] {
     override def isEmpty: Boolean = false
     override def size = ks.size
 
@@ -307,11 +308,11 @@ object HashSet extends IterableFactory[HashSet] {
     protected def get0(key: A, hash: Int, level: Int) =
       if (hash == this.hash) ks.contains(key) else false
 
-    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
-      if (hash == this.hash) new HashSetCollision1(hash, ks + key)
-      else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
+    protected def updated0(key: A, hash: Int, level: Int): OldHashSet[A] =
+      if (hash == this.hash) new OldHashSetCollision1(hash, ks + key)
+      else makeHashTrieSet(this.hash, this, hash, new OldHashSet1(key, hash), level)
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+    protected def removed0(key: A, hash: Int, level: Int): OldHashSet[A] =
       if (hash == this.hash) {
         val ks1 = ks - key
         ks1.size match {
@@ -319,14 +320,14 @@ object HashSet extends IterableFactory[HashSet] {
             // the empty set
             null
           case 1 =>
-            // create a new HashSet1 with the hash we already know
-            new HashSet1(ks1.head, hash)
+            // create a new OldHashSet1 with the hash we already know
+            new OldHashSet1(ks1.head, hash)
           case size if size == ks.size =>
             // Should only have HSC1 if size > 1
             this
           case _ =>
-            // create a new HashSetCollision with the hash we already know and the new keys
-            new HashSetCollision1(hash, ks1)
+            // create a new OldHashSetCollision with the hash we already know and the new keys
+            new OldHashSetCollision1(hash, ks1)
         }
       } else this
 
@@ -335,54 +336,54 @@ object HashSet extends IterableFactory[HashSet] {
       // hash codes and remove the collision. however this is never called
       // because no references to this class are ever handed out to client code
       // and HashTrieSet serialization takes care of the situation
-      sys.error("cannot serialize an immutable.HashSet where all items have the same 32-bit hash code")
+      sys.error("cannot serialize an immutable.OldHashSet where all items have the same 32-bit hash code")
       //out.writeObject(kvs)
     }
 
     private def readObject(in: java.io.ObjectInputStream): Unit = {
-      sys.error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
+      sys.error("cannot deserialize an immutable.OldHashSet where all items have the same 32-bit hash code")
       //kvs = in.readObject().asInstanceOf[ListSet[A]]
       //hash = computeHash(kvs.)
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] = {
       val ks1 = if(negate) ks.filterNot(p) else ks.filter(p)
       ks1.size match {
         case 0 =>
           null
         case 1 =>
-          new HashSet1(ks1.head, hash)
+          new OldHashSet1(ks1.head, hash)
         case x if x == ks.size =>
           this
         case _ =>
-          new HashSetCollision1(hash, ks1)
+          new OldHashSetCollision1(hash, ks1)
       }
     }
 
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = {
+    protected def subsetOf0(that: OldHashSet[A], level: Int): Boolean = {
       // we have to check each element
       // we use get0 with our hash at the correct level instead of calling contains,
-      // which would not work since that might not be a top-level HashSet
+      // which would not work since that might not be a top-level OldHashSet
       // and in any case would be inefficient because it would require recalculating the hash code
       ks.forall(key => that.get0(key, hash, level))
     }
 
-    private[immutable] def union0(that: LeafHashSet[A], level: Int) = that match {
+    private[immutable] def union0(that: LeafOldHashSet[A], level: Int) = that match {
       case that if that.hash != this.hash =>
         // different hash code, so there is no need to investigate further.
         // Just create a branch node containing the two.
         makeHashTrieSet(this.hash, this, that.hash, that, level)
-      case that: HashSet1[A] =>
+      case that: OldHashSet1[A] =>
         val ks1 = ks + that.key
         // Could use eq check (faster) if ListSet was guaranteed to return itself
         if (ks1.size == ks.size) {
           this
         } else {
-          // create a new HashSetCollision with the existing hash
+          // create a new OldHashSetCollision with the existing hash
           // we don't have to check for size=1 because union is never going to remove elements
-          new HashSetCollision1[A](hash, ks1)
+          new OldHashSetCollision1[A](hash, ks1)
         }
-      case that: HashSetCollision1[A] =>
+      case that: OldHashSetCollision1[A] =>
         val ks1 = this.ks ++ that.ks
         ks1.size match {
           case size if size == this.ks.size =>
@@ -394,14 +395,14 @@ object HashSet extends IterableFactory[HashSet] {
             // we have to check this as well, since we don't want to create a new instance if this is a subset of that
             that
           case _ =>
-            // create a new HashSetCollision with the existing hash
+            // create a new OldHashSetCollision with the existing hash
             // we don't have to check for size=1 because union is never going to remove elements
-            new HashSetCollision1[A](hash, ks1)
+            new OldHashSetCollision1[A](hash, ks1)
         }
     }
 
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = that match {
-      case that: LeafHashSet[A] =>
+    protected def union0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) = that match {
+      case that: LeafOldHashSet[A] =>
         // switch to the simpler Tree/Leaf implementation
         this.union0(that, level)
       case that: HashTrieSet[A] =>
@@ -411,7 +412,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => this
     }
 
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
+    protected def intersect0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) = {
       // filter the keys, taking advantage of the fact that we know their hash code
       val ks1 = ks.filter(that.get0(_, hash, level))
       ks1.size match {
@@ -429,15 +430,15 @@ object HashSet extends IterableFactory[HashSet] {
           // it is preferable to return the existing set for better structural sharing
           that
         case 1 =>
-          // create a new HashSet1 with the hash we already know
-          new HashSet1(ks1.head, hash)
+          // create a new OldHashSet1 with the hash we already know
+          new OldHashSet1(ks1.head, hash)
         case _ =>
-          // create a new HashSetCollision with the hash we already know and the new keys
-          new HashSetCollision1(hash, ks1)
+          // create a new OldHashSetCollision with the hash we already know and the new keys
+          new OldHashSetCollision1(hash, ks1)
       }
     }
 
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
+    protected def diff0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int) = {
       val ks1 = ks.filterNot(that.get0(_, hash, level))
       ks1.size match {
         case 0 =>
@@ -449,11 +450,11 @@ object HashSet extends IterableFactory[HashSet] {
           // it is preferable to return the existing set for better structural sharing
           this
         case 1 =>
-          // create a new HashSet1 with the hash we already know
-          new HashSet1(ks1.head, hash)
+          // create a new OldHashSet1 with the hash we already know
+          new OldHashSet1(ks1.head, hash)
         case _ =>
-          // create a new HashSetCollision with the hash we already know and the new keys
-          new HashSetCollision1(hash, ks1)
+          // create a new OldHashSetCollision with the hash we already know and the new keys
+          new OldHashSetCollision1(hash, ks1)
       }
     }
 
@@ -495,8 +496,8 @@ object HashSet extends IterableFactory[HashSet] {
     * elems: [a,b]
     * children:        ---b----------------a-----------
     */
-  private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
-    extends HashSet[A] {
+  private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[OldHashSet[A]], private val size0: Int)
+    extends OldHashSet[A] {
     assert(Integer.bitCount(bitmap) == elems.length)
     // assertion has to remain disabled until SI-6197 is solved
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
@@ -504,7 +505,7 @@ object HashSet extends IterableFactory[HashSet] {
     override def isEmpty: Boolean = false
     override def knownSize: Int = size
     def iterator: Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
-      final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
+      final override def getElem(cc: AnyRef): A = cc.asInstanceOf[OldHashSet1[A]].key
     }
 
     override def foreach[U](f: A => U): Unit = {
@@ -541,16 +542,16 @@ object HashSet extends IterableFactory[HashSet] {
           new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
         }
       } else {
-        val elemsNew = new Array[HashSet[A]](elems.length + 1)
+        val elemsNew = new Array[OldHashSet[A]](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
-        elemsNew(offset) = new HashSet1(key, hash)
+        elemsNew(offset) = new OldHashSet1(key, hash)
         Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
         val bitmapNew = bitmap | mask
         new HashTrieSet(bitmapNew, elemsNew, size + 1)
       }
     }
 
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
+    protected def removed0(key: A, hash: Int, level: Int): OldHashSet[A] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -561,12 +562,12 @@ object HashSet extends IterableFactory[HashSet] {
         else if (subNew eq null) {
           val bitmapNew = bitmap ^ mask
           if (bitmapNew != 0) {
-            val elemsNew = new Array[HashSet[A]](elems.length - 1)
+            val elemsNew = new Array[OldHashSet[A]](elems.length - 1)
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
             // if we have only one child, which is not a HashTrieSet but a self-contained set like
-            // HashSet1 or HashSetCollision1, return the child instead
+            // OldHashSet1 or OldHashSetCollision1, return the child instead
             if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieSet[_]])
               elemsNew(0)
             else
@@ -586,7 +587,7 @@ object HashSet extends IterableFactory[HashSet] {
       }
     }
 
-    private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A] = {
+    private[immutable] def union0(that: LeafOldHashSet[A], level: Int): OldHashSet[A] = {
       val index = (that.hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
@@ -595,13 +596,13 @@ object HashSet extends IterableFactory[HashSet] {
         val sub1 = sub.union0(that, level + 5)
         if (sub eq sub1) this
         else {
-          val elems1 = new Array[HashSet[A]](elems.length)
+          val elems1 = new Array[OldHashSet[A]](elems.length)
           Array.copy(elems, 0, elems1, 0, elems.length)
           elems1(offset) = sub1
           new HashTrieSet(bitmap, elems1, size + (sub1.size - sub.size))
         }
       } else {
-        val elems1 = new Array[HashSet[A]](elems.length + 1)
+        val elems1 = new Array[OldHashSet[A]](elems.length + 1)
         Array.copy(elems, 0, elems1, 0, offset)
         elems1(offset) = that
         Array.copy(elems, offset, elems1, offset + 1, elems.length - offset)
@@ -610,7 +611,7 @@ object HashSet extends IterableFactory[HashSet] {
       }
     }
 
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def union0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -618,7 +619,7 @@ object HashSet extends IterableFactory[HashSet] {
         // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
         // at these nodes.
         this
-      case that: LeafHashSet[A] =>
+      case that: LeafOldHashSet[A] =>
         // when that is a leaf, we can switch to the simpler Tree/Leaf implementation
         this.union0(that, level)
       case that: HashTrieSet[A] =>
@@ -683,14 +684,14 @@ object HashSet extends IterableFactory[HashSet] {
           // we don't have to check whether the result is a leaf, since union will only make the set larger
           // and this is not a leaf to begin with.
           val length = offset - offset0
-          val elems = new Array[HashSet[A]](length)
+          val elems = new Array[OldHashSet[A]](length)
           System.arraycopy(buffer, offset0, elems, 0, length)
           new HashTrieSet(this.bitmap | that.bitmap, elems, rs)
         }
       case _ => this
     }
 
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def intersect0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -698,7 +699,7 @@ object HashSet extends IterableFactory[HashSet] {
         // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
         // at these nodes!
         this
-      case that: LeafHashSet[A] =>
+      case that: LeafOldHashSet[A] =>
         // when that is a leaf, we can switch to the simpler Tree/Leaf implementation
         // it is OK to swap the arguments because intersect is symmetric
         // (we can't do this in case of diff, which is not symmetric)
@@ -772,7 +773,7 @@ object HashSet extends IterableFactory[HashSet] {
           if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
             buffer(offset0)
           else {
-            val elems = new Array[HashSet[A]](length)
+            val elems = new Array[OldHashSet[A]](length)
             System.arraycopy(buffer, offset0, elems, 0, length)
             new HashTrieSet[A](rbm, elems, rs)
           }
@@ -780,7 +781,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => null
     }
 
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    protected def diff0(that: OldHashSet[A], level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] = that match {
       case that if that eq this =>
         // shortcut for when that is this
         // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
@@ -788,7 +789,7 @@ object HashSet extends IterableFactory[HashSet] {
         // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
         // at these nodes!
         null
-      case that: HashSet1[A] =>
+      case that: OldHashSet1[A] =>
         removed0(that.key, that.hash, level)
       case that: HashTrieSet[A] =>
         val a = this.elems
@@ -849,22 +850,22 @@ object HashSet extends IterableFactory[HashSet] {
           if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
             buffer(offset0)
           else {
-            val elems = new Array[HashSet[A]](length)
+            val elems = new Array[OldHashSet[A]](length)
             System.arraycopy(buffer, offset0, elems, 0, length)
             new HashTrieSet[A](rbm, elems, rs)
           }
         }
-      case that: HashSetCollision1[A] =>
+      case that: OldHashSetCollision1[A] =>
         // we remove the elements using removed0 so we can use the fact that we know the hash of all elements
         // to be removed
-        @tailrec def removeAll(s:HashSet[A], r:ListSet[A]) : HashSet[A] =
+        @tailrec def removeAll(s:OldHashSet[A], r:ListSet[A]) : OldHashSet[A] =
           if(r.isEmpty || (s eq null)) s
           else removeAll(s.removed0(r.head, that.hash, level), r.tail)
         removeAll(this, that.ks)
       case _ => this
     }
 
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
+    protected def subsetOf0(that: OldHashSet[A], level: Int): Boolean = if (that eq this) true else that match {
       case that: HashTrieSet[A] if this.size0 <= that.size0 =>
         // create local mutable copies of members
         var abm = this.bitmap
@@ -901,13 +902,13 @@ object HashSet extends IterableFactory[HashSet] {
         }
       case _ =>
         // if the other set is a HashTrieSet but has less elements than this, it can not be a subset
-        // if the other set is a HashSet1, we can not be a subset of it because we are a HashTrieSet with at least two children (see assertion)
-        // if the other set is a HashSetCollision1, we can not be a subset of it because we are a HashTrieSet with at least two different hash codes
+        // if the other set is a OldHashSet1, we can not be a subset of it because we are a HashTrieSet with at least two children (see assertion)
+        // if the other set is a OldHashSetCollision1, we can not be a subset of it because we are a HashTrieSet with at least two different hash codes
         // if the other set is the empty set, we are not a subset of it because we are not empty
         false
     }
 
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[OldHashSet[A]], offset0: Int): OldHashSet[A] = {
       // current offset
       var offset = offset0
       // result size
@@ -940,7 +941,7 @@ object HashSet extends IterableFactory[HashSet] {
       } else {
         // we have to return a HashTrieSet
         val length = offset - offset0
-        val elems1 = new Array[HashSet[A]](length)
+        val elems1 = new Array[OldHashSet[A]](length)
         System.arraycopy(buffer, offset0, elems1, 0, length)
         val bitmap1 = if (length == elems.length) {
           // we can reuse the original bitmap
@@ -954,13 +955,13 @@ object HashSet extends IterableFactory[HashSet] {
     }
   }
 
-  // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
-  private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
+  // utility method to create a HashTrieSet from two leaf OldHashSets (OldHashSet1 or OldHashSetCollision1) with non-colliding hash code)
+  private def makeHashTrieSet[A](hash0:Int, elem0:OldHashSet[A], hash1:Int, elem1:OldHashSet[A], level:Int) : HashTrieSet[A] = {
     val index0 = (hash0 >>> level) & 0x1f
     val index1 = (hash1 >>> level) & 0x1f
     if(index0 != index1) {
       val bitmap = (1 << index0) | (1 << index1)
-      val elems = new Array[HashSet[A]](2)
+      val elems = new Array[OldHashSet[A]](2)
       if(index0 < index1) {
         elems(0) = elem0
         elems(1) = elem1
@@ -970,7 +971,7 @@ object HashSet extends IterableFactory[HashSet] {
       }
       new HashTrieSet[A](bitmap, elems, elem0.size + elem1.size)
     } else {
-      val elems = new Array[HashSet[A]](1)
+      val elems = new Array[OldHashSet[A]](1)
       val bitmap = (1 << index0)
       val child = makeHashTrieSet(hash0, elem0, hash1, elem1, level + 5)
       elems(0) = child
@@ -989,7 +990,7 @@ object HashSet extends IterableFactory[HashSet] {
     * In many internal operations the empty set is represented as null for performance reasons. This method converts
     * null to the empty set for use in public methods
     */
-  @`inline` private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
+  @`inline` private def nullToEmpty[A](s: OldHashSet[A]): OldHashSet[A] = if (s eq null) empty[A] else s
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:

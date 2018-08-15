@@ -172,7 +172,7 @@ object SeqMap extends MapFactory[SeqMap] {
         // Directly create the elements for performance reasons
         val fields = Vector(key1, key2, key3, key4, key)
         val underlying: Map[K, (Int, V1)] = if (useBaseline)
-          HashMap(
+          OldHashMap(
             (key1, (0, value1)),
             (key2, (1, value2)),
             (key3, (2, value3)),
@@ -180,7 +180,7 @@ object SeqMap extends MapFactory[SeqMap] {
             (key, (4, value))
           )
         else
-          ChampHashMap(
+          HashMap(
             (key1, (0, value1)),
             (key2, (1, value2)),
             (key3, (2, value3)),

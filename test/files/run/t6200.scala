@@ -1,4 +1,4 @@
-import scala.collection.immutable.HashMap
+import scala.collection.immutable.{OldHashMap => HashMap}
 
 object Test extends App {
 

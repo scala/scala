@@ -10,9 +10,9 @@ class HashSetTest {
 
   @Test
   def factoryReuse(): Unit = {
-    assertSame(ChampHashSet.empty, ChampHashSet.empty)
-    assertSame(ChampHashSet.empty, ChampHashSet())
-    val m = ChampHashSet("a")
-    assertSame(m, ChampHashSet.from(m))
+    assertSame(HashSet.empty, HashSet.empty)
+    assertSame(HashSet.empty, HashSet())
+    val m = HashSet("a")
+    assertSame(m, HashSet.from(m))
   }
 }

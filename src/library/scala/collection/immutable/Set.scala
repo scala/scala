@@ -211,7 +211,7 @@ object Set extends IterableFactory[Set] {
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def incl(elem: A): Set[A] =
       if (contains(elem)) this
-      else (if (useBaseline) HashSet.empty[A] else ChampHashSet.empty[A]) + elem1 + elem2 + elem3 + elem4 + elem
+      else (if (useBaseline) OldHashSet.empty[A] else HashSet.empty[A]) + elem1 + elem2 + elem3 + elem4 + elem
     def excl(elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)

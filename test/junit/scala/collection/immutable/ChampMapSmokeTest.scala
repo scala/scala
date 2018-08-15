@@ -5,11 +5,11 @@ import org.junit.{Assert, Test}
 
 object ChampMapSmokeTest {
 
-  private def emptyMap[K, V]: ChampHashMap[K, V] =
-    ChampHashMap.empty[K, V]
+  private def emptyMap[K, V]: HashMap[K, V] =
+    HashMap.empty[K, V]
 
-  private def mapOf[K, V](keyValuePairs: (K, V)*): ChampHashMap[K, V] = {
-    val builder = ChampHashMap.newBuilder[K, V]
+  private def mapOf[K, V](keyValuePairs: (K, V)*): HashMap[K, V] = {
+    val builder = HashMap.newBuilder[K, V]
     keyValuePairs.foreach(builder.addOne)
     builder.result()
   }
@@ -39,7 +39,7 @@ class ChampMapSmokeTest {
   val v32769b = mkValue(32769*10+2, 32769)
 
   @Test def testCheckPrefixConstruction(): Unit = {
-    val map: ChampHashMap[Int, Int] = emptyMap
+    val map: HashMap[Int, Int] = emptyMap
 
     val res1 = map + mkTuple(63) + mkTuple(64) + mkTuple(32768) + mkTuple(2147483647) + mkTuple(65536)
     assert(res1.contains(63))
@@ -59,21 +59,21 @@ class ChampMapSmokeTest {
   }
 
   @Test def testCheckCompactionFromBeginUponDelete(): Unit = {
-    val map: ChampHashMap[Int, Int] = emptyMap
+    val map: HashMap[Int, Int] = emptyMap
     val res1 = map + mkTuple(1) + mkTuple(2)
     val res2 = res1 + mkTuple(32769) - 2
     /* should trigger assertion in data structure if not compacting */
   }
 
   @Test def testCheckCompactionFromMiddleUponDelete(): Unit = {
-    val map: ChampHashMap[Int, Int] = emptyMap
+    val map: HashMap[Int, Int] = emptyMap
     val res1 = map + mkTuple(1) + mkTuple(2) + mkTuple(65) + mkTuple(66)
     val res2 = res1 + mkTuple(32769) - 66
     assert(!(res1 == res2))
   }
 
   @Test def testCheckCompactionFromBeginUponDelete_HashCollisionNode1(): Unit = {
-    val map: ChampHashMap[CustomHashInt, CustomHashInt] = emptyMap
+    val map: HashMap[CustomHashInt, CustomHashInt] = emptyMap
 
     val res1 = map + mkTuple(v11h1) + mkTuple(v12h1)
     assertTrue(res1.contains(v11h1))
@@ -94,7 +94,7 @@ class ChampMapSmokeTest {
   }
 
   @Test def testCheckCompactionFromBeginUponDelete_HashCollisionNode2(): Unit = {
-    val map: ChampHashMap[CustomHashInt, CustomHashInt] = emptyMap
+    val map: HashMap[CustomHashInt, CustomHashInt] = emptyMap
 
     val res1 = map + mkTuple(v32769a) + mkTuple(v32769b)
     assertEquals(2, res1.size)
@@ -117,7 +117,7 @@ class ChampMapSmokeTest {
   }
 
   @Test def testCheckCompactionFromBeginUponDelete_HashCollisionNode3(): Unit = {
-    val map: ChampHashMap[CustomHashInt, CustomHashInt] = emptyMap
+    val map: HashMap[CustomHashInt, CustomHashInt] = emptyMap
     val res1 = map + mkTuple(v32769a) + mkTuple(v32769b)
     assertEquals(2, res1.size)
     assertTrue(res1.contains(v32769a))
@@ -137,7 +137,7 @@ class ChampMapSmokeTest {
   }
 
   @Test def testCheckCompactionFromBeginUponDelete_HashCollisionNode4(): Unit = {
-    val map: ChampHashMap[CustomHashInt, CustomHashInt] = emptyMap
+    val map: HashMap[CustomHashInt, CustomHashInt] = emptyMap
     val res1 = map + mkTuple(v32769a) + mkTuple(v32769b)
     assertEquals(2, res1.size)
     assertTrue(res1.contains(v32769a))
@@ -157,13 +157,13 @@ class ChampMapSmokeTest {
   }
 
   @Test def testCreateSingletonWithFactoryMethod(): Unit = {
-    val map: ChampHashMap[Int, Int] = emptyMap + mkTuple(63, 65)
+    val map: HashMap[Int, Int] = emptyMap + mkTuple(63, 65)
     assertTrue(map.contains(63))
     assertEquals(65, map.get(63).get)
   }
 
   @Test def testRemoveFromSingleton(): Unit = {
-    val map: ChampHashMap[Int, Int] = emptyMap + mkTuple(63, 65)
+    val map: HashMap[Int, Int] = emptyMap + mkTuple(63, 65)
     val res = map - 63
     assertTrue(res.isEmpty)
     assertFalse(res.contains(63))
@@ -174,7 +174,7 @@ class ChampMapSmokeTest {
   class C(val i: Int) { override def hashCode = i % 4 ; override def toString = s"C($i)" }
   val cs = Array.tabulate(4096)(new C(_))
 
-  private def assertSameEqHash(expected: ChampHashMap[Any, Any], actual: ChampHashMap[Any, Any]) = {
+  private def assertSameEqHash(expected: HashMap[Any, Any], actual: HashMap[Any, Any]) = {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
     assertEquals(cachedJavaKeySetHashCode(expected), cachedJavaKeySetHashCode(actual))
@@ -183,26 +183,26 @@ class ChampMapSmokeTest {
 
   lazy val (mirror, field) = {
     import scala.reflect.runtime.{universe=>ru}
-    val mirror = ru.runtimeMirror(classOf[ChampHashMap[_,_]].getClassLoader)
-    val field = ru.typeOf[ChampHashMap[_,_]].decl(ru.TermName("cachedJavaKeySetHashCode")).asTerm
+    val mirror = ru.runtimeMirror(classOf[HashMap[_,_]].getClassLoader)
+    val field = ru.typeOf[HashMap[_,_]].decl(ru.TermName("cachedJavaKeySetHashCode")).asTerm
     (mirror, field)
   }
-  def cachedJavaKeySetHashCode(map:  ChampHashMap[Any, Any]) = {
+  def cachedJavaKeySetHashCode(map:  HashMap[Any, Any]) = {
     mirror.reflect(map).reflectField(field).get
   }
 
   private def value(i: Int) = new String("" + i)
 
   @Test def testCachedSizeAndHashCode(): Unit = {
-    var map: ChampHashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V1")
+    var map: HashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V1")
     assertEquals(1, map.size)
     map = map + mkTuple(O1, "O1_V2")
-    val expected: ChampHashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V2")
+    val expected: HashMap[Any, Any] = emptyMap + mkTuple(O1, "O1_V2")
     assertSameEqHash(expected, map)
   }
 
   @Test def testCachedSizeAndHashCodeCollision(): Unit = {
-    var map: ChampHashMap[Any, Any] = emptyMap
+    var map: HashMap[Any, Any] = emptyMap
     for (c <- cs)
       map = map.updated(c, value(c.i))
     var map1 = map
@@ -264,6 +264,6 @@ class ChampMapSmokeTest {
   }
 
   @Test def hashCodeCheck(): Unit = {
-    assertEquals(359703249, collection.immutable.ChampHashMap(1 -> 2).hashCode())
+    assertEquals(359703249, collection.immutable.HashMap(1 -> 2).hashCode())
   }
 }

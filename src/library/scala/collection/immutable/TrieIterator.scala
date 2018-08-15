@@ -3,8 +3,8 @@ package scala
 package collection
 package immutable
 
-import HashMap.{ HashTrieMap, HashMapCollision1, HashMap1 }
-import HashSet.{HashSet1, HashSetCollision1, HashTrieSet}
+import OldHashMap.{ HashTrieMap, OldHashMapCollision1, OldHashMap1 }
+import OldHashSet.{OldHashSet1, OldHashSetCollision1, HashTrieSet}
 import collection.Iterator
 import scala.collection.mutable.ArrayBuffer
 
@@ -39,8 +39,8 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {
-    case x: HashMapCollision1[_, _] => x.kvs.map((x: (Any, Any)) => HashMap(x)).toArray
-    case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
+    case x: OldHashMapCollision1[_, _] => x.kvs.map((x: (Any, Any)) => OldHashMap(x)).toArray
+    case x: OldHashSetCollision1[_]    => x.ks.map(x => OldHashSet(x)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
@@ -50,7 +50,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case _                                       => false
   }
   private def isContainer(x: AnyRef) = x match {
-    case _: HashMap1[_, _] | _: HashSet1[_] => true
+    case _: OldHashMap1[_, _] | _: OldHashSet1[_] => true
     case _                                  => false
   }
 
@@ -82,7 +82,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   private[this] def splitArray(ad: Array[Iterable[T]]): SplitIterators =
     if (ad.length > 1) arrayToIterators(ad)
     else ad(0) match {
-      case _: HashMapCollision1[_, _] | _: HashSetCollision1[_] =>
+      case _: OldHashMapCollision1[_, _] | _: OldHashSetCollision1[_] =>
         arrayToIterators(collisionToArray(ad(0)))
       case _ =>
         splitArray(getElems(ad(0)))
@@ -138,7 +138,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     // The much slower version:
     //
     // m match {
-    //   case _: HashMap1[_, _] | _: HashSet1[_] =>
+    //   case _: OldHashMap1[_, _] | _: OldHashSet1[_] =>
     //     getElem(m) // push current pos onto stack and descend
     //   case _: HashTrieMap[_,_] | _: HashTrieSet[_] =>
     //     if (depth >= 0) {

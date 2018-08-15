@@ -124,9 +124,9 @@ object VectorMap extends MapFactory[VectorMap] {
   def empty[K, V]: VectorMap[K, V] =
     new VectorMap[K, V](Vector.empty[K],
       if (VectorMap.useBaseline)
-        HashMap.empty[K, (Int, V)]
+        OldHashMap.empty[K, (Int, V)]
       else
-        ChampHashMap.empty[K, (Int, V)]
+        HashMap.empty[K, (Int, V)]
     )
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): VectorMap[K, V] =

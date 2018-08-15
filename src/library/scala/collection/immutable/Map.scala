@@ -389,7 +389,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
-      else (if (useBaseline) HashMap.empty[K, V1] else ChampHashMap.empty[K, V1]).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
+      else (if (useBaseline) OldHashMap.empty[K, V1] else HashMap.empty[K, V1]).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def remove(key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)

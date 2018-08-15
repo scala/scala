@@ -227,7 +227,7 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
   class C(val i: Int) { override def hashCode = i % 4 ; override def toString = s"C($i)" }
   val cs = Array.tabulate(4096)(new C(_))
 
-  private def assertSameEqHash(expected: ChampHashSet[Any], actual: ChampHashSet[Any]) = {
+  private def assertSameEqHash(expected: HashSet[Any], actual: HashSet[Any]) = {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
     assertEquals(expected.cachedJavaHashCode, actual.cachedJavaHashCode)
@@ -235,16 +235,16 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
   }
 
   @Test def testCachedSizeAndHashCode(): Unit = {
-    val emptySet = ChampHashSet.empty[Any]
-    var set: ChampHashSet[Any] = emptySet + O1
+    val emptySet = HashSet.empty[Any]
+    var set: HashSet[Any] = emptySet + O1
     assertEquals(1, set.size)
     set = set + O1
     assertSameEqHash(emptySet + O1, set)
   }
 
   @Test def testCachedSizeAndHashCodeCollision(): Unit = {
-    val emptySet = ChampHashSet.empty[Any]
-    var set: ChampHashSet[Any] = emptySet
+    val emptySet = HashSet.empty[Any]
+    var set: HashSet[Any] = emptySet
     for (c <- cs)
       set = set + c
     var set1 = set
@@ -263,6 +263,6 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
   }
 
   @Test def hashCodeCheck(): Unit = {
-    assertEquals(-1075495872, collection.immutable.ChampHashSet(1).hashCode())
+    assertEquals(-1075495872, collection.immutable.HashSet(1).hashCode())
   }
 }

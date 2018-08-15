@@ -14,19 +14,19 @@ class HashMapTest {
 
   @Test
   def canMergeIdenticalHashMap1sWithNullKvs(): Unit = {
-    def m = new HashMap.HashMap1(1, computeHashF(1), 1, null)
+    def m = new OldHashMap.OldHashMap1(1, computeHashF(1), 1, null)
     val merged = m.merged(m)(null)
     assertEquals(m, merged)
   }
 
   @Test
   def canMergeIdenticalHashMap1sWithNullKvsCustomMerge(): Unit = {
-    def m = new HashMap.HashMap1(1, computeHashF(1), 1, null)
+    def m = new OldHashMap.OldHashMap1(1, computeHashF(1), 1, null)
     val merged = m.merged(m) {
       case ((k1, v1), (k2, v2)) =>
         (k1, v1 + v2)
     }
-    assertEquals(new HashMap.HashMap1(1, computeHashF(1), 2, null), merged)
+    assertEquals(new OldHashMap.OldHashMap1(1, computeHashF(1), 2, null), merged)
   }
 
   @Test
@@ -35,9 +35,9 @@ class HashMapTest {
     val key2 = key1.##.toLong
     assert(key1.## == key2.##)
 
-    val m1 = new HashMap.HashMap1(key1, computeHashF(key1.##), 1, null)
-    val m2 = new HashMap.HashMap1(key2, computeHashF(key2.##), 1, null)
-    val expected = HashMap(key1 -> 1, key2 -> 1)
+    val m1 = new OldHashMap.OldHashMap1(key1, computeHashF(key1.##), 1, null)
+    val m2 = new OldHashMap.OldHashMap1(key2, computeHashF(key2.##), 1, null)
+    val expected = OldHashMap(key1 -> 1, key2 -> 1)
     val merged = m1.merged(m2)(null)
     assertEquals(expected, merged)
     val mergedWithMergeFunction = m1.merged(m2) { (kv1, kv2) =>
@@ -48,7 +48,7 @@ class HashMapTest {
 
   @Test
   def testWithDefaultValue: Unit = {
-    val m1 = HashMap(1 -> "a", 2 -> "b")
+    val m1 = OldHashMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue(0)
     assertEquals("a", m2(1))
     assertEquals(0, m2(3))
@@ -56,15 +56,15 @@ class HashMapTest {
 
   @Test
   def factoryReuse(): Unit = {
-    assertSame(ChampHashMap.empty, ChampHashMap.empty)
-    assertSame(ChampHashMap.empty, ChampHashMap())
-    val m = ChampHashMap("a" -> "a")
-    assertSame(m, ChampHashMap.from(m))
+    assertSame(HashMap.empty, HashMap.empty)
+    assertSame(HashMap.empty, HashMap())
+    val m = HashMap("a" -> "a")
+    assertSame(m, HashMap.from(m))
   }
 
   @Test
   def testGetOrElse: Unit = {
-    val m1 = HashMap(1 -> "a", 2 -> "b")
+    val m1 = OldHashMap(1 -> "a", 2 -> "b")
     assertEquals("a", m1.getOrElse(1, ???))
     assertEquals("c", m1.getOrElse(3, "c"))
 
@@ -72,14 +72,14 @@ class HashMapTest {
       override def hashCode = 0
     }
     val a, b, c = new Collider
-    val m2 = HashMap(a -> "a", b -> "b")
+    val m2 = OldHashMap(a -> "a", b -> "b")
     assertEquals("a", m2.getOrElse(a, ???))
     assertEquals("c", m2.getOrElse(c, "c"))
   }
 
   @Test
   def testWithDefault: Unit = {
-    val m1 = HashMap(1 -> "a", 2 -> "b")
+    val m1 = OldHashMap(1 -> "a", 2 -> "b")
 
     val m2: Map.WithDefault[Int, String] =
       m1.withDefault(i => (i + 1).toString)
@@ -106,10 +106,10 @@ class HashMapTest {
   @Test
   def canMergeHashMapCollision1WithCorrectMerege() {
     case class A(k: Int) { override def hashCode = 0 }
-    val m1 = HashMap(A(0) -> 2, A(1) -> 2)
-    val m2 = HashMap(A(0) -> 1, A(1) -> 1)
+    val m1 = OldHashMap(A(0) -> 2, A(1) -> 2)
+    val m2 = OldHashMap(A(0) -> 1, A(1) -> 1)
     val merged = m1.merged(m2) { case ((k, l), (_, r)) => k -> (l - r) }
-    val expected = HashMap(A(0) -> 1, A(1) -> 1)
+    val expected = OldHashMap(A(0) -> 1, A(1) -> 1)
     assertEquals(merged, expected)
   }
 }
