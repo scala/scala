@@ -447,10 +447,11 @@ final case class Left[+A, +B](value: A) extends Either[A, B] {
   /**
     * Upcasts this `Left[A, B]` to `Either[A, B1]`
     * {{{
-    *   Left(1).up[String] // Either[Int, String]
+    *   Left(1)                   // Either[Int, Nothing]
+    *   Left(1).withRight[String] // Either[Int, String]
     * }}}
     */
-  def up[B1 >: B]: Either[A, B1] = this
+  def withRight[B1 >: B]: Either[A, B1] = this
 
 }
 
@@ -465,10 +466,11 @@ final case class Right[+A, +B](value: B) extends Either[A, B] {
   /**
     * Upcasts this `Right[A, B]` to `Either[A1, B]`
     * {{{
-    *   Right("1").up[Int] // Either[Int, String]
+    *   Right("x")               // Either[Nothing, String]
+    *   Right("x").withLeft[Int] // Either[Int, String]
     * }}}
     */
-  def up[A1 >: A]: Either[A1, B] = this
+  def withLeft[A1 >: A]: Either[A1, B] = this
 
 }
 
