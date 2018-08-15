@@ -107,7 +107,8 @@ final class VectorMap[K, +V] private[immutable] (
   override def equals(that: Any): Boolean =
     that match {
       case vmap: VectorMap[_, _] =>
-        underlying.mapValues(_._2).toMap == vmap.underlying.mapValues(_._2).toMap
+        underlying.size == vmap.underlying.size &&
+          underlying.mapValues(_._2).toMap == vmap.underlying.mapValues(_._2).toMap
       case _ => super.equals(that)
     }
 
