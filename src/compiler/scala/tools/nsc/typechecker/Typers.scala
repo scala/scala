@@ -1518,7 +1518,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val supertparams = if (supertpt.hasSymbolField) supertpt.symbol.typeParams else Nil
         def inferParentTypeArgs: Tree = {
           typedPrimaryConstrBody(templ) {
-            val supertpe = PolyType(supertparams, appliedType(supertpt.tpe, supertparams map (_.tpeHK)))
+            val supertpe = PolyType(supertparams, appliedType(supertpt.tpe, supertparams map (_.tpeHK))) // TODO should probably clone
             val supercall = New(supertpe, mmap(argss)(_.duplicate))
             val treeInfo.Applied(Select(ctor, nme.CONSTRUCTOR), _, _) = supercall
             ctor setType supertpe // this is an essential hack, otherwise it will occasionally fail to typecheck
@@ -2838,7 +2838,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val samTyCon = samClassSym.typeConstructor
 
               // the unknowns
-              val tparams = samClassSym.typeParams
+              val tparams = samClassSym.typeParams // TODO: modifyInfo(_.asSeenFrom(pt, samClassSym))?
               // ... as typevars
               val tvars = tparams map freshVar
 
@@ -4575,10 +4575,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val tpt0 = typedTypeConstructor(tpt) modifyType (_.dealias)
           if (checkStablePrefixClassType(tpt0))
             if (tpt0.hasSymbolField && !tpt0.symbol.typeParams.isEmpty) {
-              context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
-              notifyUndetparamsAdded(context.undetparams)
+              val tpars = cloneSymbolsAndModify(tpt0.symbol.typeParams, _.asSeenFrom(tpt0.tpe, tpt0.symbol))
+              context.undetparams = tpars
+              notifyUndetparamsAdded(tpars)
               TypeTree().setOriginal(tpt0)
-                        .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
+                        .setType(appliedType(tpt0.tpe, tpars map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
             } else tpt0
           else tpt0
         }
