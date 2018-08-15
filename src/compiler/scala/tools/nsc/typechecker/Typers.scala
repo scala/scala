@@ -755,25 +755,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _ =>
     }
 
-    /**
-     * Convert a SAM type to the corresponding FunctionType,
-     * extrapolating BoundedWildcardTypes in the process
-     * (no type precision is lost by the extrapolation,
-     *  but this facilitates dealing with the types arising from Java's use-site variance).
-     */
-    def samToFunctionType(tp: Type, sam: Symbol = NoSymbol): Type = {
-      val samSym = sam orElse samOf(tp)
-
-      def correspondingFunctionSymbol = {
-        val numVparams = samSym.info.params.length
-        if (numVparams > definitions.MaxFunctionArity) NoSymbol
-        else FunctionClass(numVparams)
-      }
-
-      if (samSym.exists && tp.typeSymbol != correspondingFunctionSymbol) // don't treat Functions as SAMs
-        wildcardExtrapolation(normalize(tp memberInfo samSym))
-      else NoType
-    }
 
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
@@ -835,7 +816,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           setError(tree)
         else
           withCondConstrTyper(treeInfo.isSelfOrSuperConstrCall(tree))(typer1 =>
-            if (original != EmptyTree && pt != WildcardType) {
+            if (original != EmptyTree && !pt.isWildcard) {
               typer1 silent { tpr =>
                 val withImplicitArgs = tpr.applyImplicitArgs(tree)
                 if (tpr.context.reporter.hasErrors) tree // silent will wrap it in SilentTypeError anyway
@@ -912,7 +893,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
         }
         // (4.3) eta-expand method value when function or sam type is expected (for experimentation, always eta-expand under 2.14 source level)
-        else if (isFunctionType(pt) || samOf(pt).exists || settings.isScala214) { // TODO: decide on `settings.isScala214`
+        else if (isFunctionProto(pt) || settings.isScala214) { // TODO: decide on `settings.isScala214`
           if (settings.isScala212 && mt.params.isEmpty) // implies isFunctionType(pt)
              currentRun.reporting.deprecationWarning(tree.pos, NoSymbol, "Eta-expansion of zero-argument methods is deprecated. "+
                     s"To avoid this warning, write ${Function(Nil, Apply(tree, Nil))}.", "2.12.0")
@@ -1240,7 +1221,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         && ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue)
         && !qtpe.isError
         && !qtpe.typeSymbol.isBottomClass
-        && qtpe != WildcardType
+        && !qtpe.isWildcard
         && !qual.isInstanceOf[ApplyImplicitView] // don't chain views
         && (context.implicitsEnabled || context.enrichmentEnabled)
         // Elaborating `context.implicitsEnabled`:
@@ -1286,7 +1267,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //util.trace("adaptToArgs "+qual+", name = "+name+", argtpes = "+(args map (_.tpe))+", pt = "+pt+" = ")
         adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), restpe), reportAmbiguous, saveErrors)
 
-      if (pt == WildcardType)
+      if (pt.isWildcard)
         doAdapt(pt)
       else silent(_ => doAdapt(pt)) filter (_ != qual) orElse (_ =>
         logResult(s"fallback on implicits in adaptToArguments: $qual.$name")(doAdapt(WildcardType))
@@ -2407,11 +2388,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           block match {
             case Block(List(classDef @ ClassDef(_, _, _, _)), Apply(Select(New(_), _), _)) =>
               val classDecls = classDef.symbol.info.decls
-              lazy val visibleMembers = pt match {
-                case WildcardType                           => classDecls.toList
-                case BoundedWildcardType(TypeBounds(lo, _)) => lo.members
-                case _                                      => pt.members
-              }
+              lazy val visibleMembers =
+                pt.members match {
+                  case error: ErrorScope => classDecls.toList
+                  case ms => ms
+                }
+
               def matchesVisibleMember(member: Symbol) = visibleMembers exists { vis =>
                 (member.name == vis.name) &&
                 (member.tpe <:< vis.tpe.substThis(vis.owner, classDef.symbol))
@@ -2568,21 +2550,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def synthesizePartialFunction(paramName: TermName, paramPos: Position, paramSynthetic: Boolean,
                                   tree: Tree, mode: Mode, pt: Type): Tree = {
       assert(pt.typeSymbol == PartialFunctionClass, s"PartialFunction synthesis for match in $tree requires PartialFunction expected type, but got $pt.")
-      val targs = pt.dealiasWiden.typeArgs
+      val (argTp, resTp) = partialFunctionArgResTypeFromProto(pt)
 
-      // if targs.head isn't fully defined, we can't translate --> error
-      targs match {
-        case argTp :: _ if isFullyDefined(argTp) => // ok
-        case _ => // uh-oh
-          MissingParameterTypeAnonMatchError(tree, pt)
-          return setError(tree)
+      // if argTp isn't fully defined, we can't translate --> error
+      // NOTE: resTp still might not be fully defined
+      if (!isFullyDefined(argTp)) {
+        MissingParameterTypeAnonMatchError(tree, pt)
+        return setError(tree)
       }
 
-      // NOTE: resTp still might not be fully defined
-      val argTp :: resTp :: Nil = targs
-
       // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
-      val targsValidParams = targs forall (_ <:< AnyTpe)
+      val targsValidParams = (argTp <:< AnyTpe) && (resTp <:< AnyTpe)
 
       val anonClass = context.owner newAnonymousFunctionClass tree.pos addAnnotation SerialVersionUIDAnnotation
 
@@ -2819,7 +2797,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case fun@Function(vparams, _) if !isFunctionType(pt) =>
         // TODO: can we ensure there's always a SAMFunction attachment, instead of looking up the sam again???
         // seems like overloading complicates things?
-        val sam = samOf(pt)
+        val sam = samOfProto(pt)
 
         if (!samMatchesFunctionBasedOnArity(sam, vparams)) false
         else {
@@ -2832,34 +2810,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (!sam.exists) NoType
             else if (fullyDefinedMeetsExpectedFunTp(pt)) pt
             else try {
-              val samClassSym = pt.typeSymbol
-
-              // we're trying to fully define the type arguments for this type constructor
-              val samTyCon = samClassSym.typeConstructor
-
-              // the unknowns
-              val tparams = samClassSym.typeParams
-              // ... as typevars
-              val tvars = tparams map freshVar
-
-              val ptVars = appliedType(samTyCon, tvars)
-
-              // carry over info from pt
-              ptVars <:< pt
-
-              val samInfoWithTVars = ptVars.memberInfo(sam)
-
-              // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
-              fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
-
-              val variances = tparams map varianceInType(sam.info)
-
-              // solve constraints tracked by tvars
-              val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
-
-              debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
-
-              val ptFullyDefined = appliedType(samTyCon, targs)
+              val ptFullyDefined = instantiateSamFromFunction(fun.tpe, pt, sam)
               if (ptFullyDefined <:< pt && fullyDefinedMeetsExpectedFunTp(ptFullyDefined)) {
                 debuglog(s"sam fully defined expected type: $ptFullyDefined from $pt for ${fun.tpe}")
                 ptFullyDefined
@@ -2919,37 +2870,33 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (numVparams > definitions.MaxFunctionArity) NoSymbol
         else FunctionClass(numVparams)
 
-      val ptSym = pt.typeSymbol
-
-      /* The Single Abstract Member of pt, unless pt is the built-in function type of the expected arity,
-       * as `(a => a): Int => Int` should not (yet) get the sam treatment.
-       */
+      // The Single Abstract Member of pt, unless pt is the built-in function type of the expected arity.
       val sam =
-        if (ptSym == NoSymbol || ptSym == FunctionSymbol || ptSym == PartialFunctionClass) NoSymbol
-        else samOf(pt)
+        pt.typeSymbol match {
+          case NoSymbol | FunctionSymbol | PartialFunctionClass => NoSymbol
+          case _                                                => samOf(pt)
+        }
 
-      /* The SAM case comes first so that this works:
-       *   abstract class MyFun extends (Int => Int)
-       *   (a => a): MyFun
-       *
-       * Note that the arity of the sam must correspond to the arity of the function.
-       * TODO: handle vararg sams?
-       */
-      val ptNorm =
-        if (samMatchesFunctionBasedOnArity(sam, vparams)) samToFunctionType(pt, sam)
-        else pt
-      val (argpts, respt) =
+      val ptNorm = pt match {
+        case pt: ProtoType                                     => pt.asFunctionType
+        case _ if samMatchesFunctionBasedOnArity(sam, vparams) => samToFunctionType(pt, sam)
+        case _                                                 => pt
+      }
+
+      val (argProtos, resProto) =
         ptNorm baseType FunctionSymbol match {
           case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-          case _                                       => (vparams map (if (pt == ErrorType) (_ => ErrorType) else (_ => NoType)), WildcardType)
+          case _                                       =>
+            val dummyPt = if (pt == ErrorType) ErrorType else NoType
+            (List.fill(numVparams)(dummyPt), WildcardType) // dummyPt is in CBN position
         }
 
       if (!FunctionSymbol.exists) MaxFunctionArityError(fun, s", but ${numVparams} given")
-      else if (argpts.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argpts)
+      else if (argProtos.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argProtos)
       else {
         val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
         // first, try to define param types from expected function's arg types if needed
-        foreach2(vparams, argpts) { (vparam, argpt) =>
+        foreach2(vparams, argProtos) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
             if (isFullyDefined(argpt)) vparam.tpt setType argpt
             else paramsMissingType += vparam
@@ -2974,15 +2921,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case Apply(meth, args) if (vparams corresponds args) { case (p, Ident(name)) => p.name == name case _ => false } =>
               // We're looking for a method (as indicated by FUNmode in the silent typed below),
               // so let's make sure our expected type is a MethodType
-              val methArgs = NoSymbol.newSyntheticValueParams(argpts map { case NoType => WildcardType case tp => tp })
+              val methArgs = NoSymbol.newSyntheticValueParams(argProtos map { case NoType => WildcardType case tp => tp })
 
-              val result = silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, respt)))
+              val result = silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, resProto)))
               // we can't have results with undetermined type params
               val resultMono = result filter (_ => context.undetparams.isEmpty)
               resultMono map { methTyped =>
                 // if context.undetparams is not empty, the method was polymorphic,
                 // so we need the missing arguments to infer its type. See #871
-                val funPt = normalize(methTyped.tpe) baseType FunctionClass(numVparams)
+                val funPt = methodToExpressionTp(methTyped.tpe) baseType FunctionClass(numVparams) // numVparams could be > 22...
                 // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
 
                 // If we are sure this function type provides all the necessary info, so that we won't have
@@ -3026,11 +2973,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               val vparamsTyped = vparams mapConserve typedValDef
               val formals = vparamSyms map (_.tpe)
-              val body1 = typed(fun.body, respt)
+              val body1 = typed(fun.body, resProto)
               val restpe = {
                 val restpe0 = packedType(body1, fun.symbol).deconst.resultType
                 restpe0 match {
-                  case ct: ConstantType if (respt eq WildcardType) || (ct.widen <:< respt) => ct.widen
+                  case ct: ConstantType if (resProto eq WildcardType) || (ct.widen <:< resProto) => ct.widen
                   case tp => tp
                 }
               }
@@ -3363,59 +3310,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def handleOverloaded = {
             val undetparams = context.undetparams
 
-            def funArgTypes(tpAlts: List[(Type, Symbol)]) = tpAlts.map { case (tp, alt) =>
-              val relTp = tp.asSeenFrom(pre, alt.owner)
-              functionOrPfOrSamArgTypes(relTp)
-            }
-
-            def functionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
-              try functionType(funArgTypes(argTpWithAlt).transpose.map(lub), WildcardType)
-              catch { case _: IllegalArgumentException => WildcardType }
-
-            def partialFunctionProto(argTpWithAlt: List[(Type, Symbol)]): Type =
-              try appliedType(PartialFunctionClass, funArgTypes(argTpWithAlt).transpose.map(lub) :+ WildcardType)
-              catch { case _: IllegalArgumentException => WildcardType }
-
-            // To propagate as much information as possible to typedFunction, which uses the expected type to
-            // infer missing parameter types for Function trees that we're typing as arguments here,
-            // we expand the parameter types for all alternatives to the expected argument length,
-            // then transpose to get a list of alternative argument types (push down the overloading to the arguments).
-            // Thus, for each `arg` in `args`, the corresponding `argPts` in `altArgPts` is a list of expected types
-            // for `arg`. Depending on which overload is picked, only one of those expected types must be met, but
-            // we're in the process of figuring that out, so we'll approximate below by normalizing them to function types
-            // and lubbing the argument types (we treat SAM and FunctionN types equally, but non-function arguments
-            // do not receive special treatment: they are typed under WildcardType.)
-            val altArgPts =
-              if (settings.isScala212 && args.exists(t => treeInfo.isFunctionMissingParamType(t) || treeInfo.isPartialFunctionMissingParamType(t)))
-                try alts.map { alt =>
-                  val paramTypes = pre.memberType(alt) match {
-                    case mt @ MethodType(_, _) => mt.paramTypes
-                    case PolyType(_, mt @ MethodType(_, _)) => mt.paramTypes
-                    case t => throw new RuntimeException("Expected MethodType or PolyType of MethodType, got "+t)
-                  }
-                  formalTypes(paramTypes, argslen).map(ft => (ft, alt))
-                }.transpose // do least amount of work up front
-                catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
-              else args.map(_ => Nil) // will type under argPt == WildcardType
-
             val (args1, argTpes) = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
 
-              map2(args, altArgPts) { (arg, argPtAlts) =>
+              mapWithIndex(args) { (arg, argIdx) =>
                 def typedArg0(tree: Tree) = {
-                  // if we have an overloaded HOF such as `(f: Int => Int)Int <and> (f: Char => Char)Char`,
-                  // and we're typing a function like `x => x` for the argument, try to collapse
-                  // the overloaded type into a single function type from which `typedFunction`
-                  // can derive the argument type for `x` in the function literal above
-                  val argPt =
-                    if (argPtAlts.isEmpty) WildcardType
-                    else if (treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
-                    else if (treeInfo.isPartialFunctionMissingParamType(tree)) {
-                      if (argPtAlts.exists(ts => isPartialFunctionType(ts._1))) partialFunctionProto(argPtAlts)
-                      else functionProto(argPtAlts)
-                    } else WildcardType
-
-                  val argTyped = typedArg(tree, amode, BYVALmode, argPt)
+                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgFunProto(argIdx, pre, alts))
                   (argTyped, argTyped.tpe.deconst)
                 }
 
@@ -4631,8 +4531,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (tp.params.lengthCompare(definitions.MaxFunctionArity) > 0) MaxFunctionArityError(methodValue, s"; method ${methodValue.symbol.name} cannot be eta-expanded because it takes ${tp.params.length} arguments")
           else {
             val etaPt =
-              if (pt ne WildcardType) pt
-              else functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
+              pt match {
+                case pt: ProtoType =>
+                  pt.asFunctionType orElse functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
+                case _             => pt
+              }
 
             // We know syntactically methodValue can't refer to a constructor because you can't write `this _` for that (right???)
             typedEtaExpansion(methodValue, mode, etaPt)

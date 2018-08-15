@@ -1432,11 +1432,27 @@ to expressions $(e_1 , \ldots , e_n)$ of types $(\mathit{shape}(e_1) , \ldots , 
 If there is precisely one alternative in $\mathscr{B}$, that alternative is chosen.
 
 Otherwise, let $S_1 , \ldots , S_m$ be the list of types obtained by typing each argument as follows.
-An argument `$e_i$` of the shape `($p_1$: $T_1 , \ldots , p_n$: $T_n$) => $b$` where one of the `$T_i$` is missing,
-i.e., a function literal with a missing parameter type, is typed with an expected function type that
-propagates the least upper bound of the fully defined types of the corresponding parameters of
-the ([SAM-converted](#sam-conversion)) function types specified by the `$i$`th argument type found in each alternative.
-All other arguments are typed with an undefined expected type.
+
+Normally, an argument is typed without an expected type, except when trying to propagate more type
+information to aid inference of higher-order function parameter types, as explained next. The intuition is
+that all arguments must be of a function-like type (`PartialFunction`, `FunctionN` or some equivalent [SAM type](#sam-conversion)),
+which in turn must define the same set of higher-order argument types, so that they can safely be used as
+the expected type of a given argument of the overloaded method, without unduly ruling out any alternatives.
+The intent is not to steer overloading resolution, but to preserve enough type information to steer type
+inference of the arguments (a function literal or eta-expanded method) to this overloaded method.
+
+Note that the expected type drives eta-expansion (not performed unless a function-like type is expected),
+as well as inference of omitted parameter types of function literals.
+
+More precisely, an argument `$e_i$` is typed with an expected type that is derived from the `$i$`th argument
+type found in each alternative (call these `$T_{ij}$` for alternative `$j$` and argument position `$i$`) when
+all `$T_{ij}$` are function types `$(A_{1j},..., A_{nj}) => ?$` (or the equivalent `PartialFunction`, or SAM)
+of some arity `$n$`, and their argument types `$A_{kj}$` are identical across all overloads `$j$` for a
+given `$k$`. Then, the expected type for `$e_i$` is derived as follows:
+   - we use `$PartialFunction[A_{1j},..., A_{nj}, ?]$` if for some overload `$j$`, `$T_{ij}$`'s type symbol is `PartialFunction`;
+   - else, if for some `$j$`, `$T_{ij}$` is `FunctionN`, the expected type is `$FunctionN[A_{1j},..., A_{nj}, ?]$`;
+   - else, if for all `$j$`, `$T_{ij}$` is a SAM type of the same class, defining argument types `$A_{1j},..., A_{nj}$`
+     (and a potentially varying result type), the expected type encodes these argument types and the SAM class.
 
 For every member $m$ in $\mathscr{B}$ one determines whether it is applicable
 to expressions ($e_1 , \ldots , e_m$) of types $S_1, \ldots , S_m$.

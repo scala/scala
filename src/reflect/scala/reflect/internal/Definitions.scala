@@ -716,6 +716,22 @@ trait Definitions extends api.StandardDefinitions {
     // tends to change the course of events by forcing types.
     def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
 
+    // Are we expecting something function-ish? This considers FunctionN / SAM / ProtoType that matches functions
+    def isFunctionProto(pt: Type): Boolean =
+      (isFunctionType(pt)
+       || (pt match { case pt: ProtoType => pt.expectsFunctionType  case _ => false })
+       || samOf(pt).exists
+      )
+
+    // @requires pt.typeSymbol == PartialFunctionClass
+    def partialFunctionArgResTypeFromProto(pt: Type): (Type, Type) =
+      pt match {
+        case oap: OverloadedArgFunProto => (oap.hofParamTypes.head, WildcardType)
+        case _                          =>
+          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs
+          (arg, res)
+      }
+
     // the number of arguments expected by the function described by `tp` (a FunctionN or SAM type),
     // or `-1` if `tp` does not represent a function type or SAM
     // for use during typers (after fields, samOf will be confused by abstract accessors for trait fields)
@@ -737,6 +753,49 @@ trait Definitions extends api.StandardDefinitions {
         case samSym if samSym.exists => tp.memberInfo(samSym).paramTypes
         case _ => Nil
       }
+    }
+
+    /**
+      * Convert a SAM type to the corresponding FunctionType,
+      * extrapolating BoundedWildcardTypes in the process
+      * (no type precision is lost by the extrapolation,
+      *  but this facilitates dealing with the types arising from Java's use-site variance).
+      */
+    def samToFunctionType(tp: Type, sam: Symbol = NoSymbol): Type =
+      tp match {
+        case pt: ProtoType => pt.asFunctionType
+        case _ =>
+          val samSym = sam orElse samOf(tp)
+
+          def correspondingFunctionSymbol = {
+            val numVparams = samSym.info.params.length
+            if (numVparams > definitions.MaxFunctionArity) NoSymbol
+            else FunctionClass(numVparams)
+          }
+
+          if (samSym.exists && tp.typeSymbol != correspondingFunctionSymbol) // don't treat Functions as SAMs
+            wildcardExtrapolation(methodToExpressionTp(tp memberInfo samSym))
+          else NoType
+      }
+
+    /** Automatically perform the following conversions on expression types:
+      *  A method type becomes the corresponding function type.
+      *  A nullary method type becomes its result type.
+      *  Implicit parameters are skipped.
+      *  This method seems to be performance critical.
+      */
+    def methodToExpressionTp(tp: Type): Type = tp match {
+      case PolyType(_, restpe) =>
+        logResult(sm"""|Normalizing PolyType in infer:
+                       |  was: $restpe
+                       |  now""")(methodToExpressionTp(restpe))
+      case mt @ MethodType(_, restpe) if mt.isImplicit             => methodToExpressionTp(restpe)
+      case mt @ MethodType(_, restpe) if !mt.isDependentMethodType =>
+        if (phase.erasedTypes) FunctionClass(mt.params.length).tpe
+        else functionType(mt.paramTypes, methodToExpressionTp(restpe))
+      case NullaryMethodType(restpe)                               => methodToExpressionTp(restpe)
+      case ExistentialType(tparams, qtpe)                          => newExistentialType(tparams, methodToExpressionTp(qtpe))
+      case _                                                       => tp // @MAT aliases already handled by subtyping
     }
 
     // the SAM's parameters and the Function's formals must have the same length
@@ -917,6 +976,12 @@ trait Definitions extends api.StandardDefinitions {
         else NoSymbol
       } else NoSymbol
     }
+
+    def samOfProto(pt: Type): Symbol =
+      pt match {
+        case proto: ProtoType => samOf(proto.underlying) // TODO: add more semantic accessor to ProtoType?
+        case pt               => samOf(pt)
+      }
 
     def arrayType(arg: Type)         = appliedType(ArrayClass, arg)
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
