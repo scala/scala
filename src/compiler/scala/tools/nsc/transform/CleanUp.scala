@@ -31,7 +31,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]
     private val newStaticInits        = mutable.Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
-    private var transformListApplyLimit = 16
+    private var transformListApplyLimit = 8
     private def reducingTransformListApply[A](depth: Int)(body: => A): A = {
       val saved = transformListApplyLimit
       transformListApplyLimit -= depth
