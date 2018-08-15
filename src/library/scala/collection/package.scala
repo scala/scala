@@ -46,7 +46,7 @@ package object collection {
    *  In Scalac, we can provide `Any`, as `Any` is kind-polymorphic. In dotty this is not allowed.
    *  In dotty, we can provide `[X] => Any`. But Scalac does not know lambda syntax.
    */
-  type AnyConstr[X] = Any
+  private[scala] type AnyConstr[X] = Any
 
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
