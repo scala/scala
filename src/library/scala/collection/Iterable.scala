@@ -874,7 +874,12 @@ object IterableOps {
 }
 
 @SerialVersionUID(3L)
-object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)
+object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
+
+  def single[A](a: A): Iterable[A] = new AbstractIterable[A] {
+    override def iterator = Iterator.single(a)
+  }
+}
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
