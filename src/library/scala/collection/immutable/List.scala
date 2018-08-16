@@ -565,6 +565,8 @@ sealed abstract class List[+A]
 
 }
 
+// Internal code that mutates `next` _must_ call `ScalaRunTime.releaseFence()` if either immediately, or
+// before a newly-allocated, thread-local :: instance is aliased (e.g. in ListBuffer.toList)
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   ScalaRunTime.releaseFence()

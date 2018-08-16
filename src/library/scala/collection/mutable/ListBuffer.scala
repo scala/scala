@@ -62,6 +62,9 @@ class ListBuffer[A]
   // Avoids copying where possible.
   override def toList: List[A] = {
     aliased = nonEmpty
+    // We've accumulated a number of mutations to `List.tail` by this stage.
+    // Make sure they are visible to threads that the client of this ListBuffer might be about
+    // to share this List with.
     ScalaRunTime.releaseFence()
     first
   }

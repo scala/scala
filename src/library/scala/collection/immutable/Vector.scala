@@ -71,7 +71,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def iterableFactory: SeqFactory[Vector] = Vector
 
+  // Code paths that mutates `dirty` _must_ call `ScalaRunTime.releaseFence()` before returning from
+  // the public method.
   private[immutable] var dirty = false
+  // While most JDKs would implicit add this fence because of >= 1 final field, the spec only mandates
+  // it if all fields are final, so let's add this in explicitly.
+  ScalaRunTime.releaseFence()
 
   def length: Int = endIndex - startIndex
 
