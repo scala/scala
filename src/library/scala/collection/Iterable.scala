@@ -874,7 +874,24 @@ object IterableOps {
 }
 
 @SerialVersionUID(3L)
-object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable)
+object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
+
+  def single[A](a: A): Iterable[A] = new AbstractIterable[A] {
+    override def iterator = Iterator.single(a)
+    override def knownSize = 1
+    override def head = a
+    override def headOption = Some(a)
+    override def last = a
+    override def lastOption = Some(a)
+    override def view = new View.Single(a)
+    override def take(n: Int) = if (n > 0) this else Iterable.empty
+    override def takeRight(n: Int) = if (n > 0) this else Iterable.empty
+    override def drop(n: Int) = if (n > 0) Iterable.empty else this
+    override def dropRight(n: Int) = if (n > 0) Iterable.empty else this
+    override def tail = Iterable.empty
+    override def init = Iterable.empty
+  }
+}
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
