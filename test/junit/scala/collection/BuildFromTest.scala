@@ -156,6 +156,7 @@ class BuildFromTest {
   implicitly[BuildFrom[mutable.LongMap[_], (Long, String), mutable.LongMap[String]]]
   implicitly[BuildFrom[immutable.LongMap[_], (Long, String), immutable.LongMap[String]]]
   implicitly[BuildFrom[mutable.AnyRefMap[_ <: AnyRef, _], (String, String), mutable.AnyRefMap[String, String]]]
+  implicitly[BuildFrom[mutable.AnyRefMap[String, String], (String, String), _]]
 
   // Check that collection companions can implicitly be converted to a `BuildFrom` instance
   Iterable: BuildFrom[_, Int, Iterable[Int]]
