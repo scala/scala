@@ -57,6 +57,7 @@ class LocalToNonLocalClass[G <: CallbackGlobal](val global: G) {
     assert(s.isClass, s"The ${s.fullName} is not a class.")
     cache.getOrElseUpdate(s, lookupNonLocal(s))
   }
+
   private def lookupNonLocal(s: Symbol): Symbol = {
     if (s.owner.isPackageClass) s
     else if (s.owner.isClass) {
