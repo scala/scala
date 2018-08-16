@@ -756,11 +756,16 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) delayedInitDefsAndConstrStats(defs, remainingConstrStats)
         else (Nil, remainingConstrStats)
 
+      val fence = if (clazz.primaryConstructor.hasAttachment[ConstructorNeedsFence.type]) {
+        val tree = localTyper.typedPos(clazz.primaryConstructor.pos)(gen.mkRuntimeCall(nme.releaseFence, Nil))
+        tree :: Nil
+      } else Nil
+
       // Assemble final constructor
       val primaryConstructor = deriveDefDef(primaryConstr)(_ => {
         treeCopy.Block(
           primaryConstrBody,
-          paramInits ::: constructorPrefix ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStatsDelayedInit),
+          paramInits ::: constructorPrefix ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStatsDelayedInit) ::: fence,
           primaryConstrBody.expr)
       })
 

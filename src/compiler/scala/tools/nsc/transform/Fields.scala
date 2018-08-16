@@ -422,12 +422,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 //        println(s"expanded modules for $clazz: $expandedModules")
 
         // afterOwnPhase, so traits receive trait setters for vals (needs to be at finest grain to avoid looping)
-        val synthInSubclass =
+        val synthInSubclass: List[Symbol] =
           clazz.mixinClasses.flatMap(mixin => afterOwnPhase(mixin.info).decls.toList.filter(accessorImplementedInSubclass))
 
         // mixin field accessors --
         // invariant: (accessorsMaybeNeedingImpl, mixedInAccessorAndFields).zipped.forall(case (acc, clone :: _) => `clone` is clone of `acc` case _ => true)
-        val mixedInAccessorAndFields = synthInSubclass.map{ member =>
+        val mixedInAccessorAndFields: List[List[Symbol]] = synthInSubclass.map{ member =>
           def cloneAccessor() = {
             val clonedAccessor = (member cloneSymbol clazz) setPos clazz.pos
             setMixedinAccessorFlags(member, clonedAccessor)
@@ -659,9 +659,20 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         // trait val/var setter mixed into class
         else fieldAccess(setter) match {
           case NoSymbol => EmptyTree
-          case fieldSel => afterOwnPhase { // the assign only type checks after our phase (assignment to val)
-            mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), castHack(Ident(setter.firstParam), fieldSel.info)))
-          }
+          case fieldSel =>
+            if (!fieldSel.hasFlag(MUTABLE)) {
+              // If the field is mutable, it won't be final, so we can write to it in a setter.
+              // If it's not, we still need to initialize it, and make sure it's safely published.
+              // Since initialization is performed (lexically) outside of the constructor (in the trait setter),
+              // we have to make the field mutable starting with classfile format 53
+              // (it was never allowed, but the verifier enforces this now).
+              fieldSel.setFlag(MUTABLE)
+              fieldSel.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
+            }
+
+            afterOwnPhase { // the assign only type checks after our phase (assignment to val)
+              mkAccessor(setter)(Assign(Select(This(clazz), fieldSel), castHack(Ident(setter.firstParam), fieldSel.info)))
+            }
         }
 
       def moduleAccessorBody(module: Symbol): Tree =

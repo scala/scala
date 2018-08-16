@@ -107,4 +107,6 @@ trait StdAttachments {
   case object KnownDirectSubclassesCalled extends PlainAttachment
 
   class QualTypeSymAttachment(val sym: Symbol)
+
+  case object ConstructorNeedsFence extends PlainAttachment
 }

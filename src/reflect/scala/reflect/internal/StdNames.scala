@@ -778,6 +778,7 @@ trait StdNames {
     val productPrefix: NameType        = "productPrefix"
     val raw_ : NameType                = "raw"
     val readResolve: NameType          = "readResolve"
+    val releaseFence: NameType         = "releaseFence"
     val reify : NameType               = "reify"
     val reificationSupport : NameType  = "reificationSupport"
     val rootMirror : NameType          = "rootMirror"
