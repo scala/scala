@@ -7,7 +7,7 @@ import Gen._
 
 import scala.collection.mutable.ListBuffer
 
-object SeqMapTest extends Properties("LinkedMap") {
+object SeqMapTest extends Properties("SeqMap") {
 
   property("ordering") = forAll { (m: Map[Int, Int]) =>
     val list = m.toList
