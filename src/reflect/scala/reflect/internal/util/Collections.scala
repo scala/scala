@@ -9,7 +9,7 @@ package reflect.internal.util
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
-import scala.runtime.ScalaRunTime
+import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
  *  TODO - inlining doesn't work from here because of the bug that
@@ -59,7 +59,7 @@ trait Collections {
       tail = next
       rest = rest.tail
     }
-    ScalaRunTime.releaseFence()
+    releaseFence()
     head
   }
 
@@ -131,7 +131,7 @@ trait Collections {
       }
     }
     val result = loop(null, xs, xs, ys)
-    ScalaRunTime.releaseFence()
+    releaseFence()
     result
   }
 

@@ -6,7 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.annotation.unchecked.uncheckedVariance
-import scala.runtime.ScalaRunTime
+import scala.runtime.Statics.releaseFence
 
 /** $factoryInfo
   * @define Coll `Vector`
@@ -71,12 +71,12 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def iterableFactory: SeqFactory[Vector] = Vector
 
-  // Code paths that mutates `dirty` _must_ call `ScalaRunTime.releaseFence()` before returning from
+  // Code paths that mutates `dirty` _must_ call `Statics.releaseFence()` before returning from
   // the public method.
   private[immutable] var dirty = false
   // While most JDKs would implicit add this fence because of >= 1 final field, the spec only mandates
   // it if all fields are final, so let's add this in explicitly.
-  ScalaRunTime.releaseFence()
+  releaseFence()
 
   def length: Int = endIndex - startIndex
 
@@ -225,7 +225,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.dirty = dirty
     s.gotoPosWritable(focus, idx, focus ^ idx)  // if dirty commit changes; go to new pos and prepare for writing
     s.display0(idx & 31) = elem.asInstanceOf[AnyRef]
-    ScalaRunTime.releaseFence()
+    releaseFence()
     s
   }
 
@@ -319,7 +319,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       s.display0 = elems
       s
     }
-    ScalaRunTime.releaseFence()
+    releaseFence()
     result
   }
 
@@ -383,7 +383,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       s.display0 = elems
       s
     }
-    ScalaRunTime.releaseFence()
+    releaseFence()
     result
   }
 
@@ -521,7 +521,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
     s.preClean(d)
     s.cleanLeftEdge(cutIndex - shift)
-    ScalaRunTime.releaseFence()
+    releaseFence()
     s
   }
 
@@ -537,7 +537,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
     s.preClean(d)
     s.cleanRightEdge(cutIndex - shift)
-    ScalaRunTime.releaseFence()
+    releaseFence()
     s
   }
 
@@ -630,7 +630,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     val s = new Vector[A](0, size, 0) // should focus front or back?
     s.initFrom(this)
     if (depth > 1) s.gotoPos(0, size - 1) // we're currently focused to size - 1, not size!
-    ScalaRunTime.releaseFence()
+    releaseFence()
     s
   }
 

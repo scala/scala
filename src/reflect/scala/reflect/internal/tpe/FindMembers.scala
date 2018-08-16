@@ -7,7 +7,7 @@ package tpe
 
 import util.StatisticsStatics
 import Flags._
-import scala.runtime.ScalaRunTime
+import scala.runtime.Statics.releaseFence
 
 trait FindMembers {
   this: SymbolTable =>
@@ -282,7 +282,7 @@ trait FindMembers {
     } else {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
       lastM.next = Nil
-      ScalaRunTime.releaseFence()
+      releaseFence()
       initBaseClasses.head.newOverloaded(tpe, members)
     }
   }

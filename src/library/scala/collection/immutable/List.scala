@@ -7,7 +7,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}
-import scala.runtime.ScalaRunTime
+import scala.runtime.Statics.releaseFence
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -148,7 +148,7 @@ sealed abstract class List[+A]
       t = nx
       rest = rest.tail
     }
-    ScalaRunTime.releaseFence()
+    releaseFence()
     h
   }
 
@@ -218,7 +218,7 @@ sealed abstract class List[+A]
         t = nx
         rest = rest.tail
       }
-      ScalaRunTime.releaseFence()
+      releaseFence()
       h
     }
   }
@@ -245,7 +245,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       } while (rest ne Nil)
-      {ScalaRunTime.releaseFence(); h}
+      {releaseFence(); h}
     }
   }
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
@@ -269,7 +269,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       }
-      if (!found) Nil else {ScalaRunTime.releaseFence(); h}
+      if (!found) Nil else {releaseFence(); h}
     }
   }
 
@@ -453,7 +453,7 @@ sealed abstract class List[+A]
       }
     }
     val result = loop(null, null, this, this)
-    ScalaRunTime.releaseFence()
+    releaseFence()
     result
   }
 
@@ -537,7 +537,7 @@ sealed abstract class List[+A]
     }
 
     val result = noneIn(this)
-    ScalaRunTime.releaseFence()
+    releaseFence()
     result
   }
 
@@ -565,11 +565,11 @@ sealed abstract class List[+A]
 
 }
 
-// Internal code that mutates `next` _must_ call `ScalaRunTime.releaseFence()` if either immediately, or
+// Internal code that mutates `next` _must_ call `Statics.releaseFence()` if either immediately, or
 // before a newly-allocated, thread-local :: instance is aliased (e.g. in ListBuffer.toList)
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
-  ScalaRunTime.releaseFence()
+  releaseFence()
   override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
