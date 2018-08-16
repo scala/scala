@@ -14,7 +14,7 @@ package math
  *
  *  @author  Martin Odersky
  */
-trait PartiallyOrdered[+A] {
+trait PartiallyOrdered[+A] extends Any {
 
   type AsPartiallyOrdered[B] = B => PartiallyOrdered[B]
 
