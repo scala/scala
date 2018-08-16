@@ -8,5 +8,6 @@ public class JavaClass {
       varargz(5, 1.0, 2.0, 3.0);
       va.vt(16, "", "", "");
       System.out.println(va.vt1(16, "a", "b", "c"));
+      System.out.println(VaClass.vip(33, 22, 45));
   }
 }
