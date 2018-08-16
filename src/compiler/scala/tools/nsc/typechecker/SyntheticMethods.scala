@@ -256,23 +256,31 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     // methods for both classes and objects
     def productMethods: List[(Symbol, () => Tree)] = {
+      List(
+        Product_productPrefix -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
+        Product_productArity -> (() => constantNullary(nme.productArity, arity)),
+        Product_productElement -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect)),
+        Product_iterator -> (() => productIteratorMethod),
+        Product_canEqual -> (() => canEqualMethod)
+      )
+    }
+
+    def productClassMethods: List[(Symbol, () => Tree)] = {
+      // Classes get productElementName but case objects do not.
+      // For a case object the correct behaviour (i.e. to throw an IOOBE)
+      // is already provided by the default implementation in the Product trait.
+
+      // Support running the compiler with an older library on the classpath
       def elementName: List[(Symbol, () => Tree)] = Product_productElementName match {
         case NoSymbol => Nil
         case sym => (sym, () => productElementNameMethod) :: Nil
       }
+
       List(
-        List(
-          Product_productPrefix       -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
-          Product_productArity        -> (() => constantNullary(nme.productArity, arity)),
-          Product_productElement      -> (() => perElementMethod(nme.productElement, AnyTpe)(mkThisSelect))
-        ),
-        elementName,
-        List(
-          Product_iterator            -> (() => productIteratorMethod),
-          Product_canEqual            -> (() => canEqualMethod)
-        )
-      )
-    }.flatten
+        productMethods,
+        elementName
+      ).flatten
+    }
 
     def hashcodeImplementation(sym: Symbol): Tree = {
       sym.tpe.finalResultType.typeSymbol match {
@@ -314,13 +322,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       Any_equals -> (() => equalsDerivedValueClassMethod)
     )
 
-    def caseClassMethods = productMethods ++ /*productNMethods ++*/ Seq(
+    def caseClassMethods = productClassMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
       Object_toString -> (() => forwardToRuntime(Object_toString)),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
 
-    def valueCaseClassMethods = productMethods ++ /*productNMethods ++*/ valueClassMethods ++ Seq(
+    def valueCaseClassMethods = productClassMethods ++ /*productNMethods ++*/ valueClassMethods ++ Seq(
       Any_toString -> (() => forwardToRuntime(Object_toString))
     )
 

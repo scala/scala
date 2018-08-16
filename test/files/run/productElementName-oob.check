@@ -1,0 +1,11 @@
+java.lang.IndexOutOfBoundsException: 99
+scala.runtime.Statics.ioobe
+CaseClass.productElementName
+Test$.delayedEndpoint$Test$1
+Test$delayedInit$body.apply
+
+java.lang.IndexOutOfBoundsException: 99
+scala.Product.productElementName
+scala.Product.productElementName$
+CaseObject$.productElementName
+Test$.delayedEndpoint$Test$1

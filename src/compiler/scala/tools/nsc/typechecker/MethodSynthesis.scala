@@ -84,10 +84,19 @@ trait MethodSynthesis {
     def forwardMethod(original: Symbol, newMethod: Symbol)(transformArgs: List[Tree] => List[Tree]): Tree =
       createMethod(original)(m => gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident)))
 
-    def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree) = {
+    def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree): Tree = {
+      def dflt(arg: Tree) = currentRun.runDefinitions.RuntimeStatics_ioobe match {
+        case NoSymbol =>
+          // Support running the compiler with an older library on the classpath
+          Throw(IndexOutOfBoundsExceptionClass.tpe_*, fn(arg, nme.toString_))
+        case ioobeSym =>
+          val ioobeTypeApply = TypeApply(gen.mkAttributedRef(ioobeSym), List(TypeTree(returnType)))
+          Apply(ioobeTypeApply, List(arg))
+      }
+
       createMethod(name, List(IntTpe), returnType) { m =>
         val arg0    = Ident(m.firstParam)
-        val default = DEFAULT ==> Throw(IndexOutOfBoundsExceptionClass.tpe_*, fn(arg0, nme.toString_))
+        val default = DEFAULT ==> dflt(arg0)
         val cases   = range.map(num => CASE(LIT(num)) ==> f(num)).toList :+ default
 
         Match(arg0, cases)

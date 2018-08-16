@@ -739,6 +739,7 @@ trait StdNames {
     val initialized : NameType         = "initialized"
     val internal: NameType             = "internal"
     val inlinedEquals: NameType        = "inlinedEquals"
+    val ioobe : NameType               = "ioobe"
     val isArray: NameType              = "isArray"
     val isDefinedAt: NameType          = "isDefinedAt"
     val isEmpty: NameType              = "isEmpty"
