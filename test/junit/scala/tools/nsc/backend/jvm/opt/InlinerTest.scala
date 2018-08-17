@@ -1784,4 +1784,20 @@ class InlinerTest extends BytecodeTesting {
     // rec is inlined once, the closure application is rewritten to the body method
     assertInvokedMethods(getMethod(c, "t"), List("C.$anonfun$t$1", "T.rec"))
   }
+
+  @Test
+  def overriddenSuperNoInline(): Unit = {
+    val code =
+      """class A {
+        |  def m(x: Int) = 1
+        |}
+        |class C extends A {
+        |  @inline override final def m(x: Int) = 2
+        |  def m = 1 + super.m(1)
+        |}
+      """.stripMargin
+    val List(a, c) = compileClasses(code)
+    val m = getAsmMethods(c, "m").find(_.desc == "()I").get
+    assert(convertMethod(m).instructions.contains(Invoke(INVOKESPECIAL, "A", "m", "(I)I", itf = false)), AsmUtils.textify(m))
+  }
 }

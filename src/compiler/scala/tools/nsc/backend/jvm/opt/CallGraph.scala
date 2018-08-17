@@ -162,12 +162,32 @@ abstract class CallGraph {
 
         methodNode.instructions.iterator.asScala foreach {
           case call: MethodInsnNode if typeFlow.frameAt(call) != null => // skips over unreachable code
-            val preciseOwner = if (isStaticCallsite(call)) call.owner else {
-              val f = typeFlow.frameAt(call)
-              // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
-              val numParams = Type.getArgumentTypes(call.desc).length
-              f.peekStack(numParams).getType.getInternalName
-            }
+            // JVMS 6.5 invokespecial: " If all of the following are true, let C be the direct superclass of the current class"
+            def isSuperCall: Boolean =
+              call.getOpcode == Opcodes.INVOKESPECIAL &&
+                call.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME && {
+                  val owner = call.owner
+                  definingClass.internalName != owner && {
+                    var nextSuper = definingClass.info.get.superClass
+                    while (nextSuper.nonEmpty) {
+                      if (nextSuper.get.internalName == owner) return true
+                      nextSuper = nextSuper.get.info.get.superClass
+                    }
+                    false
+                  }
+                }
+            // This is the type where method lookup starts (implemented in byteCodeRepository.methodNode)
+            val preciseOwner =
+              if (isStaticCallsite(call)) call.owner
+              else if (isSuperCall) definingClass.info.get.superClass.get.internalName
+              else if (call.getOpcode == Opcodes.INVOKESPECIAL) call.owner
+              else {
+                // invokevirtual, invokeinterface: start search at the type of the receiver
+                val f = typeFlow.frameAt(call)
+                // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
+                val numParams = Type.getArgumentTypes(call.desc).length
+                f.peekStack(numParams).getType.getInternalName
+              }
 
             val callee: Either[OptimizerWarning, Callee] = {
               for {
