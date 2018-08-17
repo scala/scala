@@ -30,6 +30,13 @@ class MapBuilder [K, V, C <: Map[K, V] : ClassTag ] private[immutable](empty: C)
     elems = (elems + elem).asInstanceOf[C]; this
   }
 
+  /**
+    * Similar functionallity to [[addOne()]] without requiring the creation of tuples
+    */
+  def addKeyValue(key: K, value: V): this.type = {
+    elems = (elems.updated(key,value)).asInstanceOf[C]; this
+  }
+
   override def addAll(xs: IterableOnce[(K, V)]): this.type = {
     if ((elems eq empty) && isCompatibleType(xs)) {
       elems = xs.asInstanceOf[C]
