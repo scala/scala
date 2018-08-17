@@ -42,28 +42,46 @@ object IndexedSeqView {
   /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
   type SomeIndexedSeqOps[A] = IndexedSeqOps[A, AnyConstr, _]
 
+  def id[A](underlying: SomeIndexedSeqOps[A]): IndexedSeqView[A] = new Id(underlying)
+
+  def map[A, B](underlying: SomeIndexedSeqOps[A], f: A => B): IndexedSeqView[B] = new Map(underlying, f)
+
+  def prepended[A](elem: A, underlying: SomeIndexedSeqOps[A]): IndexedSeqView[A] = new Prepended(elem, underlying)
+
+  def take[A](underlying: SomeIndexedSeqOps[A], n: Int): IndexedSeqView[A] = new Take(underlying, n)
+
+  def takeRight[A](underlying: SomeIndexedSeqOps[A], n: Int): IndexedSeqView[A] = new TakeRight(underlying, n)
+
+  def drop[A](underlying: SomeIndexedSeqOps[A], n: Int): IndexedSeqView[A] = new Drop(underlying, n)
+
+  def dropRight[A](underlying: SomeIndexedSeqOps[A], n: Int): IndexedSeqView[A] = new DropRight(underlying, n)
+
+  def reverse[A](underlying: SomeIndexedSeqOps[A]): IndexedSeqView[A] = new Reverse(underlying)
+
+  def slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int): IndexedSeqView[A] = new Slice(underlying, from, until)
+
   @SerialVersionUID(3L)
-  class Id[+A](underlying: SomeIndexedSeqOps[A])
+  private[collection] class Id[+A](underlying: SomeIndexedSeqOps[A])
     extends SeqView.Id(underlying) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class Appended[+A](underlying: SomeIndexedSeqOps[A], elem: A)
+  private[collection] class Appended[+A](underlying: SomeIndexedSeqOps[A], elem: A)
     extends SeqView.Appended(underlying, elem) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class Prepended[+A](elem: A, underlying: SomeIndexedSeqOps[A])
+  private[collection] class Prepended[+A](elem: A, underlying: SomeIndexedSeqOps[A])
     extends SeqView.Prepended(elem, underlying) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class Concat[A](prefix: SomeIndexedSeqOps[A], suffix: SomeIndexedSeqOps[A])
+  private[collection] class Concat[A](prefix: SomeIndexedSeqOps[A], suffix: SomeIndexedSeqOps[A])
     extends SeqView.Concat[A](prefix, suffix) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class Take[A](underlying: SomeIndexedSeqOps[A], n: Int)
+  private[collection] class Take[A](underlying: SomeIndexedSeqOps[A], n: Int)
     extends SeqView.Take(underlying, n) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class TakeRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedSeqView[A] {
+  private[collection] class TakeRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedSeqView[A] {
     private[this] val delta = (underlying.size - (n max 0)) max 0
     def length = underlying.size - delta
     @throws[IndexOutOfBoundsException]
@@ -71,14 +89,14 @@ object IndexedSeqView {
   }
 
   @SerialVersionUID(3L)
-  class Drop[A](underlying: SomeIndexedSeqOps[A], n: Int) extends View.Drop[A](underlying, n) with IndexedSeqView[A] {
+  private[collection] class Drop[A](underlying: SomeIndexedSeqOps[A], n: Int) extends View.Drop[A](underlying, n) with IndexedSeqView[A] {
     def length = (underlying.size - normN) max 0
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
   }
 
   @SerialVersionUID(3L)
-  class DropRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedSeqView[A] {
+  private[collection] class DropRight[A](underlying: SomeIndexedSeqOps[A], n: Int) extends AbstractIndexedSeqView[A] {
     private[this] val len = (underlying.size - (n max 0)) max 0
     def length = len
     @throws[IndexOutOfBoundsException]
@@ -86,14 +104,14 @@ object IndexedSeqView {
   }
 
   @SerialVersionUID(3L)
-  class Map[A, B](underlying: SomeIndexedSeqOps[A], f: A => B)
+  private[collection] class Map[A, B](underlying: SomeIndexedSeqOps[A], f: A => B)
     extends SeqView.Map(underlying, f) with IndexedSeqView[B]
 
   @SerialVersionUID(3L)
-  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends SeqView.Reverse[A](underlying) with IndexedSeqView[A]
+  private[collection] class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends SeqView.Reverse[A](underlying) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
-  class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends AbstractIndexedSeqView[A] {
+  private[collection] class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends AbstractIndexedSeqView[A] {
     protected val lo = from max 0
     protected val hi = (until max 0) min underlying.length
     protected val len = (hi - lo) max 0

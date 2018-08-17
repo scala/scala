@@ -140,7 +140,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n` evaluations of `elem`.
     */
-  def fill[A](n: Int)(elem: => A): CC[A] = from(new View.Fill(n)(elem))
+  def fill[A](n: Int)(elem: => A): CC[A] = from(View.fill(n)(elem))
 
   /** Produces a two-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
