@@ -87,7 +87,7 @@ extends AbstractMap[A, B]
       // Repeat search
       // because evaluation of `default` can bring entry with `key`
       val secondEntry = findEntry(key, newEntryIndex)
-      if (secondEntry == null) addEntry0(e, newEntryIndex)
+      if (secondEntry == null) addEntry(e, newEntryIndex)
       else secondEntry.value = default
       default
     }
