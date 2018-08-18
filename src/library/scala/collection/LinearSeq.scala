@@ -21,18 +21,33 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   // To be overridden in implementations:
   def isEmpty: Boolean
   def head: A
-  def tail: LinearSeq[A]
+  def tail: C
 
-  def iterator: Iterator[A] = new LinearSeqIterator[A](toSeq)
+  def iterator: Iterator[A] =
+    if (knownSize == 0) Iterator.empty
+    else new LinearSeqIterator[A](toSeq)
 
   def length: Int = {
-    var these = toIterable
+    var these = coll
     var len = 0
-    while (!these.isEmpty) {
+    while (these.nonEmpty) {
       len += 1
       these = these.tail
     }
     len
+  }
+
+  override def last: A = {
+    if (isEmpty) throw new NoSuchElementException("LinearSeq.last")
+    else {
+      var these = coll
+      var scout = tail
+      while (scout.nonEmpty) {
+        these = scout
+        scout = scout.tail
+      }
+      these.head
+    }
   }
 
   override def lengthCompare(len: Int): Int = {
