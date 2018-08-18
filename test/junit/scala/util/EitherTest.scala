@@ -20,10 +20,10 @@ class EitherTest {
   }
 
   @Test
-  def testLeftUp: Unit = {
+  def testWithRight: Unit = {
 
     def rightSumOrLeftEmpty(l: List[Int]) =
-      l.foldLeft(Left("empty").up[Int]) {
+      l.foldLeft(Left("empty").withRight[Int]) {
         case (Left(_), i) => Right(i)
         case (Right(s), i) => Right(s + i)
       }
@@ -33,10 +33,10 @@ class EitherTest {
   }
 
   @Test
-  def testRightUp: Unit = {
+  def testWithLeft: Unit = {
 
     def leftSumOrRightEmpty(l: List[Int]) =
-      l.foldLeft(Right("empty").up[Int]) {
+      l.foldLeft(Right("empty").withLeft[Int]) {
         case (Right(_), i) => Left(i)
         case (Left(s), i) => Left(s + i)
       }

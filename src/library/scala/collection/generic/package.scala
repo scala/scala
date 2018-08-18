@@ -13,4 +13,10 @@ package object generic {
 
   @deprecated("Shrinkable was moved from collection.generic to collection.mutable", "2.13.0")
   type Shrinkable[-A] = scala.collection.mutable.Shrinkable[A]
+
+  @deprecated("Use IsIterable instead", "2.13.0")
+  type IsTraversableLike[Repr] = IsIterable[Repr]
+
+  @deprecated("Use IsIterableOnce instead", "2.13.0")
+  type IsTraversableOnce[Repr] = IsIterableOnce[Repr]
 }

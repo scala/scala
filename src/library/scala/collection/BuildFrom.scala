@@ -82,7 +82,7 @@ trait BuildFromLowPriority1 extends BuildFromLowPriority2 {
   }
 }
 
-trait BuildFromLowPriority2 extends BuildFromLowPriority3 {
+trait BuildFromLowPriority2 {
   /** Build the source collection type from an IterableOps */
   implicit def buildFromIterableOps[CC[X] <: Iterable[X] with IterableOps[X, CC, _], A0, A]: BuildFrom[CC[A0], A, CC[A]] = new BuildFrom[CC[A0], A, CC[A]] {
     //TODO: Reuse a prototype instance
@@ -92,13 +92,6 @@ trait BuildFromLowPriority2 extends BuildFromLowPriority3 {
 
   implicit def buildFromIterator[A]: BuildFrom[Iterator[_], A, Iterator[A]] = new BuildFrom[Iterator[_], A, Iterator[A]] {
     def newBuilder(from: Iterator[_]): mutable.Builder[A, Iterator[A]] = Iterator.newBuilder
-    override def fromSpecific(from: Iterator[_])(it: IterableOnce[A]) = it.iterator
-  }
-}
-
-trait BuildFromLowPriority3 {
-  implicit def buildFromIterableOnce[A]: BuildFrom[IterableOnce[_], A, IterableOnce[A]] = new BuildFrom[IterableOnce[_], A, IterableOnce[A]] {
-    def newBuilder(from: IterableOnce[_]): mutable.Builder[A, IterableOnce[A]] = Iterator.newBuilder
-    override def fromSpecific(from: IterableOnce[_])(it: IterableOnce[A]) = it.iterator
+    def fromSpecific(from: Iterator[_])(it: IterableOnce[A]): Iterator[A] = Iterator.from(it)
   }
 }

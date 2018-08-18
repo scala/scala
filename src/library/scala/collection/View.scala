@@ -79,16 +79,7 @@ object View extends IterableFactory[View] {
   /** A view with exactly one element */
   @SerialVersionUID(3L)
   class Single[A](a: A) extends AbstractView[A] {
-    def iterator: Iterator[A] =
-      new AbstractIterator[A] {
-        private[this] var notConsumed: Boolean = true
-        def next(): A =
-          if (notConsumed) {
-            notConsumed = false
-            a
-          } else Iterator.empty.next()
-        def hasNext: Boolean = notConsumed
-      }
+    def iterator: Iterator[A] = Iterator.single(a)
     override def knownSize: Int = 1
     override def isEmpty: Boolean = false
   }

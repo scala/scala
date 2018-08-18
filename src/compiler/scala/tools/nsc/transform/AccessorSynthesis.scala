@@ -292,7 +292,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
 
         // The lazy accessor delegates to the compute method if needed, otherwise just accesses the var (it was initialized previously)
         // `if ((bitmap&n & MASK) == 0) this.l$compute() else l$`
-        val accessorRhs = If(needsInit, Apply(Select(thisRef, slowPathSym), Nil), selectVar)
+        val accessorRhs = fields.castHack(If(needsInit, Apply(Select(thisRef, slowPathSym), Nil), selectVar), lazyVar.info)
 
         afterOwnPhase { // so that we can assign to vals
           Thicket(List((DefDef(slowPathSym, slowPathRhs)), DefDef(lazyAccessor, accessorRhs)) map typedPos(lazyAccessor.pos.focus))

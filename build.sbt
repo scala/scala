@@ -157,7 +157,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     // END: Copy/pasted from SBT
   },
   fork in run := true,
-  scalacOptions in Compile += "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_",
+  //scalacOptions in Compile += "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_",
   //scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
@@ -606,7 +606,7 @@ lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partest, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
-  .settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
+  //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(
@@ -714,7 +714,7 @@ lazy val test = project
   .disablePlugins(plugins.JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(commonSettings)
-  .settings(scalacOptions in Compile -= "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_") // as in common settings
+  //.settings(scalacOptions in Compile -= "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_") // as in common settings
   .settings(disableDocs)
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
