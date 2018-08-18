@@ -1800,4 +1800,35 @@ class InlinerTest extends BytecodeTesting {
     val m = getAsmMethods(c, "m").find(_.desc == "()I").get
     assert(convertMethod(m).instructions.contains(Invoke(INVOKESPECIAL, "A", "m", "(I)I", itf = false)), AsmUtils.textify(m))
   }
+
+  @Test
+  def noInlineTemporaryIllegalInstructions(): Unit = {
+    // The problem with this example was:
+    //   1. `foo` is inlined into `m`. the inliner knows that this is illegal, so it saved the state
+    //      before. `m` is pushed on the queue of methods for further inlining.
+    //   2. `m` is inlined into `t`, so `t` also calls the private method `A.impl`
+    //   3. At the end, `m` is reverted because the call to `impl` was not inlined in a later round
+    // This left `t` with an illegal instruction
+    // The fix: when inlining leaves a method with an illegal access instruction, continue inlining
+    // into that method until the instructions are gone or the method is rolled back.
+    val code =
+      """class A {
+        |  private def impl = 0
+        |  // We don't mark `foo` @inline but rely on the heuristics. Marking it @inline
+        |  // causes `makeNotPrivate` to be called on `impl` during SuperAccessors.
+        |  final def foo(f: Int => Int) = impl
+        |  def t = foo(x => x)
+        |}
+        |class C {
+        |  @inline final def m(a: A) = a.foo(x => x)
+        |  def t(a: A) = m(a)
+        |}
+      """.stripMargin
+    val List(a, c) = compileClasses(code)
+    assert((getAsmMethod(a, "impl").access & ACC_PRIVATE) != 0)
+    assertInvoke(getMethod(a, "foo"), "A", "impl")
+    assertInvoke(getMethod(a, "t"), "A", "impl")
+    assertInvoke(getMethod(c, "m"), "A", "foo") // rolled back
+    assertInvoke(getMethod(c, "t"), "A", "foo")
+  }
 }

@@ -277,9 +277,12 @@ abstract class Inliner {
       r
     }
 
-    val overallChangedMethods = mutable.Set.empty[MethodNode]
+    var changedMethodHasIllegalAccess = false
 
     var currentMethodRolledBack = false
+
+    // TODO: remove those that were rolled back to their original form?
+    val overallChangedMethods = mutable.Set.empty[MethodNode]
 
     // Show chain of inlines that lead to a failure in inliner warnings
     def inlineChainSuffix(callsite: Callsite, chain: List[Callsite]): String =
@@ -296,7 +299,10 @@ abstract class Inliner {
       // of a method, before inlining into other methods. But that could cause work duplication. If
       // a callee is inlined before the inliner has run on it, the inliner needs to do the work on
       // both the callee and the cloned version(s).
-      if (requests.nonEmpty) {
+      // Exception: if, after inlining, `m` has instructions that would cause an IllegalAccessError,
+      // continue inlining into `m`. These instructions might get inlined as well, otherwise `m` is
+      // rolled back. This avoid cloning the illegal instructions in case `m` itself gets inlined.
+      if (requests.nonEmpty && !changedMethodHasIllegalAccess) {
         val (method, rs) = requests.dequeue()
         val state = inlinerState.getOrElseUpdate(method, new MethodInlinerState)
         var changed = false
@@ -350,7 +356,7 @@ abstract class Inliner {
               state.inlineLog.logFail(r, w, state.outerCallsite(r.callsite.callsiteInstruction))
 
               if (state.illegalAccessInstructions(callInsn)) {
-                state.inlineLog.logRollback(r.callsite, "The could not be inlined, keeping it would cause an IllegalAccessError", state.outerCallsite(r.callsite.callsiteInstruction))
+                state.inlineLog.logRollback(r.callsite, "The callsite could not be inlined, keeping it would cause an IllegalAccessError", state.outerCallsite(r.callsite.callsiteInstruction))
                 state.undoLog.rollback()
               }
 
@@ -373,7 +379,11 @@ abstract class Inliner {
 
         if (changed) {
           callGraph.refresh(method, rs.head.callsite.callsiteClass)
-          changedMethods.enqueue(method)
+          if (state.illegalAccessInstructions.nonEmpty) {
+            changedMethods.prepend(method)
+            changedMethodHasIllegalAccess = true
+          } else
+            changedMethods.enqueue(method)
           overallChangedMethods += method
         }
 
@@ -402,7 +412,8 @@ abstract class Inliner {
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
-            if (newRequests.nonEmpty) requests.enqueue(method -> newRequests)
+            // why prepend: see changedMethodHasIllegalAccess
+            if (newRequests.nonEmpty) requests.prepend(method -> newRequests)
 
           case Some(notInlinedIllegalInsn) =>
             state.undoLog.rollback()
@@ -419,6 +430,7 @@ abstract class Inliner {
             }
         }
 
+        changedMethodHasIllegalAccess = false
         currentMethodRolledBack = false
       }
     }
