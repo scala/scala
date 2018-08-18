@@ -120,7 +120,12 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
-  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean = methodNode.visibleAnnotations != null && methodNode.visibleAnnotations.asScala.exists(_.desc == "Lsun/reflect/CallerSensitive;")
+  // cross-jdk
+  def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean =
+    methodNode.visibleAnnotations != null &&
+    methodNode.visibleAnnotations.stream.filter(ann =>
+      ann.desc == "Lsun/reflect/CallerSensitive;" || ann.desc == "Ljdk/internal/reflect/CallerSensitive;"
+    ).findFirst.isPresent
 
   def isFinalClass(classNode: ClassNode): Boolean = (classNode.access & ACC_FINAL) != 0
 
