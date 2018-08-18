@@ -15,20 +15,19 @@ import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionCon
 import scala.annotation.tailrec
 
 
-private[scala] class ExecutionContextImpl private[impl] (val executor: Executor, val reporter: Throwable => Unit) extends ExecutionContextExecutor {
+private[scala] class ExecutionContextImpl private[impl] (final val executor: Executor, final val reporter: Throwable => Unit) extends ExecutionContextExecutor {
   require(executor ne null, "Executor must not be null")
-  override def execute(runnable: Runnable) = executor execute runnable
-  override def reportFailure(t: Throwable) = reporter(t)
+  override final def execute(runnable: Runnable): Unit = executor execute runnable
+  override final def reportFailure(t: Throwable): Unit = reporter(t)
 }
-
 
 private[concurrent] object ExecutionContextImpl {
 
   final class DefaultThreadFactory(
-    daemonic: Boolean,
-    maxBlockers: Int,
-    prefix: String,
-    uncaught: Thread.UncaughtExceptionHandler) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
+    final val daemonic: Boolean,
+    final val maxBlockers: Int,
+    final val prefix: String,
+    final val uncaught: Thread.UncaughtExceptionHandler) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
 
     require(prefix ne null, "DefaultThreadFactory.prefix must be non null")
     require(maxBlockers >= 0, "DefaultThreadFactory.maxBlockers must be greater-or-equal-to 0")
@@ -56,30 +55,27 @@ private[concurrent] object ExecutionContextImpl {
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
       wire(new ForkJoinWorkerThread(fjp) with BlockContext {
-        private[this] var isBlocked: Boolean = false // This is only ever read & written if this thread is the current thread
+        private[this] final var isBlocked: Boolean = false // This is only ever read & written if this thread is the current thread
         final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T =
           if ((Thread.currentThread eq this) && !isBlocked && newBlocker()) {
             try {
-              isBlocked = true
               val b: ForkJoinPool.ManagedBlocker with (() => T) =
                 new ForkJoinPool.ManagedBlocker with (() => T) {
-                  private[this] var result: T = null.asInstanceOf[T]
-                  private[this] var done: Boolean = false
+                  private[this] final var result: T = null.asInstanceOf[T]
+                  private[this] final var done: Boolean = false
                   final override def block(): Boolean = {
-                    try {
-                      if (!done)
-                        result = thunk
-                    } finally {
+                    if (!done) {
+                      result = thunk // If this throws then it will stop blocking.
                       done = true
                     }
 
-                    true
+                    isReleasable
                   }
 
                   final override def isReleasable = done
-
                   final override def apply(): T = result
                 }
+              isBlocked = true
               ForkJoinPool.managedBlock(b)
               b()
             } finally {
@@ -90,7 +86,7 @@ private[concurrent] object ExecutionContextImpl {
       })
   }
 
-  def createDefaultExecutorService(reporter: Throwable => Unit): ExecutorService = {
+  def createDefaultExecutorService(reporter: Throwable => Unit): ExecutionContextExecutorService = {
     def getInt(name: String, default: String) = (try System.getProperty(name, default) catch {
       case e: SecurityException => default
     }) match {
@@ -98,54 +94,52 @@ private[concurrent] object ExecutionContextImpl {
       case other => other.toInt
     }
 
-    def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
-    val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
-    // The hard limit on the number of active threads that the thread factory will produce
-    val maxNoOfThreads = getInt("scala.concurrent.context.maxThreads", "x1")
+    val desiredParallelism = // A range between min and max given num
+      scala.math.min(
+        scala.math.max(
+          getInt("scala.concurrent.context.minThreads", "1"),
+          getInt("scala.concurrent.context.numThreads", "x1")),
+          getInt("scala.concurrent.context.maxThreads", "x1")
+        )
 
-    val desiredParallelism = range(
-      getInt("scala.concurrent.context.minThreads", "1"),
-      numThreads,
-      maxNoOfThreads)
+    val threadFactory = new DefaultThreadFactory(daemonic = true,
+                                                 maxBlockers = getInt("scala.concurrent.context.maxExtraThreads", "256"),
+                                                 prefix = "scala-execution-context-global",
+                                                 uncaught = (thread: Thread, cause: Throwable) => reporter(cause))
 
-    // The thread factory must provide additional threads to support managed blocking.
-    val maxExtraThreads = getInt("scala.concurrent.context.maxExtraThreads", "256")
-
-    val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
-      override def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
+    new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService {
+      final override def reportFailure(cause: Throwable): Unit =
+        getUncaughtExceptionHandler() match {
+          case null =>
+          case some => some.uncaughtException(Thread.currentThread, cause)
+        }
     }
-
-    val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
-                                                                      maxBlockers = maxExtraThreads,
-                                                                      prefix = "scala-execution-context-global",
-                                                                      uncaught = uncaughtExceptionHandler)
-
-    new ForkJoinPool(desiredParallelism, threadFactory, uncaughtExceptionHandler, true)
   }
 
-  def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl =
-    new ExecutionContextImpl(Option(e).getOrElse(createDefaultExecutorService(reporter)), reporter)
+  def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextExecutor =
+    e match {
+      case null => createDefaultExecutorService(reporter)
+      case some => new ExecutionContextImpl(some, reporter)
+    }
 
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter):
-    ExecutionContextImpl with ExecutionContextExecutorService = {
-    new ExecutionContextImpl(Option(es).getOrElse(createDefaultExecutorService(reporter)), reporter)
-      with ExecutionContextExecutorService {
-        final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
-        override def execute(command: Runnable) = executor.execute(command)
-        override def shutdown(): Unit = { asExecutorService.shutdown() }
-        override def shutdownNow() = asExecutorService.shutdownNow()
-        override def isShutdown = asExecutorService.isShutdown
-        override def isTerminated = asExecutorService.isTerminated
-        override def awaitTermination(l: Long, timeUnit: TimeUnit) = asExecutorService.awaitTermination(l, timeUnit)
-        override def submit[T](callable: Callable[T]) = asExecutorService.submit(callable)
-        override def submit[T](runnable: Runnable, t: T) = asExecutorService.submit(runnable, t)
-        override def submit(runnable: Runnable) = asExecutorService.submit(runnable)
-        override def invokeAll[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAll(callables)
-        override def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAll(callables, l, timeUnit)
-        override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
-        override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
-      }
-    }
+    ExecutionContextExecutorService = es match {
+      case null => createDefaultExecutorService(reporter)
+      case some =>
+        new ExecutionContextImpl(some, reporter) with ExecutionContextExecutorService {
+            private[this] final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
+            final override def shutdown() { asExecutorService.shutdown() }
+            final override def shutdownNow() = asExecutorService.shutdownNow()
+            final override def isShutdown = asExecutorService.isShutdown
+            final override def isTerminated = asExecutorService.isTerminated
+            final override def awaitTermination(l: Long, timeUnit: TimeUnit) = asExecutorService.awaitTermination(l, timeUnit)
+            final override def submit[T](callable: Callable[T]) = asExecutorService.submit(callable)
+            final override def submit[T](runnable: Runnable, t: T) = asExecutorService.submit(runnable, t)
+            final override def submit(runnable: Runnable) = asExecutorService.submit(runnable)
+            final override def invokeAll[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAll(callables)
+            final override def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAll(callables, l, timeUnit)
+            final override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
+            final override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
+          }
+        }
 }
-
-

@@ -120,7 +120,7 @@ class PromiseTests extends MinimalScalaTest {
   }
 
   "An interrupted Promise" should {
-    val message = "Boxed InterruptedException"
+    val message = "Boxed Exception"
     val future = Promise[String]().complete(Failure(new InterruptedException(message))).future
     futureWithException[ExecutionException](_(future, message))
   }
@@ -149,7 +149,7 @@ class PromiseTests extends MinimalScalaTest {
         Await.result((future filter (_ => true)), defaultTimeout) mustBe (result)
         intercept[NoSuchElementException] {
           Await.result((future filter (_ => false)), defaultTimeout)
-        }
+        }.getMessage mustBe ("Future.filter predicate is not satisfied")
       }
     }
 
