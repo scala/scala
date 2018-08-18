@@ -6,9 +6,10 @@
 package scala
 package reflect.internal.util
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
+import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
  *  TODO - inlining doesn't work from here because of the bug that
@@ -58,6 +59,7 @@ trait Collections {
       tail = next
       rest = rest.tail
     }
+    releaseFence()
     head
   }
 
@@ -128,7 +130,9 @@ trait Collections {
         }
       }
     }
-    loop(null, xs, xs, ys)
+    val result = loop(null, xs, xs, ys)
+    releaseFence()
+    result
   }
 
   final def map3[A, B, C, D](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => D): List[D] = {

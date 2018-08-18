@@ -5,6 +5,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
+import scala.runtime.Statics.releaseFence
 
 /** A `Buffer` implementation backed by a list. It provides constant time
   *  prepend and append. Most other operations are linear.
@@ -61,6 +62,10 @@ class ListBuffer[A]
   // Avoids copying where possible.
   override def toList: List[A] = {
     aliased = nonEmpty
+    // We've accumulated a number of mutations to `List.tail` by this stage.
+    // Make sure they are visible to threads that the client of this ListBuffer might be about
+    // to share this List with.
+    releaseFence()
     first
   }
 

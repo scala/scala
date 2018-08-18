@@ -757,7 +757,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         else (Nil, remainingConstrStats)
 
       val fence = if (clazz.primaryConstructor.hasAttachment[ConstructorNeedsFence.type]) {
-        val tree = localTyper.typedPos(clazz.primaryConstructor.pos)(gen.mkRuntimeCall(nme.releaseFence, Nil))
+        val tree = localTyper.typedPos(clazz.primaryConstructor.pos)(gen.mkMethodCall(RuntimeStaticsModule, nme.releaseFence, Nil))
         tree :: Nil
       } else Nil
 
