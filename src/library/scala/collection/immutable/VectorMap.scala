@@ -46,7 +46,7 @@ final class VectorMap[K, +V] private[immutable] (
 
   override def withDefaultValue[V1 >: V](d: V1): Map.WithDefault[K, V1] = new Map.WithDefault[K, V1](this, _ => d)
 
-  def iterator: Iterator[(K, V)] = new Iterator[(K, V)] {
+  def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
     private val fieldsIterator = fields.iterator
 
     override def hasNext: Boolean = fieldsIterator.hasNext
