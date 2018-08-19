@@ -12,4 +12,19 @@ object VectorMapTest extends Properties("VectorMap") {
     val z = VectorMap(3 -> 4, 1 -> 2)
     x == y && y == z && x == z
   }
+
+  property("shuffle") = forAll { (m: Map[Int, Int]) =>
+    val asSeq = Seq.from(m)
+    val vm1 = VectorMap.from(asSeq)
+    val vm2 = VectorMap.from(scala.util.Random.shuffle(asSeq))
+    vm1 == vm2
+  }
+
+  property("notEqual") = forAll { (m1: Map[Int, Int], m2: Map[Int, Int]) =>
+    m1 != m2 ==> {
+      val vm1 = VectorMap.from(m1)
+      val vm2 = VectorMap.from(m2)
+      m1 != m2
+    }
+  }
 }
