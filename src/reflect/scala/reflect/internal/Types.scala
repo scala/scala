@@ -9,7 +9,7 @@ package internal
 
 import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
-import mutable.{ BitSet, ListBuffer }
+import mutable.ListBuffer
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
@@ -4768,14 +4768,8 @@ trait Types
   }
 
   /** A list of the typevars in a type. */
-  def typeVarsInType(tp: Type): List[TypeVar] = {
-    var tvs: List[TypeVar] = Nil
-    tp foreach {
-      case t: TypeVar => tvs ::= t
-      case _          =>
-    }
-    tvs.reverse
-  }
+  def typeVarsInType(tp: Type): List[TypeVar] =
+    typeVarsInTypeRev(tp).reverse
 
   private[this] def typeVarsInTypeRev(tp: Type): List[TypeVar] = {
     var tvs: List[TypeVar] = Nil
