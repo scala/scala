@@ -255,4 +255,10 @@ private[process] trait ProcessImpl {
     override def exitValue() = if (success.get) 0 else 1   // thread.join()
     override def destroy()   = thread.interrupt()
   }
+
+  private[process] object FailedProcess extends Process {
+    override def isAlive() = false
+    override def exitValue() = 1
+    override def destroy(): Unit = ()
+  }
 }
