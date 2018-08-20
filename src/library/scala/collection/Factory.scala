@@ -153,7 +153,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a three-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2 x n3` evaluations of `elem`.
     */
@@ -162,7 +162,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a four-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4` evaluations of `elem`.
@@ -173,7 +173,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a five-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   n5  the number of elements in the 5th dimension
     *  @param   elem the element computation
@@ -202,7 +202,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a three-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   f   The function computing element values
     *  @return A $coll consisting of elements `f(i1, i2, i3)`
     *          for `0 <= i1 < n1`, `0 <= i2 < n2`, and `0 <= i3 < n3`.
@@ -213,7 +213,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a four-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   f   The function computing element values
     *  @return A $coll consisting of elements `f(i1, i2, i3, i4)`
@@ -225,7 +225,7 @@ trait IterableFactory[+CC[_]] extends Serializable {
   /** Produces a five-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   n5  the number of elements in the 5th dimension
     *  @param   f   The function computing element values
@@ -544,7 +544,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a three-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2 x n3` evaluations of `elem`.
     */
@@ -553,7 +553,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a four-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   elem the element computation
     *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4` evaluations of `elem`.
@@ -564,7 +564,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a five-dimensional $coll containing the results of some element computation a number of times.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   n5  the number of elements in the 5th dimension
     *  @param   elem the element computation
@@ -586,7 +586,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a three-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   f   The function computing element values
     *  @return A $coll consisting of elements `f(i1, i2, i3)`
     *          for `0 <= i1 < n1`, `0 <= i2 < n2`, and `0 <= i3 < n3`.
@@ -597,7 +597,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a four-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   f   The function computing element values
     *  @return A $coll consisting of elements `f(i1, i2, i3, i4)`
@@ -609,7 +609,7 @@ trait ClassTagIterableFactory[+CC[_]] extends EvidenceIterableFactory[CC, ClassT
   /** Produces a five-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
     *  @param   n1  the number of elements in the 1st dimension
     *  @param   n2  the number of elements in the 2nd dimension
-    *  @param   n3  the number of elements in the 3nd dimension
+    *  @param   n3  the number of elements in the 3rd dimension
     *  @param   n4  the number of elements in the 4th dimension
     *  @param   n5  the number of elements in the 5th dimension
     *  @param   f   The function computing element values
