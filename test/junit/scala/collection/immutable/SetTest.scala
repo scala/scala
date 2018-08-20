@@ -80,6 +80,13 @@ class SetTest {
   }
 
   @Test
+  def simpleBitset(): Unit = {
+    val b = Set.newBuilder[Any]
+    b ++= BitSet(1)
+    val set:Set[Any] = b.result()
+    val more = set + "fish"
+  }
+  @Test
   def testRemoveAll(): Unit = {
     val s0 = Set(1, 2, 3) -- List(1, 2)
     assertEquals(Set(3), s0)

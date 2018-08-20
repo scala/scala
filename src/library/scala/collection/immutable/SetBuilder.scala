@@ -8,34 +8,26 @@ import scala.reflect.{ClassTag, classTag}
   *
   * Note - this builder can be serially reused - it is NOT required to call `clear` after `result`
   */
-class SetBuilder [T, C <: Set[T] : ClassTag] private[immutable](empty: C)
-  extends ReusableBuilder[T, C] {
+class SetBuilder [T, CC[T] <: Set[T]] private[immutable](empty: CC[T])
+  extends ReusableBuilder[T, CC[T]] {
 
-  protected var elems: C = empty
+  protected var elems: CC[T] = empty
 
   def clear(): Unit = { elems = empty }
 
-  def result(): C = elems
+  def result(): CC[T] = elems
 
   final def size: Int = elems.size
 
   final def isEmpty: Boolean = elems.isEmpty
 
-  /**
-    * are the types implementationally compatible,
-    */
-  protected def isCompatibleType(value: IterableOnce[T]) : Boolean =
-    classTag[C].runtimeClass.isInstance(value)
-
   def addOne(element: T): this.type = {
-    elems = (elems + element).asInstanceOf[C]
+    elems = (elems + element).asInstanceOf[CC[T]]
     this
   }
 
   override def addAll(xs: IterableOnce[T]): this.type = {
-    if ((elems eq empty) && isCompatibleType(xs)) {
-      elems = xs.asInstanceOf[C]
-      this
-    } else super.addAll(xs)
+    elems = (elems concat xs).asInstanceOf[CC[T]]
+    this
   }
 }

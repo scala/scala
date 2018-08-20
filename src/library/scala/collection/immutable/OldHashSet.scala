@@ -163,8 +163,8 @@ object OldHashSet extends IterableFactory[OldHashSet] {
 
   def empty[A]: OldHashSet[A] = EmptyOldHashSet.asInstanceOf[OldHashSet[A]]
 
-  def newBuilder[A]: SetBuilder[A, OldHashSet[A]] =
-    new SetBuilder[A, OldHashSet[A]](empty)
+  def newBuilder[A]: SetBuilder[A, OldHashSet] =
+    new SetBuilder[A, OldHashSet](empty)
 
   private object EmptyOldHashSet extends OldHashSet[Any] {
 
