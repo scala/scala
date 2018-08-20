@@ -524,7 +524,7 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     val arg: String,
     descr: String,
-    initial: ScalaVersion,
+    val initial: ScalaVersion,
     default: Option[ScalaVersion])
   extends Setting(name, descr) {
     type T = ScalaVersion
@@ -625,7 +625,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   class MultiChoiceSetting[E <: MultiChoiceEnumeration] private[nsc](
     name: String,
-    helpArg: String,
+    val helpArg: String,
     descr: String,
     val domain: E,
     val default: Option[List[String]]
@@ -832,7 +832,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   class ChoiceSetting private[nsc](
     name: String,
-    helpArg: String,
+    val helpArg: String,
     descr: String,
     override val choices: List[String],
     val default: String,
@@ -887,7 +887,7 @@ class MutableSettings(val errorFn: String => Unit)
   class PhasesSetting private[nsc](
     name: String,
     descr: String,
-    default: String
+    val default: String
   ) extends Setting(name, mkPhasesHelp(descr, default)) with Clearable {
     private[nsc] def this(name: String, descr: String) = this(name, descr, "")
 
