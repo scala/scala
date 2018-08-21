@@ -630,18 +630,17 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override protected[this] def className = "Vector"
 }
 
-class VectorIterator[+A](_startIndex: Int, endIndex: Int)
+final class VectorIterator[+A](_startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
     with VectorPointer[A @uncheckedVariance] {
 
-  private[this] var blockIndex: Int = _startIndex & ~31
-  private[this] var lo: Int = _startIndex & 31
-
-  private[this] var endLo = Math.min(endIndex - blockIndex, 32)
+  private[this] final var blockIndex: Int = _startIndex & ~31
+  private[this] final var lo: Int = _startIndex & 31
+  private[this] final var endLo = Math.min(endIndex - blockIndex, 32)
 
   def hasNext = _hasNext
 
-  private[this] var _hasNext = blockIndex + lo < endIndex
+  private[this] final var _hasNext = blockIndex + lo < endIndex
 
   private[this] def advanceToNextBlockIfNecessary(): Unit = {
     if (lo == endLo) {
