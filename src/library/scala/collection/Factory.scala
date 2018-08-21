@@ -282,20 +282,30 @@ object IterableFactory {
 /**
   * @tparam CC Collection type constructor (e.g. `List`)
   */
-trait SeqFactory[+CC[_]] extends IterableFactory[CC] {
-  def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
+trait SeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extends IterableFactory[CC] {
+  import SeqFactory.UnapplySeqWrapper
+  final def unapplySeq[A](x: CC[A] @uncheckedVariance): UnapplySeqWrapper[A] = new UnapplySeqWrapper(x) // TODO is uncheckedVariance sound here?
 }
 
 object SeqFactory {
   @SerialVersionUID(3L)
-  class Delegate[CC[_]](delegate: SeqFactory[CC]) extends SeqFactory[CC] {
+  class Delegate[CC[A] <: SeqOps[A, Seq, Seq[A]]](delegate: SeqFactory[CC]) extends SeqFactory[CC] {
     def empty[A]: CC[A] = delegate.empty
     def from[E](it: IterableOnce[E]): CC[E] = delegate.from(it)
     def newBuilder[A]: Builder[A, CC[A]] = delegate.newBuilder[A]
   }
+
+  final class UnapplySeqWrapper[A](private val c: SeqOps[A, Seq, Seq[A]]) extends AnyVal {
+    def isEmpty: Boolean = false
+    def get: UnapplySeqWrapper[A] = this
+    def lengthCompare(len: Int): Int = c.lengthCompare(len)
+    def apply(i: Int): A = c(i)
+    def drop(n: Int): scala.Seq[A] = c.view.drop(n).toSeq
+    def toSeq: scala.Seq[A] = c.toSeq
+  }
 }
 
-trait StrictOptimizedSeqFactory[+CC[_]] extends SeqFactory[CC] {
+trait StrictOptimizedSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extends SeqFactory[CC] {
 
   override def fill[A](n: Int)(elem: => A): CC[A] = {
     val b = newBuilder[A]
@@ -645,23 +655,24 @@ object ClassTagIterableFactory {
 /**
   * @tparam CC Collection type constructor (e.g. `ArraySeq`)
   */
-trait ClassTagSeqFactory[+CC[_]] extends ClassTagIterableFactory[CC] {
-  def unapplySeq[A](x: CC[A] @uncheckedVariance): Some[CC[A]] = Some(x) //TODO is uncheckedVariance sound here?
+trait ClassTagSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extends ClassTagIterableFactory[CC] {
+  import SeqFactory.UnapplySeqWrapper
+  final def unapplySeq[A](x: CC[A] @uncheckedVariance): UnapplySeqWrapper[A] = new UnapplySeqWrapper(x) // TODO is uncheckedVariance sound here?
 }
 
 object ClassTagSeqFactory {
   @SerialVersionUID(3L)
-  class Delegate[CC[_]](delegate: ClassTagSeqFactory[CC])
+  class Delegate[CC[A] <: SeqOps[A, Seq, Seq[A]]](delegate: ClassTagSeqFactory[CC])
     extends ClassTagIterableFactory.Delegate[CC](delegate) with ClassTagSeqFactory[CC]
 
   /** A SeqFactory that uses ClassTag.Any as the evidence for every element type. This may or may not be
     * sound depending on the use of the `ClassTag` by the collection implementation. */
   @SerialVersionUID(3L)
-  class AnySeqDelegate[CC[_]](delegate: ClassTagSeqFactory[CC])
+  class AnySeqDelegate[CC[A] <: SeqOps[A, Seq, Seq[A]]](delegate: ClassTagSeqFactory[CC])
     extends ClassTagIterableFactory.AnyIterableDelegate[CC](delegate) with SeqFactory[CC]
 }
 
-trait StrictOptimizedClassTagSeqFactory[+CC[_]] extends ClassTagSeqFactory[CC] {
+trait StrictOptimizedClassTagSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extends ClassTagSeqFactory[CC] {
 
   override def fill[A : ClassTag](n: Int)(elem: => A): CC[A] = {
     val b = newBuilder[A]

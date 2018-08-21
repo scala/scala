@@ -73,18 +73,7 @@ trait MatchCodeGen extends Interface {
       def fun(arg: Symbol, body: Tree): Tree     = Function(List(ValDef(arg)), body)
       def tupleSel(binder: Symbol)(i: Int): Tree = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
       def index(tgt: Tree)(i: Int): Tree         = tgt APPLY (LIT(i))
-
-      // Right now this blindly calls drop on the result of the unapplySeq
-      // unless it verifiably has no drop method (this is the case in particular
-      // with Array.) You should not actually have to write a method called drop
-      // for name-based matching, but this was an expedient route for the basics.
-      def drop(tgt: Tree)(n: Int): Tree = {
-        def callDirect   = fn(tgt, nme.drop, LIT(n))
-        def callRuntime  = Apply(REF(currentRun.runDefinitions.traversableDropMethod), tgt :: LIT(n) :: Nil)
-        def needsRuntime = (tgt.tpe ne null) && (elementTypeFromDrop(tgt.tpe) == NoType)
-
-        if (needsRuntime) callRuntime else callDirect
-      }
+      def drop(tgt: Tree)(n: Int): Tree          = fn(tgt, nme.drop, LIT(n))
 
       // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)

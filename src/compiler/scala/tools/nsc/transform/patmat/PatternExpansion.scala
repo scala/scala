@@ -112,10 +112,8 @@ trait PatternExpansion {
         else tps.map(_.substSym(List(unapplySelector), List(extractedBinder)))
 
       val withoutStar = productTypes ::: List.fill(elementArity)(elementType)
-      replaceUnapplySelector(if (isStar) withoutStar :+ sequenceType else withoutStar)
+      replaceUnapplySelector(if (isStar) withoutStar :+ seqType(elementType) else withoutStar)
     }
-
-    def lengthCompareSym = sequenceType member nme.lengthCompare
 
     // rest is private
     private val isUnapply        = fun.symbol.name == nme.unapply
@@ -190,23 +188,19 @@ trait PatternExpansion {
       }
       else equivConstrParamTypes
 
-    private def notRepeated = (NoType, NoType, NoType)
-    private val (elementType, sequenceType, repeatedType) =
+    private def notRepeated = (NoType, NoType)
+    private val (elementType, repeatedType) =
       // case class C() is deprecated, but still need to defend against equivConstrParamTypes.isEmpty
       if (isUnapply || equivConstrParamTypes.isEmpty) notRepeated
       else {
         val lastParamTp = equivConstrParamTypes.last
         if (isUnapplySeq) {
-          val elementTp =
-            elementTypeFromHead(lastParamTp) orElse
-            elementTypeFromApply(lastParamTp) orElse
-            definitions.elementType(ArrayClass, lastParamTp)
-
-          (elementTp, lastParamTp, scalaRepeatedType(elementTp))
+          val elementTp = elementTypeFromApply(lastParamTp)
+          (elementTp, scalaRepeatedType(elementTp))
         } else {
           definitions.elementType(RepeatedParamClass, lastParamTp) match {
             case NoType => notRepeated
-            case elementTp => (elementTp, seqType(elementTp), lastParamTp)
+            case elementTp => (elementTp, lastParamTp)
           }
         }
       }
@@ -228,7 +222,7 @@ trait PatternExpansion {
       }
 
     private def arityError(mismatch: String) = {
-      val isErroneous = (productTypes contains NoType) && !(isSeq && (sequenceType ne NoType))
+      val isErroneous = (productTypes contains NoType) && !(isSeq && (elementType ne NoType))
 
       val offeringString = if (isErroneous) "<error>" else productTypes match {
         case tps if isSeq => (tps.map(_.toString) :+ s"${elementType}*").mkString("(", ", ", ")")

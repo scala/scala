@@ -1,7 +1,7 @@
 import scala.reflect.macros.whitebox.Context
 
 object Helper {
-  def unapplySeq[T](x: List[T]): Option[Seq[T]] = List.unapplySeq[T](x)
+  def unapplySeq[T](x: List[T]): Option[Seq[T]] = Some(x)
 }
 
 object Macros {

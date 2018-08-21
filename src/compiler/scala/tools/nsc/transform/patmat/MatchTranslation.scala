@@ -409,22 +409,22 @@ trait MatchTranslation {
       protected def expectedLength      = elementArity
       protected def lastIndexingBinder  = nonStarArity - 1
 
-      private def productElemsToN(binder: Symbol, n: Int): List[Tree] = 1 to n map tupleSel(binder) toList
-      private def genTake(binder: Symbol, n: Int): List[Tree]         = (0 until n).toList map (codegen index seqTree(binder))
-      private def genDrop(binder: Symbol, n: Int): List[Tree]         = codegen.drop(seqTree(binder))(expectedLength) :: Nil
+      private def productElemsToN(binder: Symbol, n: Int): List[Tree] = if (n == 0) Nil else List.tabulate(n)(i => tupleSel(binder)(i + 1))
+      private def genTake(binder: Symbol, n: Int): List[Tree]         = if (n == 0) Nil else List.tabulate(n)(codegen index seqTree(binder, forceImmutable = false))
+      private def genDrop(binder: Symbol, n: Int): List[Tree]         = codegen.drop(seqTree(binder, forceImmutable = false))(n) :: Nil
 
       // codegen.drop(seqTree(binder))(nbIndexingIndices)))).toList
-      protected def seqTree(binder: Symbol)                = tupleSel(binder)(firstIndexingBinder + 1)
-      protected def tupleSel(binder: Symbol)(i: Int): Tree = codegen.tupleSel(binder)(i)
+      protected def seqTree(binder: Symbol, forceImmutable: Boolean) = tupleSel(binder)(firstIndexingBinder + 1)
+      protected def tupleSel(binder: Symbol)(i: Int): Tree           = codegen.tupleSel(binder)(i)
 
       // the trees that select the subpatterns on the extractor's result,
       // referenced by `binder`
       protected def subPatRefsSeq(binder: Symbol): List[Tree] = {
-        def lastTrees: List[Tree] = (
+        def lastTrees: List[Tree] = {
           if (!isStar) Nil
-          else if (expectedLength == 0) seqTree(binder) :: Nil
+          else if (expectedLength == 0) seqTree(binder, forceImmutable = true) :: Nil
           else genDrop(binder, expectedLength)
-        )
+        }
         // this error-condition has already been checked by checkStarPatOK:
         //   if(isSeq) assert(firstIndexingBinder + nbIndexingIndices + (if(lastIsStar) 1 else 0) == totalArity, "(resultInMonad, ts, subPatTypes, subPats)= "+(resultInMonad, ts, subPatTypes, subPats))
 
@@ -440,10 +440,10 @@ trait MatchTranslation {
 
       // the trees that select the subpatterns on the extractor's result, referenced by `binder`
       // require (nbSubPats > 0 && (!lastIsStar || isSeq))
-      protected def subPatRefs(binder: Symbol): List[Tree] = (
+      protected def subPatRefs(binder: Symbol): List[Tree] = {
         if (totalArity > 0 && isSeq) subPatRefsSeq(binder)
         else productElemsToN(binder, totalArity)
-      )
+      }
 
       private def compareInts(t1: Tree, t2: Tree) =
         gen.mkMethodCall(termMember(ScalaPackage, "math"), TermName("signum"), Nil, (t1 INT_- t2) :: Nil)
@@ -451,12 +451,14 @@ trait MatchTranslation {
       protected def lengthGuard(binder: Symbol): Option[Tree] =
         // no need to check unless it's an unapplySeq and the minimal length is non-trivially satisfied
         checkedLength map { expectedLength =>
+          def lengthCompareSym = binder.info member nme.lengthCompare
+
           // `binder.lengthCompare(expectedLength)`
           // ...if binder has a lengthCompare method, otherwise
           // `scala.math.signum(binder.length - expectedLength)`
           def checkExpectedLength = lengthCompareSym match {
-            case NoSymbol => compareInts(Select(seqTree(binder), nme.length), LIT(expectedLength))
-            case lencmp   => (seqTree(binder) DOT lencmp)(LIT(expectedLength))
+            case NoSymbol => compareInts(Select(seqTree(binder, forceImmutable = false), nme.length), LIT(expectedLength))
+            case lencmp   => (seqTree(binder, forceImmutable = false) DOT lencmp)(LIT(expectedLength))
           }
 
           // the comparison to perform
@@ -467,7 +469,7 @@ trait MatchTranslation {
             else         _ INT_== _
 
           // `if (binder != null && $checkExpectedLength [== | >=] 0) then else zero`
-          (seqTree(binder) ANY_!= NULL) AND compareOp(checkExpectedLength, ZERO)
+          (seqTree(binder, forceImmutable = false) ANY_!= NULL) AND compareOp(checkExpectedLength, ZERO)
         }
 
       def checkedLength: Option[Int] =
@@ -569,9 +571,13 @@ trait MatchTranslation {
           extractorTreeMaker :: Nil
       }
 
-      override protected def seqTree(binder: Symbol): Tree =
-        if (firstIndexingBinder == 0) REF(binder)
-        else super.seqTree(binder)
+      override protected def seqTree(binder: Symbol, forceImmutable: Boolean): Tree =
+        if (firstIndexingBinder == 0) {
+          val ref = REF(binder)
+          if (forceImmutable && !binder.tpe.typeSymbol.isNonBottomSubClass(SeqClass)) Select(ref, nme.toSeq)
+          else ref
+        }
+        else super.seqTree(binder, forceImmutable)
 
       // the trees that select the subpatterns on the extractor's result, referenced by `binder`
       // require (totalArity > 0 && (!lastIsStar || isSeq))
