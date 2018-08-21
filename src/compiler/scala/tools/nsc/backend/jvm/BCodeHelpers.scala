@@ -790,7 +790,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *
      * must-single-thread
      */
-    private def addForwarder(isRemoteClass: Boolean, jclass: asm.ClassVisitor, moduleClass: Symbol, m: Symbol): Unit = {
+    private def addForwarder(
+        isRemoteClass: Boolean,
+        isBridge: Boolean,
+        jclass: asm.ClassVisitor,
+        moduleClass: Symbol,
+        m: Symbol): Unit = {
       def staticForwarderGenericSignature: String = {
         // scala/bug#3452 Static forwarder generation uses the same erased signature as the method if forwards to.
         // By rights, it should use the signature as-seen-from the module class, and add suitable
@@ -814,8 +819,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
        *  and we don't know what classes might be subclassing the companion class.  See scala/bug#4827.
        */
       // TODO: evaluate the other flags we might be dropping on the floor here.
-      // TODO: ACC_SYNTHETIC ?
       val flags = GenBCode.PublicStatic |
+        (if (isBridge) asm.Opcodes.ACC_BRIDGE else 0) |
         (if (m.isVarargsMethod) asm.Opcodes.ACC_VARARGS else 0) |
         (if (m.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0)
 
@@ -885,7 +890,11 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
           log(s"No forwarder for non-public member $m")
         else {
           log(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
-          addForwarder(isRemoteClass, jclass, moduleClass, m)
+          addForwarder(isRemoteClass,
+            isBridge = m.isBridge,
+            jclass,
+            moduleClass,
+            m)
         }
       }
     }
@@ -1161,7 +1170,12 @@ object BCodeHelpers {
   val ExcludedForwarderFlags = {
     import scala.tools.nsc.symtab.Flags._
     // Should include DEFERRED but this breaks findMember.
-    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
+    // Note that BRIDGE is *not* excluded. Trying to exclude bridges by flag doesn't work, findMembers
+    // will then include the member from the parent (which the bridge overrides / implements).
+    // This caused scala/bug#11061 and scala/bug#10812. In 2.13, they are fixed by not emitting
+    // forwarders for bridges. But in 2.12 that's not binary compatible, so instead we continue to
+    // emit forwarders for bridges, but mark them with ACC_BRIDGE.
+    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | PRIVATE | MACRO
   }
 
   /**
