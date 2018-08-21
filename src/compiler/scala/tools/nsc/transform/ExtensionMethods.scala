@@ -155,7 +155,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       // so must drop their variance.
       val tparamsFromClass = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
 
-      val thisParamType = appliedType(clazz, tparamsFromClass map (_.tpeHK): _*)
+      val thisParamType = appliedType(clazz, tparamsFromClass.map(_.tpeHK))
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       val resultType    = MethodType(List(thisParam), dropNullaryMethod(methodResult))
       val selfParamType = singleType(currentOwner.companionModule.thisType, thisParam)

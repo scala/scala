@@ -789,7 +789,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       if (needsAnnotation) {
         val c   = Constant(definitions.RemoteExceptionClass.tpe)
         val arg = Literal(c) setType c.tpe
-        meth.addAnnotation(appliedType(definitions.ThrowsClass, c.tpe), arg)
+        meth.addAnnotation(appliedType(definitions.ThrowsClass, c.tpe :: Nil), arg)
       }
     }
 

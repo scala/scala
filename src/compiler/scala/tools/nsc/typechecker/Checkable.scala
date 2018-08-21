@@ -77,7 +77,7 @@ trait Checkable {
   def propagateKnownTypes(from: Type, to: Symbol): Type = {
     def tparams  = to.typeParams
     val tvars    = tparams map (p => TypeVar(p))
-    val tvarType = appliedType(to, tvars: _*)
+    val tvarType = appliedType(to, tvars)
     val bases    = from.baseClasses filter (to.baseClasses contains _)
 
     bases foreach { bc =>
@@ -104,7 +104,7 @@ trait Checkable {
       case (_, tvar) if tvar.instValid => tvar.constr.inst
       case (tparam, _)                 => tparam.tpeHK
     }
-    appliedType(to, resArgs: _*)
+    appliedType(to, resArgs)
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (

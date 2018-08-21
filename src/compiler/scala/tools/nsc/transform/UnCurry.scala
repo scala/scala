@@ -130,7 +130,7 @@ abstract class UnCurry extends InfoTransform
 
     /** The type of a non-local return expression with given argument type */
     private def nonLocalReturnExceptionType(argtype: Type) =
-      appliedType(NonLocalReturnControlClass, argtype)
+      appliedType(NonLocalReturnControlClass, argtype :: Nil)
 
     /** A hashmap from method symbols to non-local return keys */
     private val nonLocalReturnKeys = perRunCaches.newMap[Symbol, Symbol]()
