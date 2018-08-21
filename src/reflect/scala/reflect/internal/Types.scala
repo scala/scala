@@ -1010,7 +1010,7 @@ trait Types
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
       if (this.isGround) findMembersInternal
-      else suspendingTypeVars(typeVarsInType(this))(findMembersInternal)
+      else suspendingTypeVars(typeVarsInTypeRev(this))(findMembersInternal)
     }
 
     /**
@@ -1026,7 +1026,7 @@ trait Types
       def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
 
       if (this.isGround) findMemberInternal
-      else suspendingTypeVars(typeVarsInType(this))(findMemberInternal)
+      else suspendingTypeVars(typeVarsInTypeRev(this))(findMemberInternal)
     }
 
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
@@ -4768,13 +4768,16 @@ trait Types
   }
 
   /** A list of the typevars in a type. */
-  def typeVarsInType(tp: Type): List[TypeVar] = {
+  def typeVarsInType(tp: Type): List[TypeVar] =
+    typeVarsInTypeRev(tp).reverse
+
+  private[this] def typeVarsInTypeRev(tp: Type): List[TypeVar] = {
     var tvs: List[TypeVar] = Nil
     tp foreach {
       case t: TypeVar => tvs ::= t
       case _          =>
     }
-    tvs.reverse
+    tvs
   }
 
   // If this type contains type variables, put them to sleep for a while.
