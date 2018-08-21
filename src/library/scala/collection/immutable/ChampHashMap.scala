@@ -4,6 +4,7 @@ package collection.immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.Integer.bitCount
 import java.lang.System.arraycopy
+import java.util
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
@@ -378,7 +379,7 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
     // assert(key0 != key1)
 
     if (shift >= HashCodeLength) {
-      new HashCollisionMapNode[K, V1](originalHash0, keyHash0, Vector((key0, value0), (key1, value1)))
+      new HashCollisionMapNode[K, V1](originalHash0, keyHash0, Array(key0, value0, key1, value1))
     } else {
       val mask0 = maskFrom(keyHash0, shift)
       val mask1 = maskFrom(keyHash1, shift)
@@ -570,58 +571,83 @@ private final class BitmapIndexedMapNode[K, +V](val dataMap: Int, val nodeMap: I
 
 }
 
-private final class HashCollisionMapNode[K, +V](val originalHash: Int, val hash: Int, val content: Vector[(K, V)]) extends MapNode[K, V] {
+private final class HashCollisionMapNode[K, +V](val originalHash: Int, val hash: Int, val content: Array[Any]) extends MapNode[K, V] {
 
   import Node._
 
-  require(content.size >= 2)
+  require(content.length >= 4)
+  require(content.length %2 == 0)
 
-  def size = content.size
+  def size = content.length /2
 
-  def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V] =
-    if (this.hash == hash) content.find(key == _._1).map(_._2) else None
-
-  def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1 = {
+  def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V] = {
+    // hash must collide??
     if (this.hash == hash) {
-      content.find(key == _._1) match {
-        case Some(pair) => pair._2
-        case None => f
-      }
-    } else f
+      val idx = rawKeyIndex(key)
+      if (idx >= 0)
+        return Some(content(idx + 1).asInstanceOf[V])
+    }
+    None
   }
 
-  def keyIndex(key: K) = content.indexWhere(key == _._1, 0)
+  def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1 = {
+    // hash must collide??
+    if (this.hash == hash) {
+      val idx = rawKeyIndex(key)
+      if (idx >= 0)
+        return content(idx + 1).asInstanceOf[V]
+    }
+    f
+  }
+
+  def rawKeyIndex(key: K): Int = {
+    var idx = 0
+    while (idx < content.length) {
+      if (key == content(idx))
+        return idx
+      idx += 2
+    }
+    -1
+  }
 
   override def containsKey(key: K, originalHash: Int, hash: Int, shift: Int): Boolean =
   // hash must collide??
     this.hash == hash &&
-      keyIndex(key) >= 0
+      rawKeyIndex(key) >= 0
 
   def updated[V1 >: V](key: K, value: V1, originalHash: Int, hash: Int, shift: Int): MapNode[K, V1] = {
     // hash must collide??
-    val index = keyIndex(key)
-    if (index < 0) new HashCollisionMapNode[K, V1](originalHash, hash, content.appended(Tuple2(key, value)))
+    val index = rawKeyIndex(key)
+    if (index < 0) {
+      val newContent = util.Arrays.copyOf(content.asInstanceOf[Array[AnyRef]], content.length + 2).asInstanceOf[Array[Any]]
+      newContent(content.length) = key
+      newContent(content.length + 1) = value
+      new HashCollisionMapNode[K, V1](originalHash, hash, newContent)
+    }
+    else if ((content(index).asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) && (content(index + 1).asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef])) this
     else {
-      val kv = content(index)
-      if ((kv._1.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) && (kv._2.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef])) this
-      else new HashCollisionMapNode[K, V1](originalHash, hash, content.updateAt(index, Tuple2(key, value)))
+      val newContent = content.clone()
+      //althought the key `==` the old value, it may not be `eq`, so we replace the key in line with standard map operations
+      newContent(index) = key
+      newContent(index + 1) = value
+      new HashCollisionMapNode[K, V1](originalHash, hash, newContent)
     }
   }
 
   def removed[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int): MapNode[K, V1] = {
     // hash must collide??
-    val index = keyIndex(key)
+    val index = rawKeyIndex(key)
     if (index < 0) this
     else if (size == 2) {
-      val (k, v) = content(index ^ 1)
-      new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, Array(k, v), Array(originalHash), 1)
+      //so removed makes the new size 1
+      val other = index ^ 2
+      new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, Array[Any](content(other), content(other+1)), Array(originalHash), 1)
     } else {
-      //shame there isn't a removeAt
-      val updatedContent =
-        if (index == 0) content.tail
-        else if (index == content.length - 1) content.take(index)
-        else (content.take(index) concat content.slice(index+1, content.length))
-      new HashCollisionMapNode[K, V1](originalHash, hash, updatedContent)
+      val newContent =  new Array[Any](content.length - 2)
+      System.arraycopy(content,0,newContent,0,index)
+      System.arraycopy(content,index + 2,newContent,index, content.length - 2 - index)
+
+      new HashCollisionMapNode[K, V1](originalHash, hash, newContent)
     }
   }
 
@@ -634,24 +660,40 @@ private final class HashCollisionMapNode[K, +V](val originalHash: Int, val hash:
 
   def hasPayload: Boolean = true
 
-  def payloadArity: Int = content.size
+  def payloadArity: Int = size
 
-  def getKey(index: Int): K = getPayload(index)._1
-  def getValue(index: Int): V = getPayload(index)._2
+  def getKey(index: Int): K = content(index * 2).asInstanceOf[K]
+  def getValue(index: Int): V = content(index * 2 + 1).asInstanceOf[V]
 
-  def getPayload(index: Int): (K, V) = content(index)
+  def getPayload(index: Int): (K, V) = (getKey(index), getValue(index))
   override def getHash(index: Int): Int = originalHash
   def sizePredicate: Int = SizeMoreThanOne
 
-  def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
+  def foreach[U](f: ((K, V)) => U): Unit = {
+    var idx = 0
+    while (idx < size) {
+      f(getPayload(idx))
+      idx += 1
+    }
+  }
 
   override def equals(that: Any): Boolean =
     that match {
       case node: HashCollisionMapNode[K, V] =>
         (this eq node) ||
           (this.hash == node.hash) &&
-            (this.content.size == node.content.size) &&
-            (this.content.forall(node.content.contains))
+            (this.content.length == node.content.length) && {
+            var idx = 0
+            var matching = true
+            while (idx < content.length && matching) {
+              val found = node.rawKeyIndex(content(idx).asInstanceOf[K])
+              if (found < 0) matching = false
+              else
+                matching = node.content(found) == content(idx) && node.content(found + 1) == content(idx + 1)
+              idx += 2
+            }
+            matching
+          }
       case _ => false
     }
 
