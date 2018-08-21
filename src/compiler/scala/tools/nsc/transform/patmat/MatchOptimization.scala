@@ -89,8 +89,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
       val reused = new mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
-      var okToCall = false
-      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
+      val reusedOrOrig = (tm: TreeMaker) => reused.getOrElse(tm, tm)
 
       // maybe collapse: replace shared prefix of tree makers by a ReusingCondTreeMaker
       // once this has been computed, we'll know which tree makers are reused,
@@ -128,7 +127,6 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
         collapsedTreeMakers getOrElse tests.map(_.treeMaker) // sharedPrefix need not be empty (but it only contains True-tests, which are dropped above)
       }
-      okToCall = true // TODO: remove (debugging)
 
       // replace original treemakers that are reused (as determined when computing collapsed),
       // by ReusedCondTreeMakers
