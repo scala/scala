@@ -40,7 +40,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
     */
   def nextBoolean(b: Boolean, n: Int): Boolean = {
     val next = self.nextBoolean()
-    var count = 0
+    var count = 2
     if (next == b) next
     else {
       while (count <= n)
