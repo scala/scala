@@ -34,6 +34,25 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    */
   def nextBoolean(): Boolean = self.nextBoolean()
 
+  /** Returns the next pseudorandom, uniformly distributed boolean value
+    *  from this random number generator's sequence with the specified boolean
+    *  value being the specified int value times more likely
+    */
+  def nextBoolean(b: Boolean, n: Int): Boolean = {
+    val next = self.nextBoolean()
+    var count = 0
+    if (next == b) next
+    else {
+      while (count <= n)
+        {
+          val next = self.nextBoolean()
+          if (next == b) next
+          count += 1
+        }
+        next
+    }
+
+  }
   /** Generates random bytes and places them into a user-supplied byte
    *  array.
    */
