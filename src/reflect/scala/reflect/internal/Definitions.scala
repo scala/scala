@@ -435,6 +435,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
+         def List_cons              = getMemberMethod(ListClass, nme.CONS)
     lazy val SeqClass               = requiredClass[scala.collection.Seq[_]]
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
     lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
