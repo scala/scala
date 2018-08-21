@@ -191,7 +191,7 @@ trait Names extends api.Names {
     // compile loses track of this fact.
 
     /** Index into name table */
-    def start: Int = index
+    final def start: Int = index
 
     /** The next name in the same hash bucket. */
     def next: Name with ThisNameType
