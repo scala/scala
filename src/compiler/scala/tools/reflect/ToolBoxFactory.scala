@@ -234,7 +234,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
             case _ => NoSymbol
           }
           trace("wrapping ")(defOwner(expr) -> meth)
-          val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
+          val methdef = DefDef(meth, expr changeOwner (defOwner(expr), meth))
 
           val moduledef = ModuleDef(
               obj,

@@ -229,7 +229,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               .substituteSymbols(origTpeParams, extensionTpeParams)
               .substituteSymbols(origParams, extensionParams)
               .substituteThis(origThis, extensionThis)
-              .changeOwner(origMeth -> extensionMeth)
+              .changeOwner(origMeth, extensionMeth)
             new SubstututeRecursion(origMeth, extensionMeth, unit).transform(tree)
           }
           val castBody =

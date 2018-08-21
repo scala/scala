@@ -336,7 +336,7 @@ abstract class UnCurry extends InfoTransform
             case body =>
               val thunkFun = localTyper.typedPos(body.pos)(Function(Nil, body)).asInstanceOf[Function]
               log(s"Change owner from $currentOwner to ${thunkFun.symbol} in ${thunkFun.body}")
-              thunkFun.body.changeOwner((currentOwner, thunkFun.symbol))
+              thunkFun.body.changeOwner(currentOwner, thunkFun.symbol)
               transformFunction(thunkFun)
           }
         }
@@ -400,7 +400,7 @@ abstract class UnCurry extends InfoTransform
         debuglog("lifting tree at: " + (tree.pos))
         val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
         sym.setInfo(MethodType(List(), tree.tpe))
-        tree.changeOwner(currentOwner -> sym)
+        tree.changeOwner(currentOwner, sym)
         localTyper.typedPos(tree.pos)(Block(
           List(DefDef(sym, ListOfNil, tree)),
           Apply(Ident(sym), Nil)

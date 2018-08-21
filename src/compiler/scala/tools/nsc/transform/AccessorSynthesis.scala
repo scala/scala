@@ -278,7 +278,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         */
       def expandLazyClassMember(lazyVar: global.Symbol, lazyAccessor: global.Symbol, transformedRhs: global.Tree): Tree = {
         val slowPathSym  = slowPathFor(lazyAccessor)
-        val rhsAtSlowDef = transformedRhs.changeOwner(lazyAccessor -> slowPathSym)
+        val rhsAtSlowDef = transformedRhs.changeOwner(lazyAccessor, slowPathSym)
 
         val isUnit    = isUnitGetter(lazyAccessor)
         val selectVar = if (isUnit) UNIT         else Select(thisRef, lazyVar)

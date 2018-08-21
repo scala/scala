@@ -250,7 +250,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       methodSym setInfoAndEnter MethodType(Nil, UnitTpe)
 
       // changeOwner needed because the `stats` contained in the DefDef were owned by the template, not long ago.
-      val blk       = Block(stats, gen.mkZero(UnitTpe)).changeOwner(impl.symbol -> methodSym)
+      val blk       = Block(stats, gen.mkZero(UnitTpe)).changeOwner(impl.symbol, methodSym)
       val delayedDD = localTyper typed { DefDef(methodSym, Nil, blk) }
 
       delayedDD.asInstanceOf[DefDef]
@@ -549,7 +549,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       // Move tree into constructor, take care of changing owner from `oldOwner` to `newOwner` (the primary constructor symbol)
       def apply(oldOwner: Symbol, newOwner: Symbol)(tree: Tree) =
         if (tree eq EmptyTree) tree
-        else transform(tree.changeOwner(oldOwner -> newOwner))
+        else transform(tree.changeOwner(oldOwner, newOwner))
     }
 
     // Assign `rhs` to class field / trait setter `assignSym`
