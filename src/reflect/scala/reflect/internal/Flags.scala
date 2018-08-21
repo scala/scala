@@ -81,7 +81,7 @@ package internal
 /** Flags set on Modifiers instances in the parsing stage.
  */
 class ModifierFlags {
-   final val IMPLICIT      = 1L << 9
+  final val IMPLICIT      = 1L << 9
   final val FINAL         = 1L << 5    // May not be overridden. Note that java final implies much more than scala final.
   final val PRIVATE       = 1L << 2
   final val PROTECTED     = 1L << 0
