@@ -123,10 +123,10 @@ trait TypeDiagnostics {
    */
   final def exampleTuplePattern(names: List[Name]): String = {
     val arity = names.length
-    val varPatternNames: Option[List[String]] = sequence(names map {
+    val varPatternNames: Option[List[String]] = traverseOpt(names) {
       case name if nme.isVariableName(name) => Some(name.decode)
       case _                                => None
-    })
+    }
     def parenthesize(a: String) = s"($a)"
     def genericParams = (Seq("param1") ++ (if (arity > 2) Seq("...") else Nil) ++ Seq(s"param$arity"))
     parenthesize(varPatternNames.getOrElse(genericParams).mkString(", "))

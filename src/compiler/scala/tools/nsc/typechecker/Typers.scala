@@ -3796,9 +3796,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           tryConst(tree, pt)
       }
       def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotArg] = {
-        val args = trees.map(tree2ConstArg(_, pt))
-        if (args.exists(_.isEmpty)) None
-        else Some(ArrayAnnotArg(args.flatten.toArray))
+        traverseOpt(trees)(tree2ConstArg(_, pt))
+          .map(args => ArrayAnnotArg(args.toArray))
       }
 
       // begin typedAnnotation

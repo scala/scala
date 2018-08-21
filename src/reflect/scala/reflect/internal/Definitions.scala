@@ -1350,7 +1350,7 @@ trait Definitions extends api.StandardDefinitions {
       newPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
     }
     def newT1NoParamsMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
-      newPolyMethod(1, owner, name, flags)(tparams => (Some(Nil), createFn(tparams.head)))
+      newPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
     }
 
     /** Is symbol a phantom class for which no runtime representation exists? */

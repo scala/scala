@@ -10,6 +10,7 @@ package transform
 package patmat
 
 import scala.tools.nsc.typechecker.Contexts
+import scala.reflect.internal.util
 
 /** An 'extractor' can be a case class or an unapply or unapplySeq method.
   *
@@ -157,7 +158,7 @@ trait PatternExpansion {
       else None
     }
 
-    private def booleanUnapply = if (isBooleanUnapply) Some(Nil) else None
+    private def booleanUnapply = if (isBooleanUnapply) util.SomeOfNil else None
 
     // In terms of the (equivalent -- if we're dealing with an unapply) case class, what are the constructor's parameter types?
     private val equivConstrParamTypes =

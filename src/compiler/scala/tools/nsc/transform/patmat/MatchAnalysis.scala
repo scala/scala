@@ -857,7 +857,7 @@ trait MatchAnalysis extends MatchApproximation {
                   val argLen = (caseFieldAccs.length min ctorParams.length)
 
                   val examples = (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse Some(WildcardExample)).toList
-                  sequence(examples)
+                  sequenceOpt(examples)
                 }
 
                 cls match {

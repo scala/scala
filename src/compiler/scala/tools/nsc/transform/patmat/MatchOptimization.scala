@@ -414,7 +414,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         // generate if-then-else for 1 case switch (avoids verify error... can't imagine a one-case switch being faster than if-then-else anyway)
         if (cases.isEmpty || cases.tail.isEmpty) Nil
         else {
-          val caseDefs = cases map { case (scrutSym, makers) =>
+          val caseDefs = traverseOpt(cases) { case (scrutSym, makers) =>
             makers match {
               // default case
               case GuardAndBodyTreeMakers(guard, body) =>
@@ -424,15 +424,15 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                 Some(CaseDef(pattern, guard, body))
               // alternatives
               case AlternativesTreeMaker(_, altss, pos) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
-                val switchableAlts = altss map {
+                // succeed iff they were all switchable
+                val switchableAlts = traverseOpt(altss) {
                   case SwitchableTreeMaker(pattern) :: Nil =>
                     Some(pattern)
                   case _ =>
                     None
                 }
 
-                // succeed if they were all switchable
-                sequence(switchableAlts) map { switchableAlts =>
+                switchableAlts map { switchableAlts =>
                   def extractConst(t: Tree) = t match {
                     case Literal(const) => const
                     case _              => t
@@ -451,7 +451,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             }
           }
 
-          val caseDefsWithGuards = sequence(caseDefs) match {
+          val caseDefsWithGuards = caseDefs match {
             case None      => return Nil
             case Some(cds) => cds
           }
