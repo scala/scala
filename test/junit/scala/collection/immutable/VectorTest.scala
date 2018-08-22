@@ -50,4 +50,10 @@ class VectorTest {
   }
 
   @Test def checkSearch: Unit = SeqTests.checkSearch(Vector(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+
+  @Test
+  def emptyIteratorReuse(): Unit = {
+    assertSame(Vector.empty.iterator, Vector.empty.iterator)
+    assertSame(Vector.empty.iterator, Vector(1).drop(1).iterator)
+  }
 }

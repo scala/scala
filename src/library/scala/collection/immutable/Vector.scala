@@ -86,10 +86,14 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
   }
 
-  override def iterator: VectorIterator[A] = {
-    val s = new VectorIterator[A](startIndex, endIndex)
-    initIterator(s)
-    s
+  override def iterator: Iterator[A] = {
+    if(isEmpty)
+      Iterator.empty
+    else {
+      val s = new VectorIterator[A](startIndex, endIndex)
+      initIterator(s)
+      s
+    }
   }
 
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
