@@ -112,4 +112,39 @@ class HashMapTest {
     val expected = OldHashMap(A(0) -> 1, A(1) -> 1)
     assertEquals(merged, expected)
   }
+
+  @Test
+  def builder: Unit = {
+
+    val hm = HashMap(1 -> 1)
+
+    val hm2 = hm updated (1, 1)
+
+    val hmb = new HashMapBuilder[Int, String]
+
+    hmb.addOne(1 -> "hello")
+    hmb.addOne(2 -> "again")
+
+    hmb.addAll(Seq(
+      1 -> "hh",
+      6 -> "66",
+      1 -> "hhhhhhhh",
+      -5 -> ""
+    ))
+
+    assertEquals(Map( 1 -> "hello", 2 -> "again",    1 -> "hh", 6 -> "66", 1 -> "hhhhhhhh", -5 -> ""), hmb.result())
+
+  }
+}
+
+@RunWith(classOf[JUnit4])
+class HashMapBuilderTest {
+
+  @Test
+  def foo: Unit = {
+
+    val b = new HashMapBuilder[Int, String]
+
+  }
+
 }

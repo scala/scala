@@ -462,7 +462,15 @@ class SetMapConsistencyTest {
     val rn = new scala.util.Random(42)
     def mhm: M = { val m = new cm.HashMap[Int, Boolean]; m ++= manyKVs; m }
     def mohm: M = { val m = new cm.OpenHashMap[Int, Boolean]; m ++= manyKVs; m }
-    def ihm: M = ci.HashMap.empty[Int, Boolean] ++ manyKVs
+    def ihm: M = {
+      val d = manyKVs.distinctBy(_._1)
+      val result = ci.HashMap.empty[Int, Boolean] ++ manyKVs
+      val s = result.size
+      val rV = result.toVector
+      val anyMissed = manyKVs.map(_._1).forall(result.contains)
+      val missed = manyKVs.filterNot(kv => result.contains(kv._1))
+      result
+    }
     val densities = List(0, 0.05, 0.2, 0.5, 0.8, 0.95, 1)
     def repeat = rn.nextInt(100) < 33
     def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble < density).toSet
@@ -473,7 +481,11 @@ class SetMapConsistencyTest {
           val density = densities(rn.nextInt(densities.length))
           val keep = pick(ms.head, density)
           ms = ms.map(_.filter(keep contains _._1))
-          if (!ms.sliding(2).forall(s => s(0) == s(1))) return false
+          if (!ms.sliding(2).forall{s =>
+            val result = s(0) == s(1)
+            result
+          })
+            return false
         } while (repeat)
       }
       true
