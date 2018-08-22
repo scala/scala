@@ -2495,7 +2495,15 @@ trait Types
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
-      else typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      else  {
+        // Since we're going to lose the information denoted by the prefix when pulling the type params
+        // out for use as binders in the PolyType, we must eagerly rewrite their infos using relativize
+        // to preserve that knowledge.
+        val denotedTpars = cloneSymbolsAndModify(tpars, relativize)
+
+        // @PP: use typeConstructor! #3343, #4018, #4347.
+        PolyType(denotedTpars, TypeRef(pre, sym, denotedTpars map (_.typeConstructor)))
+      }
     }
 
     // only need to rebind type aliases, as typeRef already handles abstract types
@@ -4063,14 +4071,6 @@ trait Types
 
   @deprecated("use genPolyType(...) instead", "2.10.0") // Used in reflection API
   def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
-
-  /** A creator for anonymous type functions, where the symbol for the type function still needs to be created.
-   *
-   * TODO:
-   * type params of anonymous type functions, which currently can only arise from normalising type aliases, are owned by the type alias of which they are the eta-expansion
-   * higher-order subtyping expects eta-expansion of type constructors that arise from a class; here, the type params are owned by that class, but is that the right thing to do?
-   */
-  def typeFunAnon(tps: List[Symbol], body: Type): Type = typeFun(tps, body)
 
   /** A creator for a type functions, assuming the type parameters tps already have the right owner. */
   def typeFun(tps: List[Symbol], body: Type): Type = PolyType(tps, body)

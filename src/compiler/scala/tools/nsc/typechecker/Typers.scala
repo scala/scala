@@ -4470,13 +4470,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // typedTypeConstructor dealiases nothing now, but it makes sense for a "new" to always be
           // given a dealiased type.
           val tpt0 = typedTypeConstructor(tpt) modifyType (_.dealias)
-          if (checkStablePrefixClassType(tpt0))
-            if (tpt0.hasSymbolField && !tpt0.symbol.typeParams.isEmpty) {
-              context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
-              notifyUndetparamsAdded(context.undetparams)
-              TypeTree().setOriginal(tpt0)
-                        .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
-            } else tpt0
+
+          if (checkStablePrefixClassType(tpt0)) {
+            tpt0.tpe.normalize match { // eta-expand
+              case PolyType(undet, appliedToUndet) =>
+                context.undetparams = undet // can reuse these type params, they're fresh
+                notifyUndetparamsAdded(undet)
+                TypeTree().setOriginal(tpt0).setType(appliedToUndet)
+              case _                               => tpt0
+            }
+          }
           else tpt0
         }
 
