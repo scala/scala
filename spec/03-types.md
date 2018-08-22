@@ -307,7 +307,7 @@ equivalent to `AnyRef` $\\{ R \\}$.
 
 ###### Example
 
-The following example shows how to declare and use a method which
+The following example shows how to declare and use a method which has
 a parameter type that contains a refinement with structural declarations.
 
 ```scala

@@ -422,6 +422,22 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
+lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
+  .dependsOn(compiler, reflect, library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.5",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5",
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.5",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5"
+    )
+  )
+
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
@@ -720,6 +736,8 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     sources in IntegrationTest := Seq.empty,
     fork in IntegrationTest := true,
+    // enable this in 2.13, when tests pass
+    //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
     javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
@@ -937,7 +955,7 @@ lazy val root: Project = (project in file("."))
         .withRecompileOnMacroDef(false) //     // macros in library+reflect are hard-wired to implementations with `FastTrack`.
     }
   )
-  .aggregate(library, reflect, compiler, interactive, repl, replJline, replJlineEmbedded,
+  .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
@@ -1133,7 +1151,9 @@ intellij := {
       moduleDeps(scalacheck, config = Test).value,
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
-      moduleDeps(testP).value)
+      moduleDeps(testP).value,
+      moduleDeps(compilerOptionsExporter).value
+    )
   }
 
   def moduleDep(name: String, jars: Seq[File]) = {

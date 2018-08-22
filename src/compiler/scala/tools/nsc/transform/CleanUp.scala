@@ -31,6 +31,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]
     private val newStaticInits        = mutable.Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
+    private var transformListApplyLimit = 8
+    private def reducingTransformListApply[A](depth: Int)(body: => A): A = {
+      val saved = transformListApplyLimit
+      transformListApplyLimit -= depth
+      try body
+      finally transformListApplyLimit = saved
+    }
     private def clearStatics() {
       newStaticMembers.clear()
       newStaticInits.clear()
@@ -471,6 +478,17 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
+
+      // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
+      case Apply(appMeth, List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
+      if wrapArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == List_apply && rest.elems.length < transformListApplyLimit =>
+        val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
+          (acc, elem) => New(ConsClass, elem, acc)
+        )
+        // Limiting extra stack frames consumed by generated code
+        reducingTransformListApply(rest.elems.length) {
+          super.transform(localTyper.typedPos(tree.pos)(consed))
+        }
 
       case _ =>
         super.transform(tree)

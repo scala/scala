@@ -1,0 +1,132 @@
+
+scala> $intp.isettings.maxPrintString = 0
+$intp.isettings.maxPrintString: Int = 0
+
+scala> :paste < EOF
+// Entering paste mode (EOF to finish)
+
+import java.awt.AWTError,java.awt.Dialog,java.awt.KeyEventDispatcher,java.awt.Robot,java.awt.AWTEvent,java.awt.Dimension,java.awt.KeyEventPostProcessor,java.awt.ScrollPane,java.awt.AWTEventMulticaster,java.awt.DisplayMode,java.awt.KeyboardFocusManager,java.awt.ScrollPaneAdjustable,java.awt.AWTException,java.awt.Event,java.awt.Label,java.awt.Scrollbar,java.awt.AWTKeyStroke,java.awt.EventQueue,java.awt.LayoutManager,java.awt.SecondaryLoop,java.awt.AWTPermission,java.awt.FileDialog,java.awt.LayoutManager2,java.awt.Shape,java.awt.ActiveEvent,java.awt.FlowLayout,java.awt.LinearGradientPaint,java.awt.SplashScreen,java.awt.Adjustable,java.awt.FocusTraversalPolicy,java.awt.List,java.awt.Stroke,java.awt.AlphaComposite,java.awt.Font,java.awt.MediaTracker,java.awt.SystemColor,java.awt.BasicStroke,java.awt.FontFormatException,java.awt.Menu,java.awt.SystemTray,java.awt.BorderLayout,java.awt.FontMetrics,java.awt.MenuBar,java.awt.TextArea,java.awt.BufferCapabilities,java.awt.Frame,java.awt.MenuComponent,java.awt.TextComponent,java.awt.Button,java.awt.GradientPaint,java.awt.MenuContainer,java.awt.TextField,java.awt.Canvas,java.awt.Graphics,java.awt.MenuItem,java.awt.TexturePaint,java.awt.CardLayout,java.awt.Graphics2D,java.awt.MenuShortcut,java.awt.Toolkit,java.awt.Checkbox,java.awt.GraphicsConfigTemplate,java.awt.MouseInfo,java.awt.Transparency,java.awt.CheckboxGroup,java.awt.GraphicsConfiguration,java.awt.MultipleGradientPaint,java.awt.TrayIcon,java.awt.CheckboxMenuItem,java.awt.GraphicsDevice,java.awt.PageAttributes,java.awt.Window,java.awt.Choice,java.awt.GraphicsEnvironment,java.awt.Paint,java.awt.color,java.awt.Color,java.awt.GridBagConstraints,java.awt.PaintContext,java.awt.datatransfer,java.awt.Component,java.awt.GridBagLayout,java.awt.Panel,java.awt.dnd,java.awt.ComponentOrientation,java.awt.GridBagLayoutInfo,java.awt.Point,java.awt.event,java.awt.Composite,java.awt.GridLayout,java.awt.PointerInfo,java.awt.font,java.awt.CompositeContext,java.awt.HeadlessException,java.awt.Polygon,java.awt.geom,java.awt.Container,java.awt.IllegalComponentStateException,java.awt.PopupMenu,java.awt.im,java.awt.ContainerOrderFocusTraversalPolicy,java.awt.Image,java.awt.PrintGraphics,java.awt.image,java.awt.Cursor,java.awt.ImageCapabilities,java.awt.PrintJob,java.awt.peer,java.awt.DefaultFocusTraversalPolicy,java.awt.Insets,java.awt.RadialGradientPaint,java.awt.print,java.awt.DefaultKeyboardFocusManager,java.awt.ItemSelectable,java.awt.Rectangle,java.awt.Desktop,java.awt.JobAttributes,java.awt.RenderingHints
+EOF
+
+// Exiting paste mode, now interpreting.
+
+import java.awt.AWTError
+import java.awt.Dialog
+import java.awt.KeyEventDispatcher
+import java.awt.Robot
+import java.awt.AWTEvent
+import java.awt.Dimension
+import java.awt.KeyEventPostProcessor
+import java.awt.ScrollPane
+import java.awt.AWTEventMulticaster
+import java.awt.DisplayMode
+import java.awt.KeyboardFocusManager
+import java.awt.ScrollPaneAdjustable
+import java.awt.AWTException
+import java.awt.Event
+import java.awt.Label
+import java.awt.Scrollbar
+import java.awt.AWTKeyStroke
+import java.awt.EventQueue
+import java.awt.LayoutManager
+import java.awt.SecondaryLoop
+import java.awt.AWTPermission
+import java.awt.FileDialog
+import java.awt.LayoutManager2
+import java.awt.Shape
+import java.awt.ActiveEvent
+import java.awt.FlowLayout
+import java.awt.LinearGradientPaint
+import java.awt.SplashScreen
+import java.awt.Adjustable
+import java.awt.FocusTraversalPolicy
+import java.awt.List
+import java.awt.Stroke
+import java.awt.AlphaComposite
+import java.awt.Font
+import java.awt.MediaTracker
+import java.awt.SystemColor
+import java.awt.BasicStroke
+import java.awt.FontFormatException
+import java.awt.Menu
+import java.awt.SystemTray
+import java.awt.BorderLayout
+import java.awt.FontMetrics
+import java.awt.MenuBar
+import java.awt.TextArea
+import java.awt.BufferCapabilities
+import java.awt.Frame
+import java.awt.MenuComponent
+import java.awt.TextComponent
+import java.awt.Button
+import java.awt.GradientPaint
+import java.awt.MenuContainer
+import java.awt.TextField
+import java.awt.Canvas
+import java.awt.Graphics
+import java.awt.MenuItem
+import java.awt.TexturePaint
+import java.awt.CardLayout
+import java.awt.Graphics2D
+import java.awt.MenuShortcut
+import java.awt.Toolkit
+import java.awt.Checkbox
+import java.awt.GraphicsConfigTemplate
+import java.awt.MouseInfo
+import java.awt.Transparency
+import java.awt.CheckboxGroup
+import java.awt.GraphicsConfiguration
+import java.awt.MultipleGradientPaint
+import java.awt.TrayIcon
+import java.awt.CheckboxMenuItem
+import java.awt.GraphicsDevice
+import java.awt.PageAttributes
+import java.awt.Window
+import java.awt.Choice
+import java.awt.GraphicsEnvironment
+import java.awt.Paint
+import java.awt.color
+import java.awt.Color
+import java.awt.GridBagConstraints
+import java.awt.PaintContext
+import java.awt.datatransfer
+import java.awt.Component
+import java.awt.GridBagLayout
+import java.awt.Panel
+import java.awt.dnd
+import java.awt.ComponentOrientation
+import java.awt.GridBagLayoutInfo
+import java.awt.Point
+import java.awt.event
+import java.awt.Composite
+import java.awt.GridLayout
+import java.awt.PointerInfo
+import java.awt.font
+import java.awt.CompositeContext
+import java.awt.HeadlessException
+import java.awt.Polygon
+import java.awt.geom
+import java.awt.Container
+import java.awt.IllegalComponentStateException
+import java.awt.PopupMenu
+import java.awt.im
+import java.awt.ContainerOrderFocusTraversalPolicy
+import java.awt.Image
+import java.awt.PrintGraphics
+import java.awt.image
+import java.awt.Cursor
+import java.awt.ImageCapabilities
+import java.awt.PrintJob
+import java.awt.peer
+import java.awt.DefaultFocusTraversalPolicy
+import java.awt.Insets
+import java.awt.RadialGradientPaint
+import java.awt.print
+import java.awt.DefaultKeyboardFocusManager
+import java.awt.ItemSelectable
+import java.awt.Rectangle
+import java.awt.Desktop
+import java.awt.JobAttributes
+import java.awt.RenderingHints
+
+scala> :quit

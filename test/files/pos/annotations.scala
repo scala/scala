@@ -103,8 +103,10 @@ object Test3 {
 class Test4 {
   @Ann3(arr = Array("dlkfj", "DSF"))
   @Ann4(i = 2908)
-  @Ann4(i = Test3.i)
   @Ann5(value = classOf[Int])
-  @Ann5(Test3.cls)
   def foo {}
+
+  @Ann4(i = Test3.i)
+  @Ann5(Test3.cls)
+  def bar {}
 }

@@ -25,6 +25,11 @@ import scala.util.matching.Regex
  *  `Value` type member of the enumeration (`Value` selected on the stable
  *  identifier path of the enumeration instance).
  *
+ *  Values SHOULD NOT be added to an enumeration after its construction;
+ *  doing so makes the enumeration thread-unsafe. If values are added to an
+ *  enumeration from multiple threads (in a non-synchronized fashion) after
+ *  construction, the behavior of the enumeration is undefined.
+ *
  * @example {{{
  * // Define a new enumeration with a type alias and work with the full set of enumerated values
  * object WeekDay extends Enumeration {

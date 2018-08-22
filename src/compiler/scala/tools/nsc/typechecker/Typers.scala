@@ -3198,17 +3198,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           //         the corresponding synthetics to the package class, only to the package object class.
           // scala/bug#6734 Locality test below is meaningless if we're not even in the correct tree.
           //         For modules that are synthetic case companions, check that case class is defined here.
+          // scala/bug#10783 ditto for synthetic companions of derived value classes.
           def shouldAdd(sym: Symbol): Boolean = {
+            def classDefinedHere(s: Symbol): Boolean = stats exists {
+              case t: ClassDef => t.symbol eq s
+              case _           => false
+            }
             def shouldAddAsModule: Boolean =
-              sym.moduleClass.attachments.get[ClassForCaseCompanionAttachment] match {
-                case Some(att) =>
-                  val cdef = att.caseClass
-                  stats.exists {
-                    case t @ ClassDef(_, _, _, _) => t.symbol == cdef.symbol   // cdef ne t
-                    case _ => false
-                  }
-                case _ => true
-              }
+              classDefinedHere(companionSymbolOf(sym, context))
 
             (!sym.isModule || shouldAddAsModule) && (inBlock || !context.isInPackageObject(sym, context.owner))
           }
@@ -4705,7 +4702,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         def advice1(convo: Tree, errors: List[AbsTypeError], err: SilentTypeError): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val header = f"${e.errMsg}%n  Expression does not convert to assignment because:%n    "
               val expansion = f"%n    expansion: ${show(convo)}"
               NormalTypeError(tree, err.errors.flatMap(_.errMsg.lines.toList).mkString(header, f"%n    ", expansion))
@@ -4713,7 +4710,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         def advice2(errors: List[AbsTypeError]): List[AbsTypeError] =
           errors.map { e =>
-            if (e.errPos == tree.pos) {
+            if (e.errPos samePointAs tree.pos) {
               val msg = f"${e.errMsg}%n  Expression does not convert to assignment because receiver is not assignable."
               NormalTypeError(tree, msg)
             } else e

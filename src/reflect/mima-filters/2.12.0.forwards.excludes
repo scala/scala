@@ -9,6 +9,7 @@ ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.PlainNioFile")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps.newMappedBaseTypeSeq")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.newMappedBaseTypeSeq")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.statistics")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror#JavaAnnotationProxy.transformArgs")
 
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LazyEntry")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.closeZipFile")

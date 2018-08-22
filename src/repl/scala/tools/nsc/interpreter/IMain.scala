@@ -925,18 +925,30 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       |  %s
       |  lazy val %s: _root_.java.lang.String = %s {
       |    %s
-      |    (""
       """.stripMargin.format(
         lineRep.evalName, evalResult, lineRep.printName,
         executionWrapper, fullAccessPath
       )
 
       val postamble = """
-      |    )
       |  }
       |}
       """.stripMargin
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
+
+      override def apply(contributors: List[MemberHandler]): String = stringFromWriter { code =>
+        code println preamble
+        if (contributors.lengthCompare(1) > 0) {
+          code.println("val sb = new _root_.scala.StringBuilder")
+          contributors foreach (x => code.println(s"""sb.append("" ${generate(x)})"""))
+          code.println("sb.toString")
+        } else {
+          code.print(""""" """) // start with empty string
+          contributors foreach (x => code.print(generate(x)))
+          code.println()
+        }
+        code println postamble
+      }
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.

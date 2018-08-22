@@ -53,7 +53,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.KnownDirectSubclassesCalled
     this.noPrint
     this.typeDebug
-    this.Range
     // inaccessible: this.posAssigner
     this.ConsoleWriter
     this.RefTree
@@ -384,6 +383,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StaticAnnotationClass
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr
+    definitions.AnnotationRepeatableAttr
     definitions.BridgeClass
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass

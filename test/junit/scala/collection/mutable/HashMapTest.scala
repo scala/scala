@@ -35,4 +35,17 @@ class HashMapTest {
     hm.put(0, 0)
     hm.getOrElseUpdate(0, throw new AssertionError())
   }
+
+  @Test
+  def getOrElseUpdate_keyIdempotence_t10703(): Unit = {
+    val map = mutable.HashMap[String, String]()
+
+    val key = "key"
+    map.getOrElseUpdate(key, {
+      map.getOrElseUpdate(key, "value1")
+      "value2"
+    })
+
+    assertEquals(List((key, "value2")), map.toList)
+  }
 }

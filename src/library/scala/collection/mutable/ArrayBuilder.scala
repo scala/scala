@@ -60,9 +60,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[T] = {
-      val newelems = new Array[T](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (capacity == size && capacity > 0) elems
+      else if (elems eq null) new Array[T](size)
+      else java.util.Arrays.copyOf[T](elems, size)
     }
 
     private def resize(size: Int) {

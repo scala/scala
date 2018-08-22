@@ -1,0 +1,7 @@
+t10935.scala:4: error: value += is not a member of Int
+  Expression does not convert to assignment because:
+    value lengt is not a member of String
+    expansion: a.this.size = a.this.size.+(1.+("foo".<lengt: error>))
+  size += 1 + "foo".lengt
+       ^
+one error found

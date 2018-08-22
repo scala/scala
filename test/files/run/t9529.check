@@ -1,0 +1,16 @@
+A: List()
+B: List(@javax.annotation.Resource(shareable=true, lookup=, name=B, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=))
+C: List(@anns.Ann_0(name=C, value=see))
+D: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=D, value=dee), @anns.Ann_0(name=D, value=dye)]))
+
+x: List(@anns.Ann_0(name=x, value=eks))
+y: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=y, value=why), @anns.Ann_0(name=y, value=wye)]))
+
+t: List(@anns.Ann_0(name=t, value=tee))
+u: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=u, value=you), @anns.Ann_0(name=u, value=yew)]))
+
+1: List(@anns.Ann_0(name=1, value=one))
+2: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=2, value=two), @anns.Ann_0(name=2, value=tew)]))
+
+List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=<init>, value=constructor), @anns.Ann_0(name=<init>, value=initializer)]))
+
