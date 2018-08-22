@@ -5519,7 +5519,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _                 => abort(s"unexpected tree in pattern mode: ${tree.getClass}\n$tree")
       }
 
-      def typedTypTree(tree: TypTree): Tree = tree match {
+      @inline def typedTypTree(tree: TypTree): Tree = tree match {
         case tree: TypeTree                     => typedTypeTree(tree)
         case tree: AppliedTypeTree              => typedAppliedTypeTree(tree)
         case tree: TypeBoundsTree               => typedTypeBoundsTree(tree)
@@ -5531,7 +5531,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _                                  => abort(s"unexpected type-representing tree: ${tree.getClass}\n$tree")
       }
 
-      def typedMemberDef(tree: MemberDef): Tree = tree match {
+      @inline def typedMemberDef(tree: MemberDef): Tree = tree match {
         case tree: ValDef     => typedValDef(tree)
         case tree: DefDef     => defDefTyper(tree).typedDefDef(tree)
         case tree: ClassDef   => newTyper(context.makeNewScope(tree, sym)).typedClassDef(tree)
@@ -5565,7 +5565,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // Trees allowed in or out of pattern mode.
-      def typedInAnyMode(tree: Tree): Tree = tree match {
+      @inline def typedInAnyMode(tree: Tree): Tree = tree match {
         case tree: Ident   => typedIdentOrWildcard(tree)
         case tree: Bind    => typedBind(tree)
         case tree: Apply   => typedApply(tree)
@@ -5591,27 +5591,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
       lastTreeToTyper = tree
-      def body = (
-        if (printTypings && !phase.erasedTypes && !noPrintTyping(tree))
-          typingStack.nextTyped(tree, mode, pt, context)(typedInternal(tree, mode, pt))
-        else
-          typedInternal(tree, mode, pt)
-      )
       val statsEnabled = StatisticsStatics.areSomeHotStatsEnabled() && statistics.areHotStatsLocallyEnabled
       val startByType = if (statsEnabled) statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (statsEnabled) statistics.incCounter(visitsByType, tree.getClass)
-      try body
-      finally if (statsEnabled) statistics.popTimer(byTypeStack, startByType)
-    }
+      val shouldPrintTyping = printTypings && !phase.erasedTypes && !noPrintTyping(tree)
+      val shouldPopTypingStack = shouldPrintTyping && typingStack.beforeNextTyped(tree, mode, pt, context)
+      try {
 
-    private def typedInternal(tree: Tree, mode: Mode, pt: Type): Tree = {
-      val ptPlugins = pluginsPt(pt, this, tree, mode)
-      def retypingOk = (
-            context.retyping
-        && (tree.tpe ne null)
-        && (tree.tpe.isErroneous || !(tree.tpe <:< ptPlugins))
-      )
-      def runTyper(): Tree = {
+        val ptPlugins = pluginsPt(pt, this, tree, mode)
+        def retypingOk = (
+          context.retyping
+            && (tree.tpe ne null)
+            && (tree.tpe.isErroneous || !(tree.tpe <:< ptPlugins))
+          )
         if (retypingOk) {
           tree.setType(null)
           if (tree.hasSymbolField) tree.symbol = NoSymbol
@@ -5651,10 +5643,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (mode.inPatternMode && !mode.inPolyMode && result.isType)
           PatternMustBeValue(result, pt)
 
-        result
-      }
+        if (shouldPopTypingStack) typingStack.showPop(result)
 
-      try runTyper() catch {
+        result
+      } catch {
         case ex: CyclicReference if global.propagateCyclicReferences =>
           throw ex
         case ex: TypeError =>
@@ -5665,10 +5657,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           setError(tree)
         case ex: Exception =>
           // @M causes cyclic reference error
-          devWarning(s"exception when typing $tree, pt=$ptPlugins")
+          devWarning(s"exception when typing $tree, pt=$pt")
           if (context != null && context.unit.exists && tree != null)
             logError("AT: " + tree.pos, ex)
           throw ex
+      } finally {
+        if (shouldPopTypingStack) typingStack.pop(tree)
+        if (statsEnabled) statistics.popTimer(byTypeStack, startByType)
       }
     }
 
@@ -5680,12 +5675,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Types expression or definition `tree`.
      */
-    def typed(tree: Tree): Tree = {
-      val ret = typed(tree, context.defaultModeForTyped, WildcardType)
-      ret
-    }
+    @inline final def typed(tree: Tree): Tree =
+      typed(tree, context.defaultModeForTyped, WildcardType)
 
-    def typedByValueExpr(tree: Tree, pt: Type = WildcardType): Tree = typed(tree, EXPRmode | BYVALmode, pt)
+    @inline final def typedByValueExpr(tree: Tree, pt: Type = WildcardType): Tree = typed(tree, EXPRmode | BYVALmode, pt)
 
     def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree) = typed(atPos(pos)(tree), mode, pt)
     def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
@@ -5695,28 +5688,28 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     /** Types expression `tree` with given prototype `pt`.
      */
-    def typed(tree: Tree, pt: Type): Tree =
+    @inline final def typed(tree: Tree, pt: Type): Tree =
       typed(tree, context.defaultModeForTyped, pt)
 
-    def typed(tree: Tree, mode: Mode): Tree =
+    @inline final def typed(tree: Tree, mode: Mode): Tree =
       typed(tree, mode, WildcardType)
 
     /** Types qualifier `tree` of a select node.
      *  E.g. is tree occurs in a context like `tree.m`.
      */
-    def typedQualifier(tree: Tree, mode: Mode, pt: Type): Tree =
+    @inline final def typedQualifier(tree: Tree, mode: Mode, pt: Type): Tree =
       typed(tree, PolyQualifierModes | mode.onlyTypePat, pt) // TR: don't set BYVALmode, since qualifier might end up as by-name param to an implicit
 
     /** Types qualifier `tree` of a select node.
      *  E.g. is tree occurs in a context like `tree.m`.
      */
-    def typedQualifier(tree: Tree, mode: Mode): Tree =
+    @inline final def typedQualifier(tree: Tree, mode: Mode): Tree =
       typedQualifier(tree, mode, WildcardType)
 
-    def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode, WildcardType)
+    @inline final def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode, WildcardType)
 
     /** Types function part of an application */
-    def typedOperator(tree: Tree): Tree = typed(tree, OperatorModes)
+    @inline final def typedOperator(tree: Tree): Tree = typed(tree, OperatorModes)
 
     // the qualifier type of a supercall constructor is its first parent class
     private def typedSelectOrSuperQualifier(qual: Tree) =
@@ -5833,6 +5826,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _           => op
     }
 
+    @inline
     final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
