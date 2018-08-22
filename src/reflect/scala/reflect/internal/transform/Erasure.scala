@@ -121,12 +121,12 @@ trait Erasure {
       case st: SubType =>
         apply(st.supertype)
       case tref @ TypeRef(pre, sym, args) =>
-        if (sym == ArrayClass)
+        if (sym eq ArrayClass)
           if (unboundedGenericArrayLevel(tp) == 1) ObjectTpe
           else if (args.head.typeSymbol.isBottomClass)  arrayType(ObjectTpe)
           else typeRef(apply(pre), sym, args map applyInArray)
-        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) ObjectTpe
-        else if (sym == UnitClass) BoxedUnitTpe
+        else if ((sym eq AnyClass) || (sym eq AnyValClass) || (sym eq SingletonClass)) ObjectTpe
+        else if (sym eq UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (sym.isClass) eraseNormalClassRef(tref)
@@ -148,15 +148,15 @@ trait Erasure {
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
         val newParents =
-          if (parents.isEmpty || clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
-          else if (clazz == ArrayClass) ObjectTpe :: Nil
+          if (parents.isEmpty || (clazz eq ObjectClass) || isPrimitiveValueClass(clazz)) Nil
+          else if (clazz eq ArrayClass) ObjectTpe :: Nil
           else {
             val erasedParents = parents mapConserve this
 
             // drop first parent for traits -- it has been normalized to a class by now,
             // but we should drop that in bytecode
             if (clazz.hasFlag(Flags.TRAIT) && !clazz.hasFlag(Flags.JAVA))
-              ObjectTpe :: erasedParents.tail.filter(_.typeSymbol != ObjectClass)
+              ObjectTpe :: erasedParents.tail.filter(_.typeSymbol ne ObjectClass)
             else erasedParents
           }
         if (newParents eq parents) tp
