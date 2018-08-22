@@ -1,0 +1,13 @@
+t11102.scala:5: error: error during expansion of this match (this is a scalac bug).
+The underlying error was: type mismatch;
+ found   : Seq[MutableCons] (in scala.collection.mutable)
+ required: Seq[MutableCons] (in scala.collection.immutable)
+  def f(x: MutableSeq) = x match {
+                           ^
+t11102.scala:8: error: error during expansion of this match (this is a scalac bug).
+The underlying error was: type mismatch;
+ found   : Seq[CollectionCons] (in scala.collection)
+ required: Seq[CollectionCons] (in scala.collection.immutable)
+  def f(x: CollectionSeq) = x match {
+                              ^
+two errors found
