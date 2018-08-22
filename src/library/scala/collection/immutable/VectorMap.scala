@@ -95,11 +95,11 @@ final class VectorMap[K, +V] private[immutable] (
   }
 
   override def tail: VectorMap[K, V] = {
-    new VectorMap(fields.tail, underlying.remove(fields.last))
+    new VectorMap(fields.tail, underlying.remove(fields.head))
   }
 
   override def init: VectorMap[K, V] = {
-    new VectorMap(fields.init, underlying.remove(fields.head))
+    new VectorMap(fields.init, underlying.remove(fields.last))
   }
 
   // Only care about content, not ordering for equality
