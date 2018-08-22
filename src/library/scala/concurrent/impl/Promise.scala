@@ -10,7 +10,7 @@ package scala.concurrent.impl
 import scala.concurrent.{ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, Batchable }
 import Future.InternalCallbackExecutor
 import scala.concurrent.duration.Duration
-import scala.annotation.{ tailrec, unchecked, switch }
+import scala.annotation.{ tailrec, switch }
 import scala.util.control.{ NonFatal, ControlThrowable }
 import scala.util.{ Try, Success, Failure }
 import scala.runtime.NonLocalReturnControl
