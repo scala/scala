@@ -383,7 +383,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     def run(): Unit = {
       echoPhaseSummary(this)
-      currentRun.units foreach applyPhase
+      val units = currentRun.units
+      while (units.hasNext)
+        applyPhase(units.next())
     }
 
     def apply(unit: CompilationUnit): Unit
@@ -396,12 +398,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
-    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
+    private def beforeUnit(unit: CompilationUnit): Unit = {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
+    }
+
+    @deprecated
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
+      beforeUnit(unit)
       if (!cancelled(unit)) {
         currentRun.informUnitStarting(this, unit)
         try withCurrentUnitNoLog(unit)(task)
@@ -409,6 +416,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
     }
 
+    @inline
     final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit): Unit = {
       val unit0 = currentUnit
       try {
@@ -420,7 +428,19 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
     }
 
-    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
+    final def applyPhase(unit: CompilationUnit) = {
+      beforeUnit(unit)
+      if (!cancelled(unit)) {
+        currentRun.informUnitStarting(this, unit)
+        val unit0 = currentUnit
+        currentRun.currentUnit = unit
+        try apply(unit)
+        finally {
+          currentRun.currentUnit = unit0
+          currentRun.advanceUnit()
+        }
+      }
+    }
   }
 
   // phaseName = "parser"

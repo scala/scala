@@ -77,7 +77,7 @@ trait TypersTracking {
     def indented(s: String): String =
       if (s == "") "" else currentIndent + s.replaceAll("\n", "\n" + currentIndent)
 
-    @inline final def runWith[T](t: Tree)(body: => T): T = {
+    @inline private final def runWith[T](t: Tree)(body: => T): T = {
       push(t)
       try body finally pop(t)
     }
@@ -128,15 +128,11 @@ trait TypersTracking {
         show(indented(s"[typed$class_s] " + truncAndOneLine(ptTree(tree))))
     }
 
-    def nextTyped(tree: Tree, mode: Mode, pt: Type, context: Context)(body: => Tree): Tree =
-      nextTypedInternal(tree, showPush(tree, mode, pt, context))(body)
-
-    def nextTypedInternal(tree: Tree, pushFn: => Unit)(body: => Tree): Tree = (
-      if (noPrintTyping(tree))
-        body
-      else
-        runWith(tree) { pushFn ; showPop(body) }
-    )
+    def beforeNextTyped(tree: Tree, mode: Mode, pt: Type, context: Context): Boolean = if (noPrintTyping(tree)) false else {
+      push(tree)
+      showPush(tree, mode, pt, context)
+      true
+    }
 
     @inline final def printTyping(tree: Tree, s: => String) = {
       if (printTypings && !noPrintTyping(tree))
