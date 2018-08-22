@@ -834,9 +834,29 @@ private[internal] trait TypeMaps {
   /** Note: This map is needed even for non-dependent method types, despite what the name might imply.
     */
   class InstantiateDependentMap(params: List[Symbol], actuals0: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
-    private val actuals      = actuals0.toIndexedSeq
-    private val existentials = new Array[Symbol](actuals.size)
-    def existentialsNeeded: List[Symbol] = existentials.iterator.filter(_ ne null).toList
+    private[this] var _actuals: Array[Type] = _
+    private[this] var _existentials: Array[Symbol] = _
+    private def actuals: Array[Type] = {
+      if (_actuals eq null) {
+        // OPT: hand rolled actuals0.toArray to avoid intermediate object creation.
+        val temp = new Array[Type](actuals0.size)
+        var i = 0
+        var l = actuals0
+        while (i < temp.length) {
+          temp(i) = l.head
+          l = l.tail // will not generated a NoSuchElementException because temp.size == actuals0.size
+          i += 1
+        }
+        _actuals = temp
+      }
+      _actuals
+    }
+    private def existentials: Array[Symbol] = {
+      if (_existentials eq null) _existentials = new Array[Symbol](actuals.length)
+      _existentials
+    }
+
+    def existentialsNeeded: List[Symbol] = if (_existentials eq null) Nil else existentials.iterator.filter(_ ne null).toList
 
     private object StableArgTp {
       // type of actual arg corresponding to param -- if the type is stable
