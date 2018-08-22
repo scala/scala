@@ -4049,23 +4049,11 @@ trait Types
 
   /** A creator and extractor for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
-   *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
-   *
-   *  PP to AM: I've co-opted this for where I know tparams may well be empty, and
-   *  expecting to get back `tpe` in such cases.  Re being "forgiving" below,
-   *  can we instead say this is the canonical creator for polyTypes which
-   *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
   object GenPolyType {
-    def apply(tparams: List[Symbol], tpe: Type): Type = {
-      tpe match {
-        case MethodType(_, _) =>
-          assert(tparams forall (_.isInvariant), "Trying to create a method with variant type parameters: " + ((tparams, tpe)))
-        case _                =>
-      }
-      if (tparams.nonEmpty) typeFun(tparams, tpe)
-      else tpe // it's okay to be forgiving here
-    }
+    def apply(tparams: List[Symbol], tpe: Type): Type =
+      if (tparams.isEmpty) tpe else PolyType(tparams, tpe)
+
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
       case PolyType(tparams, restpe) => Some((tparams, restpe))
       case _                         => Some((Nil, tpe))
