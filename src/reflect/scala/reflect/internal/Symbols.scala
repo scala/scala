@@ -2083,9 +2083,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // The slightly more principled approach of using the paramss of the
       // primary constructor leads to cycles in, for example, pos/t5084.scala.
       val primaryNames = constrParamAccessors map (_.name.dropLocal)
+      def nameStartsWithOrigDollar(name: Name, prefix: Name) =
+        name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
       caseFieldAccessorsUnsorted.sortBy { acc =>
         primaryNames indexWhere { orig =>
-          (acc.name == orig) || (acc.name startsWith (orig append "$"))
+          (acc.name == orig) || nameStartsWithOrigDollar(acc.name, orig)
         }
       }
     }
