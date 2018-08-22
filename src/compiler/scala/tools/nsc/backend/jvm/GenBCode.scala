@@ -62,8 +62,6 @@ abstract class GenBCode extends SubComponent {
   class BCodePhase(prev: Phase) extends StdPhase(prev) {
     override def description = "Generate bytecode from ASTs using the ASM library"
 
-    override val erasedTypes = true
-
     def apply(unit: CompilationUnit): Unit = codeGen.genUnit(unit)
 
     override def run(): Unit = {
