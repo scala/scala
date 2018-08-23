@@ -582,7 +582,7 @@ trait Types
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
-    def decl(name: Name): Symbol = findDecl(name, 0)
+    def decl(name: Name): Symbol = findDecl(name, 0L)
 
     /** A list of all non-private members defined or declared in this type. */
     def nonPrivateDecls: List[Symbol] = decls.filterNot(_.isPrivate).toList
@@ -977,7 +977,7 @@ trait Types
     /** If this is a symbol loader type, load and assign a new type to `sym`. */
     def load(sym: Symbol): Unit = {}
 
-    private def findDecl(name: Name, excludedFlags: Int): Symbol = {
+    private def findDecl(name: Name, excludedFlags: Long): Symbol = {
       var alts: List[Symbol] = List()
       var sym: Symbol = NoSymbol
       var e: ScopeEntry = decls.lookupEntry(name)
@@ -1023,10 +1023,17 @@ trait Types
      *  @param stableOnly     If set, return only members that are types or stable values
      */
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
-
-      if (this.isGround) findMemberInternal
-      else suspendingTypeVars(typeVarsInTypeRev(this))(findMemberInternal)
+      this match {
+        case _: PackageTypeRef =>
+          // OPT: No base type sequence to search, its more efficient to just use findDecl
+          val sym = findDecl(name, excludedFlags)
+          if (sym.hasAllFlags(requiredFlags)) sym
+          else NoSymbol
+        case _ =>
+          def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
+          if (this.isGround) findMemberInternal
+          else suspendingTypeVars(typeVarsInTypeRev(this))(findMemberInternal)
+      }
     }
 
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
