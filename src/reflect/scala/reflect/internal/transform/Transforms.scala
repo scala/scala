@@ -14,8 +14,8 @@ trait Transforms { self: SymbolTable =>
    *  in the standard library. Or is it already?
    */
   private class Lazy[T](op: => T) {
-    private var value: T = _
-    private var _isDefined = false
+    private[this] var value: T = _
+    private[this] var _isDefined = false
     def isDefined = _isDefined
     def force: T = {
       if (!isDefined) { value = op; _isDefined = true }
@@ -23,9 +23,9 @@ trait Transforms { self: SymbolTable =>
     }
   }
 
-  private val uncurryLazy     = new Lazy(new { val global: Transforms.this.type = self } with UnCurry)
-  private val erasureLazy     = new Lazy(new { val global: Transforms.this.type = self } with Erasure)
-  private val postErasureLazy = new Lazy(new { val global: Transforms.this.type = self } with PostErasure)
+  private[this] val uncurryLazy     = new Lazy(new { val global: Transforms.this.type = self } with UnCurry)
+  private[this] val erasureLazy     = new Lazy(new { val global: Transforms.this.type = self } with Erasure)
+  private[this] val postErasureLazy = new Lazy(new { val global: Transforms.this.type = self } with PostErasure)
 
   def uncurry = uncurryLazy.force
   def erasure = erasureLazy.force

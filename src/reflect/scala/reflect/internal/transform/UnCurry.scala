@@ -68,7 +68,7 @@ trait UnCurry {
       }
   }
 
-  private val uncurryType = new TypeMap {
+  private[this] val uncurryType = new TypeMap {
     def apply(tp0: Type): Type = {
       val tp = expandAlias(tp0)
       tp match {

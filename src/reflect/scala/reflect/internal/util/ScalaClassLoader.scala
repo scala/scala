@@ -132,7 +132,7 @@ object ScalaClassLoader {
          with ScalaClassLoader
          with HasClassPath {
 
-    private var classloaderURLs: Seq[URL] = urls
+    private[this] var classloaderURLs: Seq[URL] = urls
     def classPathURLs: Seq[URL] = classloaderURLs
 
     /** Override to widen to public */

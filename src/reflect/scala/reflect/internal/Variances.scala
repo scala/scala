@@ -20,10 +20,10 @@ trait Variances {
    *  TODO - eliminate duplication with varianceInType
    */
   class VarianceValidator extends InternalTraverser {
-    private val escapedLocals = mutable.HashSet[Symbol]()
+    private[this] val escapedLocals = mutable.HashSet[Symbol]()
     // A flag for when we're in a refinement, meaning method parameter types
     // need to be checked.
-    private var inRefinement = false
+    private[this] var inRefinement = false
     @inline private def withinRefinement(body: => Type): Type = {
       val saved = inRefinement
       inRefinement = true
@@ -57,7 +57,7 @@ trait Variances {
     )
 
     private object ValidateVarianceMap extends TypeMap(trackVariance = true) {
-      private var base: Symbol = _
+      private[this] var base: Symbol = _
 
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.

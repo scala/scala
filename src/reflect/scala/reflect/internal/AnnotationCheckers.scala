@@ -80,7 +80,7 @@ trait AnnotationCheckers {
   // Syncnote: Annotation checkers inaccessible to reflection, so no sync in var necessary.
 
   /** The list of annotation checkers that have been registered */
-  private var annotationCheckers: List[AnnotationChecker] = Nil
+  private[this] var annotationCheckers: List[AnnotationChecker] = Nil
 
   /** Register an annotation checker.  Typically these are added by compiler plugins. */
   def addAnnotationChecker(checker: AnnotationChecker): Unit = {

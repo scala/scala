@@ -214,7 +214,7 @@ abstract class SymbolTable extends macros.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  private val phStack: collection.mutable.Stack[Phase] = new collection.mutable.Stack()
+  private[this] val phStack: collection.mutable.Stack[Phase] = new collection.mutable.Stack()
   private[this] var ph: Phase = NoPhase
   private[this] var per = NoPeriod
 
@@ -395,8 +395,8 @@ abstract class SymbolTable extends macros.Universe
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
     import java.lang.ref.WeakReference
-    private var caches = List[WeakReference[Clearable]]()
-    private var javaCaches = List[JavaClearable[_]]()
+    private[this] var caches = List[WeakReference[Clearable]]()
+    private[this] var javaCaches = List[JavaClearable[_]]()
 
     def recordCache[T <: Clearable](cache: T): T = {
       cache match {

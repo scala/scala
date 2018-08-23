@@ -313,7 +313,7 @@ trait Erasure {
   }
 
   object boxingErasure extends ScalaErasureMap {
-    private var boxPrimitives = true
+    private[this] var boxPrimitives = true
 
     override def applyInArray(tp: Type): Type = {
       val saved = boxPrimitives

@@ -239,7 +239,7 @@ private[internal] trait TypeMaps {
     *  in ClassFileParser.sigToType (where it is usually done).
     */
   def rawToExistential = new TypeMap {
-    private var expanded = immutable.Set[Symbol]()
+    private[this] var expanded = immutable.Set[Symbol]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         if (expanded contains sym) AnyRefTpe
@@ -272,7 +272,7 @@ private[internal] trait TypeMaps {
   /** Used by existentialAbstraction.
     */
   class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(trackVariance = true) {
-    private val occurCount = mutable.HashMap[Symbol, Int]()
+    private[this] val occurCount = mutable.HashMap[Symbol, Int]()
     private def countOccs(tp: Type) = {
       tp foreach {
         case TypeRef(_, sym, _) =>
@@ -371,7 +371,7 @@ private[internal] trait TypeMaps {
   /** A map to compute the asSeenFrom method.
     */
   class AsSeenFromMap(seenFromPrefix0: Type, seenFromClass: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
-    private val seenFromPrefix: Type = if (seenFromPrefix0.typeSymbolDirect.hasPackageFlag && !seenFromClass.hasPackageFlag)
+    private[this] val seenFromPrefix: Type = if (seenFromPrefix0.typeSymbolDirect.hasPackageFlag && !seenFromClass.hasPackageFlag)
       seenFromPrefix0.packageObject.typeOfThis
     else seenFromPrefix0
     // Some example source constructs relevant in asSeenFrom:
@@ -403,9 +403,9 @@ private[internal] trait TypeMaps {
       case _                                                           => tp.mapOver(this)
     }
 
-    private var _capturedSkolems: List[Symbol] = Nil
-    private var _capturedParams: List[Symbol]  = Nil
-    private val isStablePrefix = seenFromPrefix.isStable
+    private[this] var _capturedSkolems: List[Symbol] = Nil
+    private[this] var _capturedParams: List[Symbol]  = Nil
+    private[this] val isStablePrefix = seenFromPrefix.isStable
 
     // isBaseClassOfEnclosingClassOrInfoIsNotYetComplete would be a more accurate
     // but less succinct name.
@@ -428,7 +428,7 @@ private[internal] trait TypeMaps {
         && isBaseClassOfEnclosingClass(sym.owner)
       )
 
-    private var capturedThisIds = 0
+    private[this] var capturedThisIds = 0
     private def nextCapturedThisId() = { capturedThisIds += 1; capturedThisIds }
     /** Creates an existential representing a type parameter which appears
       *  in the prefix of a ThisType.

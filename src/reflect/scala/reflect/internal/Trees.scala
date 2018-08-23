@@ -1681,7 +1681,7 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = new SubstSymMap(from, to)
-    private var mutatedSymbols: List[Symbol] = Nil
+    private[this] var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
       def subst(from: List[Symbol], to: List[Symbol]): Unit = {
         if (!from.isEmpty)

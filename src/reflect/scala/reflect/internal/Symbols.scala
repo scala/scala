@@ -31,17 +31,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
-  private var _recursionTable = immutable.Map.empty[Symbol, Int]
+  private[this] var _recursionTable = immutable.Map.empty[Symbol, Int]
   def recursionTable = _recursionTable
   def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
-  private var _lockedCount = 0
+  private[this] var _lockedCount = 0
   def lockedCount = this._lockedCount
   def lockedCount_=(i: Int) = _lockedCount = i
 
 
   @deprecated("Global existential IDs no longer used", "2.12.1")
-  private var existentialIds = 0
+  private[this] var existentialIds = 0
   @deprecated("Global existential IDs no longer used", "2.12.1")
   protected def nextExistentialId() = { existentialIds += 1; existentialIds }
   @deprecated("Use overload that accepts an id", "2.12.1")
@@ -70,7 +70,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    * The original owner of a symbol is needed in some places in the backend. Ideally, owners should
    * be versioned like the type history.
    */
-  private val originalOwnerMap = perRunCaches.newAnyRefMap[Symbol, Symbol]()
+  private[this] val originalOwnerMap = perRunCaches.newAnyRefMap[Symbol, Symbol]()
 
   // TODO - don't allow the owner to be changed without checking invariants, at least
   // when under some flag. Define per-phase invariants for owner/owned relationships,
@@ -1224,7 +1224,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def enclClassChain: List[Symbol] = owner.enclClassChain
 
     def ownersIterator: Iterator[Symbol] = new collection.AbstractIterator[Symbol] {
-      private var current = Symbol.this
+      private[this] var current = Symbol.this
       def hasNext = current ne NoSymbol
       def next = { val r = current; current = current.owner; r }
     }
@@ -2934,7 +2934,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for module symbols */
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with ModuleSymbolApi {
-    private var flatname: TermName = null
+    private[this] var flatname: TermName = null
 
     override def associatedFile = moduleClass.associatedFile
     override def associatedFile_=(f: AbstractFile): Unit = { moduleClass.associatedFile = f }
@@ -3092,10 +3092,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case _             => super.resolveOverloadedFlag(flag)
     }
 
-    private var tyconCache: Type = null
-    private var tyconRunId = NoRunId
-    private var tpeCache: Type = _
-    private var tpePeriod = NoPeriod
+    private[this] var tyconCache: Type = null
+    private[this] var tyconRunId = NoRunId
+    private[this] var tpeCache: Type = _
+    private[this] var tpePeriod = NoPeriod
 
     override def isAbstractType          = this hasFlag DEFERRED
     override def isContravariant         = this hasFlag CONTRAVARIANT
@@ -3442,9 +3442,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var typeOfThisCache: Type = _
     private[this] var typeOfThisPeriod      = NoPeriod
 
-    private var implicitMembersCacheValue: Scope = EmptyScope
-    private var implicitMembersCacheKey1: Type = NoType
-    private var implicitMembersCacheKey2: ScopeEntry = null
+    private[this] var implicitMembersCacheValue: Scope = EmptyScope
+    private[this] var implicitMembersCacheKey1: Type = NoType
+    private[this] var implicitMembersCacheKey2: ScopeEntry = null
 
     override def isModuleClass = true
     override def linkedClassOfClass = companionClass

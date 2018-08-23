@@ -43,7 +43,7 @@ abstract class Origins {
   def newRep(xs: StackSlice): Rep
   def repString(rep: Rep): String
 
-  private val origins      = new mutable.HashMap[Rep, Int] withDefaultValue 0
+  private[this] val origins      = new mutable.HashMap[Rep, Int] withDefaultValue 0
   private def add(xs: Rep) = origins(xs) += 1
   private def total        = origins.values.foldLeft(0L)(_ + _)
 
@@ -70,8 +70,8 @@ abstract class Origins {
 }
 
 object Origins {
-  private val counters  = mutable.HashMap[String, Origins]()
-  private val thisClass = this.getClass.getName
+  private[this] val counters  = mutable.HashMap[String, Origins]()
+  private[this] val thisClass = this.getClass.getName
 
   locally {
     Runtime.getRuntime.addShutdownHook(new Thread(() =>

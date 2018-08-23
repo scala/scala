@@ -21,7 +21,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   lazy val settings = new Settings
 
   override final val statistics = new Statistics(JavaUniverse.this, settings) with ReflectStats
-  private val isLogging = System.getProperty("scala.debug.reflect") != null
+  private[this] val isLogging = System.getProperty("scala.debug.reflect") != null
   def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   // TODO: why put output under isLogging? Calls to inform are already conditional on debug/verbose/...

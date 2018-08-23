@@ -73,8 +73,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** a cache for all elements, to be used by symbol iterator.
      */
-    private var elemsCache: List[Symbol] = null
-    private var cachedSize = -1
+    private[this] var elemsCache: List[Symbol] = null
+    private[this] var cachedSize = -1
     private def flushElemsCache(): Unit = {
       elemsCache = null
       cachedSize = -1
@@ -275,13 +275,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** Returns an iterator yielding every symbol with given name in this scope.
      */
     def lookupAll(name: Name): Iterator[Symbol] = new AbstractIterator[Symbol] {
-      var e = lookupEntry(name)
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
     }
 
     def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new AbstractIterator[ScopeEntry] {
-      var e = lookupEntry(name)
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
     }

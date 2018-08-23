@@ -14,8 +14,8 @@ import java.lang.ref.WeakReference
 private[runtime] trait TwoWayCaches { self: SymbolTable =>
   class TwoWayCache[J, S] {
 
-    private val toScalaMap = new WeakHashMap[J, WeakReference[S]]
-    private val toJavaMap = new WeakHashMap[S, WeakReference[J]]
+    private[this] val toScalaMap = new WeakHashMap[J, WeakReference[S]]
+    private[this] val toJavaMap = new WeakHashMap[S, WeakReference[J]]
 
     def enter(j: J, s: S) = gilSynchronized {
       // debugInfo("cached: "+j+"/"+s)

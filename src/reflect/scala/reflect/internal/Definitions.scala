@@ -47,7 +47,7 @@ trait Definitions extends api.StandardDefinitions {
 
     import ClassfileConstants._
 
-    private val nameToWeight = Map[Name, Int](
+    private[this] val nameToWeight = Map[Name, Int](
       tpnme.Byte   -> 2,
       tpnme.Char   -> 3,
       tpnme.Short  -> 4,
@@ -57,7 +57,7 @@ trait Definitions extends api.StandardDefinitions {
       tpnme.Double -> 96
     )
 
-    private val nameToTag = Map[Name, Char](
+    private[this] val nameToTag = Map[Name, Char](
       tpnme.Byte    -> BYTE_TAG,
       tpnme.Char    -> CHAR_TAG,
       tpnme.Short   -> SHORT_TAG,
@@ -178,7 +178,7 @@ trait Definitions extends api.StandardDefinitions {
   }
 
   abstract class DefinitionsClass extends DefinitionsApi with ValueClassDefinitions {
-    private var isInitialized = false
+    private[this] var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
     // It becomes tricky to create dedicated objects for other symbols because
@@ -588,10 +588,10 @@ trait Definitions extends api.StandardDefinitions {
       (sym.tpe member nme.main).alternatives exists isJavaMainMethod
 
     class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
-      private val offset = countFrom - init.size
+      private[this] val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
       val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
-      private val symSet = new SymbolSet(seq.toList)
+      private[this] val symSet = new SymbolSet(seq.toList)
       def contains(sym: Symbol): Boolean = symSet.contains(sym)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {

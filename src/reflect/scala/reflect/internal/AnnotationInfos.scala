@@ -144,7 +144,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     assert(args.isEmpty || assocs.isEmpty, atp)
 
     // necessary for reification, see Reifiers.scala for more info
-    private var orig: Tree = EmptyTree
+    private[this] var orig: Tree = EmptyTree
     def original = orig
     def setOriginal(t: Tree): this.type = {
       orig = t
@@ -166,7 +166,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  definitions) have to be lazy (#1782)
    */
   final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
-    private var forced = false
+    private[this] var forced = false
     private lazy val forcedInfo = try lazyInfo finally forced = true
 
     def atp: Type                               = forcedInfo.atp
@@ -215,7 +215,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // see annotationArgRewriter
     lazy val isTrivial = atp.isTrivial && !hasArgWhich(_.isInstanceOf[This])
 
-    private var rawpos: Position = NoPosition
+    private[this] var rawpos: Position = NoPosition
     def pos = rawpos
     def setPos(pos: Position): this.type = { // Syncnote: Setpos inaccessible to reflection, so no sync in rawpos necessary.
       rawpos = pos

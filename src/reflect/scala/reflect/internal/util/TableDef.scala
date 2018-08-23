@@ -17,7 +17,7 @@ class TableDef[T](_cols: Column[T]*) {
   def ~(next: Column[T])            = retThis(cols :+= next)
 
   // Below this point should all be considered private/internal.
-  private var cols: List[Column[T]] = _cols.toList
+  private[this] var cols: List[Column[T]] = _cols.toList
 
   def defaultSep(index: Int)   = if (index > (cols.size - 2)) "" else " "
   def sepAfter(i: Int): String = defaultSep(i)

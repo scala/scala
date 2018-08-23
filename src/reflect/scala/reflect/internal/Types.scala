@@ -90,7 +90,7 @@ trait Types
   import definitions._
   import statistics._
 
-  private var explainSwitch = false
+  private[this] var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
   private final val breakCycles = settings.breakCycles.value
@@ -114,7 +114,7 @@ trait Types
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
-  private var _skolemizationLevel = 0
+  private[this] var _skolemizationLevel = 0
   def skolemizationLevel = _skolemizationLevel
   def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
@@ -123,7 +123,7 @@ trait Types
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  private val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  private[this] val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
   def intersectionWitness = _intersectionWitness
 
   /** A proxy for a type (identified by field `underlying`) that forwards most
@@ -1382,7 +1382,7 @@ trait Types
    *  Cannot be created directly; one should always use `singleType` for creation.
    */
   abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType with SingleTypeApi {
-    private var trivial: ThreeValue = UNKNOWN
+    private[this] var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN) trivial = fromBoolean(pre.isTrivial)
       toBoolean(trivial)
@@ -1460,7 +1460,7 @@ trait Types
   }
 
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType with SuperTypeApi {
-    private var trivial: ThreeValue = UNKNOWN
+    private[this] var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN) trivial = fromBoolean(thistpe.isTrivial && supertpe.isTrivial)
       toBoolean(trivial)
@@ -1722,7 +1722,7 @@ trait Types
   }
 
   object baseClassesCycleMonitor {
-    private var open: List[Symbol] = Nil
+    private[this] var open: List[Symbol] = Nil
     @inline private def cycleLog(msg: => String): Unit = {
       if (settings.debug)
         Console.err.println(msg)
@@ -1811,7 +1811,7 @@ trait Types
         normalized
       }
 
-    private var normalized: Type = _
+    private[this] var normalized: Type = _
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
       // scala/bug#8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
@@ -1911,7 +1911,7 @@ trait Types
      *  it is accessed only from expansiveRefs, which is called only from
      *  Typer.
      */
-    private var refs: Array[RefMap] = _
+    private[this] var refs: Array[RefMap] = _
 
     /** The initialization state of the class: UnInitialized --> Initializing --> Initialized
      *  Syncnote: This var need not be protected with synchronized, because
@@ -1955,7 +1955,7 @@ trait Types
 
     // TODO should we pull this out to reduce memory footprint of ClassInfoType?
     private object enterRefs extends TypeMap {
-      private var tparam: Symbol = _
+      private[this] var tparam: Symbol = _
 
       def apply(tp: Type): Type = {
         tp match {
@@ -2174,9 +2174,9 @@ trait Types
       * several times. Hence, no need to protected with synchronized in a multi-threaded
       * usage scenario.
       */
-    private var relativeInfoCache: Type = _
-    private var relativeInfoCacheValidForPeriod: Period = NoPeriod
-    private var relativeInfoCacheValidForSymInfo: Type = _
+    private[this] var relativeInfoCache: Type = _
+    private[this] var relativeInfoCacheValidForPeriod: Period = NoPeriod
+    private[this] var relativeInfoCacheValidForSymInfo: Type = _
 
     override private[Types] def invalidateTypeRefCaches(): Unit = {
       super.invalidateTypeRefCaches()
@@ -2345,7 +2345,7 @@ trait Types
       if ((pre1 eq pre) && (args1 eq args)) this
       else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
     }
-    private var trivial: ThreeValue = UNKNOWN
+    private[this] var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN)
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
@@ -2371,7 +2371,7 @@ trait Types
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod             = NoPeriod
-    private var normalized: Type                       = _
+    private[this] var normalized: Type                       = _
 
     //OPT specialize hashCode
     override final def computeHashCode = {
@@ -2755,7 +2755,7 @@ trait Types
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type with MethodTypeApi {
 
-    private var trivial: ThreeValue = UNKNOWN
+    private[this] var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
       if (trivial == UNKNOWN) trivial = fromBoolean(isTrivialResult && areTrivialParams)
       toBoolean(trivial)
@@ -2834,7 +2834,7 @@ trait Types
       }
       else existentialAbstraction(params, resultType)
 
-    private var isdepmeth: ThreeValue = UNKNOWN
+    private[this] var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
       if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
       toBoolean(isdepmeth)
@@ -3436,7 +3436,7 @@ trait Types
 
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
-    private var _suspended: Type = ConstantFalse
+    private[this] var _suspended: Type = ConstantFalse
     private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
       case ConstantFalse => false
       case ConstantTrue  => true
@@ -4142,9 +4142,9 @@ trait Types
 
 // Hash consing --------------------------------------------------------------
 
-  private val initialUniquesCapacity = 4096
-  private var uniques: util.WeakHashSet[Type] = _
-  private var uniqueRunId = NoRunId
+  private[this] val initialUniquesCapacity = 4096
+  private[this] var uniques: util.WeakHashSet[Type] = _
+  private[this] var uniqueRunId = NoRunId
 
   final def howManyUniqueTypes: Int = if (uniques == null) 0 else uniques.size
 
@@ -4409,11 +4409,11 @@ trait Types
   /** Are `tps1` and `tps2` lists of pairwise equivalent types? */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
-  private var _basetypeRecursions: Int = 0
+  private[this] var _basetypeRecursions: Int = 0
   def basetypeRecursions = _basetypeRecursions
   def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
 
-  private val _pendingBaseTypes = new mutable.HashSet[Type]
+  private[this] val _pendingBaseTypes = new mutable.HashSet[Type]
   def pendingBaseTypes = _pendingBaseTypes
 
   /** Does this type have a prefix that begins with a type variable,
@@ -4990,7 +4990,7 @@ trait Types
   }
 
   /** The current indentation string for traces */
-  private var _indent: String = ""
+  private[this] var _indent: String = ""
   protected def indent = _indent
   protected def indent_=(value: String) = _indent = value
 

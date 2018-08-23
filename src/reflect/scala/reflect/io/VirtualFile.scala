@@ -32,7 +32,7 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     case _              => false
   }
 
-  private var content = Array.emptyByteArray
+  private[this] var content = Array.emptyByteArray
 
   def absolute = this
 
