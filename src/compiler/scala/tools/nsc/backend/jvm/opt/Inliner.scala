@@ -297,8 +297,6 @@ abstract class Inliner {
 
     var changedMethodHasIllegalAccess = false
 
-    var currentMethodRolledBack = false
-
     // TODO: remove those that were rolled back to their original form?
     val overallChangedMethods = mutable.Set.empty[MethodNode]
 
@@ -345,6 +343,8 @@ abstract class Inliner {
           instructionMap
         }
 
+        var currentMethodRolledBack = false
+
         for (r <- rs) if (!currentMethodRolledBack) {
           canInlineCallsite(r.callsite) match {
             case None =>
@@ -354,15 +354,14 @@ abstract class Inliner {
               if (state.undoLog == NoUndoLogging) {
                 val undo = new UndoLog()
                 val currentState = state.clone()
+                // undo actions for the method and global state
                 undo.saveMethodState(r.callsite.callsiteClass, method)
                 undo {
+                  // undo actions for the state of the inliner loop
                   failed += r.callsite.callsiteInstruction
                   inlinerState(method) = currentState
-                  currentMethodRolledBack = true
                   // method is not in changedMethods in both places where `rollback` is invoked
                   changedMethods.enqueue(method)
-                  BackendUtils.clearDceDone(method)
-                  analyzerCache.invalidate(method)
                 }
                 state.undoLog = undo
               }
@@ -376,6 +375,7 @@ abstract class Inliner {
               if (state.illegalAccessInstructions(callInsn)) {
                 state.inlineLog.logRollback(r.callsite, "The callsite could not be inlined, keeping it would cause an IllegalAccessError", state.outerCallsite(r.callsite.callsiteInstruction))
                 state.undoLog.rollback()
+                currentMethodRolledBack = true
               }
 
               state.rootInlinedCallsiteWithWarning(r.callsite.callsiteInstruction, skipForwarders = true) match {
@@ -449,7 +449,6 @@ abstract class Inliner {
         }
 
         changedMethodHasIllegalAccess = false
-        currentMethodRolledBack = false
       }
     }
 
@@ -619,6 +618,8 @@ abstract class Inliner {
         methodNode.maxLocals = currentMaxLocals
         methodNode.maxStack = currentMaxStack
 
+        BackendUtils.clearDceDone(methodNode)
+        analyzerCache.invalidate(methodNode)
         callGraph.refresh(methodNode, ownerClass)
 
         onIndyLambdaImplMethodIfPresent(ownerClass.internalName)(_.remove(methodNode))
