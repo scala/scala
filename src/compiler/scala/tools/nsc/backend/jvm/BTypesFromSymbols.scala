@@ -93,19 +93,12 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryNameString
-      cachedClassBType(internalName) match {
-        case Some(bType) =>
-          if (currentRun.compiles(classSym))
-            assert(bType fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
-          bType
-        case None =>
-          // The new ClassBType is added to the map via its apply, before we set its info. This
-          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-          ClassBType(internalName, true) { res:ClassBType =>
-            if (completeSilentlyAndCheckErroneous(classSym))
-              Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-            else computeClassInfo(classSym, res)
-          }
+      // The new ClassBType is added to the map via its apply, before we set its info. This
+      // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+      ClassBType(internalName, fromSymbol = true) { res:ClassBType =>
+        if (completeSilentlyAndCheckErroneous(classSym))
+          Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+        else computeClassInfo(classSym, res)
       }
     }
   }
@@ -623,33 +616,29 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    cachedClassBType(internalName).getOrElse {
-      ClassBType(internalName, true) { c: ClassBType =>
-        val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
-        val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
-        Right(ClassInfo(
-          superClass = Some(ObjectRef),
-          interfaces = Nil,
-          flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
-          nestedClasses = nested,
-          nestedInfo = Lazy.eagerNone,
-          inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
-      }
+    ClassBType(internalName, fromSymbol = true) { c: ClassBType =>
+      val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
+      val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
+      Right(ClassInfo(
+        superClass = Some(ObjectRef),
+        interfaces = Nil,
+        flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
+        nestedClasses = nested,
+        nestedInfo = Lazy.eagerNone,
+        inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
     }
   }
 
   def beanInfoClassClassBType(mainClass: Symbol): ClassBType = {
     val internalName = mainClass.javaBinaryNameString + "BeanInfo"
-    cachedClassBType(internalName).getOrElse {
-      ClassBType(internalName, true) { c: ClassBType =>
-        Right(ClassInfo(
-          superClass = Some(sbScalaBeanInfoRef),
-          interfaces = Nil,
-          flags = javaFlags(mainClass),
-          nestedClasses = Lazy.eagerNil,
-          nestedInfo = Lazy.eagerNone,
-          inlineInfo = EmptyInlineInfo))
-      }
+    ClassBType(internalName, fromSymbol = true) { c: ClassBType =>
+      Right(ClassInfo(
+        superClass = Some(sbScalaBeanInfoRef),
+        interfaces = Nil,
+        flags = javaFlags(mainClass),
+        nestedClasses = Lazy.eagerNil,
+        nestedInfo = Lazy.eagerNone,
+        inlineInfo = EmptyInlineInfo))
     }
   }
 

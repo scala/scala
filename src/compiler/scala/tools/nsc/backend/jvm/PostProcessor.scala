@@ -148,8 +148,8 @@ abstract class PostProcessor extends PerRunInit {
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
       // All types that appear in a class node need to have their ClassBType cached, see [[cachedClassBType]].
-      val a = cachedClassBType(inameA).get
-      val b = cachedClassBType(inameB).get
+      val a = cachedClassBType(inameA)
+      val b = cachedClassBType(inameB)
       val lub = a.jvmWiseLUB(b).get
       val lubName = lub.internalName
       assert(lubName != "scala/Any")
