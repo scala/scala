@@ -127,21 +127,23 @@ abstract class Inliner {
     // Because the InlineLog is part of the MethodInlinerState, subsequent requests will all be
     // for the same callsite class / method. At the point where the MethodInlinerState is created
     // we don't have access to the enclosing class.
-    private def active(callsite: Callsite) = {
+    private def active(callsiteClass: ClassBType, callsiteMethod: MethodNode): Boolean = {
       if (roots == null) {
         compilerSettings.optLogInline match {
           case Some("_") => _active = true
-          case Some(prefix) => _active = s"${callsite.callsiteClass.internalName}.${callsite.callsiteMethod.name}" startsWith prefix
+          case Some(prefix) => _active = s"${callsiteClass.internalName}.${callsiteMethod.name}" startsWith prefix
           case _ => _active = false
         }
         if (_active) {
           roots = mutable.ArrayBuffer.empty[InlineLogResult]
           downstream = mutable.HashMap.empty[Callsite, mutable.ArrayBuffer[InlineLogResult]]
-          callsiteInfo = s"Inlining into ${callsite.callsiteClass.internalName}.${callsite.callsiteMethod.name}"
+          callsiteInfo = s"Inlining into ${callsiteClass.internalName}.${callsiteMethod.name}"
         }
       }
       _active
     }
+
+    private def active(callsite: Callsite): Boolean = active(callsite.callsiteClass, callsite.callsiteMethod)
 
     private def bufferForOuter(outer: Option[Callsite]) = outer match {
       case Some(o) => downstream.getOrElse(o, roots)
@@ -151,6 +153,10 @@ abstract class Inliner {
     def logSuccess(request: InlineRequest, sizeBefore: Int, sizeAfter: Int, outer: Option[Callsite]) = if (active(request.callsite)) {
       bufferForOuter(outer) += InlineLogSuccess(request, sizeBefore, sizeAfter)
       downstream(request.callsite) = mutable.ArrayBuffer.empty
+    }
+
+    def logClosureRewrite(closureInit: ClosureInstantiation, invocations: mutable.ArrayBuffer[(MethodInsnNode, Int)], outer: Option[Callsite]) = if (active(closureInit.ownerClass, closureInit.ownerMethod)) {
+      bufferForOuter(outer) += InlineLogRewrite(closureInit, invocations.map(_._1).toList)
     }
 
     def logFail(request: InlineRequest, warning: CannotInlineWarning, outer: Option[Callsite]) = if (active(request.callsite)) {
@@ -198,6 +204,9 @@ abstract class Inliner {
           case s @ InlineLogSuccess(r, sizeBefore, sizeAfter) =>
             s"${indentString}inlined ${calleeString(r)} (${r.reason}). Before: $sizeBefore ins, after: $sizeAfter ins."
 
+          case InlineLogRewrite(closureInit, invocations) =>
+            s"${indentString}rewrote invocations of closure allocated in ${closureInit.ownerClass.internalName}.${closureInit.ownerMethod.name} with body ${closureInit.lambdaMetaFactoryCall.implMethod.getName}: ${invocations.map(AsmUtils.textify).mkString(", ")}"
+
           case InlineLogFail(r, w) =>
             s"${indentString}failed ${calleeString(r)} (${r.reason}). ${w.toString.replace('\n', ' ')}"
 
@@ -207,6 +216,7 @@ abstract class Inliner {
       }
     }
     final case class InlineLogSuccess(request: InlineRequest, sizeBefore: Int, sizeAfter: Int) extends InlineLogResult
+    final case class InlineLogRewrite(closureInit: ClosureInstantiation, invocations: List[MethodInsnNode]) extends InlineLogResult
     final case class InlineLogFail(request: InlineRequest, warning: CannotInlineWarning) extends InlineLogResult
     final case class InlineLogRollback(reason: String) extends InlineLogResult
   }
@@ -256,7 +266,8 @@ abstract class Inliner {
 
       if (runClosureOptimizer) {
         val specificMethodsForClosureRewriting = if (firstRound) None else Some(changedByInliner)
-        changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting)
+        // TODO: remove cast by moving `MethodInlinerState` and other classes from inliner to a separate PostProcessor component
+        changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting, inlinerState.asInstanceOf[mutable.Map[MethodNode, postProcessor.closureOptimizer.postProcessor.inliner.MethodInlinerState]])
       }
 
       for (m <- inlinerState.keySet if !changedByClosureOptimizer(m))
