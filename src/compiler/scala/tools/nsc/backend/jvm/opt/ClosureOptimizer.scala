@@ -84,7 +84,7 @@ abstract class ClosureOptimizer {
    *                instantiations.
    * @return The changed methods. The order of the resulting sequence is deterministic.
    */
-  def rewriteClosureApplyInvocations(methods: Option[Iterable[MethodNode]]): mutable.LinkedHashSet[MethodNode] = {
+  def rewriteClosureApplyInvocations(methods: Option[Iterable[MethodNode]], inlinerState: mutable.Map[MethodNode, inliner.MethodInlinerState]): mutable.LinkedHashSet[MethodNode] = {
 
     // sort all closure invocations to rewrite to ensure bytecode stability
     val toRewrite = mutable.TreeMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
@@ -141,6 +141,8 @@ abstract class ClosureOptimizer {
         previousMethod = closureInit.ownerMethod
         changedMethods += previousMethod
         analyzerCache.invalidate(previousMethod)
+        val state = inlinerState.getOrElseUpdate(previousMethod, new inliner.MethodInlinerState)
+        state.inlineLog.logClosureRewrite(closureInit, invocations, invocations.headOption.flatMap(p => state.outerCallsite(p._1)))
       }
     }
 

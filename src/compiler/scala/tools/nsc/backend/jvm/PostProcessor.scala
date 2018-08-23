@@ -3,6 +3,7 @@ package backend.jvm
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
@@ -113,7 +114,7 @@ abstract class PostProcessor extends PerRunInit {
       if (compilerSettings.optInlinerEnabled)
         inliner.runInlinerAndClosureOptimizer()
       else if (compilerSettings.optClosureInvocations)
-        closureOptimizer.rewriteClosureApplyInvocations(None)
+        closureOptimizer.rewriteClosureApplyInvocations(None, mutable.Map.empty)
     }
   }
 
