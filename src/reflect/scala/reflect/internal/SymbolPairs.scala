@@ -270,7 +270,7 @@ abstract class SymbolPairs {
 
     def hasNext     = curEntry ne null
     def currentPair = new SymbolPair(base, low, high)
-    def iterator    = new Iterator[SymbolPair] {
+    def iterator: Iterator[SymbolPair] = new collection.AbstractIterator[SymbolPair] {
       def hasNext = cursor.hasNext
       def next()  = try cursor.currentPair finally cursor.next()
     }

@@ -1223,7 +1223,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // Non-classes skip self and return rest of owner chain; overridden in ClassSymbol.
     def enclClassChain: List[Symbol] = owner.enclClassChain
 
-    def ownersIterator: Iterator[Symbol] = new Iterator[Symbol] {
+    def ownersIterator: Iterator[Symbol] = new collection.AbstractIterator[Symbol] {
       private var current = Symbol.this
       def hasNext = current ne NoSymbol
       def next = { val r = current; current = current.owner; r }

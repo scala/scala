@@ -66,7 +66,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     xs.iterator foreach addEntry
   }
 
-  def iterator = new Iterator[T] {
+  def iterator: Iterator[T] = new collection.AbstractIterator[T] {
     private var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (table(i) eq null)) i += 1

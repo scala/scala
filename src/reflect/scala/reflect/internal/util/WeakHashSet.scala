@@ -280,7 +280,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   override def iterator: Iterator[A] = {
     removeStaleEntries()
 
-    new Iterator[A] {
+    new collection.AbstractIterator[A] {
 
       /**
        * the bucket currently being examined. Initially it's set past the last bucket and will be decremented
