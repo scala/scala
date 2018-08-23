@@ -1094,7 +1094,7 @@ abstract class ClassfileParser {
     def addParamNames(): Unit =
       if ((paramNames ne null) && sym.hasRawInfo && sym.isMethod) {
         val params = sym.rawInfo.params
-        (paramNames zip params).foreach {
+        foreach2(paramNames.toList, params) {
           case (nme.NO_NAME, _) => // param was ACC_SYNTHETIC; ignore
           case (name, param) =>
             param.resetFlag(SYNTHETIC)
