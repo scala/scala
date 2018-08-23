@@ -9,59 +9,47 @@ import java.lang.invoke.MethodHandle;
  * Its implementation delegates to {@link scala.reflect.internal.util.AlmostFinalValue},
  * which helps performance (see docs to find out why).
  */
-public final class StatisticsStatics extends BooleanContainer {
-  public StatisticsStatics(boolean value) {
-    super(value);
-  }
-
-  private static final AlmostFinalValue<BooleanContainer> COLD_STATS = new AlmostFinalValue<BooleanContainer>() {
+public final class StatisticsStatics {
+  private static final AlmostFinalValue COLD_STATS = new AlmostFinalValue() {
     @Override
-    protected BooleanContainer initialValue() {
-        return new FalseContainer();
+    protected boolean initialValue() {
+        return false;
     }
   };
 
-  private static final AlmostFinalValue<BooleanContainer> HOT_STATS = new AlmostFinalValue<BooleanContainer>() {
+  private static final AlmostFinalValue HOT_STATS = new AlmostFinalValue() {
     @Override
-    protected BooleanContainer initialValue() {
-        return new FalseContainer();
+    protected boolean initialValue() {
+        return false;
     }
   };
 
   private static final MethodHandle COLD_STATS_GETTER = COLD_STATS.createGetter();
   private static final MethodHandle HOT_STATS_GETTER = HOT_STATS.createGetter();
   
-  public static boolean areSomeColdStatsEnabled() {
-    try {
-      return ((BooleanContainer)(Object) COLD_STATS_GETTER.invokeExact()).isEnabledNow();
-    } catch (Throwable e) {
-      throw new AssertionError(e.getMessage(), e);
-    }
+  public static boolean areSomeColdStatsEnabled() throws Throwable {
+    return (boolean) COLD_STATS_GETTER.invokeExact();
   }
 
-  public static boolean areSomeHotStatsEnabled() {
-    try {
-      return ((BooleanContainer)(Object) HOT_STATS_GETTER.invokeExact()).isEnabledNow();
-    } catch (Throwable e) {
-      throw new AssertionError(e.getMessage(), e);
-    }
+  public static boolean areSomeHotStatsEnabled() throws Throwable {
+    return (boolean) HOT_STATS_GETTER.invokeExact();
   }
 
-  public static void enableColdStats() {
+  public static void enableColdStats() throws Throwable {
     if (!areSomeColdStatsEnabled())
-      COLD_STATS.setValue(new TrueContainer());
+      COLD_STATS.setValue(true);
   }
 
   public static void disableColdStats() {
-    COLD_STATS.setValue(new FalseContainer());
+    COLD_STATS.setValue(false);
   }
 
-  public static void enableHotStats() {
+  public static void enableHotStats() throws Throwable {
     if (!areSomeHotStatsEnabled())
-      HOT_STATS.setValue(new TrueContainer());
+      HOT_STATS.setValue(true);
   }
 
   public static void disableHotStats() {
-    HOT_STATS.setValue(new FalseContainer());
+    HOT_STATS.setValue(false);
   }
 }
