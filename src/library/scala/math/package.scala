@@ -20,7 +20,7 @@ package scala
   * @groupprio math-const 10
   *
   * @groupname minmax Minimum and Maximum
-  * @groupdesc minmax Find the min or max of two numbers. Note: [[scala.collection.TraversableOnce]] has
+  * @groupdesc minmax Find the min or max of two numbers. Note: [[scala.collection.IterableOnceOps]] has
   *           min and max methods which determine the min or max of a collection.
   * @groupprio minmax 20
   *
