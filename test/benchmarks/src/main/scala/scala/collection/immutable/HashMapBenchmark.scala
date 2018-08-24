@@ -44,54 +44,54 @@ class HashMapBenchmark {
     map2 = collection.immutable.Map(existingKeys.splitAt(10)._1.map(x => (x, (x, x))) ++ missingKeys.map(x => (x, x)) : _*)
   }
 
-    @Benchmark def concat(bh: Blackhole): Unit = {
-      var i = 0
-      while (i < size) {
-        bh.consume(map concat map2)
-        i += 1
-      }
+  @Benchmark def concat(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < size) {
+      bh.consume(map concat map2)
+      i += 1
     }
+  }
 
-//  @Benchmark def contains(bh: Blackhole): Unit = {
-//    var i = 0
-//    while (i < size) {
-//      bh.consume(map.contains(existingKeys(i)))
-//      if (useMissingValues) {
-//        bh.consume(map.contains(missingKeys(i)))
-//      }
-//      i += 1
-//    }
-//  }
-//
-//  @Benchmark def get(bh: Blackhole): Unit = {
-//    var i = 0
-//    while (i < size) {
-//      bh.consume(map.get(existingKeys(i)))
-//      if (useMissingValues) {
-//        bh.consume(map.get(missingKeys(i)))
-//      }
-//      i += 1
-//    }
-//  }
-//
-//  @Benchmark def getOrElse(bh: Blackhole): Unit = {
-//    var i = 0
-//    while (i < size) {
-//      bh.consume(map.getOrElse(existingKeys(i), ""))
-//      if (useMissingValues) {
-//        bh.consume(map.getOrElse(missingKeys(i), ""))
-//      }
-//      i += 1
-//    }
-//  }
-//  @Benchmark def updated(bh: Blackhole): Unit = {
-//    var i = 0
-//    while (i < size) {
-//      bh.consume(map.updated(existingKeys(i), ""))
-//      if (useMissingValues) {
-//        bh.consume(map.updated(missingKeys(i), ""))
-//      }
-//      i += 1
-//    }
-//  }
+  @Benchmark def contains(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < size) {
+      bh.consume(map.contains(existingKeys(i)))
+      if (useMissingValues) {
+        bh.consume(map.contains(missingKeys(i)))
+      }
+      i += 1
+    }
+  }
+
+  @Benchmark def get(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < size) {
+      bh.consume(map.get(existingKeys(i)))
+      if (useMissingValues) {
+        bh.consume(map.get(missingKeys(i)))
+      }
+      i += 1
+    }
+  }
+
+  @Benchmark def getOrElse(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < size) {
+      bh.consume(map.getOrElse(existingKeys(i), ""))
+      if (useMissingValues) {
+        bh.consume(map.getOrElse(missingKeys(i), ""))
+      }
+      i += 1
+    }
+  }
+  @Benchmark def updated(bh: Blackhole): Unit = {
+    var i = 0
+    while (i < size) {
+      bh.consume(map.updated(existingKeys(i), ""))
+      if (useMissingValues) {
+        bh.consume(map.updated(missingKeys(i), ""))
+      }
+      i += 1
+    }
+  }
 }
