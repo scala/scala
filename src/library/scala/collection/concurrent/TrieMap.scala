@@ -251,7 +251,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
               if (ct.isReadOnly || (startgen eq in.gen)) in.rec_lookup(k, hc, lev + 5, this, startgen, ct)
               else {
                 if (GCAS(cn, cn.renewed(startgen, ct), ct)) rec_lookup(k, hc, lev, parent, startgen, ct)
-                else RESTART // used to be throw RestartException
+                else RESTART
               }
             case sn: SNode[K, V] => // 2) singleton node
               if (sn.hc == hc && equal(sn.k, k, ct)) sn.v.asInstanceOf[AnyRef]
@@ -261,7 +261,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
       case tn: TNode[K, V] => // 3) non-live node
         def cleanReadOnly(tn: TNode[K, V]) = if (ct.nonReadOnly) {
           clean(parent, ct, lev - 5)
-          RESTART // used to be throw RestartException
+          RESTART
         } else {
           if (tn.hc == hc && tn.k == k) tn.v.asInstanceOf[AnyRef]
           else null
@@ -758,19 +758,6 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     else res
   }
 
-  /* slower:
-  //@tailrec
-  private def lookuphc(k: K, hc: Int): AnyRef = {
-    val r = RDCSS_READ_ROOT()
-    try {
-      r.rec_lookup(k, hc, 0, null, r.gen, this)
-    } catch {
-      case RestartException =>
-        lookuphc(k, hc)
-    }
-  }
-  */
-
   @tailrec private def removehc(k: K, v: V, hc: Int): Option[V] = {
     val r = RDCSS_READ_ROOT()
     val res = r.rec_remove(k, v, hc, 0, null, r.gen, this)
@@ -1125,9 +1112,6 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
   }
 
 }
-
-
-private[concurrent] object RestartException extends ControlThrowable
 
 
 /** Only used for ctrie serialization. */
