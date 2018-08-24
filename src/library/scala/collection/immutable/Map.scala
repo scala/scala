@@ -6,7 +6,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable.Map.Map4
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.mutable.Builder
 import scala.language.higherKinds
 
 
@@ -181,10 +181,7 @@ object Map extends MapFactory[Map] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
-    new ImmutableBuilder[(K, V), Map[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl
 
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
