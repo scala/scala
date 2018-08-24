@@ -7,6 +7,7 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
+import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.Builder
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import scala.util.hashing.MurmurHash3
@@ -832,8 +833,10 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
     * mutations. */
   private var aliased: Boolean = false
 
+  /** The root node of the partially build hashmap */
   private var rootNode: MapNode[K, V] = newEmptyRootNode
 
+  /** The cached hash of the partially-built hashmap */
   private var hash: Int = 0
 
   /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
@@ -964,6 +967,50 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
         }
     }
   }
+  /** Inserts the this key/value only if the key is not present in the map already */
+  private def updateIfNotExists(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
+    mapNode match {
+      case bm: BitmapIndexedMapNode[K, V] =>
+        val mask = maskFrom(keyHash, shift)
+        val bitpos = bitposFrom(mask)
+        if ((bm.dataMap & bitpos) != 0) {
+          val index = indexFrom(bm.dataMap, mask, bitpos)
+          val key0 = bm.getKey(index)
+
+          if (key0 == key) {
+            () // do nothing
+          } else {
+
+            val value0 = bm.getValue(index)
+            val key0UnimprovedHash = key0.##
+            val key0Hash = improve(key0UnimprovedHash)
+
+            val subNodeNew: MapNode[K, V] =
+              bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
+
+            hash += keyHash
+            migrateFromInlineToNode(bm, bitpos, subNodeNew)
+          }
+
+        } else if ((bm.nodeMap & bitpos) != 0) {
+          val index = indexFrom(bm.nodeMap, mask, bitpos)
+          val subNode = bm.getNode(index)
+          val beforeSize = subNode.size
+          updateIfNotExists(subNode, key, value, originalHash, keyHash, shift + BitPartitionSize)
+          bm.size += subNode.size - beforeSize
+        } else {
+          insertValue(bm, bitpos, key, originalHash, keyHash, value)
+          hash += keyHash
+        }
+      case hc: HashCollisionMapNode[K, V] =>
+        val index = hc.contentKeys.indexOf(key)
+        if (index < 0) {
+          hash += keyHash
+          hc.contentKeys = hc.contentKeys.appended(key)
+          hc.contentValues = hc.contentValues.appended(value)
+        }
+    }
+  }
 
 
   /** If currently referencing aliased structure, copy elements to new mutable structure */
@@ -989,11 +1036,20 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
       hm
     }
 
-  override def addOne(elem: (K, V)) = {
+  override def addOne(elem: (K, V)): this.type = {
     ensureUnaliased()
     val h = elem._1.##
     val im = improve(h)
     update(rootNode, elem._1, elem._2, h, im, 0)
+    this
+  }
+
+
+  private[collection] def addOneIfNotExists(key: K, value: V): this.type = {
+    ensureUnaliased()
+    val h = key.##
+    val im = improve(h)
+    updateIfNotExists(rootNode, key, value, h, im, 0)
     this
   }
 
@@ -1032,6 +1088,9 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
             }
         }
         addAllRec(hm.rootNode)
+
+      case map4: Map4[K, V] =>
+        map4
       case other =>
         val it = other.iterator
         while(it.hasNext) addOne(it.next())
@@ -1047,4 +1106,6 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
     }
     hash = 0
   }
+
+  private[collection] def size: Int = rootNode.size
 }
