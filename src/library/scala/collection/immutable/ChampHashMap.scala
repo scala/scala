@@ -1088,9 +1088,6 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
             }
         }
         addAllRec(hm.rootNode)
-
-      case map4: Map4[K, V] =>
-        map4
       case other =>
         val it = other.iterator
         while(it.hasNext) addOne(it.next())
