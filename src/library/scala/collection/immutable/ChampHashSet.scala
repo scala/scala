@@ -9,8 +9,8 @@ import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
+import scala.collection.immutable.Set.Set4
 import scala.util.hashing.MurmurHash3
-
 import scala.runtime.Statics.releaseFence
 
 /** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.
@@ -952,4 +952,5 @@ private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]]
 
   private[collection] def size: Int = rootNode.size
 }
+
 
