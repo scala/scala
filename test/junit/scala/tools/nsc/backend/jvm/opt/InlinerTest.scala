@@ -80,6 +80,7 @@ class InlinerTest extends BytecodeTesting {
         VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
         Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
         Label(10), VarOp(ILOAD, 2), // load return value
+        Op(ACONST_NULL), VarOp(ASTORE, 1), // null out inliner local
         VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IADD), Op(IRETURN)))
 
     // line numbers are kept, so there's a line 2 (from the inlined f)
@@ -117,6 +118,7 @@ class InlinerTest extends BytecodeTesting {
       Jump(GOTO, Label(11)),
       Label(11),
       VarOp(ALOAD, 2),
+      Op(ACONST_NULL), VarOp(ASTORE, 1),
       Op(ATHROW))
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)

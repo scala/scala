@@ -38,11 +38,6 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * call). However, the receiver is an value on the stack and consumed while interpreting the
  * instruction - so we can only gain some knowledge if we know that the receiver was an alias of
  * some other local variable or stack slot. Therefore we use the AliasingFrame class.
- *
- * TODO:
- * Finally, we'd also like to exploit the knowledge gained from `if (x == null)` tests: x is known
- * to be null in one branch, not null in the other. This will make use of alias tracking as well.
- * We still have to figure out how to do this exactly in the analyzer framework.
  */
 
 /**

@@ -668,16 +668,22 @@ abstract class Inliner {
     }
     val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
 
+    val refLocals = mutable.BitSet.empty
+
     // local vars in the callee are shifted by the number of locals at the callsite
     val localVarShift = callsiteMethod.maxLocals
     clonedInstructions.iterator.asScala foreach {
-      case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
-      case iinc: IincInsnNode          => iinc.`var` += localVarShift
-      case _ => ()
+      case varInstruction: VarInsnNode =>
+        varInstruction.`var` += localVarShift
+        if (varInstruction.getOpcode == ASTORE) refLocals += varInstruction.`var`
+      case iinc: IincInsnNode =>
+        iinc.`var` += localVarShift
+      case _ =>
     }
 
     // add a STORE instruction for each expected argument, including for THIS instance if any
     val argStores = new InsnList
+    val nullOutLocals = new InsnList
     var nextLocalIndex = callsiteMethod.maxLocals
     if (!isStaticMethod(callee)) {
       if (!receiverKnownNotNull) {
@@ -689,6 +695,8 @@ abstract class Inliner {
         argStores.add(nonNullLabel)
       }
       argStores.add(new VarInsnNode(ASTORE, nextLocalIndex))
+      nullOutLocals.add(new InsnNode(ACONST_NULL))
+      nullOutLocals.add(new VarInsnNode(ASTORE, nextLocalIndex))
       nextLocalIndex += 1
     }
 
@@ -699,8 +707,19 @@ abstract class Inliner {
     for(argTp <- calleeParamTypes) {
       val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
       argStores.insert(new VarInsnNode(opc, nextLocalIndex)) // "insert" is "prepend" - the last argument is on the top of the stack
+      if (opc == ASTORE) {
+        nullOutLocals.add(new InsnNode(ACONST_NULL))
+        nullOutLocals.add(new VarInsnNode(ASTORE, nextLocalIndex))
+      }
       nextLocalIndex += argTp.getSize
     }
+
+    for (i <- refLocals) {
+      nullOutLocals.add(new InsnNode(ACONST_NULL))
+      nullOutLocals.add(new VarInsnNode(ASTORE, i))
+    }
+
+    val hasNullOutInsn = nullOutLocals.size > 0
 
     clonedInstructions.insert(argStores)
 
@@ -720,6 +739,8 @@ abstract class Inliner {
         case None =>
       }
     }
+
+    clonedInstructions.add(nullOutLocals)
 
     // replace xRETURNs:
     //   - store the return value (if any)
@@ -801,7 +822,10 @@ abstract class Inliner {
       // When adding a null check for the receiver, a DUP is inserted, which might cause a new maxStack.
       // If the callsite has other argument values than the receiver on the stack, these are pop'ed
       // and stored into locals before the null check, so in that case the maxStack doesn't grow.
-      val stackSlotForNullCheck = if (!isStaticMethod(callee) && !receiverKnownNotNull && calleeParamTypes.isEmpty) 1 else 0
+      val stackSlotForNullCheck =
+        if (!isStaticMethod(callee) && !receiverKnownNotNull && calleeParamTypes.isEmpty) 1
+        else if (hasNullOutInsn) 1
+        else 0
       callsiteStackHeight + stackSlotForNullCheck
     }
 
