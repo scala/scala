@@ -144,7 +144,12 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
 }
 
-private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, val content: Array[Any], val originalHashes: Array[Int], val size: Int) extends SetNode[A] {
+private final class BitmapIndexedSetNode[A](
+  var dataMap: Int,
+  var nodeMap: Int,
+  var content: Array[Any],
+  var originalHashes: Array[Int],
+  var size: Int) extends SetNode[A] {
 
   import Node._
   import SetNode._
@@ -517,11 +522,11 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
 
 }
 
-private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, val content: Vector[A]) extends SetNode[A] {
+private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Array[A]) extends SetNode[A] {
 
   import Node._
 
-  require(content.size >= 2)
+  require(content.length >= 2)
 
   def contains(element: A, originalHash: Int, hash: Int, shift: Int): Boolean =
     this.hash == hash && content.contains(element)
@@ -679,4 +684,283 @@ object HashSet extends IterableFactory[HashSet] {
   // This prevents it from serializing it in the first place:
   private[this] def writeObject(out: ObjectOutputStream): Unit = ()
   private[this] def readObject(in: ObjectInputStream): Unit = ()
+}
+
+private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]] {
+  import Node._
+  import SetNode._
+
+  private def newEmptyRootNode = new BitmapIndexedSetNode[A](0, 0, Array(), Array(), 0)
+
+  /** True if and only if `rootNode` has been given out as a return value of `result()`.
+    * Indicates that on next add, the elements should be copied to an identical structure, before continuing
+    * mutations. */
+  private var aliased: Boolean = false
+
+  /** The root node of the partially build hashmap */
+  private var rootNode: SetNode[A] = newEmptyRootNode
+
+  /** The cached hash of the partially-built hashmap */
+  private var hash: Int = 0
+
+  /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
+  private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
+  }
+
+  /** Inserts key-value into the bitmapIndexMapNode. Requires that this is a new key-value pair */
+  private def insertValue[A1 >: A](bm: BitmapIndexedSetNode[A],bitpos: Int, key: A, originalHash: Int, keyHash: Int): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+
+    val src = bm.content
+    val dst = new Array[Any](src.length + TupleLength)
+
+    // copy 'src' and insert 2 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, idx)
+    dst(idx) = key
+    arraycopy(src, idx, dst, idx + TupleLength, src.length - idx)
+
+    val dstHashes = insertElement(bm.originalHashes, dataIx, originalHash)
+
+    bm.dataMap = bm.dataMap | bitpos
+    bm.content = dst
+    bm.originalHashes = dstHashes
+    bm.size += 1
+  }
+
+  /** Removes element at index `ix` from array `as`, shifting the trailing elements right */
+  private def removeElement(as: Array[Int], ix: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
+  /** Mutates `bm` to replace inline data at bit position `bitpos` with node `node` */
+  private def migrateFromInlineToNode(bm: BitmapIndexedSetNode[A], bitpos: Int, node: SetNode[A]): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idxOld = TupleLength * dataIx
+    val idxNew = bm.content.length - TupleLength - bm.nodeIndex(bitpos)
+
+    val src = bm.content
+    val dst = new Array[Any](src.length - TupleLength + 1)
+
+    // copy 'src' and remove 2 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld <= idxNew)
+    arraycopy(src, 0, dst, 0, idxOld)
+    arraycopy(src, idxOld + TupleLength, dst, idxOld, idxNew - idxOld)
+    dst(idxNew) = node
+    arraycopy(src, idxNew + TupleLength, dst, idxNew + 1, src.length - idxNew - TupleLength)
+
+    val dstHashes = removeElement(bm.originalHashes, dataIx)
+
+    bm.dataMap = bm.dataMap ^ bitpos
+    bm.nodeMap = bm.nodeMap | bitpos
+    bm.content = dst
+    bm.originalHashes = dstHashes
+    bm.size = bm.size - 1 + node.size
+  }
+
+  /** Mutates `bm` to replace inline data at bit position `bitpos` with updated key/value */
+  private def setValue[A1 >: A](bm: BitmapIndexedSetNode[A], bitpos: Int, elem: A, originalHash: Int, elementHas: Int): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+    bm.dataMap |= bitpos
+    bm.content(idx) = elem
+  }
+
+  def updated(setNode: SetNode[A], element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+    setNode match {
+      case bm: BitmapIndexedSetNode[A] =>
+        val mask = maskFrom(elementHash, shift)
+        val bitpos = bitposFrom(mask)
+
+        if ((bm.dataMap & bitpos) != 0) {
+          val index = indexFrom(bm.dataMap, mask, bitpos)
+          val element0 = bm.getPayload(index)
+
+          if (element0.asInstanceOf[AnyRef] eq element.asInstanceOf[AnyRef]) {
+            () // do nothing, element already in set
+          } else {
+            if (element0.equals(element)) {
+              val element0UnimprovedHash = element0.##
+              val element0Hash = improve(element0UnimprovedHash)
+              setValue(bm, bitpos, element, originalHash, elementHash)
+            } else {
+              val element0UnimprovedHash = element0.##
+              val element0Hash = improve(element0UnimprovedHash)
+              val subNodeNew = bm.mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
+              migrateFromInlineToNode(bm, bitpos, subNodeNew)
+              hash += elementHash
+            }
+          }
+        } else if ((bm.nodeMap & bitpos) != 0) {
+          val index = indexFrom(bm.nodeMap, mask, bitpos)
+          val subNode = bm.getNode(index)
+          val beforeSize = subNode.size
+          update(subNode, element, originalHash, elementHash, shift + BitPartitionSize)
+          bm.size += subNode.size - beforeSize
+        } else {
+          insertValue(bm, bitpos, element, originalHash, elementHash)
+          hash += elementHash
+        }
+    case hc: HashCollisionSetNode[A] =>
+      val index = hc.content.indexOf(element)
+      if (index < 0) {
+        hash += elementHash
+        hc.content = hc.content.appended(element)
+      } else {
+        hc.content(index) = element
+      }
+  }
+
+
+  /** Inserts the this key/value only if the key is not present in the map already */
+  private def updateIfNotExists(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
+    mapNode match {
+      case bm: BitmapIndexedMapNode[K, V] =>
+        val mask = maskFrom(keyHash, shift)
+        val bitpos = bitposFrom(mask)
+        if ((bm.dataMap & bitpos) != 0) {
+          val index = indexFrom(bm.dataMap, mask, bitpos)
+          val key0 = bm.getKey(index)
+
+          if (key0 == key) {
+            () // do nothing
+          } else {
+
+            val value0 = bm.getValue(index)
+            val key0UnimprovedHash = key0.##
+            val key0Hash = improve(key0UnimprovedHash)
+
+            val subNodeNew: MapNode[K, V] =
+              bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
+
+            hash += keyHash
+            migrateFromInlineToNode(bm, bitpos, subNodeNew)
+          }
+
+        } else if ((bm.nodeMap & bitpos) != 0) {
+          val index = indexFrom(bm.nodeMap, mask, bitpos)
+          val subNode = bm.getNode(index)
+          val beforeSize = subNode.size
+          updateIfNotExists(subNode, key, value, originalHash, keyHash, shift + BitPartitionSize)
+          bm.size += subNode.size - beforeSize
+        } else {
+          insertValue(bm, bitpos, key, originalHash, keyHash, value)
+          hash += keyHash
+        }
+      case hc: HashCollisionMapNode[K, V] =>
+        val index = hc.contentKeys.indexOf(key)
+        if (index < 0) {
+          hash += keyHash
+          hc.contentKeys = hc.contentKeys.appended(key)
+          hc.contentValues = hc.contentValues.appended(value)
+        }
+    }
+  }
+
+
+  /** If currently referencing aliased structure, copy elements to new mutable structure */
+  private def ensureUnaliased() = {
+    if (aliased) copyElems()
+    aliased = false
+  }
+
+  /** Copy elements to new mutable structure */
+  private def copyElems(): Unit = {
+    val temp = rootNode
+    clear()
+    temp.foreach(addOne)
+  }
+
+  override def result(): HashMap[K, V] =
+    if (rootNode.size == 0) {
+      HashMap.empty
+    } else {
+      aliased = true
+      val hm = new HashMap(rootNode, hash)
+      releaseFence()
+      hm
+    }
+
+  override def addOne(elem: (K, V)): this.type = {
+    ensureUnaliased()
+    val h = elem._1.##
+    val im = improve(h)
+    update(rootNode, elem._1, elem._2, h, im, 0)
+    this
+  }
+
+
+  private[collection] def addOneIfNotExists(key: K, value: V): this.type = {
+    ensureUnaliased()
+    val h = key.##
+    val im = improve(h)
+    updateIfNotExists(rootNode, key, value, h, im, 0)
+    this
+  }
+
+  override def addAll(xs: IterableOnce[(K, V)]) = {
+    ensureUnaliased()
+    xs match {
+      case hm: HashMap[K, V] =>
+        def addAllRec(node: MapNode[K, V]): Unit = node match {
+          case bm: BitmapIndexedMapNode[K, V] =>
+            var i = 0
+            val payloadArity = bm.payloadArity
+            while (i < payloadArity) {
+              val originalHash = bm.getHash(i)
+              update(
+                mapNode = rootNode,
+                key = bm.getKey(i),
+                value = bm.getValue(i),
+                originalHash = originalHash,
+                keyHash = improve(originalHash),
+                0
+              )
+              i += 1
+            }
+
+            var j = 0
+            while (j < bm.nodeArity) {
+              addAllRec(bm.getNode(j))
+              j += 1
+            }
+
+          case hc: HashCollisionMapNode[K, V] =>
+            var i = 0
+            while (i < hc.contentKeys.length) {
+              update(rootNode, hc.getKey(i), hc.getValue(i), hc.originalHash, hc.hash, shift = 0)
+              i += 1
+            }
+        }
+        addAllRec(hm.rootNode)
+      case other =>
+        val it = other.iterator
+        while(it.hasNext) addOne(it.next())
+    }
+
+    this
+  }
+
+  override def clear(): Unit = {
+    aliased = false
+    if (rootNode.size > 0) {
+      rootNode = new BitmapIndexedSetNode[A](0, 0, Array(), Array(), 0)
+    }
+    hash = 0
+  }
+
+  private[collection] def size: Int = rootNode.size
 }
