@@ -72,6 +72,13 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJ
     else this
   }
 
+  override def concat(that: IterableOnce[A]): HashSet[A] = {
+    val builder = iterableFactory.newBuilder[A]
+    builder ++= this
+    builder ++= that
+    builder.result()
+  }
+
   override def tail: HashSet[A] = this - head
 
   override def init: HashSet[A] = this - last
