@@ -208,22 +208,25 @@ private[internal] trait TypeMaps {
     /** Applies this map to the symbol's info, setting variance = Invariant
       *  if necessary when the symbol is an alias.
       */
-    private def applyToSymbolInfo(sym: Symbol): Type = {
+    private def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
       if (trackVariance && !variance.isInvariant && sym.isAliasType)
-        withVariance(Invariant)(this(sym.info))
+        withVariance(Invariant)(this(info))
       else
-        this(sym.info)
+        this(info)
     }
 
-    /** Called by mapOver to determine whether the original symbols can
-      *  be returned, or whether they must be cloned.
+    /** The index of the first symbol in `origSyms` which would have its info
+      * transformed by this type map.
       */
-    protected def noChangeToSymbols(origSyms: List[Symbol]): Boolean = {
-      @tailrec def loop(syms: List[Symbol]): Boolean = syms match {
-        case Nil     => true
-        case x :: xs => (x.info eq applyToSymbolInfo(x)) && loop(xs)
+    protected def firstChangedSymbol(origSyms: List[Symbol]): Int = {
+      @tailrec def loop(i: Int, syms: List[Symbol]): Int = syms match {
+        case Nil     => -1
+        case x :: xs =>
+          val info = x.info
+          if (applyToSymbolInfo(x, info) eq info) loop(i+1, xs)
+          else i
       }
-      loop(origSyms)
+      loop(0, origSyms)
     }
 
     /** Map this function over given scope */
@@ -236,10 +239,16 @@ private[internal] trait TypeMaps {
 
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
+      val firstChange = firstChangedSymbol(origSyms)
       // fast path in case nothing changes due to map
-      if (noChangeToSymbols(origSyms)) origSyms
-      // map is not the identity --> do cloning properly
-      else cloneSymbolsAndModify(origSyms, TypeMap.this)
+      if (firstChange < 0) origSyms
+      else {
+        // map is not the identity --> do cloning properly
+        val cloned = cloneSymbols(origSyms)
+        // but we don't need to run the map again on the unchanged symbols
+        cloned.drop(firstChange).foreach(_ modifyInfo this)
+        cloned
+      }
     }
 
     def mapOver(annot: AnnotationInfo): AnnotationInfo = {
