@@ -779,7 +779,7 @@ private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]]
     bm.content(idx) = elem
   }
 
-  def updated(setNode: SetNode[A], element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+  def update(setNode: SetNode[A], element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
     setNode match {
       case bm: BitmapIndexedSetNode[A] =>
         val mask = maskFrom(elementHash, shift)
@@ -826,10 +826,11 @@ private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]]
 
 
   /** Inserts the this key/value only if the key is not present in the map already */
-  private def updateIfNotExists(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
-    mapNode match {
-      case bm: BitmapIndexedMapNode[K, V] =>
-        val mask = maskFrom(keyHash, shift)
+//  private def updateIfNotExists(setNode: SetNode[A], element: A, originalHash: Int, elementHash: Int, shift: Int) = {
+  private def updateIfNotExists(setNode: SetNode[A], element: A, originalHash: Int, keyHash: Int, shift: Int): Unit = {
+    setNode match {
+      case bm: BitmapIndexedSetNode[A] =>
+        val mask = maskFrom(elementHash, shift)
         val bitpos = bitposFrom(mask)
         if ((bm.dataMap & bitpos) != 0) {
           val index = indexFrom(bm.dataMap, mask, bitpos)
