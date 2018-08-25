@@ -28,6 +28,8 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJ
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
+  releaseFence()
+
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
   override def knownSize: Int = rootNode.size
@@ -294,7 +296,7 @@ private final class BitmapIndexedSetNode[A](
     // assert(key0 != key1)
 
     if (shift >= HashCodeLength) {
-      new HashCollisionSetNode[A](originalKeyHash0, keyHash0, Vector(key0, key1))
+      new HashCollisionSetNode[A](originalKeyHash0, keyHash0, Array(key0, key1))
     } else {
       val mask0 = maskFrom(keyHash0, shift)
       val mask1 = maskFrom(keyHash1, shift)
@@ -524,7 +526,7 @@ private final class BitmapIndexedSetNode[A](
 
 }
 
-private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Array[A]) extends SetNode[A] {
+private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Array[Any]) extends SetNode[A] {
 
   import Node._
 
@@ -555,7 +557,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
       // assert(updatedContent.size == content.size - 1)
 
       updatedContent.size match {
-        case 1 => new BitmapIndexedSetNode[A](bitposFrom(maskFrom(hash, 0)), 0, updatedContent.toArray, Array(originalHash), 1)
+        case 1 => new BitmapIndexedSetNode[A](bitposFrom(maskFrom(hash, 0)), 0, updatedContent, Array(originalHash), 1)
         case _ => new HashCollisionSetNode[A](originalHash, hash, updatedContent)
       }
     }
@@ -569,23 +571,28 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
 
   def hasPayload: Boolean = true
 
-  def payloadArity: Int = content.size
+  def payloadArity: Int = content.length
 
-  def getPayload(index: Int): A = content(index)
+  def getPayload(index: Int): A = content(index).asInstanceOf[A]
 
   override def getHash(index: Int): Int = originalHash
 
   def sizePredicate: Int = SizeMoreThanOne
 
-  def size: Int = content.size
+  def size: Int = content.length
 
-  def foreach[U](f: A => U): Unit = content.foreach(f)
+  def foreach[U](f: A => U): Unit = {
+    var i = 0
+    while (i < content.length) {
+      f(getPayload(i))
+      i += 1
+    }
+  }
 
   def subsetOf(that: SetNode[A], shift: Int): Boolean = if (this eq that) true else that match {
     case node: BitmapIndexedSetNode[A] => false
-    case node: HashCollisionSetNode[A] => {
+    case node: HashCollisionSetNode[A] =>
       this.payloadArity <= node.payloadArity && this.content.forall(node.content.contains)
-    }
   }
 
   override def equals(that: Any): Boolean =
@@ -674,13 +681,7 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A]: Builder[A, HashSet[A]] =
-    new ImmutableBuilder[A, HashSet[A]](empty) {
-      def addOne(element: A): this.type = {
-        elems = elems + element
-        this
-      }
-    }
+  def newBuilder[A]: Builder[A, HashSet[A]] = new HashSetBuilder
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:
