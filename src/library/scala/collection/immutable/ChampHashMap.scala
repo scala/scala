@@ -1099,6 +1099,7 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
   override def clear(): Unit = {
     aliased = false
     if (rootNode.size > 0) {
+      // if rootNode is empty, we will not have given it away anyways, we instead give out the reused Map.empty
       rootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0)
     }
     hash = 0
