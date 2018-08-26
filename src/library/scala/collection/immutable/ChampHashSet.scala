@@ -952,7 +952,7 @@ private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]]
     aliased = false
     if (rootNode.size > 0) {
       // if rootNode is empty, we will not have given it away anyways, we instead give out the reused Set.empty
-      rootNode = new BitmapIndexedSetNode[A](0, 0, Array(), Array(), 0)
+      rootNode = newEmptyRootNode
     }
     hash = 0
   }
