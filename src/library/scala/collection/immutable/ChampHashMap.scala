@@ -1099,7 +1099,7 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
   override def clear(): Unit = {
     aliased = false
     if (rootNode.size > 0) {
-      rootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0)
+      rootNode = newEmptyRootNode
     }
     hash = 0
   }
