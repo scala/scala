@@ -11,6 +11,7 @@ package io
 import java.io.{BufferedOutputStream, ByteArrayOutputStream, IOException, InputStream, OutputStream}
 import java.io.{File => JFile}
 import java.net.URL
+import java.nio.file.attribute.{BasicFileAttributes, FileTime}
 
 import scala.collection.AbstractIterable
 
@@ -259,6 +260,22 @@ abstract class AbstractFile extends AbstractIterable[AbstractFile] {
     assert (isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
     fileOrSubdirectoryNamed(name, isDir = true)
   }
+
+  final def asNioBasicFileAttributes: BasicFileAttributes = new BasicFileAttributes {
+    override def lastModifiedTime(): FileTime = FileTime.fromMillis(lastModified)
+    override def lastAccessTime(): FileTime = unsupported()
+    override def creationTime(): FileTime = unsupported()
+    override def isRegularFile: Boolean = !isDirectory
+    override def isDirectory: Boolean = isDirectory
+    override def isSymbolicLink: Boolean = unsupported()
+    override def isOther: Boolean = false
+    override def size(): Long = AbstractFile.this.sizeOption match {
+      case Some(size) => size.toLong
+      case None => unsupported()
+    }
+    override def fileKey(): AnyRef = unsupported()
+  }
+
 
   protected def unsupported(): Nothing = unsupported(null)
   protected def unsupported(msg: String): Nothing = throw new UnsupportedOperationException(msg)
