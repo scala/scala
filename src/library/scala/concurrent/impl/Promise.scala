@@ -10,7 +10,7 @@ package scala.concurrent.impl
 import scala.concurrent.{ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, Batchable }
 import Future.InternalCallbackExecutor
 import scala.concurrent.duration.Duration
-import scala.annotation.{ tailrec, unchecked, switch }
+import scala.annotation.{ tailrec, switch }
 import scala.util.control.{ NonFatal, ControlThrowable }
 import scala.util.{ Try, Success, Failure }
 import scala.runtime.NonLocalReturnControl
@@ -54,7 +54,7 @@ private[concurrent] final object Promise {
      * If when compressing a chain of Links it is discovered that the root has been completed,
      * the `owner`'s value is completed with that value, and the Link chain is discarded.
      **/
-    private final class Link[T](to: DefaultPromise[T]) extends AtomicReference[DefaultPromise[T]](to) {
+    private[concurrent] final class Link[T](to: DefaultPromise[T]) extends AtomicReference[DefaultPromise[T]](to) {
       /**
        * Compresses this chain and returns the currently known root of this chain of Links.
        **/
@@ -303,7 +303,7 @@ private[concurrent] final object Promise {
 
     /** Link this promise to the root of another promise.
      */
-    @tailrec protected[concurrent] final def linkRootOf(target: DefaultPromise[T], link: Link[T]): Unit =
+    @tailrec private[concurrent] final def linkRootOf(target: DefaultPromise[T], link: Link[T]): Unit =
       if (this ne target) {
         val state = get()
         if (state.isInstanceOf[Try[T]]) {

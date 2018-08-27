@@ -1943,6 +1943,7 @@ trait Types
                                          // (this can happen only for erroneous programs).
       }
 
+    // TODO should we pull this out to reduce memory footprint of ClassInfoType?
     private object enterRefs extends TypeMap {
       private var tparam: Symbol = _
 
@@ -2495,7 +2496,25 @@ trait Types
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
-      else typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      else  {
+        // It's not clear which owner we should use (we don't know the context we're in),
+        // but pos/t10762 shows it can't be the class (`sym`) that owns the type params,
+        // as that will confuse ASF during separate compilation.
+        //
+        // During pickling, a pickle-local symbol (the type param) that has a non-pickle-local owner (the class),
+        // will get a new owner (the pickle root, a class) assigned to it by localizedOwner.
+        // This causes spurious recompilation, as well as confusion in ASF.
+        // Thus, use a pickle-local term symbol owner and avoid this whole owner-rejiggering.
+        val pickleLocalOwner = sym.newLocalDummy(sym.pos)
+
+        // Since we're going to lose the information denoted by the prefix when pulling the type params
+        // out for use as binders in the PolyType, we must eagerly rewrite their infos using relativize
+        // to preserve that knowledge.
+        val denotedLocallyOwnedTpars = cloneSymbolsAtOwnerAndModify(tpars, pickleLocalOwner, relativize)
+
+        // @PP: use typeConstructor! #3343, #4018, #4347.
+        PolyType(denotedLocallyOwnedTpars, TypeRef(pre, sym, denotedLocallyOwnedTpars map (_.typeConstructor)))
+      }
     }
 
     // only need to rebind type aliases, as typeRef already handles abstract types
@@ -4049,23 +4068,11 @@ trait Types
 
   /** A creator and extractor for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
-   *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
-   *
-   *  PP to AM: I've co-opted this for where I know tparams may well be empty, and
-   *  expecting to get back `tpe` in such cases.  Re being "forgiving" below,
-   *  can we instead say this is the canonical creator for polyTypes which
-   *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
   object GenPolyType {
-    def apply(tparams: List[Symbol], tpe: Type): Type = {
-      tpe match {
-        case MethodType(_, _) =>
-          assert(tparams forall (_.isInvariant), "Trying to create a method with variant type parameters: " + ((tparams, tpe)))
-        case _                =>
-      }
-      if (tparams.nonEmpty) typeFun(tparams, tpe)
-      else tpe // it's okay to be forgiving here
-    }
+    def apply(tparams: List[Symbol], tpe: Type): Type =
+      if (tparams.isEmpty) tpe else PolyType(tparams, tpe)
+
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
       case PolyType(tparams, restpe) => Some((tparams, restpe))
       case _                         => Some((Nil, tpe))
@@ -4075,14 +4082,6 @@ trait Types
 
   @deprecated("use genPolyType(...) instead", "2.10.0") // Used in reflection API
   def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
-
-  /** A creator for anonymous type functions, where the symbol for the type function still needs to be created.
-   *
-   * TODO:
-   * type params of anonymous type functions, which currently can only arise from normalising type aliases, are owned by the type alias of which they are the eta-expansion
-   * higher-order subtyping expects eta-expansion of type constructors that arise from a class; here, the type params are owned by that class, but is that the right thing to do?
-   */
-  def typeFunAnon(tps: List[Symbol], body: Type): Type = typeFun(tps, body)
 
   /** A creator for a type functions, assuming the type parameters tps already have the right owner. */
   def typeFun(tps: List[Symbol], body: Type): Type = PolyType(tps, body)

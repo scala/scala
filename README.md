@@ -199,6 +199,8 @@ You may also want to check out the following resources:
 
 # Scala CI
 
+[![Build Status](https://travis-ci.org/scala/scala.svg?branch=2.13.x)](https://travis-ci.org/scala/scala)
+
 Once you submit a PR your commits will be automatically tested by the Scala CI.
 
 If you see a spurious build failure, you can post `/rebuild` as a PR comment.

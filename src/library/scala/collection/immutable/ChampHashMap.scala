@@ -7,7 +7,6 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
-import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.Builder
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import scala.util.hashing.MurmurHash3
@@ -644,8 +643,8 @@ private final class HashCollisionMapNode[K, +V](
       this
     } else {
       val index = contentKeys.indexOf(key)
-      val newContentKeys = removeElement(contentKeys, index)
-      val newContentValues = removeElement(contentValues, index)
+      val newContentKeys = removeAnyElement(contentKeys, index)
+      val newContentValues = removeAnyElement(contentValues, index)
 
       // assert(newContentKeys.length == contentKeys.length - 1)
 
@@ -1099,8 +1098,7 @@ final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
   override def clear(): Unit = {
     aliased = false
     if (rootNode.size > 0) {
-      // if rootNode is empty, we will not have given it away anyways, we instead give out the reused Map.empty
-      rootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0)
+      rootNode = newEmptyRootNode
     }
     hash = 0
   }

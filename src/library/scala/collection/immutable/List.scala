@@ -245,7 +245,8 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       } while (rest ne Nil)
-      {releaseFence(); h}
+      releaseFence()
+      h
     }
   }
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
