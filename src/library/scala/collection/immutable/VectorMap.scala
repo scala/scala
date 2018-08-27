@@ -20,13 +20,12 @@ import scala.annotation.unchecked.{uncheckedVariance => uV}
   * @define Coll `immutable.VectorMap`
   */
 final class VectorMap[K, +V] private[immutable] (
-    private val fields: Vector[K],
-    private val underlying: Map[K, (Int, V)])
+    private[immutable] val fields: Vector[K],
+    private[immutable] val underlying: Map[K, (Int, V)])
     extends AbstractMap[K, V]
     with SeqMap[K, V]
     with MapOps[K, V, VectorMap, VectorMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, VectorMap[K, V]] {
-
   override protected[this] def className: String = "VectorMap"
 
   def updated[V1 >: V](key: K, value: V1): VectorMap[K, V1] = {
@@ -37,7 +36,7 @@ final class VectorMap[K, +V] private[immutable] (
       case None =>
         new VectorMap(
           fields :+ key,
-          underlying.updated(key, (fields.length + 1, value)))
+          underlying.updated(key, (fields.length, value)))
     }
   }
 
@@ -96,19 +95,40 @@ final class VectorMap[K, +V] private[immutable] (
   }
 
   override def tail: VectorMap[K, V] = {
-    new VectorMap(fields.tail, underlying.remove(fields.last))
+    new VectorMap(fields.tail, underlying.remove(fields.head))
   }
 
   override def init: VectorMap[K, V] = {
-    new VectorMap(fields.init, underlying.remove(fields.head))
+    new VectorMap(fields.init, underlying.remove(fields.last))
   }
 
   // Only care about content, not ordering for equality
   override def equals(that: Any): Boolean =
     that match {
-      case vmap: VectorMap[_, _] =>
-        underlying.size == vmap.underlying.size &&
-          underlying.mapValues(_._2).toMap == vmap.underlying.mapValues(_._2).toMap
+      case map: Map[K, V] =>
+        (this eq map) ||
+          (this.size == map.size) && {
+            try {
+              var i = 0
+              val _size = size
+              while (i < _size) {
+                val k = fields(i)
+
+                map.get(k) match {
+                  case Some(value) =>
+                    if (!(value == underlying(k)._2)) {
+                      return false
+                    }
+                  case None =>
+                    return false
+                }
+                i += 1
+              }
+              true
+            } catch {
+              case _: ClassCastException => false
+            }
+          }
       case _ => super.equals(that)
     }
 

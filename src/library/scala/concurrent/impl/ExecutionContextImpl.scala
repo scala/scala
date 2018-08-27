@@ -128,7 +128,7 @@ private[concurrent] object ExecutionContextImpl {
       case some =>
         new ExecutionContextImpl(some, reporter) with ExecutionContextExecutorService {
             private[this] final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
-            final override def shutdown() { asExecutorService.shutdown() }
+            final override def shutdown() = asExecutorService.shutdown()
             final override def shutdownNow() = asExecutorService.shutdownNow()
             final override def isShutdown = asExecutorService.isShutdown
             final override def isTerminated = asExecutorService.isTerminated
