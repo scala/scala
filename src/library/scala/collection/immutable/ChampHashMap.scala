@@ -7,7 +7,6 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
-import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.Builder
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
 import scala.util.hashing.MurmurHash3
@@ -644,8 +643,8 @@ private final class HashCollisionMapNode[K, +V](
       this
     } else {
       val index = contentKeys.indexOf(key)
-      val newContentKeys = removeElement(contentKeys, index)
-      val newContentValues = removeElement(contentValues, index)
+      val newContentKeys = removeAnyElement(contentKeys, index)
+      val newContentValues = removeAnyElement(contentValues, index)
 
       // assert(newContentKeys.length == contentKeys.length - 1)
 
