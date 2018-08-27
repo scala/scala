@@ -3741,18 +3741,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           typedFun0
       )
       val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
-      val annType = annTpt.tpe
-      val isJava = annType != null && annType.typeSymbol.isJavaDefined
+      val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
+      val annTypeSym = annType.typeSymbol
+      val isJava = annType != null && annTypeSym.isJavaDefined
 
       finish(
         if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
-        else if (isJava || annType.typeSymbol.isNonBottomSubClass(ConstantAnnotationClass)) {
+        else if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass)) {
           // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
           // stored in the `assocs` field of the resulting AnnotationInfo
           if (argss.length > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
+            // TODO: annType may have undetermined type params -- can we infer them?
             val annScopeJava =
               if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
               else EmptyScope // annScopeJava is only used if isJava
@@ -3801,11 +3803,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val typedAnn: Tree = {
             // local dummy fixes scala/bug#5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
-            localTyper.typed(ann, mode, annType)
+            localTyper.typed(ann, mode, deriveTypeWithWildcards(context.undetparams)(annType))
           }
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              AnnotationInfo(annType, args, List()).setOriginal(typedAnn).setPos(t.pos)
+              // `tpt.tpe` is more precise than `annType`, since it incorporates the types of `args`
+              AnnotationInfo(tpt.tpe, args, List()).setOriginal(typedAnn).setPos(t.pos)
 
             case Block(stats, expr) =>
               context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
@@ -3823,7 +3826,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
           }
 
-          if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
+          if (annTypeSym == DeprecatedAttr && argss.flatten.size < 2)
             context.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.", "2.11.0")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
@@ -4470,13 +4473,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // typedTypeConstructor dealiases nothing now, but it makes sense for a "new" to always be
           // given a dealiased type.
           val tpt0 = typedTypeConstructor(tpt) modifyType (_.dealias)
-          if (checkStablePrefixClassType(tpt0))
-            if (tpt0.hasSymbolField && !tpt0.symbol.typeParams.isEmpty) {
-              context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
-              notifyUndetparamsAdded(context.undetparams)
-              TypeTree().setOriginal(tpt0)
-                        .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
-            } else tpt0
+
+          if (checkStablePrefixClassType(tpt0)) {
+            tpt0.tpe.normalize match { // eta-expand
+              case PolyType(undet, appliedToUndet) =>
+                context.undetparams = undet // can reuse these type params, they're fresh
+                notifyUndetparamsAdded(undet)
+                TypeTree().setOriginal(tpt0).setType(appliedToUndet)
+              case _                               => tpt0
+            }
+          }
           else tpt0
         }
 
