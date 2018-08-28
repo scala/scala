@@ -7,7 +7,9 @@ package scala
 package reflect
 package internal
 
-import scala.collection.{ mutable, immutable }
+import java.util.Objects
+
+import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
@@ -2378,9 +2380,10 @@ trait Types
     }
     //OPT specialize equals
     override final def equals(other: Any): Boolean = {
-      other match {
+      if (this eq other.asInstanceOf[AnyRef]) true
+      else other match {
         case otherTypeRef: TypeRef =>
-          pre.equals(otherTypeRef.pre) && sym.eq(otherTypeRef.sym) && sameElementsEquals(args, otherTypeRef.args)
+          Objects.equals(pre, otherTypeRef.pre) && sym.eq(otherTypeRef.sym) && sameElementsEquals(args, otherTypeRef.args)
         case _ => false
       }
     }
