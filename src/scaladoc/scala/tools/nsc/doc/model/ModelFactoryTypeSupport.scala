@@ -230,7 +230,7 @@ trait ModelFactoryTypeSupport {
                 nameBuffer append "val "
                 nameBuffer append tpnme.dropSingletonName(sym.name)
                 nameBuffer append ": "
-                appendType0(dropSingletonType(sym.info.bounds.hi))
+                appendType0(dropSingletonType(sym.info.upperBound))
               } else {
                 if (sym.flagString != "") nameBuffer append (sym.flagString + " ")
                 if (sym.keyString != "") nameBuffer append (sym.keyString + " ")

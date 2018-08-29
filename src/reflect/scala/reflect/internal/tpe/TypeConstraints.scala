@@ -202,7 +202,7 @@ private[internal] trait TypeConstraints {
     }
 
     @inline def toBound(hi: Boolean, tparam: Symbol) =
-      if (hi) tparam.info.bounds.hi else tparam.info.bounds.lo
+      if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance): Unit = {
       if (tvar.constr.inst == NoType) {
@@ -235,7 +235,7 @@ private[internal] trait TypeConstraints {
             // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
             configForeach { (tvarOther, tparamOther, _) =>
-              if ((tparamOther ne tparam) && tparamOther.info.bounds.lo =:= tparamTycon)
+              if ((tparamOther ne tparam) && tparamOther.info.lowerBound =:= tparamTycon)
                 tvar.addHiBound(tvarOther)
             }
           } else {
@@ -246,7 +246,7 @@ private[internal] trait TypeConstraints {
             // `tparam` is the upper bound of `tvarOther`. Flip that, and add `tvarOther` as an lower bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
             configForeach { (tvarOther, tparamOther, _) =>
-              if ((tparamOther ne tparam) && tparamOther.info.bounds.hi =:= tparamTycon)
+              if ((tparamOther ne tparam) && tparamOther.info.upperBound =:= tparamTycon)
                 tvar.addLoBound(tvarOther)
             }
           }

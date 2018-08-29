@@ -169,7 +169,7 @@ trait MatchTranslation {
       }
       def translate(): List[TreeMaker] = nextStep() merge (_.translate())
 
-      private def concreteType = tpe.bounds.hi
+      private def concreteType = tpe.upperBound
       private def unbound = unbind(tree)
       private def tpe_s = if (pt <:< concreteType) "" + pt else s"$pt (binder: $tpe)"
       private def at_s = unbound match {

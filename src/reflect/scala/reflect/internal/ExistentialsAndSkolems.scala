@@ -49,9 +49,9 @@ trait ExistentialsAndSkolems {
    */
   private def existentialBoundsExcludingHidden(hidden: List[Symbol]): Map[Symbol, Type] = {
     def safeBound(t: Type): Type =
-      if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.bounds.hi) else t
+      if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.upperBound) else t
 
-    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi).resultType match {
+    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.upperBound).resultType match {
       case tp @ RefinedType(parents, decls) =>
         val parents1 = parents mapConserve safeBound
         if (parents eq parents1) tp
