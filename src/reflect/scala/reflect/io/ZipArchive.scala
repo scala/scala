@@ -77,10 +77,6 @@ object ZipArchive {
       new String(result)
     }
   }
-  def dottedToPath(dotted: String): String = {
-    val sb = new java.lang.StringBuilder(dotted.length)
-    dotted.replace('.', '/') + "/"
-  }
 }
 import ZipArchive._
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
@@ -228,7 +224,13 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
   }
 
   @deprecated("Use allDirsByDottedName after converting keys from relative paths to dotted names", "2.13")
-  lazy val allDirs: mutable.HashMap[String, DirEntry] = allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
+  lazy val allDirs: mutable.HashMap[String, DirEntry] = {
+    def dottedToPath(dotted: String): String = {
+      val sb = new java.lang.StringBuilder(dotted.length)
+      dotted.replace('.', '/') + "/"
+    }
+    allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
+  }
 
   def iterator: Iterator[Entry] = root.iterator
 
@@ -249,7 +251,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")
-    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
 
     @tailrec def loop() {
@@ -317,7 +319,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def iterator = {
     val root     = new DirEntry("/")
-    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val manifest = new Manifest(input)
     val iter     = manifest.getEntries().keySet().iterator().asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
 
