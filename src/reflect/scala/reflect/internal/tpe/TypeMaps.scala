@@ -189,7 +189,7 @@ private[internal] trait TypeMaps {
       // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    def withVariance[T](v: Variance)(body: => T): T = {
+    @inline final def withVariance[T](v: Variance)(body: => T): T = {
       val saved = variance
       variance = v
       try body finally variance = saved
@@ -199,7 +199,7 @@ private[internal] trait TypeMaps {
       try body
       finally if (trackVariance) variance = variance.flip
     }
-    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
+    protected final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
       if (trackVariance)
         map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
       else
@@ -218,13 +218,13 @@ private[internal] trait TypeMaps {
     /** The index of the first symbol in `origSyms` which would have its info
       * transformed by this type map.
       */
-    protected def firstChangedSymbol(origSyms: List[Symbol]): Int = {
+    private def firstChangedSymbol(origSyms: List[Symbol]): Int = {
       @tailrec def loop(i: Int, syms: List[Symbol]): Int = syms match {
-        case Nil     => -1
         case x :: xs =>
           val info = x.info
           if (applyToSymbolInfo(x, info) eq info) loop(i+1, xs)
           else i
+        case Nil => -1
       }
       loop(0, origSyms)
     }
