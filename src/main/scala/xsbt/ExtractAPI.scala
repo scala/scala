@@ -72,6 +72,7 @@ class ExtractAPI[GlobalType <: Global](
 
   private[this] val emptyStringArray = Array.empty[String]
 
+  private[this] val allNonLocalClassSymbols = perRunCaches.newSet[Symbol]()
   private[this] val allNonLocalClassesInSrc = perRunCaches.newSet[xsbti.api.ClassLike]()
   private[this] val _mainClasses = perRunCaches.newSet[String]()
 
@@ -430,7 +431,8 @@ class ExtractAPI[GlobalType <: Global](
     def mkVar = Some(fieldDef(in, sym, keepConst = false, xsbti.api.Var.of(_, _, _, _, _)))
     def mkVal = Some(fieldDef(in, sym, keepConst = true, xsbti.api.Val.of(_, _, _, _, _)))
     if (isClass(sym))
-      if (ignoreClass(sym)) None else Some(classLike(in, sym))
+      if (ignoreClass(sym)) {allNonLocalClassSymbols.+=(sym); None}
+      else Some(classLike(in, sym))
     else if (sym.isNonClassType)
       Some(typeDef(in, sym))
     else if (sym.isVariable)
@@ -646,6 +648,8 @@ class ExtractAPI[GlobalType <: Global](
     allNonLocalClassesInSrc.toSet
   }
 
+  def allExtractedNonLocalSymbols: Set[Symbol] = allNonLocalClassSymbols.toSet
+
   def mainClasses: Set[String] = {
     forceStructures()
     _mainClasses.toSet
@@ -691,6 +695,7 @@ class ExtractAPI[GlobalType <: Global](
     val classWithMembers = constructClass(structure)
 
     allNonLocalClassesInSrc += classWithMembers
+    allNonLocalClassSymbols += sym
 
     if (sym.isStatic && defType == DefinitionType.Module && definitions.hasJavaMainMethod(sym)) {
       _mainClasses += name
