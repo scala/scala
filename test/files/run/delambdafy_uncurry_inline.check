@@ -7,7 +7,7 @@ package <empty> {
     };
     def bar(): Unit = {
       val f: Int => Int = {
-        @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1[Int,Int] with Serializable {
+        @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1[Int,Int] with java.io.Serializable {
           def <init>(): <$anon: Int => Int> = {
             $anonfun.super.<init>();
             ()

@@ -14,6 +14,9 @@ import scala.annotation.migration
  * @contentDiagram hideNodes "scala.Serializable"
  */
 package object scala {
+  type Cloneable    = java.lang.Cloneable
+  type Serializable = java.io.Serializable
+
   type Throwable = java.lang.Throwable
   type Exception = java.lang.Exception
   type Error     = java.lang.Error
