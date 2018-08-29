@@ -45,3 +45,4 @@ ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map1
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map2.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map3.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map4.serialVersionUID")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.GenTraversableOnce.toList")
