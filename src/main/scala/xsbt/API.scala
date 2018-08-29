@@ -143,7 +143,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
    *    subsequent incremental compilations before (!) the initial compilation is done.
    *    This can buy us ~30-40% faster incremental compiler iterations.
    *
-   * This method only takes care of non-local classes because local clsases have no
+   * This method only takes care of non-local classes because local classes have no
    * relevance in the correctness of the algorithm and can be registered after genbcode.
    * Local classes are only used to contruct the relations of products and to produce
    * the list of generated files + stamps, but names referring to local classes **never**
@@ -175,7 +175,6 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       }
 
       val names = FlattenedNames(
-        //flattenedNames(symbol)
         fullName(symbol, java.io.File.separatorChar, symbol.moduleSuffix, true),
         fullName(symbol, '.', symbol.moduleSuffix, false)
       )
