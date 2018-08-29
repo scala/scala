@@ -1,0 +1,18 @@
+ur-ass.scala:22: warning: discarded non-Unit value
+  def h() := { println("I don't care (I love it)") ; 42 }
+                                                     ^
+ur-ass.scala:22: warning: a pure expression does nothing in statement position
+  def h() := { println("I don't care (I love it)") ; 42 }
+                                                     ^
+ur-ass.scala:22: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+  def h() := { println("I don't care (I love it)") ; 42 }
+                                                     ^
+ur-ass.scala:25: warning: discarded non-Unit value
+  def fail(): Unit = 42
+                     ^
+ur-ass.scala:25: warning: a pure expression does nothing in statement position
+  def fail(): Unit = 42
+                     ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

@@ -1415,6 +1415,28 @@ self =>
       if (in.token == COLON) { in.nextToken(); typ() }
       else TypeTree()
 
+    /** {{{
+     *  TypedOpt ::= [(`:' Type) | (`:` `=`) | `:=`]
+     *  }}}
+     */
+    def typedOptOrUrAss(): Tree =
+      in.token match {
+        case COLON =>
+          in.nextToken()
+          if (in.token == EQUALS) TypeTree(definitions.UnitTpe)
+          else typ()
+        case IDENTIFIER if in.name.decode == ":=" =>
+          val eq = new ScannerData {} copyFrom in
+          eq.offset += 1
+          eq.lastOffset += 1
+          eq.token = EQUALS
+          in.next copyFrom eq
+          in.nextToken()
+          TypeTree(definitions.UnitTpe)
+        case _ =>
+          TypeTree()
+      }
+
     def typeOrInfixType(location: Location): Tree =
       if (location == Local) typ()
       else startInfixType()
@@ -2711,8 +2733,9 @@ self =>
      */
 
     /** {{{
-     *  FunDef ::= FunSig [`:' Type] `=' [`macro'] Expr
-     *          |  FunSig [nl] `{' Block `}'
+     *  FunDef ::= FunSig [`:` Type] `=` [`macro`] Expr
+     *          |  FunSig (`:` `=` | `:=`) [`macro`] Expr          // take : = or := as : Unit =
+     *          |  FunSig [nl] `{` Block `}`
      *          |  `this' ParamClause ParamClauses
      *                 (`=' ConstrExpr | [nl] ConstrBlock)
      *  FunDcl ::= FunSig [`:' Type]
@@ -2749,7 +2772,7 @@ self =>
         val tparams = typeParamClauseOpt(name, contextBoundBuf)
         val vparamss = paramClauses(name, contextBoundBuf.toList, ofCaseClass = false)
         newLineOptWhenFollowedBy(LBRACE)
-        var restype = fromWithinReturnType(typedOpt())
+        var restype = fromWithinReturnType(typedOptOrUrAss())
         def msg(what: String, instead: String) =
           s"procedure syntax is $what: instead, add `$instead` to explicitly declare `$name`'s return type"
         val rhs =
