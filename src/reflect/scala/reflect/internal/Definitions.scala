@@ -455,6 +455,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
+             def List_cons              = getMemberMethod(ListClass, nme.CONS)
     @migration("SeqClass now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqClass               = if(isNewCollections) requiredClass[scala.collection.immutable.Seq[_]] else requiredClass[scala.collection.Seq[_]]
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
