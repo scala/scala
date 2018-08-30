@@ -109,7 +109,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     def apply(t: Tree): Unit = super.traverse(t)
   }
 
-  private[this] def reportTree(prefix: String, tree: Tree) {
+  private[this] def reportTree(prefix: String, tree: Tree): Unit = {
     val source = if (tree.pos.isDefined) tree.pos.source else ""
     inform("== " + prefix + " tree [" + tree.id + "] of type " + tree.productPrefix + " at " + tree.pos.show + source)
     inform("")
@@ -117,7 +117,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     inform("")
   }
 
-  private[this] def positionError(topTree: Tree, msg: String)(body: => Unit) {
+  private[this] def positionError(topTree: Tree, msg: String)(body: => Unit): Unit = {
     inform("======= Position error\n" + msg)
     body
     inform("\nWhile validating #" + topTree.id)
@@ -166,7 +166,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
         }
 
         //we dont care about zeroing the array
-        def clear() {size = 0}
+        def clear(): Unit = {size = 0}
 
         def traverseSolidChild(t: Tree): Unit = {
           if (size == childSolidDescendants.length) {
@@ -178,7 +178,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
         }
       }
 
-      def loop(tree: Tree, encltree: Tree) {
+      def loop(tree: Tree, encltree: Tree): Unit = {
         if (!tree.isEmpty && tree.canHaveAttrs) {
           val treePos = tree.pos
           if (trace)
