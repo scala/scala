@@ -1587,7 +1587,21 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Boolean_not = definitions.Boolean_not
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
-      lazy val List_apply = DefinitionsClass.this.List_apply
+      private lazy val List_apply = DefinitionsClass.this.List_apply
+      final def isListApply(tree: Tree): Boolean = {
+        /*
+         * This is translating uses of List() into Nil.  This is less
+         *  than ideal from a consistency standpoint, but it shouldn't be
+         *  altered without due caution.
+         *  ... this also causes bootstrapping cycles if List_apply is
+         *  forced during kind-arity checking, so it is guarded by additional
+         *  tests to ensure we're sufficiently far along.
+         */
+        (tree.symbol eq List_apply) && (tree match {
+          case treeInfo.Applied(core @ Select(qual, _), _, _) => treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
+          case _ => false
+        })
+      }
 
       def isPredefClassOf(sym: Symbol) = if (PredefModule.hasCompleteInfo) sym == Predef_classOf else isPredefMemberNamed(sym, nme.classOf)
 

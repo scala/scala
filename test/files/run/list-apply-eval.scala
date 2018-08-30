@@ -4,7 +4,7 @@ object Test {
     counter += 1
     counter.toString
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     //List.apply is subject to an optimisation in cleanup
     //ensure that the arguments are evaluated in the currect order
     // Rewritten to:
