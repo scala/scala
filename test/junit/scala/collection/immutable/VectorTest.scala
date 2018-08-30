@@ -56,4 +56,10 @@ class VectorTest {
     assertSame(Vector.empty.iterator, Vector.empty.iterator)
     assertSame(Vector.empty.iterator, Vector(1).drop(1).iterator)
   }
+
+  @Test
+  def t11122_prependedAll_Iterator(): Unit = {
+    val i = Iterator.from(1).take(3)
+    assertEquals(Vector(1, 2, 3, 0), Vector(0).prependedAll(i))
+  }
 }
