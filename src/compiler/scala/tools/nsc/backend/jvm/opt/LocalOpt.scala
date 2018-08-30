@@ -579,34 +579,60 @@ abstract class LocalOpt {
    * Note: we cannot replace `INSTANCEOF` tests by only looking at the types, `null.isInstanceOf`
    * always returns false, so we'd also need nullness information.
    */
-  def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = {
-    AsmAnalyzer.sizeOKForBasicValue(method) && {
-      def isSubType(aRefDesc: String, bClass: InternalName): Boolean = aRefDesc == bClass || bClass == ObjectRef.internalName || {
-        (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
-      }
-
-      lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
-
-      // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
-      val toRemove = mutable.Set.empty[TypeInsnNode]
-
-      val it = method.instructions.iterator
-      while (it.hasNext) it.next() match {
-        case ti: TypeInsnNode if ti.getOpcode == CHECKCAST =>
-          val frame = typeAnalyzer.frameAt(ti)
-          val valueTp = frame.getValue(frame.stackTop)
-          if (valueTp.isReference && isSubType(valueTp.getType.getDescriptor, ti.desc)) {
-            toRemove += ti
-          }
-
-        case _ =>
-      }
-
-      toRemove foreach method.instructions.remove
-      val changed = toRemove.nonEmpty
-      if (changed) analyzerCache.invalidate(method)
-      changed
+  def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = AsmAnalyzer.sizeOKForBasicValue(method) && {
+    def isSubType(aRefDesc: String, bClass: InternalName): Boolean = aRefDesc == bClass || bClass == ObjectRef.internalName || {
+      (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
     }
+
+    lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
+    lazy val nullnessAnalyzer = analyzerCache.get[NullnessAnalyzer](method)(
+      new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation))
+
+
+    // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
+    val toReplace = mutable.Map.empty[TypeInsnNode, List[AbstractInsnNode]]
+
+
+    val it = method.instructions.iterator
+    while (it.hasNext) it.next() match {
+      case ti: TypeInsnNode =>
+        val opc = ti.getOpcode
+        if (opc == CHECKCAST || opc == INSTANCEOF) {
+          val valueNullness = {
+            val frame = nullnessAnalyzer.frameAt(ti)
+            frame.getValue(frame.stackTop)
+          }
+          if (opc == INSTANCEOF && valueNullness == NullValue) {
+            toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
+          } else {
+            val valueTp = {
+              val frame = typeAnalyzer.frameAt(ti)
+              frame.getValue(frame.stackTop)
+            }
+            if (isSubType(valueTp.getType.getDescriptor, ti.desc)) {
+              if (opc == CHECKCAST) {
+                toReplace(ti) = Nil
+              } else if (valueNullness == NotNullValue) {
+                toReplace(ti) = List(getPop(1), new InsnNode(ICONST_1))
+              }
+            } else if (opc == INSTANCEOF && !isSubType(ti.desc, valueTp.getType.getDescriptor)) {
+              // the two types are unrelated, so the instance check is known to fail
+              toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
+            }
+          }
+        }
+
+      case _ =>
+    }
+
+    for ((oldOp, newOp) <- toReplace) {
+      for (n <- newOp) method.instructions.insertBefore(oldOp, n)
+      method.instructions.remove(oldOp)
+    }
+
+    val changed = toReplace.nonEmpty
+    if (changed) analyzerCache.invalidate(method)
+    changed
   }
 }
 

@@ -322,12 +322,17 @@ abstract class BackendUtils extends PerRunInit {
     isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi)
   }
 
-  def isModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
+  def isModuleLoad(insn: AbstractInsnNode): Boolean = insn match {
+    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.name == "MODULE$" && fi.desc == ("L" + fi.owner + ";")
+    case _ => false
+  }
+
+  def isSpecificModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
     case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.owner == moduleName && fi.name == "MODULE$" && fi.desc == ("L" + moduleName + ";")
     case _ => false
   }
 
-  def isPredefLoad(insn: AbstractInsnNode) = isModuleLoad(insn, PredefRef.internalName)
+  def isPredefLoad(insn: AbstractInsnNode) = isSpecificModuleLoad(insn, PredefRef.internalName)
 
   def isPrimitiveBoxConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, primitiveBoxConstructors)
   def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
@@ -949,5 +954,13 @@ object BackendUtils {
 
       x.getDesc compareTo y.getDesc
     }
+  }
+
+  def isArrayGetLength(mi: MethodInsnNode): Boolean = mi.owner == "java/lang/reflect/Array" && mi.name == "getLength" && mi.desc == "(Ljava/lang/Object;)I"
+
+  // If argument i of the method is null-checked, the bit `i+1` of the result is 1
+  def nullCheckedArguments(mi: MethodInsnNode): Long = {
+    if (isArrayGetLength(mi)) 1
+    else 0
   }
 }
