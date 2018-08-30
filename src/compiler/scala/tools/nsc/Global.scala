@@ -407,7 +407,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     }
 
     @deprecated
-    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
       beforeUnit(unit)
       if (!cancelled(unit)) {
         currentRun.informUnitStarting(this, unit)
