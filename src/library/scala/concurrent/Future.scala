@@ -688,7 +688,7 @@ object Future {
    * @return          the `Future` of the resulting collection
    */
   final def sequence[A, CC[X] <: IterableOnce[X], To](in: CC[Future[A]])(implicit bf: BuildFrom[CC[Future[A]], A, To], executor: ExecutionContext): Future[To] =
-    in.foldLeft(successful(bf.newBuilder(in))) {
+    in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, fa) => fr.zipWith(fa)(Future.addToBuilderFun)
     }.map(_.result())(InternalCallbackExecutor)
 
@@ -700,7 +700,7 @@ object Future {
    * @return          the `Future` holding the result of the future that is first to be completed
    */
   final def firstCompletedOf[T](futures: IterableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] =
-    if (futures.isEmpty) Future.never
+    if (futures.iterator.isEmpty) Future.never
     else {
       val p = Promise[T]()
       val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
@@ -837,7 +837,7 @@ object Future {
    * @return          the `Future` of the `IterableOnce` of results
    */
   final def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
-    in.foldLeft(successful(bf.newBuilder(in))) {
+    in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, a) => fr.zipWith(fn(a))(Future.addToBuilderFun)
     }.map(_.result())(InternalCallbackExecutor)
 
