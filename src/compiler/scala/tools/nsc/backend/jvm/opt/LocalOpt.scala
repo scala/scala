@@ -75,6 +75,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  * redundant casts: eliminates casts that are statically known to succeed (uses type propagation)
  *   + enables UPSTREAM:
  *     - box-unbox elimination (a removed checkcast may be a box consumer)
+ *     - copy propagation (a removed checkcast may turn an upcasted local variable into an alias)
  *   + enables downstream:
  *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast, see scala/bug#9540)
  *
@@ -264,6 +265,7 @@ abstract class LocalOpt {
         requestNullness: Boolean,
         requestDCE: Boolean,
         requestBoxUnbox: Boolean,
+        requestCopyProp: Boolean,
         requestStaleStores: Boolean,
         requestPushPop: Boolean,
         requestStoreLoad: Boolean,
@@ -293,7 +295,7 @@ abstract class LocalOpt {
       traceIfChanged("boxUnbox")
 
       // COPY PROPAGATION
-      val runCopyProp = compilerSettings.optCopyPropagation && (firstIteration || boxUnboxChanged)
+      val runCopyProp = compilerSettings.optCopyPropagation && (requestCopyProp || boxUnboxChanged)
       val copyPropChanged = runCopyProp && copyPropagation(method, ownerClassName)
       traceIfChanged("copyProp")
 
@@ -333,6 +335,7 @@ abstract class LocalOpt {
       val runNullnessAgain = boxUnboxChanged
       val runDCEAgain = removeHandlersResult.liveHandlerRemoved || jumpsChanged
       val runBoxUnboxAgain = boxUnboxChanged || castRemoved || pushPopRemoved || removeHandlersResult.liveHandlerRemoved
+      val runCopyPropAgain = castRemoved
       val runStaleStoresAgain = pushPopRemoved
       val runPushPopAgain = jumpsChanged
       val runStoreLoadAgain = jumpsChanged
@@ -342,6 +345,7 @@ abstract class LocalOpt {
         requestNullness = runNullnessAgain,
         requestDCE = runDCEAgain,
         requestBoxUnbox = runBoxUnboxAgain,
+        requestCopyProp = runCopyPropAgain,
         requestStaleStores = runStaleStoresAgain,
         requestPushPop = runPushPopAgain,
         requestStoreLoad = runStoreLoadAgain,
@@ -367,6 +371,7 @@ abstract class LocalOpt {
         requestNullness = true,
         requestDCE = true,
         requestBoxUnbox = true,
+        requestCopyProp = true,
         requestStaleStores = true,
         requestPushPop = true,
         requestStoreLoad = true,
@@ -573,8 +578,8 @@ abstract class LocalOpt {
    * always returns false, so we'd also need nullness information.
    */
   def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = AsmAnalyzer.sizeOKForBasicValue(method) && {
-    def isSubType(aRefDesc: String, bClass: InternalName): Boolean = aRefDesc == bClass || bClass == ObjectRef.internalName || {
-      (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo classBTypeFromParsedClassfile(bClass)).getOrElse(false)
+    def isSubType(aRefDesc: String, bRefDesc: InternalName): Boolean = aRefDesc == bRefDesc || bRefDesc == ObjectRef.internalName || {
+      (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo bTypeForDescriptorOrInternalNameFromClassfile(bRefDesc)).getOrElse(false)
     }
 
     lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
@@ -591,7 +596,7 @@ abstract class LocalOpt {
       case ti: TypeInsnNode =>
         val opc = ti.getOpcode
         if (opc == CHECKCAST || opc == INSTANCEOF) {
-          val valueNullness = {
+          lazy val valueNullness = {
             val frame = nullnessAnalyzer.frameAt(ti)
             frame.getValue(frame.stackTop)
           }

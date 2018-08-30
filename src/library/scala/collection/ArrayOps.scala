@@ -815,9 +815,10 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `f` to each element of this array and collecting the results.
     */
   def map[B : ClassTag](f: A => B): Array[B] = {
-    val res = new Array[B](xs.length)
+    val l = xs.length
+    val res = new Array[B](l)
     var i = 0
-    while (i < xs.length) {
+    while (i < l) {
       res(i) = f(xs(i))
       i = i + 1
     }

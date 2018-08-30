@@ -305,11 +305,17 @@ abstract class InlinerHeuristics extends PerRunInit {
   }
 
   lazy val knownMethods: Map[String, Set[String]] = Map(
-    "scala/Predef$" -> Set("intArrayOps([I)Ljava/lang/Object;"),
+    "scala/Predef$" -> Set(
+      "intArrayOps([I)Ljava/lang/Object;",
+      "refArrayOps([Ljava/lang/Object;)Ljava/lang/Object;"
+    ),
     "scala/runtime/ScalaRunTime$" -> Set(
       "array_length(Ljava/lang/Object;)I",
-      "array_apply(Ljava/lang/Object;I)Ljava/lang/Object;"
-    )
+      "array_apply(Ljava/lang/Object;I)Ljava/lang/Object;",
+      "array_update(Ljava/lang/Object;ILjava/lang/Object;)V"),
+    "scala/reflect/ManifestFactory$IntManifest" -> Set(
+      "newArray(I)Ljava/lang/Object;",
+      "newArray(I)[I")
   )
 }
 

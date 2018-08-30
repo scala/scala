@@ -1839,15 +1839,47 @@ class InlinerTest extends BytecodeTesting {
     val code =
       """class C {
         |  def consume(i: Int): Unit = ()
-        |  def t(a: Array[Int]) = a.foreach(consume)
+        |  def t1(a: Array[Int]) = a.foreach(consume)
+        |  def t2(a: Array[String]) = a.foreach(_.trim)
         |}
       """.stripMargin
     val c = compileClass(code)
-    assertSameSummary(getMethod(c, "t"), List(
+    assertSameSummary(getMethod(c, "t1"), List(
       ALOAD, "getLength", ISTORE, ICONST_0, ISTORE, // get length, init loop counter
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*25*/,     // check loop condition
-      ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "$anonfun$t$1", // load element, store into local, call body method
+      ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "$anonfun$t1$1", // load element, store into local, call body method
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,    // increase loop counter, jump
       -1 /*25*/, RETURN))
+
+    assertSameSummary(getMethod(c, "t2"), List(
+      ALOAD, "getLength", ISTORE, ICONST_0, ISTORE,
+      -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*24*/,
+      ALOAD, ILOAD, AALOAD, CHECKCAST, "$anonfun$t2$1", POP,
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,
+      -1 /*24*/, RETURN)
+    )
+  }
+
+  @Test
+  def cleanArrayMap(): Unit = {
+    val code =
+      """class C {
+        |  def t1(a: Array[Int]) = a.map(_ + 1)
+        |  def t2(a: Array[String]) = a.map(_.trim)
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "t1"), List(
+      ALOAD, "getLength", ISTORE, ILOAD, NEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*11*/, ILOAD, ILOAD, IF_ICMPGE /*30*/, // loop condition
+      ALOAD, ILOAD, IALOAD, "$anonfun$t1$1", ISTORE, // compute element
+      ALOAD, ILOAD, ILOAD, IASTORE, // store element
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*11*/, // increase counter, jump
+      -1 /*30*/, ALOAD, ARETURN)
+    )
+
+    println(AsmUtils.textify(getAsmMethod(c, "t2")))
+
+//    assertSameSummary(getMethod(c, "t2"), Nil)
   }
 }
