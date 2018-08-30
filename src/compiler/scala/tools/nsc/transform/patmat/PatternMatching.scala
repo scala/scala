@@ -217,7 +217,6 @@ trait Interface extends ast.TreeDSL {
     class Substitution(val from: List[Symbol], val to: List[Tree]) {
       import global.{Transformer, Ident, NoType, TypeTree, SingleType}
 
-      private val toIdents = to.forall(_.isInstanceOf[Ident])
       private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
       lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
 
@@ -233,7 +232,9 @@ trait Interface extends ast.TreeDSL {
               tp match {
                 case SingleType(_, sym) =>
                   if (from contains sym) {
-                    if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree, subst= $this")
+                    global.devWarningIf(to.exists(!_.isInstanceOf[Ident])) {
+                      s"Unexpected substitution of non-Ident into TypeTree, subst= $this"
+                    }
                     result = true
                   }
                 case _ =>
@@ -277,7 +278,7 @@ trait Interface extends ast.TreeDSL {
           }
         }
         if (containsSym) {
-          if (toIdents)
+          if (to.forall(_.isInstanceOf[Ident]))
             tree.duplicate.substituteSymbols(from, to.map(_.symbol)) // scala/bug#7459 catches `case t => new t.Foo`
           else
             substIdentsForTrees.transform(tree)

@@ -1763,8 +1763,9 @@ trait Types
         tp match {
           case tr @ TypeRef(_, sym, args) if args.nonEmpty =>
             val tparams = tr.initializedTypeParams
-            if (settings.debug && !sameLength(tparams, args))
-              devWarning(s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args")
+            devWarningIf(!sameLength(tparams, args)) {
+              s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args"
+            }
 
             foreach2(tparams, args) { (tparam1, arg) =>
               if (arg contains tparam) {

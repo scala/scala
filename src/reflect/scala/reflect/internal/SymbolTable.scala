@@ -87,6 +87,10 @@ abstract class SymbolTable extends macros.Universe
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
+
+  /** dev-warns if dev-warning is enabled and `cond` is true; no-op otherwise */
+  @inline final def devWarningIf(cond: => Boolean)(msg: => String): Unit =
+    if (isDeveloper && cond) devWarning(msg)
   def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
   def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
