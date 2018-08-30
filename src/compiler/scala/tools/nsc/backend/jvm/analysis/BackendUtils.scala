@@ -312,14 +312,20 @@ abstract class BackendUtils extends PerRunInit {
 
   def runtimeRefClassBoxedType(refClass: InternalName): Type = Type.getArgumentTypes(srRefCreateMethods(refClass).methodType.descriptor)(0)
 
-  def isSideEffectFreeCall(insn: MethodInsnNode): Boolean = {
-    isScalaBox(insn) || isScalaUnbox(insn) ||
-      isJavaBox(insn) || // not java unbox, it may NPE
-      isSideEffectFreeConstructorCall(insn)
+  def isKnownClassTag(mi: MethodInsnNode): Boolean = {
+    mi.owner == "scala/reflect/ClassTag$" && mi.name == "Int" && mi.desc == "()Lscala/reflect/ManifestFactory$IntManifest;"
   }
 
+  def isSideEffectFreeCall(mi: MethodInsnNode): Boolean = {
+    isScalaBox(mi) || isScalaUnbox(mi) ||
+      isJavaBox(mi) || // not java unbox, it may NPE
+      isSideEffectFreeConstructorCall(mi) ||
+      isKnownClassTag(mi)
+  }
+
+  // methods that are known to return a non-null result
   def isNonNullMethodInvocation(mi: MethodInsnNode): Boolean = {
-    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi)
+    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi) || isKnownClassTag(mi)
   }
 
   def isModuleLoad(insn: AbstractInsnNode): Boolean = insn match {

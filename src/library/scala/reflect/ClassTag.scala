@@ -96,7 +96,7 @@ object ClassTag {
   val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
   val Short   : ClassTag[scala.Short]      = Manifest.Short
   val Char    : ClassTag[scala.Char]       = Manifest.Char
-  val Int     : ClassTag[scala.Int]        = Manifest.Int
+  val Int     : ManifestFactory.IntManifest = Manifest.Int
   val Long    : ClassTag[scala.Long]       = Manifest.Long
   val Float   : ClassTag[scala.Float]      = Manifest.Float
   val Double  : ClassTag[scala.Double]     = Manifest.Double

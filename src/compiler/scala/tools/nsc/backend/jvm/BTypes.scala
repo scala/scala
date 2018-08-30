@@ -165,7 +165,6 @@ abstract class BTypes {
         case BOOL | BYTE | SHORT | CHAR =>
           this == other || other == INT || other == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
         case _ =>
-          assert(isPrimitive && other.isPrimitive, s"Expected primitive types $this - $other")
           this == other
       }
     }))

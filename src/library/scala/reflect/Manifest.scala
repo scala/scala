@@ -140,7 +140,7 @@ object ManifestFactory {
   val Char: AnyValManifest[Char] = new CharManifest
 
   @SerialVersionUID(1L)
-  private class IntManifest extends AnyValManifest[scala.Int]("Int") {
+  final private[reflect] class IntManifest extends AnyValManifest[scala.Int]("Int") {
     def runtimeClass = java.lang.Integer.TYPE
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): ArraySeq[Int] = new ArraySeq.ofInt(new Array[Int](len))
@@ -153,7 +153,7 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Int
   }
-  val Int: AnyValManifest[Int] = new IntManifest
+  val Int: IntManifest = new IntManifest
 
   @SerialVersionUID(1L)
   private class LongManifest extends AnyValManifest[scala.Long]("Long") {
