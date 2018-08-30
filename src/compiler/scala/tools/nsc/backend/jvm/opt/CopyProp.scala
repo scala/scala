@@ -108,8 +108,10 @@ abstract class CopyProp {
       //     `true`: then the store argument is already known to be ACONST_NULL.
       val toNullOut = mutable.ArrayBuffer.empty[(VarInsnNode, Boolean)]
 
-      // `true` for variables that are known to be live
-      val liveVars = new Array[Boolean](method.maxLocals)
+      // `true` for variables that are known to be live and hold non-primitives
+      val liveRefVars = new Array[Boolean](method.maxLocals)
+
+      val firstLocalIndex = parametersSize(method)
 
       val it = method.instructions.iterator
       while (it.hasNext) it.next() match {
@@ -133,10 +135,13 @@ abstract class CopyProp {
           toDelete += ii
 
         case vi: VarInsnNode =>
-          liveVars(vi.`var`) = true
-
-        case ii: IincInsnNode =>
-          liveVars(ii.`var`) = true
+          val opc = vi.getOpcode
+          val markAsLive = opc == ALOAD || opc == ASTORE && (
+            // a store makes the variable live if it's a parameter, or if a non-null value if stored
+            vi.`var` < firstLocalIndex || prodCons.initialProducersForInputsOf(vi).exists(_.getOpcode != ACONST_NULL)
+          )
+          if (markAsLive)
+            liveRefVars(vi.`var`) = true
 
         case _ =>
       }
@@ -151,7 +156,7 @@ abstract class CopyProp {
       storesToDrop foreach replaceByPop
 
       for ((vi, isStoreNull) <- toNullOut) {
-        if (!liveVars(vi.`var`)) replaceByPop(vi) // can drop `ASTORE x` where x has only dead stores
+        if (!liveRefVars(vi.`var`)) replaceByPop(vi) // can drop `ASTORE x` where x has only dead stores
         else {
           if (!isStoreNull) {
             val prev = vi.getPrevious
@@ -349,8 +354,8 @@ abstract class CopyProp {
             handleInputs(prod, 1)
 
           case GETFIELD | GETSTATIC =>
-            // TODO eliminate side-effect free module loads (https://github.com/scala/scala-dev/issues/16)
-            if (isBoxedUnit(prod)) toRemove += prod
+            // TODO don't eliminate all module loads (https://github.com/scala/scala-dev/issues/16)
+            if (isBoxedUnit(prod) || isModuleLoad(prod)) toRemove += prod
             else popAfterProd() // keep potential class initialization (static field) or NPE (instance field)
 
           case INVOKEVIRTUAL | INVOKESPECIAL | INVOKESTATIC | INVOKEINTERFACE =>

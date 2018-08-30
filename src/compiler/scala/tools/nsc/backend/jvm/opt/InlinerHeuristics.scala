@@ -129,6 +129,7 @@ abstract class InlinerHeuristics extends PerRunInit {
           else None
 
         case "default" =>
+          def shouldInlineKnownMethod = isKnownMethod(callee)
           def shouldInlineForwarder = backendUtils.isAnonfunAdaptedMethod(callee.callee)
           def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
             case (index, _) => callsite.argInfos.contains(index)
@@ -138,6 +139,8 @@ abstract class InlinerHeuristics extends PerRunInit {
             if (callsite.isInlineAnnotated) {
               val what = if (callee.annotatedInline) "callee" else "callsite"
               s"the $what is annotated `@inline`"
+            } else if (shouldInlineKnownMethod) {
+              "the callee is a known method"
             } else if (shouldInlineForwarder) {
               "the callee is a forwarder method"
             } else {
@@ -158,7 +161,7 @@ abstract class InlinerHeuristics extends PerRunInit {
             }
           }
 
-          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineForwarder || shouldInlineHO)) requestIfCanInline(callsite, reason)
+          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineKnownMethod || shouldInlineForwarder || shouldInlineHO)) requestIfCanInline(callsite, reason)
           else None
       }
     }
@@ -295,6 +298,19 @@ abstract class InlinerHeuristics extends PerRunInit {
     ("javafx/util/Callback", "call(Ljava/lang/Object;)Ljava/lang/Object;")
   )
   def javaSam(internalName: InternalName): Option[String] = javaSams.get(internalName)
+
+  def isKnownMethod(callee: Callee): Boolean = knownMethods.get(callee.calleeDeclarationClass.internalName) match {
+    case Some(ms) => val c = callee.callee; ms(c.name + c.desc)
+    case _ => false
+  }
+
+  lazy val knownMethods: Map[String, Set[String]] = Map(
+    "scala/Predef$" -> Set("intArrayOps([I)Ljava/lang/Object;"),
+    "scala/runtime/ScalaRunTime$" -> Set(
+      "array_length(Ljava/lang/Object;)I",
+      "array_apply(Ljava/lang/Object;I)Ljava/lang/Object;"
+    )
+  )
 }
 
 object InlinerHeuristics {

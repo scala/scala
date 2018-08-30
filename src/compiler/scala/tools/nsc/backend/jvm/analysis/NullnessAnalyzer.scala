@@ -6,7 +6,7 @@ import java.util
 
 import scala.annotation.switch
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
+import scala.tools.asm.tree._
 import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
@@ -95,6 +95,14 @@ final class NullnessInterpreter(knownNonNullInvocation: MethodInsnNode => Boolea
       case _: String | _: Type => NotNullValue
       case _ => NullnessValue.unknown(insn)
     }
+
+    case Opcodes.GETSTATIC =>
+      val fi = insn.asInstanceOf[FieldInsnNode]
+      // TODO: check more about `fi` (fi.desc corresponds to fi.owner)
+      fi.name match {
+        case "MODULE$" if fi.desc.endsWith("$;") => NotNullValue
+        case _ => NullnessValue.unknown(insn)
+      }
 
     // for Opcodes.NEW, we use Unknown. The value will become NotNull after the constructor call.
     case _ => NullnessValue.unknown(insn)
@@ -220,6 +228,21 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
         val desc = insn.asInstanceOf[MethodInsnNode].desc
         val numArgs = Type.getArgumentTypes(desc).length
         aliasesOf(this.stackTop - numArgs)
+
+      case INVOKESTATIC =>
+        var nullChecked = BackendUtils.nullCheckedArguments(insn.asInstanceOf[MethodInsnNode])
+        var i = 0
+        var res: AliasSet = null
+        while (nullChecked > 0) {
+          if ((nullChecked & 1l) != 0) {
+            val a = aliasesOf(this.stackTop - i)
+            if (res == null) res = a
+            else a.iterator.foreach(res.+=)
+          }
+          i += 1
+          nullChecked >>= 1
+        }
+        res
 
       case ARRAYLENGTH |
            MONITORENTER |

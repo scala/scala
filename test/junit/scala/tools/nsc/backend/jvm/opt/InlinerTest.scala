@@ -1833,4 +1833,21 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "m"), "A", "foo") // rolled back
     assertInvoke(getMethod(c, "t"), "A", "foo")
   }
+
+  @Test
+  def cleanArrayForeach(): Unit = {
+    val code =
+      """class C {
+        |  def consume(i: Int): Unit = ()
+        |  def t(a: Array[Int]) = a.foreach(consume)
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertSameSummary(getMethod(c, "t"), List(
+      ALOAD, "getLength", ISTORE, ICONST_0, ISTORE, // get length, init loop counter
+      -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*25*/,     // check loop condition
+      ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "$anonfun$t$1", // load element, store into local, call body method
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,    // increase loop counter, jump
+      -1 /*25*/, RETURN))
+  }
 }
