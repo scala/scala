@@ -177,7 +177,7 @@ abstract class ClosureOptimizer {
           case _            => Right(prodCons.frameAt(invocation).getStackSize)
         }
 
-        stackSize.right.map((invocation, _))
+        stackSize.map((invocation, _))
     }).toList
   }
 

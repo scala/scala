@@ -166,7 +166,7 @@ abstract class InlinerHeuristics extends PerRunInit {
             postCall.flatMap(call => {
               callGraph.addIfMissing(callee.callee, callee.calleeDeclarationClass)
               val maybeCallsite = callGraph.findCallSite(callee.callee, call)
-              maybeCallsite.flatMap(requestIfCanInline(_, reason).flatMap(_.right.toOption))
+              maybeCallsite.flatMap(requestIfCanInline(_, reason).flatMap(_.toOption))
             }).toList
           }
           Some(Right(InlineRequest(callsite, postInlineRequest, reason)))
