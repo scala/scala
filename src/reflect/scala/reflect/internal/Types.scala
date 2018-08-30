@@ -1305,8 +1305,8 @@ trait Types
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
-    private def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
-    private def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
+    def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
+    def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     override def safeToString = scalaNotation(_.toString)
@@ -4702,10 +4702,6 @@ trait Types
     try { explainSwitch = true; op } finally { explainSwitch = s }
   }
 
-  def isUnboundedGeneric(tp: Type) = tp match {
-    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefTpe)
-    case _                      => false
-  }
   def isBoundedGeneric(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefTpe)
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)

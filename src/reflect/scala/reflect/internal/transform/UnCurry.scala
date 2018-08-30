@@ -56,6 +56,12 @@ trait UnCurry {
   }
 
   object DesugaredParameterType {
+    def isUnboundedGeneric(tp: Type) = tp match {
+      case t @ TypeRef(_, sym, _) if sym.isAbstractType =>
+        sym.info.resultType.bounds.emptyUpperBound
+      case _                      => false
+    }
+
     def unapply(tpe: Type): Option[Type] = tpe match {
       case TypeRef(pre, ByNameParamClass, arg :: Nil) =>
         Some(functionType(List(), arg))
