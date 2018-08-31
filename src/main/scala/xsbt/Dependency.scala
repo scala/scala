@@ -126,18 +126,42 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
             // The dependency comes from a class file
             binaryDependency(pf.file, binaryClassName)
           case _ =>
-          // TODO: If this happens, scala internals have changed. Log error.
+            reporter.error(
+              NoPosition,
+              s"Internal error: ${binaryClassName} comes from unknown origin ${at}"
+            )
         }
       }
 
-      val onSource = dep.to.sourceFile
+      val targetSymbol = dep.to
+      val onSource = targetSymbol.sourceFile
       if (onSource == null) {
-        // Dependency is external -- source is undefined
-        classFile(dep.to) match {
-          case Some((at, binaryClassName)) =>
-            processExternalDependency(binaryClassName, at)
-          case None =>
-            debuglog(Feedback.noOriginFileForExternalSymbol(dep.to))
+        // Ignore packages right away as they don't map to a class file/jar
+        if (targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) None
+        // Ignore `Any` which by default has no `associatedFile`
+        else if (targetSymbol == definitions.AnyClass) ()
+        else {
+          classFile(targetSymbol) match {
+            case Some((at, binaryClassName)) =>
+              // Associated file is set, so we know which classpath entry it came from
+              processExternalDependency(binaryClassName, at)
+            case None =>
+              /* If there is no associated file, it's likely the compiler didn't set it correctly.
+               * This happens very rarely, see https://github.com/sbt/zinc/issues/559 as an example,
+               * but when it does we must ensure the incremental compiler tries its best no to lose
+               * any dependency. Therefore, we do a last-time effort to get the origin of the symbol
+               * by inspecting the classpath manually.
+               */
+              val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, false)
+              global.findClasspathOriginOf(fqn) match {
+                case Some((at, true)) =>
+                  processExternalDependency(fqn, at)
+                case Some((_, false)) | None =>
+                  // Study the possibility of warning or adding this to the zinc profiler so that
+                  // if users reports errors, the lost dependencies are present in the zinc profiler
+                  debuglog(Feedback.noOriginFileForExternalSymbol(targetSymbol))
+              }
+          }
         }
       } else if (onSource.file != sourceFile || allowLocal) {
         // We cannot ignore dependencies coming from the same source file because

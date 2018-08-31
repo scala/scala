@@ -21,7 +21,14 @@ sealed abstract class CallbackGlobal(settings: Settings,
     extends Global(settings, reporter) {
 
   def callback: AnalysisCallback
-  def findClass(name: String): Option[(AbstractFile, Boolean)]
+  def findClasspathOriginOf(name: String): Option[(AbstractFile, Boolean)]
+
+  def fullName(
+      symbol: Symbol,
+      separator: Char,
+      suffix: CharSequence,
+      includePackageObjectClassNames: Boolean
+  ): String
 
   lazy val outputDirs: Iterable[File] = {
     output match {
@@ -126,7 +133,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   }
 
   /** Returns the class file location of a fully qualified name and whether it's on the classpath. */
-  def findClass(fqn: String): Option[(AbstractFile, Boolean)] = {
+  def findClasspathOriginOf(fqn: String): Option[(AbstractFile, Boolean)] = {
     def getOutputClass(name: String): Option[AbstractFile] = {
       // This could be improved if a hint where to look is given.
       val className = name.replace('.', '/') + ".class"
@@ -137,6 +144,55 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
       classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 
     getOutputClass(fqn).map(f => (f, true)).orElse(findOnClassPath(fqn).map(f => (f, false)))
+  }
+
+  /**
+   * Replicate the behaviour of `fullName` with a few changes to the code to produce
+   * correct file-system compatible full names for non-local classes. It mimics the
+   * paths of the class files produced by genbcode.
+   *
+   * Changes compared to the normal version in the compiler:
+   *
+   * 1. It will use the encoded name instead of the normal name.
+   * 2. It will not skip the name of the package object class (required for the class file path).
+   *
+   * Note that using `javaBinaryName` is not useful for these symbols because we
+   * need the encoded names. Zinc keeps track of encoded names in both the binary
+   * names and the Zinc names.
+   *
+   * @param symbol The symbol for which we extract the full name.
+   * @param separator The separator that we will apply between every name.
+   * @param suffix The suffix to add at the end (in case it's a module).
+   * @param includePackageObjectClassNames Include package object class names or not.
+   * @return The full name.
+   */
+  override def fullName(
+      symbol: Symbol,
+      separator: Char,
+      suffix: CharSequence,
+      includePackageObjectClassNames: Boolean
+  ): String = {
+    var b: java.lang.StringBuffer = null
+    def loop(size: Int, sym: Symbol): Unit = {
+      val symName = sym.name
+      // Use of encoded to produce correct paths for names that have symbols
+      val encodedName = symName.encoded
+      val nSize = encodedName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
+      if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
+        val capacity = size + nSize
+        b = new java.lang.StringBuffer(capacity)
+        b.append(chrs, symName.start, nSize)
+      } else {
+        val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
+        loop(size + nSize + 1, next)
+        // Addition to normal `fullName` to produce correct names for nested non-local classes
+        if (sym.isNestedClass) b.append(nme.MODULE_SUFFIX_STRING) else b.append(separator)
+        b.append(chrs, symName.start, nSize)
+      }
+    }
+    loop(suffix.length(), symbol)
+    b.append(suffix)
+    b.toString
   }
 
   private[this] var callback0: AnalysisCallback = null

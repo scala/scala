@@ -76,55 +76,6 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
   private case class FlattenedNames(binaryName: String, className: String)
 
   /**
-   * Replicate the behaviour of `fullName` with a few changes to the code to produce
-   * correct file-system compatible full names for non-local classes. It mimics the
-   * paths of the class files produced by genbcode.
-   *
-   * Changes compared to the normal version in the compiler:
-   *
-   * 1. It will use the encoded name instead of the normal name.
-   * 2. It will not skip the name of the package object class (required for the class file path).
-   *
-   * Note that using `javaBinaryName` is not useful for these symbols because we
-   * need the encoded names. Zinc keeps track of encoded names in both the binary
-   * names and the Zinc names.
-   *
-   * @param symbol The symbol for which we extract the full name.
-   * @param separator The separator that we will apply between every name.
-   * @param suffix The suffix to add at the end (in case it's a module).
-   * @param includePackageObjectClassNames Include package object class names or not.
-   * @return The full name.
-   */
-  def fullName(
-      symbol: Symbol,
-      separator: Char,
-      suffix: CharSequence,
-      includePackageObjectClassNames: Boolean
-  ): String = {
-    var b: java.lang.StringBuffer = null
-    def loop(size: Int, sym: Symbol): Unit = {
-      val symName = sym.name
-      // Use of encoded to produce correct paths for names that have symbols
-      val encodedName = symName.encoded
-      val nSize = encodedName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
-      if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
-        val capacity = size + nSize
-        b = new java.lang.StringBuffer(capacity)
-        b.append(chrs, symName.start, nSize)
-      } else {
-        val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
-        loop(size + nSize + 1, next)
-        // Addition to normal `fullName` to produce correct names for nested non-local classes
-        if (sym.isNestedClass) b.append(nme.MODULE_SUFFIX_STRING) else b.append(separator)
-        b.append(chrs, symName.start, nSize)
-      }
-    }
-    loop(suffix.length(), symbol)
-    b.append(suffix)
-    b.toString
-  }
-
-  /**
    * Registers only non-local generated classes in the callback by extracting
    * information about its names and using the names to generate class file paths.
    *

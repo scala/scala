@@ -431,8 +431,7 @@ class ExtractAPI[GlobalType <: Global](
     def mkVar = Some(fieldDef(in, sym, keepConst = false, xsbti.api.Var.of(_, _, _, _, _)))
     def mkVal = Some(fieldDef(in, sym, keepConst = true, xsbti.api.Val.of(_, _, _, _, _)))
     if (isClass(sym))
-      if (ignoreClass(sym)) {allNonLocalClassSymbols.+=(sym); None}
-      else Some(classLike(in, sym))
+      if (ignoreClass(sym)) { allNonLocalClassSymbols.+=(sym); None } else Some(classLike(in, sym))
     else if (sym.isNonClassType)
       Some(typeDef(in, sym))
     else if (sym.isVariable)
