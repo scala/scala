@@ -20,7 +20,7 @@ object languageFeature {
   sealed trait dynamics
   object dynamics extends dynamics
 
-  @meta.languageFeature("postfix operator #", enableRequired = false)
+  @meta.languageFeature("postfix operator #", enableRequired = true)
   sealed trait postfixOps
   object postfixOps extends postfixOps
 
