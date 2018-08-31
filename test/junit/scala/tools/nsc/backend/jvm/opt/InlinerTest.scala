@@ -3,7 +3,7 @@ package backend.jvm
 package opt
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -1908,4 +1908,98 @@ class InlinerTest extends BytecodeTesting {
       -1 /*37*/, ALOAD, ARETURN)
     )
   }
+
+  @Test
+  def cleanArrayOps(): Unit = {
+    // These calls all optimize to while loops, no boxing
+    val code =
+      """class C {
+        |  // test for `exists` also covers `forall`, `indexWhere`, `find` (they are implemented the same)
+        |  def t1a(a: Array[Int]) = a.exists(_ == 0)
+        |  def t1b(a: Array[String]) = a.exists(_ == "")
+        |
+        |  // also covers `fold`, `foldRight`
+        |  def t2a(a: Array[Int]) = a.foldLeft(0)(_ + _)
+        |  def t2b(a: Array[String]) = a.foldLeft(0)(_ + _.length)
+        |
+        |  // also covers `scan`, `scanRigth`
+        |  def t3a(a: Array[Int]) = a.scanLeft(0)(_ + _)
+        |  def t3b(a: Array[String]) = a.scanLeft(0)(_ + _.length)
+        |  def t3c(a: Array[String]) = a.scanLeft("")((_, s) => s.trim)
+        |
+        |  def t4a(a: Array[Int]) = a.mapInPlace(_ + 1)
+        |  def t4b(a: Array[String]) = a.mapInPlace(_.trim)
+        |
+        |  def t5a(a: Array[Int]) = a.count(_ == 0)
+        |  def t5b(a: Array[String]) = a.count(_ == "")
+        |}
+      """.stripMargin
+
+    val c = compileClass(code)
+
+    assertInvokedMethods(getMethod(c, "t1a"), List("scala/collection/ArrayOps$.indexWhere$default$2$extension", "C.$anonfun$t1a$1"))
+    assertInvokedMethods(getMethod(c, "t1b"), List("scala/collection/ArrayOps$.indexWhere$default$2$extension", "C.$anonfun$t1b$1"))
+
+    assertInvokedMethods(getMethod(c, "t2a"), List("java/lang/NullPointerException.<init>", "C.$anonfun$t2a$1"))
+    assertInvokedMethods(getMethod(c, "t2b"), List("java/lang/NullPointerException.<init>", "C.$anonfun$t2b$1"))
+
+    assertInvokedMethods(getMethod(c, "t3a"), List("C.$anonfun$t3a$1"))
+    assertInvokedMethods(getMethod(c, "t3b"), List("C.$anonfun$t3b$1"))
+    assertInvokedMethods(getMethod(c, "t3c"), List("C.$anonfun$t3c$1"))
+
+    assertInvokedMethods(getMethod(c, "t4a"), List("C.$anonfun$t4a$1"))
+    assertInvokedMethods(getMethod(c, "t4b"), List("C.$anonfun$t4b$1"))
+
+    assertInvokedMethods(getMethod(c, "t5a"), List("C.$anonfun$t5a$1"))
+    assertInvokedMethods(getMethod(c, "t5b"), List("C.$anonfun$t5b$1"))
+  }
+
+  @Test @Ignore
+  def cleanArrayPartition(): Unit = {
+    // need to
+    //   - inline ArrayOps$.elemTag$extension
+    //   - intrinsify x.getClass.getComponentType if x is a primitive array (rewrite to `GETSTATIC java/lang/Integer.TYPE`)
+    //   - inline ArrayBuilder.make (heuristic: inline if classtag is known -- however, that only happens in local opt, during inlining it's not yet known)
+    //   - make `GETSTATIC java/lang/Integer.TYPE` known non-null
+    //   - constant-fold `java/lang/Integer.TYPE.equals(java/lang/Integer.TYPE)`
+    //   - this should result in having an ArrayBuilder.ofInt, and we could skip boxing / unboxing
+    //   - not necessary for ref arrays (there's no boxing. maybe casting, but that's much okisher)
+    val code =
+    """class C {
+      |  def t1(a: Array[Int]) = a.partition(_ == 0)
+      |  def t2(a: Array[String]) = a.partition(_ == "")
+      |}
+    """.stripMargin
+    val c = compileClass(code)
+    println(AsmUtils.textify(getAsmMethod(c, "t1")))
+    println(AsmUtils.textify(getAsmMethod(c, "t2")))
+  }
+
+  // need more special handling by the optimizer
+  //  - partition: see comment above in test case
+  //  - filter: same as partition, goal eliminate boxing
+  //  - reverse: should avoid boxing primitives
+  //     - need to inline
+  //     - need to intrinsify ClassTag(int[].class.getComponentType).newArray
+  //  - groupBy: box elim by inlining tags/ArrayBuilder.make?
+  //
+  // ok without special casing
+  //  - withFilter: probably nothing can be done here
+  //  - slice should be ok without inlining, it does a type test on the array, so no boxing. todo: benchmark
+  //  - takeWhile / dropWhile / span are fine, inline for the HOF, then call slice. add test
+  //  - zip: nothing to optimize, will box into tuple anyway
+  //
+  // questionable
+  //  - sorted: looks very bad for primitive arrays, creates an array with boxed values.
+  //    just call Arrays.sort instead... should we deprecate the mehtod? only use is sorting
+  //    generic arrays.
+  //
+  //
+  // TODO CHECK
+  //  - flatMap, flatten, collect: maybe OK, no boxing because it's using arraycopy (addAll)???
+  //  - appended, prepended, -(All): should be ok because using arraycopy?
+  //  - contains: should probably @inline to elim boxing
+  //  - patch: should be ok because using arraycopy
+  //  - toArray, copyToArray, startsWith, endsWith: inline to avoid boxing? is there boxing? we end up in System.arraycopy anyway, so should be fine.
+  //  - updated: @inline to avoid boxing?
 }

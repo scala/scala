@@ -985,6 +985,17 @@ object BackendUtils {
       val f = typeAnalyzer.frameAt(mi)
       f.getValue(f.stackTop).getType.getSort == Type.ARRAY
     }
+  }
 
+  def getClassKnownType(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Type = {
+    if (mi.name == "getClass" && mi.owner == "java/lang/Object" && mi.desc == "()Ljava/lang/Class;") {
+      val f = typeAnalyzer.frameAt(mi)
+      val tp = f.getValue(f.stackTop).getType
+      if (tp.getSort == Type.ARRAY) {
+        if (tp.getElementType.getSort != Type.OBJECT)
+          return tp
+      }
+    }
+    null
   }
 }

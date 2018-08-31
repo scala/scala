@@ -641,6 +641,11 @@ abstract class LocalOpt {
       case mi: MethodInsnNode =>
         if (BackendUtils.isArrayGetLength(mi, typeAnalyzer)) {
           toReplace(mi) = List(new InsnNode(ARRAYLENGTH))
+        } else {
+          val getClassTp = BackendUtils.getClassKnownType(mi, typeAnalyzer)
+          if (getClassTp != null) {
+            toReplace(mi) = List(getPop(1), new LdcInsnNode(getClassTp))
+          }
         }
 
       case _ =>
