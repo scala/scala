@@ -671,7 +671,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
            getOrElse  Class.forName("scala.tools.scalap.scalasig.ByteCode$"))
         ByteCodeModuleCls.getDeclaredFields()(0).get(null).asInstanceOf[ByteCodeModule]
       }
-      ByteCode forClass clazz bytes
+      ByteCode.forClass(clazz).bytes
     }
 
     scalap.Main.decompileScala(bytes, isPackageObject)
@@ -690,7 +690,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
     val args = file2String(testFile changeExtension "args")
     val cmdFile = if (isWin) testFile changeExtension "bat" else testFile
-    val succeeded = (((cmdFile + " " + args) #> logFile !) == 0)
+    val succeeded = (((s"$cmdFile $args" #> logFile).!) == 0)
 
     val result = if (succeeded) genPass else genFail(s"script $cmdFile failed to run")
 

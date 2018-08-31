@@ -62,6 +62,6 @@ abstract class CompilerTest extends DirectTest {
     def symbols = classes ++ terms filterNot (_ eq NoSymbol)
     def terms   = allMembers(pkg) filter (s => s.isTerm && !s.isConstructor)
     def tparams = classes flatMap (_.info.typeParams)
-    def tpes    = symbols map (_.tpe) distinct
+    def tpes    = symbols.map(_.tpe).distinct
   }
 }
