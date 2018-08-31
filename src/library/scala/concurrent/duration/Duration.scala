@@ -8,7 +8,8 @@
 
 package scala.concurrent.duration
 
-import java.lang.{ Double => JDouble, Long => JLong }
+import java.lang.{Double => JDouble, Long => JLong}
+import java.util.concurrent.TimeUnit
 
 object Duration {
 
@@ -127,6 +128,41 @@ object Duration {
     else
       fromNanos(nanos.round)
   }
+
+  /**
+    * Construct a finite duration from the given number of days.
+    */
+  def ofDays(days: Long): FiniteDuration = Duration(days, TimeUnit.DAYS)
+
+  /**
+    * Construct a finite duration from the given number of hours.
+    */
+  def ofHours(hours: Long): FiniteDuration = Duration(hours, TimeUnit.HOURS)
+
+  /**
+    * Construct a finite duration from the given number of minutes.
+    */
+  def ofMinutes(minutes: Long): FiniteDuration = Duration(minutes, TimeUnit.MINUTES)
+
+  /**
+    * Construct a finite duration from the given number of seconds.
+    */
+  def ofSeconds(seconds: Long): FiniteDuration = Duration(seconds, TimeUnit.SECONDS)
+
+  /**
+    * Construct a finite duration from the given number of milliseconds.
+    */
+  def ofMillis(millis: Long): FiniteDuration = Duration(millis, TimeUnit.MILLISECONDS)
+
+  /**
+    * Construct a finite duration from the given number of microseconds.
+    */
+  def ofMicros(micros: Long): FiniteDuration = Duration(micros, TimeUnit.MICROSECONDS)
+
+  /**
+    * Construct a finite duration from the given number of nanos.
+    */
+  def ofNanos(nanos: Long): FiniteDuration = Duration(nanos, TimeUnit.NANOSECONDS)
 
   private[this] final val  µs_per_ns = 1000L
   private[this] final val  ms_per_ns =  µs_per_ns * 1000
