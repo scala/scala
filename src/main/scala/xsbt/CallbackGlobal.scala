@@ -21,7 +21,7 @@ sealed abstract class CallbackGlobal(settings: Settings,
     extends Global(settings, reporter) {
 
   def callback: AnalysisCallback
-  def findClasspathOriginOf(name: String): Option[(AbstractFile, Boolean)]
+  def findAssociatedFile(name: String): Option[(AbstractFile, Boolean)]
 
   def fullName(
       symbol: Symbol,
@@ -132,8 +132,10 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     this.computePhaseDescriptors
   }
 
-  /** Returns the class file location of a fully qualified name and whether it's on the classpath. */
-  def findClasspathOriginOf(fqn: String): Option[(AbstractFile, Boolean)] = {
+  private final val fqnsToAssociatedFiles = perRunCaches.newMap[String, (AbstractFile, Boolean)]()
+
+  /** Returns the associated file of a fully qualified name and whether it's on the classpath. */
+  def findAssociatedFile(fqn: String): Option[(AbstractFile, Boolean)] = {
     def getOutputClass(name: String): Option[AbstractFile] = {
       // This could be improved if a hint where to look is given.
       val className = name.replace('.', '/') + ".class"
@@ -143,7 +145,12 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     def findOnClassPath(name: String): Option[AbstractFile] =
       classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 
-    getOutputClass(fqn).map(f => (f, true)).orElse(findOnClassPath(fqn).map(f => (f, false)))
+    fqnsToAssociatedFiles.get(fqn).orElse {
+      val newResult = getOutputClass(fqn).map(f => (f, true))
+        .orElse(findOnClassPath(fqn).map(f => (f, false)))
+      newResult.foreach(res => fqnsToAssociatedFiles.put(fqn, res))
+      newResult
+    }
   }
 
   /**

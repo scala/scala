@@ -137,7 +137,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       val onSource = targetSymbol.sourceFile
       if (onSource == null) {
         // Ignore packages right away as they don't map to a class file/jar
-        if (targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) None
+        if (targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ()
         // Ignore `Any` which by default has no `associatedFile`
         else if (targetSymbol == definitions.AnyClass) ()
         else {
@@ -153,7 +153,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
                * by inspecting the classpath manually.
                */
               val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, false)
-              global.findClasspathOriginOf(fqn) match {
+              global.findAssociatedFile(fqn) match {
                 case Some((at, true)) =>
                   processExternalDependency(fqn, at)
                 case Some((_, false)) | None =>
@@ -168,7 +168,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
         val onClassName = classNameAsString(dep.to)
         callback.classDependency(onClassName, fromClassName, context)
-      }
+      } else ()
     }
   }
 
