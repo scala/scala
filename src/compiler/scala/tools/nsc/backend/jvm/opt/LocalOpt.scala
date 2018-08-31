@@ -64,6 +64,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   + enables downstream:
  *     - stale stores (a stored value may not be loaded anymore)
  *     - store-load pairs (a load n may now be right after a store n)
+ *     - redundant casts -- because copy prop rewrites known methods like newArray
  *   + NOTE: copy propagation is only executed once, in the first fixpoint loop iteration. none of
  *     the other optimizations enables further copy prop. we still run it as part of the loop
  *     because it requires unreachable code to be eliminated.
@@ -77,7 +78,10 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - box-unbox elimination (a removed checkcast may be a box consumer)
  *     - copy propagation (a removed checkcast may turn an upcasted local variable into an alias)
  *   + enables downstream:
- *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast, see scala/bug#9540)
+ *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast,
+ *       see scala/bug#9540. also, Array.getLength is rewritten to ARRAYLENGTH)
+ *     - redundant casts (changing an instanceof to true/false removes branches and can make types
+ *       of other values more precise)
  *
  * push-pop (when a POP is the only consumer of a value, remove the POP and its producer)
  *   + enables UPSTREAM:
@@ -267,9 +271,9 @@ abstract class LocalOpt {
         requestBoxUnbox: Boolean,
         requestCopyProp: Boolean,
         requestStaleStores: Boolean,
+        requestRedundantCasts: Boolean,
         requestPushPop: Boolean,
         requestStoreLoad: Boolean,
-        firstIteration: Boolean,
         maxRecursion: Int = 10): (Boolean, Boolean) = {
       if (maxRecursion == 0) return (false, false)
 
@@ -305,12 +309,12 @@ abstract class LocalOpt {
       traceIfChanged("staleStores")
 
       // REDUNDANT CASTS
-      val runRedundantCasts = compilerSettings.optRedundantCasts && (firstIteration || boxUnboxChanged)
+      val runRedundantCasts = compilerSettings.optRedundantCasts && (requestRedundantCasts || boxUnboxChanged || copyPropChanged)
       val castRemoved = runRedundantCasts && eliminateRedundantCasts(method, ownerClassName)
       traceIfChanged("redundantCasts")
 
       // PUSH-POP
-      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || firstIteration || storesRemoved || castRemoved)
+      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || storesRemoved || castRemoved)
       val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
       traceIfChanged("pushPop")
 
@@ -337,9 +341,10 @@ abstract class LocalOpt {
       val runBoxUnboxAgain = boxUnboxChanged || castRemoved || pushPopRemoved || removeHandlersResult.liveHandlerRemoved
       val runCopyPropAgain = castRemoved
       val runStaleStoresAgain = pushPopRemoved
+      val runRedundantCastsAgain = castRemoved
       val runPushPopAgain = jumpsChanged
       val runStoreLoadAgain = jumpsChanged
-      val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || pushPopRemoved || runStaleStoresAgain || runPushPopAgain || runStoreLoadAgain
+      val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || runCopyPropAgain || pushPopRemoved || runStaleStoresAgain || runRedundantCastsAgain || runPushPopAgain || runStoreLoadAgain
 
       val downstreamRequireEliminateUnusedLocals = runAgain && removalRound(
         requestNullness = runNullnessAgain,
@@ -347,9 +352,9 @@ abstract class LocalOpt {
         requestBoxUnbox = runBoxUnboxAgain,
         requestCopyProp = runCopyPropAgain,
         requestStaleStores = runStaleStoresAgain,
+        requestRedundantCasts = runRedundantCastsAgain,
         requestPushPop = runPushPopAgain,
         requestStoreLoad = runStoreLoadAgain,
-        firstIteration = false,
         maxRecursion = maxRecursion - 1)._2
 
       val requireEliminateUnusedLocals = downstreamRequireEliminateUnusedLocals ||
@@ -373,9 +378,9 @@ abstract class LocalOpt {
         requestBoxUnbox = true,
         requestCopyProp = true,
         requestStaleStores = true,
+        requestRedundantCasts = true,
         requestPushPop = true,
-        requestStoreLoad = true,
-        firstIteration = true)
+        requestStoreLoad = true)
       if (compilerSettings.optUnreachableCode) BackendUtils.setDceDone(method)
       r
     } else (false, false)
@@ -578,8 +583,20 @@ abstract class LocalOpt {
    * always returns false, so we'd also need nullness information.
    */
   def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = AsmAnalyzer.sizeOKForBasicValue(method) && {
-    def isSubType(aRefDesc: String, bRefDesc: InternalName): Boolean = aRefDesc == bRefDesc || bRefDesc == ObjectRef.internalName || {
-      (bTypeForDescriptorOrInternalNameFromClassfile(aRefDesc) conformsTo bTypeForDescriptorOrInternalNameFromClassfile(bRefDesc)).getOrElse(false)
+    def isSubType(aDescOrIntN: String, bDescOrIntN: String): Boolean = {
+      // Neither a nor b may be descriptors for primitive types. INSTANCEOF and CHECKCAST require
+      //   - "objectref must be of type reference" and
+      //   - "constant pool item must be a class, array, or interface type"
+      // However we may get a mix of descriptors and internal names. The typeAnalyzer returns
+      // descriptors (`Lfoo/C;`), the descriptor in a TypeInsn is an internal name (`foo/C`) or an
+      // array descriptor.
+      def sameClass(a: String, b: String) = {
+        a == b ||
+          a(0) == 'L' && a.last == ';' && a.regionMatches(1, b, 0, b.length) ||
+          b(0) == 'L' && b.last == ';' && b.regionMatches(1, a, 0, a.length)
+      }
+      sameClass(aDescOrIntN, bDescOrIntN) || sameClass(bDescOrIntN, ObjectRef.internalName) ||
+        bTypeForDescriptorOrInternalNameFromClassfile(aDescOrIntN).conformsTo(bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN)).getOrElse(false)
     }
 
     lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
@@ -588,7 +605,7 @@ abstract class LocalOpt {
 
 
     // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
-    val toReplace = mutable.Map.empty[TypeInsnNode, List[AbstractInsnNode]]
+    val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
 
 
     val it = method.instructions.iterator
@@ -603,21 +620,27 @@ abstract class LocalOpt {
           if (opc == INSTANCEOF && valueNullness == NullValue) {
             toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
           } else {
-            val valueTp = {
+            val tii = ti
+            val valueDesc = typeAnalyzer.preciseAaloadTypeDesc({
               val frame = typeAnalyzer.frameAt(ti)
               frame.getValue(frame.stackTop)
-            }
-            if (isSubType(valueTp.getType.getDescriptor, ti.desc)) {
+            })
+            if (isSubType(valueDesc, ti.desc)) {
               if (opc == CHECKCAST) {
                 toReplace(ti) = Nil
               } else if (valueNullness == NotNullValue) {
                 toReplace(ti) = List(getPop(1), new InsnNode(ICONST_1))
               }
-            } else if (opc == INSTANCEOF && !isSubType(ti.desc, valueTp.getType.getDescriptor)) {
+            } else if (opc == INSTANCEOF && !isSubType(ti.desc, valueDesc)) {
               // the two types are unrelated, so the instance check is known to fail
               toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
             }
           }
+        }
+
+      case mi: MethodInsnNode =>
+        if (BackendUtils.isArrayGetLength(mi, typeAnalyzer)) {
+          toReplace(mi) = List(new InsnNode(ARRAYLENGTH))
         }
 
       case _ =>

@@ -1331,6 +1331,9 @@ class InlinerTest extends BytecodeTesting {
         |  @inline final def asO(a: Any) = a.asInstanceOf[Object]
         |  @inline final def asC(a: Any) = a.asInstanceOf[C]
         |  @inline final def asD(a: Any) = a.asInstanceOf[D]
+        |  @inline final def asOs(a: Any) = a.asInstanceOf[Array[Object]]
+        |  @inline final def asCs(a: Any) = a.asInstanceOf[Array[C]]
+        |  @inline final def c0(a: Array[Object]) = a(0).asInstanceOf[C]
         |
         |  def t1(c: C) = asC(c) // eliminated
         |  def t2(c: C) = asO(c) // eliminated
@@ -1338,17 +1341,35 @@ class InlinerTest extends BytecodeTesting {
         |  def t4(c: C, d: D, b: Boolean) = asC(if (b) c else d) // not eliminated: lub of two non-equal reference types approximated with Object
         |  def t5(c: C, d: D, b: Boolean) = asO(if (b) c else d)
         |  def t6(c: C, cs: Array[C], b: Boolean) = asO(if (b) c else cs)
+        |  def t7(a: Array[Int]) = asO(a)
+        |  def t8(a: Array[Int]) = asC(a)
+        |  def t9(a: Array[Int]) = asOs(a)
+        |  def t10(a: Array[Object]) = asO(a)
+        |  def t11(a: Array[Object]) = asOs(a)
+        |  def t12(a: Array[Object]) = asCs(a)
+        |  def t13(a: Array[C]) = c0(a.asInstanceOf[Array[Object]])
         |}
         |class D extends C
       """.stripMargin
     val List(c, _) = compileClasses(code)
-    def casts(m: String) = getInstructions(c, m) collect { case TypeOp(CHECKCAST, tp) => tp }
+    def casts(mn: String) = {
+      val m = getMethod(c, mn)
+      assertNoInvoke(m) // everything is inlined
+      m.instructions collect { case TypeOp(CHECKCAST, tp) => tp }
+    }
     assertSameCode(getMethod(c, "t1"), List(VarOp(ALOAD, 1), Op(ARETURN)))
     assertSameCode(getMethod(c, "t2"), List(VarOp(ALOAD, 1), Op(ARETURN)))
     assertSameCode(getMethod(c, "t3"), List(VarOp(ALOAD, 1), TypeOp(CHECKCAST, "C"), Op(ARETURN)))
     assertEquals(casts("t4"), List("C"))
     assertEquals(casts("t5"), Nil)
     assertEquals(casts("t6"), Nil)
+    assertEquals(casts("t7"), Nil)
+    assertEquals(casts("t8"), List("C"))
+    assertEquals(casts("t9"), List("[Ljava/lang/Object;"))
+    assertEquals(casts("t10"), Nil)
+    assertEquals(casts("t11"), Nil)
+    assertEquals(casts("t12"), List("[LC;"))
+    assertEquals(casts("t13"), Nil)
   }
 
   @Test
@@ -1845,16 +1866,16 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameSummary(getMethod(c, "t1"), List(
-      ALOAD, "getLength", ISTORE, ICONST_0, ISTORE, // get length, init loop counter
+      ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE, // get length, init loop counter
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*25*/,     // check loop condition
       ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "$anonfun$t1$1", // load element, store into local, call body method
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,    // increase loop counter, jump
       -1 /*25*/, RETURN))
 
     assertSameSummary(getMethod(c, "t2"), List(
-      ALOAD, "getLength", ISTORE, ICONST_0, ISTORE,
+      ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE,
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*24*/,
-      ALOAD, ILOAD, AALOAD, CHECKCAST, "$anonfun$t2$1", POP,
+      ALOAD, ILOAD, AALOAD, "$anonfun$t2$1", POP,
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,
       -1 /*24*/, RETURN)
     )
@@ -1870,16 +1891,21 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameSummary(getMethod(c, "t1"), List(
-      ALOAD, "getLength", ISTORE, ILOAD, NEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
       -1 /*11*/, ILOAD, ILOAD, IF_ICMPGE /*30*/, // loop condition
       ALOAD, ILOAD, IALOAD, "$anonfun$t1$1", ISTORE, // compute element
       ALOAD, ILOAD, ILOAD, IASTORE, // store element
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*11*/, // increase counter, jump
       -1 /*30*/, ALOAD, ARETURN)
     )
-
-    println(AsmUtils.textify(getAsmMethod(c, "t2")))
-
-//    assertSameSummary(getMethod(c, "t2"), Nil)
+    assertSameSummary(getMethod(c, "t2"), List(
+      LDC, POP, // classOf[String] currently not eliminated, as it could cause an exception
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*37*/, // loop condition
+      ALOAD, ILOAD, AALOAD, "$anonfun$t2$1", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, // compute and store element
+      ACONST_NULL, ASTORE, // null out local variable that was inlined
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*14*/, // increase counter, jump
+      -1 /*37*/, ALOAD, ARETURN)
+    )
   }
 }
