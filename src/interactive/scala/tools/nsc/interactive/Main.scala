@@ -21,7 +21,7 @@ object Main extends nsc.MainClass {
       val reloaded = new interactive.Response[Unit]
       compiler.askReload(sfs, reloaded)
 
-      reloaded.get.right.toOption match {
+      reloaded.get.toOption match {
         case Some(ex) => reporter.ERROR.count += 1 // Causes exit code to be non-0
         case None     => reporter.reset()          // Causes other compiler errors to be ignored
       }
