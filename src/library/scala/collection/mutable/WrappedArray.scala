@@ -130,7 +130,7 @@ object WrappedArray {
     def update(index: Int, elem: T) { array(index) = elem }
     override def hashCode = MurmurHash3.wrappedArrayHash(array)
     override def equals(that: Any) = that match {
-      case that: ofRef[_] => that.array.canEqual(array) && array.sameElements(that.array)
+      case that: ofRef[_] => array.sameElements(that.array)
       case _ => super.equals(that)
     }
   }
