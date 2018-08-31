@@ -5804,11 +5804,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       assert(context.owner.isMacro, context.owner)
       assert(ddef.symbol.isMacro, ddef.symbol)
 
+      // macro defs are typechecked in `methodSig` (by calling this method) in order to establish their link to macro implementation asap
+      // if a macro def doesn't have explicitly specified return type, this method will be called again by `assignTypeToTree`
+      // here we guard against this case
       val rhs1 =
         if (transformed contains ddef.rhs) {
-          // macro defs are typechecked in `methodSig` (by calling this method) in order to establish their link to macro implementation asap
-          // if a macro def doesn't have explicitly specified return type, this method will be called again by `assignTypeToTree`
-          // here we guard against this case
           transformed(ddef.rhs)
         } else {
           val rhs1 = typedMacroBody(this, ddef)
@@ -5824,17 +5824,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           ddef.symbol.setFlag(IS_ERROR)
           context.error(ddef.pos, commonMessage)
         }
-        def reportWarning(inferredType: Type) = {
-          val explanation = s"inference of $inferredType from macro impl's c.Expr[$inferredType] is deprecated and is going to stop working in 2.12"
-          context.deprecationWarning(ddef.pos, ddef.symbol, s"$commonMessage ($explanation)", "2.12.0")
-        }
-        computeMacroDefTypeFromMacroImplRef(ddef, rhs1) match {
-          case ErrorType => ErrorType
-          case NothingTpe => NothingTpe
-          case NoType => reportFailure(); AnyTpe
-          case tpe => reportWarning(tpe); tpe
-        }
-      } else AnyTpe
+        reportFailure()
+      }
+      AnyTpe
     }
 
     @inline final def transformedOr(tree: Tree, op: => Tree): Tree = lookupTransformed(tree) match {

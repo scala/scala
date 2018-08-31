@@ -5,5 +5,5 @@ object Macros {
   def impl(c: Context) = {
     c.abort(c.enclosingPosition, "aborted")
   }
-  def abort = macro impl
+  def abort: Any = macro impl
 }

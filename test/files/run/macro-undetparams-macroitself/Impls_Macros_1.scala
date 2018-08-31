@@ -7,5 +7,5 @@ object Macros {
     reify { println(c.Expr[String](Literal(Constant(implicitly[c.WeakTypeTag[T]].toString))).splice) }
   }
 
-  def foo[T](foo: T) = macro impl[T]
+  def foo[T](foo: T): Unit = macro impl[T]
 }
