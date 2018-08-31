@@ -37,10 +37,6 @@ import scala.util.control.{NoStackTrace, NonFatal}
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
  * instance.
  *
- * One example is the AsmAnalyzer class, which runs `computeMaxLocalsMaxStack` on the methodNode to
- * be analyzed. This method in turn lives inside the BTypes assembly because it queries the per-run
- * cache `maxLocalsMaxStackComputed` defined in there.
- *
  * TODO: move out of `analysis` package?
  */
 abstract class BackendUtils extends PerRunInit {
@@ -313,7 +309,10 @@ abstract class BackendUtils extends PerRunInit {
   def runtimeRefClassBoxedType(refClass: InternalName): Type = Type.getArgumentTypes(srRefCreateMethods(refClass).methodType.descriptor)(0)
 
   def isKnownClassTag(mi: MethodInsnNode): Boolean = {
-    mi.owner == "scala/reflect/ClassTag$" && mi.name == "Int" && mi.desc == "()Lscala/reflect/ManifestFactory$IntManifest;"
+    mi.owner == "scala/reflect/ClassTag$" && {
+      mi.name == "Int" && mi.desc == "()Lscala/reflect/ManifestFactory$IntManifest;" ||
+        mi.name == "apply" && mi.desc == "(Ljava/lang/Class;)Lscala/reflect/ClassTag;"
+    }
   }
 
   def isSideEffectFreeCall(mi: MethodInsnNode): Boolean = {
@@ -968,5 +967,36 @@ object BackendUtils {
   def nullCheckedArguments(mi: MethodInsnNode): Long = {
     if (isArrayGetLength(mi)) 1
     else 0
+  }
+
+  def classTagNewArrayArg(mi: MethodInsnNode, prodCons: ProdConsAnalyzer): InternalName = {
+    if (mi.name == "newArray" && mi.owner == "scala/reflect/ClassTag" && mi.desc == "(I)Ljava/lang/Object;") {
+      val prods = prodCons.initialProducersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
+      if (prods.size == 1) prods.head match {
+        case ctApply: MethodInsnNode =>
+          if (ctApply.name == "apply" && ctApply.owner == "scala/reflect/ClassTag$" && ctApply.desc == "(Ljava/lang/Class;)Lscala/reflect/ClassTag;") {
+            val clsProd = prodCons.initialProducersForValueAt(ctApply, prodCons.frameAt(ctApply).stackTop)
+            if (clsProd.size == 1) clsProd.head match {
+              case ldc: LdcInsnNode =>
+                ldc.cst match {
+                  case tp: Type if tp.getSort == Type.OBJECT => // TODO: support nested arrays?
+                    return tp.getInternalName
+                  case _ =>
+                }
+              case _ =>
+            }
+          }
+        case _ =>
+      }
+    }
+    null
+  }
+
+  def isArrayGetLength(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Boolean = {
+    mi.name == "getLength" && mi.owner == "java/lang/reflect/Array" && mi.desc == "(Ljava/lang/Object;)I" && {
+      val f = typeAnalyzer.frameAt(mi)
+      f.getValue(f.stackTop).getType.getSort == Type.ARRAY
+    }
+
   }
 }

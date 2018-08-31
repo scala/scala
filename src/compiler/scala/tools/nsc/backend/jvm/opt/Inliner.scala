@@ -1168,6 +1168,7 @@ abstract class Inliner {
 
       case ci: LdcInsnNode => ci.cst match {
         case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName), destinationClass)
+          // TODO: method handle -- check if method accessible?
         case _           => Right(true)
       }
 

@@ -103,17 +103,17 @@ abstract class CopyProp {
       lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
-      // insns to delete: IINC that have no consumer
-      val toDelete = mutable.ArrayBuffer.empty[IincInsnNode]
-
-      // xSTORE insns to be replaced by POP or POP2
-      val storesToDrop = mutable.ArrayBuffer.empty[VarInsnNode]
+      def popFor(vi: VarInsnNode): AbstractInsnNode = getPop(if (isSize2LoadOrStore(vi.getOpcode)) 2 else 1)
 
       // ASTORE insn that have no consumer.
       //   - if the local is not live, the store is replaced by POP
       //   - otherwise, pop the argument value and store NULL instead. Unless the boolean field is
       //     `true`: then the store argument is already known to be ACONST_NULL.
-      val toNullOut = mutable.ArrayBuffer.empty[(VarInsnNode, Boolean)]
+      val toNullOut = mutable.Map.empty[VarInsnNode, Boolean]
+
+      val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
+
+      val returns = mutable.Set.empty[AbstractInsnNode]
 
       // `true` for variables that are known to be live and hold non-primitives
       val liveRefVars = new Array[Boolean](method.maxLocals)
@@ -131,15 +131,15 @@ abstract class CopyProp {
               case _ => false
             })
           }
-          if (canElim) storesToDrop += vi
+          if (canElim) toReplace(vi) = List(popFor(vi))
           else {
             val prods = prodCons.producersForValueAt(vi, prodCons.frameAt(vi).stackTop)
             val isStoreNull = prods.size == 1 && prods.head.getOpcode == ACONST_NULL
-            toNullOut += ((vi, isStoreNull))
+            toNullOut(vi) = isStoreNull
           }
 
         case ii: IincInsnNode if hasNoCons(ii, ii.`var`) =>
-          toDelete += ii
+          toReplace(ii) = Nil
 
         case vi: VarInsnNode =>
           val opc = vi.getOpcode
@@ -150,20 +150,62 @@ abstract class CopyProp {
           if (markAsLive)
             liveRefVars(vi.`var`) = true
 
-        case _ =>
+        case mi: MethodInsnNode =>
+          val newArrayCls = BackendUtils.classTagNewArrayArg(mi, prodCons)
+          if (newArrayCls != null) {
+            val receiverProds = prodCons.producersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
+            if (receiverProds.size == 1) {
+              toReplace(receiverProds.head) = List(receiverProds.head, getPop(1))
+              toReplace(mi) = List(new TypeInsnNode(ANEWARRAY, newArrayCls))
+            }
+          }
+
+        case insn =>
+          if (isReturn(insn)) returns += insn
       }
 
-      def replaceByPop(vi: VarInsnNode): Unit = {
-        val size = if (isSize2LoadOrStore(vi.getOpcode)) 2 else 1
-        method.instructions.set(vi, getPop(size))
+      def isTrailing(insn: AbstractInsnNode) = insn != null && {
+        import scala.tools.asm.tree.AbstractInsnNode._
+        insn.getType match {
+          case METHOD_INSN | INVOKE_DYNAMIC_INSN | JUMP_INSN | TABLESWITCH_INSN | LOOKUPSWITCH_INSN => false
+          case _ => true
+        }
       }
 
-      toDelete foreach method.instructions.remove
+      // stale stores that precede a return can be removed, there's no need to null them out. the
+      // references are released for gc when the method returns. this also cleans up unnecessary
+      // `ACONST_NULL; ASTORE x` created by the inliner (for locals of the inlined method).
+      for (ret <- returns) {
+        var i = ret
+        while (isTrailing(i)) {
+          if (i.getType == AbstractInsnNode.VAR_INSN) {
+            val vi = i.asInstanceOf[VarInsnNode]
+            if (toNullOut.remove(vi).nonEmpty)
+              toReplace(i) = List(popFor(vi))
+          }
+          i = i.getPrevious
+        }
+      }
 
-      storesToDrop foreach replaceByPop
+      for ((i, nis) <- toReplace) {
+        if (nis.isEmpty) {
+          method.instructions.remove(i)
+        } else {
+          val next = i.getNext
+          if (next != null) {
+            method.instructions.remove(i)
+            for (ni <- nis)
+              method.instructions.insertBefore(next, ni)
+          } else {
+            for (ni <- nis.reverse)
+              method.instructions.insert(i, ni)
+            method.instructions.remove(i)
+          }
+        }
+      }
 
       for ((vi, isStoreNull) <- toNullOut) {
-        if (!liveRefVars(vi.`var`)) replaceByPop(vi) // can drop `ASTORE x` where x has only dead stores
+        if (!liveRefVars(vi.`var`)) method.instructions.set(vi, popFor(vi)) // can drop `ASTORE x` where x has only dead stores
         else {
           if (!isStoreNull) {
             val prev = vi.getPrevious
@@ -173,7 +215,7 @@ abstract class CopyProp {
         }
       }
 
-      val changed = toDelete.nonEmpty || storesToDrop.nonEmpty || toNullOut.nonEmpty
+      val changed = toReplace.nonEmpty || toNullOut.nonEmpty
       if (changed) analyzerCache.invalidate(method)
       changed
     }
@@ -385,12 +427,14 @@ abstract class CopyProp {
             if (isNewForSideEffectFreeConstructor(prod)) toRemove += prod
             else popAfterProd()
 
-          case LDC => prod.asInstanceOf[LdcInsnNode].cst match {
+          case LDC =>
+            prod.asInstanceOf[LdcInsnNode].cst match {
             case _: java.lang.Integer | _: java.lang.Float | _: java.lang.Long | _: java.lang.Double | _: String =>
               toRemove += prod
 
             case _ =>
               // don't remove class literals, method types, method handles: keep a potential NoClassDefFoundError
+              // TODO: make that dependent on an optimizer flag
               popAfterProd()
           }
 

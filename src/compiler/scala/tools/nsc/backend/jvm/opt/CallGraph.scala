@@ -299,7 +299,7 @@ abstract class CallGraph {
 
   def samParamTypes(methodNode: MethodNode, receiverType: ClassBType): IntMap[ClassBType] = {
     val paramTypes = {
-      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
+      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
       val isStatic = BytecodeUtils.isStaticMethod(methodNode)
       if (isStatic) params else receiverType +: params
     }
@@ -307,7 +307,7 @@ abstract class CallGraph {
   }
 
   def capturedSamTypes(lmf: LambdaMetaFactoryCall): IntMap[ClassBType] = {
-    val capturedTypes = Type.getArgumentTypes(lmf.indy.desc).map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
+    val capturedTypes = Type.getArgumentTypes(lmf.indy.desc).map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
     samTypes(capturedTypes)
   }
 
