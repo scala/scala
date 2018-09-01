@@ -484,9 +484,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       def compare(x: (T1, T2), y: (T1, T2)): Int = {
         val compare1 = ord1.compare(x._1, y._1)
         if (compare1 != 0) return compare1
-        val compare2 = ord2.compare(x._2, y._2)
-        if (compare2 != 0) return compare2
-        0
+        ord2.compare(x._2, y._2)
       }
     }
 
@@ -497,9 +495,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare1 != 0) return compare1
         val compare2 = ord2.compare(x._2, y._2)
         if (compare2 != 0) return compare2
-        val compare3 = ord3.compare(x._3, y._3)
-        if (compare3 != 0) return compare3
-        0
+        ord3.compare(x._3, y._3)
       }
     }
 
@@ -512,9 +508,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare2 != 0) return compare2
         val compare3 = ord3.compare(x._3, y._3)
         if (compare3 != 0) return compare3
-        val compare4 = ord4.compare(x._4, y._4)
-        if (compare4 != 0) return compare4
-        0
+        ord4.compare(x._4, y._4)
       }
     }
 
@@ -529,9 +523,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare3 != 0) return compare3
         val compare4 = ord4.compare(x._4, y._4)
         if (compare4 != 0) return compare4
-        val compare5 = ord5.compare(x._5, y._5)
-        if (compare5 != 0) return compare5
-        0
+        ord5.compare(x._5, y._5)
       }
     }
 
@@ -548,9 +540,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare4 != 0) return compare4
         val compare5 = ord5.compare(x._5, y._5)
         if (compare5 != 0) return compare5
-        val compare6 = ord6.compare(x._6, y._6)
-        if (compare6 != 0) return compare6
-        0
+        ord6.compare(x._6, y._6)
       }
     }
 
@@ -569,9 +559,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare5 != 0) return compare5
         val compare6 = ord6.compare(x._6, y._6)
         if (compare6 != 0) return compare6
-        val compare7 = ord7.compare(x._7, y._7)
-        if (compare7 != 0) return compare7
-        0
+        ord7.compare(x._7, y._7)
       }
     }
 
@@ -592,9 +580,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare6 != 0) return compare6
         val compare7 = ord7.compare(x._7, y._7)
         if (compare7 != 0) return compare7
-        val compare8 = ord8.compare(x._8, y._8)
-        if (compare8 != 0) return compare8
-        0
+        ord8.compare(x._8, y._8)
       }
     }
 
@@ -617,9 +603,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         if (compare7 != 0) return compare7
         val compare8 = ord8.compare(x._8, y._8)
         if (compare8 != 0) return compare8
-        val compare9 = ord9.compare(x._9, y._9)
-        if (compare9 != 0) return compare9
-        0
+        ord9.compare(x._9, y._9)
       }
     }
 
