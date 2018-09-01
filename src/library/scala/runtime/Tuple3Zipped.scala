@@ -44,28 +44,24 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
 
   def map[B, To](f: (El1, El2, El3) => B)(implicit bf: BuildFrom[It1, B, To]): To = {
     val b = bf.newBuilder(coll1)
+    val elems1 = coll1.iterator
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
 
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext)
-        b += f(el1, elems2.next(), elems3.next())
-      else
-        return b.result()
+    while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
+      b += f(elems1.next(), elems2.next(), elems3.next())
     }
     b.result()
   }
 
   def flatMap[B, To](f: (El1, El2, El3) => IterableOnce[B])(implicit bf: BuildFrom[It1, B, To]): To = {
     val b = bf.newBuilder(coll1)
+    val elems1 = coll1.iterator
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
 
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext)
-        b ++= f(el1, elems2.next(), elems3.next())
-      else
-        return b.result()
+    while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
+      b ++= f(elems1.next(), elems2.next(), elems3.next())
     }
     b.result()
   }
@@ -77,37 +73,33 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
     val b1 = bf1.newBuilder(coll1)
     val b2 = bf2.newBuilder(coll2)
     val b3 = bf3.newBuilder(coll3)
+    val elems1 = coll1.iterator
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
-    def result = (b1.result(), b2.result(), b3.result())
 
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext) {
-        val el2 = elems2.next()
-        val el3 = elems3.next()
+    while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
+      val el1 = elems1.next()
+      val el2 = elems2.next()
+      val el3 = elems3.next()
 
-        if (f(el1, el2, el3)) {
-          b1 += el1
-          b2 += el2
-          b3 += el3
-        }
+      if (f(el1, el2, el3)) {
+        b1 += el1
+        b2 += el2
+        b3 += el3
       }
-      else return result
     }
-
-    result
+    (b1.result(), b2.result(), b3.result())
   }
 
   def exists(p: (El1, El2, El3) => Boolean): Boolean = {
+    val elems1 = coll1.iterator
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
 
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext) {
-        if (p(el1, elems2.next(), elems3.next()))
-          return true
+    while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
+      if (p(elems1.next(), elems2.next(), elems3.next())) {
+        return true
       }
-      else return false
     }
     false
   }
@@ -118,14 +110,12 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
   def iterator: Iterator[(El1, El2, El3)] = coll1.iterator.zip(coll2.iterator).zip(coll3.iterator).map { case ((a, b), c) => (a, b, c)}
   override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty
   def foreach[U](f: (El1, El2, El3) => U): Unit = {
+    val elems1 = coll1.iterator
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
 
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext)
-        f(el1, elems2.next(), elems3.next())
-      else
-        return
+    while (elems1.hasNext && elems2.hasNext && elems3.hasNext) {
+      f(elems1.next(), elems2.next(), elems3.next())
     }
   }
 
