@@ -112,29 +112,32 @@ final class VectorMap[K, +V] private[immutable] (
   override def equals(that: Any): Boolean =
     that match {
       case map: Map[K, V] =>
-        (this eq map) ||
-          (this.size == map.size) && {
-            try {
-              var i = 0
-              val _size = size
-              while (i < _size) {
-                val k = fields(i)
+        if (this eq map) {
+          true
+        } else if (this.size == map.size) {
+          try {
+            var i = 0
+            val _size = size
+            while (i < _size) {
+              val k = fields(i)
 
-                map.get(k) match {
-                  case Some(value) =>
-                    if (!(value == underlying(k)._2)) {
-                      return false
-                    }
-                  case None =>
+              map.get(k) match {
+                case Some(value) =>
+                  if (!(value == underlying(k)._2)) {
                     return false
-                }
-                i += 1
+                  }
+                case None =>
+                  return false
               }
-              true
-            } catch {
-              case _: ClassCastException => false
+              i += 1
             }
+            true
+          } catch {
+            case _: ClassCastException => false
           }
+        } else {
+          false
+        }
       case _ => super.equals(that)
     }
 
