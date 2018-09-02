@@ -35,9 +35,11 @@ trait Equiv[T] extends Any with Serializable {
   def equiv(x: T, y: T): Boolean
 }
 
+@deprecated("This only existed for the implicit universalEquiv. Use the explicit Equiv.universal instead.", "2.13.0")
 trait LowPriorityEquiv {
   self: Equiv.type =>
 
+  @deprecated("This being implicit was error-prone. Use the explicit Equiv.universal instead.", "2.13.0")
   implicit def universalEquiv[T] : Equiv[T] = universal[T]
 }
 
