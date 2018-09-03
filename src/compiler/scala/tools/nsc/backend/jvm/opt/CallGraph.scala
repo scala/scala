@@ -151,9 +151,10 @@ abstract class CallGraph {
       // if the method is too large to run an analyzer, it is not added to the call graph
       if (analyzer.nonEmpty) {
         val Some(a) = analyzer
-        def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a match {
+        def receiverNotNullByAnalysis(call: MethodInsnNode, paramTps: FLazy[Array[Type]]) = a match {
           case nullnessAnalyzer: NullnessAnalyzer =>
             val frame = nullnessAnalyzer.frameAt(call)
+            val numArgs = paramTps.get.length
             frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
           case _ => false
         }
@@ -162,7 +163,7 @@ abstract class CallGraph {
         var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
         // lazy so it is only computed if actually used by computeArgInfos
-        lazy val prodCons = backendUtils.analyzerCache.get[ProdConsAnalyzer](methodNode)(new ProdConsAnalyzer(methodNode, definingClass.internalName))
+        val prodCons = FLazy(backendUtils.analyzerCache.get[ProdConsAnalyzer](methodNode)(new ProdConsAnalyzer(methodNode, definingClass.internalName)))
 
         // TODO: check which analyzer to run! nullness, type flow, prod cons. really all of them!?
         lazy val typeFlow = backendUtils.analyzerCache.get[NonLubbingTypeFlowAnalyzer](methodNode)(new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName))
@@ -183,6 +184,7 @@ abstract class CallGraph {
                     false
                   }
                 }
+            val paramTps = FLazy(Type.getArgumentTypes(call.desc))
             // This is the type where method lookup starts (implemented in byteCodeRepository.methodNode)
             val preciseOwner =
               if (isStaticCallsite(call)) call.owner
@@ -192,7 +194,7 @@ abstract class CallGraph {
                 // invokevirtual, invokeinterface: start search at the type of the receiver
                 val f = typeFlow.frameAt(call)
                 // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
-                val numParams = Type.getArgumentTypes(call.desc).length
+                val numParams = paramTps.get.length
                 f.peekStack(numParams).getType.getInternalName
               }
 
@@ -202,7 +204,7 @@ abstract class CallGraph {
                 (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
               } yield {
                 val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath, definingClass)
+                val info = analyzeCallsite(method, declarationClassBType, call, paramTps, calleeSourceFilePath, definingClass)
                 import info._
                 Callee(
                   callee = method,
@@ -216,12 +218,10 @@ abstract class CallGraph {
               }
             }
 
-            val argInfos = computeArgInfos(callee, call, prodCons)
+            val argInfos = computeArgInfos(callee, call, paramTps, prodCons)
 
-            val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
-              val numArgs = Type.getArgumentTypes(call.desc).length
-              receiverNotNullByAnalysis(call, numArgs)
-            }
+            val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC ||
+              receiverNotNullByAnalysis(call, paramTps)
 
             methodCallsites += call -> Callsite(
               callsiteInstruction = call,
@@ -236,9 +236,9 @@ abstract class CallGraph {
               annotatedNoInline = noInlineAnnotatedCallsites(call)
             )
 
-          case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
+          case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes) if a.frameAt(indy) != null =>
             val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
-            val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
+            val capturedArgInfos = computeCapturedArgInfos(lmf, indyParamTypes, prodCons)
             methodClosureInstantiations += indy -> ClosureInstantiation(
               lmf,
               methodNode,
@@ -254,21 +254,21 @@ abstract class CallGraph {
     }
   }
 
-  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
+  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, paramTps: FLazy[Array[Type]], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
     if (callee.isLeft) IntMap.empty
     else {
-      lazy val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
+      val numArgs = FLazy(paramTps.get.length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1))
       argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, prodCons)
     }
   }
 
-  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
-    val capturedSams = capturedSamTypes(lmf)
-    val numCaptures = Type.getArgumentTypes(lmf.indy.desc).length
-    argInfosForSams(capturedSams, lmf.indy, numCaptures, prodCons)
+  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, indyParamTypes: Array[Type], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
+    val capturedTypes = indyParamTypes.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
+    val capturedSams = samTypes(capturedTypes)
+    argInfosForSams(capturedSams, lmf.indy, FLazy(indyParamTypes.length), prodCons)
   }
 
-  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: => Int, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
+  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: FLazy[Int], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
     // TODO: use type analysis instead of ProdCons - should be more efficient
     // some random thoughts:
     //  - assign special types to parameters and indy-lambda-functions to track them
@@ -276,39 +276,33 @@ abstract class CallGraph {
     //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
     //    inline the factory? analysis across method boundary?
 
-    // assign to a lazy val to prevent repeated evaluation of the by-name arg
-    lazy val prodConsI = prodCons
+    // lazy val to prevent unnecessary ProdCons analysis
     lazy val firstConsumedSlot = {
-      val consumerFrame = prodConsI.frameAt(consumerInsn)
-      consumerFrame.stackTop - numConsumed + 1
+      val consumerFrame = prodCons.get.frameAt(consumerInsn)
+      consumerFrame.stackTop - numConsumed.get + 1
     }
     sams flatMap {
       case (index, _) =>
-        val prods = prodConsI.initialProducersForValueAt(consumerInsn, firstConsumedSlot + index)
+        val prods = prodCons.get.initialProducersForValueAt(consumerInsn, firstConsumedSlot + index)
         if (prods.size != 1) None
         else {
           val argInfo = prods.head match {
-            case LambdaMetaFactoryCall(_, _, _, _) => Some(FunctionLiteral)
-            case ParameterProducer(local)          => Some(ForwardedParam(local))
-            case _                                 => None
+            case LambdaMetaFactoryCall(_, _, _, _, _) => Some(FunctionLiteral)
+            case ParameterProducer(local)             => Some(ForwardedParam(local))
+            case _                                    => None
           }
           argInfo.map((index, _))
         }
     }
   }
 
-  def samParamTypes(methodNode: MethodNode, receiverType: ClassBType): IntMap[ClassBType] = {
+  def samParamTypes(methodNode: MethodNode, paramTps: Array[Type], receiverType: ClassBType): IntMap[ClassBType] = {
     val paramTypes = {
-      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
+      val params = paramTps.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
       val isStatic = BytecodeUtils.isStaticMethod(methodNode)
       if (isStatic) params else receiverType +: params
     }
     samTypes(paramTypes)
-  }
-
-  def capturedSamTypes(lmf: LambdaMetaFactoryCall): IntMap[ClassBType] = {
-    val capturedTypes = Type.getArgumentTypes(lmf.indy.desc).map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
-    samTypes(capturedTypes)
   }
 
   private def samTypes(types: Array[BType]): IntMap[ClassBType] = {
@@ -324,6 +318,22 @@ abstract class CallGraph {
     res
   }
 
+  final class FLazy[@specialized(Int) T](_init: => T) {
+    private[this] var init = () => _init
+    private[this] var v: T = _
+    def get: T = {
+      if (init != null) {
+        v = init()
+        init = null
+      }
+      v
+    }
+  }
+
+  object FLazy {
+    def apply[T](init: => T): FLazy[T] = new FLazy(init)
+  }
+
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
@@ -335,7 +345,7 @@ abstract class CallGraph {
   /**
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
    */
-  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, calleeSourceFilePath: Option[String], callsiteClass: ClassBType): CallsiteInfo = {
+  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, paramTps: FLazy[Array[Type]], calleeSourceFilePath: Option[String], callsiteClass: ClassBType): CallsiteInfo = {
     val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
 
     try {
@@ -381,7 +391,7 @@ abstract class CallGraph {
             sourceFilePath       = calleeSourceFilePath,
             annotatedInline      = methodInlineInfo.annotatedInline,
             annotatedNoInline    = methodInlineInfo.annotatedNoInline,
-            samParamTypes        = samParamTypes(calleeMethodNode, receiverType),
+            samParamTypes        = samParamTypes(calleeMethodNode, paramTps.get, receiverType),
             warning              = warning)
 
         case None =>
@@ -476,7 +486,7 @@ abstract class CallGraph {
   final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
 
   object LambdaMetaFactoryCall {
-    def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type)] = insn match {
+    def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type, Array[Type])] = insn match {
       case indy: InvokeDynamicInsnNode if indy.bsm == coreBTypes.lambdaMetaFactoryMetafactoryHandle || indy.bsm == coreBTypes.lambdaMetaFactoryAltMetafactoryHandle =>
         indy.bsmArgs match {
           case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, _@_*) =>
@@ -525,7 +535,7 @@ abstract class CallGraph {
                    samArgType == instArgType || isReference(samArgType) && isReference(instArgType)) // (3)
             )
 
-            if (isIndyLambda) Some((indy, samMethodType, implMethod, instantiatedMethodType))
+            if (isIndyLambda) Some((indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes))
             else None
 
           case _ => None
