@@ -158,7 +158,7 @@ object Jar {
     def update(key: Attributes.Name, value: String) = attrs.put(key, value)
   }
 
-  // See http://docs.oracle.com/javase/7/docs/api/java/nio/file/Path.html
+  // See https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
   // for some ideas.
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
