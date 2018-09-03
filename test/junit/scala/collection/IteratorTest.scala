@@ -209,8 +209,8 @@ class IteratorTest {
     def mkIterator = Range.inclusive(1, 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
-    val s1 = LazyList.fromIterator(mkIterator)
-    val s2 = LazyList.fromIterator(mkInfinite)
+    val s1 = LazyList.from(mkIterator)
+    val s2 = LazyList.from(mkInfinite)
     // back and forth without slipping into nontermination.
     results += LazyList.from(1).iterator.drop(10).to(LazyList).drop(10).iterator.next()
     assertTrue(List(21).sameElements(results))
