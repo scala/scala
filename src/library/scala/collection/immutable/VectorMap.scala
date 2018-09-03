@@ -95,7 +95,7 @@ final class VectorMap[K, +V] private[immutable] (
 
   override def lastOption: Option[(K, V)] = {
     fields.lastOption match {
-      case Some(last) => Some(last, underlying(last)._2)
+      case Some(last) => Some((last, underlying(last)._2))
       case None => None
     }
   }
