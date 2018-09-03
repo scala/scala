@@ -120,9 +120,10 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
+  /* // Not defined here anymore since immutable inheritors should use more optimal specific implmentations instead, see scala/bug#11128
   override def concat[B >: A](suffix: IterableOnce[B]): CC[B] =
     strictOptimizedConcat(suffix, iterableFactory.newBuilder[B])
-
+  */
   /**
     * @param that Elements to concatenate to this collection
     * @param b Builder to use to build the resulting collection

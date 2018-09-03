@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection
+package scala
+package collection
+package mutable
 
 import scala.language.higherKinds
 
@@ -22,7 +24,7 @@ import scala.language.higherKinds
   * @tparam CC Collection type constructor
   * @tparam C  Collection type
   */
-trait StrictOptimizedMapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
+trait StrictOptimizedMapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends MapOps[K, V, CC, C]
     with StrictOptimizedIterableOps[(K, V), Iterable, C] {
 

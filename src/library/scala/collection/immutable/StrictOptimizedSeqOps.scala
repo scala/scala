@@ -10,6 +10,18 @@
  * additional information regarding copyright ownership.
  */
 
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -21,7 +33,7 @@ import scala.language.higherKinds
   */
 trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   extends SeqOps[A, CC, C]
-    with collection.StrictOptimizedSeqOps[A, CC, C] {
+    with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {
     if (lengthCompare(1) <= 0) coll

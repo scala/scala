@@ -20,7 +20,7 @@ import java.lang.System.arraycopy
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
 import scala.collection.mutable.Builder
-import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
+import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps}
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence
 

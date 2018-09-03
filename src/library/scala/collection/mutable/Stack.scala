@@ -13,7 +13,7 @@
 package scala.collection.mutable
 
 import scala.annotation.migration
-import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps}
+import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory}
 
 /** A stack implements a data structure which allows to store and retrieve
   *  objects in a last-in-first-out (LIFO) fashion.

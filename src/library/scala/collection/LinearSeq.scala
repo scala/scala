@@ -189,30 +189,6 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator.single(newSpecificBuilder.result())
 }
 
-trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {
-  // A more efficient iterator implementation than the default LinearSeqIterator
-  override def iterator: Iterator[A] = new AbstractIterator[A] {
-    private[this] var current: Iterable[A] = toIterable
-    def hasNext = !current.isEmpty
-    def next() = { val r = current.head; current = current.tail; r }
-  }
-
-  // Optimized version of `drop` that avoids copying
-  override def drop(n: Int): C = {
-    @tailrec def loop(n: Int, s: C): C =
-      if (n <= 0 || s.isEmpty) s
-      else loop(n - 1, s.tail)
-    loop(n, coll)
-  }
-
-  override def dropWhile(p: A => Boolean): C = {
-    @tailrec def loop(s: C): C =
-      if (s.nonEmpty && p(s.head)) loop(s.tail)
-      else s
-    loop(coll)
-  }
-}
-
 /** A specialized Iterator for LinearSeqs that is lazy enough for Stream and LazyList. This is accomplished by not
   * evaluating the tail after returning the current head.
   */

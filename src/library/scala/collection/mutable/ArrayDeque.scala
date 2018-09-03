@@ -17,8 +17,6 @@ package mutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.reflect.ClassTag
-import scala.collection.{Iterator, StrictOptimizedSeqOps}
-import java.lang.Math
 import java.util.NoSuchElementException
 
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer

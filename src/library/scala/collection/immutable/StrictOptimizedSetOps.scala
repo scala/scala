@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection
+package scala
+package collection
+package immutable
 
 /**
   * Trait that overrides set operations to take advantage of strict builders.
@@ -22,8 +24,4 @@ package scala.collection
 trait StrictOptimizedSetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends SetOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
-
-  override def concat(that: IterableOnce[A]): C =
-    strictOptimizedConcat(that, newSpecificBuilder)
-
 }

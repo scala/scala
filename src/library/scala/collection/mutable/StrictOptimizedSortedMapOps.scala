@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection
+package scala
+package collection
+package mutable
 
 import scala.annotation.implicitNotFound
 
@@ -22,7 +24,7 @@ import scala.annotation.implicitNotFound
   * @tparam CC Collection type constructor
   * @tparam C  Collection type
   */
-trait StrictOptimizedSortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
+trait StrictOptimizedSortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends SortedMapOps[K, V, CC, C]
     with StrictOptimizedMapOps[K, V, Map, C] {
 

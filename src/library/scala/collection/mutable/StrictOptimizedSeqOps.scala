@@ -10,29 +10,15 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection
+package scala
+package collection
+package mutable
 
 import scala.language.higherKinds
 
-/**
-  * Trait that overrides operations on sequences in order
-  * to take advantage of strict builders.
-  */
-trait StrictOptimizedSeqOps [+A, +CC[_], +C]
-  extends Any
-    with StrictOptimizedIterableOps[A, CC, C]
-    with SeqOps[A, CC, C] {
-
-  override def distinctBy[B](f: A => B): C = {
-    val builder = newSpecificBuilder
-    val seen = mutable.HashSet.empty[B]
-    val it = this.iterator
-    while (it.hasNext) {
-      val next = it.next()
-      if (seen.add(f(next))) builder += next
-    }
-    builder.result()
-  }
+trait StrictOptimizedSeqOps [A, +CC[_], +C <: AnyRef]
+  extends SeqOps[A, CC, C]
+    with StrictOptimizedIterableOps[A, CC, C] {
 
   override def prepended[B >: A](elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]
@@ -76,5 +62,4 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     }
     b.result()
   }
-
 }

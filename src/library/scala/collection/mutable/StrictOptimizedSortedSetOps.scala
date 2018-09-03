@@ -12,6 +12,7 @@
 
 package scala
 package collection
+package mutable
 
 
 import scala.annotation.implicitNotFound

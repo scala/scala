@@ -13,10 +13,8 @@
 package scala
 package collection.mutable
 
-import collection.{SortedIterableFactory, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
+import collection.SortedIterableFactory
 import collection.mutable.{RedBlackTree => RB}
-
-import java.lang.String
 
 /**
   * A mutable sorted set implemented using a mutable red-black tree as underlying data structure.
