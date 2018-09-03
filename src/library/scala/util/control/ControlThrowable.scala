@@ -35,31 +35,31 @@ package util.control
 trait ControlThrowable extends Throwable with NoStackTrace
 
 object ControlThrowable {
-  sealed trait CachedBase extends ControlThrowable {
+  sealed trait CacheableBase extends ControlThrowable {
     override def fillInStackTrace(): Throwable = this
   }
 
   class Cacheable(message: String)
     extends Throwable(message, null, false, false)
-    with CachedBase {
+    with CacheableBase {
     def this() = this(null)
   }
 
   class CacheableError(message: String)
     extends Error(message, null, false, false)
-    with CachedBase {
+    with CacheableBase {
     def this() = this(null)
   }
 
   class CacheableException(message: String)
     extends Exception(message, null, false, false)
-    with CachedBase {
+    with CacheableBase {
     def this() = this(null)
   }
 
   class CacheableRuntimeException(message: String)
     extends RuntimeException(message, null, false, false)
-    with CachedBase {
+    with CacheableBase {
     def this() = this(null)
   }
 }
