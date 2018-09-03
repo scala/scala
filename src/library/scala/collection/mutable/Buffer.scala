@@ -199,7 +199,7 @@ trait IndexedBuffer[A] extends IndexedSeq[A]
       j += 1
     }
     if (j < patch.length) insertAll(i + j, patch.iterator.drop(j))
-    else if (j < replaced0) remove(i + j, replaced0 - j)
+    else if (j < replaced0) remove(i + j, math.min(replaced0 - j, length - i - j))
     this
   }
 }
