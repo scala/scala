@@ -446,7 +446,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
 
   override def concat[V1 >: V](xs: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] = {
     val lm = clone().asInstanceOf[LongMap[V1]]
-    xs.foreach(kv => lm += kv)
+    xs.iterator.foreach(kv => lm += kv)
     lm
   }
 
