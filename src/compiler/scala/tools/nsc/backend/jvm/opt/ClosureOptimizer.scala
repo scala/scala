@@ -392,7 +392,7 @@ abstract class ClosureOptimizer {
           sourceFilePath = sourceFilePath,
           annotatedInline = false,
           annotatedNoInline = false,
-          samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
+          samParamTypes = callGraph.samParamTypes(bodyMethodNode, Type.getArgumentTypes(bodyMethodNode.desc), bodyDeclClassType),
           calleeInfoWarning = None)
     })
     val argInfos = closureInit.capturedArgInfos ++ originalCallsite.map(cs => cs.argInfos map {

@@ -412,7 +412,7 @@ abstract class CopyProp {
 
           case INVOKEDYNAMIC =>
             prod match {
-              case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => handleClosureInst(indy)
+              case callGraph.LambdaMetaFactoryCall(indy, _, _, _, _) => handleClosureInst(indy)
               case _ => popAfterProd()
             }
 

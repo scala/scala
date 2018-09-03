@@ -1102,7 +1102,7 @@ abstract class Inliner {
          Right(true)
 
       // does the InvokeDynamicInsnNode call LambdaMetaFactory?
-      case LambdaMetaFactoryCall(_, _, implMethod, _) =>
+      case LambdaMetaFactoryCall(_, _, implMethod, _, _) =>
         // an indy instr points to a "call site specifier" (CSP) [1]
         //  - a reference to a bootstrap method [2]
         //    - bootstrap method name
