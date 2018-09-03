@@ -168,7 +168,7 @@ final class BigInt(val bigInteger: BigInteger)
     (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
   }
 
-  def isWhole() = true
+  def isWhole = true
   def underlying = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.
