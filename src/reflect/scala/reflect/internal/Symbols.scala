@@ -738,8 +738,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = getFlag(mask) != 0
 
-    def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
-
     /** Does symbol have ALL the flags in `mask` set? */
     final def hasAllFlags(mask: Long): Boolean = getFlag(mask) == mask
 

@@ -1220,12 +1220,12 @@ trait ContextErrors {
       }
 
 
-      def AbstractMemberWithModiferError(sym: Symbol, flag: Int) =
-        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag.toLong) + " modifier")
+      def AbstractMemberWithModiferError(sym: Symbol, flag: Long) =
+        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag) + " modifier")
 
-      def IllegalModifierCombination(sym: Symbol, flag1: Int, flag2: Int) =
+      def IllegalModifierCombination(sym: Symbol, flag1: Long, flag2: Long) =
         issueSymbolTypeError(sym, "illegal combination of modifiers: %s and %s for: %s".format(
-            Flags.flagsToString(flag1.toLong), Flags.flagsToString(flag2.toLong), sym))
+            Flags.flagsToString(flag1), Flags.flagsToString(flag2), sym))
 
       def IllegalDependentMethTpeError(sym: Symbol)(context: Context) = {
         val errorAddendum =

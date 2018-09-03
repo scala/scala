@@ -978,12 +978,12 @@ trait Types
     /** If this is a symbol loader type, load and assign a new type to `sym`. */
     def load(sym: Symbol) {}
 
-    private def findDecl(name: Name, excludedFlags: Int): Symbol = {
+    private def findDecl(name: Name, excludedFlags: Long): Symbol = {
       var alts: List[Symbol] = List()
       var sym: Symbol = NoSymbol
       var e: ScopeEntry = decls.lookupEntry(name)
       while (e ne null) {
-        if (!e.sym.hasFlag(excludedFlags.toLong)) {
+        if (!e.sym.hasFlag(excludedFlags)) {
           if (sym == NoSymbol) sym = e.sym
           else {
             if (alts.isEmpty) alts = sym :: Nil
