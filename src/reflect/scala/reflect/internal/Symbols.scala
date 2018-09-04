@@ -1015,7 +1015,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
          (this hasFlag FINAL | PACKAGE)
       || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
       || isTerm && (isPrivate || isLocalToBlock || (hasAllFlags(notPRIVATE | METHOD) && !hasFlag(DEFERRED)))
-      || isClass && originalOwner.isTerm && children.isEmpty // we track known subclasses of term-owned classes, use that infer finality
+      || isClass && !isRefinementClass && originalOwner.isTerm && children.isEmpty // we track known subclasses of term-owned classes, use that infer finality
+      // don't look at owner for refinement classes (it's basically arbitrary) -- instead,
+      // it suffices for one parent of an intersection to be final, for the resulting type to be final
+      // any subclass of the refinement would have to be a subclass of that final parent, which is not allowed
+      || isRefinementClass && info.parents.exists { _.typeSymbol.isEffectivelyFinal }
     )
     /** Is this symbol effectively final or a concrete term member of sealed class whose children do not override it */
     final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)

@@ -971,7 +971,12 @@ abstract class RefChecks extends Transform {
       case Object_eq | Object_ne | Object_== | Object_!= | Any_== | Any_!= => true
       case _                                                               => false
     }
-    /** Check the sensibility of using the given `equals` to compare `qual` and `other`. */
+
+    /**
+      * Check the sensibility of using the given `equals` to compare `qual` and `other`.
+      *
+      * NOTE: I'm really not convinced by the logic here. I also think this would work better after erasure.
+      */
     private def checkSensibleEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree) = {
       def isReferenceOp = sym == Object_eq || sym == Object_ne
       def isNew(tree: Tree) = tree match {
@@ -991,8 +996,12 @@ abstract class RefChecks extends Transform {
       // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
       def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
 
+      // TODO: this should probably be used in more type comparisons in checkSensibleEquals
+      def erasedClass(tp: Type) = erasure.javaErasure(tp).typeSymbol
+
       /* Symbols which limit the warnings we can issue since they may be value types */
-      val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
+      val couldBeAnything = Set[Symbol](ObjectClass, ComparableClass, JavaSerializableClass)
+      def isMaybeValue(sym: Symbol): Boolean = couldBeAnything(erasedClass(sym.tpe))
 
       // Whether def equals(other: Any) has known behavior: it is the default
       // inherited from java.lang.Object, or it is a synthetically generated
@@ -1084,12 +1093,7 @@ abstract class RefChecks extends Transform {
           nonSensiblyNew()
         else if (isNew(other) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
           nonSensiblyNew()
-        else if (!(receiver.isRefinementClass || actual.isRefinementClass) &&
-                 // Rule out receiver of refinement class because checking receiver.isEffectivelyFinal does not work for them.
-                 // (the owner of the refinement depends on where the refinement was inferred, which has no bearing on the finality of the intersected classes)
-                 // TODO: should we try to decide finality for refinements?
-                 // TODO: Also, is subclassing really the right relationship to detect non-sensible equals between "effectively final" types??
-                 receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+        else if (actual.isEffectivelyFinal && receiver.isEffectivelyFinal && !haveSubclassRelationship) {  // object X, Y; X == Y
           if (isEitherNullable)
             nonSensible("non-null ", false)
           else
@@ -1104,12 +1108,20 @@ abstract class RefChecks extends Transform {
         unrelatedTypes()
       // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
       else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
-        // better to have lubbed and lost
+        // Warn if types are unrelated, without interesting lub. (Don't bother if we don't know anything about the values we're comparing.)
         def warnIfLubless(): Unit = {
-          val common = global.lub(List(actual.tpe, receiver.tpe))
-          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe) && !(ObjectTpe <:< receiver.tpe))
-            unrelatedTypes()
+          if (isMaybeValue(actual) || isMaybeValue(receiver) || haveSubclassRelationship) {} // ignore trivial or related types
+          else {
+            // better to have lubbed and lost
+            // We erase the lub because the erased type is closer to what happens at run time.
+            // Also, the lub of `S` and `String` is, weirdly, the refined type `Serializable{}` (for `class S extends Serializable`),
+            // which means we can't just take its type symbol and look it up in our isMaybeValue Set. Erasure restores sanity.
+            val commonRuntimeClass = erasedClass(global.lub(List(actual.tpe, receiver.tpe)))
+            if (commonRuntimeClass == ObjectClass)
+              unrelatedTypes()
+          }
         }
+
         // warn if actual has a case parent that is not same as receiver's;
         // if actual is not a case, then warn if no common supertype, as below
         if (isCaseEquals) {
@@ -1122,14 +1134,11 @@ abstract class RefChecks extends Transform {
               //else
               // if a class, it must be super to thisCase (and receiver) since not <: thisCase
               if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
-              else if (!haveSubclassRelationship) warnIfLubless()
+              else warnIfLubless()
             case _ =>
           }
         }
-        // warn only if they have no common supertype below Object
-        else if (!haveSubclassRelationship) {
-          warnIfLubless()
-        }
+        else warnIfLubless()
       }
     }
     /** Sensibility check examines flavors of equals. */
@@ -1558,7 +1567,7 @@ abstract class RefChecks extends Transform {
         // analyses in the pattern matcher
         if (!inPattern) {
           checkImplicitViewOptionApply(tree.pos, fn, args)
-          checkSensible(tree.pos, fn, args)
+          checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
         }
         currentApplication = tree
         tree
