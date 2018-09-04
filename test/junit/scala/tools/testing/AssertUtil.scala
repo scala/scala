@@ -44,12 +44,14 @@ object AssertUtil {
    *  Any other exception is propagated.
    */
   def assertThrows[T <: Throwable: ClassTag](body: => Any,
-      checkMessage: String => Boolean = s => true): Unit = {
+      checkMessage: String => Boolean = s => true): T = {
     try {
       body
       fail("Expression did not throw!")
+      throw new IllegalStateException()
     } catch {
       case e: T if checkMessage(e.getMessage) =>
+        e
     }
   }
 

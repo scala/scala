@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager">
-    <output url="file://$MODULE_DIR$/../../build/quick/classes/reflect" />
-    <output-test url="file://$MODULE_DIR$/../../out/test/reflect" />
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/jpms" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/jpms" />
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../reflect">
-      <sourceFolder url="file://$MODULE_DIR$/../reflect" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../jpms">
+      <sourceFolder url="file://$MODULE_DIR$/../jpms" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="jpms" exported="" />
     <orderEntry type="library" name="starr" level="project" />
   </component>
 </module>

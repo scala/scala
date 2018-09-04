@@ -48,8 +48,8 @@ object ZipArchive {
 
   def fromManifestURL(url: URL): AbstractFile = new ManifestResources(url)
 
-  private def dirName(path: String)  = splitPath(path, front = true)
-  private def baseName(path: String) = splitPath(path, front = false)
+  def dirName(path: String)  = splitPath(path, front = true)
+  def baseName(path: String) = splitPath(path, front = false)
   private def splitPath(path0: String, front: Boolean): String = {
     val isDir = path0.charAt(path0.length - 1) == '/'
     val path  = if (isDir) path0.substring(0, path0.length - 1) else path0

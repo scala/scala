@@ -380,6 +380,14 @@ lazy val library = configureAsSubproject(project)
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala"))))
 
+lazy val jpms = configureAsSubproject(project)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .settings(
+    name := "scala-reflect-jpms",
+    description := "Scala JPMS foundations"
+  )
+
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
@@ -387,6 +395,8 @@ lazy val reflect = configureAsSubproject(project)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
+    products in Compile in packageBin :=
+      (products in Compile in packageBin).value ++ (products in Compile in packageBin in jpms).value,
     Osgi.bundleName := "Scala Reflect",
     scalacOptions in Compile in doc ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
@@ -400,10 +410,11 @@ lazy val reflect = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
+    pomDependencyExclusions ++= List((organization.value, "scala-reflect-jpms")),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both"
   )
-  .dependsOn(library)
+  .dependsOn(library, jpms)
 
 lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
   .dependsOn(compiler, reflect, library)

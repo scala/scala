@@ -169,6 +169,7 @@
       <module filepath="$PROJECT_DIR$/compilerOptionsExporter.iml" fileurl="file://$PROJECT_DIR$/compilerOptionsExporter.iml"/>
       <module filepath="$PROJECT_DIR$/interactive.iml" fileurl="file://$PROJECT_DIR$/interactive.iml"/>
       <module filepath="$PROJECT_DIR$/junit.iml" fileurl="file://$PROJECT_DIR$/junit.iml"/>
+      <module filepath="$PROJECT_DIR$/jpms.iml" fileurl="file://$PROJECT_DIR$/jpms.iml"/>
       <module filepath="$PROJECT_DIR$/library.iml" fileurl="file://$PROJECT_DIR$/library.iml"/>
       <module filepath="$PROJECT_DIR$/manual.iml" fileurl="file://$PROJECT_DIR$/manual.iml"/>
       <module filepath="$PROJECT_DIR$/partest.iml" fileurl="file://$PROJECT_DIR$/partest.iml"/>
