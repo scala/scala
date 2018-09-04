@@ -373,6 +373,23 @@ trait Trees extends api.Trees {
       }
   }
 
+  case class JpmsModuleDef(open: Boolean, name: TermName, directives: List[Tree])
+    extends DefTree {
+    override def transform(transformer: Transformer): Tree = this
+    override def traverse(traverser: Traverser): Unit = ()
+  }
+  abstract class JpmsDirective extends Tree {
+    override def transform(transformer: Transformer): Tree = this
+    override def traverse(traverser: Traverser): Unit = ()
+  }
+  case class JpmsRequiresDirective(moduleName: String, transitive: Boolean, isStatic: Boolean) extends JpmsDirective {
+    require(!(transitive && isStatic), "A requires directive cannot be both transitive and static")
+  }
+  case class JpmsExportsDirective(packageName: String, to: List[String]) extends JpmsDirective
+  case class JpmsOpensDirective(packageName: String, to: List[String]) extends JpmsDirective
+  case class JpmsUsesDirective(typeName: String) extends JpmsDirective
+  case class JpmsProvidesDirective(typeName: String, providers: List[String]) extends JpmsDirective
+
   abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
     def name: TermName
     def tpt: Tree

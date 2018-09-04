@@ -11,6 +11,7 @@ package javac
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.ListOfNil
@@ -210,7 +211,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         nme.ERROR
       }
 
-    def repsep[T <: Tree](p: () => T, sep: Int): List[T] = {
+    def repsep[T](p: () => T, sep: Int): List[T] = {
       val buf = ListBuffer[T](p())
       while (in.token == sep) {
         in.nextToken()
@@ -909,14 +910,136 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val buf = new ListBuffer[Tree]
       while (in.token == IMPORT)
         buf ++= importDecl()
+      if (thisPackageName == tpnme.EMPTY_PACKAGE_NAME && in.token == IDENTIFIER) {
+        thisPackageName = tpnme.EMPTY
+        var ident1 = ident()
+        var isOpen = false
+        if (ident1 == nme.javaKeywords.OPEN) {
+          isOpen = true
+          ident1 = ident()
+        }
+        ident1 match {
+          case nme.javaKeywords.MODULE =>
+            val jpmsModuleDef = jpmsModule(isOpen)
+            accept(EOF)
+            atPos(pos) {
+              makePackaging(pkg, buf.prependToList(jpmsModuleDef :: Nil))
+            }
+          case _ =>
+            syntaxError("unexpected identifier", skipIt = true)
+            atPos(pos) {
+              makePackaging(pkg, buf.toList)
+            }
+        }
+      } else {
+        while (in.token != EOF && in.token != RBRACE) {
+          while (in.token == SEMI) in.nextToken()
+          if (in.token != EOF)
+            buf ++= typeDecl(modifiers(inInterface = false))
+        }
+        accept(EOF)
+        atPos(pos) {
+          makePackaging(pkg, buf.toList)
+        }
+      }
+    }
+    def dottedName(): String = {
+      val buf = new java.lang.StringBuffer
+
+      @tailrec def collectIdents(): Int = {
+        val nameOffset = in.pos
+        buf.append(ident())
+        if (in.token == DOT) {
+          buf.append(".")
+          in.nextToken()
+          collectIdents()
+        } else nameOffset
+      }
+
+      collectIdents()
+      buf.toString
+    }
+
+    def jpmsModule(open: Boolean): Tree = {
+      val nameOffset = in.pos
+      val moduleName = this.moduleName()
+      accept(LBRACE)
+      val directives = ListBuffer[Tree]()
       while (in.token != EOF && in.token != RBRACE) {
         while (in.token == SEMI) in.nextToken()
-        if (in.token != EOF)
-          buf ++= typeDecl(modifiers(inInterface = false))
+        if (in.token != RBRACE)
+          directives += jpmsModuleDirective()
       }
-      accept(EOF)
-      atPos(pos) {
-        makePackaging(pkg, buf.toList)
+      accept(RBRACE)
+      JpmsModuleDef(open, moduleName, directives.toList)
+    }
+    def moduleName(): String = dottedName()
+    def packageName(): String = dottedName()
+    def typeName(): String = dottedName()
+    def jpmsModuleDirective(): Tree = {
+      // TODO JPMS position directives
+      import nme.javaKeywords
+      ident() match {
+        case javaKeywords.REQUIRES =>
+          if (in.token == IDENTIFIER) {
+            in.name match {
+              case javaKeywords.TRANSITIVE =>
+                in.nextToken()
+                // TODO JPMS `requires transitive.foo.bar` should be allowed, see the Java Language Specification
+                // description of "restricted keywords".
+                JpmsRequiresDirective(this.moduleName, transitive = true, isStatic = false)
+              case _ =>
+                JpmsRequiresDirective(this.moduleName(), transitive = false, isStatic = false)
+            }
+          } else if (in.token == STATIC) {
+            val requirement = this.moduleName()
+            JpmsRequiresDirective(requirement, transitive = false, isStatic = true)
+          } else {
+            syntaxError("expected `transitive` or module name`", skipIt = true)
+            errorTypeTree
+          }
+        case javaKeywords.EXPORTS =>
+          val packageName = this.packageName()
+          if (in.token == IDENTIFIER) {
+            ident() match {
+              case javaKeywords.TO =>
+                val tos = repsep(() => moduleName(), COMMA)
+                JpmsExportsDirective(packageName, tos)
+              case _ =>
+                syntaxError("expected `to` or `;`", skipIt = true)
+                errorTypeTree
+            }
+          } else {
+            JpmsExportsDirective(packageName, Nil)
+          }
+        case javaKeywords.OPENS =>
+          val packageName = this.packageName()
+          if (in.token == IDENTIFIER) {
+            ident() match {
+              case javaKeywords.TO =>
+                val tos = repsep(() => moduleName(), COMMA)
+                JpmsOpensDirective(packageName, tos)
+              case _ =>
+                syntaxError("expected `to` or `;`", skipIt = true)
+                errorTypeTree
+            }
+          } else {
+            JpmsOpensDirective(packageName, Nil)
+          }
+        case javaKeywords.USES =>
+          val used = typeName()
+          JpmsUsesDirective(used)
+        case javaKeywords.PROVIDES =>
+          val provided = typeName()
+          ident() match {
+            case javaKeywords.WITH =>
+              val providers = repsep(() => typeName(), COMMA)
+              JpmsProvidesDirective(provided, providers)
+            case _ =>
+              syntaxError("expected `with`", skipIt = true)
+              errorTypeTree
+          }
+        case _         => in.nextToken(); syntaxError("illegal directive", skipIt = true); errorTypeTree
       }
     }
   }

@@ -1176,6 +1176,18 @@ trait StdNames {
     final val WHILEkw: TermName        = kw("while")
 
     final val keywords = kw.result
+
+    // Soft keywords, we parse them as idents.
+    final val OPEN: TermName = "open"
+    final val MODULE: TermName = "module"
+    final val REQUIRES: TermName = "requires"
+    final val TRANSITIVE: TermName = "transitive"
+    final val EXPORTS: TermName = "exports"
+    final val TO: TermName = "to"
+    final val OPENS: TermName = "opens"
+    final val USES: TermName = "uses"
+    final val PROVIDES: TermName = "provides"
+    final val WITH: TermName = "with"
   }
 
   sealed abstract class SymbolNames {
