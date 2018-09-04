@@ -241,8 +241,13 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
 
   def newBuilder[A : ClassTag]: UnrolledBuffer[A] = new UnrolledBuffer[A]
 
-  val waterline = 50
-  val waterlineDelim = 100    // TODO -- fix this name!  It's a denominator, not a delimiter.  (But it's part of the API so we can't just change it.)
+  final val waterline: Int = 50
+
+  final def waterlineDenom: Int = 100
+
+  @deprecated("Use waterlineDenom instead.", "2.13.0")
+  final val waterlineDelim: Int = waterlineDenom
+
   private[collection] val unrolledlength = 32
 
   /** Unrolled buffer node.
@@ -354,7 +359,7 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       }
       nullout(i, i + 1)
     }
-    protected def tryMergeWithNext() = if (next != null && (size + next.size) < (array.length * waterline / waterlineDelim)) {
+    protected def tryMergeWithNext() = if (next != null && (size + next.size) < (array.length * waterline / waterlineDenom)) {
       // copy the next array, then discard the next node
       Array.copy(next.array, 0, array, size, next.size)
       size = size + next.size
