@@ -22,46 +22,46 @@ import java.lang.invoke.SwitchPoint;
  * we cannot do that if we make `Statistics` an object extending `MutableCallSite`
  * in Scala. We instead rely on the Java implementation that uses a boxed representation.
  */
-public class AlmostFinalValue<V> {
-  private final AlmostFinalCallSite<V> callsite =
-      new AlmostFinalCallSite<>(this);
+public class AlmostFinalValue {
+  private final AlmostFinalCallSite callsite =
+      new AlmostFinalCallSite(this);
   
-  protected V initialValue() {
-    return null;
+  protected boolean initialValue() {
+    return false;
   }
   
   public MethodHandle createGetter() {
     return callsite.dynamicInvoker();
   }
   
-  public void setValue(V value) {
+  public void setValue(boolean value) {
     callsite.setValue(value);
   }
   
-  private static class AlmostFinalCallSite<V> extends MutableCallSite {
-    private Object value;
+  private static class AlmostFinalCallSite extends MutableCallSite {
+    private Boolean value;
     private SwitchPoint switchPoint;
-    private final AlmostFinalValue<V> volatileFinalValue;
+    private final AlmostFinalValue volatileFinalValue;
     private final MethodHandle fallback;
     private final Object lock;
     
-    private static final Object NONE = new Object();
+    private static final Boolean NONE = null;
     private static final MethodHandle FALLBACK;
     static {
       try {
         FALLBACK = MethodHandles.lookup().findVirtual(AlmostFinalCallSite.class, "fallback",
-            MethodType.methodType(Object.class));
+            MethodType.methodType(Boolean.TYPE));
       } catch (NoSuchMethodException|IllegalAccessException e) {
         throw new AssertionError(e.getMessage(), e);
       }
     }
     
-    AlmostFinalCallSite(AlmostFinalValue<V> volatileFinalValue) {
-      super(MethodType.methodType(Object.class));
+    AlmostFinalCallSite(AlmostFinalValue volatileFinalValue) {
+      super(MethodType.methodType(Boolean.TYPE));
       Object lock = new Object();
       MethodHandle fallback = FALLBACK.bindTo(this);
       synchronized(lock) {
-        value = NONE;
+        value = null;
         switchPoint = new SwitchPoint();
         setTarget(fallback);
       }
@@ -70,19 +70,19 @@ public class AlmostFinalValue<V> {
       this.fallback = fallback;
     }
 
-    Object fallback() {
+    boolean fallback() {
       synchronized(lock) {
-        Object value = this.value;
+        Boolean value = this.value;
         if (value == NONE) {
           value = volatileFinalValue.initialValue();
         }
-        MethodHandle target = switchPoint.guardWithTest(MethodHandles.constant(Object.class, value), fallback);
+        MethodHandle target = switchPoint.guardWithTest(MethodHandles.constant(Boolean.TYPE, value), fallback);
         setTarget(target);
         return value;
       }
     }
     
-    void setValue(V value) {
+    void setValue(boolean value) {
       synchronized(lock) {
         SwitchPoint switchPoint = this.switchPoint;
         this.value = value;
