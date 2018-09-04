@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class FixedModuleFinder implements ModuleFinder {
+final class FixedModuleFinder implements ModuleFinder {
     private List<ModuleReference> modules;
 
     public FixedModuleFinder(List<ModuleReference> modules) {

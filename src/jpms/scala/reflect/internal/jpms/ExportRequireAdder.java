@@ -3,7 +3,7 @@ package scala.reflect.internal.jpms;
 import java.lang.module.ModuleDescriptor;
 import java.util.*;
 
-public class ExportRequireAdder {
+class ExportRequireAdder {
     public Iterable<ModuleDescriptor.Exports> addExports(String moduleName) { return Collections.emptyList(); };
     public  Iterable<String> addReads(String moduleName) { return Collections.emptyList(); };;
 

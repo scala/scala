@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ExportRequireAddingModuleFinder implements ModuleFinder {
+final class ExportRequireAddingModuleFinder implements ModuleFinder {
     private ModuleFinder delegate;
     private ExportRequireAdder patcher;
 

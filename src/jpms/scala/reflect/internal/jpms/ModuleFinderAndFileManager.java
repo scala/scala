@@ -3,8 +3,9 @@ package scala.reflect.internal.jpms;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import java.lang.module.ModuleFinder;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /** A configured module finder and java file manager */
