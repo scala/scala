@@ -24,3 +24,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settin
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.getDir")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.allDirsByDottedName")

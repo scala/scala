@@ -62,21 +62,6 @@ object ZipArchive {
       if (front) path.substring(0, idx + 1)
       else path.substring(idx + 1)
   }
-  def pathToDotted(path: String): String = {
-    if (path == "/") ""
-    else {
-      val slashEnd = path.endsWith("/")
-      val len = path.length - (if (slashEnd) 1 else 0)
-      val result = new Array[Char](len)
-      var i = 0
-      while (i < len) {
-        val char = path.charAt(i)
-        result(i) = if (char == '/') '.' else char
-        i += 1
-      }
-      new String(result)
-    }
-  }
 }
 import ZipArchive._
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
@@ -113,6 +98,22 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     override def lookupName(name: String, directory: Boolean): Entry = {
       if (directory) entries.get(name + "/").orNull
       else entries.get(name).orNull
+    }
+  }
+
+  private def pathToDotted(path: String): String = {
+    if (path == "/") ""
+    else {
+      val slashEnd = path.endsWith("/")
+      val len = path.length - (if (slashEnd) 1 else 0)
+      val result = new Array[Char](len)
+      var i = 0
+      while (i < len) {
+        val char = path.charAt(i)
+        result(i) = if (char == '/') '.' else char
+        i += 1
+      }
+      new String(result)
     }
   }
 
@@ -188,9 +189,14 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def sizeOption: Option[Int] = Some(zipEntry.getSize.toInt)
   }
 
-  lazy val (root, allDirsByDottedName) = {
+  private[scala] def allDirsByDottedName: collection.Map[String, DirEntry] = {
+    root // force
+    dirs
+  }
+  private[this] val dirs = mutable.HashMap[String, DirEntry]()
+  lazy val root: DirEntry = {
     val root = new DirEntry("/")
-    val dirs = mutable.HashMap[String, DirEntry]("" -> root)
+    dirs("") = root
     val zipFile = openZipFile()
     val enum    = zipFile.entries()
 
@@ -220,7 +226,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     } finally {
       if (ZipArchive.closeZipFile) zipFile.close()
     }
-    (root, dirs)
+    root
   }
 
   @deprecated("Use allDirsByDottedName after converting keys from relative paths to dotted names", "2.13")
@@ -229,7 +235,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
       val sb = new java.lang.StringBuilder(dotted.length)
       dotted.replace('.', '/') + "/"
     }
-    allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
+    dirs.map { case (k, v) => (dottedToPath(k), v) }
   }
 
   def iterator: Iterator[Entry] = root.iterator
