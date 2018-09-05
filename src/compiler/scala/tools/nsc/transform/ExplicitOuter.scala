@@ -264,7 +264,11 @@ abstract class ExplicitOuter extends InfoTransform
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       if (from == to) base
-      else outerPath(outerSelect(base), from.outerClass, to)
+      else {
+        val outerSel = outerSelect(base)
+        if (outerSel.isEmpty) EmptyTree
+        else outerPath(outerSel, from.outerClass, to)
+      }
     }
 
 
