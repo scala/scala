@@ -131,10 +131,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = => scala.Int
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<byname>, // <-- ByNameParamClass
@@ -159,10 +159,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = <repeated...>[Object]
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<repeated...>, // <-- JavaRepeatedParamClass
@@ -184,10 +184,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = scala.Int*
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<repeated>, // <-- RepeatedParamClass
