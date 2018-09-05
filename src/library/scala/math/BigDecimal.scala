@@ -498,10 +498,10 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   /** Division and Remainder - returns tuple containing the result of
    *  divideToIntegralValue and the remainder.  The computation is exact: no rounding is applied.
    */
-  def /% (that: BigDecimal): (BigDecimal, BigDecimal) =
-    this.bigDecimal.divideAndRemainder(that.bigDecimal, mc) match {
-      case Array(q, r)  => (new BigDecimal(q, mc), new BigDecimal(r, mc))
-    }
+  def /% (that: BigDecimal): (BigDecimal, BigDecimal) = {
+    val qr = this.bigDecimal.divideAndRemainder(that.bigDecimal, mc)
+    (new BigDecimal(qr(0), mc), new BigDecimal(qr(1), mc))
+  }
 
   /** Divide to Integral value.
    */
