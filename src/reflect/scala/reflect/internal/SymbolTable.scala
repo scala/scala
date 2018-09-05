@@ -20,6 +20,7 @@ import util._
 import java.util.concurrent.TimeUnit
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.settings.MutableSettings
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 
 abstract class SymbolTable extends macros.Universe
@@ -46,7 +47,6 @@ abstract class SymbolTable extends macros.Universe
                               with Positions
                               with TypeDebugging
                               with Importers
-                              with Required
                               with CapturedVariables
                               with StdAttachments
                               with StdCreators
@@ -80,7 +80,15 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
-  def isDeveloper: Boolean = settings.debug
+  final def isDeveloper: Boolean = settings.debug.value || settings.developer.value
+  def picklerPhase: Phase
+
+  def erasurePhase: Phase
+
+  def settings: MutableSettings
+
+  @deprecated("Interactive is implemented with a custom Global; this flag is ignored", "2.11.0") def forInteractive = false
+  @deprecated("Scaladoc is implemented with a custom Global; this flag is ignored", "2.11.0")    def forScaladoc = false
 
   @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)

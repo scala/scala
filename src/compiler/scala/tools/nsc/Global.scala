@@ -285,8 +285,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       body
   }
 
-  override def isDeveloper = settings.developer || super.isDeveloper
-
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
