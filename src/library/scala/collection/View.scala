@@ -345,7 +345,13 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class Zip[A, B](underlying: SomeIterableOps[A], other: Iterable[B]) extends AbstractView[(A, B)] {
     def iterator = underlying.iterator.zip(other)
-    override def knownSize = underlying.knownSize min other.knownSize
+    override def knownSize = {
+      val s1 = underlying.knownSize
+      if (s1 == 0) 0 else {
+        val s2 = other.knownSize
+        if (s2 == 0) 0 else s1 min s2
+      }
+    }
     override def isEmpty: Boolean = underlying.isEmpty || other.isEmpty
   }
 
