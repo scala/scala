@@ -18,7 +18,9 @@ abstract class INodeBase<K, V> extends BasicNode {
     public static final AtomicReferenceFieldUpdater<INodeBase<?, ?>, MainNode<?, ?>> updater =
             AtomicReferenceFieldUpdater.newUpdater((Class<INodeBase<?, ?>>) (Class<?>) INodeBase.class, (Class<MainNode<?, ?>>) (Class<?>) MainNode.class, "mainnode");
 
-    public static final Object RESTART = new Object();
+    static final Object RESTART = new Object();
+
+    static final Object NO_SUCH_ELEMENT_SENTINEL = new Object();
 
     public volatile MainNode<K, V> mainnode = null;
 
