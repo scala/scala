@@ -11,6 +11,7 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.tools.asm.Type
 import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
@@ -134,6 +135,7 @@ abstract class InlinerHeuristics extends PerRunInit {
           def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
             case (index, _) => callsite.argInfos.contains(index)
           })
+          def shouldInlineRefParam = Type.getArgumentTypes(callee.callee.desc).exists(tp => coreBTypes.srRefCreateMethods.contains(tp.getInternalName))
 
           def reason = if (!compilerSettings.optLogInline.isDefined) null else {
             if (callsite.isInlineAnnotated) {
@@ -143,6 +145,8 @@ abstract class InlinerHeuristics extends PerRunInit {
               "the callee is a known method"
             } else if (shouldInlineForwarder) {
               "the callee is a forwarder method"
+            } else if (shouldInlineRefParam) {
+              "the callee has a Ref type parameter"
             } else {
               val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
               def param(i: Int) = {
@@ -161,7 +165,7 @@ abstract class InlinerHeuristics extends PerRunInit {
             }
           }
 
-          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineKnownMethod || shouldInlineForwarder || shouldInlineHO)) requestIfCanInline(callsite, reason)
+          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineKnownMethod || shouldInlineForwarder || shouldInlineHO || shouldInlineRefParam)) requestIfCanInline(callsite, reason)
           else None
       }
     }
