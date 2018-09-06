@@ -6,13 +6,17 @@ import scala.tools.asm.{Opcodes, Type}
 import scala.tools.asm.tree.{AbstractInsnNode, InsnNode, MethodNode}
 import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter.AaloadValue
+import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
+  override def newParameterValue(isInstanceMethod: Boolean, local: Int, tpe: Type): BasicValue =
+    new ParamValue(local, tpe)
+
   override def newValue(tp: Type): BasicValue = {
     if (tp == null) super.newValue(tp)
-    else if (isRef(tp)) new BasicValue(tp)
+    else if (isRef(tp)) new SpecialAwareBasicValue(tp)
     else super.newValue(tp)
   }
 
@@ -26,24 +30,76 @@ abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opco
     case _ => super.binaryOperation(insn, value1, value2)
   }
 
+  override def naryOperation(insn: AbstractInsnNode, values: java.util.List[_ <: BasicValue]): BasicValue = {
+    val v = super.naryOperation(insn, values)
+    insn.getOpcode match {
+      case Opcodes.INVOKEDYNAMIC => insn match {
+        case LambdaMetaFactoryCall(_, _, _, _, _) => new LMFValue(v.getType)
+        case _ => v
+      }
+      case _ => v
+    }
+  }
+
   def refLub(a: BasicValue, b: BasicValue): BasicValue
 
   override def merge(a: BasicValue, b: BasicValue): BasicValue = {
-    if (a.isInstanceOf[AaloadValue] || b.isInstanceOf[AaloadValue]) BasicValue.REFERENCE_VALUE
     if (a == b) a
+    else if (a.isInstanceOf[SpecialValue] || b.isInstanceOf[SpecialValue]) merge(new SpecialAwareBasicValue(a.getType), new SpecialAwareBasicValue(b.getType))
     else if (isRef(a.getType) && isRef(b.getType)) refLub(a, b)
-    else BasicValue.UNINITIALIZED_VALUE
+    else UninitializedValue
+//    if (a.isInstanceOf[ParamValue])
+//      println(s"merge $a $b $r -- ${a.getClass.getSimpleName} ${b.getClass.getSimpleName} ${r.getClass.getSimpleName}")
+//    r
   }
 }
 
 object TypeFlowInterpreter {
+  // Marker trait for BasicValue subclasses that add a special meaning on top of the value's `getType`.
+  trait SpecialValue
+
+  private val obj = Type.getObjectType("java/lang/Object")
+
+  // A BasicValue with equality that knows about special versions
+  class SpecialAwareBasicValue(tpe: Type) extends BasicValue(tpe) {
+    override def equals(other: Any): Boolean = {
+      this match {
+        case tav: AaloadValue => other match {
+          case oav: AaloadValue => tav.aaload == oav.aaload
+          case _ => false
+        }
+        case _: LMFValue => other.isInstanceOf[LMFValue] && super.equals(other)
+        case pv: ParamValue => other.isInstanceOf[ParamValue] && pv.local == other.asInstanceOf[ParamValue].local && super.equals(other)
+        case _ => !other.isInstanceOf[SpecialValue] && super.equals(other) // A non-special value cannot equal a special value
+      }
+    }
+
+    override def hashCode: Int = this match {
+      case av: AaloadValue => av.aaload.hashCode
+      case pv: ParamValue => pv.local + super.hashCode
+      case _ => super.hashCode
+    }
+  }
+
+  val ObjectValue = new SpecialAwareBasicValue(BasicValue.REFERENCE_VALUE.getType)
+  val UninitializedValue = new SpecialAwareBasicValue(null)
+
   // In the interpreter, visiting an AALOAD, we don't know the type of the array
   // just by looking at the instruction. By using an AaloadValue for the value produced
   // by the AALOAD, we can go back to the AALOAD instruction and get the type of its input
   // (once the analysis is done). See preciseAaloadTypeDesc.
-  // Note that the merge / refLub function discards AaloadValue instances, so if a value
-  // may have other producers than the AALOAD, we just see Object.
-  class AaloadValue(val aaload: InsnNode) extends BasicValue(Type.getObjectType("java/lang/Object"))
+  // Note that the merge / refLub function discards AaloadValue instances (unless the merged values
+  // denote the same AALOAD instruction), so if a value may have other producers than the AALOAD,
+  // we just get Object.
+  class AaloadValue(val aaload: InsnNode) extends SpecialAwareBasicValue(obj) with SpecialValue
+
+  // Note: merging two LMFValue with the same underlying type gives a LMFValue, but if the
+  // underlying types differ, the merge is just a BasicValue
+  class LMFValue(tpe: Type) extends SpecialAwareBasicValue(tpe) with SpecialValue
+
+  // Note: merging two ParamValue with the same underlying type gives a ParamValue, but if the
+  // underlying types differ, the merge is just a BasicValue
+  class ParamValue(val local: Int, tpe: Type) extends SpecialAwareBasicValue(tpe) with SpecialValue
 }
 
 /**
@@ -52,7 +108,7 @@ object TypeFlowInterpreter {
  * the `jvmWiseLUB` method.
  */
 class NonLubbingTypeFlowInterpreter extends TypeFlowInterpreter {
-  def refLub(a: BasicValue, b: BasicValue): BasicValue = BasicValue.REFERENCE_VALUE // java/lang/Object
+  def refLub(a: BasicValue, b: BasicValue): BasicValue = ObjectValue
 }
 
 class NonLubbingTypeFlowAnalyzer(methodNode: MethodNode, classInternalName: InternalName) extends AsmAnalyzer(methodNode, classInternalName, new Analyzer(new NonLubbingTypeFlowInterpreter)) {
