@@ -77,7 +77,9 @@ class InlinerTest extends BytecodeTesting {
     val gConv = convertMethod(g)
     assertSameCode(gConv,
       List(
-        VarOp(ALOAD, 0), VarOp(ASTORE, 1), // store this
+        VarOp(ALOAD, 0),
+        Op(DUP), Jump(IFNONNULL, Label(8)), Op(ACONST_NULL), Op(ATHROW), Label(8), // receiver null check (eliminated by nullness local opt)
+        VarOp(ASTORE, 1), // store this
         Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
         Label(10), VarOp(ILOAD, 2), // load return value
         Op(ACONST_NULL), VarOp(ASTORE, 1), // null out inliner local
@@ -113,7 +115,7 @@ class InlinerTest extends BytecodeTesting {
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
 
-    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
+    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: Op(DUP) :: Jump(IFNONNULL, Label(8)) :: Op(ACONST_NULL) :: Op(ATHROW) :: Label(8) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
       VarOp(ASTORE, 2),
       Jump(GOTO, Label(11)),
       Label(11),

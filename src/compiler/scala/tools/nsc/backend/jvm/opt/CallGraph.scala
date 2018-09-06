@@ -13,10 +13,11 @@ import scala.collection.immutable.IntMap
 import scala.collection.{concurrent, mutable}
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree._
-import scala.tools.asm.{Handle, Opcodes, Type}
+import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
+import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter.{LMFValue, ParamValue}
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -123,170 +124,125 @@ abstract class CallGraph {
   }
 
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode)) {
-      // TODO: run dataflow analyses to make the call graph more precise
-      //  - producers to get forwarded parameters (ForwardedParam)
-      //  - typeAnalysis for more precise argument types, more precise callee
+    if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode) && AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
+      lazy val typeAnalyzer = backendUtils.analyzerCache.get[NonLubbingTypeFlowAnalyzer](methodNode)(new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName))
 
-      // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
-      // call is known to be not-null, in which case we don't have to emit a null check when inlining.
-      // It is also used to get the stack height at the call site.
+      var methodCallsites = Map.empty[MethodInsnNode, Callsite]
+      var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
-      val analyzer = {
-        if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(
-            backendUtils.analyzerCache.get[NullnessAnalyzer](methodNode)(
-              new NullnessAnalyzer(methodNode, definingClass.internalName, backendUtils.isNonNullMethodInvocation)))
-        } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
-          Some(backendUtils.analyzerCache.getAny(methodNode, definingClass.internalName))
-        } else None
-      }
-
-      // if the method is too large to run an analyzer, it is not added to the call graph
-      if (analyzer.nonEmpty) {
-        val Some(a) = analyzer
-        def receiverNotNullByAnalysis(call: MethodInsnNode, paramTps: FLazy[Array[Type]]) = a match {
-          case nullnessAnalyzer: NullnessAnalyzer =>
-            val frame = nullnessAnalyzer.frameAt(call)
-            val numArgs = paramTps.get.length
-            frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
-          case _ => false
-        }
-
-        var methodCallsites = Map.empty[MethodInsnNode, Callsite]
-        var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
-
-        // lazy so it is only computed if actually used by computeArgInfos
-        val prodCons = FLazy(backendUtils.analyzerCache.get[ProdConsAnalyzer](methodNode)(new ProdConsAnalyzer(methodNode, definingClass.internalName)))
-
-        // TODO: check which analyzer to run! nullness, type flow, prod cons. really all of them!?
-        lazy val typeFlow = backendUtils.analyzerCache.get[NonLubbingTypeFlowAnalyzer](methodNode)(new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName))
-
-        methodNode.instructions.iterator.asScala foreach {
-          case call: MethodInsnNode if typeFlow.frameAt(call) != null => // skips over unreachable code
-            // JVMS 6.5 invokespecial: " If all of the following are true, let C be the direct superclass of the current class"
-            def isSuperCall: Boolean =
-              call.getOpcode == Opcodes.INVOKESPECIAL &&
-                call.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME && {
-                  val owner = call.owner
-                  definingClass.internalName != owner && {
-                    var nextSuper = definingClass.info.get.superClass
-                    while (nextSuper.nonEmpty) {
-                      if (nextSuper.get.internalName == owner) return true
-                      nextSuper = nextSuper.get.info.get.superClass
-                    }
-                    false
+      methodNode.instructions.iterator.asScala foreach {
+        case call: MethodInsnNode if typeAnalyzer.frameAt(call) != null => // skips over unreachable code
+          // JVMS 6.5 invokespecial: " If all of the following are true, let C be the direct superclass of the current class"
+          def isSuperCall: Boolean =
+            call.getOpcode == Opcodes.INVOKESPECIAL &&
+              call.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME && {
+                val owner = call.owner
+                definingClass.internalName != owner && {
+                  var nextSuper = definingClass.info.get.superClass
+                  while (nextSuper.nonEmpty) {
+                    if (nextSuper.get.internalName == owner) return true
+                    nextSuper = nextSuper.get.info.get.superClass
                   }
+                  false
                 }
-            val paramTps = FLazy(Type.getArgumentTypes(call.desc))
-            // This is the type where method lookup starts (implemented in byteCodeRepository.methodNode)
-            val preciseOwner =
-              if (isStaticCallsite(call)) call.owner
-              else if (isSuperCall) definingClass.info.get.superClass.get.internalName
-              else if (call.getOpcode == Opcodes.INVOKESPECIAL) call.owner
-              else {
-                // invokevirtual, invokeinterface: start search at the type of the receiver
-                val f = typeFlow.frameAt(call)
-                // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
-                val numParams = paramTps.get.length
-                f.peekStack(numParams).getType.getInternalName
               }
-
-            val callee: Either[OptimizerWarning, Callee] = {
-              for {
-                (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
-                (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
-              } yield {
-                val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-                val info = analyzeCallsite(method, declarationClassBType, call, paramTps, calleeSourceFilePath, definingClass)
-                import info._
-                Callee(
-                  callee = method,
-                  calleeDeclarationClass = declarationClassBType,
-                  isStaticallyResolved = isStaticallyResolved,
-                  sourceFilePath = sourceFilePath,
-                  annotatedInline = annotatedInline,
-                  annotatedNoInline = annotatedNoInline,
-                  samParamTypes = info.samParamTypes,
-                  calleeInfoWarning = warning)
-              }
+          val paramTps = FLazy(Type.getArgumentTypes(call.desc))
+          // This is the type where method lookup starts (implemented in byteCodeRepository.methodNode)
+          val preciseOwner =
+            if (isStaticCallsite(call)) call.owner
+            else if (isSuperCall) definingClass.info.get.superClass.get.internalName
+            else if (call.getOpcode == Opcodes.INVOKESPECIAL) call.owner
+            else {
+              // invokevirtual, invokeinterface: start search at the type of the receiver
+              val f = typeAnalyzer.frameAt(call)
+              // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
+              val numParams = paramTps.get.length
+              f.peekStack(numParams).getType.getInternalName
             }
 
-            val argInfos = computeArgInfos(callee, call, paramTps, prodCons)
+          val callee: Either[OptimizerWarning, Callee] = {
+            for {
+              (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+              (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
+            } yield {
+              val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
+              val info = analyzeCallsite(method, declarationClassBType, call, paramTps, calleeSourceFilePath, definingClass)
+              import info._
+              Callee(
+                callee = method,
+                calleeDeclarationClass = declarationClassBType,
+                isStaticallyResolved = isStaticallyResolved,
+                sourceFilePath = sourceFilePath,
+                annotatedInline = annotatedInline,
+                annotatedNoInline = annotatedNoInline,
+                samParamTypes = info.samParamTypes,
+                calleeInfoWarning = warning)
+            }
+          }
 
-            val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC ||
-              receiverNotNullByAnalysis(call, paramTps)
+          val argInfos = computeArgInfos(callee, call, paramTps, typeAnalyzer)
 
-            methodCallsites += call -> Callsite(
-              callsiteInstruction = call,
-              callsiteMethod = methodNode,
-              callsiteClass = definingClass,
-              callee = callee,
-              argInfos = argInfos,
-              callsiteStackHeight = a.frameAt(call).getStackSize,
-              receiverKnownNotNull = receiverNotNull,
-              callsitePosition = callsitePositions.getOrElse(call, NoPosition),
-              annotatedInline = inlineAnnotatedCallsites(call),
-              annotatedNoInline = noInlineAnnotatedCallsites(call)
-            )
+          // A nullness analysis could be used to prevent emitting unnecessary receiver null checks
+          // when inlining non-static callistes. However, LocalOpt's nullness cleanup will also do
+          // it after the fact, so we can avoid running the nullness analysis when building the call
+          // graph (or when inlining).
+          val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC
 
-          case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes) if a.frameAt(indy) != null =>
-            val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
-            val capturedArgInfos = computeCapturedArgInfos(lmf, indyParamTypes, prodCons)
-            methodClosureInstantiations += indy -> ClosureInstantiation(
-              lmf,
-              methodNode,
-              definingClass,
-              capturedArgInfos)
+          methodCallsites += call -> Callsite(
+            callsiteInstruction = call,
+            callsiteMethod = methodNode,
+            callsiteClass = definingClass,
+            callee = callee,
+            argInfos = argInfos,
+            callsiteStackHeight = typeAnalyzer.frameAt(call).getStackSize,
+            receiverKnownNotNull = receiverNotNull,
+            callsitePosition = callsitePositions.getOrElse(call, NoPosition),
+            annotatedInline = inlineAnnotatedCallsites(call),
+            annotatedNoInline = noInlineAnnotatedCallsites(call)
+          )
 
-          case _ =>
-        }
+        case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes) if typeAnalyzer.frameAt(indy) != null =>
+          val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
+          val capturedArgInfos = computeCapturedArgInfos(lmf, indyParamTypes, typeAnalyzer)
+          methodClosureInstantiations += indy -> ClosureInstantiation(
+            lmf,
+            methodNode,
+            definingClass,
+            capturedArgInfos)
 
-        callsites(methodNode) = methodCallsites
-        closureInstantiations(methodNode) = methodClosureInstantiations
+        case _ =>
       }
+
+      callsites(methodNode) = methodCallsites
+      closureInstantiations(methodNode) = methodClosureInstantiations
     }
   }
 
-  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, paramTps: FLazy[Array[Type]], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
+  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, paramTps: FLazy[Array[Type]], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
     if (callee.isLeft) IntMap.empty
     else {
       val numArgs = FLazy(paramTps.get.length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1))
-      argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, prodCons)
+      argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, typeAnalyzer)
     }
   }
 
-  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, indyParamTypes: Array[Type], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
+  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, indyParamTypes: Array[Type], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
     val capturedTypes = indyParamTypes.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
     val capturedSams = samTypes(capturedTypes)
-    argInfosForSams(capturedSams, lmf.indy, FLazy(indyParamTypes.length), prodCons)
+    argInfosForSams(capturedSams, lmf.indy, FLazy(indyParamTypes.length), typeAnalyzer)
   }
 
-  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: FLazy[Int], prodCons: FLazy[ProdConsAnalyzer]): IntMap[ArgInfo] = {
-    // TODO: use type analysis instead of ProdCons - should be more efficient
-    // some random thoughts:
-    //  - assign special types to parameters and indy-lambda-functions to track them
-    //  - upcast should not change type flow analysis: don't lose information.
-    //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
-    //    inline the factory? analysis across method boundary?
-
-    // lazy val to prevent unnecessary ProdCons analysis
-    lazy val firstConsumedSlot = {
-      val consumerFrame = prodCons.get.frameAt(consumerInsn)
-      consumerFrame.stackTop - numConsumed.get + 1
-    }
+  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: FLazy[Int], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
+    val consumerFrame = typeAnalyzer.frameAt(consumerInsn)
+    val firstConsumedSlot = consumerFrame.stackTop - numConsumed.get + 1
     sams flatMap {
       case (index, _) =>
-        val prods = prodCons.get.initialProducersForValueAt(consumerInsn, firstConsumedSlot + index)
-        if (prods.size != 1) None
-        else {
-          val argInfo = prods.head match {
-            case LambdaMetaFactoryCall(_, _, _, _, _) => Some(FunctionLiteral)
-            case ParameterProducer(local)             => Some(ForwardedParam(local))
-            case _                                    => None
-          }
-          argInfo.map((index, _))
+        val argInfo = consumerFrame.getValue(firstConsumedSlot + index) match {
+          case _: LMFValue => Some(FunctionLiteral)
+          case p: ParamValue => Some(ForwardedParam(p.local))
+          case _ => None
         }
+        argInfo.map((index, _))
     }
   }
 
