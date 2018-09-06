@@ -5,6 +5,14 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Internal representation of a module-info.java file, for use with Java reflection in the compiler's implementation
+ * of module access checking.
+ *
+ * See https://docs.oracle.com/javase/specs/jls/se9/html/jls-7.html#jls-ModuleDeclaration
+ *
+ * TODO: imports
+ */
 public class JpmsModuleDescriptor {
     private final String name;
     private final List<RequireDirective> requires;

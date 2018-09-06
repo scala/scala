@@ -14,6 +14,7 @@ import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
 import Jar.isJarOrZip
+import scala.reflect.internal.jpms.JpmsModuleDescriptor
 
 /**
   * A representation of the compiler's class- or sourcepath.
@@ -21,6 +22,11 @@ import Jar.isJarOrZip
 trait ClassPath {
   import scala.tools.nsc.classpath._
   def asURLs: Seq[URL]
+
+  /**
+    * Called by the parser on encountering a module-info.java file with a module declaration.
+    */
+  def registerJpmsModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {}
 
   /*
    * These methods are mostly used in the ClassPath implementation to implement the `list` and
