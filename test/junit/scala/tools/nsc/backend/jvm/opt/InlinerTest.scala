@@ -1266,16 +1266,15 @@ class InlinerTest extends BytecodeTesting {
         |
         |  final def m(f: Int => Unit) = f(10)
         |  def t2 = {
-        |    var x = -1                  // IntRef not yet eliminated: closure elimination does not
-        |    m(i => if (i == 10) x = 1)  // yet inline the anonfun method, need to improve the heuristsics
+        |    var x = -1                  // IntRef eliminated, heuristics inline anonfun method because
+        |    m(i => if (i == 10) x = 1)  // it has an IntRef parameter
         |    x
         |  }
         |}
       """.stripMargin
     val c = compileClass(code)
     assertSameCode(getMethod(c, "t1"), List(Op(ICONST_0), Op(ICONST_1), Op(IADD), Op(IRETURN)))
-    assertEquals(getMethod(c, "t2").instructions collect { case i: Invoke => i.owner +"."+ i.name }, List(
-      "scala/runtime/IntRef.create", "C.$anonfun$t2$1"))
+    assertNoInvoke(getMethod(c, "t2"))
   }
 
   @Test
@@ -2004,4 +2003,25 @@ class InlinerTest extends BytecodeTesting {
   //  - patch: should be ok because using arraycopy
   //  - toArray, copyToArray, startsWith, endsWith: inline to avoid boxing? is there boxing? we end up in System.arraycopy anyway, so should be fine.
   //  - updated: @inline to avoid boxing?
+
+  @Test
+  def cleanRangeForeach(): Unit = {
+    // IntRef is eliminated
+    val code =
+      """class C {
+        |  def t = {
+        |    var x = 0
+        |    for (i <- 1 to 10) x += i
+        |    x
+        |  }
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertInvokedMethods(getMethod(c, "t"), List(
+      "scala/runtime/RichInt$.to$extension0",
+      "scala/collection/immutable/Range.isEmpty",
+      "scala/collection/immutable/Range.start",
+      "scala/collection/immutable/Range.step")
+    )
+  }
 }
