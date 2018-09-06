@@ -26,7 +26,7 @@ import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.Value
-import scala.tools.asm.{Handle, Type}
+import scala.tools.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -512,6 +512,81 @@ object BackendUtils {
   def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
   def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
   def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+
+  final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
+
+  object LambdaMetaFactoryCall {
+    val lambdaMetaFactoryMetafactoryHandle = new Handle(
+      Opcodes.H_INVOKESTATIC,
+      "java/lang/invoke/LambdaMetafactory",
+      "metafactory",
+      "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+      /* itf = */ false)
+
+    val lambdaMetaFactoryAltMetafactoryHandle = new Handle(
+      Opcodes.H_INVOKESTATIC,
+      "java/lang/invoke/LambdaMetafactory",
+      "altMetafactory",
+      "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;",
+      /* itf = */ false)
+
+    def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type, Array[Type])] = insn match {
+      case indy: InvokeDynamicInsnNode if indy.bsm == lambdaMetaFactoryMetafactoryHandle || indy.bsm == lambdaMetaFactoryAltMetafactoryHandle =>
+        indy.bsmArgs match {
+          case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, _@_*) =>
+            // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda
+            // implementation method (casting, boxing, unboxing, and primitive widening, see Javadoc).
+            //
+            // The closure optimizer supports only one of those adaptations: it will cast arguments
+            // to the correct type when re-writing a closure call to the body method. Example:
+            //
+            //   val fun: String => String = l => l
+            //   val l = List("")
+            //   fun(l.head)
+            //
+            // The samMethodType of Function1 is `(Object)Object`, while the instantiatedMethodType
+            // is `(String)String`. The return type of `List.head` is `Object`.
+            //
+            // The implMethod has the signature `C$anonfun(String)String`.
+            //
+            // At the closure callsite, we have an `INVOKEINTERFACE Function1.apply (Object)Object`,
+            // so the object returned by `List.head` can be directly passed into the call (no cast).
+            //
+            // The closure object will cast the object to String before passing it to the implMethod.
+            //
+            // When re-writing the closure callsite to the implMethod, we have to insert a cast.
+            //
+            // The check below ensures that
+            //   (1) the implMethod type has the expected signature (captured types plus argument types
+            //       from instantiatedMethodType)
+            //   (2) the receiver of the implMethod matches the first captured type
+            //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
+            //       are reference types, so that we can insert casts to perform the same adaptation
+            //       that the closure object would.
+
+            val isStatic                   = implMethod.getTag == Opcodes.H_INVOKESTATIC
+            val indyParamTypes             = Type.getArgumentTypes(indy.desc)
+            val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
+            val expectedImplMethodType     = {
+              val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
+              Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
+            }
+
+            val isIndyLambda = (
+              Type.getType(implMethod.getDesc) == expectedImplMethodType              // (1)
+                && (isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName)  // (2)
+                && samMethodType.getArgumentTypes.corresponds(instantiatedMethodArgTypes)((samArgType, instArgType) =>
+                samArgType == instArgType || isReference(samArgType) && isReference(instArgType)) // (3)
+              )
+
+            if (isIndyLambda) Some((indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes))
+            else None
+
+          case _ => None
+        }
+      case _ => None
+    }
+  }
 
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM

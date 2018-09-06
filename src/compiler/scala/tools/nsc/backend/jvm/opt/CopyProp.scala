@@ -21,6 +21,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -419,7 +420,7 @@ abstract class CopyProp {
 
           case INVOKEDYNAMIC =>
             prod match {
-              case callGraph.LambdaMetaFactoryCall(indy, _, _, _, _) => handleClosureInst(indy)
+              case LambdaMetaFactoryCall(indy, _, _, _, _) => handleClosureInst(indy)
               case _ => popAfterProd()
             }
 

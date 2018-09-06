@@ -23,6 +23,7 @@ import scala.tools.asm.tree._
 import scala.tools.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -482,65 +483,5 @@ abstract class CallGraph {
    */
   final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType, capturedArgInfos: IntMap[ArgInfo]) {
     override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
-  }
-  final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
-
-  object LambdaMetaFactoryCall {
-    def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type, Array[Type])] = insn match {
-      case indy: InvokeDynamicInsnNode if indy.bsm == coreBTypes.lambdaMetaFactoryMetafactoryHandle || indy.bsm == coreBTypes.lambdaMetaFactoryAltMetafactoryHandle =>
-        indy.bsmArgs match {
-          case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, _@_*) =>
-            // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda
-            // implementation method (casting, boxing, unboxing, and primitive widening, see Javadoc).
-            //
-            // The closure optimizer supports only one of those adaptations: it will cast arguments
-            // to the correct type when re-writing a closure call to the body method. Example:
-            //
-            //   val fun: String => String = l => l
-            //   val l = List("")
-            //   fun(l.head)
-            //
-            // The samMethodType of Function1 is `(Object)Object`, while the instantiatedMethodType
-            // is `(String)String`. The return type of `List.head` is `Object`.
-            //
-            // The implMethod has the signature `C$anonfun(String)String`.
-            //
-            // At the closure callsite, we have an `INVOKEINTERFACE Function1.apply (Object)Object`,
-            // so the object returned by `List.head` can be directly passed into the call (no cast).
-            //
-            // The closure object will cast the object to String before passing it to the implMethod.
-            //
-            // When re-writing the closure callsite to the implMethod, we have to insert a cast.
-            //
-            // The check below ensures that
-            //   (1) the implMethod type has the expected signature (captured types plus argument types
-            //       from instantiatedMethodType)
-            //   (2) the receiver of the implMethod matches the first captured type
-            //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
-            //       are reference types, so that we can insert casts to perform the same adaptation
-            //       that the closure object would.
-
-            val isStatic                   = implMethod.getTag == Opcodes.H_INVOKESTATIC
-            val indyParamTypes             = Type.getArgumentTypes(indy.desc)
-            val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
-            val expectedImplMethodType     = {
-              val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
-              Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
-            }
-
-            val isIndyLambda = (
-                 Type.getType(implMethod.getDesc) == expectedImplMethodType              // (1)
-              && (isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName)  // (2)
-              && samMethodType.getArgumentTypes.corresponds(instantiatedMethodArgTypes)((samArgType, instArgType) =>
-                   samArgType == instArgType || isReference(samArgType) && isReference(instArgType)) // (3)
-            )
-
-            if (isIndyLambda) Some((indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes))
-            else None
-
-          case _ => None
-        }
-      case _ => None
-    }
   }
 }
