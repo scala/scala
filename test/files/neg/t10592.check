@@ -1,0 +1,13 @@
+t10592.scala:24: error: type mismatch;
+ found   : O.U[O.A]
+    (which expands to)  O.U[AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def a: Int}}}}}}}}]
+ required: O.U[AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef}}}}}}}]
+  def f(a: U[A], b: U[B]) = Seq(a, b)
+                                ^
+t10592.scala:24: error: type mismatch;
+ found   : O.U[O.B]
+    (which expands to)  O.U[AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def b: Int}}}}}}}}]
+ required: O.U[AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef{def X: AnyRef}}}}}}}]
+  def f(a: U[A], b: U[B]) = Seq(a, b)
+                                   ^
+two errors found

@@ -415,7 +415,7 @@ private[internal] trait GlbLubs {
     *  If the recursion is broken, no member is added to the glb.
     */
   private var globalGlbDepth = Depth.Zero
-  private final val globalGlbLimit = Depth(2)
+  private final val globalGlbLimit = Depth(8)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
   def glb(ts: List[Type]): Type = elimSuper(ts) match {
@@ -496,7 +496,7 @@ private[internal] trait GlbLubs {
               val symtypes = syms map glbThisType.memberInfo
               assert(!symtypes.isEmpty)
               proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
-                if (proto.isTerm) glb(symtypes, depth.decr)
+                if (proto.isTerm) glb(symtypes, depth)
                 else {
                   def isTypeBound(tp: Type) = tp match {
                     case TypeBounds(_, _) => true
@@ -544,7 +544,7 @@ private[internal] trait GlbLubs {
     }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nestedLubCount)
-    glb0(ts)
+    glb0(ts.map(_.dealias))
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
   }
 
