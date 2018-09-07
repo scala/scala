@@ -19,4 +19,18 @@ class HtmlDocletTest {
     // "unicode: …" != "unicode: ￢ﾀﾦ"
     assertEquals(in, out)
   }
+
+  @Test
+  def escapeComment(): Unit = {
+    val result = HtmlTags.textOf(SyntaxHigh("// <foo>bar</foo> & "))
+    val expect = """<span class="cmt">// &lt;foo&gt;bar&lt;/foo&gt; & </span>"""
+    assertEquals(expect, result)
+  }
+
+  @Test
+  def escapeStringLiteral(): Unit = {
+    val result = HtmlTags.textOf(SyntaxHigh(""" " <foo>bar</foo> & " """))
+    val expect = """<span class="lit">" &lt;foo&gt;bar&lt;/foo&gt; & "</span>"""
+    assertEquals(expect, result)
+  }
 }
