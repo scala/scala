@@ -83,6 +83,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     */
   def hasNext: Boolean
 
+  @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
+  @`inline` override final def hasDefiniteSize = isEmpty
+
   /** Return the next element and advance the iterator.
     *
     * @throws NoSuchElementException if there is no next element.

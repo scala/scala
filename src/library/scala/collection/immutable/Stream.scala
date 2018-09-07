@@ -309,6 +309,27 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     *             a cycle at the fourth element.
     */
   override def toString = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
+
+  @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
+  override def hasDefiniteSize: Boolean = isEmpty || {
+    if (!tailDefined) false
+    else {
+      // Two-iterator trick (2x & 1x speed) for cycle detection.
+      var those = this
+      var these = tail
+      while (those ne these) {
+        if (these.isEmpty) return true
+        if (!these.tailDefined) return false
+        these = these.tail
+        if (these.isEmpty) return true
+        if (!these.tailDefined) return false
+        these = these.tail
+        if (those eq these) return false
+        those = those.tail
+      }
+      false  // Cycle detected
+    }
+  }
 }
 
 @deprecated("Use LazyList (which is fully lazy) instead of Stream (which has a lazy tail only)", "2.13.0")

@@ -433,8 +433,35 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   def knownSize: Int = -1
 
-  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
-  @`inline` final def hasDefiniteSize = knownSize >= 0
+  /** Tests whether this $coll is known to have a finite size.
+    *  All strict collections are known to have finite size. For a non-strict
+    *  collection such as `Stream`, the predicate returns `'''true'''` if all
+    *  elements have been computed. It returns `'''false'''` if the stream is
+    *  not yet evaluated to the end. Non-empty Iterators usually return
+    *  `'''false'''` even if they were created from a collection with a known
+    *  finite size.
+    *
+    *  Note: many collection methods will not work on collections of infinite sizes.
+    *  The typical failure mode is an infinite loop. These methods always attempt a
+    *  traversal without checking first that `hasDefiniteSize` returns `'''true'''`.
+    *  However, checking `hasDefiniteSize` can provide an assurance that size is
+    *  well-defined and non-termination is not a concern.
+    *
+    *  @deprecated This method is deprecated in 2.13 because it does not provide any
+    *    actionable information. As noted above, even the collection library itself
+    *    does not use it. When there is no guarantee that a collection is finite, it
+    *    is generally best to attempt a computation anyway and document that it will
+    *    not terminate for inifinite collections rather than backing out because this
+    *    would prevent performing the computation on collections that are in fact
+    *    finite even though `hasDefiniteSize` returns `false`.
+    *
+    *  @see method `knownSize` for a more useful alternative
+    *
+    *  @return  `'''true'''` if this collection is known to have finite size,
+    *           `'''false'''` otherwise.
+    */
+  @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
+  def hasDefiniteSize: Boolean = true
 
   /** Tests whether this $coll can be repeatedly traversed.  Always
    *  true for Iterables and false for Iterators unless overridden.
