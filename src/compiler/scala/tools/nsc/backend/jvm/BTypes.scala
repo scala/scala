@@ -127,7 +127,7 @@ abstract class BTypes {
         case ArrayBType(component) =>
           if (other == ObjectRef || other == jlCloneableRef || other == jiSerializableRef) true
           else other match {
-            case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow
+            case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow // TODO: primitive arrays should only conform if same elem type?
             case _ => false
           }
 

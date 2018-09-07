@@ -592,11 +592,29 @@ abstract class LocalOpt {
       // array descriptor.
       def sameClass(a: String, b: String) = {
         a == b ||
-          a(0) == 'L' && a.last == ';' && a.regionMatches(1, b, 0, b.length) ||
-          b(0) == 'L' && b.last == ';' && b.regionMatches(1, a, 0, a.length)
+          a.length - 2 == b.length && a(0) == 'L' && a.last == ';' && a.regionMatches(1, b, 0, b.length) ||
+          b.length - 2 == a.length && b(0) == 'L' && b.last == ';' && b.regionMatches(1, a, 0, a.length)
       }
       sameClass(aDescOrIntN, bDescOrIntN) || sameClass(bDescOrIntN, ObjectRef.internalName) ||
         bTypeForDescriptorOrInternalNameFromClassfile(aDescOrIntN).conformsTo(bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN)).getOrElse(false)
+    }
+
+    // precondition: !isSubType(aDescOrIntN, bDescOrIntN)
+    def isUnrelated(aDescOrIntN: String, bDescOrIntN: String): Boolean = {
+      def impl(aTp: BType, bTp: BType): Boolean = {
+        (aTp, bTp) match {
+          case (aa: ArrayBType, ba: ArrayBType) =>
+            impl(aa.elementType, ba.elementType)
+          case (act: ClassBType, bct: ClassBType) =>
+            val noItf = act.isInterface.flatMap(aIf => bct.isInterface.map(bIf => !aIf && !bIf)).getOrElse(false)
+            noItf && !bct.conformsTo(act).getOrElse(true)
+          case (_: PrimitiveBType, _: RefBType) | (_: RefBType, _: PrimitiveBType) => true
+          case _ => false
+        }
+      }
+      impl(
+        bTypeForDescriptorOrInternalNameFromClassfile(aDescOrIntN),
+        bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN))
     }
 
     lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
@@ -620,7 +638,6 @@ abstract class LocalOpt {
           if (opc == INSTANCEOF && valueNullness == NullValue) {
             toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
           } else {
-            val tii = ti
             val valueDesc = typeAnalyzer.preciseAaloadTypeDesc({
               val frame = typeAnalyzer.frameAt(ti)
               frame.getValue(frame.stackTop)
@@ -631,7 +648,7 @@ abstract class LocalOpt {
               } else if (valueNullness == NotNullValue) {
                 toReplace(ti) = List(getPop(1), new InsnNode(ICONST_1))
               }
-            } else if (opc == INSTANCEOF && !isSubType(ti.desc, valueDesc)) {
+            } else if (opc == INSTANCEOF && isUnrelated(valueDesc, ti.desc)) {
               // the two types are unrelated, so the instance check is known to fail
               toReplace(ti) = List(getPop(1), new InsnNode(ICONST_0))
             }
