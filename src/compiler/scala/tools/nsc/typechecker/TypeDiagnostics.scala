@@ -536,6 +536,8 @@ trait TypeDiagnostics {
             }
           case _: RefTree if sym ne null             => targets += sym
           case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
+          case Function(ps, _) if settings.warnUnusedParams =>
+            params ++= ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
           case _                                     =>
         }
 
@@ -713,7 +715,7 @@ trait TypeDiagnostics {
             && !isConvention(s)
           )
         for (s <- unusedPrivates.unusedParams if warnable(s))
-          typer.context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
+          typer.context.warning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used")
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
