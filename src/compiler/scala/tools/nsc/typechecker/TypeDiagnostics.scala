@@ -505,7 +505,7 @@ trait TypeDiagnostics {
         override def traverse(t: Tree): Unit = if (!t.isErrorTyped) {
           val sym = t.symbol
           t match {
-            case m: MemberDef if qualifies(sym)   =>
+            case m: MemberDef if qualifies(sym) =>
               t match {
                 case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
                   if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
@@ -519,14 +519,16 @@ trait TypeDiagnostics {
                 case _ =>
                   defnTrees += m
               }
-            case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars    =>
+            case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars =>
               pat.foreach {
                 case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
                 case _ =>
               }
-            case _: RefTree if sym ne null             => targets += sym
-            case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
-            case _                                     =>
+            case _: RefTree if sym ne null                    => targets += sym
+            case Assign(lhs, _) if lhs.symbol != null         => setVars += lhs.symbol
+            case Function(ps, _) if settings.warnUnusedParams =>
+              params ++= ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+            case _                                            =>
           }
 
           if (t.tpe ne null) {
