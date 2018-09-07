@@ -35,13 +35,7 @@ trait Equiv[T] extends Any with Serializable {
   def equiv(x: T, y: T): Boolean
 }
 
-trait LowPriorityEquiv {
-  self: Equiv.type =>
-
-  implicit def universalEquiv[T] : Equiv[T] = universal[T]
-}
-
-object Equiv extends LowPriorityEquiv {
+object Equiv {
   def reference[T <: AnyRef]: Equiv[T] = { _ eq _ }
   def universal[T]: Equiv[T] = { _ == _ }
   def fromComparator[T](cmp: Comparator[T]): Equiv[T] = {
