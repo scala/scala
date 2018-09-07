@@ -91,18 +91,29 @@ abstract class Inliner {
     // In a chain of inlined calls which lead to some (call) instruction, return the root `InlinedCallsite`
     // which has a delayed warning . When inlining `call` fails, warn about the root instruction instead of
     // the downstream inline request that tried to eliminate an illegalAccess instruction.
-    def rootInlinedCallsiteWithWarning(call: AbstractInsnNode, skipForwarders: Boolean): Option[InlinedCallsite] = {
+    // This method skips over forwarders. For example in `trait T { def m = ... }; class A extends T`
+    // the inline chain is `A.m (mixin forwarder) - T.m$ (static accessor) - T.m`. The method returns
+    // `T.m` (even if the root callsite is `A.m`.
+    // If the chain has only forwarders, `returnForwarderIfNoOther` determines whether to return `None`
+    // or the last inlined forwarder.
+    def rootInlinedCallsiteWithWarning(call: AbstractInsnNode, returnForwarderIfNoOther: Boolean): Option[InlinedCallsite] = {
+      def isForwarder(callsite: Callsite) = backendUtils.isTraitSuperAccessorOrMixinForwarder(callsite.callee.get.callee, callsite.callee.get.calleeDeclarationClass)
+      def result(res: Option[InlinedCallsite]) = res match {
+        case Some(r) if returnForwarderIfNoOther || !isForwarder(r.eliminatedCallsite) => res
+        case _ => None
+      }
       @tailrec def impl(insn: AbstractInsnNode, res: Option[InlinedCallsite]): Option[InlinedCallsite] = inlinedCalls.get(insn) match {
         case Some(inlinedCallsite) =>
           val w = inlinedCallsite.filterForWarning(insn)
-          if (w.isEmpty) res
+          if (w.isEmpty) result(res)
           else {
             val cs = inlinedCallsite.eliminatedCallsite
-            val nextRes = if (skipForwarders && backendUtils.isTraitSuperAccessorOrMixinForwarder(cs.callee.get.callee, cs.callee.get.calleeDeclarationClass)) res else w
+            // The returned InlinedCallsite can be a forwarder if that forwarder was the initial callsite in the method
+            val nextRes = if (isForwarder(cs) && res.nonEmpty && !isForwarder(res.get.eliminatedCallsite)) res else w
             impl(cs.callsiteInstruction, nextRes)
           }
 
-        case _ => res
+        case _ => result(res)
       }
       impl(call, None)
     }
@@ -225,8 +236,8 @@ abstract class Inliner {
     insns.forall({
       case mi: MethodInsnNode =>
         (mi.getOpcode != INVOKESPECIAL) || {
-          // An invokespecial T.f that appears within T, and T defines f.
-          // Such an instruction is inlined into a different class, but it needs to be inlined in
+          // Special handling for invokespecial T.f that appears within T, and T defines f.
+          // Such an instruction can be inlined into a different class, but it needs to be inlined in
           // turn in a later inlining round.
           // The call graph needs to treat it specially: the normal dynamic lookup needs to be
           // avoided, it needs to resolve to T.f, no matter in which class the invocation appears.
@@ -372,7 +383,7 @@ abstract class Inliner {
                 currentMethodRolledBack = true
               }
 
-              state.rootInlinedCallsiteWithWarning(r.callsite.callsiteInstruction, skipForwarders = true) match {
+              state.rootInlinedCallsiteWithWarning(r.callsite.callsiteInstruction, returnForwarderIfNoOther = false) match {
                 case Some(inlinedCallsite) =>
                   val rw = inlinedCallsite.warning.get
                   if (rw.emitWarning(compilerSettings)) {
@@ -429,11 +440,11 @@ abstract class Inliner {
 
           case Some(notInlinedIllegalInsn) =>
             state.undoLog.rollback()
-            state.rootInlinedCallsiteWithWarning(notInlinedIllegalInsn, skipForwarders = true) match {
+            state.rootInlinedCallsiteWithWarning(notInlinedIllegalInsn, returnForwarderIfNoOther = true) match {
               case Some(inlinedCallsite) =>
                 val callsite = inlinedCallsite.eliminatedCallsite
                 val w = inlinedCallsite.warning.get
-                state.inlineLog.logRollback(callsite, s"Instruction ${AsmUtils.textify(notInlinedIllegalInsn)} would cause an IllegalAccessError, and is not selected for inlining", state.outerCallsite(notInlinedIllegalInsn))
+                state.inlineLog.logRollback(callsite, s"Instruction ${AsmUtils.textify(notInlinedIllegalInsn)} would cause an IllegalAccessError, and is not selected for (or failed) inlining", state.outerCallsite(notInlinedIllegalInsn))
                 if (w.emitWarning(compilerSettings))
                   backendReporting.inlinerWarning(callsite.callsitePosition, w.toString + inlineChainSuffix(callsite, state.inlineChain(callsite.callsiteInstruction, skipForwarders = true)))
               case _ =>
@@ -920,7 +931,7 @@ abstract class Inliner {
       callsiteStackHeight > expectedArgs
     }
 
-    if (codeSizeOKForInlining(callsiteMethod, callee)) {
+    if (callsiteTooLargeAfterInlining(callsiteMethod, callee)) {
       val warning = ResultingMethodTooLarge(
         calleeDeclarationClass.internalName, callee.name, callee.desc, callsite.isInlineAnnotated,
         callsiteClass.internalName, callsiteMethod.name, callsiteMethod.desc)
