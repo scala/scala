@@ -14,9 +14,10 @@ object Test extends App {
   println(textractor)
   val rtextractor = tb.untypecheck(textractor)
   try {
+    // should print 2 without error
     println(tb.eval(rtextractor))
   } catch {
-    // this is the current behaviour, rather than the desired behavior; see scala/bug#5465
+    // this is the old behaviour, rather than the desired behavior; see scala/bug#5465
     case _: ToolBoxError => println("error!")
   }
 }

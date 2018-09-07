@@ -2,4 +2,4 @@
 2 match {
   case Test.this.Extractor.unapply(<unapply-selector>) <unapply> ((x @ _)) => x
 }
-error!
+2
