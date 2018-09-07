@@ -304,7 +304,7 @@ object BytecodeUtils {
     }
   }
 
-  def codeSizeOKForInlining(caller: MethodNode, callee: MethodNode): Boolean = {
+  def callsiteTooLargeAfterInlining(caller: MethodNode, callee: MethodNode): Boolean = {
     // Looking at the implementation of CodeSizeEvaluator, all instructions except tableswitch and
     // lookupswitch are <= 8 bytes. These should be rare enough for 8 to be an OK rough upper bound.
     def roughUpperBound(methodNode: MethodNode): Int = methodNode.instructions.size * 8
