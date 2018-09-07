@@ -30,14 +30,16 @@ private[html] object SyntaxHigh {
 
   /** Annotations, sorted alphabetically */
   val annotations = Array(
-    "BeanProperty", "SerialVersionUID",
-    "beanGetter", "beanSetter", "bridge",
+    "BeanProperty", "BooleanBeanProperty", "SerialVersionUID",
+    "beanGetter", "beanSetter",
+    "companionClass", "companionMethod", "companionObject", "compileTimeOnly",
     "deprecated", "deprecatedName", "deprecatedOverriding", "deprecatedInheritance",
-    "elidable", "field", "getter", "inline",
+    "elidable", "field", "getter", "implicitAmbiguous", "implicitNotFound", "inline",
+    "languageFeature",
     "migration", "native", "noinline", "param",
-    "setter", "specialized", "strictfp", "switch",
+    "setter", "showAsInfix", "specialized", "strictfp", "switch",
     "tailrec", "throws", "transient",
-    "unchecked", "uncheckedStable", "uncheckedVariance",
+    "unchecked", "uncheckedStable", "uncheckedVariance", "unspecialized",
     "varargs", "volatile").sorted
 
   /** Standard library classes/objects, sorted alphabetically */
