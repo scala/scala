@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 
-abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthesis {
+abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   import global._
   import definitions._
   import CODE._
@@ -355,8 +355,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
       mixinTraitForwarders(mc)
     }
   }
-
-  override def transformInfo(sym: Symbol, tp: Type): Type = tp
 
 // --------- term transformation -----------------------------------------------
 
