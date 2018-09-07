@@ -38,6 +38,15 @@ trait Equiv[T] extends Any with Serializable {
 trait LowPriorityEquiv {
   self: Equiv.type =>
 
+  /**
+   * @deprecated since 2.12.7. An implicit universal Equiv instance allows code to compile when it
+   * is comparing instances of types for which equality isn't well-defined or implemented (for
+   * example, comparing two Function1 instances doesn't generally provide a meaningful result). Use
+   * Equiv.universal explicitly instead. If you really want an implicit univeral Equiv intance
+   * despite the potential problems, you can write a method such as `implicit def universalEquiv[T]:
+   * Equiv[T] = universal[T]`
+   */
+  @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information.", "2.12.7")
   implicit def universalEquiv[T] : Equiv[T] = universal[T]
 }
 
