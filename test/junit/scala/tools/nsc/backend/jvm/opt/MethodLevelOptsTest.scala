@@ -130,6 +130,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |                  // so we get `LDC met; POP; ACONST_NULL; ASTORE 1`. the `LDC met; POP` is eliminated by push-pop.
         |    a = "zit"     // this store is live, so we get `LDC zit; ASOTRE 1; ALOAD 1; ARETURN`.
         |                  // we cannot eliminated the store-load sequence, because the local is live (again scala/bug#5313).
+        |    println()     // need a call instruction, otherwise trailing NULL stores are optimzied away
         |    a
         |  }
         |}
@@ -140,7 +141,9 @@ class MethodLevelOptsTest extends BytecodeTesting {
       Ldc(LDC, "el"), VarOp(ASTORE, 1),
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
       Op(ACONST_NULL), VarOp(ASTORE, 1),
-      Ldc(LDC, "zit"), VarOp(ASTORE, 1), VarOp(ALOAD, 1), Op(ARETURN)))
+      Ldc(LDC, "zit"), VarOp(ASTORE, 1),
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "()V", false),
+      VarOp(ALOAD, 1), Op(ARETURN)))
   }
 
   @Test
