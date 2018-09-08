@@ -46,7 +46,9 @@ trait LowPriorityEquiv {
    * despite the potential problems, you can write a method such as `implicit def universalEquiv[T]:
    * Equiv[T] = universal[T]`
    */
-  @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information.", "2.12.7")
+  @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information: " +
+    "https://www.scala-lang.org/api/2.12.7/scala/math/Equiv$.html#universalEquiv[T]:scala.math.Equiv[T]",
+    since = "2.12.7")
   implicit def universalEquiv[T] : Equiv[T] = universal[T]
 }
 
