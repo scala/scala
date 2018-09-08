@@ -154,7 +154,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  @see foreach
    */
   @inline final def map[B](f: A => B): Option[B] =
-    if (isEmpty) None else Some(f(this.get))
+    if (isEmpty) None else Option(f(this.get))
 
   /** Returns the result of applying $f to this $option's
    *  value if the $option is nonempty.  Otherwise, evaluates
