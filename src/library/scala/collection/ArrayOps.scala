@@ -104,24 +104,25 @@ object ArrayOps {
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), xs)
   }
 
-  private class ArrayIterator[A](private[this] val xs: Array[A]) extends AbstractIterator[A] {
+  private final class ArrayIterator[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) A](xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = 0
-    def hasNext: Boolean = pos < xs.length
+    private[this] val len = xs.length
+    def hasNext: Boolean = pos < len
     def next(): A = try {
       val r = xs(pos)
       pos += 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
+    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
   }
 
-  private class ReverseIterator[A](private[this] val xs: Array[A]) extends AbstractIterator[A] {
+  private final class ReverseIterator[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) A](xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
     def next(): A = try {
       val r = xs(pos)
       pos -= 1
       r
-    } catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException }
+    } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
   }
 
   private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends AbstractIterator[Array[A]] {
@@ -318,7 +319,20 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     slice(lo, xs.length)
   }
 
-  def iterator: Iterator[A] = new ArrayOps.ArrayIterator[A](xs)
+  def iterator: Iterator[A] =
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Int]     => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Double]  => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Long]    => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Float]   => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Char]    => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Byte]    => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Short]   => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Boolean] => new ArrayOps.ArrayIterator(xs)
+      case xs: Array[Unit]    => new ArrayOps.ArrayIterator(xs)
+      case null               => throw new NullPointerException
+    }).asInstanceOf[Iterator[A]]
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`
@@ -384,7 +398,20 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @return  an iterator yielding the elements of this array in reversed order
     */
-  def reverseIterator: Iterator[A] = new ArrayOps.ReverseIterator[A](xs)
+  def reverseIterator: Iterator[A] =
+    ((xs: Any) match {
+      case xs: Array[AnyRef]  => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Int]     => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Double]  => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Long]    => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Float]   => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Char]    => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Byte]    => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Short]   => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Boolean] => new ArrayOps.ReverseIterator(xs)
+      case xs: Array[Unit]    => new ArrayOps.ReverseIterator(xs)
+      case null               => throw new NullPointerException
+    }).asInstanceOf[Iterator[A]]
 
   /** Selects all elements of this array which satisfy a predicate.
     *
