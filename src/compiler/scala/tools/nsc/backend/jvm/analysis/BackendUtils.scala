@@ -296,23 +296,16 @@ abstract class BackendUtils extends PerRunInit {
 
   def runtimeRefClassBoxedType(refClass: InternalName): Type = Type.getArgumentTypes(srRefCreateMethods(refClass).methodType.descriptor)(0)
 
-  def isKnownClassTag(mi: MethodInsnNode): Boolean = {
-    mi.owner == "scala/reflect/ClassTag$" && {
-      mi.name == "Int" && mi.desc == "()Lscala/reflect/ManifestFactory$IntManifest;" ||
-        mi.name == "apply" && mi.desc == "(Ljava/lang/Class;)Lscala/reflect/ClassTag;"
-    }
-  }
-
   def isSideEffectFreeCall(mi: MethodInsnNode): Boolean = {
     isScalaBox(mi) || isScalaUnbox(mi) ||
       isJavaBox(mi) || // not java unbox, it may NPE
       isSideEffectFreeConstructorCall(mi) ||
-      isKnownClassTag(mi)
+      isClassTagApply(mi)
   }
 
   // methods that are known to return a non-null result
   def isNonNullMethodInvocation(mi: MethodInsnNode): Boolean = {
-    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi) || isKnownClassTag(mi)
+    isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi) || isClassTagApply(mi)
   }
 
   def isModuleLoad(insn: AbstractInsnNode): Boolean = insn match {
@@ -1072,5 +1065,27 @@ object BackendUtils {
       }
     }
     null
+  }
+
+  val primitiveTypes: Map[String, Type] = Map(
+    ("Unit", Type.VOID_TYPE),
+    ("Boolean", Type.BOOLEAN_TYPE),
+    ("Char", Type.CHAR_TYPE),
+    ("Byte", Type.BYTE_TYPE),
+    ("Short", Type.SHORT_TYPE),
+    ("Int", Type.INT_TYPE),
+    ("Float", Type.FLOAT_TYPE),
+    ("Long", Type.LONG_TYPE),
+    ("Double", Type.DOUBLE_TYPE))
+
+  private val primitiveManifestApplies: Map[String, String] = primitiveTypes map {
+    case (k, _) => (k, s"()Lscala/reflect/ManifestFactory$$${k}Manifest;")
+  }
+
+  def isClassTagApply(mi: MethodInsnNode): Boolean = {
+    mi.owner == "scala/reflect/ClassTag$" && {
+      mi.name == "apply" && mi.desc == "(Ljava/lang/Class;)Lscala/reflect/ClassTag;" ||
+        primitiveManifestApplies.get(mi.name).contains(mi.desc)
+    }
   }
 }
