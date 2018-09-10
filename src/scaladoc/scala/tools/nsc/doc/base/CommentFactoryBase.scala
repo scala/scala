@@ -217,7 +217,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         SafeTags.replaceAllIn(javadoclessComment, { mtch =>
           java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
         })
-      markedTagComment.lines.toList map (cleanLine(_))
+      markedTagComment.linesIterator.toList map (cleanLine(_))
     }
 
     /** Parses a comment (in the form of a list of lines) to a `Comment`

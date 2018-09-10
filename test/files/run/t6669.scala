@@ -14,7 +14,7 @@ object Test extends App {
   //val currentLocationCpFragment = File.pathSeparator + "."
 
   // let's assume dirs don't normally have dots
-  def hasCurrentDir(s: String): Boolean = s.lines.next.split("[ ,:;]").exists(_.endsWith("."))
+  def hasCurrentDir(s: String): Boolean = s.linesIterator.next.split("[ ,:;]").exists(_.endsWith("."))
 
   // now make sure we saw the '.' in the classpath
   val msg1 = baos.toString()

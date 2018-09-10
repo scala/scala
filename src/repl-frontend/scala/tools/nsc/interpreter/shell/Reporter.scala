@@ -32,7 +32,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   def colorOk: Boolean = config.colorOk
-  def indentDepth: Int = config.promptText.lines.toList.last.length
+  def indentDepth: Int = config.promptText.linesIterator.toList.last.length
   def isDebug: Boolean = config.isReplDebug
   def isTrace: Boolean = config.isReplTrace
 
@@ -51,7 +51,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
         if (!success.isEmpty && printResults)
           printMessage(success stripSuffix "\n") // TODO: can we avoid having to strip the trailing "\n"?
         else if (isDebug) // show quiet-mode activity
-          printMessage(success.trim.lines map ("[quiet] " + _) mkString "\n")
+          printMessage(success.trim.linesIterator map ("[quiet] " + _) mkString "\n")
 
       case Left(error) =>
         // don't truncate stack traces
@@ -141,7 +141,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   private val indentation = " " * indentDepth
-  private def indented(str: String) = str.lines.mkString(indentation, "\n" + indentation, "")
+  private def indented(str: String) = str.linesIterator.mkString(indentation, "\n" + indentation, "")
 
   // indent errors, error message uses the caret to point at the line already on the screen instead of repeating it
   // TODO: can we splice the error into the code the user typed when multiple lines were entered?

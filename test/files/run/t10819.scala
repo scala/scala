@@ -16,7 +16,7 @@ object Test extends StoreReporterDirectTest {
     Console.withOut(baos)(Console.withErr(baos)(compile()))
     val out = baos.toString("UTF-8")
 
-    val inferredType = out.lines.filter(_.contains("C.this.id[")).map(_.trim).toList
+    val inferredType = out.linesIterator.filter(_.contains("C.this.id[")).map(_.trim).toList
     assert(inferredType.length == 1)
     assert(inferredType.forall(_.startsWith("C.this.id[Int]")), inferredType)
   }

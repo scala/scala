@@ -73,11 +73,11 @@ object RichStringTest1 extends RichTest {
 object RichStringTest2 extends RichTest {
   def run: Unit = {
     println("\n" + getObjectName + ":")
-    Console.print("s1: "); s1.lines foreach println
-    Console.print("s2: "); s2.lines foreach println
-    Console.print("s3: "); s3.lines foreach println
-    Console.print("s4: "); s4.lines foreach println
-    Console.print("s5: "); s5.lines foreach println
+    Console.print("s1: "); s1.linesIterator foreach println
+    Console.print("s2: "); s2.linesIterator foreach println
+    Console.print("s3: "); s3.linesIterator foreach println
+    Console.print("s4: "); s4.linesIterator foreach println
+    Console.print("s5: "); s5.linesIterator foreach println
   }
 }
 object RichStringTest3 extends RichTest {

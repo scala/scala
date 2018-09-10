@@ -588,7 +588,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
               tmp.safeSlurp() match {
                 case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
                 case Some(edited) =>
-                  echo(edited.lines map ("+" + _) mkString "\n")
+                  echo(edited.linesIterator map ("+" + _) mkString "\n")
                   val res = intp interpret edited
                   if (res == Incomplete) diagnose(edited)
                   else {
@@ -824,7 +824,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
         val text = (
           margin filter (_.nonEmpty) map {
-            case "-" => input.lines map (_.trim) mkString "\n"
+            case "-" => input.linesIterator map (_.trim) mkString "\n"
             case m   => input stripMargin m.head   // ignore excess chars in "<<||"
           } getOrElse input
         ).trim
@@ -846,7 +846,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   private val continueText   = {
     val text   = enversion(continueString)
-    val margin = promptText.lines.toList.last.length - text.length
+    val margin = promptText.linesIterator.toList.last.length - text.length
     if (margin > 0) " " * margin + text else text
   }
 

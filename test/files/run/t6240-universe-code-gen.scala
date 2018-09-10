@@ -65,7 +65,7 @@ object Test extends App {
   val actualFile = new java.io.File(testFile.getParent + "/../../../src/reflect/scala/reflect/runtime/JavaUniverseForce.scala").getCanonicalFile
   val actual = scala.io.Source.fromFile(actualFile)
   val actualLines = actual.getLines.toList
-  val generatedLines = code.lines.toList
+  val generatedLines = code.linesIterator.toList
   if (actualLines != generatedLines) {
     val msg = s"""|${actualFile} must be updated.
                   |===========================================================
