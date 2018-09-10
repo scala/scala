@@ -143,7 +143,7 @@ object BytecodeUtils {
 
   def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STRICT) != 0
 
-  def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
+  def isReference(t: Type): Boolean = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
 
   /** Find the nearest preceding node to `insn` which is executable (i.e., not a label / line number)
     * and which is not selected by `stopBefore`. */
