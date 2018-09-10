@@ -938,7 +938,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def zipAll[A1 >: A, B](that: Iterable[B], thisElem: A1, thatElem: B): Array[(A1, B)] = {
     val b = new ArrayBuilder.ofRef[(A1, B)]()
     val k = that.knownSize
-    b.sizeHint(if(k >= 0) max(k, xs.length) else xs.length)
+    b.sizeHint(max(k, xs.length))
     var i = 0
     val it = that.iterator
     while(i < xs.length && it.hasNext) {
