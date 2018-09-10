@@ -404,8 +404,7 @@ abstract class CopyProp {
             handleInputs(prod, 1)
 
           case GETFIELD | GETSTATIC =>
-            // TODO don't eliminate all module loads (https://github.com/scala/scala-dev/issues/16)
-            if (isBoxedUnit(prod) || isModuleLoad(prod)) toRemove += prod
+            if (isBoxedUnit(prod) || isElidableModuleLoad(prod, modulesAllowSkipInitialization)) toRemove += prod
             else popAfterProd() // keep potential class initialization (static field) or NPE (instance field)
 
           case INVOKEVIRTUAL | INVOKESPECIAL | INVOKESTATIC | INVOKEINTERFACE =>
@@ -435,7 +434,8 @@ abstract class CopyProp {
 
             case _ =>
               // don't remove class literals, method types, method handles: keep a potential NoClassDefFoundError
-              // TODO: make that dependent on an optimizer flag
+              // TODO: make that dependent on an optimizer flag. Note that the optimizer already skips class loading,
+              // for example when inlining a static method. Make that depend on the flag as well.
               popAfterProd()
           }
 

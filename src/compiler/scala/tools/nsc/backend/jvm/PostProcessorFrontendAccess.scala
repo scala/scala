@@ -79,6 +79,7 @@ object PostProcessorFrontendAccess {
     def optSimplifyJumps: Boolean
     def optCompactLocals: Boolean
     def optClosureInvocations: Boolean
+    def optAllowSkipCoreModuleInit: Boolean
 
     def optInlinerEnabled: Boolean
     def optInlineFrom: List[String]
@@ -200,6 +201,7 @@ object PostProcessorFrontendAccess {
       val optSimplifyJumps: Boolean = s.optSimplifyJumps
       val optCompactLocals: Boolean = s.optCompactLocals
       val optClosureInvocations: Boolean = s.optClosureInvocations
+      val optAllowSkipCoreModuleInit: Boolean = s.optAllowSkipCoreModuleInit
 
       val optInlinerEnabled: Boolean = s.optInlinerEnabled
       val optInlineFrom: List[String] = s.optInlineFrom.value

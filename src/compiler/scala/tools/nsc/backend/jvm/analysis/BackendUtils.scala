@@ -320,17 +320,29 @@ abstract class BackendUtils extends PerRunInit {
     isJavaBox(mi) || isScalaBox(mi) || isPredefAutoBox(mi) || isRefCreate(mi) || isRefZero(mi) || isClassTagApply(mi)
   }
 
-  def isModuleLoad(insn: AbstractInsnNode): Boolean = insn match {
-    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.name == "MODULE$" && fi.desc == ("L" + fi.owner + ";")
+  lazy val modulesAllowSkipInitialization: Set[InternalName] =
+    if (!compilerSettings.optAllowSkipCoreModuleInit) Set.empty
+    else Set(
+      "scala/Predef$",
+      "scala/runtime/ScalaRunTime$",
+      "scala/reflect/ClassTag$",
+      "scala/reflect/ManifestFactory$",
+      "scala/Array$",
+      "scala/collection/ArrayOps$",
+      "scala/collection/StringOps$",
+    ) ++ primitiveTypes.keysIterator
+
+  def isElidableModuleLoad(insn: AbstractInsnNode, nameMatches: InternalName => Boolean): Boolean = insn match {
+    case fi: FieldInsnNode =>
+      fi.getOpcode == GETSTATIC &&
+        nameMatches(fi.owner) &&
+        fi.name == "MODULE$" &&
+        fi.desc.length == fi.owner.length + 2 &&
+        fi.desc.regionMatches(1, fi.owner, 0, fi.owner.length)
     case _ => false
   }
 
-  def isSpecificModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
-    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.owner == moduleName && fi.name == "MODULE$" && fi.desc == ("L" + moduleName + ";")
-    case _ => false
-  }
-
-  def isPredefLoad(insn: AbstractInsnNode) = isSpecificModuleLoad(insn, PredefRef.internalName)
+  def isPredefLoad(insn: AbstractInsnNode): Boolean = isElidableModuleLoad(insn, _ == PredefRef.internalName)
 
   def isPrimitiveBoxConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, primitiveBoxConstructors)
   def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
@@ -341,14 +353,14 @@ abstract class BackendUtils extends PerRunInit {
     insn.name == INSTANCE_CONSTRUCTOR_NAME && sideEffectFreeConstructors.get((insn.owner, insn.desc))
   }
 
-  def isNewForSideEffectFreeConstructor(insn: AbstractInsnNode) = {
+  def isNewForSideEffectFreeConstructor(insn: AbstractInsnNode): Boolean = {
     insn.getOpcode == NEW && {
       val ti = insn.asInstanceOf[TypeInsnNode]
       classesOfSideEffectFreeConstructors.get.contains(ti.desc)
     }
   }
 
-  def isBoxedUnit(insn: AbstractInsnNode) = {
+  def isBoxedUnit(insn: AbstractInsnNode): Boolean = {
     insn.getOpcode == GETSTATIC && {
       val fi = insn.asInstanceOf[FieldInsnNode]
       fi.owner == srBoxedUnitRef.internalName && fi.name == "UNIT" && fi.desc == srBoxedUnitRef.descriptor
@@ -1079,7 +1091,7 @@ object BackendUtils {
     null
   }
 
-  val primitiveTypes: Map[String, Type] = Map(
+  lazy val primitiveTypes: Map[String, Type] = Map(
     ("Unit", Type.VOID_TYPE),
     ("Boolean", Type.BOOLEAN_TYPE),
     ("Char", Type.CHAR_TYPE),
