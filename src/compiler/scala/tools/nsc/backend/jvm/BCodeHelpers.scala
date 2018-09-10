@@ -253,7 +253,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       def fail(msg: String, pos: Position = sym.pos) = {
         reporter.warning(sym.pos,
           sym.name +
-          s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
+          s" has a main method with parameter type Array, but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
           // TODO: make this next claim true, if possible
           //   by generating valid main methods as static in module classes
           //   not sure what the jvm allows here
@@ -275,7 +275,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       hasApproximate && {
         // Before erasure so we can identify generic mains.
         enteringErasure {
-          val companion     = sym.linkedClassOfClass
+          val companion = sym.linkedClassOfClass
 
           if (definitions.hasJavaMainMethod(companion))
             failNoForwarder("companion contains its own main method")
@@ -284,9 +284,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
           else if (companion.isTrait)
             failNoForwarder("companion is a trait")
-          // Now either succeed, or issue some additional warnings for things which look like
-          // attempts to be java main methods.
-        else (possibles exists definitions.isJavaMainMethod) || {
+            // Now either succeed, or issue some additional warnings for things which look like
+            // attempts to be java main methods.
+          else (possibles exists definitions.isJavaMainMethod) || {
             possibles exists { m =>
               m.info match {
                 case PolyType(_, _) =>
