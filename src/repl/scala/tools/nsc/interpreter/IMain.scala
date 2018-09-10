@@ -582,7 +582,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         if (printResults && result != "")
           printMessage(result stripSuffix "\n")
         else if (isReplDebug) // show quiet-mode activity
-          printMessage(result.trim.lines map ("[quiet] " + _) mkString "\n")
+          printMessage(result.trim.linesIterator map ("[quiet] " + _) mkString "\n")
 
         // Book-keeping.  Have to record synthetic requests too,
         // as they may have been issued for information, e.g. :type
@@ -1238,7 +1238,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
      */
-    def isShow = code.lines exists (_.trim endsWith "// show")
+    def isShow = code.linesIterator exists (_.trim endsWith "// show")
     if (isReplDebug || isShow) {
       beSilentDuring(parse(code)) match {
         case parse.Success(ts) =>

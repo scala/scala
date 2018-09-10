@@ -269,7 +269,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   //       |def hh(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
   //       |def j(x: Int): Bar
   //       |def k(): AnyRef { type Dingus <: T forSome { type T <: String } }
-  //     """.stripMargin.trim.lines map (_.trim)
+  //     """.stripMargin.trim.linesIterator map (_.trim)
   //
   //   files("RefinementAndExistentials.html") match {
   //     case node: scala.xml.Node => {

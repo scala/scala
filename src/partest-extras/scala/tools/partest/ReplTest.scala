@@ -46,7 +46,7 @@ abstract class ReplTest extends DirectTest {
     log("eval(): settings = " + s)
     val transcript = ILoop.runForTranscript(code, s, inSession = inSession)
     log(s"transcript[[$transcript]]")
-    val lines = transcript.lines
+    val lines = transcript.linesIterator
     val clean =
       if (welcoming) {
         val welcome = "(Welcome to Scala).*".r
@@ -55,7 +55,7 @@ abstract class ReplTest extends DirectTest {
           case s          => s
         }
       } else {
-        lines.drop(header.lines.size)
+        lines.drop(header.linesIterator.size)
       }
     clean.map(normalize)
   }
@@ -75,7 +75,7 @@ abstract class SessionTest extends ReplTest  {
   def session: String = testPath.changeExtension("check").toFile.slurp
 
   /** Expected output, as an iterator, optionally marginally stripped. */
-  def expected = if (stripMargins) session.stripMargin.lines else session.lines
+  def expected = if (stripMargins) session.stripMargin.linesIterator else session.linesIterator
 
   /** Override with true if session is a """string""" with margin indent. */
   def stripMargins: Boolean = false

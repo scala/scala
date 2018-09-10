@@ -581,7 +581,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
               tmp.safeSlurp() match {
                 case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
                 case Some(edited) =>
-                  echo(edited.lines map ("+" + _) mkString "\n")
+                  echo(edited.linesIterator map ("+" + _) mkString "\n")
                   val res = intp interpret edited
                   if (res == IR.Incomplete) diagnose(edited)
                   else {
@@ -812,7 +812,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
         val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
         val text = (
           margin filter (_.nonEmpty) map {
-            case "-" => input.lines map (_.trim) mkString "\n"
+            case "-" => input.linesIterator map (_.trim) mkString "\n"
             case m   => input stripMargin m.head   // ignore excess chars in "<<||"
           } getOrElse input
         ).trim
