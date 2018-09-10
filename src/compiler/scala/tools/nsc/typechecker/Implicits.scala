@@ -971,7 +971,7 @@ trait Implicits {
 
           val mark = undoLog.log
           val typedFirstPending = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
-          if (typedFirstPending.isFailure && settings.isScala213)
+          if (typedFirstPending.isFailure)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
