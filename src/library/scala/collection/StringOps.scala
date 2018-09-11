@@ -628,8 +628,11 @@ final class StringOps(private val s: String) extends AnyVal {
     *  end characters; i.e., apply `.stripLineEnd` to all lines
     *  returned by `linesWithSeparators`.
     */
-  def lines: Iterator[String] =
+  def linesIterator: Iterator[String] =
     linesWithSeparators map (_.stripLineEnd)
+
+  @deprecated("Use linesIterator. JDK 11 introduces its own lines method on String", "2.13.0-M5")
+  def lines: Iterator[String] = linesIterator
 
   /** Returns this string with first character converted to upper case.
     * If the first character of the string is capitalized, it is returned unchanged.
