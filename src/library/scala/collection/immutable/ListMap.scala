@@ -63,11 +63,21 @@ sealed class ListMap[K, +V]
   def iterator: Iterator[(K, V)] = {
     var curr: ListMap[K, V] = this
     var res: List[(K, V)] = Nil
-    while (!curr.isEmpty) {
+    while (curr.nonEmpty) {
       res = (curr.key, curr.value) :: res
       curr = curr.next
     }
     res.iterator
+  }
+
+  override def keys: Iterable[K] = {
+    var curr: ListMap[K, V] = this
+    var res: List[K] = Nil
+    while (curr.nonEmpty) {
+      res = curr.key :: res
+      curr = curr.next
+    }
+    res
   }
 
   protected def key: K = throw new NoSuchElementException("key of empty map")
