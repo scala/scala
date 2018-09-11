@@ -83,8 +83,8 @@ public class JpmsClasspathSupport {
         }
         ExportRequireAdder adder = getExportRequireAdder(this.addExports, this.addReads);
         // Resolve the module graph.
-        // `fromSourceFinder` is passed as the `before` finder to take precendence over, rather than clash with, a module-info.class in the
-        // output directory.
+        // `fromSourceFinder` is passed as the `before` finder to take precedence over, rather than clash with,
+        // a module-info.class in the output directory.
         ExportRequireAddingModuleFinder afterFinder = new ExportRequireAddingModuleFinder(this.moduleFinder, adder);
         List<String> roots = new ArrayList<>(this.addModules);
         roots.add(UNNAMED_MODULE_NAME);

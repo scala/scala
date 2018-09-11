@@ -10,7 +10,6 @@ import org.junit.Assert._
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.jpms.StoreDiagnosticListener
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
@@ -146,6 +145,21 @@ class Compiler(val global: Global) {
     m.instructions
   }
 
+  /* TODO: JDK11+
+  import javax.tools.Diagnostic
+  import javax.tools.DiagnosticListener
+  import java.util
+  import java.util.stream.Collectors
+
+  final class StoreDiagnosticListener[S] extends DiagnosticListener[S] {
+    private val diagnostics = new util.ArrayList[Diagnostic[_ <: S]]
+    override def report(diagnostic: Diagnostic[_ <: S]): Unit = {
+      diagnostics.add(diagnostic)
+    }
+    def getDiagnostics: util.List[Diagnostic[_ <: S]] = diagnostics
+    def getErrors: util.List[Diagnostic[_ <: S]] = diagnostics.stream.filter((diagnostic: Diagnostic[_ <: S]) => diagnostic.getKind == Diagnostic.Kind.ERROR).collect(Collectors.toList)
+  }
+
   def compileJava(sources: List[Path], options: List[String]): Unit = {
     import scala.collection.JavaConverters._
     val compiler = javax.tools.ToolProvider.getSystemJavaCompiler
@@ -158,7 +172,9 @@ class Compiler(val global: Global) {
       throw new CompilerErrors(errors.asScala.map(_.getMessage(Locale.US)).toList)
     }
   }
+  */
 }
+
 
 object BytecodeTesting {
   def genMethod(flags: Int = Opcodes.ACC_PUBLIC,

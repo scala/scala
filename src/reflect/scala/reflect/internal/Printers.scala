@@ -517,7 +517,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         // case SelectFromArray(qualifier, name, _) =>
         //   print(qualifier); print(".<arr>"); print(symName(tree, name))
 
-        case JpmsModuleDef(open, name, directives) =>
+        case Jpms.ModuleDef(open, name, directives) =>
           val currentOwner1 = currentOwner
           if (tree.symbol != NoSymbol) currentOwner = tree.symbol.owner
           if (open) print("open ")
@@ -528,13 +528,13 @@ trait Printers extends api.Printers { self: SymbolTable =>
             printColumn(directives, "", ";", "}")
           }
           currentOwner = currentOwner1
-        case JpmsRequiresDirective(moduleName, transitive, isStatic) =>
+        case Jpms.RequiresDirective(moduleName, transitive, isStatic) =>
           print("requires")
           if (transitive) print(" transitive")
           else if (isStatic) print(" transitive")
           else print(" ")
           print(moduleName)
-        case JpmsExportsDirective(packageName, tos) =>
+        case Jpms.ExportsDirective(packageName, tos) =>
           print("exports ")
           print(packageName)
           tos match {
@@ -542,7 +542,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case _ => print(" to ")
               printSeq(tos)(to => print(to))(print(", "))
           }
-        case JpmsOpensDirective(packageName, tos) =>
+        case Jpms.OpensDirective(packageName, tos) =>
           print("opens ")
           print(packageName)
           tos match {
@@ -550,10 +550,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case _ => print(" to ")
               printSeq(tos)(to => print(to))(print(", "))
           }
-        case JpmsUsesDirective(typeName) =>
+        case Jpms.UsesDirective(typeName) =>
           print("uses ")
           print(typeName)
-        case JpmsProvidesDirective(typeName, providers) =>
+        case Jpms.ProvidesDirective(typeName, providers) =>
           print("provides ")
           print(typeName)
           providers match {

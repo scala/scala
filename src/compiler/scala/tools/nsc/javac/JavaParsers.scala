@@ -971,7 +971,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           directives += jpmsModuleDirective()
       }
       accept(RBRACE)
-      JpmsModuleDef(open, moduleName, directives.toList)
+      Jpms.ModuleDef(open, moduleName, directives.toList)
     }
     def moduleName(): String = dottedName()
     def packageName(): String = dottedName()
@@ -987,13 +987,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                 in.nextToken()
                 // TODO JPMS `requires transitive.foo.bar` should be allowed, see the Java Language Specification
                 // description of "restricted keywords".
-                JpmsRequiresDirective(this.moduleName, transitive = true, isStatic = false)
+                Jpms.RequiresDirective(this.moduleName, transitive = true, isStatic = false)
               case _ =>
-                JpmsRequiresDirective(this.moduleName(), transitive = false, isStatic = false)
+                Jpms.RequiresDirective(this.moduleName(), transitive = false, isStatic = false)
             }
           } else if (in.token == STATIC) {
             val requirement = this.moduleName()
-            JpmsRequiresDirective(requirement, transitive = false, isStatic = true)
+            Jpms.RequiresDirective(requirement, transitive = false, isStatic = true)
           } else {
             syntaxError("expected `transitive` or module name`", skipIt = true)
             errorTypeTree
@@ -1004,13 +1004,13 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             ident() match {
               case javaKeywords.TO =>
                 val tos = repsep(() => moduleName(), COMMA)
-                JpmsExportsDirective(packageName, tos)
+                Jpms.ExportsDirective(packageName, tos)
               case _ =>
                 syntaxError("expected `to` or `;`", skipIt = true)
                 errorTypeTree
             }
           } else {
-            JpmsExportsDirective(packageName, Nil)
+            Jpms.ExportsDirective(packageName, Nil)
           }
         case javaKeywords.OPENS =>
           val packageName = this.packageName()
@@ -1018,23 +1018,23 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             ident() match {
               case javaKeywords.TO =>
                 val tos = repsep(() => moduleName(), COMMA)
-                JpmsOpensDirective(packageName, tos)
+                Jpms.OpensDirective(packageName, tos)
               case _ =>
                 syntaxError("expected `to` or `;`", skipIt = true)
                 errorTypeTree
             }
           } else {
-            JpmsOpensDirective(packageName, Nil)
+            Jpms.OpensDirective(packageName, Nil)
           }
         case javaKeywords.USES =>
           val used = typeName()
-          JpmsUsesDirective(used)
+          Jpms.UsesDirective(used)
         case javaKeywords.PROVIDES =>
           val provided = typeName()
           ident() match {
             case javaKeywords.WITH =>
               val providers = repsep(() => typeName(), COMMA)
-              JpmsProvidesDirective(provided, providers)
+              Jpms.ProvidesDirective(provided, providers)
             case _ =>
               syntaxError("expected `with`", skipIt = true)
               errorTypeTree

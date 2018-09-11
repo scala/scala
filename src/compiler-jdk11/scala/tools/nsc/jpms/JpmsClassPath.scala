@@ -1,4 +1,4 @@
-package scala.tools.nsc.util
+package scala.tools.nsc.jpms
 
 import java.net.URL
 import java.nio.file._
@@ -12,29 +12,55 @@ import scala.collection.JavaConverters.{iterableAsScalaIterableConverter, _}
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.jpms.ClassOutput.{OutputPathClassOutput, SupplierClassOutput}
 import scala.reflect.internal.jpms.FileManagerJava9Api._
+import scala.reflect.internal.jpms.JpmsModuleDescriptor
 import scala.reflect.internal.jpms.{JpmsClasspathSupport, JpmsModuleDescriptor, ResolvedModuleGraph}
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.Settings
 import scala.tools.nsc.classpath.PackageNameUtils.separatePkgAndClassNames
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.util.ClassPath
 
 final class JpmsClassPath(patches: Map[String, List[String]], private val impl: JpmsClasspathSupport) extends ClassPath {
-  private var _sourceModule: JpmsModuleDescriptor = null
-  private var _sourceModuleSeen = false // for debugging (see NOTE on moduleGraph below)
-  def sourceModule: JpmsModuleDescriptor = {
-    _sourceModuleSeen = true
-    _sourceModule
-  }
-  def sourceModule_= (moduleDef: JpmsModuleDescriptor): Unit = {
-    assert(!_sourceModuleSeen)
-    _sourceModule = moduleDef
+  private var _sourceModuleDescriptor: JpmsModuleDescriptor = null
+  private var _sourceModuleDescriptorSeen = false // for debugging (see NOTE on moduleGraph below)
+
+  // NOTE: do not touch until `jpmsRegisterModuleInfo` has been called from the parser
+  private lazy val moduleGraph: ResolvedModuleGraph = {
+    _sourceModuleDescriptorSeen = true
+    impl.resolveModuleGraph(_sourceModuleDescriptor)
   }
 
-  // NOTE: do not touch until `sourceModule` has been set from the parser
-  private lazy val _moduleGraph: ResolvedModuleGraph = impl.resolveModuleGraph(sourceModule)
+  override private[nsc] def jpmsRegisterModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {
+    assert(!_sourceModuleDescriptorSeen)
+    _sourceModuleDescriptor = moduleDescriptor
+  }
 
-  override private[nsc] def jpmsModuleGraph: Option[ResolvedModuleGraph] = Some(_moduleGraph)
+  override private[nsc] def jpmsModuleNameForSource(srcFile: AbstractFile): String = {
+    moduleGraph.moduleForSourceFile(srcFile.file.toPath)
+  }
+
+  // from a given module's perspective, cache which packages it can see in other modules
+  private[this] var accessiblePackages: mutable.Map[String, Map[String, Option[immutable.Set[String]]]] = mutable.Map.empty
+  private def computeAccessibility(fromModuleName: String): Map[String, Option[immutable.Set[String]]] = {
+    val accessible: java.util.Map[String, java.util.Set[String]] = moduleGraph.accessibleModulePackages(fromModuleName)
+    import scala.collection.JavaConverters._
+    accessible.asScala.map {
+      case (targetModule: String, targetPackages: java.util.Set[String]) =>
+        val targetPackagesOrWildcard =
+          if (targetPackages eq ResolvedModuleGraph.AUTOMATIC_MODULE_EXPORT_ALL) None // this was an automatic module
+          else Some(targetPackages.asScala.toSet)
+        (targetModule, targetPackagesOrWildcard)
+    }.toMap
+  }
+
+  override private[nsc] def jpmsIsPackageAccessibleFrom(fromModuleName: String, otherModuleName: String, otherPackageName: String): Boolean = {
+    accessiblePackages.getOrElseUpdate(fromModuleName, computeAccessibility(fromModuleName)).get(otherModuleName) match {
+      case Some(None)      => true // this was an automatic module
+      case Some(Some(set)) => set(otherPackageName)
+      case None            => false
+    }
+  }
 
   override def asURLs: Seq[URL] = Nil // TODO
   override def asClassPathStrings: Seq[String] = Nil // TODO
@@ -100,15 +126,17 @@ final class JpmsClassPath(patches: Map[String, List[String]], private val impl: 
 
   private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = {
     val result = immutable.ArraySeq.untagged.newBuilder[ClassFileEntry]
-    for {
-      (path, standardLocation, location) <- paths
-    } {
-      val moduleName = if (isModuleOrientedLocation(standardLocation))
-        inferModuleName(fileManager, location)
-      else ""
+    // TODO: simplify indexing logic, but make sure to list each class only once (paths has duplicated entries if you only consider the input to fileManager.list below)
+    for ((standardLocation, location) <- paths.map { case (p, sl, l) => (sl, l)}.distinct) {
+      val moduleName =
+        if (!isModuleOrientedLocation(location)) inferModuleName(fileManager, location)
+        else ""
+//      println(s"----  $location / $moduleName ----")
+
       for (jfo <- fileManager.list(location, inPackage, util.EnumSet.of(JavaFileObject.Kind.CLASS), false).asScala) {
         val binaryName = fileManager.inferBinaryName(location, jfo)
         val path = asPath(fileManager, jfo)
+//        println(s"$path $moduleName $location")
         result += JpmsClassFileEntryImpl(new PlainNioFile(path), moduleName, standardLocation)
       }
     }
@@ -137,7 +165,7 @@ final class JpmsClassPath(patches: Map[String, List[String]], private val impl: 
 }
 
 object JpmsClassPath {
-  def apply(s: Settings): ClassPath = {
+  def apply(s: Settings, classPath: String): ClassPath = {
     val javaOptions = new java.util.ArrayList[java.util.List[String]]()
 
     def add(optName: String, args: String*): Unit = {
@@ -159,7 +187,7 @@ object JpmsClassPath {
         add("--patch-module", s"$module=${patches.mkString(",")}")
       }
     }
-    add("--class-path", s.classpath.value)
+    add("--class-path", classPath)
     val releaseOptional = java.util.Optional.ofNullable(s.release.value).filter(!_.isEmpty)
     val singleOutput = s.outputDirs.getSingleOutput.get
     val classOutput = if (singleOutput.file != null)
@@ -174,6 +202,9 @@ object JpmsClassPath {
     }
     val impl = new JpmsClasspathSupport(releaseOptional, classOutput, javaOptions, s.addModules.value.asJava, s.addExports.value.asJava, s.addReads.value.asJava)
     // TODO JPMS refactor this classpath so that settings are re-read on subsequent runs. Maybe currentClasspath should just be recreated on each new Run?
+    if (s.Ylogcp) {
+      println(s"JPMS classpath ($releaseOptional, $classOutput, $javaOptions, ${s.addModules.value}, ${s.addExports.value}, ${s.addReads.value}) ")
+    }
     new JpmsClassPath(allPatches, impl)
   }
 

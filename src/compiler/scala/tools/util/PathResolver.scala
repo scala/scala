@@ -11,7 +11,7 @@ import java.net.URL
 
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.{ClassPath, JpmsClassPath}
+import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
 import scala.tools.nsc.classpath._
@@ -243,7 +243,7 @@ final class PathResolver(settings: Settings) {
     import classPathFactory._
 
     // Assemble the elements!
-    def classpathBasis = List[Iterable[ClassPath]](
+    def basis = List[Iterable[ClassPath]](
       JrtClassPath.apply(settings.releaseValue),    // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
@@ -254,11 +254,6 @@ final class PathResolver(settings: Settings) {
       classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
-
-    def moduleBasis = List[Iterable[ClassPath]] {
-      JpmsClassPath(settings) :: Nil
-    }
-    def basis = if (settings.modulePath.isSetByUser) moduleBasis else classpathBasis
 
     lazy val containers = basis.flatten.distinct
 
@@ -282,7 +277,7 @@ final class PathResolver(settings: Settings) {
 
   def result: ClassPath = {
     if (settings.modulePath.isSetByUser) {
-      JpmsClassPath.apply(settings)
+      scala.tools.nsc.jpms.JpmsClassPath(settings, Calculated.javaUserClassPath +":"+ Calculated.userClassPath) // TODO: integrate with AggregateClassPath?
     } else {
       val cp = computeResult()
       if (settings.Ylogcp) {

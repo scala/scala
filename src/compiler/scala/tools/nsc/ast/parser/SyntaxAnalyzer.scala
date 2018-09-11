@@ -82,12 +82,21 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
   }
 
   private def initialUnitBody(unit: CompilationUnit): Tree = {
+    // Jump out of cake.
+    def toDescriptor(md: Jpms.ModuleDef) = {
+      import scala.reflect.internal.jpms._
+      import JpmsModuleDescriptor._
+      import scala.collection.JavaConverters._
+
+      new JpmsModuleDescriptor(md.name.toString, md.directives.collect { case req: Jpms.RequiresDirective => new RequireDirective(req.moduleName, req.transitive, req.isStatic) } asJava)
+    }
+
     if (unit.isJava) {
       val body = newJavaUnitParser(unit).parse()
 
       if (unit.source.file.name.equalsIgnoreCase("module-info.java")) {
         body match {
-          case PackageDef(_, (md: JpmsModuleDef) :: Nil) => classPath.registerJpmsModuleInfo(md.toJava)
+          case PackageDef(_, (md: Jpms.ModuleDef) :: Nil) => classPath.jpmsRegisterModuleInfo(toDescriptor(md))
           case _ =>
             // TODO: support imports
             warning(body.pos, "Unsupported syntax in module-info.java; module declaration ignored.")

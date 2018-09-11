@@ -10,6 +10,7 @@ import org.junit.Test
 
 import scala.tools.nsc
 import scala.tools.testing.{AssertUtil, BytecodeTesting, ClearAfterClass, CompilerErrors}
+import scala.util.Properties
 
 class JpmsTest extends ClearAfterClass {
 
@@ -17,6 +18,8 @@ class JpmsTest extends ClearAfterClass {
 
   // TODO JPMS factor out the setup part of this test into a test fixture and split this into smaller pieces
   @Test def modulePath(): Unit = {
+    if (!Properties.isJavaAtLeast("9")) { println("skipping modulePath() on old JDK"); return }
+
     val javaClassPath = sys.props("java.class.path").split(java.io.File.pathSeparator).toList
     val library = javaClassPath.find(element => Paths.get(element).getFileName.toString == "library").get
     val outputDir = fileFactory.tempDir()
@@ -68,9 +71,10 @@ class JpmsTest extends ClearAfterClass {
     compilerDefault.compileSourceFiles(code1 :: moduleInfoP1 :: Nil)
 
     // Use javac to generate the module-info.class file.
-    compilerDefault.compileJava(moduleInfoP1.file.file.toPath :: Nil, List("-nowarn", "-d", outputDir.toString,
-      "--module-path", scalaLibraryJpmsModuleJar.toString, "--patch-module", s"scala.library=$library", "-cp", outputDir.toString))
-    assert(Files.exists(outputDir.resolve("module-info.class")))
+    // /* TODO: JDK11+
+//    compilerDefault.compileJava(moduleInfoP1.file.file.toPath :: Nil, List("-nowarn", "-d", outputDir.toString,
+//      "--module-path", scalaLibraryJpmsModuleJar.toString, "--patch-module", s"scala.library=$library", "-cp", outputDir.toString))
+//    assert(Files.exists(outputDir.resolve("module-info.class")))
 
     // Let's compile clients of this module.
     val outputDir2 = fileFactory.tempDir()

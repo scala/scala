@@ -380,14 +380,6 @@ lazy val library = configureAsSubproject(project)
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala"))))
 
-lazy val jpms = configureAsSubproject(project)
-  .settings(disableDocs)
-  .settings(disablePublishing)
-  .settings(
-    name := "scala-reflect-jpms",
-    description := "Scala JPMS foundations"
-  )
-
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
@@ -395,8 +387,6 @@ lazy val reflect = configureAsSubproject(project)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
-    products in Compile in packageBin :=
-      (products in Compile in packageBin).value ++ (products in Compile in packageBin in jpms).value,
     Osgi.bundleName := "Scala Reflect",
     scalacOptions in Compile in doc ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
@@ -410,11 +400,10 @@ lazy val reflect = configureAsSubproject(project)
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    pomDependencyExclusions ++= List((organization.value, "scala-reflect-jpms")),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both"
   )
-  .dependsOn(library, jpms)
+  .dependsOn(library)
 
 lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
   .dependsOn(compiler, reflect, library)
@@ -442,6 +431,10 @@ lazy val compiler = configureAsSubproject(project)
     name := "scala-compiler",
     description := "Scala Compiler",
     libraryDependencies += asmDep,
+    // If we're building on Java 11 or later, unlock more functionality implemented in compiler-jdk11,
+    // otherwise, pull in stubs from compiler-pre-jdk11
+    unmanagedSourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / (if (javaAtLeast11) "compiler-jdk11" else "compiler-pre-jdk11"),
+
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= Seq(jlineDep),
@@ -500,6 +493,7 @@ lazy val compiler = configureAsSubproject(project)
     pomDependencyExclusions += (("org.scala-lang.modules", "scala-asm"))
   )
   .dependsOn(library, reflect)
+
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs)

@@ -30,6 +30,10 @@ public final class FileManagerJava9Api {
     public static JavaFileManager.Location getLocationForModule(StandardJavaFileManager self, JavaFileManager.Location location, JavaFileObject fileObject) throws IOException {
         return self.getLocationForModule(location, fileObject);
     }
+    public static JavaFileManager.Location getLocationForModule(StandardJavaFileManager self, JavaFileManager.Location location, String moduleName) throws IOException {
+        return self.getLocationForModule(location, moduleName);
+    }
+
     public static Iterable<? extends JavaFileObject> getJavaFileObjects(StandardJavaFileManager self, Path... paths) throws IOException {
         return self.getJavaFileObjects(paths);
     }

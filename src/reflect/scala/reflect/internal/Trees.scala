@@ -10,7 +10,6 @@ package internal
 import Flags._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.jpms.JpmsModuleDescriptor
 import scala.reflect.macros.Attachments
 import util.{Statistics, StatisticsStatics}
 
@@ -374,26 +373,24 @@ trait Trees extends api.Trees {
       }
   }
 
-  case class JpmsModuleDef(open: Boolean, name: TermName, directives: List[Tree]) extends DefTree {
-    override def transform(transformer: Transformer): Tree = this
-    override def traverse(traverser: Traverser): Unit = ()
-    def toJava: JpmsModuleDescriptor = {
-      import scala.collection.JavaConverters._
-      new JpmsModuleDescriptor(name.toString, directives.collect { case req: JpmsRequiresDirective => req.toJava }.asJava)
+  object Jpms {
+    case class ModuleDef(open: Boolean, name: TermName, directives: List[Tree]) extends DefTree {
+      override def transform(transformer: Transformer): Tree = this
+      override def traverse(traverser: Traverser): Unit = ()
     }
+
+    abstract class Directive extends Tree {
+      override def transform(transformer: Transformer): Tree = this
+      override def traverse(traverser: Traverser): Unit = ()
+    }
+    case class RequiresDirective(moduleName: String, transitive: Boolean, isStatic: Boolean) extends Directive {
+      require(!(transitive && isStatic), "A requires directive cannot be both transitive and static")
+    }
+    case class ExportsDirective(packageName: String, to: List[String]) extends Directive
+    case class OpensDirective(packageName: String, to: List[String]) extends Directive
+    case class UsesDirective(typeName: String) extends Directive
+    case class ProvidesDirective(typeName: String, providers: List[String]) extends Directive
   }
-  abstract class JpmsDirective extends Tree {
-    override def transform(transformer: Transformer): Tree = this
-    override def traverse(traverser: Traverser): Unit = ()
-  }
-  case class JpmsRequiresDirective(moduleName: String, transitive: Boolean, isStatic: Boolean) extends JpmsDirective {
-    require(!(transitive && isStatic), "A requires directive cannot be both transitive and static")
-    def toJava: JpmsModuleDescriptor.RequireDirective = new JpmsModuleDescriptor.RequireDirective(moduleName, transitive, isStatic)
-  }
-  case class JpmsExportsDirective(packageName: String, to: List[String]) extends JpmsDirective
-  case class JpmsOpensDirective(packageName: String, to: List[String]) extends JpmsDirective
-  case class JpmsUsesDirective(typeName: String) extends JpmsDirective
-  case class JpmsProvidesDirective(typeName: String, providers: List[String]) extends JpmsDirective
 
   abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
     def name: TermName

@@ -15,7 +15,6 @@ import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import Variance._
 import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
-import scala.reflect.internal.jpms.{JpmsClasspathSupport, ResolvedModuleGraph}
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -3267,6 +3266,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private[this] var flatname: TypeName            = _
     private[this] var _associatedFile: AbstractFile = _
+    private[this] var _associatedJpmsModuleName: String = _
     private[this] var thissym: Symbol               = this
 
     private[this] var thisTypeCache: Type      = _
@@ -3345,6 +3345,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     )
     override def associatedFile_=(f: AbstractFile): Unit = { _associatedFile = f }
+
+    def associatedJpmsModuleName: String =
+      if (!isTopLevel) enclosingTopLevelClass.asClass.associatedJpmsModuleName
+      else if (_associatedJpmsModuleName eq null) "" // guarantee not null, but save cost of initializing the var
+      else _associatedJpmsModuleName
+
+    def associatedJpmsModuleName_=(name: String): Unit = _associatedJpmsModuleName = name
 
     override def reset(completer: Type): this.type = {
       super.reset(completer)

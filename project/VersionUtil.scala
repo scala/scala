@@ -92,6 +92,8 @@ object VersionUtil {
     GitProperties(date, sha)
   }
 
+  lazy val javaAtLeast11: Boolean = sys.props.get("java.vm.specification.version").flatMap{s => util.Try{s.toInt}.toOption}.exists(_ >= 11)
+
   /** Compute the canonical, Maven and OSGi version number from `baseVersion` and `baseVersionSuffix`.
     * Examples of the generated versions:
     *
@@ -121,18 +123,18 @@ object VersionUtil {
       } else (b, s)
     }
 
-
-
     val Patch = """\d+\.\d+\.(\d+)""".r
     def cross = base match {
       case Patch(p) if p.toInt > 0 => "bin"
       case _ => "pre"
     }
 
+    val jdk = if (javaAtLeast11) "-jdk11" else ""
+
     val (canonicalV, mavenSuffix, osgiV, release) = suffix match {
-      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-$cross-SNAPSHOT",      s"$base.v$date-$sha",         false)
-      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$cross-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
-      case "SHA"          => (s"$base-$sha",         s"-$cross-$sha",          s"$base.v$date-$sha",         false)
+      case "SNAPSHOT"     => (s"$base-$date-$sha",   s"-$cross$jdk-SNAPSHOT",      s"$base.v$date-$sha",         false)
+      case "SHA-SNAPSHOT" => (s"$base-$date-$sha",   s"-$cross$jdk-$sha-SNAPSHOT", s"$base.v$date-$sha",         false)
+      case "SHA"          => (s"$base-$sha",         s"-$cross$jdk-$sha",          s"$base.v$date-$sha",         false)
       case ""             => (s"$base",              "",                       s"$base.v$date-VFINAL-$sha",  true)
       case _              => (s"$base-$suffix",      s"-$suffix",              s"$base.v$date-$suffix-$sha", true)
     }

@@ -1,0 +1,7 @@
+#partest java11+
+jpms_unsafe.scala:5: error: class Unsafe in package misc cannot be accessed in package sun.misc
+  sun.misc.Unsafe.getUnsafe
+           ^
+one error found
+#partest java8
+error: This functionality is only available in the jdk11 preview builds.

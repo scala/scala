@@ -10,9 +10,8 @@ import classfile.ClassfileParser
 import java.io.IOException
 
 import scala.reflect.internal.MissingRequirementError
-import scala.reflect.internal.jpms.ResolvedModuleGraph
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation, JpmsClassPath}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.reflect.internal.util.StatisticsStatics
 
 /** This class ...
@@ -42,7 +41,7 @@ abstract class SymbolLoaders {
   protected def compileLate(srcfile: AbstractFile): Unit
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
-    assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
+    assert(owner.info.decls.lookup(member.name) == NoSymbol, s"Found ${owner.fullName}.${member.name} as ${owner.info.decls.lookup(member.name)}")
     owner.info.decls enter member
     member
   }
@@ -155,7 +154,7 @@ abstract class SymbolLoaders {
    *  (overridden in interactive.Global).
    */
   def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile): Unit = {
-    enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src)) // graph.moduleForSourceFile(src.file.toPath)
+    enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src))
   }
 
   /** The package objects of scala and scala.reflect should always
@@ -171,19 +170,23 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit = {
-    ((classRep.binary, classRep.source) : @unchecked) match {
-      case (Some(bin), Some(src))
-      if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
-        if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
-        enterToplevelsFromSource(owner, classRep.name, src)
-      case (None, Some(src)) =>
-        if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
-        enterToplevelsFromSource(owner, classRep.name, src)
-      case (Some(bin), _) =>
-        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _)) // classRep.jpmsModuleName,
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation): Unit =
+    if (classRep.name != "module-info") {
+//      println(s"initializeFromClassPath($owner, $classRep)")
+
+      ((classRep.binary, classRep.source): @unchecked) match {
+        case (Some(bin), None)   =>
+          enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, classRep.jpmsModuleName, _, _))
+        case (binOpt, Some(src)) =>
+          if (settings.verbose)
+            if (binOpt.isEmpty)
+              inform("[symloader] no class, picked up source file for " + src.path)
+            else if (platform.needCompile(binOpt.get, src) && !binaryOnly(owner, classRep.name))
+                   inform("[symloader] picked up newer source file for " + src.path)
+
+          enterToplevelsFromSource(owner, classRep.name, src)
+      }
     }
-  }
 
   /**
    * A lazy type that completes itself by calling parameter doComplete.
@@ -267,8 +270,7 @@ abstract class SymbolLoaders {
       val classPathEntries = classPath.list(packageName)
 
       if (!root.isRoot)
-        for (entry <- classPathEntries.classesAndSources if entry.name != "module-info")
-          initializeFromClassPath(root, entry)
+        for (entry <- classPathEntries.classesAndSources) initializeFromClassPath(root, entry)
 
       if (!root.isEmptyPackageClass) {
         for (pkg <- classPathEntries.packages) {
@@ -286,7 +288,17 @@ abstract class SymbolLoaders {
     }
   }
 
-  class ClassfileLoader(val classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
+  private def setAssociatedModuleName(sym: Symbol, name: => String): Unit =
+    if (settings.Yjpms && sym.isClass) { // make sure to call with the class and not the module symbol (a term)
+      sym.asClass.associatedJpmsModuleName = name
+      sym.linkedClassOfClass.andAlso(_.asClass.associatedJpmsModuleName = name)
+    }
+
+  class ClassfileLoader(val classfile: AbstractFile, jpmsModuleName: String, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
+    def this(classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) {
+      this(classfile, "", clazz, module)
+    }
+
     private object classfileParser extends {
       val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable
     } with ClassfileParser {
@@ -309,9 +321,13 @@ abstract class SymbolLoaders {
 
     protected def description = "class file "+ classfile.toString
 
+    // `root` is either `clazz` or `module`
     protected def doComplete(root: Symbol): Unit = {
+//      assert((root eq clazz) || (root eq module), s"$root / $clazz / $module")
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.classReadNanos) else null
       classfileParser.parse(classfile, clazz, module)
+      setAssociatedModuleName(clazz, jpmsModuleName) // use `clazz` instead of `root` to simplify logic
+
       if (clazz.associatedFile eq NoAbstractFile) clazz.associatedFile = classfile
       if (module.associatedFile eq NoAbstractFile) module.associatedFile = classfile
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
@@ -323,7 +339,10 @@ abstract class SymbolLoaders {
     protected def description = "source file "+ srcfile.toString
     override def fromSource = true
     override def sourcefile = Some(srcfile)
-    protected def doComplete(root: Symbol): Unit = compileLate(srcfile)
+    protected def doComplete(root: Symbol): Unit = {
+      setAssociatedModuleName(root, platform.classPath.jpmsModuleNameForSource(srcfile))
+      compileLate(srcfile)
+    }
   }
 
   object moduleClassLoader extends SymbolLoader with FlagAssigningCompleter {

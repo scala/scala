@@ -899,27 +899,18 @@ trait Contexts { self: Analyzer =>
         // TODO JPMS when should we restrict access to a type alias with an underlying symbol that is inaccessible?
         // TODO JPMS restrict access to `package p1.p2` unless we can access it _or_ one of its subpackages.
         // TODO JPMS better error reporting for accessibility errors due to JPMS
-        /*val jpmsCanAccess =
-          sym.hasPackageFlag || !(sym.isClass || sym.isModule || sym.isMethod) || {
-            classPath.jpmsModuleGraph() match {
-              case None => true
-              case Some(graph) =>
-                val symJpmsModule = sym.enclosingTopLevelClass match {
-                  case cls: ClassSymbol => cls.jpmsModule
-                  case _ => NoJpmsModuleSymbol
-                }
-                // TODO JPMS: cache this keyed by the compilation unit (or its file?)
-                val jpmsModule = {
-                  val file = unit.source.file.file
-                  if (file == null) NoJpmsModuleSymbol
-                  else lookupJpmsModule(graph.moduleForSourceFile(file.toPath))
-                }
+        val jpmsCanAccess =
+          !settings.Yjpms || (sym.hasPackageFlag || !(sym.isClass || sym.isModule || sym.isMethod) || {
+            val accessedTop = sym.enclosingTopLevelClass.asClass
+            val accessedModule = accessedTop.associatedJpmsModuleName
+            val fromModule = enclClass.owner.asClass.associatedJpmsModuleName
+//            println(s"jpmsCanAccess from=${enclClass.owner.asClass} (in '$fromModule') --> $accessedTop (in '$accessedModule', pkg ${accessedTop.enclosingPackageClass.fullNameString})")
+            accessedModule == fromModule ||
+            classPath.jpmsIsPackageAccessibleFrom(fromModule, accessedModule, accessedTop.enclosingPackageClass.fullNameString)
+          })
 
-                jpmsModule.isAccessible(graph)(symJpmsModule, sym.enclosingPackage)
-            }
-          }
-
-        jpmsCanAccess &&*/ (  (ab.isTerm || ab == rootMirror.RootClass)
+        jpmsCanAccess && (
+           (ab.isTerm || ab == rootMirror.RootClass)
         || (accessWithin(ab) || accessWithinLinked(ab)) &&
              (  !sym.isLocalToThis
              || sym.isProtected && isSubThisType(pre, sym.owner)

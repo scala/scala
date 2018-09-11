@@ -14,7 +14,8 @@ import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
 import Jar.isJarOrZip
-import scala.reflect.internal.jpms.{JpmsModuleDescriptor, ResolvedModuleGraph}
+
+import scala.reflect.internal.jpms.JpmsModuleDescriptor
 
 /**
   * A representation of the compiler's class- or sourcepath.
@@ -26,9 +27,11 @@ trait ClassPath {
   /**
     * Called by the parser on encountering a module-info.java file with a module declaration.
     */
-  private[nsc] def registerJpmsModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {}
+  private[nsc] def jpmsRegisterModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {}
 
-  private[nsc] def jpmsModuleGraph(): Option[ResolvedModuleGraph] = None
+  private[nsc] def jpmsModuleNameForSource(srcFile: AbstractFile): String = ""
+
+  private[nsc] def jpmsIsPackageAccessibleFrom(fromModuleName: String, otherModuleName: String, otherPackageName: String): Boolean = true
 
   /*
    * These methods are mostly used in the ClassPath implementation to implement the `list` and
