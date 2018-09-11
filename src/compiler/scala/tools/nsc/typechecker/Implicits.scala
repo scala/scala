@@ -802,7 +802,7 @@ trait Implicits {
           Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
         }
       }
-      val itree1 = if (isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
+      val itree1 = if (info.sym.isMacro && isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
       typingLog("considering", typeDebug.ptTree(itree1))
 
       @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
