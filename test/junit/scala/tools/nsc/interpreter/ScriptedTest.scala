@@ -90,7 +90,7 @@ class ScriptedTest {
     ctx.setErrorWriter(err)
     ctx.setReader(in)
     engine.eval(code, ctx)
-    val lines = text.lines.toList
+    val lines = text.linesIterator.toList
     assertEquals(lines.head + EOL + lines.last + EOL, out.toString)
     assertEquals(lines(1) + EOL, err.toString)
   }

@@ -35,7 +35,7 @@ object SerializationStability {
   def patch(file: File, line: Int, prevResult: String, result: String): Unit = {
     amend(file) {
       content =>
-        content.lines.toList.zipWithIndex.map {
+        content.linesIterator.toList.zipWithIndex.map {
           case (content, i) if i == line - 1 =>
             val newContent = content.replaceAllLiterally(quote(prevResult), quote(result))
             if (newContent != content)
@@ -55,7 +55,7 @@ object SerializationStability {
     val newComment = s"  // Generated on $timestamp with Scala ${scala.util.Properties.versionString})"
     amend(file) {
       content =>
-        content.lines.toList.map {
+        content.linesIterator.toList.map {
           f => f.replaceAll("""^ +// Generated on.*""", newComment)
         }.mkString("\n")
     }

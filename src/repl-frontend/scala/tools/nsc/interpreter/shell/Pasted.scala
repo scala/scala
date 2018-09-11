@@ -21,7 +21,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   def interpret(line: String): Result
   def echo(message: String): Unit
 
-  val PromptString    = prompt.lines.toList.last
+  val PromptString    = prompt.linesIterator.toList.last
   val AltPromptString = "scala> "
   val ContinuePrompt  = continuePrompt
   val ContinueString  = continueText     // "     | "
