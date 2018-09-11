@@ -101,9 +101,15 @@ final class HashMap[K, +V] private[immutable] (private val rootNode: MapNode[K, 
     else this
   }
 
-  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = {
-    // TODO PERF We could avoid recomputing entry hash's when `that` is another `HashMap`
-    super.concat(that)
+  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = that match {
+    case hm: HashMap[K, V1] =>
+      if (isEmpty) hm
+      else
+      // TODO use hm.merged(this)(null) when optimised
+      // TODO PERF We could avoid recomputing entry hash's when `that` is another `HashMap`
+        super.concat(that)
+    case _ =>
+      super.concat(that)
   }
 
   override def tail: HashMap[K, V] = this - head._1
@@ -762,11 +768,23 @@ object HashMap extends MapFactory[HashMap] {
       case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] =
-    new ImmutableBuilder[(K, V), HashMap[K, V]](empty) {
-      def addOne(element: (K, V)): this.type = {
-        elems = elems + element
-        this
+  def newBuilder[K, V]: MapBuilder[K, V, HashMap] =
+    new MapBuilder[K, V, HashMap](empty) {
+      override def addAll(xs: IterableOnce[(K, V)]): this.type = {
+        xs match {
+          case hm: HashMap[K, V] =>
+            if (!hm.isEmpty) {
+              if (elems.isEmpty) {
+                elems = hm
+              } else {
+                //TODO use mere when optimised (https://github.com/scala/bug/issues/11077)
+                // elems = elems concat hm
+                super.addAll(xs)
+              }
+            }
+            this
+          case _ => super.addAll(xs)
+        }
       }
     }
 

@@ -93,6 +93,15 @@ sealed abstract class OldHashMap[K, +V]
 
   override protected[this] def className: String = "OldHashMap"
 
+  override def concat[V1 >: V](that: IterableOnce[(K, V1)]): OldHashMap[K, V1] = {
+    that match {
+      case hm: OldHashMap[K, V1] =>
+        if (isEmpty) hm
+        else hm.merged(this)(null)
+      case _ =>
+        super.concat(that)
+    }
+  }
 }
 
 /**
@@ -111,9 +120,23 @@ object OldHashMap extends MapFactory[OldHashMap] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), OldHashMap[K, V]] =
-    new ImmutableBuilder[(K, V), OldHashMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+  def newBuilder[K, V]: MapBuilder[K, V, OldHashMap] =
+    new MapBuilder[K, V, OldHashMap](empty){
+      override def addAll(xs: IterableOnce[(K, V)]): this.type = {
+        xs match {
+          case hm: OldHashMap[K, V] =>
+            if (!hm.isEmpty) {
+              if (elems.isEmpty) {
+                elems = hm
+              } else {
+                elems = elems concat hm
+                super.addAll(xs)
+              }
+            }
+            this
+          case _ => super.addAll(xs)
+        }
+      }
     }
 
   private[collection] abstract class Merger[A, B] {

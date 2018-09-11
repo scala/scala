@@ -667,13 +667,8 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A]: Builder[A, HashSet[A]] =
-    new ImmutableBuilder[A, HashSet[A]](empty) {
-      def addOne(element: A): this.type = {
-        elems = elems + element
-        this
-      }
-    }
+  def newBuilder[A]: SetBuilder[A, HashSet] =
+    new SetBuilder[A, HashSet](empty)
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:
