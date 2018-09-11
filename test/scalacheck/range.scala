@@ -230,6 +230,14 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     }
   }
 
+  property("tails") = forAll(myGen) { r =>
+    r.tails.toList == r.toList.tails.toList
+  }
+
+  property("inits") = forAll(myGen) { r =>
+    r.inits.toList == r.toList.inits.toList
+  }
+
   property("reverse.toSet.equal") = forAll(myGen) { r =>
 //    println("reverse.toSet.equal "+str(r))
     val reversed = r.reverse
