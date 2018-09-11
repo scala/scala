@@ -21,7 +21,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.postProcessor.backendUtils._
 
-  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new NullnessAnalyzer(methodNode, classInternalName, isNonNullMethodInvocation)
+  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new NullnessAnalyzer(methodNode, classInternalName, isNonNullMethodInvocation, true)
 
   def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
     for (i <- findInstrs(method, query)) {

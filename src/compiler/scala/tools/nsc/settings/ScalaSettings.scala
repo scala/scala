@@ -284,7 +284,9 @@ trait ScalaSettings extends AbsScalaSettings
     val boxUnbox                = Choice("box-unbox",                   "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
     val nullnessTracking        = Choice("nullness-tracking",           "Track nullness / non-nullness of local variables and apply optimizations.")
     val closureInvocations      = Choice("closure-invocations" ,        "Rewrite closure invocations to the implementation method.")
-    val allowSkipCoreModuleInit = Choice("allow-skip-core-module-init", "Allow eliminating unused module loads for core modules of the standard library (e.g., Predef).")
+    val allowSkipCoreModuleInit = Choice("allow-skip-core-module-init", "Allow eliminating unused module loads for core modules of the standard library (e.g., Predef, ClassTag).")
+    val assumeModulesNonNull    = Choice("assume-modules-non-null",     "Assume loading a module never results in null (happens if the module is accessed in its super constructor).")
+    val allowSkipClassLoading   = Choice("allow-skip-class-laoding",    "Allow optimizations that can skip or delay class loading.")
     val inline                  = Choice("inline",                      "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
 
     // note: unlike the other optimizer levels, "l:none" appears up in the `opt.value` set because it's not an expanding option (expandsTo is empty)
@@ -297,7 +299,7 @@ trait ScalaSettings extends AbsScalaSettings
       "Enable default optimizations: " + defaultChoices.mkString("", ",", "."),
       expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit)
+    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
     val lMethod = Choice(
       "l:method",
       "Enable intra-method optimizations: " + methodChoices.mkString("", ",", "."),
@@ -347,6 +349,8 @@ trait ScalaSettings extends AbsScalaSettings
   def optNullnessTracking        = optEnabled(optChoices.nullnessTracking)
   def optClosureInvocations      = optEnabled(optChoices.closureInvocations)
   def optAllowSkipCoreModuleInit = optEnabled(optChoices.allowSkipCoreModuleInit)
+  def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
+  def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
   def optInlinerEnabled          = optEnabled(optChoices.inline)
 
   // deprecated inliner levels

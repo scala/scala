@@ -320,17 +320,7 @@ abstract class BackendUtils extends PerRunInit {
       "scala/collection/StringOps$",
     ) ++ primitiveTypes.keysIterator
 
-  def isElidableModuleLoad(insn: AbstractInsnNode, nameMatches: InternalName => Boolean): Boolean = insn match {
-    case fi: FieldInsnNode =>
-      fi.getOpcode == GETSTATIC &&
-        nameMatches(fi.owner) &&
-        fi.name == "MODULE$" &&
-        fi.desc.length == fi.owner.length + 2 &&
-        fi.desc.regionMatches(1, fi.owner, 0, fi.owner.length)
-    case _ => false
-  }
-
-  def isPredefLoad(insn: AbstractInsnNode): Boolean = isElidableModuleLoad(insn, _ == PredefRef.internalName)
+  def isPredefLoad(insn: AbstractInsnNode): Boolean = isModuleLoad(insn, _ == PredefRef.internalName)
 
   def isPrimitiveBoxConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, primitiveBoxConstructors)
   def isRuntimeRefConstructor(insn: MethodInsnNode): Boolean = calleeInMap(insn, srRefConstructors)
@@ -1032,7 +1022,7 @@ object BackendUtils {
   def isArrayGetLength(mi: MethodInsnNode): Boolean = mi.owner == "java/lang/reflect/Array" && mi.name == "getLength" && mi.desc == "(Ljava/lang/Object;)I"
 
   // If argument i of the method is null-checked, the bit `i+1` of the result is 1
-  def nullCheckedArguments(mi: MethodInsnNode): Long = {
+  def argumentsNullCheckedByCallee(mi: MethodInsnNode): Long = {
     if (isArrayGetLength(mi)) 1
     else 0
   }
@@ -1047,7 +1037,7 @@ object BackendUtils {
             if (clsProd.size == 1) clsProd.head match {
               case ldc: LdcInsnNode =>
                 ldc.cst match {
-                  case tp: Type if tp.getSort == Type.OBJECT => // TODO: support nested arrays?
+                  case tp: Type if tp.getSort == Type.OBJECT || tp.getSort == Type.ARRAY =>
                     return tp.getInternalName
                   case _ =>
                 }
@@ -1060,14 +1050,15 @@ object BackendUtils {
     null
   }
 
-  def isArrayGetLength(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Boolean = {
-    mi.name == "getLength" && mi.owner == "java/lang/reflect/Array" && mi.desc == "(Ljava/lang/Object;)I" && {
+  // Check for an Array.getLength(x) call where x is statically known to be of array type
+  def isArrayGetLengthOnStaticallyKnownArray(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Boolean = {
+    isArrayGetLength(mi) && {
       val f = typeAnalyzer.frameAt(mi)
       f.getValue(f.stackTop).getType.getSort == Type.ARRAY
     }
   }
 
-  def getClassKnownType(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Type = {
+  def getClassOnStaticallyKnownPrimitiveArray(mi: MethodInsnNode, typeAnalyzer: NonLubbingTypeFlowAnalyzer): Type = {
     if (mi.name == "getClass" && mi.owner == "java/lang/Object" && mi.desc == "()Ljava/lang/Class;") {
       val f = typeAnalyzer.frameAt(mi)
       val tp = f.getValue(f.stackTop).getType
@@ -1099,5 +1090,15 @@ object BackendUtils {
       mi.name == "apply" && mi.desc == "(Ljava/lang/Class;)Lscala/reflect/ClassTag;" ||
         primitiveManifestApplies.get(mi.name).contains(mi.desc)
     }
+  }
+
+  def isModuleLoad(insn: AbstractInsnNode, nameMatches: InternalName => Boolean): Boolean = insn match {
+    case fi: FieldInsnNode =>
+      fi.getOpcode == GETSTATIC &&
+        nameMatches(fi.owner) &&
+        fi.name == "MODULE$" &&
+        fi.desc.length == fi.owner.length + 2 &&
+        fi.desc.regionMatches(1, fi.owner, 0, fi.owner.length)
+    case _ => false
   }
 }

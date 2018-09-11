@@ -1900,7 +1900,6 @@ class InlinerTest extends BytecodeTesting {
       -1 /*30*/, ALOAD, ARETURN)
     )
     assertSameSummary(getMethod(c, "t2"), List(
-      LDC, POP, // classOf[String] currently not eliminated, as it could cause an exception
       ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
       -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*37*/, // loop condition
       ALOAD, ILOAD, AALOAD, "$anonfun$t2$1", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, // compute and store element
