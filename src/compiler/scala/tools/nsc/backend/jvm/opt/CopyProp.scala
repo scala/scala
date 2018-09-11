@@ -21,7 +21,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
-import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.{LambdaMetaFactoryCall, _}
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -29,6 +29,7 @@ abstract class CopyProp {
   val postProcessor: PostProcessor
 
   import postProcessor.{backendUtils, callGraph}
+  import postProcessor.bTypes.frontendAccess.compilerSettings
   import backendUtils._
 
 
@@ -152,6 +153,7 @@ abstract class CopyProp {
             liveRefVars(vi.`var`) = true
 
         case mi: MethodInsnNode =>
+          // rewrite `ClassTag(classOf[X]).newArray` to `new Array[X]`
           val newArrayCls = BackendUtils.classTagNewArrayArg(mi, prodCons)
           if (newArrayCls != null) {
             val receiverProds = prodCons.producersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
@@ -404,7 +406,7 @@ abstract class CopyProp {
             handleInputs(prod, 1)
 
           case GETFIELD | GETSTATIC =>
-            if (isBoxedUnit(prod) || isElidableModuleLoad(prod, modulesAllowSkipInitialization)) toRemove += prod
+            if (isBoxedUnit(prod) || isModuleLoad(prod, modulesAllowSkipInitialization)) toRemove += prod
             else popAfterProd() // keep potential class initialization (static field) or NPE (instance field)
 
           case INVOKEVIRTUAL | INVOKESPECIAL | INVOKESTATIC | INVOKEINTERFACE =>
@@ -433,10 +435,8 @@ abstract class CopyProp {
               toRemove += prod
 
             case _ =>
-              // don't remove class literals, method types, method handles: keep a potential NoClassDefFoundError
-              // TODO: make that dependent on an optimizer flag. Note that the optimizer already skips class loading,
-              // for example when inlining a static method. Make that depend on the flag as well.
-              popAfterProd()
+              if (compilerSettings.optAllowSkipClassLoading) toRemove += prod
+              else popAfterProd()
           }
 
           case MULTIANEWARRAY =>

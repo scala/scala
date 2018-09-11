@@ -435,7 +435,7 @@ abstract class LocalOpt {
     AsmAnalyzer.sizeOKForNullness(method) && {
       lazy val nullnessAnalyzer =
         analyzerCache.get[NullnessAnalyzer](method)(
-          new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation))
+          new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull))
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
@@ -626,7 +626,7 @@ abstract class LocalOpt {
 
     lazy val typeAnalyzer = analyzerCache.get[NonLubbingTypeFlowAnalyzer](method)(new NonLubbingTypeFlowAnalyzer(method, owner))
     lazy val nullnessAnalyzer = analyzerCache.get[NullnessAnalyzer](method)(
-      new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation))
+      new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull))
 
 
     // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
@@ -663,10 +663,13 @@ abstract class LocalOpt {
         }
 
       case mi: MethodInsnNode =>
-        if (BackendUtils.isArrayGetLength(mi, typeAnalyzer)) {
+        // Rewrite some known method invocations
+        if (BackendUtils.isArrayGetLengthOnStaticallyKnownArray(mi, typeAnalyzer)) {
+          // Array.getLength(x) where x is known to be an array
           toReplace(mi) = List(new InsnNode(ARRAYLENGTH))
         } else {
-          val getClassTp = BackendUtils.getClassKnownType(mi, typeAnalyzer)
+          // x.getClass where x is statically known to be a primitive array
+          val getClassTp = BackendUtils.getClassOnStaticallyKnownPrimitiveArray(mi, typeAnalyzer)
           if (getClassTp != null) {
             toReplace(mi) = List(getPop(1), new LdcInsnNode(getClassTp))
           }
