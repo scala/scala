@@ -140,7 +140,7 @@ final class VectorMap[K, +V] private[immutable] (
 
   override def foreach[U](f: ((K, V)) => U): Unit = iterator.foreach(f)
 
-  override def keys: Iterable[K] = fields.toIterable
+  override def keys: Iterable[K] = fields
 
   override def values: Iterable[V] = new Iterable[V] {
     override def iterator: Iterator[V] = fields.iterator.map(underlying(_)._2)
