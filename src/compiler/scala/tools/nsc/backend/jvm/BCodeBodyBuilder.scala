@@ -949,12 +949,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
         val mbt = symInfoTK(module).asClassBType
-        mnode.visitFieldInsn(
-          asm.Opcodes.GETSTATIC,
-          mbt.internalName /* + "$" */ ,
-          strMODULE_INSTANCE_FIELD,
-          mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
-        )
+        val moduleLoadDesc = MethodBType(Nil, mbt).descriptor
+        mnode.visitInvokeDynamicInsn("MODULE$", moduleLoadDesc, moduleLoadBootstrapHandle, mbt.toASMType)
       }
     }
 

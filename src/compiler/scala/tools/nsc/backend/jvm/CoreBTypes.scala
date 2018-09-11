@@ -165,6 +165,9 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   def                     jiSerializableRef         : ClassBType = _jiSerializableRef.get
   private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaSerializableClass))     // java/io/Serializable
 
+  def                     jlClassRef                : ClassBType = _jlClassRef.get
+  private[this] lazy val _jlClassRef                : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ClassClass))                // java/lang/Class
+
   def                     jlClassCastExceptionRef   : ClassBType = _jlClassCastExceptionRef.get
   private[this] lazy val _jlClassCastExceptionRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ClassCastExceptionClass))   // java/lang/ClassCastException
 
@@ -209,6 +212,9 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   def                     srLambdaDeserialize       : ClassBType = _srLambdaDeserialize.get
   private[this] lazy val _srLambdaDeserialize       : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.LambdaDeserialize]))
+
+  def                     srModuleLoad              : ClassBType = _srModuleLoad.get
+  private[this] lazy val _srModuleLoad              : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.ModuleLoad]))
 
   def                     srBoxedUnitRef            : ClassBType = _srBoxedUnitRef.get
   private[this] lazy val _srBoxedUnitRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxedUnit]))
@@ -399,6 +405,22 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
           coreBTypes.StringRef,
           coreBTypes.jliMethodTypeRef,
           ArrayBType(jliMethodHandleRef)
+        ),
+        coreBTypes.jliCallSiteRef
+      ).descriptor,
+      /* itf = */ coreBTypes.srLambdaDeserialize.isInterface.get)
+  }
+
+  def moduleLoadBootstrapHandle: Handle = _moduleLoadBootstrapHandle.get
+  private[this] lazy val _moduleLoadBootstrapHandle: LazyVar[Handle] = runLazy {
+    new Handle(Opcodes.H_INVOKESTATIC,
+      coreBTypes.srModuleLoad.internalName, sn.Bootstrap.toString,
+      MethodBType(
+        List(
+          coreBTypes.jliMethodHandlesLookupRef,
+          coreBTypes.StringRef,
+          coreBTypes.jliMethodTypeRef,
+          coreBTypes.jlClassRef
         ),
         coreBTypes.jliCallSiteRef
       ).descriptor,
