@@ -39,12 +39,12 @@ trait LowPriorityEquiv {
   self: Equiv.type =>
 
   /**
-   * @deprecated since 2.12.7. An implicit universal Equiv instance allows code to compile when it
-   * is comparing instances of types for which equality isn't well-defined or implemented (for
-   * example, comparing two Function1 instances doesn't generally provide a meaningful result). Use
-   * Equiv.universal explicitly instead. If you really want an implicit univeral Equiv intance
-   * despite the potential problems, you can write a method such as `implicit def universalEquiv[T]:
-   * Equiv[T] = universal[T]`
+   * @deprecated since 2.12.7. This implicit universal `Equiv` instance allows accidentally
+   * comparing instances of types for which equality isn't well-defined or implemented.
+   * (For example, it does not make sense to compare two `Function1` instances.)
+   *
+   * Use `Equiv.universal` explicitly instead. If you really want an implicit univeral `Equiv` instance
+   * despite the potential problems, consider `implicit def universalEquiv[T]: Equiv[T] = universal[T]`.
    */
   @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information: " +
     "https://www.scala-lang.org/api/2.12.7/scala/math/Equiv$.html#universalEquiv[T]:scala.math.Equiv[T]",
