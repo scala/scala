@@ -19,7 +19,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /**
   * This class implements immutable maps using a list-based data structure. List map iterators and
-  * traversal methods visit key-value pairs in the order whey were first inserted.
+  * traversal methods visit key-value pairs in the order they were first inserted.
   *
   * Entries are stored internally in reversed insertion order, which means the newest key is at the
   * head of the list. As such, methods such as `head` and `tail` are O(n), while `last` and `init`
