@@ -293,7 +293,7 @@ abstract class BackendUtils extends PerRunInit {
   }
 
   def isModuleLoad(insn: AbstractInsnNode, moduleName: InternalName): Boolean = insn match {
-    case fi: FieldInsnNode => fi.getOpcode == GETSTATIC && fi.owner == moduleName && fi.name == "MODULE$" && fi.desc == ("L" + moduleName + ";")
+    case insn: InvokeDynamicInsnNode => insn.name == "MODULE$" && insn.desc == ("L" + moduleName + ";")
     case _ => false
   }
 
