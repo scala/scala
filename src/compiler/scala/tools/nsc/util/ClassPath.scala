@@ -14,7 +14,7 @@ import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
 import Jar.isJarOrZip
-import scala.reflect.internal.jpms.JpmsModuleDescriptor
+import scala.reflect.internal.jpms.{JpmsModuleDescriptor, ResolvedModuleGraph}
 
 /**
   * A representation of the compiler's class- or sourcepath.
@@ -26,7 +26,9 @@ trait ClassPath {
   /**
     * Called by the parser on encountering a module-info.java file with a module declaration.
     */
-  def registerJpmsModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {}
+  private[nsc] def registerJpmsModuleInfo(moduleDescriptor: JpmsModuleDescriptor): Unit = {}
+
+  private[nsc] def jpmsModuleGraph(): Option[ResolvedModuleGraph] = None
 
   /*
    * These methods are mostly used in the ClassPath implementation to implement the `list` and
@@ -180,6 +182,7 @@ trait ClassRepresentation {
   def name: String
   def binary: Option[AbstractFile]
   def source: Option[AbstractFile]
+  def jpmsModuleName: String = ""
 }
 
 @deprecated("shim for sbt's compiler interface", since = "2.12.0")

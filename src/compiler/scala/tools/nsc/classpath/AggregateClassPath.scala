@@ -45,7 +45,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     val sourceEntry = findEntry(isSource = true)
 
     (classEntry, sourceEntry) match {
-      case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
+      case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file, c.jpmsModuleName))
       case (c @ Some(_), _) => c
       case (_, s) => s
     }
@@ -105,9 +105,9 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
         val existing = mergedEntries(index)
 
         if (existing.binary.isEmpty && entry.binary.isDefined)
-          mergedEntries(index) = ClassAndSourceFilesEntry(entry.binary.get, existing.source.get)
+          mergedEntries(index) = ClassAndSourceFilesEntry(entry.binary.get, existing.source.get, entry.jpmsModuleName) // TODO JPMS
         if (existing.source.isEmpty && entry.source.isDefined)
-          mergedEntries(index) = ClassAndSourceFilesEntry(existing.binary.get, entry.source.get)
+          mergedEntries(index) = ClassAndSourceFilesEntry(existing.binary.get, entry.source.get, existing.jpmsModuleName) // TODO JPMS
       }
       else {
         indices(name) = count

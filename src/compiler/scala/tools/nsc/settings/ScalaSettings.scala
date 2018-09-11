@@ -54,6 +54,15 @@ trait ScalaSettings extends AbsScalaSettings
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
+
+  val modulePath = PathSetting("-modulepath", "JPMS module path", "") withAbbreviation "--module-path"
+  val patchModule = MultiStringSetting("-patchmodule", "Patches to modules", "") withAbbreviation "--patch-module"
+  val upgradeModulePath = PathSetting("-upgrademodulepath", "Overrides for upgradable modules", "") withAbbreviation "--upgrade-module-path"
+  val limitModules = MultiStringSetting("-limitmodules", "<module>(,<module>)*", "Limit observable modules") withAbbreviation "--limit-modules"
+  val addModules = MultiStringSetting("-addmodules", "<module>(,<module>)*", "Root modules to resolve in addition to the initial modules, or all modules on the module path if <module> is ALL-MODULE-PATH.") withAbbreviation "--add-modules"
+  val addExports = MultiStringSetting("-addexports", "<module>/<package>=<other-module>(,<other-module>)*", "Specify a package to be considered as exported from its defining module") withAbbreviation "--add-exports"
+  val addReads = MultiStringSetting("-addreads", "<module>=<other-module>(,<other-module>)*", "Specify additional modules to be considered as required by a given module.\n<other-module> may be ALL-UNNAMED to require the unnamed module.") withAbbreviation "--add-reads"
+
   val d             = OutputSetting     (outputDirs, ".")
   val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.") withAbbreviation "--no-specialization"
 

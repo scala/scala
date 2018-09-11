@@ -9,11 +9,13 @@ package internal
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
-import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
+import util.{Statistics, StatisticsStatics, shortClassOfInstance}
 import Flags._
 import scala.annotation.tailrec
-import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import Variance._
+import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
+import scala.reflect.internal.jpms.{JpmsClasspathSupport, ResolvedModuleGraph}
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
@@ -3490,6 +3492,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def sourceModule = companionModule
     override def enclClassChain = Nil
     override def isPackageClass = true
+
+    // Cache this because it is used in JPMS access checks.
+    private[this] var fullNameStringCache: String = null
+    override def fullNameString: String = {
+      val cached = fullNameStringCache
+      if (cached == null) {
+        val computed = super.fullNameString
+        fullNameStringCache = computed
+        computed
+      } else {
+        fullNameStringCache
+      }
+    }
   }
 
   class RefinementClassSymbol protected[Symbols] (owner0: Symbol, pos0: Position)

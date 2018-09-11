@@ -8,9 +8,11 @@ package symtab
 
 import classfile.ClassfileParser
 import java.io.IOException
+
 import scala.reflect.internal.MissingRequirementError
+import scala.reflect.internal.jpms.ResolvedModuleGraph
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
-import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation, JpmsClassPath}
 import scala.reflect.internal.util.StatisticsStatics
 
 /** This class ...
@@ -153,7 +155,7 @@ abstract class SymbolLoaders {
    *  (overridden in interactive.Global).
    */
   def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile): Unit = {
-    enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src))
+    enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src)) // graph.moduleForSourceFile(src.file.toPath)
   }
 
   /** The package objects of scala and scala.reflect should always
@@ -179,7 +181,7 @@ abstract class SymbolLoaders {
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _))
+        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _)) // classRep.jpmsModuleName,
     }
   }
 
@@ -261,10 +263,13 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
 
+      // Build up classpath on demand
       val classPathEntries = classPath.list(packageName)
 
       if (!root.isRoot)
-        for (entry <- classPathEntries.classesAndSources) initializeFromClassPath(root, entry)
+        for (entry <- classPathEntries.classesAndSources if entry.name != "module-info")
+          initializeFromClassPath(root, entry)
+
       if (!root.isEmptyPackageClass) {
         for (pkg <- classPathEntries.packages) {
           val fullName = pkg.name

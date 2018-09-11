@@ -8,9 +8,10 @@ package tools
 package util
 
 import java.net.URL
+
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.{ClassPath, JpmsClassPath}
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
 import scala.tools.nsc.classpath._
@@ -242,7 +243,7 @@ final class PathResolver(settings: Settings) {
     import classPathFactory._
 
     // Assemble the elements!
-    def basis = List[Iterable[ClassPath]](
+    def classpathBasis = List[Iterable[ClassPath]](
       JrtClassPath.apply(settings.releaseValue),    // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
@@ -253,6 +254,11 @@ final class PathResolver(settings: Settings) {
       classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
+
+    def moduleBasis = List[Iterable[ClassPath]] {
+      JpmsClassPath(settings) :: Nil
+    }
+    def basis = if (settings.modulePath.isSetByUser) moduleBasis else classpathBasis
 
     lazy val containers = basis.flatten.distinct
 
@@ -275,16 +281,20 @@ final class PathResolver(settings: Settings) {
   import PathResolver.MkLines
 
   def result: ClassPath = {
-    val cp = computeResult()
-    if (settings.Ylogcp) {
-      Console print f"Classpath built from ${settings.toConciseString} %n"
-      Console print s"Defaults: ${PathResolver.Defaults}"
-      Console print s"Calculated: $Calculated"
+    if (settings.modulePath.isSetByUser) {
+      JpmsClassPath.apply(settings)
+    } else {
+      val cp = computeResult()
+      if (settings.Ylogcp) {
+        Console print f"Classpath built from ${settings.toConciseString} %n"
+        Console print s"Defaults: ${PathResolver.Defaults}"
+        Console print s"Calculated: $Calculated"
 
-      val xs = (Calculated.basis drop 2).flatten.distinct
-      Console print (xs mkLines (s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
+        val xs = (Calculated.basis drop 2).flatten.distinct
+        Console print (xs mkLines(s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
+      }
+      cp
     }
-    cp
   }
 
   def resultAsURLs: Seq[URL] = result.asURLs
