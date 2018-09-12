@@ -155,11 +155,11 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 
   def apply(idx: Int) =
     if (idx >= 0 && idx < sz) headptr(idx)
-    else throw new IndexOutOfBoundsException(idx.toString)
+    else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
   def update(idx: Int, newelem: T) =
     if (idx >= 0 && idx < sz) headptr(idx) = newelem
-    else throw new IndexOutOfBoundsException(idx.toString)
+    else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
   def mapInPlace(f: T => T): this.type = {
     headptr.mapInPlace(f)
@@ -170,7 +170,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     if (idx >= 0 && idx < sz) {
       sz -= 1
       headptr.remove(idx, this)
-    } else throw new IndexOutOfBoundsException(idx.toString)
+    } else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
   @tailrec final def remove(idx: Int, count: Int): Unit =
     if (count > 0) {
@@ -190,7 +190,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   def insertAll(idx: Int, elems: IterableOnce[T]): Unit =
     if (idx >= 0 && idx <= sz) {
       sz += headptr.insertAll(idx, elems, this)
-    } else throw new IndexOutOfBoundsException(idx.toString)
+    } else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
   override def subtractOne(elem: T): this.type = {
     headptr.subtractOne(elem, this)

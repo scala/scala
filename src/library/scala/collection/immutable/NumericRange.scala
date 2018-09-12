@@ -87,7 +87,7 @@ sealed class NumericRange[T](
 
   @throws[IndexOutOfBoundsException]
   def apply(idx: Int): T = {
-    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
+    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${length - 1})")
     else locationAfterN(idx)
   }
 

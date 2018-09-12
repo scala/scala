@@ -117,17 +117,15 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   @throws[IndexOutOfBoundsException]
   def apply(index: Int): A = {
-    val idx = checkRangeConvert(index)
+    val idx = rangeConvert(index)
+    if (index < 0 || endIndex <= idx) {
+      throw new IndexOutOfBoundsException(s"Can't update at $index since bound is 0-${endIndex - startIndex - 1}")
+    }
     getElem(idx, idx ^ focus)
   }
 
-  @throws[IndexOutOfBoundsException]
-  private def checkRangeConvert(index: Int) = {
-    val idx = index + startIndex
-    if (index >= 0 && idx < endIndex)
-      idx
-    else
-      throw new IndexOutOfBoundsException(index.toString)
+  private def rangeConvert(index: Int) = {
+    index + startIndex
   }
   // requires structure is at pos oldIndex = xor ^ index
   private final def getElem(index: Int, xor: Int): A = {
@@ -282,7 +280,10 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   // semi-private api
 
   private[immutable] def updateAt[B >: A](index: Int, elem: B): Vector[B] = {
-    val idx = checkRangeConvert(index)
+    val idx = rangeConvert(index)
+    if (index < 0 || endIndex <= idx) {
+      throw new IndexOutOfBoundsException(s"Can't update at $index since bound is 0-${endIndex - startIndex - 1}")
+    }
     val s = new Vector[B](startIndex, endIndex, idx)
     s.initFrom(this)
     s.dirty = dirty

@@ -368,7 +368,7 @@ class Product(val i: Int) extends Group("Product") with Arity {
 
   def cases = {
     val xs = for ((x, i) <- mdefs.zipWithIndex) yield "case %d => %s".format(i, x)
-    val default = "case _ => throw new IndexOutOfBoundsException(n.toString())"
+    val default = "case _ => throw new IndexOutOfBoundsException(s\"$n is out of bounds (min 0, max " + (i-1) +")\")"
     "\n" + ((xs ::: List(default)).map("    " + _ + "\n").mkString)
   }
   def proj = {

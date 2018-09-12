@@ -79,7 +79,11 @@ object SeqView {
 
   @SerialVersionUID(3L)
   class Take[+A](underlying: SomeSeqOps[A], n: Int) extends View.Take(underlying, n) with SeqView[A] {
-    def apply(idx: Int): A = if (idx < n) underlying(idx) else throw new IndexOutOfBoundsException(idx.toString)
+    def apply(idx: Int): A = if (idx < n) {
+      underlying(idx)
+    } else {
+      throw new IndexOutOfBoundsException(if (underlying.knownSize >= 0) s"$idx is out of bounds (min 0, max ${knownSize - 1})" else idx.toString)
+    }
     def length: Int = underlying.length min normN
   }
 }

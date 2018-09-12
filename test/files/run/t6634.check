@@ -4,25 +4,25 @@ String OK.
 Length OK.
 
 Trying lb1 ...
-java.lang.IndexOutOfBoundsException: 6
+java.lang.IndexOutOfBoundsException: 6 to 12 is out of bounds (min 0, max 4)
 Checking ...
 String OK.
 Length OK.
 
 Trying lb2 ...
-java.lang.IndexOutOfBoundsException: 99
+java.lang.IndexOutOfBoundsException: 99 to 105 is out of bounds (min 0, max 4)
 Checking ...
 String OK.
 Length OK.
 
 Trying lb3 ...
-java.lang.IndexOutOfBoundsException: 1
+java.lang.IndexOutOfBoundsException: 1 to 10 is out of bounds (min 0, max 4)
 Checking ...
 String OK.
 Length OK.
 
 Trying lb4 ...
-java.lang.IndexOutOfBoundsException: -1
+java.lang.IndexOutOfBoundsException: -1 to 0 is out of bounds (min 0, max 4)
 Checking ...
 String OK.
 Length OK.

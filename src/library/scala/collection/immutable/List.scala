@@ -215,7 +215,7 @@ sealed abstract class List[+A]
     if (i == index && current.nonEmpty) {
       prefix.prependToList(elem :: current.tail)
     } else {
-      throw new IndexOutOfBoundsException(index.toString)
+      throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${length-1})")
     }
   }
 

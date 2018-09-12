@@ -57,7 +57,7 @@ trait Product18[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
     case 15 => _16
     case 16 => _17
     case 17 => _18
-    case _ => throw new IndexOutOfBoundsException(n.toString())
+    case _ => throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max 17)")
  }
 
   /** A projection of element 1 of this Product.

@@ -167,7 +167,7 @@ sealed abstract class Range(
   @throws[IndexOutOfBoundsException]
   final def apply(idx: Int): Int = {
     validateMaxLength()
-    if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
+    if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${numRangeElements-1})")
     else start + (step * idx)
   }
 
