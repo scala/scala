@@ -7,6 +7,8 @@
 
 package xsbt
 
+import java.io.File
+
 import scala.tools.nsc.Phase
 
 object Analyzer {
@@ -15,6 +17,7 @@ object Analyzer {
 
 final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
   import global._
+  private val STJ = new STJ(outputDirs)
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
   private class AnalyzerPhase(prev: Phase) extends GlobalPhase(prev) {
@@ -22,22 +25,36 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       "Finds concrete instances of provided superclasses, and application entry points."
     def name = Analyzer.name
 
+    private lazy val existingJaredClasses: Set[STJ.JaredClass] = {
+      STJ.outputJar
+        .map { jar =>
+          val classes = STJ.listFiles(jar)
+          classes.map(STJ.init(jar, _))
+        }
+        .getOrElse(Set.empty)
+    }
+
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
         val sourceFile = unit.source.file.file
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
-          val outputDir = settings.outputDirs.outputDirFor(sym.sourceFile).file
           def addGenerated(separatorRequired: Boolean): Unit = {
-            val classFile = fileForClass(outputDir, sym, separatorRequired)
-            if (classFile.exists()) {
-              assert(sym.isClass, s"${sym.fullName} is not a class")
-              // Use own map of local classes computed before lambdalift to ascertain class locality
-              if (localToNonLocalClass.isLocal(sym).getOrElse(true)) {
-                // Inform callback about local classes, non-local classes have been reported in API
-                callback.generatedLocalClass(sourceFile, classFile)
-              }
+            val locatedClass = if (STJ.enabled) {
+              locateClassInJar(sym, separatorRequired)
+            } else {
+              locatePlainClassFile(sym, separatorRequired)
             }
+
+            locatedClass
+              .foreach { classFile =>
+                assert(sym.isClass, s"${sym.fullName} is not a class")
+                // Use own map of local classes computed before lambdalift to ascertain class locality
+                if (localToNonLocalClass.isLocal(sym).getOrElse(true)) {
+                  // Inform callback about local classes, non-local classes have been reported in API
+                  callback.generatedLocalClass(sourceFile, classFile)
+                }
+              }
           }
 
           if (sym.isModuleClass && !sym.isImplClass) {
@@ -49,5 +66,24 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
         }
       }
     }
+
+    private def locatePlainClassFile(sym: Symbol, separatorRequired: Boolean): Option[File] = {
+      val outputDir = settings.outputDirs.outputDirFor(sym.sourceFile).file
+      val classFile = fileForClass(outputDir, sym, separatorRequired)
+      if (classFile.exists()) Some(classFile) else None
+    }
+
+    private def locateClassInJar(sym: Symbol, separatorRequired: Boolean): Option[File] = {
+      val classFile =
+        fileForClass(new java.io.File("."), sym, separatorRequired).toString
+          .drop(2) // stripPrefix ./ or .\
+      val jaredClass = STJ.init(classFile)
+      if (existingJaredClasses.contains(jaredClass)) {
+        Some(new File(jaredClass))
+      } else {
+        None
+      }
+    }
   }
+
 }

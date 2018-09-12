@@ -14,6 +14,8 @@ import scala.tools.nsc._
 import io.AbstractFile
 import java.io.File
 
+import scala.reflect.io.PlainFile
+
 /** Defines the interface of the incremental compiler hiding implementation details. */
 sealed abstract class CallbackGlobal(settings: Settings,
                                      reporter: reporters.Reporter,
@@ -132,21 +134,34 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     this.computePhaseDescriptors
   }
 
+  private final val STJ = new STJ(outputDirs)
+
+  private final val jaredClassesFromPrevCompilation =
+    perRunCaches.recordCache(new STJ.PrevJarCache(settings.classpath.value))
+
   private final val fqnsToAssociatedFiles = perRunCaches.newMap[String, (AbstractFile, Boolean)]()
 
   /** Returns the associated file of a fully qualified name and whether it's on the classpath. */
   def findAssociatedFile(fqn: String): Option[(AbstractFile, Boolean)] = {
     def getOutputClass(name: String): Option[AbstractFile] = {
-      // This could be improved if a hint where to look is given.
-      val className = name.replace('.', '/') + ".class"
-      outputDirs.map(new File(_, className)).find((_.exists)).map((AbstractFile.getFile(_)))
+      val relPathToClass = name.replace('.', '/') + ".class"
+      if (STJ.enabled) {
+        val jaredClass = STJ.init(relPathToClass)
+        if (jaredClassesFromPrevCompilation.contains(jaredClass)) {
+          Some(new PlainFile(jaredClass))
+        } else None
+      } else {
+        // This could be improved if a hint where to look is given.
+        outputDirs.map(new File(_, relPathToClass)).find(_.exists()).map(AbstractFile.getFile(_))
+      }
     }
 
     def findOnClassPath(name: String): Option[AbstractFile] =
       classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 
     fqnsToAssociatedFiles.get(fqn).orElse {
-      val newResult = getOutputClass(fqn).map(f => (f, true))
+      val newResult = getOutputClass(fqn)
+        .map(f => (f, true))
         .orElse(findOnClassPath(fqn).map(f => (f, false)))
       newResult.foreach(res => fqnsToAssociatedFiles.put(fqn, res))
       newResult
