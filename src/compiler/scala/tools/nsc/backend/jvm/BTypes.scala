@@ -761,6 +761,8 @@ abstract class BTypes {
             // finds the first common one.
             // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
             //  - https://github.com/scala/bug/issues/3872
+            // @jz Wouldn't it be better to walk the superclass chain of both types in reverse (starting from Object), and
+            //     finding the last common link? That would be O(N), whereas this looks O(N^2)
             firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
         }
 

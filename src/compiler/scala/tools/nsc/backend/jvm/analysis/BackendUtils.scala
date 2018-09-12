@@ -13,7 +13,7 @@ import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, Label, LabelAccess, Type}
+import scala.tools.asm.{Handle, Label, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
@@ -189,7 +189,7 @@ abstract class BackendUtils extends PerRunInit {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
-    var inlinedTargetHandles = mutable.ListBuffer[Handle]()
+    val inlinedTargetHandles = mutable.ListBuffer[Handle]()
     for (ins <- methodNode.instructions.iterator.asScala) {
       ins match {
         case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => indy.bsmArgs match {
@@ -588,9 +588,18 @@ object BackendUtils {
   def clearDceDone(method: MethodNode) = method.access &= ~ACC_DCE_DONE
 
   private val LABEL_REACHABLE_STATUS = 0x1000000
-  def isLabelReachable(label: LabelNode) = LabelAccess.isLabelFlagSet(label.getLabel, LABEL_REACHABLE_STATUS)
-  def setLabelReachable(label: LabelNode) = LabelAccess.setLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
-  def clearLabelReachable(label: LabelNode) = LabelAccess.clearLabelFlag(label.getLabel, LABEL_REACHABLE_STATUS)
+  private def isLabelFlagSet(l: LabelNode1, f: Int): Boolean = (l.flags & f) != 0
+
+  private def setLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags |= f
+  }
+
+  private def clearLabelFlag(l: LabelNode1, f: Int): Unit = {
+    l.flags &= ~f
+  }
+  def isLabelReachable(label: LabelNode) = isLabelFlagSet(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
+  def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
   abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
     val innerClasses = mutable.Set.empty[T]
