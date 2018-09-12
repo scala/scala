@@ -220,8 +220,8 @@ trait BaseTypeSeqs {
         var minTypes: List[Type] = List()
         def alreadyInMinTypes(tp: Type): Boolean = {
           @annotation.tailrec def loop(tps: List[Type]): Boolean = tps match {
-            case Nil     => false
             case x :: xs => (tp =:= x) || loop(xs)
+            case _       => false
           }
           loop(minTypes)
         }
