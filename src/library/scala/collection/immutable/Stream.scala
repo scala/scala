@@ -15,14 +15,14 @@ import scala.collection.mutable.{ArrayBuffer, StringBuilder}
 sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A, Stream, Stream[A]] {
   def tail: Stream[A]
 
-  /** Forces evaluation of the whole `LazyList` and returns it.
+  /** Forces evaluation of the whole `Stream` and returns it.
     *
-    * @note Often we use `LazyList`s to represent an infinite set or series.  If
-    * that's the case for your particular `LazyList` then this function will never
+    * @note Often we use `Stream`s to represent an infinite set or series.  If
+    * that's the case for your particular `Stream` then this function will never
     * return and will probably crash the VM with an `OutOfMemory` exception.
     * This function will not hang on a finite cycle, however.
     *
-    *  @return The fully realized `LazyList`.
+    *  @return The fully realized `Stream`.
     */
   def force: this.type
 
@@ -38,9 +38,9 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     *  @param f The treatment to apply to each element.
     *  @note  Overridden here as final to trigger tail-call optimization, which
     *  replaces 'this' with 'tail' at each iteration. This is absolutely
-    *  necessary for allowing the GC to collect the underlying LazyList as elements
+    *  necessary for allowing the GC to collect the underlying Stream as elements
     *  are consumed.
-    *  @note  This function will force the realization of the entire LazyList
+    *  @note  This function will force the realization of the entire Stream
     *  unless the `f` throws an exception.
     */
   @tailrec
@@ -57,12 +57,12 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     else new Stream.Cons(head, tail.take(n - 1))
   }
 
-  /** LazyList specialization of foldLeft which allows GC to collect along the
+  /** Stream specialization of foldLeft which allows GC to collect along the
     * way.
     *
     * @tparam B The type of value being accumulated.
     * @param z The initial value seeded into the function `op`.
-    * @param op The operation to perform on successive elements of the `LazyList`.
+    * @param op The operation to perform on successive elements of the `Stream`.
     * @return The accumulated value from successive applications of `op`.
     */
   @tailrec
@@ -89,8 +89,8 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 
   /** The stream resulting from the concatenation of this stream with the argument stream.
     *
-    * @param suffix The collection that gets appended to this lazy list
-    * @return The lazy list containing elements of this lazy list and the iterable object.
+    * @param suffix The collection that gets appended to this stream
+    * @return The stream containing elements of this stream and the iterable object.
     */
   def lazyAppendedAll[B >: A](suffix: => collection.IterableOnce[B]): Stream[B] =
     if (isEmpty) iterableFactory.from(suffix) else cons[B](head, tail.lazyAppendedAll(suffix))
@@ -102,11 +102,11 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     if (isEmpty) z +: iterableFactory.empty
     else cons(z, tail.scanLeft(op(z, head))(op))
 
-  /** LazyList specialization of reduceLeft which allows GC to collect
+  /** Stream specialization of reduceLeft which allows GC to collect
     *  along the way.
     *
     * @tparam B The type of value being accumulated.
-    * @param f The operation to perform on successive elements of the `LazyList`.
+    * @param f The operation to perform on successive elements of the `Stream`.
     * @return The accumulated value from successive applications of `f`.
     */
   override final def reduceLeft[B >: A](f: (B, A) => B): B = {
@@ -152,7 +152,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   override final def collect[B](pf: PartialFunction[A, B]): Stream[B] = {
     // this implementation avoids:
     // 1) stackoverflows (could be achieved with tailrec, too)
-    // 2) out of memory errors for big lazy lists (`this` reference can be eliminated from the stack)
+    // 2) out of memory errors for big streams (`this` reference can be eliminated from the stack)
     var rest: Stream[A] = coll
 
     // Avoids calling both `pf.isDefined` and `pf.apply`.
@@ -161,7 +161,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 
     while (rest.nonEmpty && !runWith(rest.head)) rest = rest.tail
 
-    //  without the call to the companion object, a thunk is created for the tail of the new lazy list,
+    //  without the call to the companion object, a thunk is created for the tail of the new stream,
     //  and the closure of the thunk will reference `this`
     if (rest.isEmpty) iterableFactory.empty
     else Stream.collectedTail(newHead, rest, pf)
@@ -301,11 +301,11 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     *
     *         Examples:
     *
-    *           - `"LazyList(_, ?)"`, a non-empty lazy list, whose head has not been
+    *           - `"Stream(_, ?)"`, a non-empty stream, whose head has not been
     *             evaluated ;
-    *           - `"LazyList(_, 1, _, ?)"`, a lazy list with at least three elements,
+    *           - `"Stream(_, 1, _, ?)"`, a stream with at least three elements,
     *             the second one has been evaluated ;
-    *           - `"LazyList(1, 2, 3, ...)"`, an infinite lazy list that contains
+    *           - `"Stream(1, 2, 3, ...)"`, an infinite stream that contains
     *             a cycle at the fourth element.
     */
   override def toString = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
@@ -443,11 +443,11 @@ object Stream extends SeqFactory[Stream] {
     def withFilter(q: A => Boolean): collection.WithFilter[A, Stream] = new WithFilter(filtered, q)
   }
 
-  /** An infinite LazyList that repeatedly applies a given function to a start value.
+  /** An infinite Stream that repeatedly applies a given function to a start value.
     *
-    *  @param start the start value of the LazyList
+    *  @param start the start value of the Stream
     *  @param f     the function that's repeatedly applied
-    *  @return      the LazyList returning the infinite sequence of values `start, f(start), f(f(start)), ...`
+    *  @return      the Stream returning the infinite sequence of values `start, f(start), f(f(start)), ...`
     */
   def iterate[A](start: => A)(f: A => A): Stream[A] = {
     lazy val head = start
@@ -455,30 +455,30 @@ object Stream extends SeqFactory[Stream] {
   }
 
   /**
-    * Create an infinite LazyList starting at `start` and incrementing by
+    * Create an infinite Stream starting at `start` and incrementing by
     * step `step`.
     *
-    * @param start the start value of the LazyList
-    * @param step the increment value of the LazyList
-    * @return the LazyList starting at value `start`.
+    * @param start the start value of the Stream
+    * @param step the increment value of the Stream
+    * @return the Stream starting at value `start`.
     */
   def from(start: Int, step: Int): Stream[Int] =
     newCons(start, from(start + step, step))
 
   /**
-    * Create an infinite LazyList starting at `start` and incrementing by `1`.
+    * Create an infinite Stream starting at `start` and incrementing by `1`.
     *
-    * @param start the start value of the LazyList
-    * @return the LazyList starting at value `start`.
+    * @param start the start value of the Stream
+    * @return the Stream starting at value `start`.
     */
   def from(start: Int): Stream[Int] = from(start, 1)
 
   /**
-    * Create an infinite LazyList containing the given element expression (which
+    * Create an infinite Stream containing the given element expression (which
     * is computed for each occurrence).
     *
-    * @param elem the element composing the resulting LazyList
-    * @return the LazyList containing an infinite number of elem
+    * @param elem the element composing the resulting Stream
+    * @return the Stream containing an infinite number of elem
     */
   def continually[A](elem: => A): Stream[A] = newCons(elem, continually(elem))
 
@@ -491,7 +491,7 @@ object Stream extends SeqFactory[Stream] {
     newCons(head, stream.tail.collect(pf))
   }
 
-  /** This serialization proxy is used for LazyLists and Streams which start with a sequence of evaluated cons cells.
+  /** This serialization proxy is used for Streams which start with a sequence of evaluated cons cells.
     * The forced sequence is serialized in a compact, sequential format, followed by the unevaluated tail, which uses
     * standard Java serialization to store the complete structure of unevaluated thunks. This allows the serialization
     * of long evaluated streams without exhausting the stack through recursive serialization of cons cells.
