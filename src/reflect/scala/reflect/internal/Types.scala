@@ -4407,7 +4407,19 @@ trait Types
 
 
   /** Are `tps1` and `tps2` lists of pairwise equivalent types? */
-  def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
+  def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = {
+    // OPT: hand inlined (tps1 corresponds tps2)(_ =:= _) to avoid cost of boolean unboxing (which includes
+    // a null check)
+    var i = tps1
+    var j = tps2
+    while (!(i.isEmpty || j.isEmpty)) {
+      if (!(i.head =:= j.head))
+        return false
+      i = i.tail
+      j = j.tail
+    }
+    i.isEmpty && j.isEmpty
+  }
 
   private var _basetypeRecursions: Int = 0
   def basetypeRecursions = _basetypeRecursions
