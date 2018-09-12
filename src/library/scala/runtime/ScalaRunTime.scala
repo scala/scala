@@ -83,7 +83,7 @@ object ScalaRunTime {
   }
 
   /** Get generic array length */
-  def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
+  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
 
   // TODO: bytecode Object.clone() will in fact work here and avoids
   // the type switch. See Array_clone comment in BCodeBodyBuilder.
