@@ -147,7 +147,7 @@ import scala.language.implicitConversions"""
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
     def mkUnaryOps  = unaryOps map (x => "%s\n  def unary_%s : %s".format(x.doc, x.op, this opType I))
     def mkStringOps = List(
-      """@deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"${num}{$str}\"`", "2.13.0") def +(x: String): String"""
+      """@deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0") def +(x: String): String"""
     )
     def mkShiftOps  = (
       for (op <- shiftOps ; arg <- List(I, L)) yield {
