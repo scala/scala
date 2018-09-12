@@ -14,8 +14,8 @@ trait Transforms { self: SymbolTable =>
    *  in the standard library. Or is it already?
    */
   private class Lazy[T](op: => T) {
-    private var value: T = _
-    private var _isDefined = false
+    private[this] var value: T = _
+    private[this] var _isDefined = false
     def isDefined = _isDefined
     def force: T = {
       if (!isDefined) { value = op; _isDefined = true }

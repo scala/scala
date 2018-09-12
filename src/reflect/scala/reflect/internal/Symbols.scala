@@ -31,11 +31,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
-  private var _recursionTable = immutable.Map.empty[Symbol, Int]
+  private[this] var _recursionTable = immutable.Map.empty[Symbol, Int]
   def recursionTable = _recursionTable
   def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
-  private var _lockedCount = 0
+  private[this] var _lockedCount = 0
   def lockedCount = this._lockedCount
   def lockedCount_=(i: Int) = _lockedCount = i
 

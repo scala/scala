@@ -114,7 +114,7 @@ trait Types
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
-  private var _skolemizationLevel = 0
+  private[this] var _skolemizationLevel = 0
   def skolemizationLevel = _skolemizationLevel
   def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
@@ -123,7 +123,7 @@ trait Types
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  private val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  private[this] val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
   def intersectionWitness = _intersectionWitness
 
   /** A proxy for a type (identified by field `underlying`) that forwards most
@@ -3436,7 +3436,7 @@ trait Types
 
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
-    private var _suspended: Type = ConstantFalse
+    private[this] var _suspended: Type = ConstantFalse
     private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
       case ConstantFalse => false
       case ConstantTrue  => true
@@ -4409,11 +4409,11 @@ trait Types
   /** Are `tps1` and `tps2` lists of pairwise equivalent types? */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
-  private var _basetypeRecursions: Int = 0
+  private[this] var _basetypeRecursions: Int = 0
   def basetypeRecursions = _basetypeRecursions
   def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
 
-  private val _pendingBaseTypes = new mutable.HashSet[Type]
+  private[this] val _pendingBaseTypes = new mutable.HashSet[Type]
   def pendingBaseTypes = _pendingBaseTypes
 
   /** Does this type have a prefix that begins with a type variable,
@@ -4990,7 +4990,7 @@ trait Types
   }
 
   /** The current indentation string for traces */
-  private var _indent: String = ""
+  private[this] var _indent: String = ""
   protected def indent = _indent
   protected def indent_=(value: String) = _indent = value
 
