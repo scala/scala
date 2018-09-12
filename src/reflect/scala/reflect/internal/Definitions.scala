@@ -932,6 +932,7 @@ trait Definitions extends api.StandardDefinitions {
 
     private[this] val doSam = settings.isScala212
 
+    private[this] val samCache = perRunCaches.newAnyRefMap[Symbol, Symbol]()
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
      *
      * The method must be monomorphic and have exactly one parameter list.
@@ -942,40 +943,45 @@ trait Definitions extends api.StandardDefinitions {
       // look at erased type because we (only) care about what ends up in bytecode
       // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
       val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
-
-      if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
+      val info = tp.typeSymbol.info
+      def compute: Symbol = {
+        if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
           // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
           // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
-          && { val ctor = tpSym.primaryConstructor
-            !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)}
+          && {
+          val ctor = tpSym.primaryConstructor
+          !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
+        }
           // we won't be able to create an instance of tp if it doesn't correspond to its self type
           // (checking conformance gets complicated when tp is not fully defined, so let's just rule out self types entirely)
           && !tpSym.hasSelfType
-      ) {
+        ) {
 
-        // find the single abstract member, if there is one
-        // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
-        //    scala> abstract class X { def m: Int }
-        //    scala> class Y extends X { def m: Int = 1}
-        //    scala> typeOf[Y].deferredMembers
-        //    Scopes(method m, method getClass)
-        //
-        //    scala> typeOf[Y].members.filter(_.isDeferred)
-        //    Scopes()
-        // must filter out "universal" members (getClass is deferred for some reason)
-        val deferredMembers = (
-          tp.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD).toList.filter(
-            mem => mem.isDeferred && !isUniversalMember(mem)
-          ) // TODO: test
-        )
+          // find the single abstract member, if there is one
+          // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
+          //    scala> abstract class X { def m: Int }
+          //    scala> class Y extends X { def m: Int = 1}
+          //    scala> typeOf[Y].deferredMembers
+          //    Scopes(method m, method getClass)
+          //
+          //    scala> typeOf[Y].members.filter(_.isDeferred)
+          //    Scopes()
+          // must filter out "universal" members (getClass is deferred for some reason)
+          val deferredMembers = (
+            info.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD).toList.filter(
+              mem => mem.isDeferred && !isUniversalMember(mem)
+            ) // TODO: test
+            )
 
-        // if there is only one, it's monomorphic and has a single argument list
-        if (deferredMembers.lengthCompare(1) == 0 &&
+          // if there is only one, it's monomorphic and has a single argument list
+          if (deferredMembers.lengthCompare(1) == 0 &&
             deferredMembers.head.typeParams.isEmpty &&
             deferredMembers.head.info.paramSectionCount == 1)
-          deferredMembers.head
-        else NoSymbol
-      } else NoSymbol
+            deferredMembers.head
+          else NoSymbol
+        } else NoSymbol
+      }
+      samCache.getOrElseUpdate(tpSym, compute)
     }
 
     def samOfProto(pt: Type): Symbol =
