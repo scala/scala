@@ -129,6 +129,25 @@ sealed class ListMap[K, +V]
     override def last: (K, V1) = (key, value)
     override def init: ListMap[K, V1] = next
   }
+
+  override def inits: Iterator[ListMap[K, V]] =
+    new AbstractIterator[ListMap[K, V]] {
+      private[this] var current: ListMap[K, V] = ListMap.this
+      override def hasNext = current ne null
+      override def next = {
+        if (hasNext) {
+          val res = current
+          if (current.isEmpty) {
+            current = null
+          } else {
+            current = current.next
+          }
+          res
+        } else {
+          Iterator.empty.next()
+        }
+      }
+    }
 }
 
 /**
