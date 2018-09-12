@@ -60,9 +60,6 @@ abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opco
     else if (a.isInstanceOf[SpecialValue] || b.isInstanceOf[SpecialValue]) merge(new SpecialAwareBasicValue(a.getType), new SpecialAwareBasicValue(b.getType))
     else if (isRef(a.getType) && isRef(b.getType)) refLub(a, b)
     else UninitializedValue
-//    if (a.isInstanceOf[ParamValue])
-//      println(s"merge $a $b $r -- ${a.getClass.getSimpleName} ${b.getClass.getSimpleName} ${r.getClass.getSimpleName}")
-//    r
   }
 }
 

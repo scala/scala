@@ -22,6 +22,7 @@ import scala.tools.asm.Type
 import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
 
 abstract class InlinerHeuristics extends PerRunInit {
@@ -34,7 +35,7 @@ abstract class InlinerHeuristics extends PerRunInit {
 
   lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
-  // TODO doc `reason`. where is it used??? in the inliner log?
+  // `reason` is non-null if `-Yopt-log-inline` is active, it explains why the callsite was selected for inlining.
   final case class InlineRequest(callsite: Callsite, reason: String)
 
   def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName): Boolean = {
@@ -315,19 +316,12 @@ abstract class InlinerHeuristics extends PerRunInit {
     case _ => false
   }
 
+  // TODO: array_apply / update are really large. should only inline if array has known type.
   lazy val knownMethods: Map[String, Set[String]] = Map(
-    "scala/Predef$" -> Set(
-      "intArrayOps([I)Ljava/lang/Object;",
-      "refArrayOps([Ljava/lang/Object;)Ljava/lang/Object;"
-    ),
     "scala/runtime/ScalaRunTime$" -> Set(
       "array_length(Ljava/lang/Object;)I",
       "array_apply(Ljava/lang/Object;I)Ljava/lang/Object;",
-      "array_update(Ljava/lang/Object;ILjava/lang/Object;)V"),
-    "scala/reflect/ManifestFactory$IntManifest" -> Set(
-      "newArray(I)Ljava/lang/Object;",
-      "newArray(I)[I")
-  )
+      "array_update(Ljava/lang/Object;ILjava/lang/Object;)V"))
 }
 
 object InlinerHeuristics {
