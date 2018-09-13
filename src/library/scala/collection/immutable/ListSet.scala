@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 
 /**
   * This class implements immutable sets using a list-based data structure. List set iterators and
-  * traversal methods visit elements in the order whey were first inserted.
+  * traversal methods visit elements in the order they were first inserted.
   *
   * Elements are stored internally in reversed insertion order, which means the newest element is at
   * the head of the list. As such, methods such as `head` and `tail` are O(n), while `last` and

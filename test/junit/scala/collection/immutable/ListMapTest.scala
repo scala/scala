@@ -45,4 +45,10 @@ class ListMapTest {
     val m = ListMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
     assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator.toList)
   }
+
+  @Test
+  def keysShouldPreserveOrderAsInserted: Unit = {
+    val m = ListMap("a" -> "1", "b" -> "2", "c" -> "3", "d" -> "4", "e" -> "5")
+    assertEquals(List("A", "B", "C", "D", "E"), m.keys.map(_.toUpperCase).toList)
+  }
 }
