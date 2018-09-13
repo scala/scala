@@ -354,6 +354,35 @@ sealed abstract class Range(
       else head
     } else super.max(ord)
 
+  override def tails: Iterator[Range] =
+    new AbstractIterator[Range] {
+      private[this] var i = 0
+      override def hasNext = i <= Range.this.length
+      override def next = {
+        if (hasNext) {
+          val res = Range.this.drop(i)
+          i += 1
+          res
+        } else {
+          Iterator.empty.next()
+        }
+      }
+    }
+
+  override def inits: Iterator[Range] =
+    new AbstractIterator[Range] {
+      private[this] var i = 0
+      override def hasNext = i <= Range.this.length
+      override def next = {
+        if (hasNext) {
+          val res = Range.this.dropRight(i)
+          i += 1
+          res
+        } else {
+          Iterator.empty.next()
+        }
+      }
+    }
 
   final override def equals(other: Any) = other match {
     case x: Range =>
