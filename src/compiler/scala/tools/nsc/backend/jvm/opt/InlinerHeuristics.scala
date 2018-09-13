@@ -130,7 +130,7 @@ abstract class InlinerHeuristics extends PerRunInit {
           requestIfCanInline(callsite, reason)
 
         case "at-inline-annotated" =>
-          def reason = if (!compilerSettings.optLogInline.isDefined) null else {
+          def reason = if (compilerSettings.optLogInline.isEmpty) null else {
             val what = if (callee.annotatedInline) "callee" else "callsite"
             s"the $what is annotated `@inline`"
           }
@@ -138,23 +138,28 @@ abstract class InlinerHeuristics extends PerRunInit {
           else None
 
         case "default" =>
-          def shouldInlineKnownMethod = isKnownMethod(callee)
           def shouldInlineForwarder = backendUtils.isAnonfunAdaptedMethod(callee.callee)
           def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
-            case (index, _) => callsite.argInfos.contains(index)
+            case (index, _) => callsite.argInfos.get(index) match {
+              case Some(FunctionLiteral) | Some(ForwardedParam(_)) => true
+              case _ => false
+            }
           })
           def shouldInlineRefParam = Type.getArgumentTypes(callee.callee.desc).exists(tp => coreBTypes.srRefCreateMethods.contains(tp.getInternalName))
+          def shouldInlineArrayOp =
+            BackendUtils.isRuntimeArrayLoadOrUpdate(callsite.callsiteInstruction) &&
+              callsite.argInfos.get(1).contains(StaticallyKnownArray)
 
           def reason = if (!compilerSettings.optLogInline.isDefined) null else {
             if (callsite.isInlineAnnotated) {
               val what = if (callee.annotatedInline) "callee" else "callsite"
               s"the $what is annotated `@inline`"
-            } else if (shouldInlineKnownMethod) {
-              "the callee is a known method"
             } else if (shouldInlineForwarder) {
               "the callee is a forwarder method"
             } else if (shouldInlineRefParam) {
               "the callee has a Ref type parameter"
+            } else if (shouldInlineArrayOp) {
+              "ScalaRuntime.array_apply and array_update are inlined if the array has a statically knonw type"
             } else {
               val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
               def param(i: Int) = {
@@ -166,6 +171,7 @@ abstract class InlinerHeuristics extends PerRunInit {
                 val argKind = info match {
                   case FunctionLiteral => "function literal"
                   case ForwardedParam(_) => "parameter of the callsite method"
+                  case StaticallyKnownArray => "" // should not happen, just included to avoid potential crash
                 }
                 samInfo(i, sam.internalName.split('/').last, argKind)
               }
@@ -173,7 +179,7 @@ abstract class InlinerHeuristics extends PerRunInit {
             }
           }
 
-          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineKnownMethod || shouldInlineForwarder || shouldInlineHO || shouldInlineRefParam)) requestIfCanInline(callsite, reason)
+          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineForwarder || shouldInlineHO || shouldInlineRefParam || shouldInlineArrayOp)) requestIfCanInline(callsite, reason)
           else None
       }
     }
@@ -310,18 +316,6 @@ abstract class InlinerHeuristics extends PerRunInit {
     ("javafx/util/Callback", "call(Ljava/lang/Object;)Ljava/lang/Object;")
   )
   def javaSam(internalName: InternalName): Option[String] = javaSams.get(internalName)
-
-  def isKnownMethod(callee: Callee): Boolean = knownMethods.get(callee.calleeDeclarationClass.internalName) match {
-    case Some(ms) => val c = callee.callee; ms(c.name + c.desc)
-    case _ => false
-  }
-
-  // TODO: array_apply / update are really large. should only inline if array has known type.
-  lazy val knownMethods: Map[String, Set[String]] = Map(
-    "scala/runtime/ScalaRunTime$" -> Set(
-      "array_length(Ljava/lang/Object;)I",
-      "array_apply(Ljava/lang/Object;I)Ljava/lang/Object;",
-      "array_update(Ljava/lang/Object;ILjava/lang/Object;)V"))
 }
 
 object InlinerHeuristics {

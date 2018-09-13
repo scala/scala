@@ -71,22 +71,25 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   + enables downstream:
  *     - stale stores (a stored value may not be loaded anymore)
  *     - store-load pairs (a load n may now be right after a store n)
- *     - redundant casts -- because copy prop rewrites known methods like newArray
  *   + NOTE: copy propagation is only executed once, in the first fixpoint loop iteration. none of
  *     the other optimizations enables further copy prop. we still run it as part of the loop
  *     because it requires unreachable code to be eliminated.
  *
- * stale stores (replace STORE by POP)
+ * stale stores (replace STORE by POP), rewrites `ClassTag(x).newArray`, inlines `array_apply/update`
+ *   + enables UPSTREAM:
+ *     - nullness optimizations (newArray rewrite or inlining may turn things non-null)
  *   + enables downstream:
  *     - push-pop (the new pop may be the single consumer for an instruction)
+ *     - redundant casts (because rewrites `newArray`, the array type gets more precise)
  *
- * redundant casts: eliminates casts that are statically known to succeed (uses type propagation)
+ * redundant casts and rewrite some intrinsics: eliminates casts that are statically known to
+ * succeed (uses type propagation), rewrites instanceof checks, rewrites intrinsics.
  *   + enables UPSTREAM:
  *     - box-unbox elimination (a removed checkcast may be a box consumer)
  *     - copy propagation (a removed checkcast may turn an upcasted local variable into an alias)
  *   + enables downstream:
  *     - push-pop for closure allocation elimination (every indyLambda is followed by a checkcast,
- *       see scala/bug#9540. also, Array.getLength is rewritten to ARRAYLENGTH)
+ *       see scala/bug#9540)
  *     - redundant casts (changing an instanceof to true/false removes branches and can make types
  *       of other values more precise)
  *
@@ -312,16 +315,16 @@ abstract class LocalOpt {
 
       // STALE STORES
       val runStaleStores = compilerSettings.optCopyPropagation && (requestStaleStores || nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged)
-      val storesRemoved = runStaleStores && eliminateStaleStores(method, ownerClassName)
+      val (storesRemoved, intrinsicRewrittenByStaleStores, callInlinedByStaleStores) = if (!runStaleStores) (false, false, false) else eliminateStaleStoresAndRewriteSomeIntrinsics(method, ownerClassName)
       traceIfChanged("staleStores")
 
       // REDUNDANT CASTS
-      val runRedundantCasts = compilerSettings.optRedundantCasts && (requestRedundantCasts || boxUnboxChanged || copyPropChanged)
-      val castRemoved = runRedundantCasts && eliminateRedundantCasts(method, ownerClassName)
+      val runRedundantCasts = compilerSettings.optRedundantCasts && (requestRedundantCasts || boxUnboxChanged || intrinsicRewrittenByStaleStores || callInlinedByStaleStores)
+      val (typeInsnChanged, intrinsicRewrittenByCasts) = if (!runRedundantCasts) (false, false) else eliminateRedundantCastsAndRewriteSomeIntrinsics(method, ownerClassName)
       traceIfChanged("redundantCasts")
 
       // PUSH-POP
-      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || storesRemoved || castRemoved)
+      val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || storesRemoved || typeInsnChanged)
       val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
       traceIfChanged("pushPop")
 
@@ -343,15 +346,15 @@ abstract class LocalOpt {
       traceIfChanged("simplifyJumps")
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
-      val runNullnessAgain = boxUnboxChanged
+      val runNullnessAgain = boxUnboxChanged || callInlinedByStaleStores
       val runDCEAgain = removeHandlersResult.liveHandlerRemoved || jumpsChanged
-      val runBoxUnboxAgain = boxUnboxChanged || castRemoved || pushPopRemoved || removeHandlersResult.liveHandlerRemoved
-      val runCopyPropAgain = castRemoved
+      val runBoxUnboxAgain = boxUnboxChanged || typeInsnChanged || pushPopRemoved || removeHandlersResult.liveHandlerRemoved
+      val runCopyPropAgain = typeInsnChanged
       val runStaleStoresAgain = pushPopRemoved
-      val runRedundantCastsAgain = castRemoved
+      val runRedundantCastsAgain = typeInsnChanged
       val runPushPopAgain = jumpsChanged
       val runStoreLoadAgain = jumpsChanged
-      val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || runCopyPropAgain || pushPopRemoved || runStaleStoresAgain || runRedundantCastsAgain || runPushPopAgain || runStoreLoadAgain
+      val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || runCopyPropAgain || runStaleStoresAgain || runRedundantCastsAgain || runPushPopAgain || runStoreLoadAgain
 
       val downstreamRequireEliminateUnusedLocals = runAgain && removalRound(
         requestNullness = runNullnessAgain,
@@ -372,7 +375,7 @@ abstract class LocalOpt {
         storeLoadRemoved ||
         removeHandlersResult.handlerRemoved
 
-      val codeChanged = nullnessOptChanged || codeRemoved || boxUnboxChanged || castRemoved || copyPropChanged || storesRemoved || pushPopRemoved || storeLoadRemoved || removeHandlersResult.handlerRemoved || jumpsChanged
+      val codeChanged = nullnessOptChanged || codeRemoved || boxUnboxChanged || copyPropChanged || storesRemoved || intrinsicRewrittenByStaleStores || callInlinedByStaleStores || typeInsnChanged || intrinsicRewrittenByCasts || pushPopRemoved || storeLoadRemoved || removeHandlersResult.handlerRemoved || jumpsChanged
       (codeChanged, requireEliminateUnusedLocals)
     }
 
@@ -581,15 +584,24 @@ abstract class LocalOpt {
    * Eliminate `CHECKCAST` instructions that are statically known to succeed. This is safe if the
    * tested object is null: `null.asInstanceOf` always succeeds.
    *
+   * Replace `INSTANCEOF` instructions with `ICONST_0/1` if the result is statically known.
+   *
+   * Since this optimization runs a type analysis, we use it to rewrite some intrinsic method calls
+   *   - `java.lang.reflect.Arrays.getLength(x)` when `x` is statically known to be an array:
+   *     rewrite to `ARRAYLENGTH`
+   *   - `x.getClass` when `x` is statically known to be a primitive array. Rewrite to `LDC`.
+   *
    * The type of the tested object is determined using a NonLubbingTypeFlowAnalyzer. Note that this
    * analysis collapses LUBs of non-equal references types to Object for simplicity. Example:
    * given `B <: A <: Object`, the cast in `(if (..) new B else new A).asInstanceOf[A]` would not
    * be eliminated.
    *
-   * Note: we cannot replace `INSTANCEOF` tests by only looking at the types, `null.isInstanceOf`
-   * always returns false, so we'd also need nullness information.
+   * Note: to rewrite `INSTANCEOF` tests, we also run a nullness analyzer. We need to know nullness
+   * because `null.isInstanceOf` is always `false`.
+   *
+   * Returns two booleans (typeInsnChanged, intrinsicRewritten)
    */
-  def eliminateRedundantCasts(method: MethodNode, owner: InternalName): Boolean = AsmAnalyzer.sizeOKForBasicValue(method) && {
+  def eliminateRedundantCastsAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean) = if (!AsmAnalyzer.sizeOKForNullness(method)) (false, false) else {
     def isSubType(aDescOrIntN: String, bDescOrIntN: String): Boolean = {
       // Neither a nor b may be descriptors for primitive types. INSTANCEOF and CHECKCAST require
       //   - "objectref must be of type reference" and
@@ -628,10 +640,8 @@ abstract class LocalOpt {
     lazy val nullnessAnalyzer = analyzerCache.get[NullnessAnalyzer](method)(
       new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull))
 
-
     // cannot remove instructions while iterating, it gets the analysis out of synch (indexed by instructions)
     val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
-
 
     val it = method.instructions.iterator
     while (it.hasNext) it.next() match {
@@ -678,14 +688,18 @@ abstract class LocalOpt {
       case _ =>
     }
 
+    var typeInsnChanged = false
+    var intrinsicRewritten = false
+
     for ((oldOp, newOp) <- toReplace) {
+      if (oldOp.isInstanceOf[TypeInsnNode]) typeInsnChanged = true
+      else if (oldOp.isInstanceOf[MethodInsnNode]) intrinsicRewritten = true
       for (n <- newOp) method.instructions.insertBefore(oldOp, n)
       method.instructions.remove(oldOp)
     }
 
-    val changed = toReplace.nonEmpty
-    if (changed) analyzerCache.invalidate(method)
-    changed
+    if (toReplace.nonEmpty) analyzerCache.invalidate(method)
+    (typeInsnChanged, intrinsicRewritten)
   }
 }
 

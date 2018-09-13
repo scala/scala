@@ -1113,4 +1113,12 @@ object BackendUtils {
         fi.desc.regionMatches(1, fi.owner, 0, fi.owner.length)
     case _ => false
   }
+
+  def isRuntimeArrayLoadOrUpdate(insn: AbstractInsnNode): Boolean = insn.getOpcode == Opcodes.INVOKEVIRTUAL && {
+    val mi = insn.asInstanceOf[MethodInsnNode]
+    mi.owner == "scala/runtime/ScalaRunTime$" && {
+      mi.name == "array_apply" && mi.desc == "(Ljava/lang/Object;I)Ljava/lang/Object;" ||
+        mi.name == "array_update" && mi.desc == "(Ljava/lang/Object;ILjava/lang/Object;)V"
+    }
+  }
 }

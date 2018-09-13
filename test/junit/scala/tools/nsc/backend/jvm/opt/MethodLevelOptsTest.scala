@@ -328,6 +328,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |                 // when the object has no more references. See scala/bug#5313
         |    kept1 = new Object // could eliminate this one with a more elaborate analysis (we know it contains null)
         |                       // however, such is not implemented: if a var is live, then stores are kept.
+        |    println()    // make stores non-trailing
         |    result
         |  }
         |
@@ -355,6 +356,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |    catch {
         |      case _ : Throwable => kept4 = null // have to keep, it clobbers kept4 which is used
         |    }
+        |    println() // make stores non-trailing
         |    0
         |  }
         |
@@ -364,6 +366,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |    kept5 = null // can't eliminate it's a clobber and it's used
         |    print(kept5)
         |    kept5 = null // eliminated by nullness analysis (store null to a local that is known to be null)
+        |    println()    // make stores non-trailing
         |    0
         |  }
         |

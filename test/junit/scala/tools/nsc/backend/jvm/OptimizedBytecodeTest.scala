@@ -257,10 +257,12 @@ class OptimizedBytecodeTest extends BytecodeTesting {
 
     val cls = compileClassesSeparately(List(c1, c2), extraArgs = compilerArgs)
     val c = findClass(cls, "C")
+
     assertSameSummary(getMethod(c, "t"), List(
-      GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW, // module load and null checks not yet eliminated
-      -1, ICONST_1, GETSTATIC, IFNONNULL, ACONST_NULL, ATHROW,
-      -1, ICONST_2, IADD, IRETURN))
+      GETSTATIC, POP, // null checks on module loads are eliminated by default, but module loads are not eliminated (except for Predef and a few built-in friends)
+      ICONST_1,
+      GETSTATIC, POP,
+      ICONST_2, IADD, IRETURN))
   }
 
   @Test

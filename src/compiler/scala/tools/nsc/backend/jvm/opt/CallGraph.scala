@@ -240,9 +240,9 @@ abstract class CallGraph {
   }
 
   private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: FLazy[Int], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
-    val consumerFrame = typeAnalyzer.frameAt(consumerInsn)
-    val firstConsumedSlot = consumerFrame.stackTop - numConsumed.get + 1
-    sams flatMap {
+    lazy val consumerFrame = typeAnalyzer.frameAt(consumerInsn)
+    lazy val firstConsumedSlot = consumerFrame.stackTop - numConsumed.get + 1
+    val samInfos: IntMap[ArgInfo] = sams flatMap {
       case (index, _) =>
         val argInfo = consumerFrame.getValue(firstConsumedSlot + index) match {
           case _: LMFValue => Some(FunctionLiteral)
@@ -251,6 +251,10 @@ abstract class CallGraph {
         }
         argInfo.map((index, _))
     }
+    val isArrayLoadOrUpdateOnKnonwArray = BackendUtils.isRuntimeArrayLoadOrUpdate(consumerInsn) &&
+      consumerFrame.getValue(firstConsumedSlot + 1).getType.getSort == Type.ARRAY
+    if (isArrayLoadOrUpdateOnKnonwArray) samInfos.updated(1, StaticallyKnownArray)
+    else samInfos
   }
 
   def samParamTypes(methodNode: MethodNode, paramTps: Array[Type], receiverType: ClassBType): IntMap[ClassBType] = {
@@ -397,6 +401,7 @@ abstract class CallGraph {
   sealed trait ArgInfo
   case object FunctionLiteral extends ArgInfo
   final case class ForwardedParam(index: Int) extends ArgInfo
+  case object StaticallyKnownArray extends ArgInfo
   //  final case class ArgTypeInfo(argType: BType, isPrecise: Boolean, knownNotNull: Boolean) extends ArgInfo
   // can be extended, e.g., with constant types
 
