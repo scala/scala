@@ -117,7 +117,7 @@ abstract class Reporter {
     }
 }
 
-/** A `Reporter` that forwards all methods to a delegate.
+/** A `Reporter` that forwards messages to a delegate.
  *
  *  Concrete subclasses must implement the abstract `delegate` member.
  */
@@ -143,21 +143,7 @@ trait ForwardingReporter extends Reporter {
   override def warning(pos: Position, msg: String) = delegate.warning(pos, msg)
   override def error(pos: Position, msg: String)   = delegate.error(pos, msg)
 
-  private def other(severity: Severity): delegate.Severity = severity match {
-    case ERROR   => delegate.ERROR
-    case WARNING => delegate.WARNING
-    case _       => delegate.INFO
-  }
-  override def count(severity: Severity)      = delegate.count(other(severity))
-  override def resetCount(severity: Severity) = delegate.resetCount(other(severity))
-
-  override def errorCount   = delegate.errorCount
-  override def warningCount = delegate.warningCount
-  override def hasErrors    = delegate.hasErrors
-  override def hasWarnings  = delegate.hasWarnings
-  override def reset()      = delegate.reset()
-  override def flush()      = delegate.flush()
-  override def finish()     = delegate.finish()
-  override def rerunWithDetails(setting: MutableSettings#Setting, name: String) =
-                              delegate.rerunWithDetails(setting, name)
+  override def reset()      = { super.reset() ; delegate.reset() }
+  override def flush()      = { super.flush() ; delegate.flush() }
+  override def finish()     = { super.finish() ; delegate.finish() }
 }
