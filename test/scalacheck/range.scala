@@ -251,6 +251,13 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
     }
     aresame :| str(r)
   }
+
+  property("grouped") = forAllNoShrink(
+    myGen,
+    Gen.posNum[Int],
+  ) { (r, size) =>
+    r.grouped(size).toSeq == r.toList.grouped(size).toSeq
+  }
 }
 
 object NormalRangeTest extends RangeTest("normal") {

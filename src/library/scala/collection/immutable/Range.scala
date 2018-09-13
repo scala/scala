@@ -413,6 +413,27 @@ sealed abstract class Range(
   override protected[this] def className = "Range"
 
   override def distinct: Range = this
+
+  override def grouped(size: Int): Iterator[Range] = {
+    require(size >= 1, f"size=$size%d, but size must be positive")
+    if (isEmpty) {
+      Iterator.empty
+    } else {
+      val s = size
+      new AbstractIterator[Range] {
+        private[this] var i = 0
+        override def hasNext = Range.this.length > i
+        override def next =
+          if (hasNext) {
+            val x = Range.this.slice(i, i + s)
+            i += s
+            x
+          } else {
+            Iterator.empty.next()
+          }
+      }
+    }
+  }
 }
 
 /**
