@@ -30,7 +30,7 @@ trait Seq[+A]
 
   override def equals(o: scala.Any): Boolean = this.eq(o.asInstanceOf[AnyRef]) || (
     o match {
-      case it: Seq[A] => (it canEqual this) && sameElements(it)
+      case it: Seq[A] => (it eq this) || (it canEqual this) && sameElements(it)
       case _ => false
     }
   )

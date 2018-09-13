@@ -62,4 +62,91 @@ class VectorTest {
     val i = Iterator.from(1).take(3)
     assertEquals(Vector(1, 2, 3, 0), Vector(0).prependedAll(i))
   }
+
+  @Test
+  def vectorIteratorDrop(): Unit = {
+    val underlying = Vector(0 to 10010: _*)
+
+    val totalSize = underlying.size
+
+    for (start <- 1056 to 10000) {
+      val it = underlying.iterator.drop(start)
+      assertEquals(totalSize - start, it.knownSize)
+      assertEquals(totalSize - start, it.size)
+      assertTrue(it.hasNext)
+      assertEquals(start, it.next())
+    }
+  }
+  def intercept[T <: Throwable: Manifest](fn: => Any): T = {
+    try {
+      fn
+      fail(s"expected a ${manifest[T].runtimeClass.getName} to be thrown")
+      ???
+    } catch {
+      case x: T => x
+    }
+  }
+  @Test
+  def vectorIteratorDropToEnd(): Unit = {
+    val underlying = Vector(0)
+
+    for (start <- List(1,2,3,4,99)) {
+      {
+        var it = underlying.iterator.drop(start)
+        assertFalse(it.hasNext)
+        intercept[NoSuchElementException](it.next)
+        it = it.drop(0)
+        assertFalse(it.hasNext)
+        it = it.drop(1)
+        assertFalse(it.hasNext)
+        it = it.drop(99)
+        assertFalse(it.hasNext)
+        intercept[NoSuchElementException](it.next)
+      }
+
+      {
+        var it = underlying.iterator.drop(start)
+        intercept[NoSuchElementException](it.next)
+        it = it.drop(0)
+        it = it.drop(1)
+        it = it.drop(99)
+        intercept[NoSuchElementException](it.next)
+      }
+    }
+  }
+  @Test
+  def vectorIteratorRepeated(): Unit = {
+    val underlying = Vector(1 to 10001: _*)
+
+
+    for (stepSize <- List(0, 1, 2, 3, 4, 8, 10, 24, 32, 63, 64, 100)) {
+      var it:Iterator[Int] = underlying.iterator
+      for (stepCount <- 1 to 10) {
+        it = it.drop(stepSize)
+        assertTrue(it.hasNext)
+        val expected = (stepSize + 1) * stepCount
+        assertEquals(expected, it.next())
+      }
+    }
+  }
+  @Test
+  def vectorFill(): Unit = {
+    var i = 0
+    val test = Vector.fill(10){
+      i += 1
+      i * 10
+    }
+    assertEquals(List(10,20,30,40,50,60,70,80,90,100), test)
+    assertEquals(10, test.length)
+    assertEquals(10, test.head)
+    assertEquals(10, test(0))
+    assertEquals(20, test(1))
+    assertEquals(80, test(7))
+    assertEquals(100, test(9))
+
+    assertEquals(0, test.indexOf(10))
+    assertEquals(8, test.indexOf(90))
+    assertEquals(-1, test.indexOf(1000))
+  }
+
 }

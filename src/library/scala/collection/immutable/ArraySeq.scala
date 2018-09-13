@@ -146,12 +146,7 @@ sealed abstract class ArraySeq[+A]
 
   override protected[this] def writeReplace(): AnyRef = this
 
-  override def equals(other: Any): Boolean = other match {
-    case that: ArraySeq[_] if this.unsafeArray.length != that.unsafeArray.length =>
-      false
-    case _ =>
-      super.equals(other)
-  }
+  override protected final def applyPreferredMaxLength: Int = Int.MaxValue
 }
 
 /**

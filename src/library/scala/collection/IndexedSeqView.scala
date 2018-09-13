@@ -8,6 +8,7 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   override def view: IndexedSeqView[A] = this
 
   override def iterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewIterator(this)
+  override def reverseIterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewReverseIterator(this)
 
   override def appended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Appended(this, elem)
   override def prepended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Prepended(elem, this)
@@ -37,6 +38,28 @@ object IndexedSeqView {
         current += 1
         r
       } else Iterator.empty.next()
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) current = Math.min(self.size, current + n)
+      this
+    }
+  }
+  @SerialVersionUID(3L)
+  private final class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
+    private[this] var pos = self.size - 1
+    def hasNext: Boolean = pos >= 0
+    def next(): A =
+      if (pos < 0) throw new NoSuchElementException
+      else {
+        val r = self(pos)
+        pos -= 1
+        r
+      }
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) pos = Math.max( -1, pos - n)
+      this
+    }
   }
 
   /** An `IndexedSeqOps` whose collection type and collection type constructor are unknown */
@@ -90,7 +113,12 @@ object IndexedSeqView {
     extends SeqView.Map(underlying, f) with IndexedSeqView[B]
 
   @SerialVersionUID(3L)
-  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends SeqView.Reverse[A](underlying) with IndexedSeqView[A]
+  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends SeqView.Reverse[A](underlying) with IndexedSeqView[A] {
+    override def reverse: IndexedSeqView[A] = underlying match {
+      case x: IndexedSeqView[A] => x
+      case _ => super.reverse
+    }
+  }
 
   @SerialVersionUID(3L)
   class Slice[A](underlying: SomeIndexedSeqOps[A], from: Int, until: Int) extends AbstractIndexedSeqView[A] {
