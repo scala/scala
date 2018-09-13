@@ -304,7 +304,8 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
         }
       stopwatchDuration = Some(durationMs)
-      val more = reportTest(state, info, durationMs, diffOnFail = config.optShowDiff || onlyIndividualTests , logOnFail = config.optShowLog || onlyIndividualTests)
+      val verboseSummation = onlyIndividualTests && !terse
+      val more = reportTest(state, info, durationMs, diffOnFail = config.optShowDiff || verboseSummation , logOnFail = config.optShowLog || verboseSummation)
       runner.cleanup(state)
       if (more.isEmpty) state
       else {
