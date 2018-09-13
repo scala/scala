@@ -9,6 +9,7 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.{ArrayBuffer, StringBuilder}
+import Stream.cons
 
 @deprecated("Use LazyList (which is fully lazy) instead of Stream (which has a lazy tail only)", "2.13.0")
 @SerialVersionUID(3L)
@@ -29,8 +30,6 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   override def iterableFactory: SeqFactory[Stream] = Stream
 
   override protected[this] def className: String = "Stream"
-
-  protected def cons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
 
   /** Apply the given function `f` to each element of this linear sequence
     * (while respecting the order of the elements).
@@ -315,8 +314,6 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 @SerialVersionUID(3L)
 object Stream extends SeqFactory[Stream] {
 
-  protected def newCons[T](hd: => T, tl: => Stream[T]): Stream[T] = new Stream.Cons(hd, tl)
-
   //@SerialVersionUID(3L) //TODO Putting an annotation on Stream.empty causes a cyclic dependency in unpickling
   object Empty extends Stream[Nothing] {
     override def isEmpty: Boolean = true
@@ -451,7 +448,7 @@ object Stream extends SeqFactory[Stream] {
     */
   def iterate[A](start: => A)(f: A => A): Stream[A] = {
     lazy val head = start
-    newCons(head, iterate(f(head))(f))
+    cons(head, iterate(f(head))(f))
   }
 
   /**
@@ -463,7 +460,7 @@ object Stream extends SeqFactory[Stream] {
     * @return the Stream starting at value `start`.
     */
   def from(start: Int, step: Int): Stream[Int] =
-    newCons(start, from(start + step, step))
+    cons(start, from(start + step, step))
 
   /**
     * Create an infinite Stream starting at `start` and incrementing by `1`.
@@ -480,15 +477,15 @@ object Stream extends SeqFactory[Stream] {
     * @param elem the element composing the resulting Stream
     * @return the Stream containing an infinite number of elem
     */
-  def continually[A](elem: => A): Stream[A] = newCons(elem, continually(elem))
+  def continually[A](elem: => A): Stream[A] = cons(elem, continually(elem))
 
 
   private[Stream] def filteredTail[A](stream: Stream[A] @uncheckedVariance, p: A => Boolean, isFlipped: Boolean) = {
-    newCons(stream.head, stream.tail.filterImpl(p, isFlipped))
+    cons(stream.head, stream.tail.filterImpl(p, isFlipped))
   }
 
   private[Stream] def collectedTail[A, B](head: B, stream: Stream[A] @uncheckedVariance, pf: PartialFunction[A, B]) = {
-    newCons(head, stream.tail.collect(pf))
+    cons(head, stream.tail.collect(pf))
   }
 
   /** This serialization proxy is used for Streams which start with a sequence of evaluated cons cells.
