@@ -431,7 +431,7 @@ abstract class Inliner {
             }
           case _ =>
         }
-        val newRequests = rs.toList.sorted(callsiteOrdering)
+        val newRequests = rs.toList.sorted(inlineRequestOrdering)
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
@@ -465,25 +465,25 @@ abstract class Inliner {
    *   - Always remove the same request when breaking inlining cycles
    *   - Perform inlinings in a consistent order
    */
-  object callsiteOrdering extends Ordering[InlineRequest] {
-    override def compare(x: InlineRequest, y: InlineRequest): Int = {
+  object callsiteOrdering extends Ordering[Callsite] {
+    override def compare(x: Callsite, y: Callsite): Int = {
       if (x eq y) return 0
 
-      val xCs = x.callsite
-      val yCs = y.callsite
-      val cls = xCs.callsiteClass.internalName compareTo yCs.callsiteClass.internalName
+      val cls = x.callsiteClass.internalName compareTo y.callsiteClass.internalName
       if (cls != 0) return cls
 
-      val name = xCs.callsiteMethod.name compareTo yCs.callsiteMethod.name
+      val name = x.callsiteMethod.name compareTo y.callsiteMethod.name
       if (name != 0) return name
 
-      val desc = xCs.callsiteMethod.desc compareTo yCs.callsiteMethod.desc
+      val desc = x.callsiteMethod.desc compareTo y.callsiteMethod.desc
       if (desc != 0) return desc
 
       def pos(c: Callsite) = c.callsiteMethod.instructions.indexOf(c.callsiteInstruction)
-      pos(xCs) - pos(yCs)
+      pos(x) - pos(y)
     }
   }
+
+  val inlineRequestOrdering = Ordering.by[InlineRequest, Callsite](_.callsite)(callsiteOrdering)
 
   /**
    * Returns the callsites that can be inlined, grouped by method. Ensures that the returned inline
@@ -525,7 +525,7 @@ abstract class Inliner {
       val requests = requestsByMethod.valuesIterator.flatten.toArray
       // sort the inline requests to ensure that removing requests is deterministic
       // Callsites within the same method are next to each other in the sorted array.
-      java.util.Arrays.sort(requests, callsiteOrdering)
+      java.util.Arrays.sort(requests, inlineRequestOrdering)
 
       val result = new mutable.ListBuffer[(MethodNode, List[InlineRequest])]()
       var currentMethod: MethodNode = null

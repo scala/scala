@@ -30,7 +30,7 @@ abstract class CopyProp {
    * For every `xLOAD n`, find all local variable slots that are aliases of `n` using an
    * AliasingAnalyzer and change the instruction to `xLOAD m` where `m` is the smallest alias.
    * This leaves behind potentially stale `xSTORE n` instructions, which are then eliminated
-   * by [[eliminateStaleStores]].
+   * by [[eliminateStaleStoresAndRewriteSomeIntrinsics]].
    */
   def copyPropagation(method: MethodNode, owner: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForAliasing(method) && {
@@ -89,12 +89,24 @@ abstract class CopyProp {
    * Eliminate `xSTORE` instructions that have no consumer. If the instruction can be completely
    * eliminated, it is replaced by a POP. The [[eliminatePushPop]] cleans up unnecessary POPs.
    *
+   * Also rewrites some intrinsics (done here because a ProdCons analysis is available):
+   *   - `ClassTag(classOf[X]).newArray` is rewritten to `new Array[X]`
+   *
+   * Finally there's an interesting special case that complements the inliner heuristics. After
+   * the rewrite above, if the `new Array[X]` is used in a `ScalaRuntime.array_apply/update` call,
+   * inline that method. These methods have a big pattern match for all primitive array types, and
+   * we only inline them if we statically know the array type. In this case, all the non-matching
+   * branches are later eliminated by `eliminateRedundantCastsAndRewriteSomeIntrinsics`.
+   *
    * Note that an `ASOTRE` can not always be eliminated: it removes a reference to the object that
    * is currently stored in that local, which potentially frees it for GC (scala/bug#5313). Therefore
-   * we replace such stores by `POP; ACONST_NULL; ASTORE x`.
+   * we replace such stores by `POP; ACONST_NULL; ASTORE x` - except if the store precedes an
+   * `xRETURN`, in which case it can be removed.
+   *
+   * Returns (staleStoreRemoved, intrinsicRewritten, callInlined).
    */
-  def eliminateStaleStores(method: MethodNode, owner: InternalName): Boolean = {
-    AsmAnalyzer.sizeOKForSourceValue(method) && {
+  def eliminateStaleStoresAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
+    if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
       lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
@@ -109,6 +121,8 @@ abstract class CopyProp {
       val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
 
       val returns = mutable.Set.empty[AbstractInsnNode]
+
+      val toInline = mutable.Set.empty[MethodInsnNode]
 
       // `true` for variables that are known to be live and hold non-primitives
       val liveRefVars = new Array[Boolean](method.maxLocals)
@@ -153,6 +167,7 @@ abstract class CopyProp {
             if (receiverProds.size == 1) {
               toReplace(receiverProds.head) = List(receiverProds.head, getPop(1))
               toReplace(mi) = List(new TypeInsnNode(ANEWARRAY, newArrayCls))
+              toInline ++= prodCons.ultimateConsumersOfOutputsFrom(mi).collect({case i if isRuntimeArrayLoadOrUpdate(i) => i.asInstanceOf[MethodInsnNode]})
             }
           }
 
@@ -177,27 +192,38 @@ abstract class CopyProp {
           if (i.getType == AbstractInsnNode.VAR_INSN) {
             val vi = i.asInstanceOf[VarInsnNode]
             if (toNullOut.remove(vi).nonEmpty)
-              toReplace(i) = List(popFor(vi))
+              toReplace(vi) = List(popFor(vi))
           }
           i = i.getPrevious
         }
       }
 
+      var staleStoreRemoved = toNullOut.nonEmpty
+      var intrinsicRewritten = false
+      val callInlined = toInline.nonEmpty
+
       for ((i, nis) <- toReplace) {
-        if (nis.isEmpty) {
-          method.instructions.remove(i)
-        } else {
-          val next = i.getNext
-          if (next != null) {
-            method.instructions.remove(i)
-            for (ni <- nis)
-              method.instructions.insertBefore(next, ni)
-          } else {
-            for (ni <- nis.reverse)
-              method.instructions.insert(i, ni)
-            method.instructions.remove(i)
+        i.getType match {
+          case AbstractInsnNode.VAR_INSN | AbstractInsnNode.IINC_INSN => staleStoreRemoved = true
+          case AbstractInsnNode.METHOD_INSN => intrinsicRewritten = true
+          case _ =>
+        }
+        // the original instruction `i` may appear (once) in `nis`.
+        var insertBefore = i
+        var insertAfter: AbstractInsnNode = null
+        for (ni <- nis) {
+          if (ni eq i) {
+            insertBefore = null
+            insertAfter = i
+          } else if (insertBefore != null)
+            method.instructions.insertBefore(insertBefore, ni)
+          else {
+            method.instructions.insert(insertAfter, ni)
+            insertAfter = ni
           }
         }
+        if (insertBefore != null)
+          method.instructions.remove(i)
       }
 
       for ((vi, isStoreNull) <- toNullOut) {
@@ -211,9 +237,20 @@ abstract class CopyProp {
         }
       }
 
-      val changed = toReplace.nonEmpty || toNullOut.nonEmpty
+      if (toInline.nonEmpty) {
+        import postProcessor._
+        val methodCallsites = callGraph.callsites(method)
+        var css = toInline.flatMap(methodCallsites.get).toList.sorted(inliner.callsiteOrdering)
+        while (css.nonEmpty) {
+          val cs = css.head
+          css = css.tail
+          inliner.inlineCallsite(cs, updateCallGraph = css.isEmpty)
+        }
+      }
+
+      val changed = toReplace.nonEmpty || toNullOut.nonEmpty || toInline.nonEmpty
       if (changed) analyzerCache.invalidate(method)
-      changed
+      (staleStoreRemoved, intrinsicRewritten, callInlined)
     }
   }
 
@@ -539,7 +576,7 @@ abstract class CopyProp {
    * Analyzer on the method, making it more efficient.
    *
    * This method also removes `ACONST_NULL; ASTORE n` if the local n is not live. This pattern is
-   * introduced by [[eliminateStaleStores]].
+   * introduced by [[eliminateStaleStoresAndRewriteSomeIntrinsics]].
    *
    * The implementation is a little tricky to support the following case:
    *   ISTORE 1; ISTORE 2; ILOAD 2; ACONST_NULL; ASTORE 3; ILOAD 1
