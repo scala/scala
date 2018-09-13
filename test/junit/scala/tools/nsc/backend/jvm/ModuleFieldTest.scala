@@ -33,7 +33,7 @@ class ModuleFieldTest extends BytecodeTesting {
     }
     check("Pure1$", true)
     check("Pure2$", true)
-    check("Impure1$", false)
-    check("Impure2$", false)
+    check("Impure1$", true)
+    check("Impure2$", true)
   }
 }
