@@ -840,7 +840,7 @@ object LazyList extends SeqFactory[LazyList] {
   private[this] def writeObject(out: ObjectOutputStream): Unit = ()
   private[this] def readObject(in: ObjectInputStream): Unit = ()
 
-  /** This serialization proxy is used for LazyLists and LazyLists which start with a sequence of evaluated cons cells.
+  /** This serialization proxy is used for LazyLists which start with a sequence of evaluated cons cells.
     * The forced sequence is serialized in a compact, sequential format, followed by the unevaluated tail, which uses
     * standard Java serialization to store the complete structure of unevaluated thunks. This allows the serialization
     * of long evaluated lazy lists without exhausting the stack through recursive serialization of cons cells.
