@@ -563,23 +563,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = genTypeApply()
 
         case Apply(fun @ Select(sup @ Super(superQual, _), _), args) =>
-          def initModule(): Unit = {
-            // we initialize the MODULE$ field immediately after the super ctor
-            if (!initModuleInClinit && !isModuleInitialized &&
-              jMethodName == INSTANCE_CONSTRUCTOR_NAME &&
-              fun.symbol.javaSimpleName.toString == INSTANCE_CONSTRUCTOR_NAME &&
-              isStaticModuleClass(claszSymbol)) {
-              isModuleInitialized = true
-              mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
-              assignModuleInstanceField(mnode)
-            }
-          }
-
           // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not just ALOAD_0)
           genLoad(superQual)
           genLoadArguments(args, paramTKs(app))
           generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos, sup.tpe.typeSymbol)
-          initModule()
 
         // 'new' constructor call: Note: since constructors are
         // thought to return an instance of what they construct,
