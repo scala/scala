@@ -79,6 +79,8 @@ class ArrayOpsTest {
     assertEquals(l0.startsWith(l0, 1), a0.startsWith(a0, 1))
     assertEquals(l0.startsWith(l1, 0), a0.startsWith(a1, 0))
     assertEquals(l0.startsWith(l1, 1), a0.startsWith(a1, 1))
+    assertEquals(l0.startsWith(l1, -1), a0.startsWith(a1, -1))
+    assertEquals(l0.startsWith(l1, Int.MinValue), a0.startsWith(a1, Int.MinValue))
   }
 
   @Test

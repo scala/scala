@@ -1345,12 +1345,13 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *         index `offset`, otherwise `false`.
     */
   def startsWith[B >: A](that: Array[B], offset: Int): Boolean = {
+    val safeOffset = offset.max(0)
     val thatl = that.length
-    if(thatl > xs.length-offset) thatl == 0
+    if(thatl > xs.length-safeOffset) thatl == 0
     else {
       var i = 0
       while(i < thatl) {
-        if(xs(i+offset) != that(i)) return false
+        if(xs(i+safeOffset) != that(i)) return false
         i += 1
       }
       true
