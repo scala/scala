@@ -358,17 +358,17 @@ class MutableSettings(val errorFn: String => Unit)
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
     /** Will be called after this Setting is set for any extra work. */
-    private var _postSetHook: this.type => Unit = (x: this.type) => ()
+    private[this] var _postSetHook: this.type => Unit = (x: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)
     def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
     /** The syntax defining this setting in a help string */
-    private var _helpSyntax = name
+    private[this] var _helpSyntax = name
     override def helpSyntax: String = _helpSyntax
     def withHelpSyntax(s: String): this.type    = { _helpSyntax = s ; this }
 
     /** Abbreviations for this setting */
-    private var _abbreviations: List[String] = Nil
+    private[this] var _abbreviations: List[String] = Nil
     override def abbreviations = _abbreviations
     def withAbbreviation(s: String): this.type  = { _abbreviations ++= List(s) ; this }
 
@@ -377,7 +377,7 @@ class MutableSettings(val errorFn: String => Unit)
     override def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
 
-    private var _deprecationMessage: Option[String] = None
+    private[this] var _deprecationMessage: Option[String] = None
     override def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
   }

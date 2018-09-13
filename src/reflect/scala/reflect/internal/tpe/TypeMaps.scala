@@ -403,9 +403,9 @@ private[internal] trait TypeMaps {
       case _                                                           => tp.mapOver(this)
     }
 
-    private var _capturedSkolems: List[Symbol] = Nil
-    private var _capturedParams: List[Symbol]  = Nil
-    private val isStablePrefix = seenFromPrefix.isStable
+    private[this] var _capturedSkolems: List[Symbol] = Nil
+    private[this] var _capturedParams: List[Symbol]  = Nil
+    private[this] val isStablePrefix = seenFromPrefix.isStable
 
     // isBaseClassOfEnclosingClassOrInfoIsNotYetComplete would be a more accurate
     // but less succinct name.
