@@ -383,6 +383,7 @@ sealed abstract class Range(
         }
       }
     }
+  override protected final def applyPreferredMaxLength: Int = Int.MaxValue
 
   final override def equals(other: Any) = other match {
     case x: Range =>
@@ -567,5 +568,18 @@ private class RangeIterator(
     _hasNext = value != lastElement
     _next = value + step
     value
+  }
+
+  override def drop(n: Int): Iterator[Int] = {
+    val longPos = _next.toLong + step * n
+    if (step > 0) {
+      _next = Math.min(lastElement, longPos).toInt
+      _hasNext = longPos <= lastElement
+    }
+    else if (step < 0) {
+      _next = Math.max(lastElement, longPos).toInt
+      _hasNext = longPos >= lastElement
+    }
+    this
   }
 }

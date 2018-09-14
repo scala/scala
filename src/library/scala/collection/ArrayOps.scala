@@ -113,6 +113,10 @@ object ArrayOps {
       pos += 1
       r
     } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) pos = Math.min(xs.length, pos + n)
+      this
+    }
   }
 
   private final class ReverseIterator[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) A](xs: Array[A]) extends AbstractIterator[A] {
@@ -123,6 +127,11 @@ object ArrayOps {
       pos -= 1
       r
     } catch { case _: ArrayIndexOutOfBoundsException => Iterator.empty.next() }
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) pos = Math.max( -1, pos - n)
+      this
+    }
   }
 
   private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends AbstractIterator[Array[A]] {

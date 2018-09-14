@@ -40,6 +40,7 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
 
   override protected[this] def className = "WrappedString"
 
+  override protected final def applyPreferredMaxLength: Int = Int.MaxValue
   override def equals(other: Any): Boolean = other match {
     case that: WrappedString =>
       this.self == that.self
