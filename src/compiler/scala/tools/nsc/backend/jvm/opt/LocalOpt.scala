@@ -614,14 +614,19 @@ abstract class LocalOpt {
     // precondition: !isSubType(aDescOrIntN, bDescOrIntN)
     def isUnrelated(aDescOrIntN: String, bDescOrIntN: String): Boolean = {
       def impl(aTp: BType, bTp: BType): Boolean = {
-        (aTp, bTp) match {
+        ((aTp, bTp): @unchecked) match {
           case (aa: ArrayBType, ba: ArrayBType) =>
             impl(aa.elementType, ba.elementType)
           case (act: ClassBType, bct: ClassBType) =>
             val noItf = act.isInterface.flatMap(aIf => bct.isInterface.map(bIf => !aIf && !bIf)).getOrElse(false)
             noItf && !bct.conformsTo(act).getOrElse(true)
-          case (_: PrimitiveBType, _: RefBType) | (_: RefBType, _: PrimitiveBType) => true
-          case _ => false
+          case (_: PrimitiveBType, _: RefBType) | (_: RefBType, _: PrimitiveBType) =>
+            true
+          case (_: PrimitiveBType, _: PrimitiveBType) =>
+            // note that this case happens for array element types. [S does not conform to [I.
+            aTp != bTp
+          case _ =>
+            false
         }
       }
       impl(

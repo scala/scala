@@ -127,38 +127,33 @@ abstract class BTypes {
         case ArrayBType(component) =>
           if (other == ObjectRef || other == jlCloneableRef || other == jiSerializableRef) true
           else other match {
-            case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow // TODO: primitive arrays should only conform if same elem type?
+            case ArrayBType(otherComponent) =>
+              // Array[Short]().isInstanceOf[Array[Int]] is false
+              // but Array[String]().isInstanceOf[Array[Object]] is true
+              if (component.isPrimitive || otherComponent.isPrimitive) component == otherComponent
+              else component.conformsTo(otherComponent).orThrow
             case _ => false
           }
 
         case classType: ClassBType =>
-          if (isBoxed) {
-            if (other.isBoxed) this == other
-            else if (other == ObjectRef) true
-            else other match {
-              case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow // e.g., java/lang/Double conforms to java/lang/Number
-              case _ => false
-            }
-          } else if (isNullType) {
-            if (other.isNothingType) false
-            else if (other.isPrimitive) false
-            else true // Null conforms to all classes (except Nothing) and arrays.
-          } else if (isNothingType) {
-            true
-          } else other match {
+          // Quick test for ObjectRef to make a common case fast
+          other == ObjectRef || (other match {
             case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow
-            // case ArrayBType(_) => this.isNullType   // documentation only, because `if (isNullType)` above covers this case
-            case _ =>
-              // isNothingType ||                      // documentation only, because `if (isNothingType)` above covers this case
-              false
-          }
+            case _ => false
+          })
 
-        case UNIT =>
-          other == UNIT
-        case BOOL | BYTE | SHORT | CHAR =>
-          this == other || other == INT || other == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
         case _ =>
-          this == other
+          // there are no bool/byte/short/char primitives at runtime, they are represented as ints.
+          // instructions like i2s are used to truncate, the result is again an int. conformsTo
+          // returns true for conversions that don't need a truncating instruction. see also emitT2T.
+          // note that for primitive arrays, Array[Short]().isInstanceOf[Array[Int]] is false.
+          this == other || ((this, other) match {
+            case (BOOL, BYTE | SHORT | INT) => true
+            case (BYTE, SHORT | INT) => true
+            case (SHORT, INT) => true
+            case (CHAR, INT) => true
+            case _ => false
+          })
       }
     }))
 

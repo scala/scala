@@ -814,12 +814,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def adapt(from: BType, to: BType): Unit = {
-      if (!from.conformsTo(to).get) {
-        to match {
-          case UNIT => bc drop from
-          case _    => bc.emitT2T(from, to)
-        }
-      } else if (from.isNothingType) {
+      if (from.isNothingType) {
         /* There are two possibilities for from.isNothingType: emitting a "throw e" expressions and
          * loading a (phantom) value of type Nothing.
          *
@@ -879,12 +874,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          */
         if (lastInsn.getOpcode != asm.Opcodes.ACONST_NULL) {
           bc drop from
-          emit(asm.Opcodes.ACONST_NULL)
+          if (to != UNIT)
+            emit(asm.Opcodes.ACONST_NULL)
+        } else if (to == UNIT) {
+          bc drop from
         }
-      }
-      else (from, to) match  {
-        case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => bc.emitT2T(INT, LONG)
-        case _ => ()
+      } else if (!from.conformsTo(to).get) {
+        to match {
+          case UNIT => bc drop from
+          case _    => bc.emitT2T(from, to)
+        }
       }
     }
 

@@ -2023,4 +2023,20 @@ class InlinerTest extends BytecodeTesting {
       "scala/collection/immutable/Range.step")
     )
   }
+
+  @Test
+  def byteArrayMap(): Unit = {
+    val code =
+      """class C {
+        |  def t1(a: Array[Byte]): Array[Int] = a map (_ + 1)
+        |  def t2(a: Array[Byte]): Array[Byte] = a map (x => (x + 1).toByte)
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    def isArrOp(opc: Int): Boolean = opc >= IALOAD && opc <= SALOAD || opc >= IASTORE && opc <= SASTORE
+    assertSameSummary(getInstructions(c, "t1").filter(i => isArrOp(i.opcode)), List(BALOAD, IASTORE))
+    assertInvokedMethods(getMethod(c, "t1"), List("C.$anonfun$t1$1"))
+    assertSameSummary(getInstructions(c, "t2").filter(i => isArrOp(i.opcode)), List(BALOAD, BASTORE))
+    assertInvokedMethods(getMethod(c, "t2"), List("C.$anonfun$t2$1"))
+  }
 }
