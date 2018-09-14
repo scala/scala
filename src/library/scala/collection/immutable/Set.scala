@@ -77,11 +77,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 @SerialVersionUID(3L)
 object Set extends IterableFactory[Set] {
 
-  // getenv not getProperty for Scala.js friendliness.
-  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
-  private final val useBaseline: Boolean =
-    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
-
   def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
   def from[E](it: collection.IterableOnce[E]): Set[E] =
@@ -211,7 +206,7 @@ object Set extends IterableFactory[Set] {
       elem == elem1 || elem == elem2 || elem == elem3 || elem == elem4
     def incl(elem: A): Set[A] =
       if (contains(elem)) this
-      else (if (useBaseline) OldHashSet.empty[A] else HashSet.empty[A]) + elem1 + elem2 + elem3 + elem4 + elem
+      else HashSet.empty[A] + elem1 + elem2 + elem3 + elem4 + elem
     def excl(elem: A): Set[A] =
       if (elem == elem1) new Set3(elem2, elem3, elem4)
       else if (elem == elem2) new Set3(elem1, elem3, elem4)

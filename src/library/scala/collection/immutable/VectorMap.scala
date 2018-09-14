@@ -150,12 +150,9 @@ final class VectorMap[K, +V] private[immutable] (
 object VectorMap extends MapFactory[VectorMap] {
 
   def empty[K, V]: VectorMap[K, V] =
-    new VectorMap[K, V](Vector.empty[K],
-      if (VectorMap.useBaseline)
-        OldHashMap.empty[K, (Int, V)]
-      else
-        HashMap.empty[K, (Int, V)]
-    )
+    new VectorMap[K, V](
+      Vector.empty[K],
+      HashMap.empty[K, (Int, V)])
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): VectorMap[K, V] =
     it match {
@@ -168,8 +165,4 @@ object VectorMap extends MapFactory[VectorMap] {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
 
-  // getenv not getProperty for Scala.js friendliness.
-  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
-  private final val useBaseline: Boolean =
-    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 }

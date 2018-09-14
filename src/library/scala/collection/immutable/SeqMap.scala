@@ -171,15 +171,7 @@ object SeqMap extends MapFactory[SeqMap] {
       else {
         // Directly create the elements for performance reasons
         val fields = Vector(key1, key2, key3, key4, key)
-        val underlying: Map[K, (Int, V1)] = if (useBaseline)
-          OldHashMap(
-            (key1, (0, value1)),
-            (key2, (1, value2)),
-            (key3, (2, value3)),
-            (key4, (3, value4)),
-            (key, (4, value))
-          )
-        else
+        val underlying: Map[K, (Int, V1)] =
           HashMap(
             (key1, (0, value1)),
             (key2, (1, value2)),
@@ -199,11 +191,6 @@ object SeqMap extends MapFactory[SeqMap] {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
   }
-
-  // getenv not getProperty for Scala.js friendliness.
-  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
-  private final val useBaseline: Boolean =
-  System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
   // This prevents it from serializing it in the first place:
