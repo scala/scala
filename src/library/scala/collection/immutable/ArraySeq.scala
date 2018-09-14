@@ -152,6 +152,28 @@ sealed abstract class ArraySeq[+A]
     case _ =>
       super.equals(other)
   }
+
+  override def sorted[B >: A](implicit ord: Ordering[B]): ArraySeq[A] = {
+    val len = this.length
+    if (len <= 1) {
+      this
+    } else {
+      val arr = unsafeArray match {
+        case a: Array[AnyRef] =>
+          a.clone()
+        case _ =>
+          val xs = new Array[AnyRef](len)
+          var i = 0
+          while (i < len) {
+            xs(i) = unsafeArray(i).asInstanceOf[AnyRef]
+            i += 1
+          }
+          xs
+      }
+      java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
+      ArraySeq.unsafeWrapArray(arr).asInstanceOf[ArraySeq[A]]
+    }
+  }
 }
 
 /**
