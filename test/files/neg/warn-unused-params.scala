@@ -71,3 +71,13 @@ class Main {
 trait Unimplementation {
   def f(u: Int): Int = ???        // no warn for param in unimplementation
 }
+
+trait Anonymous {
+  def f = (i: Int) => 42      // warn
+
+  def f1 = (_: Int) => 42     // no warn underscore parameter (a fresh name)
+
+  def f2: Int => Int = _ + 1  // no warn placeholder syntax (a fresh name and synthethic parameter)
+
+  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
+}

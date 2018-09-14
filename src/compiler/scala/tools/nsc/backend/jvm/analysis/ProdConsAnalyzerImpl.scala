@@ -94,9 +94,9 @@ trait ProdConsAnalyzerImpl {
   }
 
   def consumersOfOutputsFrom(insn: AbstractInsnNode): Set[AbstractInsnNode] = insn match {
-    case _: UninitializedLocalProducer                 => Set.empty
-    case ParameterProducer(local)                      => consumersOfValueAt(methodNode.instructions.getFirst, local)
-    case ExceptionProducer(handlerLabel, handlerFrame) => consumersOfValueAt(handlerLabel, handlerFrame.stackTop)
+    case _: UninitializedLocalProducer                      => Set.empty
+    case ParameterProducer(local)                           => consumersOfValueAt(methodNode.instructions.getFirst, local)
+    case ExceptionProducer(handlerLabel, handlerStackTop)   => consumersOfValueAt(handlerLabel, handlerStackTop)
     case _ =>
       _consumersOfOutputsFrom.get(insn).map(v => v.indices.flatMap(v.apply)(collection.breakOut): Set[AbstractInsnNode]).getOrElse(Set.empty)
   }
@@ -388,7 +388,7 @@ trait ProdConsAnalyzerImpl {
   private def outputValueSlots(insn: AbstractInsnNode): Seq[Int] = insn match {
     case ParameterProducer(local)          => Seq(local)
     case UninitializedLocalProducer(local) => Seq(local)
-    case ExceptionProducer(_, frame)       => Seq(frame.stackTop)
+    case ExceptionProducer(_, stackTop)    => Seq(stackTop)
     case _ =>
       if (insn.getOpcode == -1) return Seq.empty
       if (isStore(insn)) {
@@ -453,11 +453,11 @@ abstract class InitialProducer extends AbstractInsnNode(-1) {
   override def accept(cv: MethodVisitor): Unit = throw new UnsupportedOperationException
 }
 
-case class ParameterProducer(local: Int)                                                  extends InitialProducer
-case class UninitializedLocalProducer(local: Int)                                         extends InitialProducer
-case class ExceptionProducer[V <: Value](handlerLabel: LabelNode, handlerFrame: Frame[V]) extends InitialProducer
+case class ParameterProducer(local: Int)                                                extends InitialProducer
+case class UninitializedLocalProducer(local: Int)                                       extends InitialProducer
+case class ExceptionProducer[V <: Value](handlerLabel: LabelNode, handlerStackTop: Int) extends InitialProducer
 
-class InitialProducerSourceInterpreter extends SourceInterpreter {
+class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): SourceValue = {
     new SourceValue(tp.getSize, ParameterProducer(local))
   }
@@ -467,6 +467,7 @@ class InitialProducerSourceInterpreter extends SourceInterpreter {
   }
 
   override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[_ <: Value], exceptionType: Type): SourceValue = {
-    new SourceValue(1, ExceptionProducer(tryCatchBlockNode.handler, handlerFrame))
+    val handlerStackTop = handlerFrame.stackTop + 1 // +1 because this value is about to be pushed onto `handlerFrame`.
+    new SourceValue(1, ExceptionProducer(tryCatchBlockNode.handler, handlerStackTop))
   }
 }

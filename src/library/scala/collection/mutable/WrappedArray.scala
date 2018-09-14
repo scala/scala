@@ -129,10 +129,6 @@ object WrappedArray {
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }
     override def hashCode = MurmurHash3.wrappedArrayHash(array)
-    override def equals(that: Any) = that match {
-      case that: ofRef[_] => Arrays.equals(array.asInstanceOf[Array[AnyRef]], that.array.asInstanceOf[Array[AnyRef]])
-      case _ => super.equals(that)
-    }
   }
 
   final class ofByte(val array: Array[Byte]) extends WrappedArray[Byte] with Serializable {

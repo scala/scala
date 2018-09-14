@@ -536,6 +536,8 @@ trait TypeDiagnostics {
             }
           case _: RefTree if sym ne null             => targets += sym
           case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
+            case Function(ps, _) if settings.warnUnusedParams =>
+              params ++= ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
           case _                                     =>
         }
 
