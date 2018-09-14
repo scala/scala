@@ -248,6 +248,7 @@ abstract class BCodeIdiomatic {
 
       if (from == to) { return }
       // the only conversion involving BOOL that is allowed is (BOOL -> BOOL)
+      // TODO: it seems in the jvm a bool is an int, so it should be treated the same as byte (for example)
       assert(from != BOOL && to != BOOL, s"inconvertible types : $from -> $to")
 
       // We're done with BOOL already
