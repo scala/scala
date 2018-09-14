@@ -360,7 +360,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *
     *  @param p the test predicate
     *  @return  a pair consisting of the longest prefix of this array whose
-    *           chars all satisfy `p`, and the rest of this array.
+    *           elements all satisfy `p`, and the rest of this array.
     */
   def span(p: A => Boolean): (Array[A], Array[A]) = {
     val i = indexWhere(x => !p(x))
@@ -1431,37 +1431,41 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def intersect(that: Seq[_ >: A]): Array[A] = mutable.ArraySeq.make(xs).intersect(that).array.asInstanceOf[Array[A]]
 
-  /** Groups chars in fixed size blocks by passing a "sliding window"
+  /** Groups elements in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in grouped.)
     *  @see [[scala.collection.Iterator]], method `sliding`
     *
-    *  @param size the number of chars per group
-    *  @param step the distance between the first chars of successive groups
-    *  @return An iterator producing strings of size `size`, except the
+    *  @param size the number of elements per group
+    *  @param step the distance between the first elements of successive groups
+    *  @return An iterator producing arrays of size `size`, except the
     *          last element (which may be the only element) will be truncated
-    *          if there are fewer than `size` chars remaining to be grouped.
+    *          if there are fewer than `size` elements remaining to be grouped.
     */
   def sliding(size: Int, step: Int = 1): Iterator[Array[A]] = mutable.ArraySeq.make(xs).sliding(size, step).map(_.array.asInstanceOf[Array[A]])
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
-    *  the original string, with the chars taken in order.  Thus, `"xy"` and `"yy"`
-    *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
+    *  the original array, with the elements taken in order.  Thus, `Array("x", "y")` and `Array("y", "y")`
+    *  are both length-2 combinations of `Array("x", "y", "y")`, but `Array("y", "x")` is not.  If there is
     *  more than one way to generate the same subsequence, only one will be returned.
     *
-    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
+    *  For example, `Array("x", "y", "y", "y")` has three different ways to generate `Array("x", "y")` depending on
     *  whether the first, second, or third `"y"` is selected.  However, since all are
     *  identical, only one will be chosen.  Which of the three will be taken is an
     *  implementation detail that is not defined.
     *
-    *  @return   An Iterator which traverses the possible n-element combinations of this string.
-    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
+    *  @return   An Iterator which traverses the possible n-element combinations of this array.
+    *  @example  {{{
+    *  Array("a", "b", "b", "b", "c").combinations(2) == Iterator(Array(a, b), Array(a, c), Array(b, b), Array(b, c))
+    *  }}}
     */
   def combinations(n: Int): Iterator[Array[A]] = mutable.ArraySeq.make(xs).combinations(n).map(_.array.asInstanceOf[Array[A]])
 
   /** Iterates over distinct permutations.
     *
-    *  @return   An Iterator which traverses the distinct permutations of this string.
-    *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
+    *  @return   An Iterator which traverses the distinct permutations of this array.
+    *  @example {{{
+    *  Array("a", "b", "b").permutations == Iterator(Array(a, b, b), Array(b, a, b), Array(b, b, a))
+    *  }}}
     */
   def permutations: Iterator[Array[A]] = mutable.ArraySeq.make(xs).permutations.map(_.array.asInstanceOf[Array[A]])
 
