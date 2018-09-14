@@ -446,9 +446,8 @@ object Stream extends SeqFactory[Stream] {
     *  @param f     the function that's repeatedly applied
     *  @return      the Stream returning the infinite sequence of values `start, f(start), f(f(start)), ...`
     */
-  def iterate[A](start: => A)(f: A => A): Stream[A] = {
-    lazy val head = start
-    cons(head, iterate(f(head))(f))
+  def iterate[A](start: A)(f: A => A): Stream[A] = {
+    cons(start, iterate(f(start))(f))
   }
 
   /**
