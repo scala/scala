@@ -155,7 +155,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     convertToScalaSetAndCheckSize(subtracted) && convertToScalaSetAndCheckHashCode(subtracted)
   }
 
-  property("subtractIdentityReference") = forAll { (inputShared: HashSet[K]) =>
+  property("subtractIdentityReference") = forAll { inputShared: HashSet[K] =>
     HashSet.empty[K] == inputShared.diff(inputShared)
   }
 
@@ -165,7 +165,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     input.diff(inputCopy).isEmpty && inputCopy.diff(input).isEmpty
   }
 
-  property("subtractIdentityStructural") = forAll { (inputShared: HashSet[K]) =>
+  property("subtractIdentityStructural") = forAll { inputShared: HashSet[K] =>
     val builder = HashSet.newBuilder[K]
     inputShared.foreach(builder.addOne)
 
@@ -206,7 +206,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     subtractDefault == subtractNative
   }
 
-  property("iterator equals reverseIterator.reverse()") = forAll { (input: HashSet[K]) =>
+  property("iterator equals reverseIterator.reverse()") = forAll { input: HashSet[K] =>
     val xs: List[K] = input.iterator
       .foldLeft(List.empty[K])((list: List[K], item: K) => list prepended item)
 
@@ -216,7 +216,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     xs == ys
   }
 
-  property("smaller subsetOf larger") = forAll { (inputSet: HashSet[K]) =>
+  property("smaller subsetOf larger") = forAll { inputSet: HashSet[K] =>
     if (inputSet.isEmpty) {
       true
     } else {

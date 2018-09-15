@@ -3,6 +3,7 @@ package scala.collection.immutable
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 import org.scalacheck._
+import scala.language.higherKinds
 
 object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
 
@@ -10,28 +11,25 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
   type V = String
   type T = (K, V)
 
-  //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-  //    p.withMinSuccessfulTests(1000)
-
-  property("convertToScalaMapAndCheckSize") = forAll { (input: HashMap[K, V]) =>
+  property("convertToScalaMapAndCheckSize") = forAll { input: HashMap[K, V] =>
     convertToScalaMapAndCheckSize(input)
   }
 
   private def convertToScalaMapAndCheckSize(input: HashMap[K, V]) =
     HashMap.from(input).size == input.size
 
-  property("convertToScalaMapAndCheckHashCode") = forAll { (input: HashMap[K, V]) =>
+  property("convertToScalaMapAndCheckHashCode") = forAll { input: HashMap[K, V] =>
     convertToScalaMapAndCheckHashCode(input)
   }
 
   private def convertToScalaMapAndCheckHashCode(input: HashMap[K, V]) =
     HashMap.from(input).hashCode == input.hashCode
 
-  property("convertToScalaMapAndCheckEquality") = forAll { (input: HashMap[K, V]) =>
+  property("convertToScalaMapAndCheckEquality") = forAll { input: HashMap[K, V] =>
     input == HashMap.from(input) && HashMap.from(input) == input
   }
 
-  property("input.equals(duplicate)") = forAll { (inputMap: HashMap[K, V]) =>
+  property("input.equals(duplicate)") = forAll { inputMap: HashMap[K, V] =>
     val builder = HashMap.newBuilder[K, V]
     inputMap.foreach(builder.addOne)
 
@@ -39,17 +37,17 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
     inputMap == duplicateMap
   }
 
-  property("checkSizeAfterInsertAll") = forAll { (inputValues: HashMap[K, V]) =>
+  property("checkSizeAfterInsertAll") = forAll { inputValues: HashMap[K, V] =>
     val testMap = HashMap.empty[K, V] ++ inputValues
     inputValues.size == testMap.size
   }
 
-  property("containsAfterInsert") = forAll { (inputValues: HashMap[K, V]) =>
+  property("containsAfterInsert") = forAll { inputValues: HashMap[K, V] =>
     val testMap = HashMap.empty[K, V] ++ inputValues
     inputValues.forall { case (key, value) => testMap.get(key).contains(value) }
   }
 
-  property("iterator equals reverseIterator.reverse()") = forAll { (input: HashMap[K, V]) =>
+  property("iterator equals reverseIterator.reverse()") = forAll { input: HashMap[K, V] =>
     val xs: List[(K, V)] = input.iterator
       .foldLeft(List.empty[(K, V)])((list: List[(K, V)], item: (K, V)) => list prepended item)
 
@@ -125,3 +123,6 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
     (mb.result() eq mb.result()) && (hmb.result() eq hmb.result())
   }
 }
+
+
+
