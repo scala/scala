@@ -2,7 +2,7 @@ package scala
 package collection
 
 
-trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
+trait SeqView[+A] extends SeqOps[A, SeqView, SeqView[A]] with View[A] {
 
   override def view: SeqView[A] = this
 
