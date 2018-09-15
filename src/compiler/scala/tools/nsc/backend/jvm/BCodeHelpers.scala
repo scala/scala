@@ -253,7 +253,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       def fail(msg: String, pos: Position = sym.pos) = {
         reporter.warning(sym.pos,
           sym.name +
-          s" has a main method with parameter type Array, but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
+          s""" has a main method with parameter type Array, but ${sym.fullName('.')} will not be a runnable program.
+          |A runnable program is an object with a method main that has the exact
+          |signature (Array[String])Unit, doesn't have a trait as a companion class,
+          |doesn't have a companion class with a method called main, has no type
+          |paremters, and doesn't inherit or override anything.
+          |This fails because: $msg""".stripMargin
           // TODO: make this next claim true, if possible
           //   by generating valid main methods as static in module classes
           //   not sure what the jvm allows here

@@ -1,32 +1,60 @@
 t4749.scala:2: warning: Fail1 has a main method with parameter type Array, but bippy.Fail1 will not be a runnable program.
-  Reason: main method must have exact signature (Array[String])Unit
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: main method must have exact signature (Array[String])Unit
   object Fail1 {
          ^
 t4749.scala:6: warning: Fail2 has a main method with parameter type Array, but bippy.Fail2 will not be a runnable program.
-  Reason: main methods cannot be generic.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: main methods cannot be generic.
   object Fail2 {
          ^
 t4749.scala:13: warning: Fail3 has a main method with parameter type Array, but bippy.Fail3 will not be a runnable program.
-  Reason: main methods cannot refer to type parameters or abstract types.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: main methods cannot refer to type parameters or abstract types.
   object Fail3 extends Bippy[Unit] { }
          ^
 t4749.scala:16: warning: Fail4 has a main method with parameter type Array, but bippy.Fail4 will not be a runnable program.
-  Reason: companion is a trait, which means no static forwarder can be generated.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion is a trait, which means no static forwarder can be generated.
 
   object Fail4 {
          ^
 t4749.scala:21: warning: Fail5 has a main method with parameter type Array, but bippy.Fail5 will not be a runnable program.
-  Reason: companion contains its own main method, which means no static forwarder can be generated.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method, which means no static forwarder can be generated.
 
   object Fail5 extends Fail5 { }
          ^
 t4749.scala:26: warning: Fail6 has a main method with parameter type Array, but bippy.Fail6 will not be a runnable program.
-  Reason: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
 
   object Fail6 {
          ^
 t4749.scala:42: warning: Win3 has a main method with parameter type Array, but bippy.Win3 will not be a runnable program.
-  Reason: main method must have exact signature (Array[String])Unit
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: main method must have exact signature (Array[String])Unit
   object Win3 extends WinBippy[Unit] { }
          ^
 error: No warnings can be incurred under -Xfatal-warnings.
