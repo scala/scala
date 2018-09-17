@@ -45,3 +45,11 @@ package foo5 {
     def main(args: Array[String]): Unit = ()
   }
 }
+
+// extended messaging
+
+package p6 {
+  object Main {
+    def main(args: Array[Int]) = ()
+  }
+}
