@@ -8,7 +8,7 @@ package reflect
 package internal
 
 import scala.annotation.tailrec
-import scala.collection.AbstractIterable
+import scala.collection.{AbstractIterable, AbstractIterator}
 import scala.collection.mutable.Clearable
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
@@ -274,13 +274,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** Returns an iterator yielding every symbol with given name in this scope.
      */
-    def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
+    def lookupAll(name: Name): Iterator[Symbol] = new AbstractIterator[Symbol] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
     }
 
-    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
+    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new AbstractIterator[ScopeEntry] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
