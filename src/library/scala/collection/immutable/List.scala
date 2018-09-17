@@ -544,6 +544,8 @@ sealed abstract class List[+A]
 
   final override def toList: List[A] = this
 
+  override def iterator: Iterator[A] = new ListIterator(this)
+
   // Override for performance
   override def equals(o: scala.Any): Boolean = {
     @tailrec def listEq(a: List[_], b: List[_]): Boolean =
@@ -611,4 +613,19 @@ object List extends StrictOptimizedSeqFactory[List] {
   // This prevents it from serializing it in the first place:
   private[this] def writeObject(out: ObjectOutputStream): Unit = ()
   private[this] def readObject(in: ObjectInputStream): Unit = ()
+}
+
+private class ListIterator[A](coll: List[A]) extends AbstractIterator[A] {
+  private[this] var these: List[A] = coll
+
+  def hasNext: Boolean = !these.isEmpty
+
+  def next(): A =
+    if (isEmpty) Iterator.empty.next()
+    else {
+      val cur    = these
+      val result = cur.head
+      these = cur.tail
+      result
+    }
 }
