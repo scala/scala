@@ -87,8 +87,14 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   protected var currentValueNode: T = _
 
   private[this] var currentStackLevel: Int = -1
-  private[this] val nodeCursorsAndLengths: Array[Int] = new Array[Int](MaxDepth * 2)
-  private[this] val nodes: Array[T] = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
+  private[this] var nodeCursorsAndLengths: Array[Int] = _
+  private[this] var nodes: Array[T] = _
+  private def initNodes(): Unit = {
+    if (nodeCursorsAndLengths eq null) {
+      nodeCursorsAndLengths = new Array[Int](MaxDepth * 2)
+      nodes = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
+    }
+  }
 
   def this(rootNode: T) = {
     this()
@@ -103,6 +109,7 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   }
 
   private final def pushNode(node: T): Unit = {
+    initNodes()
     currentStackLevel = currentStackLevel + 1
 
     val cursorIndex = currentStackLevel * 2
