@@ -616,6 +616,24 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     case _ => super.equals(o)
   }
 
+  override def equals(o: Any): Boolean = o match {
+    case that: Vector[_] =>
+      if (this eq that) true
+      else if (this.length != that.length) false
+      else if ( //
+        this.startIndex == that.startIndex && //
+          this.endIndex == that.endIndex && //
+          (this.display0 eq that.display0) && //
+          (this.display1 eq that.display1) && //
+          (this.display2 eq that.display2) && //
+          (this.display3 eq that.display3) && //
+          (this.display4 eq that.display4) && //
+          (this.display5 eq that.display5) //
+      ) true
+      else super.equals(o)
+    case _ => super.equals(o)
+  }
+
   override def toVector: Vector[A] = this
 
   override protected[this] def className = "Vector"
