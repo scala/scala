@@ -144,15 +144,14 @@ package scala.test.scaladoc.tables {
     */
   trait ParagraphEnd
 
-  // Known suboptimal behaviour. Candidates for improving later.
-
   /**
-    * |First \|Header|
-    * |---|---|
-    * |\|Content 1|
-    * |C\|ontent 2|
-    * |Content\| 3|
-    * |Content \|4|
+    * |First \|Header|Second\| Header|Third\|Head\er|
+    * |:---:|:---|-:|
+    * |a\|b|cd|ef|
+    * |\|Content 1|||
+    * |C\|ontent 2|||
+    * |Content\| 3|||
+    * |Content  \|4|\|\||\|\|\|\||
     * |Content 5\||
     */
   trait CellMarkerEscaped
@@ -161,8 +160,11 @@ package scala.test.scaladoc.tables {
     * |Domain|Symbol|Operation|Extra|
     * |---|:---:|---|---|
     * |Bitwise| \| |Or||
+    * |Strange|\|\\||???|\N|
     */
-  trait CellMarkerEscapedTwice
+  trait CellMarkerEscapeEscapesOnlyMarker
+
+  // Known suboptimal behaviour. Candidates for improving later.
 
   /**
     * ||Header 1|Header 2|

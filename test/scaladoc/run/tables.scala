@@ -245,37 +245,37 @@ object Test extends ScaladocModelTest {
       assertBodiesEquals(expected, comment.body)
     }
 
+    withComment("CellMarkerEscaped") { comment =>
+      val header = r("First |Header", "Second| Header", "Third|Head\\er")
+      val colOpts = ColumnOptionCenter :: ColumnOptionLeft :: ColumnOptionRight :: Nil
+
+      val row1 = r("a|b", "cd", "ef")
+      val row2 = r("|Content 1", "", "")
+      val row3 = r("C|ontent 2", "", "")
+      val row4 = r("Content| 3", "", "")
+      val row5 = r("Content  |4", "||", "||||")
+      val row6 = Row(Cell(List(Paragraph(Text("Content 5|")))) :: Cell(Nil) :: Cell(Nil) :: Nil)
+
+      val rows = row1 :: row2 :: row3 :: row4 :: row5 :: row6 :: Nil
+      assertTableEquals(Table(header, colOpts, rows), comment.body)
+    }
+
+    withComment("CellMarkerEscapeEscapesOnlyMarker") { comment =>
+      val header = r("Domain", "Symbol", "Operation", "Extra")
+      val colOpts = ColumnOptionLeft :: ColumnOptionCenter :: ColumnOptionLeft :: ColumnOptionLeft :: Nil
+
+      val row1 = r("Bitwise", " | ", "Or", "")
+      val row2 = r("Strange", raw"|\|", "???", raw"\N")
+
+      val rows = row1 :: row2 :: Nil
+      assertTableEquals(Table(header, colOpts, rows), comment.body)
+    }
+
     /* Deferred Enhancements.
      *
      * When these improvements are made corresponding test updates to any new or
      * changed error messages and parsed content and would be included.
      */
-
-    // Deferred pipe escape functionality.
-    withComment("CellMarkerEscaped") { comment =>
-      val header = r("First \\", "Header")
-      val colOpts = ColumnOptionLeft :: ColumnOptionLeft :: Nil
-
-      val row1 = r("\\", "Content 1")
-      val row2 = r("C\\", "ontent 2")
-      val row3 = r("Content\\", " 3")
-      val row4 = r("Content \\", "4")
-      val row5 = Row(Cell(List(Paragraph(Text("Content 5\\")))) :: Cell(Nil) :: Nil)
-
-      val rows = row1 :: row2 :: row3 :: row4 :: row5 :: Nil
-      assertTableEquals(Table(header, colOpts, rows), comment.body)
-    }
-
-    // Deferred pipe escape functionality.
-    withComment("CellMarkerEscapedTwice") { comment =>
-      val header = r("Domain", "Symbol", "Operation", "Extra")
-      val colOpts = ColumnOptionLeft :: ColumnOptionCenter :: ColumnOptionLeft :: ColumnOptionLeft :: Nil
-
-      val row = r("Bitwise", " \\", " ", "Or")
-
-      val rows = row :: Nil
-      assertTableEquals(Table(header, colOpts, rows), comment.body)
-    }
 
     withComment("MissingInitialCellMark") { comment =>
 
