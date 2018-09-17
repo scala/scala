@@ -4,6 +4,8 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.immutable.Set.Set4
+import scala.collection.mutable
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.language.higherKinds
 
@@ -88,16 +90,17 @@ object Set extends IterableFactory[Set] {
     it match {
       // We want `SortedSet` (and subclasses, such as `BitSet`) to
       // rebuild themselves to avoid element type widening issues
-      case _: SortedSet[E]         => (newBuilder[E] ++= it).result()
+      case ss: SortedSet[E]         =>
+        val builder: ImmutableBuilder[E, Set[E]] = new ImmutableBuilder[E, Set[E]](empty) {
+          override def addOne(elem: E): this.type = { elems = elems + elem; this }
+        }
+        builder.addAll(it).result()
       case _ if it.knownSize == 0  => empty[E]
       case s: Set[E]               => s
       case _                       => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A]: Builder[A, Set[A]] =
-    new ImmutableBuilder[A, Set[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[A]: Builder[A, Set[A]] = new SetBuilderImpl[A]
 
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] {
@@ -203,7 +206,12 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 4 */
-  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+  final class Set4[A] private[collection] (
+    private[collection] val elem1: A,
+    private[collection] val elem2: A,
+    private[collection] val elem3: A,
+    private[collection] val elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+
     override def size: Int = 4
     override def isEmpty = false
     override def knownSize: Int = size
@@ -248,3 +256,47 @@ object Set extends IterableFactory[Set] {
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]
+
+private[collection] final class SetBuilderImpl[A] extends Builder[A, Set[A]] {
+  private[this] var elems: Set[A] = Set.empty
+  private[this] var hashSetBuilder: HashSetBuilder[A] = _
+
+  override def clear(): Unit = {
+    elems = Set.empty
+    if (hashSetBuilder != null) {
+      hashSetBuilder.clear()
+    }
+  }
+
+  override def result(): Set[A] = {
+    if (hashSetBuilder == null || hashSetBuilder.size == 0) {
+      elems
+    } else if (elems.size == 4) {
+      val set4 = elems.asInstanceOf[Set4[A]]
+
+      hashSetBuilder.addOneIfNotExists(set4.elem1)
+      hashSetBuilder.addOneIfNotExists(set4.elem1)
+      hashSetBuilder.addOneIfNotExists(set4.elem1)
+      hashSetBuilder.addOneIfNotExists(set4.elem1)
+
+      hashSetBuilder.result()
+    } else {
+      // should never happen...
+      elems.foreach(hashSetBuilder.addOneIfNotExists)
+      hashSetBuilder.result()
+    }
+  }
+  override def addOne(elem: A): this.type = {
+    if (elems.size < 4) {
+      elems = elems + elem
+    } else {
+      if (hashSetBuilder == null) {
+        hashSetBuilder = new HashSetBuilder
+      }
+
+      hashSetBuilder.addOne(elem)
+    }
+
+    this
+  }
+}

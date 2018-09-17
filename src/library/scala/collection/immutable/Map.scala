@@ -5,7 +5,8 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.immutable.Map.Map4
+import scala.collection.mutable.Builder
 import scala.language.higherKinds
 
 
@@ -180,10 +181,7 @@ object Map extends MapFactory[Map] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
-    new ImmutableBuilder[(K, V), Map[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl
 
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
@@ -335,7 +333,16 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  final class Map4[K, +V](
+    private[collection] val key1: K,
+    private[collection] val value1: V,
+    private[collection] val key2: K,
+    private[collection] val value2: V,
+    private[collection] val key3: K,
+    private[collection] val value3: V,
+    private[collection] val key4: K,
+    private[collection] val value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+
     override def size: Int = 4
     override def knownSize: Int = 4
     override def isEmpty: Boolean = false
@@ -410,3 +417,47 @@ object Map extends MapFactory[Map] {
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
+
+private[collection] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[K, V]] {
+  private[this] var elems: Map[K, V] = Map.empty
+  private[this] var hashMapBuilder: HashMapBuilder[K, V] = null
+
+  override def clear(): Unit = {
+    elems = Map.empty
+    if (hashMapBuilder != null) {
+      hashMapBuilder.clear()
+    }
+  }
+
+  override def result(): Map[K, V] = {
+    if (hashMapBuilder == null || hashMapBuilder.size == 0) {
+      elems
+    } else if (elems.size == 4) {
+      val map4 = elems.asInstanceOf[Map4[K, V]]
+
+      hashMapBuilder.addOneIfNotExists(map4.key1, map4.value1)
+      hashMapBuilder.addOneIfNotExists(map4.key2, map4.value2)
+      hashMapBuilder.addOneIfNotExists(map4.key3, map4.value3)
+      hashMapBuilder.addOneIfNotExists(map4.key4, map4.value4)
+
+      hashMapBuilder.result()
+    } else {
+      // should never happen...
+      elems.foreach { case (k, v) => hashMapBuilder.addOneIfNotExists(k, v) }
+      hashMapBuilder.result()
+    }
+  }
+  override def addOne(elem: (K, V)) = {
+    if (elems.size < 4) {
+      elems = elems + elem
+    } else {
+      if (hashMapBuilder == null) {
+        hashMapBuilder = new HashMapBuilder
+      }
+
+      hashMapBuilder.addOne(elem)
+    }
+
+    this
+  }
+}

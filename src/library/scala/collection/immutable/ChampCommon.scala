@@ -5,6 +5,8 @@ import java.lang.Integer.bitCount
 import java.lang.Math.ceil
 import java.lang.System.arraycopy
 
+import scala.reflect.ClassTag
+
 private[immutable] final object Node {
 
   final val HashCodeLength = 32
@@ -58,10 +60,28 @@ private[immutable] abstract class Node[T <: Node[T]] {
     result
   }
 
+  protected final def removeAnyElement(as: Array[Any], ix: Int): Array[Any] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Any](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
   protected final def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
     if (ix < 0) throw new ArrayIndexOutOfBoundsException
     if (ix > as.length) throw new ArrayIndexOutOfBoundsException
     val result = new Array[Int](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
+  }
+  protected final def insertAnyElement(as: Array[Any], ix: Int, elem: Int): Array[Any] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Any](as.length + 1)
     arraycopy(as, 0, result, 0, ix)
     result(ix) = elem
     arraycopy(as, ix, result, ix + 1, as.length - ix)

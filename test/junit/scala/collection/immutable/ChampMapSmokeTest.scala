@@ -207,7 +207,8 @@ class ChampMapSmokeTest {
       map = map.updated(c, value(c.i))
     var map1 = map
     for (c <- cs) {
-      map1 = map1.updated(c, value(c.i))
+      val v = value(c.i)
+      map1 = map1.updated(c, v)
       assertEquals(cachedJavaKeySetHashCode(map), cachedJavaKeySetHashCode(map1))
       if (c.i % 41 == 0)
         assertEquals(map, map1)
