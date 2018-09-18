@@ -32,6 +32,10 @@ main1.scala:59: warning: Main has a main method with parameter type Array[String
 
   object Main {
          ^
+main1.scala:59: warning: Main has a main method with parameter type Array[String], but p7.Main will not be a runnable program.
+  Reason: main method must have exact signature (Array[String])Unit
+  object Main {
+         ^
 error: No warnings can be incurred under -Xfatal-warnings.
-7 warnings found
+8 warnings found
 one error found

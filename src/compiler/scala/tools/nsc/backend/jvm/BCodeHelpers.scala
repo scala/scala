@@ -243,6 +243,11 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
   /*
    * must-single-thread
+   *
+   * TODO: make this next claim true, if possible
+   *   by generating valid main methods as static in module classes
+   *   not sure what the jvm allows here
+   * + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
    */
   object isJavaEntryPoint {
 
@@ -252,12 +257,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = sym.hasModuleFlag && {
       def fail(msg: String, pos: Position): Unit = {
         reporter.warning(sym.pos,
-          sym.name +
-          s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
-          // TODO: make this next claim true, if possible
-          //   by generating valid main methods as static in module classes
-          //   not sure what the jvm allows here
-          // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
+        s"""|${sym.name.decoded} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
+            |  Reason: $msg""".stripMargin
         )
       }
       def failNoForwarder(msg: String) = fail(s"$msg, which means no static forwarder can be generated.\n", sym.pos)
@@ -297,7 +298,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
           }
 
         companionAdvice.foreach(failNoForwarder)
-        if (companionAdvice.isEmpty) mainAdvice.foreach { case (msg, pos) => fail(msg, pos) }
+        mainAdvice.foreach { case (msg, pos) => fail(msg, pos) }
         companionAdvice.isEmpty && mainAdvice.isEmpty
       }
       // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
