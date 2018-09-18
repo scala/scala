@@ -191,7 +191,7 @@ object Iterator {
         tail = tail.tail
         merge()
         if (currentHasNextChecked) true
-        else if (current.hasNext) {
+        else if ((current ne null) && current.hasNext) {
           currentHasNextChecked = true
           true
         } else advance()

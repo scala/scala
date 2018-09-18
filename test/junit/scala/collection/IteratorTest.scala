@@ -325,6 +325,14 @@ class IteratorTest {
     assertSameElements(List(10,11,13), scan)
     assertSameElements(List(10,-1,-1,-11,11,-2,-2,-13,13,-3), results)
   }
+  // scala/bug#11153
+  @Test def handleExhaustedConcatSubIterator(): Unit = {
+    val it = Iterator.empty ++ Iterator.empty
+    // exhaust and clear internal state
+    it.hasNext
+    val concat = Iterator.empty ++ it
+    while (concat.hasNext) concat.next()
+  }
   @Test def `scan trailing avoids extra hasNext`(): Unit = {
     val it = new AbstractIterator[Int] {
       var i = 0
