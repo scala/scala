@@ -309,6 +309,14 @@ class IteratorTest {
     assertEquals(v2, v4)
     assertEquals(Some(v1), v2)
   }
+  // scala/bug#11153
+  @Test def handleExhaustedConcatSubIterator(): Unit = {
+    val it = Iterator.empty ++ Iterator.empty
+    // exhaust and clear internal state
+    it.hasNext
+    val concat = Iterator.empty ++ it
+    while (concat.hasNext) concat.next()
+  }
 
   @Test
   def hasCorrectDistinct: Unit = {
