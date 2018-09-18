@@ -935,7 +935,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
   }
 
   /** Upserts a key/value pair into mapNode, mutably */
-  private def update(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
+  private[immutable] def update(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
     mapNode match {
       case bm: BitmapIndexedMapNode[K, V] =>
         val mask = maskFrom(keyHash, shift)
@@ -984,55 +984,6 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     }
   }
 
-  /** Inserts the this key/value only if the key is not present in the map already
-    * This method is safe to all, even when aliased, since it will only ensure unaliased if it is going to mutate */
-  private def updateIfNotExists(mapNode: MapNode[K, V], key: K, value: V, originalHash: Int, keyHash: Int, shift: Int): Unit = {
-    mapNode match {
-      case bm: BitmapIndexedMapNode[K, V] =>
-        val mask = maskFrom(keyHash, shift)
-        val bitpos = bitposFrom(mask)
-        if ((bm.dataMap & bitpos) != 0) {
-          val index = indexFrom(bm.dataMap, mask, bitpos)
-          val key0 = bm.getKey(index)
-
-          if (key0 == key) {
-            () // do nothing
-          } else {
-            ensureUnaliased()
-
-            val value0 = bm.getValue(index)
-            val key0UnimprovedHash = bm.getHash(index)
-            val key0Hash = improve(key0UnimprovedHash)
-
-            val subNodeNew: MapNode[K, V] =
-              bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
-
-            hash += keyHash
-            migrateFromInlineToNode(bm, bitpos, subNodeNew)
-          }
-
-        } else if ((bm.nodeMap & bitpos) != 0) {
-          val index = indexFrom(bm.nodeMap, mask, bitpos)
-          val subNode = bm.getNode(index)
-          val beforeSize = subNode.size
-          updateIfNotExists(subNode, key, value, originalHash, keyHash, shift + BitPartitionSize)
-          bm.size += subNode.size - beforeSize
-        } else {
-          ensureUnaliased()
-          insertValue(bm, bitpos, key, originalHash, keyHash, value)
-          hash += keyHash
-        }
-      case hc: HashCollisionMapNode[K, V] =>
-        val index = hc.indexOf(key)
-        if (index < 0) {
-          ensureUnaliased()
-          hash += keyHash
-          hc.content = hc.content.appended((key, value))
-        }
-    }
-  }
-
-
   /** If currently referencing aliased structure, copy elements to new mutable structure */
   private def ensureUnaliased() = {
     if (isAliased) copyElems()
@@ -1064,11 +1015,10 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     this
   }
 
-
-  private[collection] def addOneIfNotExists(key: K, value: V): this.type = {
-    val h = key.##
-    val im = improve(h)
-    updateIfNotExists(rootNode, key, value, h, im, 0)
+  def addOne(key: K, value: V): this.type = {
+    ensureUnaliased()
+    val originalHash = key.##
+    update(rootNode, key, value, originalHash, improve(originalHash), 0)
     this
   }
 
