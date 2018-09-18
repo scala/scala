@@ -146,7 +146,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     def getOutputClass(name: String): Option[AbstractFile] = {
       val relPathToClass = name.replace('.', '/') + ".class"
       if (STJ.enabled) {
-        val jaredClass = STJ.jaredClass(relPathToClass)
+        val jaredClass = STJ.JaredClass(relPathToClass)
         if (jaredClassesFromPrevCompilation.contains(jaredClass)) {
           Some(new PlainFile(jaredClass))
         } else None

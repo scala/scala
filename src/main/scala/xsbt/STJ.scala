@@ -16,23 +16,9 @@ final class STJ(outputDirs: Iterable[File]) {
   type RelClass = String
 
   /** Creates an identifier for a class located inside a jar.
-   * For plain class files it is enough to simply use the path.
-   * A class in jar `JaredClass` is identified as a path to jar
-   * and path to the class within that jar. Those two values
-   * are held in one string separated by `!`. Slashes in both
-   * paths are consistent with `File.separatorChar` as the actual
-   * string is usually kept in `File` object.
-   *
-   * As an example given a jar file "C:\develop\zinc\target\output.jar"
-   * and relative path to the class "sbt/internal/inc/Compile.class"
-   * The resulting identifier would be:
-   * "C:\develop\zinc\target\output.jar!sbt\internal\inc\Compile.class"
-   *
-   *  @param jar jar file that contains the class
-   *  @param cls relative path to the class within the jar
-   *  @return identifier/path to a class in jar.
+   *  Mimics the behavior of sbt.internal.inc.STJ.JaredClass.
    */
-  def jaredClass(jar: File, cls: RelClass): JaredClass = {
+  def JaredClass(jar: File, cls: RelClass): JaredClass = {
     // This identifier will be stored as a java.io.File. Its constructor will normalize slashes
     // which means that the identifier to be consistent should at all points have consistent
     // slashes for safe comparisons, especially in sets or maps.
@@ -40,8 +26,8 @@ final class STJ(outputDirs: Iterable[File]) {
     s"$jar!$relClass"
   }
 
-  def jaredClass(cls: RelClass): JaredClass = {
-    jaredClass(outputJar.get, cls)
+  def JaredClass(cls: RelClass): JaredClass = {
+    JaredClass(outputJar.get, cls)
   }
 
   def listFiles(jar: File): Set[RelClass] = {
@@ -87,7 +73,7 @@ final class STJ(outputDirs: Iterable[File]) {
         .filter(_.exists())
         .fold(Set.empty[JaredClass]) { prevJar =>
           val classes = listFiles(prevJar)
-          classes.map(jaredClass)
+          classes.map(JaredClass)
         }
     }
   }
