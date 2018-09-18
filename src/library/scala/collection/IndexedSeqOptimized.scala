@@ -276,5 +276,15 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
     case _ =>
       super.endsWith(that)
   }
+
+  override def toList: List[A] = {
+    var i = length - 1
+    var result: List[A] = Nil
+    while (i >= 0) {
+      result ::= apply(i)
+      i -= 1
+    }
+    result
+  }
 }
 

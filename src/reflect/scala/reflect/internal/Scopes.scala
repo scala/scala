@@ -82,12 +82,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** size and mask of hash tables
      *  todo: make hashtables grow?
      */
-    private val HASHSIZE = 0x80
-    private val HASHMASK = 0x7f
+    private final val HASHSIZE = 0x80
+    private final val HASHMASK = 0x7f
 
     /** the threshold number of entries from which a hashtable is constructed.
      */
-    private val MIN_HASH = 8
+    private final val MIN_HASH = 8
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = newScopeWith(this.toList: _*)
@@ -311,12 +311,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       var e: ScopeEntry = null
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.tail
         }
       } else {
         e = elems
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.next
         }
       }

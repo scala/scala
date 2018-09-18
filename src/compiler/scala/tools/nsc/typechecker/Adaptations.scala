@@ -24,8 +24,6 @@ trait Adaptations {
   trait Adaptation {
     self: Typer =>
 
-    import runDefinitions._
-
     def checkValidAdaptation(t: Tree, args: List[Tree]): Boolean = {
       def applyArg = t match {
         case Apply(_, arg :: Nil) => arg
@@ -60,8 +58,8 @@ trait Adaptations {
         // they are used limits our ability to enforce anything sensible until
         // an opt-in compiler option is given.
         oneArgObject && !(
-             isStringAddition(t.symbol)
-          || isArrowAssoc(t.symbol)
+             currentRun.runDefinitions.isStringAddition(t.symbol)
+          || currentRun.runDefinitions.isArrowAssoc(t.symbol)
           || t.symbol.name == nme.equals_
           || t.symbol.name == nme.EQ
           || t.symbol.name == nme.NE

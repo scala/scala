@@ -108,7 +108,7 @@ trait Definitions extends api.StandardDefinitions {
     )
 
     /** Is symbol a numeric value class? */
-    def isNumericValueClass(sym: Symbol) = ScalaNumericValueClasses contains sym
+    def isNumericValueClass(sym: Symbol) = ScalaNumericValueClassesSet contains sym
 
     def isGetClass(sym: Symbol) = (
          sym.name == nme.getClass_ // this condition is for performance only, this is called from `Typer#stabilize`.
@@ -151,6 +151,26 @@ trait Definitions extends api.StandardDefinitions {
       FloatClass,
       DoubleClass
     )
+    lazy val ScalaValueClassesSet: SymbolSet = new SymbolSet(ScalaValueClasses)
+    lazy val ScalaNumericValueClassesSet: SymbolSet = new SymbolSet(ScalaNumericValueClasses)
+    final class SymbolSet(syms: List[Symbol]) {
+      private[this] val ids: Array[Symbol] = syms.toArray
+      private[this] val commonOwner = syms.map(_.rawowner).distinct match {
+        case common :: Nil => common
+        case _ => null
+      }
+      final def contains(sym: Symbol): Boolean = {
+        if (commonOwner != null && (commonOwner ne sym.rawowner))
+          return false
+        val array = ids
+        var i = 0
+        while (i < array.length) {
+          if (array(i) eq sym) return true
+          i += 1
+        }
+        false
+      }
+    }
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
 
     def underlyingOfValueClass(clazz: Symbol): Type =
@@ -395,10 +415,10 @@ trait Definitions extends api.StandardDefinitions {
     def isCastSymbol(sym: Symbol)          = sym == Any_asInstanceOf || sym == Object_asInstanceOf
 
     def isJavaVarArgsMethod(m: Symbol)      = m.isMethod && isJavaVarArgs(m.info.params)
-    def isJavaVarArgs(params: Seq[Symbol])  = params.nonEmpty && isJavaRepeatedParamType(params.last.tpe)
-    def isScalaVarArgs(params: Seq[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
-    def isVarArgsList(params: Seq[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
-    def isVarArgTypes(formals: Seq[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
+    def isJavaVarArgs(params: Seq[Symbol])  = !params.isEmpty && isJavaRepeatedParamType(params.last.tpe)
+    def isScalaVarArgs(params: Seq[Symbol]) = !params.isEmpty && isScalaRepeatedParamType(params.last.tpe)
+    def isVarArgsList(params: Seq[Symbol])  = !params.isEmpty && isRepeatedParamType(params.last.tpe)
+    def isVarArgTypes(formals: Seq[Type])   = !formals.isEmpty && isRepeatedParamType(formals.last)
 
     def firstParamType(tpe: Type): Type = tpe.paramTypes match {
       case p :: _ => p
@@ -566,6 +586,8 @@ trait Definitions extends api.StandardDefinitions {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
       val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      private val symSet = new SymbolSet(seq.toList)
+      def contains(sym: Symbol): Boolean = symSet.contains(sym)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
       def specificType(args: List[Type], others: Type*): Type = {
         val arity = args.length
@@ -578,6 +600,8 @@ trait Definitions extends api.StandardDefinitions {
     object VarArityClass
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
+    // A unit test checks these are kept in synch with the library.
+    val MaxTupleAritySpecialized, MaxProductAritySpecialized, MaxFunctionAritySpecialized = 2
 
     lazy val ProductClass          = new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
     lazy val TupleClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)
@@ -604,9 +628,9 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
+    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
+    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -759,7 +783,7 @@ trait Definitions extends api.StandardDefinitions {
       case TypeRef(_, NothingClass | SingletonClass, _) => true
       case TypeRef(_, sym, _) if sym.isAbstractType     => tp.bounds.hi.typeSymbol isSubClass SingletonClass
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
-      case TypeRef(_, _, _) if tp ne tp.dealias         => isStable(tp.dealias)
+      case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
       case TypeVar(origin, _)                           => isStable(origin)
       case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
       case _: SimpleTypeProxy                           => isStable(tp.underlying)
@@ -808,14 +832,19 @@ trait Definitions extends api.StandardDefinitions {
           }
         }
       }
+      def isVolatileTypeRef(tr: TypeRef) = {
+        val dealised = tr.dealias
+        if (dealised ne tr) isVolatile(dealised)
+        else if (tr.sym.isAbstractType) isVolatileAbstractType
+        else false
+      }
 
       tp match {
         case ThisType(_)                              => false
         case SingleType(_, sym)                       => isVolatile(tp.underlying) && (sym.hasVolatileType || !sym.isStable)
         case NullaryMethodType(restpe)                => isVolatile(restpe)
         case PolyType(_, restpe)                      => isVolatile(restpe)
-        case TypeRef(_, _, _) if tp ne tp.dealias     => isVolatile(tp.dealias)
-        case TypeRef(_, sym, _) if sym.isAbstractType => isVolatileAbstractType
+        case tr: TypeRef                              => isVolatileTypeRef(tr)
         case RefinedType(_, _)                        => isVolatileRefinedType
         case TypeVar(origin, _)                       => isVolatile(origin)
         case _: SimpleTypeProxy                       => isVolatile(tp.underlying)
@@ -1376,7 +1405,7 @@ trait Definitions extends api.StandardDefinitions {
     private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 
     /** Is symbol a value class? */
-    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
+    def isPrimitiveValueClass(sym: Symbol) = ScalaValueClassesSet contains sym
     def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */

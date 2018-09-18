@@ -238,6 +238,7 @@ trait Contexts { self: Analyzer =>
     def imports: List[ImportInfo] = outer.imports
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
+    protected[Contexts] def importOrNull: ImportInfo = null
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
@@ -246,8 +247,6 @@ trait Contexts { self: Analyzer =>
       openImplicits.nonEmpty && openImplicits.exists(x => !x.isView)
     }
 
-    /* For a named application block (`Tree`) the corresponding `NamedApplyInfo`. */
-    var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
     var prefix: Type = NoPrefix
 
     def inSuperInit_=(value: Boolean)         = this(SuperInit) = value
@@ -294,6 +293,13 @@ trait Contexts { self: Analyzer =>
 
     /** ...or an Apply. */
     def enclosingApply = nextEnclosing(_.tree.isInstanceOf[Apply])
+
+    @tailrec
+    final def enclosingImport: Context = this match {
+      case _: ImportContext => this
+      case NoContext => this
+      case _ => outer.enclosingImport
+    }
 
     def siteString = {
       def what_s  = if (owner.isConstructor) "" else owner.kindString
@@ -404,6 +410,9 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+
+    @inline final def withSuppressDeadArgWarning[T](suppress: Boolean)(op: => T): T =
+      if (suppress) withMode(enabled = SuppressDeadArgWarning)(op) else withMode(disabled = SuppressDeadArgWarning)(op)
 
     /** TypeConstructorAllowed is enabled when we are typing a higher-kinded type.
      *  adapt should then check kind-arity based on the prototypical type's kind
@@ -909,7 +918,7 @@ trait Contexts { self: Analyzer =>
 
     /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
     private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
-      val imports = this.imports
+      val firstImport = this.firstImport
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
@@ -922,13 +931,14 @@ trait Contexts { self: Analyzer =>
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
-        assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
-        Some(collectImplicitImports(imports.head))
+        if (isDeveloper)
+          assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
+        Some(collectImplicitImports(firstImport.get))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
         val pre = owner.packageObject.typeOfThis
         Some(collectImplicits(pre.implicitMembers, pre))
-      } else Some(Nil)
+      } else SomeNil
     }
 
     //
@@ -1065,35 +1075,51 @@ trait Contexts { self: Analyzer =>
         found1
       }
 
-      def lookupInScope(scope: Scope) =
-        (scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
+      def lookupInScope(owner: Symbol, pre: Type, scope: Scope): Symbol = {
+        var e = scope.lookupEntry(name)
+        while (e != null && !qualifies(e.sym)) {
+          e = scope.lookupNextEntry(e)
+        }
+        if (e == null) {
+          NoSymbol
+        } else {
+          val e1 = e
+          val e1Sym = e.sym
+          var syms: mutable.ListBuffer[Symbol] = null
+          e = scope.lookupNextEntry(e)
+          while (e ne null) {
+            if (e.depth == e1.depth && e.sym != e1Sym && qualifies(e.sym)) {
+              if (syms eq null) {
+                syms = new mutable.ListBuffer[Symbol]
+                syms += e1Sym
+              }
+              syms += e.sym
+            }
+            e = scope.lookupNextEntry(e)
+          }
+          // we have a winner: record the symbol depth
+          symbolDepth = (cx.depth - cx.scope.nestingLevel) + e1.depth
 
-      def newOverloaded(owner: Symbol, pre: Type, entries: List[ScopeEntry]) =
-        logResult(s"overloaded symbol in $pre")(owner.newOverloaded(pre, entries map (_.sym)))
+          if (syms eq null) e1Sym
+          else owner.newOverloaded(pre, syms.toList)
+        }
+      }
 
       // Constructor lookup should only look in the decls of the enclosing class
       // not in the self-type, nor in the enclosing context, nor in imports (scala/bug#4460, scala/bug#6745)
-      if (name == nme.CONSTRUCTOR) return {
+      if (name == nme.CONSTRUCTOR) {
         val enclClassSym = cx.enclClass.owner
         val scope = cx.enclClass.prefix.baseType(enclClassSym).decls
-        val constructorSym = lookupInScope(scope) match {
-          case Nil       => NoSymbol
-          case hd :: Nil => hd.sym
-          case entries   => newOverloaded(enclClassSym, cx.enclClass.prefix, entries)
-        }
-        finishDefSym(constructorSym, cx.enclClass.prefix)
+        val constructorSym = lookupInScope(enclClassSym, cx.enclClass.prefix, scope)
+        return finishDefSym(constructorSym, cx.enclClass.prefix)
       }
 
       // cx.scope eq null arises during FixInvalidSyms in Duplicators
       while (defSym == NoSymbol && (cx ne NoContext) && (cx.scope ne null)) {
         pre    = cx.enclClass.prefix
-        defSym = lookupInScope(cx.scope) match {
-          case Nil                  => searchPrefix
-          case entries @ (hd :: tl) =>
-            // we have a winner: record the symbol depth
-            symbolDepth = (cx.depth - cx.scope.nestingLevel) + hd.depth
-            if (tl.isEmpty) hd.sym
-            else newOverloaded(cx.owner, pre, entries)
+        defSym = lookupInScope(cx.owner, cx.enclClass.prefix, cx.scope) match {
+          case NoSymbol                  => searchPrefix
+          case found                     => found
         }
         if (!defSym.exists)
           cx = cx.outer // push further outward
@@ -1102,12 +1128,8 @@ trait Contexts { self: Analyzer =>
         symbolDepth = cx.depth
 
       var impSym: Symbol = NoSymbol
-      var imports        = Context.this.imports
-      def imp1           = imports.head
-      def imp2           = imports.tail.head
-      def sameDepth      = imp1.depth == imp2.depth
-      def imp1Explicit   = imp1 isExplicitImport name
-      def imp2Explicit   = imp2 isExplicitImport name
+      val importCursor = new ImportCursor(this, name)
+      import importCursor.{imp1, imp2}
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
         importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
@@ -1130,10 +1152,10 @@ trait Contexts { self: Analyzer =>
         || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
       )
 
-      while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
+      while (!impSym.exists && importCursor.imp1Exists && depthOk(importCursor.imp1)) {
         impSym = lookupImport(imp1, requireExplicit = false)
         if (!impSym.exists)
-          imports = imports.tail
+          importCursor.advanceImp1Imp2()
       }
 
       if (defSym.exists && impSym.exists) {
@@ -1152,16 +1174,6 @@ trait Contexts { self: Analyzer =>
       if (defSym.exists)
         finishDefSym(defSym, pre)
       else if (impSym.exists) {
-        // We continue walking down the imports as long as the tail is non-empty, which gives us:
-        //   imports  ==  imp1 :: imp2 :: _
-        // And at least one of the following is true:
-        //   - imp1 and imp2 are at the same depth
-        //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
-        def keepLooking = (
-             lookupError == null
-          && imports.tail.nonEmpty
-          && (sameDepth || !imp1Explicit)
-        )
         // If we find a competitor imp2 which imports the same name, possible outcomes are:
         //
         //  - same depth, imp1 wild, imp2 explicit:        imp2 wins, drop imp1
@@ -1173,19 +1185,19 @@ trait Contexts { self: Analyzer =>
         // The ambiguity check is: if we can verify that both imports refer to the same
         // symbol (e.g. import foo.X followed by import foo._) then we discard imp2
         // and proceed. If we cannot, issue an ambiguity error.
-        while (keepLooking) {
+        while (lookupError == null && importCursor.keepLooking) {
           // If not at the same depth, limit the lookup to explicit imports.
           // This is desirable from a performance standpoint (compare to
           // filtering after the fact) but also necessary to keep the unused
           // import check from being misled by symbol lookups which are not
           // actually used.
-          val other = lookupImport(imp2, requireExplicit = !sameDepth)
-          def imp1wins() = { imports = imp1 :: imports.tail.tail }
-          def imp2wins() = { impSym = other ; imports = imports.tail }
+          val other = lookupImport(imp2, requireExplicit = !importCursor.sameDepth)
 
+          def imp1wins() { importCursor.advanceImp2() }
+          def imp2wins() { impSym = other; importCursor.advanceImp1Imp2() }
           if (!other.exists) // imp1 wins; drop imp2 and continue.
             imp1wins()
-          else if (sameDepth && !imp1Explicit && imp2Explicit) // imp2 wins; drop imp1 and continue.
+          else if (importCursor.imp2Wins) // imp2 wins; drop imp1 and continue.
             imp2wins()
           else resolveAmbiguousImport(name, imp1, imp2) match {
             case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
@@ -1259,6 +1271,7 @@ trait Contexts { self: Analyzer =>
     }
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
+    override final def importOrNull = impInfo
     override final def isRootImport = !tree.pos.isDefined
     override final def toString     = s"${super.toString} with ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
@@ -1300,7 +1313,7 @@ trait Contexts { self: Analyzer =>
 
     @inline final def withFreshErrorBuffer[T](expr: => T): T = {
       val previousBuffer = _errorBuffer
-      _errorBuffer = newBuffer
+      _errorBuffer = null
       val res = expr // expr will read _errorBuffer
       _errorBuffer = previousBuffer
       res
@@ -1332,7 +1345,7 @@ trait Contexts { self: Analyzer =>
         case INFO    => reporter.echo(pos, msg)
       }
 
-    final override def hasErrors = super.hasErrors || errorBuffer.nonEmpty
+    final override def hasErrors = super.hasErrors || (_errorBuffer != null && errorBuffer.nonEmpty)
 
     // TODO: everything below should be pushed down to BufferingReporter (related to buffering)
     // Implicit relies on this most heavily, but there you know reporter.isInstanceOf[BufferingReporter]
@@ -1525,6 +1538,36 @@ trait Contexts { self: Analyzer =>
 
   type ImportType = global.ImportType
   val ImportType = global.ImportType
+
+  /** Walks a pair of references (`imp1` and `imp2`) up the context chain to ImportContexts */
+  private final class ImportCursor(var ctx: Context, name: Name) {
+    private var imp1Ctx = ctx.enclosingImport
+    private var imp2Ctx = imp1Ctx.outer.enclosingImport
+
+    def advanceImp1Imp2(): Unit = {
+      imp1Ctx = imp2Ctx; imp2Ctx = imp1Ctx.outer.enclosingImport
+    }
+    def advanceImp2(): Unit = {
+      imp2Ctx = imp2Ctx.outer.enclosingImport
+    }
+    def imp1Exists: Boolean = imp1Ctx.importOrNull != null
+    def imp1: ImportInfo = imp1Ctx.importOrNull
+    def imp2: ImportInfo = imp2Ctx.importOrNull
+
+    // We continue walking down the imports as long as the tail is non-empty, which gives us:
+    //   imports  ==  imp1 :: imp2 :: _
+    // And at least one of the following is true:
+    //   - imp1 and imp2 are at the same depth
+    //   - imp1 is a wildcard import, so all explicit imports from outer scopes must be checked
+    def keepLooking: Boolean = imp2Exists && (sameDepth || !imp1Explicit)
+    def imp2Wins: Boolean = sameDepth && !imp1Explicit && imp2Explicit
+    def sameDepth: Boolean = imp1.depth == imp2.depth
+
+    private def imp2Exists = imp2Ctx.importOrNull != null
+    private def imp1Explicit = imp1 isExplicitImport name
+    private def imp2Explicit = imp2 isExplicitImport name
+  }
+  private final val SomeNil = Some(Nil)
 }
 
 object ContextMode {
@@ -1581,6 +1624,12 @@ object ContextMode {
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
+  /** Should a dead code warning be issued for a Nothing-typed argument to the current application. */
+  final val SuppressDeadArgWarning: ContextMode   = 1 << 17
+
+  /** Were default arguments used? */
+  final val DiagUsedDefaults: ContextMode         = 1 << 18
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1604,7 +1653,8 @@ object ContextMode {
     StarPatterns           -> "StarPatterns",
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
-    TypeConstructorAllowed -> "TypeConstructorAllowed"
+    TypeConstructorAllowed -> "TypeConstructorAllowed",
+    SuppressDeadArgWarning -> "SuppressDeadArgWarning"
   )
 }
 

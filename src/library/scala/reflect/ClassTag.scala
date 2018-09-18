@@ -46,7 +46,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
   /** Produces a new array with element type `T` and length `len` */
-  override def newArray(len: Int): Array[T] =
+  override def newArray(len: Int): Array[T] = {
     runtimeClass match {
       case java.lang.Byte.TYPE      => new Array[Byte](len).asInstanceOf[Array[T]]
       case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]
@@ -59,6 +59,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
       case java.lang.Void.TYPE      => new Array[Unit](len).asInstanceOf[Array[T]]
       case _                        => java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
     }
+  }
 
   /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
    *
@@ -69,18 +70,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
   def unapply(x: Any): Option[T] =
-    if (null != x && (
-            (runtimeClass.isInstance(x))
-         || (x.isInstanceOf[Byte]    && runtimeClass.isAssignableFrom(classOf[Byte]))
-         || (x.isInstanceOf[Short]   && runtimeClass.isAssignableFrom(classOf[Short]))
-         || (x.isInstanceOf[Char]    && runtimeClass.isAssignableFrom(classOf[Char]))
-         || (x.isInstanceOf[Int]     && runtimeClass.isAssignableFrom(classOf[Int]))
-         || (x.isInstanceOf[Long]    && runtimeClass.isAssignableFrom(classOf[Long]))
-         || (x.isInstanceOf[Float]   && runtimeClass.isAssignableFrom(classOf[Float]))
-         || (x.isInstanceOf[Double]  && runtimeClass.isAssignableFrom(classOf[Double]))
-         || (x.isInstanceOf[Boolean] && runtimeClass.isAssignableFrom(classOf[Boolean]))
-         || (x.isInstanceOf[Unit]    && runtimeClass.isAssignableFrom(classOf[Unit])))
-       ) Some(x.asInstanceOf[T])
+    if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
     else None
 
   // case class accessories
@@ -120,7 +110,11 @@ object ClassTag {
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
   @SerialVersionUID(1L)
-  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T]
+  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
+    override def newArray(len: Int): Array[T] = {
+      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+    }
+  }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {

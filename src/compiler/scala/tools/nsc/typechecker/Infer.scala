@@ -425,37 +425,6 @@ trait Infer extends Checkable {
         tvars map (_ => WildcardType)
     }
 
-    /** [Martin] Can someone comment this please? I have no idea what it's for
-     *  and the code is not exactly readable.
-     */
-    object AdjustedTypeArgs {
-      val Result  = mutable.LinkedHashMap
-      type Result = mutable.LinkedHashMap[Symbol, Option[Type]]
-
-      def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
-        (m collect {case (p, Some(a)) => (p, a)}).unzip  ))
-
-      object Undets {
-        def unapply(m: Result): Some[(List[Symbol], List[Type], List[Symbol])] = Some(toLists{
-          val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
-          val (okArgs, okTparams) = ok.unzip
-          (okArgs, okTparams, nok.keys)
-        })
-      }
-
-      object AllArgsAndUndets {
-        def unapply(m: Result): Some[(List[Symbol], List[Type], List[Type], List[Symbol])] = Some(toLists{
-          val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
-          val (okArgs, okTparams) = ok.unzip
-          (okArgs, okTparams, m.values.map(_.getOrElse(NothingTpe)), nok.keys)
-        })
-      }
-
-      private def toLists[A1, A2](pxs: (Iterable[A1], Iterable[A2])) = (pxs._1.toList, pxs._2.toList)
-      private def toLists[A1, A2, A3](pxs: (Iterable[A1], Iterable[A2], Iterable[A3])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList)
-      private def toLists[A1, A2, A3, A4](pxs: (Iterable[A1], Iterable[A2], Iterable[A3], Iterable[A4])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList, pxs._4.toList)
-    }
-
     /** Retract arguments that were inferred to Nothing because inference failed. Correct types for repeated params.
      *
      * We detect Nothing-due-to-failure by only retracting a parameter if either:
@@ -1221,20 +1190,6 @@ trait Infer extends Checkable {
           PatternTypeIncompatibleWithPtError2(pat, pt1, pt)
       }
 
-    object toOrigin extends TypeMap {
-      def apply(tp: Type): Type = tp match {
-        case TypeVar(origin, _) => origin
-        case _ => mapOver(tp)
-      }
-    }
-
-    object approximateAbstracts extends TypeMap {
-      def apply(tp: Type): Type = tp.dealiasWiden match {
-        case TypeRef(pre, sym, _) if sym.isAbstractType => WildcardType
-        case _                                          => mapOver(tp)
-      }
-    }
-
     /** Collects type parameters referred to in a type.
      */
     def freeTypeParamsOfTerms(tp: Type): List[Symbol] = {
@@ -1450,4 +1405,50 @@ trait Infer extends Checkable {
       }
     }
   }
+
+  object toOrigin extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case TypeVar(origin, _) => origin
+      case _ => mapOver(tp)
+    }
+  }
+
+  object approximateAbstracts extends TypeMap {
+    def apply(tp: Type): Type = tp.dealiasWiden match {
+      case TypeRef(pre, sym, _) if sym.isAbstractType => WildcardType
+      case _                                          => mapOver(tp)
+    }
+  }
+
+  /** [Martin] Can someone comment this please? I have no idea what it's for
+    *  and the code is not exactly readable.
+    */
+  object AdjustedTypeArgs {
+    val Result  = mutable.LinkedHashMap
+    type Result = mutable.LinkedHashMap[Symbol, Option[Type]]
+
+    def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
+      (m collect {case (p, Some(a)) => (p, a)}).unzip  ))
+
+    object Undets {
+      def unapply(m: Result): Some[(List[Symbol], List[Type], List[Symbol])] = Some(toLists{
+        val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
+        val (okArgs, okTparams) = ok.unzip
+        (okArgs, okTparams, nok.keys)
+      })
+    }
+
+    object AllArgsAndUndets {
+      def unapply(m: Result): Some[(List[Symbol], List[Type], List[Type], List[Symbol])] = Some(toLists{
+        val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
+        val (okArgs, okTparams) = ok.unzip
+        (okArgs, okTparams, m.values.map(_.getOrElse(NothingTpe)), nok.keys)
+      })
+    }
+
+    private def toLists[A1, A2](pxs: (Iterable[A1], Iterable[A2])) = (pxs._1.toList, pxs._2.toList)
+    private def toLists[A1, A2, A3](pxs: (Iterable[A1], Iterable[A2], Iterable[A3])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList)
+    private def toLists[A1, A2, A3, A4](pxs: (Iterable[A1], Iterable[A2], Iterable[A3], Iterable[A4])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList, pxs._4.toList)
+  }
+
 }

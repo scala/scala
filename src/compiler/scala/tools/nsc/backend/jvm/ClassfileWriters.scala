@@ -135,6 +135,7 @@ abstract class ClassfileWriters {
     private sealed class DirClassWriter extends UnderlyingClassfileWriter {
       val builtPaths = new ConcurrentHashMap[Path, java.lang.Boolean]()
       val noAttributes = Array.empty[FileAttribute[_]]
+      private val isWindows = scala.util.Properties.isWin
 
       def ensureDirForPath(baseDir: Path, filePath: Path): Unit = {
         import java.lang.Boolean.TRUE
@@ -174,10 +175,12 @@ abstract class ClassfileWriters {
         val path = getPath(className, paths)
         val bytes = formatData(rawBytes)
         ensureDirForPath(paths.outputPath, path)
-        val os = try FileChannel.open(path, fastOpenOptions)
-        catch {
-          case _: FileAlreadyExistsException => FileChannel.open(path, fallbackOpenOptions)
-        }
+        val os = if (isWindows) {
+          try FileChannel.open(path, fastOpenOptions)
+          catch {
+            case _: FileAlreadyExistsException => FileChannel.open(path, fallbackOpenOptions)
+          }
+        } else FileChannel.open(path, fallbackOpenOptions)
 
         try {
           os.write(ByteBuffer.wrap(bytes), 0L)

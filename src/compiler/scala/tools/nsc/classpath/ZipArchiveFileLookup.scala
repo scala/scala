@@ -68,8 +68,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
   }
 
   private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
-    val dirName = FileUtils.dirPath(pkg) + "/"
-    archive.allDirs.get(dirName)
+    archive.allDirsByDottedName.get(pkg)
   }
 
   protected def createFileEntry(file: FileZipArchive#Entry): FileEntryType

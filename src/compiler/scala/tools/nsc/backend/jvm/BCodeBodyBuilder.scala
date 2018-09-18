@@ -629,14 +629,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genInvokeDynamicLambda(attachment)
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
-        case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
+        case Apply(fun, expr :: Nil) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = typeToBType(fun.symbol.firstParam.info)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
           generatedType = boxResultType(fun.symbol)
 
-        case Apply(fun, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
+        case Apply(fun, expr :: Nil) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
           genLoad(expr)
           val boxType = unboxResultType(fun.symbol)
           generatedType = boxType

@@ -70,7 +70,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    * The original owner of a symbol is needed in some places in the backend. Ideally, owners should
    * be versioned like the type history.
    */
-  private val originalOwnerMap = perRunCaches.newMap[Symbol, Symbol]()
+  private val originalOwnerMap = perRunCaches.newAnyRefMap[Symbol, Symbol]()
 
   // TODO - don't allow the owner to be changed without checking invariants, at least
   // when under some flag. Define per-phase invariants for owner/owned relationships,
@@ -828,7 +828,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDelambdafyTarget  = isArtifact && isMethod && hasAttachment[DelambdafyTarget.type]
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
-    final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
+    final def needsFlatClasses    = phase.flatClasses && (rawowner ne NoSymbol) && !rawowner.isPackageClass
 
     // TODO introduce a flag for these?
     final def isPatternTypeVariable: Boolean =
@@ -2082,9 +2082,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       // The slightly more principled approach of using the paramss of the
       // primary constructor leads to cycles in, for example, pos/t5084.scala.
       val primaryNames = constrParamAccessors map (_.name.dropLocal)
+      def nameStartsWithOrigDollar(name: Name, prefix: Name) =
+        name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
       caseFieldAccessorsUnsorted.sortBy { acc =>
         primaryNames indexWhere { orig =>
-          (acc.name == orig) || (acc.name startsWith (orig append "$"))
+          (acc.name == orig) || nameStartsWithOrigDollar(acc.name, orig)
         }
       }
     }

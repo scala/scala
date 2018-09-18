@@ -1,82 +1,103 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
+ * Copyright 2007-2018 LAMP/EPFL
  * @author Paul Phillips
  */
-
-package scala.tools
-package cmd
+package scala.tools.cmd
 
 import scala.annotation.tailrec
 
-/** A simple (overly so) command line parser.
- *  !!! This needs a thorough test suite to make sure quoting is
- *  done correctly and portably.
+/** A simple enough command line parser.
  */
 object CommandLineParser {
-  // splits a string into a quoted prefix and the rest of the string,
-  // taking escaping into account (using \)
-  // `"abc"def` will match as `DoubleQuoted(abc, def)`
-  private class QuotedExtractor(quote: Char) {
-    def unapply(in: String): Option[(String, String)] = {
-      val del = quote.toString
-      if (in startsWith del) {
-        var escaped = false
-        val (quoted, next) = (in substring 1) span {
-          case `quote` if !escaped => false
-          case '\\'    if !escaped => escaped = true; true
-          case _                   => escaped = false; true
-        }
-        // the only way to get out of the above loop is with an empty next or !escaped
-        // require(next.isEmpty || !escaped)
-        if (next startsWith del) Some((quoted, next substring 1))
-        else None
-      } else None
+  private final val DQ = '"'
+  private final val SQ = '\''
+
+  /** Split the line into tokens separated by whitespace or quotes.
+   *
+   *  @return either an error message or reverse list of tokens
+   */
+  private def tokens(in: String) = {
+    import Character.isWhitespace
+    import java.lang.{StringBuilder => Builder}
+    import collection.mutable.ArrayBuffer
+
+    var accum: List[String] = Nil
+    var pos = 0
+    var start = 0
+    val qpos = new ArrayBuffer[Int](16)    // positions of paired quotes
+
+    def cur: Int  = if (done) -1 else in.charAt(pos)
+    def bump() = pos += 1
+    def done   = pos >= in.length
+
+    def skipToQuote(q: Int) = {
+      var escaped = false
+      def terminal = in.charAt(pos) match {
+        case _ if escaped => escaped = false ; false
+        case '\\'         => escaped = true ; false
+        case `q`          => true
+        case _            => false
+      }
+      while (!done && !terminal) pos += 1
+      !done
     }
-  }
-  private object DoubleQuoted extends QuotedExtractor('"')
-  private object SingleQuoted extends QuotedExtractor('\'')
-  object Word {
-    private val regex = """(\S+)""".r
-    def unapply(s: String): Option[(String, String)] = {
-      regex.findPrefixOf(s) match {
-        case Some(prefix) => Some(prefix, s.substring(prefix.length))
-        case None => None
+    def skipToDelim(): Boolean =
+      cur match {
+        case q @ (DQ | SQ)        => { qpos.append(pos); bump(); skipToQuote(q) } && { qpos.append(pos); bump(); skipToDelim() }
+        case -1                   => true
+        case c if isWhitespace(c) => true
+        case _                    => bump(); skipToDelim()
+      }
+    def skipWhitespace() = while (isWhitespace(cur)) pos += 1
+    def copyText() = {
+      val buf = new Builder
+      var p = start
+      var i = 0
+      while (p < pos) {
+        if (i >= qpos.size) {
+          buf.append(in, p, pos)
+          p = pos
+        } else if (p == qpos(i)) {
+          buf.append(in, qpos(i)+1, qpos(i+1))
+          p = qpos(i+1)+1
+          i += 2
+        } else {
+          buf.append(in, p, qpos(i))
+          p = qpos(i)
+        }
+      }
+      buf.toString
+    }
+    def text() = {
+      val res =
+        if (qpos.isEmpty) in.substring(start, pos)
+        else if (qpos(0) == start && qpos(1) == pos) in.substring(start+1, pos-1)
+        else copyText()
+      qpos.clear()
+      res
+    }
+    def badquote = Left("Unmatched quote")
+
+    @tailrec def loop(): Either[String, List[String]] = {
+      skipWhitespace()
+      start = pos
+      if (done) Right(accum)
+      else if (!skipToDelim()) badquote
+      else {
+        accum = text() :: accum
+        loop()
       }
     }
-  }
-
-  // parse `in` for an argument, return it and the remainder of the input (or an error message)
-  // (argument may be in single/double quotes, taking escaping into account, quotes are stripped)
-  private def argument(in: String): Either[String, (String, String)] = in match {
-    case DoubleQuoted(arg, rest) => Right((arg, rest))
-    case SingleQuoted(arg, rest) => Right((arg, rest))
-    case Word(arg, rest)         => Right((arg, rest))
-    case _                       => Left(s"Illegal argument: $in")
-  }
-
-  // parse a list of whitespace-separated arguments (ignoring whitespace in quoted arguments)
-  @tailrec private def commandLine(in: String, accum: List[String] = Nil): Either[String, (List[String], String)] = {
-    val trimmed = in.trim
-    if (trimmed.isEmpty) Right((accum.reverse, ""))
-    else argument(trimmed) match {
-      case Right((arg, next)) =>
-        val leadingWhitespaceLen = next.prefixLength(Character.isWhitespace)
-        val rest = next.substring(leadingWhitespaceLen)
-        if (leadingWhitespaceLen == 0 && rest.nonEmpty)
-          Left("Arguments should be separated by whitespace.") // TODO: can this happen?
-        else
-          commandLine(rest, arg :: accum)
-      case Left(msg) => Left(msg)
-    }
+    loop()
   }
 
   class ParseException(msg: String) extends RuntimeException(msg)
 
-  def tokenize(line: String): List[String] = tokenize(line, x => throw new ParseException(x))
-  def tokenize(line: String, errorFn: String => Unit): List[String] = {
-    commandLine(line) match {
-      case Right((args, _)) => args
-      case Left(msg)        => errorFn(msg) ; Nil
+  def tokenize(line: String, errorFn: String => Unit): List[String] =
+    tokens(line) match {
+      case Right(args) => args.reverse
+      case Left(msg)   => errorFn(msg) ; Nil
     }
-  }
+
+  def tokenize(line: String): List[String] = tokenize(line, x => throw new ParseException(x))
 }

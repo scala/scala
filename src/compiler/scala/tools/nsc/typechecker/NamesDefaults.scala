@@ -49,6 +49,13 @@ trait NamesDefaults { self: Analyzer =>
     vargss:     List[List[Tree]],
     blockTyper: Typer
   ) { }
+  object NamedApplyBlock {
+    private[this] val tag = reflect.classTag[NamedApplyInfo]
+    def unapply(b: Tree): Option[NamedApplyInfo] = b match {
+      case _: Block => b.attachments.get[NamedApplyInfo](tag)
+      case _ => None
+    }
+  }
 
   private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case AssignOrNamedArg(Ident(name), _) => name }
   def isNamedArg(arg: Tree) = arg match {
@@ -191,15 +198,13 @@ trait NamesDefaults { self: Analyzer =>
 
         val b = Block(List(vd), baseFunTransformed)
                   .setType(baseFunTransformed.tpe).setPos(baseFun.pos.makeTransparent)
-        context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper)))
+        b.updateAttachment(NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper))
         b
       }
 
       def blockWithoutQualifier(defaultQual: Option[Tree]) = {
         val b = atPos(baseFun.pos)(Block(Nil, baseFun).setType(baseFun.tpe))
-        context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper)))
+        b.updateAttachment(NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper))
         b
       }
 
@@ -326,17 +331,14 @@ trait NamesDefaults { self: Analyzer =>
     }
 
     // begin transform
-    if (isNamedApplyBlock(tree)) {
-      context.namedApplyBlockInfo.get._1
-    } else tree match {
+    tree match {
+      case NamedApplyBlock(info) => tree
       // `fun` is typed. `namelessArgs` might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
         else {
-          assert(isNamedApplyBlock(transformedFun), transformedFun)
-          val NamedApplyInfo(qual, targs, vargss, blockTyper) =
-            context.namedApplyBlockInfo.get._2
+          val NamedApplyBlock(NamedApplyInfo(qual, targs, vargss, blockTyper)) = transformedFun
           val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
@@ -372,8 +374,7 @@ trait NamesDefaults { self: Analyzer =>
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
               val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
-              context.namedApplyBlockInfo =
-                Some((block, NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper)))
+              block.updateAttachment(NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper))
               block
             case _ => tree
           }

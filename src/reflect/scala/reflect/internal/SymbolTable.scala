@@ -230,8 +230,6 @@ abstract class SymbolTable extends macros.Universe
   }
 
   final def phase_=(p: Phase) {
-    //System.out.println("setting phase to " + p)
-    assert((p ne null) && p != NoPhase, p)
     ph = p
     per = period(currentRunId, p.id)
   }
