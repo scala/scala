@@ -29,7 +29,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       STJ.outputJar
         .map { jar =>
           val classes = STJ.listFiles(jar)
-          classes.map(STJ.init(jar, _))
+          classes.map(STJ.jaredClass(jar, _))
         }
         .getOrElse(Set.empty)
     }
@@ -77,7 +77,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       val classFile =
         fileForClass(new java.io.File("."), sym, separatorRequired).toString
           .drop(2) // stripPrefix ./ or .\
-      val jaredClass = STJ.init(classFile)
+      val jaredClass = STJ.jaredClass(classFile)
       if (existingJaredClasses.contains(jaredClass)) {
         Some(new File(jaredClass))
       } else {
