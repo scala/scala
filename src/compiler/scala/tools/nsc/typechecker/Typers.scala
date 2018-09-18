@@ -4126,7 +4126,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     //
     import treeInfo.{isApplyDynamicName, DynamicUpdate, DynamicApplicationNamed}
 
-    private def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
+    protected def acceptsApplyDynamic(tp: Type) = tp.typeSymbol isNonBottomSubClass DynamicClass
 
     /** Returns `Some(t)` if `name` can be selected dynamically on `qual`, `None` if not.
      * `t` specifies the type to be passed to the applyDynamic/selectDynamic call (unless it is NoType)
@@ -4187,7 +4187,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  - simplest solution: have two method calls
      *
      */
-    private def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+    protected def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
       val cxTree = context.enclosingNonImportContext.tree // scala/bug#8364
       debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
       val treeInfo.Applied(treeSelection, _, _) = tree
@@ -4236,7 +4236,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
     }
-    private def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
+    protected def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
     //
     // END: applyDynamic support
     //
