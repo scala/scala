@@ -381,8 +381,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
   override def appended[B >: A](value: B): Vector[B] = {
     val result = if (endIndex != startIndex) {
-      val blockIndex = endIndex & ~31
-      val lo = endIndex & 31
+      val blockIndex = endIndex & ~31 // round down to nearest 32
+      val lo = endIndex & 31 // remainder of blockIndex / 32
 
       if (endIndex != blockIndex) {
         val s = new Vector(startIndex, endIndex + 1, blockIndex)
@@ -616,6 +616,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     case _ => super.equals(o)
   }
 
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = iterator.copyToArray(xs, start, len)
+
   override def toVector: Vector[A] = this
 
   override protected[this] def className = "Vector"
@@ -628,11 +630,26 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
   private[this] var blockIndex: Int = _startIndex & ~31
   private[this] var lo: Int = _startIndex & 31
 
-  private[this] var endLo = math.min(endIndex - blockIndex, 32)
+  private[this] var endLo = Math.min(endIndex - blockIndex, 32)
 
   def hasNext = _hasNext
 
   private[this] var _hasNext = blockIndex + lo < endIndex
+
+  private[this] def advanceToNextBlockIfNecessary(): Unit = {
+    if (lo == endLo) {
+      if (blockIndex + lo < endIndex) {
+        val newBlockIndex = blockIndex + 32
+        gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
+
+        blockIndex = newBlockIndex
+        endLo = Math.min(endIndex - blockIndex, 32)
+        lo = 0
+      } else {
+        _hasNext = false
+      }
+    }
+  }
 
   override def drop(n: Int): Iterator[A] = {
     if (n > 0) {
@@ -657,24 +674,25 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
 
   def next(): A = {
     if (!_hasNext) throw new NoSuchElementException("reached iterator end")
-
     val res = display0(lo).asInstanceOf[A]
     lo += 1
-
-    if (lo == endLo) {
-      if (blockIndex + lo < endIndex) {
-        val newBlockIndex = blockIndex + 32
-        gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
-
-        blockIndex = newBlockIndex
-        endLo = math.min(endIndex - blockIndex, 32)
-        lo = 0
-      } else {
-        _hasNext = false
-      }
-    }
-
+    advanceToNextBlockIfNecessary()
     res
+  }
+
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+    val xsLen = xs.length
+    val totalToBeCopied = IterableOnce.elemsToCopyToArray(remainingElementCount, xsLen, start, len)
+    var totalCopied = 0
+    while (hasNext && totalCopied < totalToBeCopied) {
+      val _start = start + totalCopied
+      val toBeCopied = IterableOnce.elemsToCopyToArray(endLo - lo, xsLen, _start, len - totalCopied)
+      Array.copy(display0, lo, xs, _start, toBeCopied)
+      totalCopied += toBeCopied
+      lo += toBeCopied
+      advanceToNextBlockIfNecessary()
+    }
+    totalCopied
   }
 
   private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
@@ -707,15 +725,28 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   def isEmpty: Boolean = size == 0
   def nonEmpty: Boolean = size != 0
 
-  def addOne(elem: A): this.type = {
+  private[this] def advanceToNextBlockIfNecessary(): Unit = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32
       gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)
       blockIndex = newBlockIndex
       lo = 0
     }
+  }
+
+  def addOne(elem: A): this.type = {
+    advanceToNextBlockIfNecessary()
     display0(lo) = elem.asInstanceOf[AnyRef]
     lo += 1
+    this
+  }
+
+  override def addAll(xs: IterableOnce[A]): this.type = {
+    val it = (xs.iterator : Iterator[A]).asInstanceOf[Iterator[AnyRef]]
+    while (it.hasNext) {
+      advanceToNextBlockIfNecessary()
+      lo += it.copyToArray(xs = display0, start = lo, len = display0.length - lo)
+    }
     this
   }
 

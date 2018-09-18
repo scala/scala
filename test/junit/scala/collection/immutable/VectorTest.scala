@@ -64,6 +64,18 @@ class VectorTest {
   }
 
   @Test
+  def concat: Unit = {
+    assertEquals((1 to 100).toVector, (1 to 7).toVector concat (8 to 100).toVector)
+  }
+
+  @Test
+  def copyToArray: Unit = {
+    val array = Array.fill(100)(2)
+    Vector.fill(100)(1).copyToArray(array, 0, 100)
+    assertEquals(array.toSeq, Seq.fill(100)(1))
+  }
+
+  @Test
   def vectorIteratorDrop(): Unit = {
     val underlying = Vector(0 to 10010: _*)
 
