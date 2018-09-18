@@ -946,11 +946,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
           val key0UnimprovedHash = bm.getHash(index)
 
           if (key0UnimprovedHash == originalHash && key0 == key) {
-            val value0 = mapNode.getValue(index)
-            if (!((key0.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) &&
-              (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]))) {
-              setValue(bm, bitpos, key, value)
-            }
+            setValue(bm, bitpos, key, value)
           } else {
             val value0 = bm.getValue(index)
             val key0Hash = improve(key0UnimprovedHash)
