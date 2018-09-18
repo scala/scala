@@ -4519,11 +4519,20 @@ trait Types
   // sides of a subtyping/equality judgement, which can lead to recursive types
   // being constructed. See pos/t0851 for a situation where this happens.
   @inline final def suspendingTypeVars[T](tvs: List[TypeVar])(op: => T): T = {
-    val saved = tvs map (_.suspended)
+    val saved = bitSetByPredicate(tvs)(_.suspended)
     tvs foreach (_.suspended = true)
 
     try op
-    finally foreach2(tvs, saved)(_.suspended = _)
+    finally {
+      var index = 0
+      var sss = tvs
+      while (sss != Nil) {
+        val tv = sss.head
+        tv.suspended = saved(index)
+        index += 1
+        sss = sss.tail
+      }
+    }
   }
 
   final def stripExistentialsAndTypeVars(ts: List[Type], expandLazyBaseType: Boolean = false): (List[Type], List[Symbol]) = {

@@ -350,6 +350,24 @@ trait Collections {
       Some(result.toList)
     }
 
+  final def bitSetByPredicate[A](xs: List[A])(pred: A => Boolean): mutable.BitSet = {
+    val bs = new mutable.BitSet()
+    var ys = xs
+    var i: Int = 0
+    while (! ys.isEmpty){
+      if (pred(ys.head))
+        bs.add(i)
+      ys = ys.tail
+      i += 1
+    }
+    bs
+  }
+
+  final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
+    if (as.exists (_.isEmpty)) None
+    else Some(as.flatten)
+  }
+
   final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {
     Some(ass.transpose)
   } catch {
