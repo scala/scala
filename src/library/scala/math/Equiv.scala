@@ -29,13 +29,21 @@ import java.util.Comparator
  *  @since 2.7
  */
 
+sealed trait LowPriorityEquiv2 { self: Equiv.type =>
+  implicit def equivFromPartialOrdering[A](implicit ev: PartialOrdering[A]): Equiv[A] = ev
+}
+
+sealed trait LowPriorityEquiv1 extends LowPriorityEquiv2 { self: Equiv.type =>
+  implicit def equivFromOrdering[A](implicit ev: Ordering[A]): Equiv[A] = ev
+}
+
 trait Equiv[T] extends Any with Serializable {
   /** Returns `true` iff `x` is equivalent to `y`.
    */
   def equiv(x: T, y: T): Boolean
 }
 
-object Equiv {
+object Equiv extends LowPriorityEquiv1 {
   def reference[T <: AnyRef]: Equiv[T] = { _ eq _ }
   def universal[T]: Equiv[T] = { _ == _ }
   def fromComparator[T](cmp: Comparator[T]): Equiv[T] = {
