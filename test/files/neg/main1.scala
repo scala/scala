@@ -53,3 +53,10 @@ package p6 {
     def main(args: Array[Int]) = ()
   }
 }
+
+package p7 {
+  trait Main
+  object Main {
+    def main(args: Array[Int]) = ()
+  }
+}
