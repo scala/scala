@@ -1,19 +1,15 @@
-t3692-new.scala:16: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[Int,Int] (the underlying of Map[Int,Int]) is unchecked since it is eliminated by erasure
+t3692-new.scala:17: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[Int,Int] (the underlying of Map[Int,Int]) is unchecked since it is eliminated by erasure
       case m0: Map[Int, Int] => new java.util.HashMap[Integer, Integer]
                ^
-t3692-new.scala:17: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[Int,V] (the underlying of Map[Int,V]) is unchecked since it is eliminated by erasure
+t3692-new.scala:18: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[Int,V] (the underlying of Map[Int,V]) is unchecked since it is eliminated by erasure
       case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
                ^
-t3692-new.scala:18: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[T,Int] (the underlying of Map[T,Int]) is unchecked since it is eliminated by erasure
+t3692-new.scala:19: warning: non-variable type argument Int in type pattern scala.collection.immutable.Map[T,Int] (the underlying of Map[T,Int]) is unchecked since it is eliminated by erasure
       case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
                ^
-t3692-new.scala:17: warning: unreachable code
+t3692-new.scala:18: warning: unreachable code
       case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
                               ^
-t3692-new.scala:7: warning: Tester has a main method with parameter type Array[String], but Tester will not be a runnable program.
-  Reason: main method must have exact signature (Array[String])Unit
-  def main(args: Array[String]) = {
-      ^
 error: No warnings can be incurred under -Xfatal-warnings.
-5 warnings found
+four warnings found
 one error found
