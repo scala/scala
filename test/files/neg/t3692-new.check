@@ -10,10 +10,10 @@ t3692-new.scala:18: warning: non-variable type argument Int in type pattern scal
 t3692-new.scala:17: warning: unreachable code
       case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
                               ^
-t3692-new.scala:6: warning: Tester has a main method with parameter type Array[String], but Tester will not be a runnable program.
+t3692-new.scala:7: warning: Tester has a main method with parameter type Array[String], but Tester will not be a runnable program.
   Reason: main method must have exact signature (Array[String])Unit
-object Tester {
-       ^
+  def main(args: Array[String]) = {
+      ^
 error: No warnings can be incurred under -Xfatal-warnings.
 5 warnings found
 one error found

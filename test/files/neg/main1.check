@@ -23,19 +23,19 @@ main1.scala:41: warning: Foo has a main method with parameter type Array[String]
 
   object Foo extends Foo {  // Overrides main from the class
          ^
-main1.scala:52: warning: Main has a main method with parameter type Array[String], but p6.Main will not be a runnable program.
+main1.scala:53: warning: Main has a main method with parameter type Array[String], but p6.Main will not be a runnable program.
   Reason: main method must have exact signature (Array[String])Unit
-  object Main {
-         ^
+    def main(args: Array[Int]) = ()
+        ^
 main1.scala:59: warning: Main has a main method with parameter type Array[String], but p7.Main will not be a runnable program.
   Reason: companion is a trait, which means no static forwarder can be generated.
 
   object Main {
          ^
-main1.scala:59: warning: Main has a main method with parameter type Array[String], but p7.Main will not be a runnable program.
+main1.scala:60: warning: Main has a main method with parameter type Array[String], but p7.Main will not be a runnable program.
   Reason: main method must have exact signature (Array[String])Unit
-  object Main {
-         ^
+    def main(args: Array[Int]) = ()
+        ^
 error: No warnings can be incurred under -Xfatal-warnings.
 8 warnings found
 one error found

@@ -255,20 +255,23 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      * must-single-thread
      */
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = sym.hasModuleFlag && {
-      def fail(msg: String, pos: Position): Unit = {
-        reporter.warning(sym.pos,
+      def warnBadMain(msg: String, pos: Position): Unit = reporter.warning(pos,
         s"""|${sym.name.decoded} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
             |  Reason: $msg""".stripMargin
-        )
-      }
-      def failNoForwarder(msg: String) = fail(s"$msg, which means no static forwarder can be generated.\n", sym.pos)
+      )
+      def warnNoForwarder(msg: String) = reporter.warning(sym.pos,
+        s"""|${sym.name.decoded} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
+            |  Reason: $msg, which means no static forwarder can be generated.
+            |""".stripMargin
+      )
       val possibles = (sym.tpe nonPrivateMember nme.main).alternatives
       val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
 
       // Before erasure so we can identify generic mains.
       def check(): Boolean = enteringErasure {
         val companion = sym.linkedClassOfClass
-        val hasExact  = possibles.exists(definitions.isJavaMainMethod)
+        val exactly   = possibles.find(definitions.isJavaMainMethod)
+        val hasExact  = exactly.isDefined
 
         val companionAdvice =
           if (companion.isTrait)
@@ -297,8 +300,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             }
           }
 
-        companionAdvice.foreach(failNoForwarder)
-        mainAdvice.foreach { case (msg, pos) => fail(msg, pos) }
+        companionAdvice.foreach(warnNoForwarder)
+        mainAdvice.foreach { case (msg, pos) => warnBadMain(msg, pos) }
         companionAdvice.isEmpty && mainAdvice.isEmpty
       }
       // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.

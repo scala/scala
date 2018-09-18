@@ -1,15 +1,15 @@
-t4749.scala:4: warning: Fail1 has a main method with parameter type Array[String], but bippy.Fail1 will not be a runnable program.
+t4749.scala:5: warning: Fail1 has a main method with parameter type Array[String], but bippy.Fail1 will not be a runnable program.
   Reason: main method must have exact signature (Array[String])Unit
-  object Fail1 {
-         ^
-t4749.scala:8: warning: Fail2 has a main method with parameter type Array[String], but bippy.Fail2 will not be a runnable program.
+    def main(args: Array[String]): Any = ()
+        ^
+t4749.scala:9: warning: Fail2 has a main method with parameter type Array[String], but bippy.Fail2 will not be a runnable program.
   Reason: main methods cannot be generic.
-  object Fail2 {
-         ^
-t4749.scala:15: warning: Fail3 has a main method with parameter type Array[String], but bippy.Fail3 will not be a runnable program.
+    def main[T](args: Array[String]): T = null.asInstanceOf[T]
+        ^
+t4749.scala:13: warning: Fail3 has a main method with parameter type Array[String], but bippy.Fail3 will not be a runnable program.
   Reason: main methods cannot refer to type parameters or abstract types.
-  object Fail3 extends Bippy[Unit] { }
-         ^
+    def main(args: Array[String]): T = null.asInstanceOf[T]
+        ^
 t4749.scala:18: warning: Fail4 has a main method with parameter type Array[String], but bippy.Fail4 will not be a runnable program.
   Reason: companion is a trait, which means no static forwarder can be generated.
 
