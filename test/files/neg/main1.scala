@@ -60,3 +60,11 @@ package p7 {
     def main(args: Array[Int]) = ()
   }
 }
+
+package p8 {
+  trait Main
+  object Main {
+    def main(args: Array[Int]) = ()
+    def main(args: Array[Double]) = ()
+  }
+}

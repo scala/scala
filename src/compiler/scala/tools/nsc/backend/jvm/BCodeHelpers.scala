@@ -256,11 +256,15 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = sym.hasModuleFlag && {
       def warnBadMain(msg: String, pos: Position): Unit = reporter.warning(pos,
-        s"""|${sym.name.decoded} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
-            |  Reason: $msg""".stripMargin
+        s"""|not a valid main method for ${sym.fullName('.')},
+            |  because $msg.
+            |  To define an entry point, please define the main method as:
+            |    def main(args: Array[String]): Unit
+            |""".stripMargin
       )
-      def warnNoForwarder(msg: String) = reporter.warning(sym.pos,
-        s"""|${sym.name.decoded} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
+      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = reporter.warning(sym.pos,
+        s"""|${sym.name.decoded} has a ${if (hasExact) "valid " else ""}main method${if (mainly != NoType) " "+mainly else ""},
+            |  but ${sym.fullName('.')} will not have an entry point on the JVM.
             |  Reason: $msg, which means no static forwarder can be generated.
             |""".stripMargin
       )
@@ -272,6 +276,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val companion = sym.linkedClassOfClass
         val exactly   = possibles.find(definitions.isJavaMainMethod)
         val hasExact  = exactly.isDefined
+        def alternate = if (possibles.size == 1) possibles.head.info else NoType
 
         val companionAdvice =
           if (companion.isTrait)
@@ -290,18 +295,18 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
           else possibles.map { m =>
             m.info match {
               case PolyType(_, _) =>
-                ("main methods cannot be generic.", m.pos)
+                ("main methods cannot be generic", m)
               case MethodType(params, res) if res.typeSymbol :: params exists (_.isAbstractType) =>
-                ("main methods cannot refer to type parameters or abstract types.", m.pos)
+                ("main methods cannot refer to type parameters or abstract types", m)
               case MethodType(_, _) =>
-                ("main method must have exact signature (Array[String])Unit", m.pos)
+                ("main methods must have the exact signature (Array[String])Unit", m)
               case tp =>
-                (s"don't know what this is: $tp", m.pos)
+                (s"don't know what this is: $tp", m)
             }
           }
 
-        companionAdvice.foreach(warnNoForwarder)
-        mainAdvice.foreach { case (msg, pos) => warnBadMain(msg, pos) }
+        companionAdvice.foreach(msg => warnNoForwarder(msg, hasExact, exactly.fold(alternate)(_.info)))
+        mainAdvice.foreach { case (msg, m) => warnBadMain(msg, m.pos) }
         companionAdvice.isEmpty && mainAdvice.isEmpty
       }
       // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
