@@ -1,12 +1,14 @@
 package scala
 package collection
 
-import java.lang.Math.{min, max}
+import java.lang.Math.{max, min}
+import java.util.Arrays
 
 import mutable.ArrayBuilder
 import immutable.Range
 import scala.reflect.ClassTag
 import scala.math.Ordering
+import scala.util.Sorting
 import scala.Predef.{ // unimport all array-related implicit conversions to avoid triggering them accidentally
   genericArrayOps => _,
   booleanArrayOps => _,
@@ -145,6 +147,10 @@ object ArrayOps {
     }
   }
 
+  /** The cut-off point for the array size after which we switch from `Sorting.stableSort` to
+    * an implementation that copies the data to a boxed representation for use with `Arrays.sort`.
+    */
+  private final val MaxStableSortLength = 300
 }
 
 /** This class serves as a wrapper for `Array`s with many of the operations found in
@@ -458,28 +464,40 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def sorted[B >: A](implicit ord: Ordering[B]): Array[A] = {
     val len = xs.length
-    if(xs.getClass.getComponentType.isPrimitive && len > 1) {
-      // need to copy into a boxed representation to use Java's Arrays.sort
-      val a = new Array[AnyRef](len)
-      var i = 0
-      while(i < len) {
-        a(i) = xs(i).asInstanceOf[AnyRef]
-        i += 1
-      }
-      java.util.Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]])
-      val res = new Array[A](len)
-      i = 0
-      while(i < len) {
-        res(i) = a(i).asInstanceOf[A]
-        i += 1
-      }
-      res
+    def boxed = if(len < ArrayOps.MaxStableSortLength) {
+      val a = xs.clone()
+      Sorting.stableSort(xs)(ord.asInstanceOf[Ordering[A]])
+      a
     } else {
-      val copy = slice(0, len)
-      if(len > 1)
-        java.util.Arrays.sort(copy.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
-      copy
+      val a = Array.copyAs[AnyRef](xs, len)(ClassTag.AnyRef)
+      Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]])
+      Array.copyAs[A](a, len)
+      a
     }
+    if(len <= 1) xs.clone()
+    else ((xs: Array[_]) match {
+      case xs: Array[AnyRef] =>
+        val a = Arrays.copyOf(xs, len); Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]]); a
+      case xs: Array[Int] =>
+        if(ord eq Ordering.Int) { val a = Arrays.copyOf(xs, len); Arrays.sort(a); a }
+        else boxed
+      case xs: Array[Long] =>
+        if(ord eq Ordering.Long) { val a = Arrays.copyOf(xs, len); Arrays.sort(a); a }
+        else boxed
+      case xs: Array[Char] =>
+        if(ord eq Ordering.Char) { val a = Arrays.copyOf(xs, len); Arrays.sort(a); a }
+        else boxed
+      case xs: Array[Byte] =>
+        if(ord eq Ordering.Byte) { val a = Arrays.copyOf(xs, len); Arrays.sort(a); a }
+        else boxed
+      case xs: Array[Short] =>
+        if(ord eq Ordering.Short) { val a = Arrays.copyOf(xs, len); Arrays.sort(a); a }
+        else boxed
+      case xs: Array[Boolean] =>
+        if(ord eq Ordering.Boolean) { val a = Arrays.copyOf(xs, len); Sorting.stableSort(a); a }
+        else boxed
+      case xs => boxed
+    }).asInstanceOf[Array[A]]
   }
 
   /** Sorts this array according to a comparison function.
