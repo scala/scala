@@ -306,8 +306,9 @@ private final class BitmapIndexedMapNode[K, +V](
 
     if ((dataMap & bitpos) != 0) {
       val index = indexFrom(dataMap, mask, bitpos)
-      val key0 = this.getKey(index)
-      if (key0 == key) {
+      val key0 = getKey(index)
+      val key0UnimprovedHash = getHash(index)
+      if (key0UnimprovedHash == originalHash && key0 == key) {
         val value0 = this.getValue(index)
         return (
           if ((key0.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) && (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]))
@@ -316,7 +317,6 @@ private final class BitmapIndexedMapNode[K, +V](
         )
       } else {
         val value0 = this.getValue(index)
-        val key0UnimprovedHash = key0.##
         val key0Hash = improve(key0UnimprovedHash)
 
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
@@ -943,17 +943,16 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
         if ((bm.dataMap & bitpos) != 0) {
           val index = indexFrom(bm.dataMap, mask, bitpos)
           val key0 = bm.getKey(index)
+          val key0UnimprovedHash = bm.getHash(index)
 
-          if (key0 == key) {
+          if (key0UnimprovedHash == originalHash && key0 == key) {
             val value0 = mapNode.getValue(index)
             if (!((key0.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) &&
               (value0.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]))) {
               setValue(bm, bitpos, key, value)
             }
           } else {
-
             val value0 = bm.getValue(index)
-            val key0UnimprovedHash = key0.##
             val key0Hash = improve(key0UnimprovedHash)
 
             val subNodeNew: MapNode[K, V] =
