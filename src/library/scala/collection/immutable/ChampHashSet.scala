@@ -464,9 +464,10 @@ private final class BitmapIndexedSetNode[A](val dataMap: Int, val nodeMap: Int, 
               payload0 == payload1
             } else {
               // Data x Node
-              val payload = this.getPayload(indexFrom(this.dataMap, bitpos))
+              val thisDataIndex = indexFrom(this.dataMap, bitpos)
+              val payload = this.getPayload(thisDataIndex)
               val subNode = that.getNode(indexFrom(node.nodeMap, bitpos))
-              val elementUnimprovedHash = payload.##
+              val elementUnimprovedHash = getHash(thisDataIndex)
               val elementHash = improve(elementUnimprovedHash)
               subNode.contains(payload, elementUnimprovedHash, elementHash, shift + BitPartitionSize)
             }
