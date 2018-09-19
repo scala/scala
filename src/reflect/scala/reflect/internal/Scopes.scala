@@ -408,12 +408,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    // TODO in 2.13.x, s/sameLength(result, filtered)/result eq filtered/, taking advantage of
-    //      the new conservation in List.filter/filterNot
     override def filterNot(p: Symbol => Boolean): Scope = {
       val result = toList
       val filtered = result.filterNot(p)
-      if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
+      if (result eq filtered) this
+      else newScopeWith(filtered: _*)
     }
     override def filter(p: Symbol => Boolean): Scope = {
       val result = toList
