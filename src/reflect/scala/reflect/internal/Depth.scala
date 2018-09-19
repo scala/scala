@@ -37,4 +37,9 @@ object Depth {
     if (depth < AnyDepthValue) AnyDepth
     else new Depth(depth)
   }
+
+  def maximumBy[A](xs: List[A], ff: A => Depth): Depth = {
+    def maxDepth(d: Depth, x: A) = d max ff(x)
+    xs.foldLeft(Zero)(maxDepth)
+  }
 }
