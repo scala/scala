@@ -5,7 +5,8 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.immutable.Map.Map4
+import scala.collection.mutable.Builder
 import scala.language.higherKinds
 
 
@@ -180,10 +181,7 @@ object Map extends MapFactory[Map] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
-    new ImmutableBuilder[(K, V), Map[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl
 
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
@@ -335,7 +333,9 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V)
+    extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+
     override def size: Int = 4
     override def knownSize: Int = 4
     override def isEmpty: Boolean = false
@@ -399,6 +399,13 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
+
+    private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): Unit = {
+      builder.addOne(key1, value1)
+      builder.addOne(key2, value2)
+      builder.addOne(key3, value3)
+      builder.addOne(key4, value4)
+    }
   }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
@@ -410,3 +417,50 @@ object Map extends MapFactory[Map] {
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
+
+private[immutable] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[K, V]] {
+  private[this] var elems: Map[K, V] = Map.empty
+  private[this] var switchedToHashMapBuilder: Boolean = false
+  private[this] var hashMapBuilder: HashMapBuilder[K, V] = _
+
+  override def clear(): Unit = {
+    elems = Map.empty
+    if (hashMapBuilder != null) {
+      hashMapBuilder.clear()
+    }
+    switchedToHashMapBuilder = false
+  }
+
+  override def result(): Map[K, V] =
+    if (switchedToHashMapBuilder) hashMapBuilder.result() else elems
+
+  def addOne(elem: (K, V)) = {
+    if (switchedToHashMapBuilder) {
+      hashMapBuilder.addOne(elem)
+    } else if (elems.size < 4) {
+      elems = elems + elem
+    } else {
+      // assert(elems.size == 4)
+      if (elems.contains(elem._1)) {
+        elems = elems + elem
+      } else {
+        switchedToHashMapBuilder = true
+        if (hashMapBuilder == null) {
+          hashMapBuilder = new HashMapBuilder
+        }
+        elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder)
+        hashMapBuilder.addOne(elem)
+      }
+    }
+
+    this
+  }
+
+  override def addAll(xs: IterableOnce[(K, V)]): this.type =
+    if (switchedToHashMapBuilder) {
+      hashMapBuilder.addAll(xs)
+      this
+    } else {
+      super.addAll(xs)
+    }
+}

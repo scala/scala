@@ -113,3 +113,4 @@ class HashMapTest {
     assertEquals(merged, expected)
   }
 }
+

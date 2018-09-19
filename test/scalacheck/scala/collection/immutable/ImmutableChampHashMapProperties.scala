@@ -59,4 +59,69 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
     xs == ys
   }
 
+  property("building element-wise is the same as in bulk") = forAll { seq: Seq[(K, V)] =>
+    val xs = (HashMap.newBuilder[K, V] ++= seq).result()
+    val ys = {
+      val b = HashMap.newBuilder[K, V]
+      seq.foreach(b += _)
+      b.result()
+    }
+    var zs = HashMap.empty[K, V]
+    seq.foreach(zs += _)
+
+    xs == ys && xs == zs
+  }
+
+  property("adding elems twice to builder is the same as adding them once") = forAll { seq: Seq[(K, V)] =>
+    val b = HashMap.newBuilder[K, V].addAll(seq)
+    b.result == b.addAll(seq).result()
+  }
+
+  property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[(K, V)],ys: Seq[(K, V)]) =>
+    (xs ++ ys).toMap == xs.toMap ++ ys.toMap
+  }
+
+  property("HashMapBuilder produces the same Map as MapBuilder") = forAll { (xs: Seq[(K, V)]) =>
+    Map.newBuilder[K, V].addAll(xs).result() == HashMap.newBuilder[K, V].addAll(xs).result()
+  }
+  property("HashMapBuilder does not mutate after releasing") = forAll { (xs: Seq[(K, V)], ys: Seq[(K, V)], single: (K, V), addSingleFirst: Boolean) =>
+    val b = HashMap.newBuilder[K, V].addAll(xs)
+
+    val hashMapA = b.result()
+
+    val cloneOfA: Map[K, V] = hashMapA.foldLeft(Map.empty[K, V])(_ + _)
+
+    if (addSingleFirst) {
+      b.addOne(single)
+      b.addAll(ys)
+    } else {
+      b.addAll(ys)
+      b.addOne(single)
+    }
+
+    (b.result().size >= hashMapA.size) && hashMapA == cloneOfA
+  }
+  property("Map does not mutate after releasing") = forAll { (xs: Seq[(K, V)], ys: Seq[(K, V)], single: (K, V), addSingleFirst: Boolean) =>
+    val b = Map.newBuilder[K, V].addAll(xs)
+
+    val mapA = b.result()
+
+    val cloneOfA: Map[K, V] = mapA.foldLeft(Map.empty[K, V])(_ + _)
+
+    if (addSingleFirst) {
+      b.addOne(single)
+      b.addAll(ys)
+    } else {
+      b.addAll(ys)
+      b.addOne(single)
+    }
+
+    (b.result().size >= mapA.size) && mapA == cloneOfA
+  }
+
+  property("calling result() twice returns the same instance") = forAll { xs: Seq[(K, V)] =>
+    val mb = Map.newBuilder[K, V].addAll(xs)
+    val hmb = HashMap.newBuilder[K, V].addAll(xs)
+    (mb.result() eq mb.result()) && (hmb.result() eq hmb.result())
+  }
 }
