@@ -26,4 +26,10 @@ class NumericRangeTest {
     assertEquals(2, it.next())
     assertFalse(it.hasNext)
   }
+
+  @Test
+  def t11163_BigDecimalSum: Unit = {
+    val x = (BigDecimal(1) to BigDecimal(3) by 1).sum
+    assertEquals(BigDecimal(6), x)
+  }
 }

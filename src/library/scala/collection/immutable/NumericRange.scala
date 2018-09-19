@@ -183,7 +183,7 @@ sealed class NumericRange[T](
         ans.asInstanceOf[B]
       }
       else if ((num eq scala.math.Numeric.BigIntIsIntegral) ||
-        (num eq scala.math.Numeric.BigDecimalIsFractional)) {
+        (num eq scala.math.Numeric.BigDecimalAsIfIntegral)) {
         // No overflow, so we can use arithmetic series formula directly
         // (not going to worry about running out of memory)
         val numAsIntegral = num.asInstanceOf[Integral[B]]
