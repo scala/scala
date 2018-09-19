@@ -31,6 +31,8 @@ final class Depth private (val depth: Int) extends AnyVal with Ordered[Depth] {
   override def toString = s"Depth($depth)"
 }
 
+trait DepthFunction[A] { def apply(a: A): Depth }
+
 object Depth {
   // A don't care value for the depth parameter in lubs/glbs and related operations.
   // When passed this value, the recursion budget will be inferred from the shape of
@@ -48,5 +50,15 @@ object Depth {
   @inline final def apply(depth: Int): Depth = {
     if (depth < AnyDepthValue) AnyDepth
     else new Depth(depth)
+  }
+
+  def maximumBy[A](xs: List[A])(ff: DepthFunction[A]): Depth = {
+    var ys: List[A] = xs
+    var mm: Depth = Zero
+    while (!ys.isEmpty){
+      mm = mm max ff(ys.head)
+      ys = ys.tail
+    }
+    mm
   }
 }

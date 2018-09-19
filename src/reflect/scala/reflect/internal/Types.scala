@@ -4038,7 +4038,7 @@ trait Types
   /** The maximum allowable depth of lubs or glbs over types `ts`.
     */
   def lubDepth(ts: List[Type]): Depth = {
-    val td = typeDepth(ts)
+    val td = maxDepth(ts)
     val bd = baseTypeSeqDepth(ts)
     lubDepthAdjust(td, td max bd)
   }
@@ -4055,9 +4055,9 @@ trait Types
     else td.decr max (bd decr 3)
   )
 
-  private def symTypeDepth(syms: List[Symbol]): Depth  = typeDepth(syms map (_.info))
-  private def typeDepth(tps: List[Type]): Depth        = maxDepth(tps)
-  private def baseTypeSeqDepth(tps: List[Type]): Depth = maxbaseTypeSeqDepth(tps)
+  private def infoTypeDepth(sym: Symbol): Depth = typeDepth(sym.info)
+  private def symTypeDepth(syms: List[Symbol]): Depth  = Depth.maximumBy(syms)(infoTypeDepth)
+  private def baseTypeSeqDepth(tps: List[Type]): Depth = Depth.maximumBy(tps)((t: Type) => t.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection
@@ -4803,8 +4803,8 @@ trait Types
 
   /** The maximum depth of type `tp` */
   def typeDepth(tp: Type): Depth = tp match {
-    case TypeRef(pre, sym, args)          => typeDepth(pre) max typeDepth(args).incr
-    case RefinedType(parents, decls)      => typeDepth(parents) max symTypeDepth(decls.toList).incr
+    case TypeRef(pre, sym, args)          => typeDepth(pre) max maxDepth(args).incr
+    case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepth(decls.toList).incr
     case TypeBounds(lo, hi)               => typeDepth(lo) max typeDepth(hi)
     case MethodType(paramtypes, result)   => typeDepth(result)
     case NullaryMethodType(result)        => typeDepth(result)
@@ -4813,25 +4813,8 @@ trait Types
     case _                                => Depth(1)
   }
 
-  //OPT replaced with tail recursive function to save on #closures
-  // was:
-  //    var d = 0
-  //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
-  //    d
-  private[scala] def maxDepth(tps: List[Type]): Depth = {
-    @tailrec def loop(tps: List[Type], acc: Depth): Depth = tps match {
-      case tp :: rest => loop(rest, acc max typeDepth(tp))
-      case _          => acc
-    }
-    loop(tps, Depth.Zero)
-  }
-  private[scala] def maxbaseTypeSeqDepth(tps: List[Type]): Depth = {
-    @tailrec def loop(tps: List[Type], acc: Depth): Depth = tps match {
-      case tp :: rest => loop(rest, acc max tp.baseTypeSeqDepth)
-      case _          => acc
-    }
-    loop(tps, Depth.Zero)
-  }
+  private[scala] def maxDepth(tps: List[Type]): Depth =
+    Depth.maximumBy(tps)(typeDepth)
 
   @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {
     case tp :: rest => tp.isTrivial && areTrivialTypes(rest)
