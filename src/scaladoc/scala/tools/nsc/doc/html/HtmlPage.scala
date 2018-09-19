@@ -13,9 +13,10 @@ import base._
 import base.comment._
 import model._
 import scala.reflect.internal.Reporter
-import scala.collection._
+import scala.collection.{immutable, _}
 import java.io.Writer
 import java.net.URI
+
 import javax.xml.stream.XMLOutputFactory
 
 /** An html page that is part of a Scaladoc site.
@@ -96,6 +97,7 @@ abstract class HtmlPage extends Page { thisPage =>
     case OrderedList(items, listStyle) => Ol(`class`= listStyle, elems= listItemsToHtml(items))
     case DefinitionList(items)         => Dl(items.toList flatMap { case (t, d) => Dt(inlineToHtml(t)) :: Dd(blockToHtml(d)) :: NoElems })
     case HorizontalRule()              => Hr
+    case tbl: comment.Table                    => tableToHtml(tbl)
   }) :: NoElems
 
   def listItemsToHtml(items: Seq[Block]) =
@@ -140,6 +142,32 @@ abstract class HtmlPage extends Page { thisPage =>
       else Span(`class` = "extype", name=dtpl.qualifiedName, elems= inlineToHtml(text))) :: NoElems
     case _ =>
       inlineToHtml(text)
+  }
+
+  private def tableToHtml(table: comment.Table): Elem = {
+
+    val comment.Table(header, columnOptions, rows) = table
+
+    val colClass = Map(
+      ColumnOption.ColumnOptionLeft -> "doctbl-left",
+      ColumnOption.ColumnOptionCenter -> "doctbl-center",
+      ColumnOption.ColumnOptionRight -> "doctbl-right"
+    )
+    val cc = columnOptions.map(colClass)
+    Table(
+      thead = THead(
+        Tr(
+          (header.cells zip cc).toList.map{ case (cell, cls) => Th(cell.blocks.flatMap(blockToHtml).toList, `class` = cls)}
+        ) :: immutable.Nil
+      ),
+      tbody = if (rows.nonEmpty) {
+        TBody(
+          rows.toList.map {
+            row => Tr((row.cells zip cc).toList.map{ case (cell, cls) => Td(elems = cell.blocks.flatMap(blockToHtml).toList, `class`=cls) })
+          }
+        )
+      } else null,
+      `class` = "doctbl")
   }
 
   def typeToHtml(tpes: List[model.TypeEntity], hasLinks: Boolean): Elems = tpes match {

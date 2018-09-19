@@ -109,4 +109,11 @@ object HtmlTags {
   case class Svg(elems: Elems = Nil, id: String = null, `class`: String = null, width: String, height: String) extends Elem
   case object Hr extends Elem { def elems = Nil; override def tagName = "hr" }
   case object Br extends Elem { def elems = Nil; override def tagName = "br" }
+
+  case class Table(thead: THead = null, tbody: TBody = null, `class`: String = null) extends Elem { def elems = (thead :: tbody :: Nil).filterNot(_ == null)}
+  case class THead(elems: List[Tr]) extends Elem
+  case class TBody(elems: List[Tr]) extends Elem
+  case class Tr(elems: Elems = NoElems) extends Elem
+  case class Th(elems: Elems, `class`: String = null) extends Elem
+  case class Td(elems: Elems, `class`: String = null) extends Elem
 }
