@@ -1105,14 +1105,19 @@ trait Implicits {
               }
             )
 
+          val mark = undoLog.log
           val savedInfos = undetParams.map(_.info)
-          val typedFirstPending = try {
-            if(wildPtNotInstantiable || matchesPtInst(firstPending))
-              typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
-            else SearchFailure
-          } finally {
-            foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
+          val typedFirstPending = {
+            try {
+              if(wildPtNotInstantiable || matchesPtInst(firstPending))
+                typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+              else SearchFailure
+            } finally {
+              foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
+            }
           }
+          if (typedFirstPending.isFailure)
+            undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
           // the first `DivergentImplicitTypeError` that is being propagated
