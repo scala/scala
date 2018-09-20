@@ -75,7 +75,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     private def locateClassInJar(sym: Symbol, separatorRequired: Boolean): Option[File] = {
       val classFile =
-        fileForClass(new java.io.File("."), sym, separatorRequired).toString
+        fileForClass(new File("."), sym, separatorRequired).toString
           .drop(2) // stripPrefix ./ or .\
       val jaredClass = STJ.JaredClass(classFile)
       if (existingJaredClasses.contains(jaredClass)) {
