@@ -585,19 +585,15 @@ private final class BitmapIndexedMapNode[K, +V](
 
   override def copy(): BitmapIndexedMapNode[K, V] = {
     val contentClone = new Array[Any](content.length)
-    var i = 0
-    val dataIndices = bitCount(dataMap) * 2
-    while (i < dataIndices) {
-      contentClone(i) = content(i)
-      i += 1
-    }
+    val dataIndices = bitCount(dataMap) * TupleLength
+    Array.copy(content, 0, contentClone, 0, dataIndices)
+    var i = dataIndices
     while (i < content.length) {
       contentClone(i) = content(i).asInstanceOf[MapNode[K, V]].copy()
       i += 1
     }
     new BitmapIndexedMapNode[K, V](dataMap, nodeMap, contentClone, originalHashes.clone(), size)
   }
-
 }
 
 private final class HashCollisionMapNode[K, +V ](
@@ -987,7 +983,6 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
 
   /** Copy elements to new mutable structure */
   private def copyElems(): Unit = {
-    aliased = null
     rootNode = rootNode.copy()
   }
 

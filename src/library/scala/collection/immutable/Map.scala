@@ -400,12 +400,8 @@ object Map extends MapFactory[Map] {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
 
-    private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): Unit = {
-      builder.addOne(key1, value1)
-      builder.addOne(key2, value2)
-      builder.addOne(key3, value3)
-      builder.addOne(key4, value4)
-    }
+    private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): builder.type =
+      builder.addOne(key1, value1).addOne(key2, value2).addOne(key3, value3).addOne(key4, value4)
   }
 
   // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
