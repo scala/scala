@@ -125,7 +125,7 @@ self =>
   /** Return all lines in this string in an iterator, excluding trailing line
    *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
-   */
+   */ // TODO: deprecate on 2.13 to avoid conflict on Java 11, which introduces `String::lines` (this is why `linesIterator` has been un-deprecated)
   def lines: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
@@ -133,7 +133,6 @@ self =>
    *  end characters; i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
-  @deprecated("use `lines` instead","2.11.0")
   def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
