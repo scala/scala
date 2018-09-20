@@ -1,28 +1,56 @@
-main1.scala:3: warning: Foo has a main method with parameter type Array[String], but foo1.Foo will not be a runnable program.
-  Reason: companion is a trait, which means no static forwarder can be generated.
+main1.scala:3: warning: Foo has a main method with parameter type Array, but foo1.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion is a trait, which means no static forwarder can be generated.
 
   object Foo {  // companion is trait
          ^
-main1.scala:10: warning: Foo has a main method with parameter type Array[String], but foo2.Foo will not be a runnable program.
-  Reason: companion contains its own main method, which means no static forwarder can be generated.
+main1.scala:10: warning: Foo has a main method with parameter type Array, but foo2.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo {  // companion has its own main
          ^
-main1.scala:22: warning: Foo has a main method with parameter type Array[String], but foo3.Foo will not be a runnable program.
-  Reason: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
+main1.scala:19: warning: Foo has a main method with parameter type Array, but foo3.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: main method must have exact signature (Array[String])Unit
+  object Foo { // args has wrong type
+         ^
+main1.scala:28: warning: Foo has a main method with parameter type Array, but foo4.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
 
   object Foo {  // Companion contains main, but not an interfering main.
          ^
-main1.scala:31: warning: Foo has a main method with parameter type Array[String], but foo4.Foo will not be a runnable program.
-  Reason: companion contains its own main method, which means no static forwarder can be generated.
+main1.scala:37: warning: Foo has a main method with parameter type Array, but foo5.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Inherits main from the class
          ^
-main1.scala:39: warning: Foo has a main method with parameter type Array[String], but foo5.Foo will not be a runnable program.
-  Reason: companion contains its own main method, which means no static forwarder can be generated.
+main1.scala:45: warning: Foo has a main method with parameter type Array, but foo6.Foo will not be a runnable program.
+A runnable program is an object with a method main that has the exact
+signature (Array[String])Unit, doesn't have a trait as a companion class,
+doesn't have a companion class with a method called main, has no type
+paremters, and doesn't inherit or override anything.
+This fails because: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Overrides main from the class
          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-5 warnings found
+6 warnings found
 one error found

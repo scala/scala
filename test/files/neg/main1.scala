@@ -15,10 +15,16 @@ package foo2 {
   }
 }
 
+package foo3 {
+  object Foo { // args has wrong type
+    def main(args: Array[Int]): Unit = ()
+  }
+}
+
 // these should all be made to work, but are negatives for now
 // because forwarders need more work.
 
-package foo3 {
+package foo4 {
   object Foo {  // Companion contains main, but not an interfering main.
     def main(args: Array[String]): Unit = ()
   }
@@ -27,7 +33,7 @@ package foo3 {
   }
 }
 
-package foo4 {
+package foo5 {
   object Foo extends Foo {  // Inherits main from the class
   }
   class Foo {
@@ -35,7 +41,7 @@ package foo4 {
   }
 }
 
-package foo5 {
+package foo6 {
   object Foo extends Foo {  // Overrides main from the class
     override def main(args: Array[String]): Unit = ()
   }
@@ -43,3 +49,4 @@ package foo5 {
     def main(args: Array[String]): Unit = ()
   }
 }
+
