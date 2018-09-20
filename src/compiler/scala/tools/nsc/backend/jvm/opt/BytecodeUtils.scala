@@ -14,8 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{tailrec, switch}
-
+import scala.annotation.{switch, tailrec}
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
@@ -24,6 +23,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
@@ -351,33 +351,38 @@ object BytecodeUtils {
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
-    methodNode.localVariables.iterator.asScala.map(localVariable => {
-      val name =
-        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
-          calleeMethodName + "_" + localVariable.name
-        } else {
-          val parts = localVariable.name.split("_").toVector
-          val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
-          // keep at least 5 characters per method name
-          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
-          val usedMethNames =
-            if (methNames.length < maxNumMethNames) methNames
-            else {
-              val half = maxNumMethNames / 2
-              methNames.take(half) ++ methNames.takeRight(half)
-            }
-          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLength / usedMethNames.length
-          usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
-        }
-      new LocalVariableNode(
-        name,
-        localVariable.desc,
-        localVariable.signature,
-        labelMap(localVariable.start),
-        labelMap(localVariable.end),
-        localVariable.index + shift)
-    }).toList
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, localIndexMap: Int => Int): List[LocalVariableNode] = {
+    val res = mutable.ListBuffer.empty[LocalVariableNode]
+    for (localVariable <- methodNode.localVariables.iterator.asScala) {
+      val newIdx = localIndexMap(localVariable.index)
+      if (newIdx >= 0) {
+        val name =
+          if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
+            calleeMethodName + "_" + localVariable.name
+          } else {
+            val parts = localVariable.name.split("_").toVector
+            val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
+            // keep at least 5 characters per method name
+            val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
+            val usedMethNames =
+              if (methNames.length < maxNumMethNames) methNames
+              else {
+                val half = maxNumMethNames / 2
+                methNames.take(half) ++ methNames.takeRight(half)
+              }
+            val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLength / usedMethNames.length
+            usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
+          }
+        res += new LocalVariableNode(
+          name,
+          localVariable.desc,
+          localVariable.signature,
+          labelMap(localVariable.start),
+          labelMap(localVariable.end),
+          newIdx)
+      }
+    }
+    res.toList
   }
 
   /**

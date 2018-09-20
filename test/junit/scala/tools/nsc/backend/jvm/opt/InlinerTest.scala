@@ -78,11 +78,9 @@ class InlinerTest extends BytecodeTesting {
     assertSameCode(gConv,
       List(
         VarOp(ALOAD, 0),
-        Op(DUP), Jump(IFNONNULL, Label(8)), Op(ACONST_NULL), Op(ATHROW), Label(8), // receiver null check (eliminated by nullness local opt)
-        VarOp(ASTORE, 1), // store this
+        Op(POP), // pop receiver - we know the stack value is also in the local variable 0, so we use that local in the inlined code
         Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(10)), // store return value
         Label(10), VarOp(ILOAD, 2), // load return value
-        Op(ACONST_NULL), VarOp(ASTORE, 1), // null out inliner local
         VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IADD), Op(IRETURN)))
 
     // line numbers are kept, so there's a line 2 (from the inlined f)
@@ -91,8 +89,8 @@ class InlinerTest extends BytecodeTesting {
       case _ => false
     }, gConv.instructions.filter(_.isInstanceOf[LineNumber]))
 
-    assert(gConv.localVars.map(_.name).sorted == List("f_this", "this"), gConv.localVars)
-    assert(g.maxStack == 2 && g.maxLocals == 3, s"${g.maxLocals} - ${g.maxStack}")
+    assert(gConv.localVars.map(_.name).sorted == List("this"), gConv.localVars)
+    assert(g.maxStack == 2 && g.maxLocals == 2, s"${g.maxLocals} - ${g.maxStack}")
   }
 
   @Test
@@ -115,12 +113,11 @@ class InlinerTest extends BytecodeTesting {
       Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "$qmark$qmark$qmark", "()Lscala/runtime/Nothing$;", false))
 
-    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: Op(DUP) :: Jump(IFNONNULL, Label(8)) :: Op(ACONST_NULL) :: Op(ATHROW) :: Label(8) :: VarOp(ASTORE, 1) :: invokeQQQ ::: List(
-      VarOp(ASTORE, 2),
+    val gBeforeLocalOpt = VarOp(ALOAD, 0) :: Op(POP) :: invokeQQQ ::: List(
+      VarOp(ASTORE, 1),
       Jump(GOTO, Label(11)),
       Label(11),
-      VarOp(ALOAD, 2),
-      Op(ACONST_NULL), VarOp(ASTORE, 1),
+      VarOp(ALOAD, 1),
       Op(ATHROW))
 
     assertSameCode(convertMethod(g), gBeforeLocalOpt)
@@ -385,14 +382,14 @@ class InlinerTest extends BytecodeTesting {
     assert(g1.maxStack == 7 && f1.maxStack == 6, s"${g1.maxStack} - ${f1.maxStack}")
 
     // locals in f1: this, x, a
-    // locals in g1 after inlining: this, this-of-f1, x, a, return value
-    assert(g1.maxLocals == 5 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
+    // locals in g1 after inlining: this, x, a (this is reused, return value ends up in slot of x)
+    assert(g1.maxLocals == 4 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
 
     // like maxStack in g1 / f1
     assert(g2.maxStack == 5 && f2.maxStack == 4, s"${g2.maxStack} - ${f2.maxStack}")
 
-    // like maxLocals for g1 / f1, but no return value
-    assert(g2.maxLocals == 4 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
+    // like maxLocals for g1 / f1, no return value
+    assert(g2.maxLocals == 3 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
   }
 
   @Test
@@ -1219,7 +1216,7 @@ class InlinerTest extends BytecodeTesting {
 
     assertSameSummary(getMethod(c, "t1"), List(BIPUSH, "$anonfun$t1$1", IRETURN))
     assertSameSummary(getMethod(c, "t1a"), List(LCONST_1, "$anonfun$t1a$1", IRETURN))
-    assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ICONST_2, "$anonfun$t2$1",IRETURN))
+    assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ISTORE, ICONST_2, ISTORE, ILOAD, ILOAD, "$anonfun$t2$1", IRETURN))
 
     // val a = new ValKl(n); new ValKl(anonfun(a.x)).x
     // value class instantiation-extraction should be optimized by boxing elim
@@ -1232,8 +1229,8 @@ class InlinerTest extends BytecodeTesting {
 
     assertSameSummary(getMethod(c, "t4"), List(BIPUSH, "$anonfun$t4$1", "boxToInteger", ARETURN))
     assertSameSummary(getMethod(c, "t4a"), List(ICONST_1, LDC, "$anonfun$t4a$1", LRETURN))
-    assertSameSummary(getMethod(c, "t5"), List(BIPUSH, ICONST_3, "$anonfun$t5$1", "boxToInteger", ARETURN))
-    assertSameSummary(getMethod(c, "t5a"), List(BIPUSH, BIPUSH, I2B, "$anonfun$t5a$1", IRETURN))
+    assertSameSummary(getMethod(c, "t5"), List(BIPUSH, ISTORE, ICONST_3, ISTORE, ILOAD, ILOAD, "$anonfun$t5$1", "boxToInteger", ARETURN))
+    assertSameSummary(getMethod(c, "t5a"), List(BIPUSH, ISTORE, BIPUSH, I2B, ISTORE, ILOAD, ILOAD, "$anonfun$t5a$1", IRETURN))
     assertSameSummary(getMethod(c, "t6"), List(BIPUSH, "$anonfun$t6$1", RETURN))
     assertSameSummary(getMethod(c, "t7"), List(ICONST_1, "$anonfun$t7$1", RETURN))
     assertSameSummary(getMethod(c, "t8"), List(ICONST_1, LDC, "$anonfun$t8$1", LRETURN))
@@ -2038,5 +2035,74 @@ class InlinerTest extends BytecodeTesting {
     assertInvokedMethods(getMethod(c, "t1"), List("C.$anonfun$t1$1"))
     assertSameSummary(getInstructions(c, "t2").filter(i => isArrOp(i.opcode)), List(BALOAD, BASTORE))
     assertInvokedMethods(getMethod(c, "t2"), List("C.$anonfun$t2$1"))
+  }
+
+  @Test
+  def noNewAliases(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def foo(x: Int, y: Long, z: Object) = 0
+        |  def t(x: Int, y: Long, z: C) = foo(x, y, z) + { val yy = y; foo(x, yy, z) } + { val xx = x + 1; foo(xx, y, z) } + foo(x + 1, y, z.getClass) + z.foo(x, y, z)
+        |}
+      """.stripMargin
+    val c = inlineOnlyCompiler.compileClass(code)
+    val t = getMethod(c, "t")
+    assertEquals(List("yy@5", "xx@7", "this@0", "x@1", "y@2", "z@4", "foo_x@11", "foo_z@12"), t.localVars.map(lv => s"${lv.name}@${lv.index}"))
+    assertSameCode(t,
+      List(
+        // inlined first call
+        VarOp(ALOAD, 0), VarOp(ILOAD, 1), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
+        // save and load result
+        VarOp(ISTORE, 8), Jump(GOTO, Label(15)), Label(15), VarOp(ILOAD, 8),
+        // store yy
+        VarOp(LLOAD, 2), VarOp(LSTORE, 5),// store yy
+        // inlined second call
+        VarOp(ALOAD, 0), VarOp(ILOAD, 1), VarOp(LLOAD, 5), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
+        // store and load result, add
+        VarOp(ISTORE, 9), Jump(GOTO, Label(35)), Label(35), VarOp(ILOAD, 9), Op(IADD),
+        // store xx
+        VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(ISTORE, 7),
+        VarOp(ALOAD, 0), VarOp(ILOAD, 7), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Op(POP), Op(ICONST_0),
+        // store and load result, add
+        VarOp(ISTORE, 10), Jump(GOTO, Label(59)), Label(59), VarOp(ILOAD, 10), Op(IADD),
+        // inlined third call
+        VarOp(ALOAD, 0), VarOp(ILOAD, 1), Op(ICONST_1), Op(IADD), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Invoke(INVOKEVIRTUAL, "C", "getClass", "()Ljava/lang/Class;", false), VarOp(ASTORE, 12), Op(POP2), VarOp(ISTORE, 11), Op(POP), Op(ICONST_0),
+        // store and load result, null out local, add
+        VarOp(ISTORE, 13), Jump(GOTO, Label(81)), Label(81), VarOp(ILOAD, 13), Op(ACONST_NULL), VarOp(ASTORE, 12), Op(IADD),
+        // inlined fourth call, with null test on parameter
+        VarOp(ALOAD, 4), VarOp(ILOAD, 1), VarOp(LLOAD, 2), VarOp(ALOAD, 4), Op(POP), Op(POP2), Op(POP), Jump(IFNONNULL, Label(98)), Op(ACONST_NULL), Op(ATHROW), Label(98), Op(ICONST_0),
+        // store and load result, add
+        VarOp(ISTORE, 14), Jump(GOTO, Label(104)), Label(104), VarOp(ILOAD, 14), Op(IADD),
+        Op(IRETURN))
+    )
+  }
+
+  @Test
+  def nullOutLocals(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def foo(x: Int, a: String): String = { var x = "U"; if (x.hashCode > 0) x = a else return ""; x }
+        |  def t = { val s = foo(0, "a"); println(s) }
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    assertSameCode(getMethod(c, "t"), List(
+      // store argument of inlined method in local
+      Ldc(LDC, "a"), VarOp(ASTORE, 1),
+      // x = U
+      Ldc(LDC, "U"), VarOp(ASTORE, 2),
+      // if (x.hashCode)
+      VarOp(ALOAD, 2), Invoke(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false), Op(ICONST_0), Jump(IF_ICMPLE, Label(16)),
+      // x = a
+      VarOp(ALOAD, 1), VarOp(ASTORE, 2), Jump(GOTO, Label(21)),
+      // res = ""
+      Label(16), Ldc(LDC, ""), VarOp(ASTORE, 3), Jump(GOTO, Label(26)),
+      // res = x
+      Label(21), VarOp(ALOAD, 2), VarOp(ASTORE, 3),
+      // arg-local, x = null
+      Label(26), Op(ACONST_NULL), VarOp(ASTORE, 1), Op(ACONST_NULL), VarOp(ASTORE, 2),
+      // println(s)
+      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
+    )
   }
 }
