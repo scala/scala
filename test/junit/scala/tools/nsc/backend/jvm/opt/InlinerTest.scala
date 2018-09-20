@@ -1886,19 +1886,19 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameSummary(getMethod(c, "t1"), List(
-      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
-      -1 /*11*/, ILOAD, ILOAD, IF_ICMPGE /*30*/, // loop condition
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*39*/, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*39*/, // loop condition
       ALOAD, ILOAD, IALOAD, ICONST_1, IADD, ISTORE, // compute element
       ALOAD, ILOAD, ILOAD, IASTORE, // store element
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*11*/, // increase counter, jump
-      -1 /*30*/, ALOAD, ARETURN)
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*14*/, // increase counter, jump
+      -1 /*39*/, ALOAD, ARETURN)
     )
     assertSameSummary(getMethod(c, "t2"), List(
-      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
-      -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*37*/, // loop condition
+      ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ILOAD, ICONST_0, IF_ICMPLE /*38*/, ICONST_0, ISTORE, // init new array, loop counter
+      -1 /*15*/, ILOAD, ILOAD, IF_ICMPGE /*38*/, // loop condition
       ALOAD, ILOAD, AALOAD, "trim", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, // compute and store element
-      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*14*/, // increase counter, jump
-      -1 /*37*/, ALOAD, ARETURN)
+      ILOAD, ICONST_1, IADD, ISTORE, GOTO /*15*/, // increase counter, jump
+      -1 /*38*/, ALOAD, ARETURN)
     )
   }
 

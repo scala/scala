@@ -844,15 +844,24 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return       a new aray resulting from applying the given function
     *                `f` to each element of this array and collecting the results.
     */
-  def map[B : ClassTag](f: A => B): Array[B] = {
-    val l = xs.length
-    val res = new Array[B](l)
-    var i = 0
-    while (i < l) {
-      res(i) = f(xs(i))
-      i = i + 1
+  def map[B](f: A => B)(implicit ct: ClassTag[B]): Array[B] = {
+    val len = xs.length
+    val ys = new Array[B](len)
+    if(len > 0) {
+      var i = 0
+      (xs: Any) match {
+        case xs: Array[AnyRef]  => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Int]     => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Double]  => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Long]    => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Float]   => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Char]    => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Byte]    => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Short]   => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+        case xs: Array[Boolean] => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
+      }
     }
-    res
+    ys
   }
 
   def mapInPlace(f: A => A): Array[A] = {
@@ -872,7 +881,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @return       a new array resulting from applying the given collection-valued function
     *                `f` to each element of this array and concatenating the results.
     */
-  def flatMap[B: ClassTag](f: A => IterableOnce[B]): Array[B] = {
+  def flatMap[B : ClassTag](f: A => IterableOnce[B]): Array[B] = {
     val b = ArrayBuilder.make[B]
     var i = 0
     while(i < xs.length) {
@@ -894,13 +903,25 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     */
   def flatten[B](implicit asIterable: A => scala.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
     val b = ArrayBuilder.make[B]
-    val sizes = map {
-      case is: IndexedSeq[_] => is.size
-      case _ => 0
+    val len = xs.length
+    var size = 0
+    var i = 0
+    while(i < len) {
+      xs(i) match {
+        case it: IterableOnce[_] =>
+          val k = it.knownSize
+          if(k > 0) size += k
+        case a: Array[_] => size += a.length
+        case _ =>
+      }
+      i += 1
     }
-    b.sizeHint(new ArrayOps(sizes).fold(0)(_ + _))
-    for (xs <- this)
-      b ++= asIterable(xs)
+    if(size > 0) b.sizeHint(size)
+    i = 0
+    while(i < len) {
+      b ++= asIterable(xs(i))
+      i += 1
+    }
     b.result()
   }
 
@@ -1227,9 +1248,16 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   def foreach[U](f: A => U): Unit = {
     val len = xs.length
     var i = 0
-    while(i < len) {
-      f(xs(i))
-      i += 1
+    (xs: Any) match {
+      case xs: Array[AnyRef]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Int]     => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Double]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Long]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Float]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Char]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Byte]    => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Short]   => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
+      case xs: Array[Boolean] => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
     }
   }
 
