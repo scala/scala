@@ -13,10 +13,11 @@ import scala.collection.mutable
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
+import scala.tools.asm.tree.analysis.Value
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.BackendUtils
+import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -328,9 +329,9 @@ abstract class Inliner {
         val state = inlinerState.getOrElseUpdate(method, new MethodInlinerState)
         var changed = false
 
-        def doInline(r: InlineRequest, w: Option[IllegalAccessInstructions]): Map[AbstractInsnNode, AbstractInsnNode] = {
+        def doInline(r: InlineRequest, aliasFrame: AliasingFrame[Value], w: Option[IllegalAccessInstructions]): Map[AbstractInsnNode, AbstractInsnNode] = {
           val sizeBefore = method.instructions.size // cheap (a field read)
-          val instructionMap = inlineCallsite(r.callsite, updateCallGraph = false)
+          val instructionMap = inlineCallsite(r.callsite, Some(aliasFrame), updateCallGraph = false)
           val inlined = InlinedCallsite(r.callsite, w.map(iw => iw.copy(instructions = iw.instructions.map(instructionMap))))
           instructionMap.valuesIterator foreach {
             case mi: MethodInsnNode => state.inlinedCalls(mi) = inlined
@@ -348,12 +349,18 @@ abstract class Inliner {
           instructionMap
         }
 
+        val rsWithAliasFrames = {
+          val cs = rs.head.callsite
+          val a = analyzerCache.getCond(cs.callsiteMethod, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(cs.callsiteMethod, cs.callsiteClass.internalName))
+          rs.map(r => (r, a.frameAt(r.callsite.callsiteInstruction).asInstanceOf[AliasingFrame[Value]]))
+        }
+
         var currentMethodRolledBack = false
 
-        for (r <- rs) if (!currentMethodRolledBack) {
+        for ((r, aliasFrame) <- rsWithAliasFrames) if (!currentMethodRolledBack) {
           canInlineCallsite(r.callsite) match {
             case None =>
-              doInline(r, None)
+              doInline(r, aliasFrame, None)
 
             case Some(w: IllegalAccessInstructions) if maybeInlinedLater(r.callsite, w.instructions) =>
               if (state.undoLog == NoUndoLogging) {
@@ -370,7 +377,7 @@ abstract class Inliner {
                 }
                 state.undoLog = undo
               }
-              doInline(r, Some(w))
+              doInline(r, aliasFrame, Some(w))
 
             case Some(w) =>
               val callInsn = r.callsite.callsiteInstruction
@@ -646,10 +653,12 @@ abstract class Inliner {
    * @return A map associating instruction nodes of the callee with the corresponding cloned
    *         instruction in the callsite method.
    */
-  def inlineCallsite(callsite: Callsite, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
+  def inlineCallsite(callsite: Callsite, aliasFrame: Option[AliasingFrame[Value]] = None, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
     import callsite._
     val Right(callsiteCallee) = callsite.callee
     import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
+
+    val isStatic = isStaticMethod(callee)
 
     // Inlining requires the callee not to have unreachable code, the analyzer used below should not
     // return any `null` frames. Note that inlining a method can create unreachable code. Example:
@@ -671,16 +680,66 @@ abstract class Inliner {
       }
       case _ => false
     }
-    val (clonedInstructions, instructionMap) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
+    val (clonedInstructions, instructionMap, writtenLocals) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
 
     val refLocals = mutable.BitSet.empty
 
-    // local vars in the callee are shifted by the number of locals at the callsite
-    val localVarShift = callsiteMethod.maxLocals
+    val calleAsmType = asm.Type.getMethodType(callee.desc)
+    val calleeParamTypes = calleAsmType.getArgumentTypes
+
+    val f = aliasFrame.getOrElse({
+      val aliasAnalysis = analyzerCache.getCond(callsiteMethod, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(callsiteMethod, callsiteClass.internalName))
+      aliasAnalysis.frameAt(callsiteInstruction).asInstanceOf[AliasingFrame[Value]]
+    })
+
+    //// find out for which argument values on the stack there is already a local variable ////
+
+    val calleeFirstNonParamSlot = BytecodeUtils.parametersSize(callee)
+
+    // Maps callee-local-variable-index to callsite-local-variable-index.
+    val calleeParamLocals = new Array[Int](calleeFirstNonParamSlot)
+
+    // Counter for stack slots at the callsite holding the arguments (1 slot also for long / double)
+    var callsiteStackSlot = f.getLocals + f.getStackSize - calleeParamTypes.length - (if (isStatic) 0 else 1)
+    // Counter for param slots of the callee (long / double use 2 slots)
+    var calleeParamSlot = 0
+    var nextLocalIndex = callsiteMethod.maxLocals
+
+    val numLocals = f.getLocals
+
+    // used later, but computed here
+    var skipReceiverNullCheck = receiverKnownNotNull || isStatic
+
+    val paramSizes = (if (isStatic) Iterator.empty else Iterator(1)) ++ calleeParamTypes.iterator.map(_.getSize)
+    for (paramSize <- paramSizes) {
+      val min = f.aliasesOf(callsiteStackSlot).iterator.min
+      if (calleeParamSlot == 0 && !isStatic && min == 0)
+        skipReceiverNullCheck = true // no need to null-check `this`
+      val isWritten = writtenLocals(calleeParamSlot) || paramSize == 2 && writtenLocals(calleeParamSlot + 1)
+      if (min < numLocals && !isWritten) {
+        calleeParamLocals(calleeParamSlot) = min
+      } else {
+        calleeParamLocals(calleeParamSlot) = nextLocalIndex
+        nextLocalIndex += paramSize
+      }
+      if (paramSize == 2)
+        calleeParamLocals(calleeParamSlot + 1) = calleeParamLocals(calleeParamSlot) + 1
+      callsiteStackSlot += 1
+      calleeParamSlot += paramSize
+    }
+
+    val numSavedParamSlots = callsiteMethod.maxLocals + calleeFirstNonParamSlot - nextLocalIndex
+
+    // local var indices in the callee are adjusted
+    val localVarShift = callsiteMethod.maxLocals - numSavedParamSlots
     clonedInstructions.iterator.asScala foreach {
       case varInstruction: VarInsnNode =>
-        varInstruction.`var` += localVarShift
-        if (varInstruction.getOpcode == ASTORE) refLocals += varInstruction.`var`
+        if (varInstruction.`var` < calleeParamLocals.length)
+          varInstruction.`var` = calleeParamLocals(varInstruction.`var`)
+        else {
+          varInstruction.`var` += localVarShift
+          if (varInstruction.getOpcode == ASTORE) refLocals += varInstruction.`var`
+        }
       case iinc: IincInsnNode =>
         iinc.`var` += localVarShift
       case _ =>
@@ -689,34 +748,45 @@ abstract class Inliner {
     // add a STORE instruction for each expected argument, including for THIS instance if any
     val argStores = new InsnList
     val nullOutLocals = new InsnList
-    var nextLocalIndex = callsiteMethod.maxLocals
-    if (!isStaticMethod(callee)) {
-      if (!receiverKnownNotNull) {
-        argStores.add(new InsnNode(DUP))
+    val numCallsiteLocals = callsiteMethod.maxLocals
+    calleeParamSlot = 0
+    if (!isStatic) {
+      def addNullCheck(): Unit = {
         val nonNullLabel = newLabelNode
         argStores.add(new JumpInsnNode(IFNONNULL, nonNullLabel))
         argStores.add(new InsnNode(ACONST_NULL))
         argStores.add(new InsnNode(ATHROW))
         argStores.add(nonNullLabel)
       }
-      argStores.add(new VarInsnNode(ASTORE, nextLocalIndex))
-      nullOutLocals.add(new InsnNode(ACONST_NULL))
-      nullOutLocals.add(new VarInsnNode(ASTORE, nextLocalIndex))
-      nextLocalIndex += 1
+      val argLocalSlot = calleeParamLocals(calleeParamSlot)
+      if (argLocalSlot >= numCallsiteLocals) {
+        if (!skipReceiverNullCheck) {
+          argStores.add(new InsnNode(DUP))
+          addNullCheck()
+        }
+        argStores.add(new VarInsnNode(ASTORE, argLocalSlot))
+        nullOutLocals.add(new InsnNode(ACONST_NULL))
+        nullOutLocals.add(new VarInsnNode(ASTORE, argLocalSlot))
+      } else if (skipReceiverNullCheck) {
+        argStores.add(getPop(1))
+      } else {
+        addNullCheck()
+      }
+      calleeParamSlot += 1
     }
 
-    // We just use an asm.Type here, no need to create the MethodBType.
-    val calleAsmType = asm.Type.getMethodType(callee.desc)
-    val calleeParamTypes = calleAsmType.getArgumentTypes
-
     for(argTp <- calleeParamTypes) {
-      val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
-      argStores.insert(new VarInsnNode(opc, nextLocalIndex)) // "insert" is "prepend" - the last argument is on the top of the stack
-      if (opc == ASTORE) {
-        nullOutLocals.add(new InsnNode(ACONST_NULL))
-        nullOutLocals.add(new VarInsnNode(ASTORE, nextLocalIndex))
-      }
-      nextLocalIndex += argTp.getSize
+      val argLocalSlot = calleeParamLocals(calleeParamSlot)
+      if (argLocalSlot >= numCallsiteLocals) {
+        val opc = argTp.getOpcode(ISTORE) // returns the correct xSTORE instruction for argTp
+        argStores.insert(new VarInsnNode(opc, argLocalSlot)) // "insert" is "prepend" - the last argument is on the top of the stack
+        if (opc == ASTORE) {
+          nullOutLocals.add(new InsnNode(ACONST_NULL))
+          nullOutLocals.add(new VarInsnNode(ASTORE, argLocalSlot))
+        }
+      } else
+        argStores.insert(getPop(argTp.getSize))
+      calleeParamSlot += argTp.getSize
     }
 
     for (i <- refLocals) {
@@ -745,8 +815,6 @@ abstract class Inliner {
       }
     }
 
-    clonedInstructions.add(nullOutLocals)
-
     // replace xRETURNs:
     //   - store the return value (if any)
     //   - clear the stack of the inlined method (insert DROPs)
@@ -755,8 +823,9 @@ abstract class Inliner {
 
     val returnType = calleAsmType.getReturnType
     val hasReturnValue = returnType.getSort != asm.Type.VOID
-    val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals
-    nextLocalIndex += returnType.getSize
+    // Use a fresh slot for the return value. We could re-use local variable slot of the inlined
+    // code, but this makes some cleanups (in LocalOpt) fail / generate less clean code.
+    val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals - numSavedParamSlots
 
     def returnValueStore(returnInstruction: AbstractInsnNode) = {
       val opc = returnInstruction.getOpcode match {
@@ -807,20 +876,31 @@ abstract class Inliner {
       clonedInstructions.insert(postCallLabel, retVarLoad)
     }
 
+    clonedInstructions.add(nullOutLocals)
+
     callsiteMethod.instructions.insert(callsiteInstruction, clonedInstructions)
     callsiteMethod.instructions.remove(callsiteInstruction)
 
-    callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name, localVarShift).asJava)
+    val localIndexMap: Int => Int = oldIdx => {
+      if (oldIdx < 0) oldIdx
+      else if (oldIdx >= calleeParamLocals.length) oldIdx + localVarShift
+      else {
+        val newIdx = calleeParamLocals(oldIdx)
+        if (newIdx >= numCallsiteLocals) newIdx
+        else -1 // don't copy a local variable entry for params where an existing local of the callsite is re-used
+      }
+    }
+    callsiteMethod.localVariables.addAll(cloneLocalVariableNodes(callee, labelsMap, callee.name, localIndexMap).asJava)
     // prepend the handlers of the callee. the order of handlers matters: when an exception is thrown
     // at some instruction, the first handler guarding that instruction and having a matching exception
     // type is executed. prepending the callee's handlers makes sure to test those handlers first if
     // an exception is thrown in the inlined code.
     callsiteMethod.tryCatchBlocks.addAll(0, cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
-    callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
+    callsiteMethod.maxLocals += callee.maxLocals - numSavedParamSlots + returnType.getSize
     val maxStackOfInlinedCode = {
       // One slot per value is correct for long / double, see comment in the `analysis` package object.
-      val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
+      val numStoredArgs = calleeParamTypes.length + (if (isStatic) 0 else 1)
       callee.maxStack + callsiteStackHeight - numStoredArgs
     }
     val stackHeightAtNullCheck = {
@@ -828,8 +908,8 @@ abstract class Inliner {
       // If the callsite has other argument values than the receiver on the stack, these are pop'ed
       // and stored into locals before the null check, so in that case the maxStack doesn't grow.
       val stackSlotForNullCheck =
-        if (!isStaticMethod(callee) && !receiverKnownNotNull && calleeParamTypes.isEmpty) 1
-        else if (hasNullOutInsn) 1
+        if (!skipReceiverNullCheck && calleeParamTypes.isEmpty) 1
+        else if (hasNullOutInsn) 1 // TODO this is probably too conservative, could be narrowed down
         else 0
       callsiteStackHeight + stackSlotForNullCheck
     }

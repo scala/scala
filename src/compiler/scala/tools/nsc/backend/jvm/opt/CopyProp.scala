@@ -244,7 +244,7 @@ abstract class CopyProp {
         while (css.nonEmpty) {
           val cs = css.head
           css = css.tail
-          inliner.inlineCallsite(cs, updateCallGraph = css.isEmpty)
+          inliner.inlineCallsite(cs, None, updateCallGraph = css.isEmpty)
         }
       }
 

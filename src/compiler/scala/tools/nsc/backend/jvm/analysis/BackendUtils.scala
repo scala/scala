@@ -195,32 +195,38 @@ abstract class BackendUtils extends PerRunInit {
    *
    * For invocation instructions, set the callGraph.callsitePositions to the `callsitePos`.
    *
-   * Returns the new instruction list and a map from old to new instructions.
+   * Returns
+   *   - the new instruction list
+   *   - a map from old to new instructions
+   *   - a bit set containing local variable indices that are stored into
    */
-  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], callsitePos: Position, keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode]) = {
+  def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], callsitePos: Position, keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], mutable.BitSet) = {
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
+    val writtenLocals = mutable.BitSet.empty
     for (ins <- methodNode.instructions.iterator.asScala) {
-      if (keepLineNumbers || !ins.isInstanceOf[LineNumberNode]) {
+      if (keepLineNumbers || ins.getType != AbstractInsnNode.LINE) {
         val cloned = ins.clone(javaLabelMap)
-        ins match {
-          case mi: MethodInsnNode =>
-            val clonedMi = cloned.asInstanceOf[MethodInsnNode]
-            callGraph.callsitePositions(clonedMi) = callsitePos
-            if (callGraph.inlineAnnotatedCallsites(mi))
-              callGraph.inlineAnnotatedCallsites += clonedMi
-            if (callGraph.noInlineAnnotatedCallsites(mi))
-              callGraph.noInlineAnnotatedCallsites += clonedMi
-            if (callGraph.staticallyResolvedInvokespecial(mi))
-              callGraph.staticallyResolvedInvokespecial += clonedMi
-          case _ =>
+        if (ins.getType == AbstractInsnNode.METHOD_INSN) {
+          val mi = ins.asInstanceOf[MethodInsnNode]
+          val clonedMi = cloned.asInstanceOf[MethodInsnNode]
+          callGraph.callsitePositions(clonedMi) = callsitePos
+          if (callGraph.inlineAnnotatedCallsites(mi))
+            callGraph.inlineAnnotatedCallsites += clonedMi
+          if (callGraph.noInlineAnnotatedCallsites(mi))
+            callGraph.noInlineAnnotatedCallsites += clonedMi
+          if (callGraph.staticallyResolvedInvokespecial(mi))
+            callGraph.staticallyResolvedInvokespecial += clonedMi
+        } else if (isStore(ins)) {
+          val vi = ins.asInstanceOf[VarInsnNode]
+          writtenLocals += vi.`var`
         }
         result add cloned
         map += ((ins, cloned))
       }
     }
-    (result, map)
+    (result, map, writtenLocals)
   }
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
