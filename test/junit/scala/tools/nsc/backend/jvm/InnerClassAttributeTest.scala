@@ -62,7 +62,7 @@ class InnerClassAttributeTest extends BytecodeTesting {
     // Closure is inlined, no $deserializeLambda$ is generated as there are no IndyLambdas left
     // In 2.12, the $deserializeLambda$ was generated anyway, and would cause an InnerClass entry
     // This is fixed in 2.13 (scala-dev#62)
-    assertSameSummary(getMethod(c, "f"), List(ICONST_1, "$anonfun$f$1", IRETURN))
+    assertSameSummary(getMethod(c, "f"), List(ICONST_1, IRETURN))
     assert(!c.methods.asScala.exists(_.name == "$deserializeLambda$"), c.methods.asScala.map(_.name).toList)
     assertEquals(c.innerClasses.asScala.toList.map(_.name), Nil)
 

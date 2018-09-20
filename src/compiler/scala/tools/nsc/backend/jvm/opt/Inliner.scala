@@ -20,6 +20,7 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineReason
 
 abstract class Inliner {
   val postProcessor: PostProcessor
@@ -208,13 +209,13 @@ abstract class Inliner {
         val indentString = " " * indent
         this match {
           case s @ InlineLogSuccess(r, sizeBefore, sizeAfter) =>
-            s"${indentString}inlined ${calleeString(r)} (${r.reason}). Before: $sizeBefore ins, after: $sizeAfter ins."
+            s"${indentString}inlined ${calleeString(r)} (${r.logText}). Before: $sizeBefore ins, after: $sizeAfter ins."
 
           case InlineLogRewrite(closureInit, invocations) =>
             s"${indentString}rewrote invocations of closure allocated in ${closureInit.ownerClass.internalName}.${closureInit.ownerMethod.name} with body ${closureInit.lambdaMetaFactoryCall.implMethod.getName}: ${invocations.map(AsmUtils.textify).mkString(", ")}"
 
           case InlineLogFail(r, w) =>
-            s"${indentString}failed ${calleeString(r)} (${r.reason}). ${w.toString.replace('\n', ' ')}"
+            s"${indentString}failed ${calleeString(r)} (${r.logText}). ${w.toString.replace('\n', ' ')}"
 
           case InlineLogRollback(reason) =>
             s"${indentString}rolled back: $reason."
@@ -438,7 +439,7 @@ abstract class Inliner {
             }
           case _ =>
         }
-        val newRequests = rs.toList.sorted(inlineRequestOrdering)
+        val newRequests = selectRequestsForMethodSize(method, rs.toList, mutable.Map.empty).sorted(inlineRequestOrdering)
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
@@ -583,7 +584,15 @@ abstract class Inliner {
       result
     }
 
-    leavesFirst(breakInlineCycles)
+    val sortedRequests = leavesFirst(breakInlineCycles)
+    val methodSizes = mutable.Map.empty[MethodNode, Int]
+    val result = mutable.Queue.empty[(MethodNode, List[InlineRequest])]
+    for ((method, rs) <- sortedRequests) {
+      val sizeOkRs = selectRequestsForMethodSize(method, rs, methodSizes)
+      if (sizeOkRs.nonEmpty)
+      result += ((method, sizeOkRs))
+    }
+    result
   }
 
   class UndoLog(active: Boolean = true) {
