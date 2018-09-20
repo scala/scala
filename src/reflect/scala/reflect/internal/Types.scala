@@ -2238,7 +2238,13 @@ trait Types
 
     // beta-reduce, but don't do partial application -- cycles have been checked in typeRef
     override protected def normalizeImpl =
-      if (typeParamsMatchArgs) betaReduce.normalize
+      if (typeParamsMatchArgs){
+        val br = betaReduce
+        if (br ne this)
+          br.normalize
+        else
+          throw new MalformedType(pre, sym.nameString)
+      }
       else if (isHigherKinded) super.normalizeImpl
       else {
         // if we are overriding a type alias in an erroneous way, don't just
