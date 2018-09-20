@@ -4336,8 +4336,8 @@ trait Types
     else td.decr max (bd decr 3)
 
   private def infoTypeDepth(sym: Symbol): Depth = typeDepth(sym.info)
-  private def symTypeDepth(syms: List[Symbol]): Depth  = Depth.maximumBy(syms, infoTypeDepth)
-  private def baseTypeSeqDepth(tps: List[Type]): Depth = Depth.maximumBy(tps, (t: Type) => t.baseTypeSeqDepth)
+  private def symTypeDepth(syms: List[Symbol]): Depth  = Depth.maximumBy(syms)(infoTypeDepth)
+  private def baseTypeSeqDepth(tps: List[Type]): Depth = Depth.maximumBy(tps)((t: Type) => t.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection
@@ -5125,13 +5125,8 @@ trait Types
     case _                                => Depth(1)
   }
 
-  //OPT replaced with tail recursive function to save on #closures
-  // was:
-  //    var d = 0
-  //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
-  //    d
   private[scala] def maxDepth(tps: List[Type]): Depth =
-    Depth.maximumBy(tps, typeDepth)
+    Depth.maximumBy(tps)(typeDepth)
 
   @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {
     case tp :: rest => tp.isTrivial && areTrivialTypes(rest)
