@@ -9,7 +9,7 @@ import scala.collection.Iterator
 object HtmlTags {
   def textOf(elems: Elems) = elems.map(_.toText).foldLeft("")(_ + _)
 
-  trait Elem {
+  trait Elem extends Product {
     def toXhtml(xsw: XMLStreamWriter, raw: Writer): Unit = {
       if (elems.isEmpty && attribs.isEmpty) xsw.writeEmptyElement(tagName)
       else {
@@ -24,11 +24,8 @@ object HtmlTags {
 
     def elems: Elems
 
-    def productIterator: Iterator[Any]
-
-    private def cls = scala.reflect.runtime.currentMirror.classSymbol(getClass)
-    def tagName = cls.name.decodedName.toString.toLowerCase
-    def attribNames = cls.primaryConstructor.asMethod.paramLists.head.map(_.name.decodedName.toString)
+    def tagName = productPrefix.toLowerCase
+    def attribNames = productElementNames.toList
     def attribValues = productIterator.toList
 
     def attribs: Seq[(String, String)] = {
