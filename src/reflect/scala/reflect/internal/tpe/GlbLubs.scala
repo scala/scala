@@ -268,10 +268,8 @@ private[internal] trait GlbLubs {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingTpe
       case List(t) => t
-      case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
-          tparam.cloneSymbol.setInfo(glb(bounds, depth)))
-        PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
+      case (pt @ PolyType(_, _)) :: rest =>
+        polyTypeMatch(pt, rest, depth, glb, lub0)
       case ts @ (mt @ MethodType(params, _)) :: rest =>
         MethodType(params, lub0(matchingRestypes(ts, mt.paramTypes)))
       case ts @ NullaryMethodType(_) :: rest =>
@@ -432,10 +430,8 @@ private[internal] trait GlbLubs {
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyTpe
       case List(t) => t
-      case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
-          tparam.cloneSymbol.setInfo(lub(bounds, depth)))
-        PolyType(tparams1, glbNorm(matchingInstTypes(ts, tparams1), depth))
+      case (pt @ PolyType(_, _)) :: rest =>
+        polyTypeMatch(pt, rest, depth, lub, glb0)
       case ts @ (mt @ MethodType(params, _)) :: rest =>
         MethodType(params, glbNorm(matchingRestypes(ts, mt.paramTypes), depth))
       case ts @ NullaryMethodType(_) :: rest =>
@@ -540,31 +536,42 @@ private[internal] trait GlbLubs {
     *  Returns list of list of bounds infos, where corresponding type
     *  parameters are renamed to tparams.
     */
-  private def matchingBounds(tps: List[Type], tparams: List[Symbol]): List[List[Type]] = {
-    def getBounds(tp: Type): List[Type] = tp match {
-      case PolyType(tparams1, _) if sameLength(tparams1, tparams) =>
-        tparams1 map (tparam => tparam.info.substSym(tparams1, tparams))
-      case tp =>
-        if (tp ne tp.normalize) getBounds(tp.normalize)
-        else throw new NoCommonType(tps)
-    }
-    tps map getBounds
-  }
+  private def polyTypeMatch(
+    ptHead: PolyType,
+    ptRest: List[Type],
+    depth: Depth,
+    infoBoundTop: (List[Type], Depth) => Type,
+    resultTypeBottom: List[Type] => Type
+  ): PolyType = {
+    val tparamsHead: List[Symbol] = ptHead.typeParams
 
-  /** All types in list must be polytypes with type parameter lists of
-    *  same length as tparams.
-    *  Returns list of instance types, where corresponding type
-    *  parameters are renamed to tparams.
-    */
-  private def matchingInstTypes(tps: List[Type], tparams: List[Symbol]): List[Type] = {
-    def transformResultType(tp: Type): Type = tp match {
-      case PolyType(tparams1, restpe) if sameLength(tparams1, tparams) =>
-        restpe.substSym(tparams1, tparams)
+    @tailrec
+    def normalizeIter(ty: Type): PolyType = ty match {
+      case pt @ PolyType(tparams1, _) if sameLength(tparams1, tparamsHead) => pt
       case tp =>
-        if (tp ne tp.normalize) transformResultType(tp.normalize)
-        else throw new NoCommonType(tps)
+        val tpn = tp.normalize
+        if (tp ne tpn) normalizeIter(tpn) else throw new NoCommonType(ptHead :: ptRest)
     }
-    tps map transformResultType
+
+    // Since ptHead = PolyType(tparamsHead, _), no need to normalize it or unify tpaams
+    val ntps: List[PolyType]   = ptHead :: ptRest.map(normalizeIter)
+
+    val tparams1: List[Symbol] = {
+      def unifyBounds(ntp: PolyType): List[Type] = {
+        val tparams1 = ntp.typeParams
+        tparams1 map (tparam => tparam.info.substSym(tparams1, tparamsHead))
+      }
+      val boundsTts : List[List[Type]] = ntps.tail.map(unifyBounds).transpose
+      map2(tparamsHead, boundsTts){ (tparam, bounds) =>
+        tparam.cloneSymbol.setInfo(infoBoundTop(tparam.info :: bounds, depth))
+      }
+    }
+    // Do we also need to apply substSym(typeParams, tparams1) to ptHead.resultType ??
+    val matchingInstTypes: List[Type] = ntps.map { ntp =>
+      ntp.resultType.substSym(ntp.typeParams, tparams1)
+    }
+
+    PolyType(tparams1, resultTypeBottom(matchingInstTypes))
   }
 
   /** All types in list must be method types with equal parameter types.
