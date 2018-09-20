@@ -243,9 +243,6 @@ abstract class BackendUtils extends PerRunInit {
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
 
-  private val anonfunAdaptedName = """.*\$anonfun\$.*\$\d+\$adapted""".r
-  def isAnonfunAdaptedMethod(method: MethodNode): Boolean = isSyntheticMethod(method) && anonfunAdaptedName.matches(method.name)
-
   private def primitiveAsmTypeToBType(primitiveType: Type): PrimitiveBType = (primitiveType.getSort: @switch) match {
     case Type.BOOLEAN => BOOL
     case Type.BYTE    => BYTE
@@ -380,6 +377,54 @@ abstract class BackendUtils extends PerRunInit {
 
   def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
     isTraitSuperAccessor(method, owner) || isMixinForwarder(method, owner)
+  }
+
+  /**
+   * Identify forwarders, aliases, anonfun$adapted methods, bridges, trivial methods (x + y), etc
+   * Returns
+   *   -1 : no match
+   *    1 : trivial (no method calls)
+   *    2 : factory
+   *    3 : forwarder with boxing adaptation
+   *    4 : generic forwarder / alias
+   */
+  def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode): Int = {
+    val paramTypes = Type.getArgumentTypes(method.desc)
+    val numPrimitives = paramTypes.count(_.getSort < Type.ARRAY) + (if (Type.getReturnType(method.desc).getSort < Type.ARRAY) 1 else 0)
+
+    val maxSize =
+      3 +                      // forwardee call, return
+        paramTypes.length +    // param load
+        numPrimitives * 2 +    // box / unbox call, for example Predef.int2Integer
+        paramTypes.length + 2  // some slack: +1 for each parameter, receiver, return value. allow things like casts.
+
+    if (method.instructions.iterator.asScala.count(_.getOpcode > 0) > maxSize) return -1
+
+    var numBoxConv = 0
+    var numCallsOrNew = 0
+    var callMi: MethodInsnNode = null
+    var it = method.instructions.iterator
+    while (it.hasNext && numCallsOrNew < 2) {
+      val i = it.next()
+      val t = i.getType
+      if (t == AbstractInsnNode.METHOD_INSN) {
+        val mi = i.asInstanceOf[MethodInsnNode]
+        if (isScalaBox(mi) || isScalaUnbox(mi) || isPredefAutoBox(mi) || isPredefAutoUnbox(mi) || isJavaBox(mi) || isJavaUnbox(mi))
+          numBoxConv += 1
+        else {
+          numCallsOrNew += 1
+          callMi = mi
+        }
+      }
+      else if (t == AbstractInsnNode.INVOKE_DYNAMIC_INSN || t == AbstractInsnNode.JUMP_INSN || t == AbstractInsnNode.TABLESWITCH_INSN || t == AbstractInsnNode.LOOKUPSWITCH_INSN)
+        numCallsOrNew = 2 // stop here, not forwarder or trivial
+      // allow casts, NEW
+    }
+    if (numCallsOrNew > 1 || numBoxConv > paramTypes.length + 1) -1
+    else if (numCallsOrNew == 0) if (numBoxConv == 0) 1 else 3
+    else if (callMi.name == GenBCode.INSTANCE_CONSTRUCTOR_NAME) 2
+    else if (numBoxConv > 0) 3
+    else 4
   }
 
   private class Collector extends NestedClassesCollector[ClassBType] {

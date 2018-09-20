@@ -67,7 +67,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
     val List(c, t, tMod) = compileClasses(code, allowMessage = _.msg.contains("not be exhaustive"))
-    assertSameSummary(getMethod(c, "t"), List(GETSTATIC, "$qmark$qmark$qmark", ATHROW))
+    assertSameSummary(getMethod(c, "t"), List(NEW, DUP, "<init>", ATHROW))
   }
 
   @Test
@@ -223,7 +223,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
   def t8796(): Unit = {
     val code =
       """final class C {
-        |  def pr(): Unit = ()
+        |  @noinline def pr(): Unit = ()
         |  def t(index: Int): Unit = index match {
         |    case 0 => pr()
         |    case 1 => pr()
@@ -297,11 +297,10 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
     val c = compileClass(code, allowMessage = _.msg.contains("exception handler declared in the inlined method"))
-    assertInvoke(getMethod(c, "f1a"), "C", "$anonfun$f1a$1")
+    assertNoInvoke(getMethod(c, "f1a"))
     assertInvoke(getMethod(c, "f1b"), "C", "wrapper1")
-    assertInvoke(getMethod(c, "f2a"), "C", "$anonfun$f2a$1")
-    assertInvoke(getMethod(c, "f2b"), "C", "wrapper2")
-  }
+    assertNoInvoke(getMethod(c, "f2a"))
+    assertInvoke(getMethod(c, "f2b"), "C", "wrapper2")  }
 
   @Test
   def t7060(): Unit = {
@@ -333,7 +332,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |class Listt
       """.stripMargin
     val List(c, nil, nilMod, listt) = compileClasses(code)
-    assertInvoke(getMethod(c, "t"), "C", "$anonfun$t$1")
+    assertInvoke(getMethod(c, "t"), "scala/runtime/NonLocalReturnControl$mcV$sp", "<init>")
   }
 
   @Test
@@ -352,13 +351,13 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
     val List(c, f) = compileClasses(code)
-    assertInvoke(getMethod(c, "crash"), "C", "map")
+    assertInvoke(getMethod(c, "crash"), "F", "apply")
   }
 
   @Test
   def optimiseEnablesNewOpt(): Unit = {
     val code = """class C { def t = (1 to 10) foreach println }"""
     val List(c) = readAsmClasses(newCompiler(extraArgs = "-optimise -deprecation").compileToBytes(code, allowMessage = _.msg.contains("is deprecated")))
-    assertInvoke(getMethod(c, "t"), "C", "$anonfun$t$1") // range-foreach inlined from classpath
+    assertInvoke(getMethod(c, "t"), "scala/Console$", "println") // range-foreach inlined from classpath
   }
 }

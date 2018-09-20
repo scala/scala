@@ -708,7 +708,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               def recordInlineAnnotated(t: Tree): Unit = {
                 if (t.hasAttachment[InlineAnnotatedAttachment]) lastInsn match {
                   case m: MethodInsnNode =>
-                    if (app.hasAttachment[NoInlineCallsiteAttachment.type]) noInlineAnnotatedCallsites += m
+                    if (t.hasAttachment[NoInlineCallsiteAttachment.type]) noInlineAnnotatedCallsites += m
                     else inlineAnnotatedCallsites += m
                   case _ =>
                 } else t match {

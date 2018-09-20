@@ -97,7 +97,7 @@ class InlinerTest extends BytecodeTesting {
   def nothingTypedOK(): Unit = {
     val code =
       """class C {
-        |  def f: Nothing = ???
+        |  def f: Nothing = ??? : @noinline
         |  def g: Int = { f; 1 }
         |}
       """.stripMargin
@@ -174,7 +174,7 @@ class InlinerTest extends BytecodeTesting {
       """package a {
         |  class C {
         |    private def f: Int = 0
-        |    def g: Int = f
+        |    def g: Int = f: @noinline
         |  }
         |}
         |package b {
@@ -198,7 +198,7 @@ class InlinerTest extends BytecodeTesting {
         |  @inline final def f = 0
         |  final def g = 1
         |
-        |  def test = f + g
+        |  def test = f + (g: @noinline)
         |}
       """.stripMargin
     val cCls= compileClass(code)
@@ -331,7 +331,7 @@ class InlinerTest extends BytecodeTesting {
   def inlineStaticCall(): Unit = {
     val code =
       """class C {
-        |  def f = Integer.lowestOneBit(103)
+        |  def f = Integer.lowestOneBit(103): @noinline
         |}
       """.stripMargin
 
@@ -361,16 +361,16 @@ class InlinerTest extends BytecodeTesting {
       """class C {
         |  @inline final def f1(x: Int): Int = {
         |    val a = x + 1
-        |    math.max(a, math.min(10, a - 1))
+        |    math.max(a, math.min(10, a - 1): @noinline): @noinline
         |  }
         |
         |  @inline final def f2(x: Int): Unit = {
         |    val a = x + 1
-        |    println(math.max(a, 10))
+        |    println(runtime.BoxesRunTime.boxToInteger(math.max(a, 10): @noinline): @noinline): @noinline
         |  }
         |
-        |  def g1 = println(f1(32))
-        |  def g2 = println(f2(32))
+        |  def g1 = println(runtime.BoxesRunTime.boxToInteger(f1(32)): @noinline): @noinline
+        |  def g2 = println(f2(32)): @noinline
         |}
       """.stripMargin
 
@@ -867,12 +867,12 @@ class InlinerTest extends BytecodeTesting {
     assert(c == 1, c)
 
     assertInvoke(getMethod(b, "t1"), "A", "f1")
-    assertInvoke(getMethod(b, "t2"), "B", "B$$f2m")
+    assertNoInvoke(getMethod(b, "t2"))
     assertInvoke(getMethod(b, "t3"), "B", "<init>")
     assertInvoke(getMethod(b, "t4"), "B", "<init>")
 
     assertInvoke(getMethod(t, "t1"), "B", "f1")
-    assertInvoke(getMethod(t, "t2"), "B", "B$$f2m")
+    assertNoInvoke(getMethod(t, "t2"))
     assertInvoke(getMethod(t, "t3"), "B", "<init>")
     assertInvoke(getMethod(t, "t4"), "B", "<init>")
   }
@@ -942,11 +942,11 @@ class InlinerTest extends BytecodeTesting {
     val t1 = getMethod(c, "t1")
     assertNoIndy(t1)
     // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
-    assertInvoke(t1, "C", "$anonfun$m$2")
+    assertInvoke(t1, "java/lang/String", "trim")
 
     val t2 = getMethod(c, "t2")
     assertNoIndy(t2)
-    assertInvoke(t2, "M$", "$anonfun$m$1")
+    assertInvoke(t2, "java/lang/String", "trim")
   }
 
   @Test
@@ -974,14 +974,14 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
 
     val c= compileClass(code)
-    assertInvoke(getMethod(c, "t1"), "C", "$anonfun$t1$1")
+    assertNoInvoke(getMethod(c, "t1"))
     assertInvoke(getMethod(c, "t2"), "C", "a")
-    assertInvoke(getMethod(c, "t3"), "C", "b")
+    assertNoInvoke(getMethod(c, "t3"))
     assertNoInvoke(getMethod(c, "t4"))
     assertNoInvoke(getMethod(c, "t5"))
     assertNoInvoke(getMethod(c, "t6"))
-    assertInvoke(getMethod(c, "t7"), "C", "c")
-    assertInvoke(getMethod(c, "t8"), "scala/Predef$", "println")
+    assertNoInvoke(getMethod(c, "t7"))
+    assertInvoke(getMethod(c, "t8"), "scala/Console$", "println")
     assertNoInvoke(getMethod(c, "t9"))
   }
 
@@ -1022,7 +1022,7 @@ class InlinerTest extends BytecodeTesting {
   def inlineHigherOrder(): Unit = {
     val code =
       """class C {
-        |  final def h(f: Int => Int): Int = f(0)
+        |  final def h(f: Int => Int): Int = f(0) + f(0)
         |  def t1 = h(x => x + 1)
         |  def t2 = {
         |    val fun = (x: Int) => x + 1
@@ -1038,8 +1038,8 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
 
     val c = compileClass(code)
-    assertInvoke(getMethod(c, "t1"), "C", "$anonfun$t1$1")
-    assertInvoke(getMethod(c, "t2"), "C", "$anonfun$t2$1")
+    assertNoInvoke(getMethod(c, "t1"))
+    assertNoInvoke(getMethod(c, "t2"))
     assertInvoke(getMethod(c, "t3"), "scala/Function1", "apply$mcII$sp")
     assertInvoke(getMethod(c, "t4"), "scala/Function1", "apply$mcII$sp")
     assertInvoke(getMethod(c, "t5"), "C", "h")
@@ -1214,39 +1214,37 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val List(c, _, _) = compileClasses(code)
 
-    assertSameSummary(getMethod(c, "t1"), List(BIPUSH, "$anonfun$t1$1", IRETURN))
-    assertSameSummary(getMethod(c, "t1a"), List(LCONST_1, "$anonfun$t1a$1", IRETURN))
-    assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ISTORE, ICONST_2, ISTORE, ILOAD, ILOAD, "$anonfun$t2$1", IRETURN))
+    assertSameSummary(getMethod(c, "t1"), List(BIPUSH, ICONST_1, IADD, IRETURN))
+    assertSameSummary(getMethod(c, "t1a"), List(LCONST_1, L2I, IRETURN))
+    assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ISTORE, ICONST_2, ILOAD, IADD, IRETURN))
 
     // val a = new ValKl(n); new ValKl(anonfun(a.x)).x
     // value class instantiation-extraction should be optimized by boxing elim
     assertSameSummary(getMethod(c, "t3"), List(
-      NEW, DUP, ICONST_1, "<init>", ASTORE,
-      NEW, DUP, ALOAD, "x",
-      "$anonfun$t3$1",
-      "<init>",
+      NEW, DUP, ICONST_1, "<init>",
+      "$anonfun$t3$1$adapted", CHECKCAST,
       "x", IRETURN))
 
-    assertSameSummary(getMethod(c, "t4"), List(BIPUSH, "$anonfun$t4$1", "boxToInteger", ARETURN))
-    assertSameSummary(getMethod(c, "t4a"), List(ICONST_1, LDC, "$anonfun$t4a$1", LRETURN))
-    assertSameSummary(getMethod(c, "t5"), List(BIPUSH, ISTORE, ICONST_3, ISTORE, ILOAD, ILOAD, "$anonfun$t5$1", "boxToInteger", ARETURN))
-    assertSameSummary(getMethod(c, "t5a"), List(BIPUSH, ISTORE, BIPUSH, I2B, ISTORE, ILOAD, ILOAD, "$anonfun$t5a$1", IRETURN))
-    assertSameSummary(getMethod(c, "t6"), List(BIPUSH, "$anonfun$t6$1", RETURN))
-    assertSameSummary(getMethod(c, "t7"), List(ICONST_1, "$anonfun$t7$1", RETURN))
-    assertSameSummary(getMethod(c, "t8"), List(ICONST_1, LDC, "$anonfun$t8$1", LRETURN))
-    assertSameSummary(getMethod(c, "t9"), List(ICONST_1, "boxToInteger", "$anonfun$t9$1", RETURN))
+    assertSameSummary(getMethod(c, "t4"), List(ICONST_1, "valueOf", ARETURN))
+    assertSameSummary(getMethod(c, "t4a"), List(ICONST_1, ISTORE, LDC, DSTORE, LCONST_1, ILOAD, I2L, LADD, DLOAD, D2L, LADD, LRETURN))
+    assertSameSummary(getMethod(c, "t5"), List(ICONST_1, "valueOf", ARETURN))
+    assertSameSummary(getMethod(c, "t5a"), List(ICONST_1, IRETURN))
+    assertSameSummary(getMethod(c, "t6"), List(RETURN))
+    assertSameSummary(getMethod(c, "t7"), List(RETURN))
+    assertSameSummary(getMethod(c, "t8"), List(ICONST_1, ISTORE, LDC, DSTORE, LCONST_1, ILOAD, I2L, LADD, DLOAD, D2L, LADD, LRETURN))
+    assertSameSummary(getMethod(c, "t9"), List(ICONST_1, "valueOf", ASTORE, GETSTATIC, ALOAD, "println", RETURN))
 
     // t9a inlines Range.foreach, which is quite a bit of code, so just testing the core
-    assertInvoke(getMethod(c, "t9a"), "C", "$anonfun$t9a$1")
-    assertInvoke(getMethod(c, "t9a"), "scala/runtime/BoxesRunTime", "boxToInteger")
+    assertInvoke(getMethod(c, "t9a"), "java/lang/Integer", "valueOf")
+    assertInvoke(getMethod(c, "t9a"), "java/lang/Integer", "valueOf")
 
     assertSameSummary(getMethod(c, "t10"), List(
       ICONST_1, ISTORE,
       ALOAD, ILOAD,
-      "$anonfun$t10$1", RETURN))
+      "intCons", RETURN))
 
     // t10a inlines Range.foreach
-    assertInvoke(getMethod(c, "t10a"), "C", "$anonfun$t10a$1")
+    assertInvoke(getMethod(c, "t10a"), "C", "intCons")
     assertDoesNotInvoke(getMethod(c, "t10a"), "boxToInteger")
   }
 
@@ -1311,7 +1309,7 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertSameCode(getMethod(c, "t1"), List(Op(ICONST_3), Op(ICONST_4), Op(IADD), Op(IRETURN)))
-    assertSameCode(getMethod(c, "t2"), List(Op(ICONST_1), Op(ICONST_2), Op(IADD), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t2"), List(Op(ICONST_1), VarOp(ISTORE, 1), Op(ICONST_2), VarOp(ISTORE, 2), VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
     assertSameCode(getMethod(c, "t3"), List(Op(ICONST_1), Op(ICONST_3), Op(ISUB), Op(IRETURN)))
     assertNoInvoke(getMethod(c, "t4"))
     assertNoInvoke(getMethod(c, "t5"))
@@ -1391,10 +1389,8 @@ class InlinerTest extends BytecodeTesting {
     val cls = compileClasses(code)
     val test = findClass(cls, "Test$")
     assertSameSummary(getMethod(test, "f"), List(
-      GETSTATIC, "mkFoo",
-      BIPUSH, ISTORE,
-      IFNONNULL, ACONST_NULL, ATHROW, -1 /*label*/,
-      ILOAD, ICONST_1, IADD, IRETURN))
+      GETSTATIC, POP, NEW, "<init>",
+      BIPUSH, ICONST_1, IADD, IRETURN))
   }
 
   @Test // a test taken from the test suite for the 2.11 inliner
@@ -1410,9 +1406,9 @@ class InlinerTest extends BytecodeTesting {
 
     // box-unbox will clean it up
     assertSameSummary(getMethod(c, "t"), List(
-      ALOAD, "$anonfun$t$1", IFEQ /*A*/,
-      "$anonfun$t$2", IRETURN,
-      -1 /*A*/, "$anonfun$t$3", IRETURN))
+      ALOAD, GETFIELD, IFEQ /*A*/,
+      ICONST_1, IRETURN,
+      -1 /*A*/, ICONST_2, IRETURN))
   }
 
   @Test
@@ -1460,7 +1456,7 @@ class InlinerTest extends BytecodeTesting {
     val c = compileClass(code)
     val t = getMethod(c, "t")
     assertNoIndy(t)
-    assertInvoke(t, "C", "$anonfun$t$1")
+    assertInvoke(t, "C", "consume")
   }
 
   @Test
@@ -1483,7 +1479,7 @@ class InlinerTest extends BytecodeTesting {
         |}
       """.stripMargin)
     val c :: _ = compileClassesSeparately(codes, extraArgs = compilerArgs)
-    assertInvoke(getMethod(c, "t"), "p1/Implicits$RichFunction1$", "toRx$extension")
+    assertNoInvoke(getMethod(c, "t"))
   }
 
   @Test
@@ -1637,22 +1633,22 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(a, "m3b"), "T", "m3b$")
 
     assertInvoke(getMethod(c, "t1"), "T", "m1a")
-    assertInvoke(getMethod(c, "t2"), "T", "m1b")
+    assertNoInvoke(getMethod(c, "t2"))
 
     assertInvoke(getMethod(c, "t3"), "T", "m2a") // could not inline
     assertNoInvoke(getMethod(c, "t4"))
 
     assertInvoke(getMethod(c, "t5"), "T", "m3a") // could not inline
-    assertInvoke(getMethod(c, "t6"), "C", "$anonfun$t6$1") // both forwarders inlined, closure eliminated
+    assertNoInvoke(getMethod(c, "t6")) // both forwarders inlined, closure eliminated
 
-    assertInvoke(getMethod(c, "t7"), "A", "m1a")
-    assertInvoke(getMethod(c, "t8"), "A", "m1b")
+    assertInvoke(getMethod(c, "t7"), "T", "m1a$")
+    assertInvoke(getMethod(c, "t8"), "T", "m1b$")
 
     assertNoInvoke(getMethod(c, "t9"))
     assertNoInvoke(getMethod(c, "t10"))
 
-    assertInvoke(getMethod(c, "t11"), "C", "$anonfun$t11$1") // both forwarders inlined, closure eliminated
-    assertInvoke(getMethod(c, "t12"), "C", "$anonfun$t12$1") // both forwarders inlined, closure eliminated
+    assertNoInvoke(getMethod(c, "t11")) // both forwarders inlined, closure eliminated
+    assertNoInvoke(getMethod(c, "t12")) // both forwarders inlined, closure eliminated
   }
 
   @Test
@@ -1684,7 +1680,7 @@ class InlinerTest extends BytecodeTesting {
       """trait T {
         |  def bar = 1
         |  @inline final def m = {
-        |    def impl = bar // private, non-static method
+        |    @noinline def impl = bar // private, non-static method
         |    impl
         |  }
         |}
@@ -1787,7 +1783,7 @@ class InlinerTest extends BytecodeTesting {
         |The callee A::f()I contains the instruction INVOKESTATIC A.g$1 ()I
         |that would cause an IllegalAccessError when inlined into class C""".stripMargin
     val List(a, c) = compileClasses(code, allowMessage = _.msg contains warn)
-    assertSameSummary(getMethod(c, "t"), List(ALOAD, IFNONNULL /*6*/, ACONST_NULL, ATHROW, -1 /*6*/, ALOAD, "f", POP, ICONST_0, IRETURN))
+    assertSameSummary(getMethod(c, "t"), List(ALOAD, IFNONNULL /*6*/, ACONST_NULL, ATHROW, -1 /*6*/, ICONST_0, IRETURN))
   }
 
   @Test
@@ -1803,7 +1799,7 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val List(c, t) = compileClasses(code)
     // rec is inlined once, the closure application is rewritten to the body method
-    assertInvokedMethods(getMethod(c, "t"), List("C.$anonfun$t$1", "T.rec"))
+    assertInvokedMethods(getMethod(c, "t"), List("T.rec"))
   }
 
   @Test
@@ -1834,7 +1830,7 @@ class InlinerTest extends BytecodeTesting {
     // into that method until the instructions are gone or the method is rolled back.
     val code =
       """class A {
-        |  private def impl = 0
+        |  @noinline private def impl = 0
         |  // We don't mark `foo` @inline but rely on the heuristics. Marking it @inline
         |  // causes `makeNotPrivate` to be called on `impl` during SuperAccessors.
         |  final def foo(f: Int => Int) = impl
@@ -1866,14 +1862,14 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t1"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE, // get length, init loop counter
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*25*/,     // check loop condition
-      ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "$anonfun$t1$1", // load element, store into local, call body method
+      ALOAD, ILOAD, IALOAD, ISTORE, ALOAD, ILOAD, "consume", // load element, store into local, call body
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,    // increase loop counter, jump
       -1 /*25*/, RETURN))
 
     assertSameSummary(getMethod(c, "t2"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ICONST_0, ISTORE,
       -1 /*8*/, ILOAD, ILOAD, IF_ICMPGE /*24*/,
-      ALOAD, ILOAD, AALOAD, "$anonfun$t2$1", POP,
+      ALOAD, ILOAD, AALOAD, "trim", POP,
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*8*/,
       -1 /*24*/, RETURN)
     )
@@ -1891,7 +1887,7 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t1"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ILOAD, NEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
       -1 /*11*/, ILOAD, ILOAD, IF_ICMPGE /*30*/, // loop condition
-      ALOAD, ILOAD, IALOAD, "$anonfun$t1$1", ISTORE, // compute element
+      ALOAD, ILOAD, IALOAD, ICONST_1, IADD, ISTORE, // compute element
       ALOAD, ILOAD, ILOAD, IASTORE, // store element
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*11*/, // increase counter, jump
       -1 /*30*/, ALOAD, ARETURN)
@@ -1899,8 +1895,7 @@ class InlinerTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t2"), List(
       ALOAD, ARRAYLENGTH, ISTORE, ILOAD, ANEWARRAY, ASTORE, ICONST_0, ISTORE, // init new array, loop counter
       -1 /*14*/, ILOAD, ILOAD, IF_ICMPGE /*37*/, // loop condition
-      ALOAD, ILOAD, AALOAD, "$anonfun$t2$1", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, // compute and store element
-      ACONST_NULL, ASTORE, // null out local variable that was inlined
+      ALOAD, ILOAD, AALOAD, "trim", ASTORE, ALOAD, ILOAD, ALOAD, AASTORE, // compute and store element
       ILOAD, ICONST_1, IADD, ISTORE, GOTO /*14*/, // increase counter, jump
       -1 /*37*/, ALOAD, ARETURN)
     )
@@ -1934,18 +1929,20 @@ class InlinerTest extends BytecodeTesting {
 
     val c = compileClass(code)
 
-    assertInvokedMethods(getMethod(c, "t1a"), List("scala/collection/ArrayOps$.indexWhere$default$2$extension", "C.$anonfun$t1a$1"))
-    assertInvokedMethods(getMethod(c, "t1b"), List("scala/collection/ArrayOps$.indexWhere$default$2$extension", "C.$anonfun$t1b$1"))
+    assertInvokedMethods(getMethod(c, "t1a"), List("C.$anonfun$t1a$1"))
+    // anonfun not inlined, not considered trivial (too many instructions compared to num params)
+    assertEquals(global.genBCode.postProcessor.backendUtils.looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, "$anonfun$t1a$1")), -1)
+    assertInvokedMethods(getMethod(c, "t1b"), List("C.$anonfun$t1b$1"))
 
-    assertInvokedMethods(getMethod(c, "t2a"), List("java/lang/NullPointerException.<init>", "C.$anonfun$t2a$1"))
-    assertInvokedMethods(getMethod(c, "t2b"), List("java/lang/NullPointerException.<init>", "C.$anonfun$t2b$1"))
+    assertInvokedMethods(getMethod(c, "t2a"), List("java/lang/NullPointerException.<init>"))
+    assertInvokedMethods(getMethod(c, "t2b"), List("java/lang/NullPointerException.<init>", "java/lang/String.length"))
 
-    assertInvokedMethods(getMethod(c, "t3a"), List("C.$anonfun$t3a$1"))
-    assertInvokedMethods(getMethod(c, "t3b"), List("C.$anonfun$t3b$1"))
-    assertInvokedMethods(getMethod(c, "t3c"), List("C.$anonfun$t3c$1"))
+    assertInvokedMethods(getMethod(c, "t3a"), Nil)
+    assertInvokedMethods(getMethod(c, "t3b"), List("java/lang/String.length"))
+    assertInvokedMethods(getMethod(c, "t3c"), List("java/lang/String.trim"))
 
-    assertInvokedMethods(getMethod(c, "t4a"), List("C.$anonfun$t4a$1"))
-    assertInvokedMethods(getMethod(c, "t4b"), List("C.$anonfun$t4b$1"))
+    assertInvokedMethods(getMethod(c, "t4a"), Nil)
+    assertInvokedMethods(getMethod(c, "t4b"), List("java/lang/String.trim"))
 
     assertInvokedMethods(getMethod(c, "t5a"), List("C.$anonfun$t5a$1"))
     assertInvokedMethods(getMethod(c, "t5b"), List("C.$anonfun$t5b$1"))
@@ -2014,7 +2011,7 @@ class InlinerTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertInvokedMethods(getMethod(c, "t"), List(
-      "scala/runtime/RichInt$.to$extension0",
+      "scala/collection/immutable/Range$Inclusive.<init>",
       "scala/collection/immutable/Range.isEmpty",
       "scala/collection/immutable/Range.start",
       "scala/collection/immutable/Range.step")
@@ -2032,9 +2029,9 @@ class InlinerTest extends BytecodeTesting {
     val c = compileClass(code)
     def isArrOp(opc: Int): Boolean = opc >= IALOAD && opc <= SALOAD || opc >= IASTORE && opc <= SASTORE
     assertSameSummary(getInstructions(c, "t1").filter(i => isArrOp(i.opcode)), List(BALOAD, IASTORE))
-    assertInvokedMethods(getMethod(c, "t1"), List("C.$anonfun$t1$1"))
+    assertInvokedMethods(getMethod(c, "t1"), Nil)
     assertSameSummary(getInstructions(c, "t2").filter(i => isArrOp(i.opcode)), List(BALOAD, BASTORE))
-    assertInvokedMethods(getMethod(c, "t2"), List("C.$anonfun$t2$1"))
+    assertInvokedMethods(getMethod(c, "t2"), Nil)
   }
 
   @Test
@@ -2102,7 +2099,7 @@ class InlinerTest extends BytecodeTesting {
       // arg-local, x = null
       Label(26), Op(ACONST_NULL), VarOp(ASTORE, 1), Op(ACONST_NULL), VarOp(ASTORE, 2),
       // println(s)
-      Field(GETSTATIC, "scala/Predef$", "MODULE$", "Lscala/Predef$;"), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
+      Field(GETSTATIC, "scala/Console$", "MODULE$", "Lscala/Console$;"), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "scala/Console$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
     )
   }
 }
