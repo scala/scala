@@ -39,8 +39,6 @@ sealed class NumericRange[T](
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]] { self =>
 
-  override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
-
   /** Note that NumericRange must be invariant so that constructs
     *  such as "1L to 10 by 5" do not infer the range type as AnyVal.
     */
@@ -361,21 +359,4 @@ object NumericRange {
     Numeric.BigDecimalAsIfIntegral -> Ordering.BigDecimal
   )
 
-  @SerialVersionUID(3L)
-  private final class NumericRangeIterator[T](self: NumericRange[T], num: Integral[T]) extends AbstractIterator[T] with Serializable {
-    import num.mkNumericOps
-
-    private[this] var _hasNext = !self.isEmpty
-    private[this] var _next: T = self.start
-    private[this] val lastElement: T = if (_hasNext) self.last else self.start
-    override def knownSize: Int = if (_hasNext) num.toInt((lastElement - _next) / self.step) + 1 else 0
-    def hasNext: Boolean = _hasNext
-    def next(): T = {
-      if (!_hasNext) Iterator.empty.next()
-      val value = _next
-      _hasNext = value != lastElement
-      _next = num.plus(value, self.step)
-      value
-    }
-  }
 }

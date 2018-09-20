@@ -9,6 +9,12 @@ import org.junit.runners.JUnit4
 class NumericRangeTest {
 
   @Test
+  def t11152: Unit = {
+    val x = (BigDecimal(1) to BigDecimal(s"1.${"0" * 32}1") by BigDecimal(s"0.${"0" * 33}1")).iterator.toList.length
+    assertEquals(11, x)
+  }
+
+  @Test
   def emptyiterator: Unit = {
     assertFalse(NumericRange(1, 0, 1).iterator.hasNext)
     assertFalse(NumericRange(0, 10, -1).iterator.hasNext)
