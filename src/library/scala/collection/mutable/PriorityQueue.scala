@@ -16,6 +16,12 @@ import scala.math.Ordering
   *  To prioritize elements of type A there must be an implicit
   *  Ordering[A] available at creation.
   *
+  *  If multiple elements have the same priority in the ordering of this
+  *  PriorityQueue, no guarantees are made regarding the order in which elements
+  *  are returned by `dequeue` or `dequeueAll`. In particular, that means this
+  *  class does not guarantee first in first out behaviour that may be
+  *  incorrectly inferred from the Queue part of the name of this class.
+  *
   *  Only the `dequeue` and `dequeueAll` methods will return elements in priority
   *  order (while removing elements from the heap).  Standard collection methods
   *  including `drop`, `iterator`, and `toString` will remove or traverse the heap

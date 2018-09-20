@@ -408,14 +408,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filterNot(p: Symbol => Boolean): Scope = (
-      if (toList exists p) newScopeWith(toList filterNot p: _*)
-      else this
-    )
-    override def filter(p: Symbol => Boolean): Scope = (
-      if (toList forall p) this
-      else newScopeWith(toList filter p: _*)
-    )
+    override def filterNot(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filterNot(p)
+      if (result eq filtered) this
+      else newScopeWith(filtered: _*)
+    }
+    override def filter(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filter(p)
+      if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
+    }
+
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 

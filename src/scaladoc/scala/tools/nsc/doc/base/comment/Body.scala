@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
+ * Copyright 2007-2018 LAMP/EPFL
  * @author  Manohar Jonnalagedda
  */
 
@@ -55,6 +55,15 @@ final case class UnorderedList(items: Seq[Block]) extends Block
 final case class OrderedList(items: Seq[Block], style: String) extends Block
 final case class DefinitionList(items: SortedMap[Inline, Block]) extends Block
 final case class HorizontalRule() extends Block
+final case class Table(header: Row, columnOptions: Seq[ColumnOption], rows: Seq[Row]) extends Block
+final case class ColumnOption(option: Char) { require(option == 'L' || option == 'C' || option == 'R') }
+object ColumnOption {
+  val ColumnOptionLeft = ColumnOption('L')
+  val ColumnOptionCenter = ColumnOption('C')
+  val ColumnOptionRight = ColumnOption('R')
+}
+final case class Row(cells: Seq[Cell])
+final case class Cell(blocks: Seq[Block])
 
 /** An section of text inside a block, possibly with formatting. */
 sealed abstract class Inline

@@ -53,6 +53,17 @@ class ArraySeqTest {
     val y = Array[Byte](10).toSeq
     assertEquals(x.hashCode(), y.hashCode())
   }
+
+  @Test
+  def ofRefEquality(): Unit = {
+    def assertOfRef(left: Array[AnyRef], right: Array[AnyRef]): Unit = {
+      assert(new ArraySeq.ofRef(left) == new ArraySeq.ofRef(right))
+    }
+    assertOfRef(Array(Int.box(65)), Array(Double.box(65.0)))
+    assertOfRef(Array(Double.box(65.0)), Array(Int.box(65)))
+    assertOfRef(Array(Int.box(65)), Array(Char.box('A')))
+    assertOfRef(Array(Char.box('A')), Array(Int.box(65)))
+  }
 }
 
 /*
