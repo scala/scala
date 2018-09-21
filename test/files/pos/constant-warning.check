@@ -2,3 +2,5 @@ constant-warning.scala:2: warning: Evaluation of a constant expression results i
   val fails = 1 + 2 / (3 - 2 - 1)
                     ^
 one warning found
+
+some text that doesn't actually appear in the output
