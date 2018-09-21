@@ -9,6 +9,7 @@
 package scala
 package math
 
+import scala.collection.StringParsers
 import scala.language.implicitConversions
 import scala.util.Try
 
@@ -54,7 +55,7 @@ object Numeric {
     def rem(x: Int, y: Int): Int = x % y
     def negate(x: Int): Int = -x
     def fromInt(x: Int): Int = x
-    def parseString(str: String): Option[Int] = Try(str.toInt).toOption
+    def parseString(str: String): Option[Int] = StringParsers.parseInt(str)
     def toInt(x: Int): Int = x
     def toLong(x: Int): Long = x.toLong
     def toFloat(x: Int): Float = x.toFloat
@@ -70,7 +71,7 @@ object Numeric {
     def rem(x: Short, y: Short): Short = (x % y).toShort
     def negate(x: Short): Short = (-x).toShort
     def fromInt(x: Int): Short = x.toShort
-    def parseString(str: String): Option[Short] = Try(str.toShort).toOption
+    def parseString(str: String): Option[Short] = StringParsers.parseShort(str)
     def toInt(x: Short): Int = x.toInt
     def toLong(x: Short): Long = x.toLong
     def toFloat(x: Short): Float = x.toFloat
@@ -86,7 +87,7 @@ object Numeric {
     def rem(x: Byte, y: Byte): Byte = (x % y).toByte
     def negate(x: Byte): Byte = (-x).toByte
     def fromInt(x: Int): Byte = x.toByte
-    def parseString(str: String): Option[Byte] = Try(str.toByte).toOption
+    def parseString(str: String): Option[Byte] = StringParsers.parseByte(str)
     def toInt(x: Byte): Int = x.toInt
     def toLong(x: Byte): Long = x.toLong
     def toFloat(x: Byte): Float = x.toFloat
@@ -118,7 +119,7 @@ object Numeric {
     def rem(x: Long, y: Long): Long = x % y
     def negate(x: Long): Long = -x
     def fromInt(x: Int): Long = x.toLong
-    def parseString(str: String): Option[Long] = Try(str.toLong).toOption
+    def parseString(str: String): Option[Long] = StringParsers.parseLong(str)
     def toInt(x: Long): Int = x.toInt
     def toLong(x: Long): Long = x
     def toFloat(x: Long): Float = x.toFloat
@@ -132,7 +133,7 @@ object Numeric {
     def times(x: Float, y: Float): Float = x * y
     def negate(x: Float): Float = -x
     def fromInt(x: Int): Float = x.toFloat
-    def parseString(str: String): Option[Float] = Try(str.toFloat).toOption
+    def parseString(str: String): Option[Float] = StringParsers.parseFloat(str)
     def toInt(x: Float): Int = x.toInt
     def toLong(x: Float): Long = x.toLong
     def toFloat(x: Float): Float = x
@@ -149,7 +150,7 @@ object Numeric {
     def times(x: Double, y: Double): Double = x * y
     def negate(x: Double): Double = -x
     def fromInt(x: Int): Double = x.toDouble
-    def parseString(str: String): Option[Double] = Try(str.toDouble).toOption
+    def parseString(str: String): Option[Double] = StringParsers.parseDouble(str)
     def toInt(x: Double): Int = x.toInt
     def toLong(x: Double): Long = x.toLong
     def toFloat(x: Double): Float = x.toFloat
