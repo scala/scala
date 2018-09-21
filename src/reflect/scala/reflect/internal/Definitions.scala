@@ -931,52 +931,63 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     private[this] val doSam = settings.isScala212
-
+    private[this] val samCache = perRunCaches.newAnyRefMap[Symbol, Symbol]()
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
-     *
-     * The method must be monomorphic and have exactly one parameter list.
-     * The class defining the method is a supertype of `tp` that
-     * has a public no-arg primary constructor and it can be subclassed (not final or sealed).
-     */
-    def samOf(tp: Type): Symbol = if (!doSam) NoSymbol else if (!isNonRefinementClassType(unwrapToClass(tp))) NoSymbol else {
-      // look at erased type because we (only) care about what ends up in bytecode
-      // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
-      val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
+      *
+      * The method must be monomorphic and have exactly one parameter list.
+      * The class defining the method is a supertype of `tp` that
+      * has a public no-arg primary constructor and it can be subclassed (not final or sealed).
+      *
+      * Note that this is also used during erasure (TODO: maybe we could simplify typedFunction for post-typer usage and avoid this?),
+      * and the caching means that samOf is effectively computed during typer (assuming the same inputs were presented to samOf during that phase).
+      * It's kind of strange that erasure sees deferredMembers that typer does not (see commented out assert below)
+      */
+    def samOf(tp: Type): Symbol =
+      if (doSam && isNonRefinementClassType(unwrapToClass(tp))) { // TODO: is this really faster than computing tpSym below? how about just `tp.typeSymbol.isClass` (and !tpSym.isRefinementClass)?
+        // look at erased type because we (only) care about what ends up in bytecode
+        // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
+        val tpSym = erasure.javaErasure(tp).typeSymbol
 
-      if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
-          // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
-          // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
-          && { val ctor = tpSym.primaryConstructor
-            !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)}
-          // we won't be able to create an instance of tp if it doesn't correspond to its self type
-          // (checking conformance gets complicated when tp is not fully defined, so let's just rule out self types entirely)
-          && !tpSym.hasSelfType
-      ) {
+        def compute: Symbol = {
+          if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
+              // if tp has a constructor (its class is not a trait), it must be public and must not take any arguments
+              // (implementation restriction: implicit argument lists are excluded to simplify type inference in adaptToSAM)
+              && {
+                val ctor = tpSym.primaryConstructor
+                !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
+              }
+              // we won't be able to create an instance of tp if it doesn't correspond to its self type
+              // (checking conformance gets complicated when tp is not fully defined, so let's just rule out self types entirely)
+              && !tpSym.hasSelfType) {
+            // find the single abstract member, if there is one
+            // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
+            //    scala> abstract class X { def m: Int }
+            //    scala> class Y extends X { def m: Int = 1}
+            //    scala> typeOf[Y].deferredMembers
+            //    Scopes(method m, method getClass)
+            //
+            //    scala> typeOf[Y].members.filter(_.isDeferred)
+            //    Scopes()
+            // must filter out "universal" members (getClass is deferred for some reason)
+            val deferredMembers =
+              tpSym.info.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
+              .toList
+              .filter(mem => mem.isDeferred && !isUniversalMember(mem))
 
-        // find the single abstract member, if there is one
-        // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
-        //    scala> abstract class X { def m: Int }
-        //    scala> class Y extends X { def m: Int = 1}
-        //    scala> typeOf[Y].deferredMembers
-        //    Scopes(method m, method getClass)
-        //
-        //    scala> typeOf[Y].members.filter(_.isDeferred)
-        //    Scopes()
-        // must filter out "universal" members (getClass is deferred for some reason)
-        val deferredMembers = (
-          tp.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD).toList.filter(
-            mem => mem.isDeferred && !isUniversalMember(mem)
-          ) // TODO: test
-        )
+            // if there is only one, it's monomorphic and has a single argument list
+            if (deferredMembers.lengthCompare(1) == 0 &&
+                deferredMembers.head.typeParams.isEmpty &&
+                deferredMembers.head.info.paramSectionCount == 1)
+              deferredMembers.head
+            else NoSymbol
+          } else NoSymbol
+        }
 
-        // if there is only one, it's monomorphic and has a single argument list
-        if (deferredMembers.lengthCompare(1) == 0 &&
-            deferredMembers.head.typeParams.isEmpty &&
-            deferredMembers.head.info.paramSectionCount == 1)
-          deferredMembers.head
-        else NoSymbol
+        // fails in test/files/jvm/t10512b.scala
+        // { val res = samCache.getOrElseUpdate(tpSym, compute); assert(compute eq res, s"samOf($tp) cache discrepancy $compute <-> $res")
+
+        samCache.getOrElseUpdate(tpSym, compute)
       } else NoSymbol
-    }
 
     def samOfProto(pt: Type): Symbol =
       pt match {
