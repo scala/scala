@@ -123,6 +123,11 @@ sealed abstract class Range(
     else new Range.Exclusive(start + step, end, step)
   }
 
+  override def map[B](f: Int => B): IndexedSeq[B] = {
+    validateMaxLength()
+    super.map(f)
+  }
+
   final protected def copy(start: Int = start, end: Int = end, step: Int = step, isInclusive: Boolean = isInclusive): Range =
     if(isInclusive) new Range.Inclusive(start, end, step) else new Range.Exclusive(start, end, step)
 

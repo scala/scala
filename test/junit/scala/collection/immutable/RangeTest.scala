@@ -56,4 +56,9 @@ class RangeTest {
 
     assertEquals(10, it.next)
   }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def largeRangeMap(): Unit = {
+    Int.MinValue to Int.MaxValue map identity
+  }
 }
