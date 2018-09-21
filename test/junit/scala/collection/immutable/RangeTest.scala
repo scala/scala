@@ -11,6 +11,19 @@ class RangeTest {
   import AssertUtil._
 
   @Test
+  def sorted(): Unit = {
+    val reverseOrd = Ordering.Int.reverse
+
+    val x1 = 1 to 10 by 2
+    assertSame(x1, x1.sorted)
+    assertEquals(List(9, 7, 5, 3, 1), x1.sorted(reverseOrd))
+
+    val x2 = 10 to 1 by -3
+    assertEquals(List(1, 4, 7, 10), x2.sorted)
+    assertEquals(List(10, 7, 4, 1), x2.sorted(reverseOrd))
+  }
+
+  @Test
   def test_SI10060_numeric_range_min_max(): Unit = {
     assertEquals(Range.Long.inclusive(1, 9, 1).min, 1)
     assertEquals(Range.Long.inclusive(1, 9, 1).max, 9)
