@@ -21,6 +21,8 @@ private[immutable] final object Node {
 
   final val SizeMoreThanOne = 2
 
+  final val BranchingFactor = 1 << BitPartitionSize
+
   final def maskFrom(hash: Int, shift: Int): Int = (hash >>> shift) & BitPartitionMask
 
   final def bitposFrom(mask: Int): Int = 1 << mask

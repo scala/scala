@@ -6,8 +6,8 @@ import org.scalacheck._
 
 object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
 
-  type K = String
-  type V = String
+  type K = Int
+  type V = Int
   type T = (K, V)
 
   //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
