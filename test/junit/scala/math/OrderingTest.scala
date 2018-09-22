@@ -226,7 +226,6 @@ class OrderingTest {
     check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
     check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
     check(Ordering[Option[Int]])
-    check(Ordering[Iterable[Int]])
 
     import Ordering.Implicits._
     check(Ordering[Seq[Int]])

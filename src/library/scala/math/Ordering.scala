@@ -494,6 +494,13 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
     new OptionOrdering[T] { val optionOrdering = ord }
 
+  /** @deprecated Iterables are not guaranteed to have a consistent order, so the `Ordering`
+    *             returned by this method may not be stable or meaningful. If you are using a type
+    *             with a consistent order (such as `Seq`), use its `Ordering` (found in the
+    *             [[Implicits]] object) instead.
+    */
+  @deprecated("Iterables are not guaranteed to have a consistent order; if using a type with a " +
+    "consistent order (e.g. Seq), use its Ordering (found in the Ordering.Implicits object)", since = "2.13.0")
   implicit def Iterable[T](implicit ord: Ordering[T]): Ordering[Iterable[T]] =
     new IterableOrdering[Iterable, T](ord)
 
