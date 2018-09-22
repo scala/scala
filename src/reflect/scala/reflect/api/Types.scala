@@ -39,7 +39,7 @@ package api
  *  For example, to look up the `map` method of `List`, one can do:
  *
  *  {{{
- *     scala> typeOf[List[_]].member("map": TermName)
+ *     scala> typeOf[List[_]].member(TermName("map"))
  *     res1: reflect.runtime.universe.Symbol = method map
  *  }}}
  *
