@@ -1,3 +1,4 @@
+import scala.collection.immutable.SortedSet
 import scala.math.Ordering.Double.TotalOrdering
 import scala.math.Ordering.Implicits._
 
@@ -30,6 +31,8 @@ object Test extends App {
   testAll(None, Some(1));
   testAll[Seq[Int]](List(1), List(1, 2));
   testAll[Seq[Int]](List(1, 2), List(2));
+  testAll[SortedSet[Int]](SortedSet(1), SortedSet(1, 2))
+  testAll[SortedSet[Int]](SortedSet(1, 2), SortedSet(2))
   testAll((1, "bar"), (1, "foo"))
   testAll((1, "foo"), (2, "bar"))
 

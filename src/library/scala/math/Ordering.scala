@@ -255,7 +255,10 @@ object Ordering extends LowPriorityOrderingImplicits {
     /** Not in the standard scope due to the potential for divergence:
       * For instance `implicitly[Ordering[Any]]` diverges in its presence.
       */
-    implicit def seqDerivedOrdering[CC[X] <: scala.collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+    implicit def seqOrdering[CC[X] <: scala.collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+      new IterableOrdering[CC, T](ord)
+
+    implicit def sortedSetOrdering[CC[X] <: scala.collection.SortedSet[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
       new IterableOrdering[CC, T](ord)
 
     /** This implicit creates a conversion from any value for which an
