@@ -3057,12 +3057,15 @@ trait Types
 
   /** A creator for existential types which flattens nested existentials.
    */
-  def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
-    if (quantified.isEmpty) underlying
-    else underlying match {
-      case ExistentialType(qs, restpe) => newExistentialType(quantified ::: qs, restpe)
-      case _                           => ExistentialType(quantified, underlying)
-    }
+  def newExistentialType(quantified: List[Symbol], underlying: Type): Type = {
+    @tailrec
+    def loop(qsyms: List[Symbol], ul: Type): Type =
+      ul match {
+        case ExistentialType(qs, restpe) => loop(qsyms ::: qs, restpe)
+        case _                           => ExistentialType(qsyms, ul)
+      }
+    if (quantified.isEmpty) underlying else loop(quantified, underlying)
+  }
 
   case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy with ExistentialTypeApi

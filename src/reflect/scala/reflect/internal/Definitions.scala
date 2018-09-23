@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.{meta, migration}
+import scala.annotation.{meta, migration, tailrec}
 import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
@@ -855,17 +855,21 @@ trait Definitions extends api.StandardDefinitions {
      *  This makes it like 1000x easier to see the overall logic
      *  of the method.
      */
-    def isStable(tp: Type): Boolean = tp match {
-      case _: SingletonType                             => true
-      case NoPrefix                                     => true
-      case TypeRef(_, NothingClass | SingletonClass, _) => true
-      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.upperBound.typeSymbol isSubClass SingletonClass
-      case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
-      case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
-      case TypeVar(origin, _)                           => isStable(origin)
-      case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
-      case _: SimpleTypeProxy                           => isStable(tp.underlying)
-      case _                                            => false
+    def isStable(ty: Type): Boolean = {
+      @tailrec
+      def loop(tp: Type): Boolean = tp match {
+        case _: SingletonType                             => true
+        case NoPrefix                                     => true
+        case TypeRef(_, NothingClass | SingletonClass, _) => true
+        case TypeRef(_, sym, _) if sym.isAbstractType     => tp.upperBound.typeSymbol isSubClass SingletonClass
+        case TypeRef(pre, sym, _) if sym.isModuleClass    => loop(pre)
+        case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && loop(normalize)
+        case TypeVar(origin, _)                           => loop(origin)
+        case AnnotatedType(_, atp)                        => loop(atp)    // Really?
+        case _: SimpleTypeProxy                           => loop(tp.underlying)
+        case _                                            => false
+      }
+      loop(ty)
     }
     def isVolatile(tp: Type): Boolean = {
       // need to be careful not to fall into an infinite recursion here
