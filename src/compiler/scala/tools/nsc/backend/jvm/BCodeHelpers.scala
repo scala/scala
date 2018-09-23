@@ -254,15 +254,16 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     /*
      * must-single-thread
      */
-    def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = sym.hasModuleFlag && {
-      def warnBadMain(msg: String, pos: Position): Unit = reporter.warning(pos,
+    def apply(sym: Symbol, csymCompUnit: CompilationUnit, mainClass: Option[String]): Boolean = sym.hasModuleFlag && {
+      val warn = mainClass.fold(true)(_ == sym.fullNameString)
+      def warnBadMain(msg: String, pos: Position): Unit = if (warn) reporter.warning(pos,
         s"""|not a valid main method for ${sym.fullName('.')},
             |  because $msg.
             |  To define an entry point, please define the main method as:
             |    def main(args: Array[String]): Unit
             |""".stripMargin
       )
-      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = reporter.warning(sym.pos,
+      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = if (warn) reporter.warning(sym.pos,
         s"""|${sym.name.decoded} has a ${if (hasExact) "valid " else ""}main method${if (mainly != NoType) " "+mainly else ""},
             |  but ${sym.fullName('.')} will not have an entry point on the JVM.
             |  Reason: $msg, which means no static forwarder can be generated.
