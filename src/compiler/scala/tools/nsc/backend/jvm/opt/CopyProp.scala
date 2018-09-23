@@ -244,6 +244,9 @@ abstract class CopyProp {
         }
       }
 
+      val changed = toReplace.nonEmpty || toNullOut.nonEmpty
+      if (changed) analyzerCache.invalidate(method) // invalidate before running inliner!
+
       if (toInline.nonEmpty) {
         import postProcessor._
         val methodCallsites = callGraph.callsites(method)
@@ -255,8 +258,6 @@ abstract class CopyProp {
         }
       }
 
-      val changed = toReplace.nonEmpty || toNullOut.nonEmpty || toInline.nonEmpty
-      if (changed) analyzerCache.invalidate(method)
       (staleStoreRemoved, intrinsicRewritten, callInlined)
     }
   }

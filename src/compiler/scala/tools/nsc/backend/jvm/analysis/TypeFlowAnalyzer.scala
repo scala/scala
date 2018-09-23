@@ -27,7 +27,7 @@ abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opco
     new ParamValue(local, tpe)
 
   override def newValue(tp: Type): BasicValue = {
-    if (tp == null) super.newValue(tp)
+    if (tp == null) UninitializedValue
     else if (isRef(tp)) new SpecialAwareBasicValue(tp)
     else super.newValue(tp)
   }
