@@ -2102,4 +2102,20 @@ class InlinerTest extends BytecodeTesting {
       Field(GETSTATIC, "scala/Console$", "MODULE$", "Lscala/Console$;"), VarOp(ALOAD, 3), Invoke(INVOKEVIRTUAL, "scala/Console$", "println", "(Ljava/lang/Object;)V", false), Op(RETURN))
     )
   }
+
+  @Test
+  def arrayFill(): Unit = {
+    val code =
+      """class C {
+        |  def t = Array.fill[Option[Any]](10)(None)
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    // no more calls
+    assertInvokedMethods(getMethod(c, "t"), Nil)
+    // no more casts / type tests (after inlining array_update)
+    assertSameCode(
+      getInstructions(c, "t").filter(_.isInstanceOf[TypeOp]),
+      List(TypeOp(ANEWARRAY, "scala/Option"), TypeOp(ANEWARRAY, "scala/Option")))
+  }
 }
