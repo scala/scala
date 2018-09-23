@@ -68,9 +68,13 @@ object ASMConverters {
     // toString such that the first field, "opcode: Int", is printed textually.
     final override def toString() = {
       val printOpcode = opcode != -1
+      def q(a: Any) = a match {
+        case s: String => s""""$s""""
+        case _ => a.toString
+      }
       productPrefix + (
-        if (printOpcode) Iterator(opcodeToString(opcode)) ++ productIterator.drop(1)
-        else productIterator
+        if (printOpcode) Iterator(opcodeToString(opcode)) ++ productIterator.drop(1).map(q)
+        else productIterator.map(q)
       ).mkString("(", ", ", ")")
     }
   }
