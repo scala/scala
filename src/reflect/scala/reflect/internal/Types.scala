@@ -2973,6 +2973,7 @@ trait Types
 
   /** A creator for existential types which flattens nested existentials.
    */
+  @tailrec
   def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
     if (quantified.isEmpty) underlying
     else underlying match {
