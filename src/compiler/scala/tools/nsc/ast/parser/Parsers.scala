@@ -3076,7 +3076,7 @@ self =>
 
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
-        if (inScalaRootPackage && ScalaValueClassNames.contains(name))
+        if (inScalaRootPackage && ScalaValueClassNames.containsAny(name))
           Template(parents, self, anyvalConstructor :: body)
         else
           gen.mkTemplate(gen.mkParents(mods, parents, parentPos),

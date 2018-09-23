@@ -163,7 +163,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     }
 
     def skipTo(tokens: Int*): Unit = {
-      while (!(tokens contains in.token) && in.token != EOF) {
+      while (!(tokens containsAny in.token) && in.token != EOF) {
         if (in.token == LBRACE) { skipAhead(); accept(RBRACE) }
         else if (in.token == LPAREN) { skipAhead(); accept(RPAREN) }
         else in.nextToken()

@@ -1552,7 +1552,7 @@ trait Namers extends MethodSynthesis {
                     // TODO: this is a very brittle approach; I sincerely hope that Denys's research into hygiene
                     //       will open the doors to a much better way of doing this kind of stuff
                     val tparamNames = defTparams map { case TypeDef(_, name, _, _) => name }
-                    val eraseAllMentionsOfTparams = new TypeTreeSubstituter(tparamNames contains _)
+                    val eraseAllMentionsOfTparams = new TypeTreeSubstituter(tparamNames containsAny _)
                     eraseAllMentionsOfTparams(rvparam.tpt match {
                       // default getter for by-name params
                       case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg

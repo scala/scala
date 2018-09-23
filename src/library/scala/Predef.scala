@@ -389,6 +389,10 @@ object Predef extends LowPriorityImplicits {
   /** @group conversions-string */
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
 
+  @inline implicit def scalaSeqToInvariantSeqOps[A, CC[_]](seq: CC[A])
+    (implicit ev: CC[A] <:< Seq[A]): collection.InvariantSeqOps[A, CC] =
+    new collection.InvariantSeqOps(seq)
+
   // printing -----------------------------------------------------------
 
   /** Prints an object to `out` using its `toString` method.

@@ -81,7 +81,7 @@ object Opt {
 
     def choiceOf[T: FromString](choices: T*) = {
       --^[T] map { arg =>
-        if (choices contains arg) arg
+        if (choices containsAny arg) arg
         else failOption(arg.toString, "not a valid choice from " + choices)
       }
     }

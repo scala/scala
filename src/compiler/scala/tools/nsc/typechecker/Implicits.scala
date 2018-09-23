@@ -1428,7 +1428,7 @@ trait Implicits {
 
       /* Creates a tree that calls the factory method called constructor in object scala.reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
-        if (args contains EmptyTree) EmptyTree
+        if (args containsAny EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
           val mani = gen.mkManifestFactoryCall(full, constructor, tparg, args.toList)
           if (settings.debug) println("generated manifest: "+mani) // DEBUG

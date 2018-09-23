@@ -101,7 +101,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     false
   }
 
-  override def contains[A1 >: A](elem: A1): Boolean = {
+  override def containsAny(elem: Any): Boolean = {
     var these: LinearSeq[A] = coll
     while (!these.isEmpty) {
       if (these.head == elem) return true

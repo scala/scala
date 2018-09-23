@@ -104,8 +104,8 @@ trait ModelFactoryImplicitSupport {
         .getOrElse(Nil)
 
       conversions = conversions filterNot { conv: ImplicitConversionImpl =>
-        hiddenConversions.contains(conv.conversionShortName) ||
-        hiddenConversions.contains(conv.conversionQualifiedName)
+        hiddenConversions.containsAny(conv.conversionShortName) ||
+        hiddenConversions.containsAny(conv.conversionQualifiedName)
       }
 
       // Filter out non-sensical conversions from value types

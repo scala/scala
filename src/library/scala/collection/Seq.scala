@@ -471,7 +471,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *  @return     `true` if this $coll has an element that is equal (as
    *              determined by `==`) to `elem`, `false` otherwise.
    */
-  def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
+  def containsAny(elem: Any): Boolean = exists (_ == elem)
 
   @deprecated("Use .reverseIterator.map(f).to(...) instead of .reverseMap(f)", "2.13.0")
   def reverseMap[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
@@ -1100,3 +1100,14 @@ object SeqOps {
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractSeq[+A] extends AbstractIterable[A] with Seq[A]
+
+final class InvariantSeqOps[A, CC[_]](seq: CC[A])(implicit ev: CC[A] <:< Seq[A]) {
+  /** Tests whether this $seq contains a given value as an element.
+   *  $mayNotTerminateInf
+   *
+   *  @param elem  the element to test.
+   *  @return     `true` if this $seq has an element that is equal (as
+   *              determined by `==`) to `elem`, `false` otherwise.
+   */
+  def contains(elem: A): Boolean = seq.containsAny(elem)
+}

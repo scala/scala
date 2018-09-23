@@ -271,7 +271,7 @@ abstract class ExplicitOuter extends InfoTransform
     /** The stack of class symbols in which a call to this() or to the super
       * constructor, or early definition is active
       */
-    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls containsAny clazz
     protected val selfOrSuperCalls = collection.mutable.Stack[Symbol]()
 
     override def transform(tree: Tree): Tree = {

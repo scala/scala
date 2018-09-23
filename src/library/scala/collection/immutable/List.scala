@@ -367,7 +367,7 @@ sealed abstract class List[+A]
     false
   }
 
-  override final def contains[A1 >: A](elem: A1): Boolean = {
+  override final def containsAny(elem: Any): Boolean = {
     var these: List[A] = this
     while (!these.isEmpty) {
       if (these.head == elem) return true

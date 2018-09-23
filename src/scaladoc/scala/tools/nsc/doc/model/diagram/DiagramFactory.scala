@@ -126,7 +126,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
               member.parentTypes map {
                 case (template, tpe) => template
               } filter {
-                nodesAll.contains(_)
+                nodesAll.containsAny(_)
               }
           }
         }

@@ -1,0 +1,11 @@
+seq-contains.scala:2: error: type mismatch;
+ found   : String("wat")
+ required: Int
+  val x = Seq(1, 2, 3).contains("wat")
+                                ^
+seq-contains.scala:3: error: type mismatch;
+ found   : Option[String]
+ required: String
+  val l = List("foo").contains(Option("foo"))
+                                     ^
+two errors found

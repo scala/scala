@@ -331,7 +331,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         }
 
         val stripTags=List(inheritDiagramTag, contentDiagramTag, SimpleTagKey("template"), SimpleTagKey("documentable"))
-        val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
+        val tagsWithoutDiagram = tags.filterNot(pair => stripTags.containsAny(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
           tagsWithoutDiagram.view.mapValues(_.map(parseWikiAtSymbol(_, pos, site))).to(mutable.Map)
