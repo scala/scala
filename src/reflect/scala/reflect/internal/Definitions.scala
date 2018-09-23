@@ -843,6 +843,7 @@ trait Definitions extends api.StandardDefinitions {
      *  This makes it like 1000x easier to see the overall logic
      *  of the method.
      */
+    @tailrec
     def isStable(tp: Type): Boolean = tp match {
       case _: SingletonType                             => true
       case NoPrefix                                     => true
