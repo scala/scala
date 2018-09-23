@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
+import scala.collection.immutable.BitSet
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.Position
@@ -379,16 +380,29 @@ abstract class BackendUtils extends PerRunInit {
     isTraitSuperAccessor(method, owner) || isMixinForwarder(method, owner)
   }
 
+  private val nonForwarderInstructionTypes: BitSet = {
+    import AbstractInsnNode._
+    BitSet(FIELD_INSN, INVOKE_DYNAMIC_INSN, JUMP_INSN, IINC_INSN, TABLESWITCH_INSN, LOOKUPSWITCH_INSN)
+  }
+
   /**
    * Identify forwarders, aliases, anonfun$adapted methods, bridges, trivial methods (x + y), etc
    * Returns
    *   -1 : no match
-   *    1 : trivial (no method calls)
+   *    1 : trivial (no method calls), but not field getters
    *    2 : factory
    *    3 : forwarder with boxing adaptation
    *    4 : generic forwarder / alias
+   *
+   * TODO: should delay some checks to `canInline` (during inlining)
+   * problem is: here we don't have access to the callee / accessed field, so we can't check accessibility
+   *   - INVOKESPECIAL is not the only way to call private methods, INVOKESTATIC is also possible
+   *   - the body of the callee can change between here (we're in inliner heuristics) and the point
+   *     when we actually inline it (code may have been inlined into the callee)
+   *   - methods accessing a public field could be inlined. on the other hand, methods accessing a private
+   *     static field should not be inlined.
    */
-  def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode): Int = {
+  def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode, allowPrivateCalls: Boolean): Int = {
     val paramTypes = Type.getArgumentTypes(method.desc)
     val numPrimitives = paramTypes.count(_.getSort < Type.ARRAY) + (if (Type.getReturnType(method.desc).getSort < Type.ARRAY) 1 else 0)
 
@@ -403,22 +417,24 @@ abstract class BackendUtils extends PerRunInit {
     var numBoxConv = 0
     var numCallsOrNew = 0
     var callMi: MethodInsnNode = null
-    var it = method.instructions.iterator
+    val it = method.instructions.iterator
     while (it.hasNext && numCallsOrNew < 2) {
       val i = it.next()
       val t = i.getType
       if (t == AbstractInsnNode.METHOD_INSN) {
         val mi = i.asInstanceOf[MethodInsnNode]
-        if (isScalaBox(mi) || isScalaUnbox(mi) || isPredefAutoBox(mi) || isPredefAutoUnbox(mi) || isJavaBox(mi) || isJavaUnbox(mi))
-          numBoxConv += 1
-        else {
-          numCallsOrNew += 1
-          callMi = mi
+        if (!allowPrivateCalls && i.getOpcode == INVOKESPECIAL && mi.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME) {
+          numCallsOrNew = 2 // stop here: don't inline forwarders with a private or super call
+        } else {
+          if (isScalaBox(mi) || isScalaUnbox(mi) || isPredefAutoBox(mi) || isPredefAutoUnbox(mi) || isJavaBox(mi) || isJavaUnbox(mi))
+            numBoxConv += 1
+          else {
+            numCallsOrNew += 1
+            callMi = mi
+          }
         }
-      }
-      else if (t == AbstractInsnNode.INVOKE_DYNAMIC_INSN || t == AbstractInsnNode.JUMP_INSN || t == AbstractInsnNode.TABLESWITCH_INSN || t == AbstractInsnNode.LOOKUPSWITCH_INSN)
-        numCallsOrNew = 2 // stop here, not forwarder or trivial
-      // allow casts, NEW
+      } else if (i.getOpcode != GETSTATIC && nonForwarderInstructionTypes(t))
+        numCallsOrNew = 2 // stop here: not forwarder or trivial
     }
     if (numCallsOrNew > 1 || numBoxConv > paramTypes.length + 1) -1
     else if (numCallsOrNew == 0) if (numBoxConv == 0) 1 else 3

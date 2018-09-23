@@ -1406,7 +1406,7 @@ class InlinerTest extends BytecodeTesting {
 
     // box-unbox will clean it up
     assertSameSummary(getMethod(c, "t"), List(
-      ALOAD, GETFIELD, IFEQ /*A*/,
+      ALOAD, "$anonfun$t$1", IFEQ /*A*/,
       ICONST_1, IRETURN,
       -1 /*A*/, ICONST_2, IRETURN))
   }
@@ -1931,7 +1931,7 @@ class InlinerTest extends BytecodeTesting {
 
     assertInvokedMethods(getMethod(c, "t1a"), List("C.$anonfun$t1a$1"))
     // anonfun not inlined, not considered trivial (too many instructions compared to num params)
-    assertEquals(global.genBCode.postProcessor.backendUtils.looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, "$anonfun$t1a$1")), -1)
+    assertEquals(global.genBCode.postProcessor.backendUtils.looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, "$anonfun$t1a$1"), allowPrivateCalls = false), -1)
     assertInvokedMethods(getMethod(c, "t1b"), List("C.$anonfun$t1b$1"))
 
     assertInvokedMethods(getMethod(c, "t2a"), List("java/lang/NullPointerException.<init>"))
@@ -2117,5 +2117,44 @@ class InlinerTest extends BytecodeTesting {
     assertSameCode(
       getInstructions(c, "t").filter(_.isInstanceOf[TypeOp]),
       List(TypeOp(ANEWARRAY, "scala/Option"), TypeOp(ANEWARRAY, "scala/Option")))
+  }
+
+  @Test
+  def noInlineGettersSupers(): Unit = {
+    val code =
+      """class A {
+        |  @noinline def t2 = 0
+        |}
+        |final class C extends A {
+        |  val field = 0
+        |  def t1 = field
+        |
+        |  def hasSuper = super.t2
+        |  override def t2 = hasSuper + 1
+        |
+        |  def hasPrivate = {
+        |    @noinline def priv = field
+        |    priv
+        |  }
+        |  def t3 = hasPrivate
+        |
+        |  def hasPublic = t1
+        |  def t4 = hasPublic // inlined, we end up with t1 = field
+        |
+        |  def hasPrivateStatic = {
+        |    @noinline def priv = 1
+        |    priv // invokestatic of private method
+        |  }
+        |  def t5 = hasPrivateStatic
+        |}
+      """.stripMargin
+    val List(a, c) = compileClasses(code)
+    assertSameCode(getMethod(c, "t1"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "field", "()I", false), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t2"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "hasSuper", "()I", false), Op(ICONST_1), Op(IADD), Op(IRETURN)))
+    assertEquals(getAsmMethod(c, "priv$1").access & (ACC_PRIVATE | ACC_STATIC), ACC_PRIVATE)
+    assertSameCode(getMethod(c, "t3"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "hasPrivate", "()I", false), Op(IRETURN)))
+    assertSameCode(getMethod(c, "t4"), List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "field", "()I", false), Op(IRETURN)))
+    assertEquals(getAsmMethod(c, "priv$2").access & (ACC_PRIVATE | ACC_STATIC), ACC_PRIVATE | ACC_STATIC)
+    assertSameCode(getMethod(c, "t5"), List(Invoke(INVOKESTATIC, "C", "priv$2", "()I", false), Op(IRETURN))) // TODO: should not inline here...
   }
 }

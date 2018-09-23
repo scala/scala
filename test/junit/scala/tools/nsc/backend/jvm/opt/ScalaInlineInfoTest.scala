@@ -220,7 +220,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
 
     val List(c, cm, t) =  compileClasses(code)
 
-    def tst(c: ClassNode, m: String, r: Int): Unit = assertEquals(looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, m)), r)
+    def tst(c: ClassNode, m: String, r: Int): Unit = assertEquals(looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, m), allowPrivateCalls = true), r)
     tst(c, "a", 4)
     tst(c, "$anonfun$t1$1$adapted", 3)
     tst(c, "$anonfun$t1$1", 1)
