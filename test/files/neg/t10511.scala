@@ -1,5 +1,4 @@
-
-// scalac: -deprecation
+// scalac: -deprecation -Xfatal-warnings
 object Test {
   val f = Ordering[Float]
   val d = Ordering[Double]

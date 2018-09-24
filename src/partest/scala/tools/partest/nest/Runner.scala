@@ -521,6 +521,10 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     List(round1, round2).flatten
   }
 
+  def runPosTest(): TestState =
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    else runTestCommon()
+
   def runNegTest(): TestState = runInContext {
     // pass if it checks and didn't crash the compiler
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
@@ -531,16 +535,6 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
     compilationRounds(testFile).find(!_.result.isOk).map(checked).getOrElse(genFail("expected compilation failure"))
   }
-
-  /*
-  def runTestCommon(andAlso: => Boolean): (Boolean, LogContext) = runInContext {
-    compilationRounds(testFile).forall {
-      case r if r.result.isInstanceOf[Crash] => println("CRASH"); ???
-      case x => nextTestActionExpectTrue("compilation failed", x.isOk) && andAlso
-    }
-    //compilationRounds(testFile).forall(x => nextTestActionExpectTrue("compilation failed", x.isOk)) && andAlso
-  }
-  */
 
   // run compilation until failure, evaluate `andAlso` on success
   def runTestCommon(andAlso: => TestState = genPass): TestState = runInContext {
@@ -629,7 +623,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     stopwatch.start()
 
     val state =  kind match {
-      case "pos"          => runTestCommon(if (checkFile.exists) diffIsOk else genPass)
+      case "pos"          => runPosTest()
       case "neg"          => runNegTest()
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
