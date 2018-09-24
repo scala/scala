@@ -14,6 +14,8 @@ package scala.tools.nsc
 package typechecker
 
 import java.lang.Math.min
+import java.net.URL
+
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
@@ -22,6 +24,7 @@ import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
+import scala.reflect.io.AbstractFile
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
@@ -75,7 +78,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
    */
   protected def findMacroClassLoader(): ClassLoader = {
-    val classpath = global.classPath.asURLs
+    val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
+      for {
+        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
+        af <- Option(AbstractFile getDirectory file)
+      } yield af.file.toURI.toURL
+    } else global.classPath.asURLs
     def newLoader = () => {
       macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
       ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
