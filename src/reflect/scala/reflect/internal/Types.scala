@@ -4132,7 +4132,8 @@ trait Types
       while (tparams1 != tparams0) {
         tparams0 = tparams1
         tparams1 = tparams filter { p =>
-          tparams1 exists { p1 => p1 == p || (p1.info contains p) }
+          tparams1.exists( (p1: Symbol) => p1 eq p) ||
+          tparams1.exists( p1 => p1.info contains p)
         }
       }
       newExistentialType(tparams1, tpe1)
