@@ -149,8 +149,8 @@ private[collection] object RedBlackTree {
 
   def isBlack(tree: Tree[_, _]) = (tree eq null) || isBlackTree(tree)
 
-  private[this] def isRedTree(tree: Tree[_, _]) = tree.isInstanceOf[RedTree[_, _]]
-  private[this] def isBlackTree(tree: Tree[_, _]) = tree.isInstanceOf[BlackTree[_, _]]
+  @`inline` private[this] def isRedTree(tree: Tree[_, _]) = tree.isInstanceOf[RedTree[_, _]]
+  @`inline` private[this] def isBlackTree(tree: Tree[_, _]) = tree.isInstanceOf[BlackTree[_, _]]
 
   private[this] def blacken[A, B](t: Tree[A, B]): Tree[A, B] = if (t eq null) null else t.black
 
@@ -497,12 +497,12 @@ private[collection] object RedBlackTree {
     override def hasNext: Boolean = lookahead ne null
 
     @throws[NoSuchElementException]
-    override def next(): R = lookahead match {
-      case null =>
-        throw new NoSuchElementException("next on empty iterator")
-      case tree =>
+    override def next(): R = {
+      val tree = lookahead
+      if(tree ne null) {
         lookahead = findLeftMostOrPopOnEmpty(goRight(tree))
         nextResult(tree)
+      } else Iterator.empty.next()
     }
 
     @tailrec
@@ -552,12 +552,12 @@ private[collection] object RedBlackTree {
       find(root)
     }
 
-    private[this] def goLeft(tree: Tree[A, B]) = {
+    @`inline` private[this] def goLeft(tree: Tree[A, B]) = {
       pushNext(tree)
       tree.left
     }
 
-    private[this] def goRight(tree: Tree[A, B]) = tree.right
+    @`inline` private[this] def goRight(tree: Tree[A, B]) = tree.right
   }
 
   private[this] class EntriesIterator[A: Ordering, B](tree: Tree[A, B], focus: Option[A]) extends TreeIterator[A, B, (A, B)](tree, focus) {

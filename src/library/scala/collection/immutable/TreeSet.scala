@@ -23,7 +23,7 @@ import immutable.{RedBlackTree => RB}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
@@ -36,7 +36,7 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   override def sortedIterableFactory = TreeSet
 
-  private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)
+  private def newSet(t: RB.Tree[A, Null]) = new TreeSet[A](t)
 
   override def size: Int = RB.count(tree)
 
@@ -117,16 +117,27 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
     *  @param elem    a new element to add.
     *  @return        a new $coll containing `elem` and all the elements of this $coll.
     */
-  def incl(elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+  def incl(elem: A): TreeSet[A] = {
+    val t = RB.update(tree, elem, null, overwrite = false)
+    if(t eq tree) this else newSet(t)
+  }
 
   /** Creates a new `TreeSet` with the entry removed.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def excl(elem: A): TreeSet[A] =
-    if (!RB.contains(tree, elem)) this
-    else newSet(RB.delete(tree, elem))
+  def excl(elem: A): TreeSet[A] = {
+    val t = RB.delete(tree, elem)
+    if(t eq tree) this else newSet(t)
+  }
+
+  override def concat(that: collection.IterableOnce[A]): TreeSet[A] = {
+    val it = that.iterator
+    var t = tree
+    while (it.hasNext) t = RB.update(t, it.next(), null, overwrite = false)
+    if(t eq tree) this else newSet(t)
+  }
 
   override protected[this] def className = "TreeSet"
 }
@@ -145,12 +156,17 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
   def from[E: Ordering](it: scala.collection.IterableOnce[E]): TreeSet[E] =
     it match {
       case ts: TreeSet[E] => ts
-      case _ => (newBuilder[E] ++= it).result()
+      case _ =>
+        var t: RB.Tree[E, Null] = null
+        val i = it.iterator
+        while (i.hasNext) t = RB.update(t, i.next(), null, overwrite = false)
+        new TreeSet[E](t)
     }
 
   def newBuilder[A : Ordering]: Builder[A, TreeSet[A]] =
     new ImmutableBuilder[A, TreeSet[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
+      def addOne(elem: A): this.type = { elems = elems.incl(elem); this }
+      override def addAll(xs: IterableOnce[A]): this.type = { elems = elems.concat(xs); this }
     }
 
 }
