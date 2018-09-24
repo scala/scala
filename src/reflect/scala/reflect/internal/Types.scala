@@ -4126,17 +4126,27 @@ trait Types
       val extrapolation = new ExistentialExtrapolation(tparams)
       if (flipVariance) extrapolation.variance = Contravariant
       val tpe1     = extrapolation extrapolate tpe
-      var tparams0 = tparams
-      var tparams1 = tparams0 filter tpe1.contains
 
-      while (tparams1 != tparams0) {
-        tparams0 = tparams1
-        tparams1 = tparams filter { p =>
-          tparams1.exists( (p1: Symbol) => p1 eq p) ||
-          tparams1.exists( p1 => p1.info contains p)
+      val tparamClosure = mutable.ListBuffer.empty[Symbol]
+      val tparamsTodo   = mutable.ListBuffer.empty[Symbol]
+      val tparamsBord1  = mutable.ListBuffer.empty[Symbol]
+      partitionInto(tparams, tpe1.contains, tparamsBord1, tparamsTodo)
+      val tparamsBord2  = mutable.ListBuffer.empty[Symbol]
+      while (tparamsBord1.nonEmpty) {
+        tparamsBord2.clear
+        tparamsTodo.filterInPlace { paramTodo =>
+          // If our closure is not yet complete (there's a tparam in tparamsClosed whose info refers to a tparam in paramTodo),
+          // add `paramTodo` to `tparamBord2`, and drop it from `tparamsTodo`
+          !tparamsBord1.exists(_.info contains paramTodo) || {
+            tparamsBord2 += paramTodo;
+            false
+          }
         }
+        tparamClosure ++= tparamsBord1
+        tparamsBord1.clear
+        tparamsBord1 ++= tparamsBord2
       }
-      newExistentialType(tparams1, tpe1)
+      newExistentialType(tparamClosure.toList, tpe1)
     }
 
 
