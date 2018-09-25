@@ -1,0 +1,3 @@
+t1434.scala:7: warning: comparing values of types Null and Null using `!=' will always yield false
+    case a: A[_] if(a.op != null) => "with op"
+                         ^
