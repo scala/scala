@@ -4119,36 +4119,56 @@ trait Types
    *  indirectly referenced by type `tpe1`. If there are no remaining type
    *  parameters, simply returns result type `tpe`.
    */
-  def existentialAbstraction(tparams: List[Symbol], tpe0: Type, flipVariance: Boolean = false): Type =
-    if (tparams.isEmpty) tpe0
+  def existentialAbstraction(tparams: List[Symbol], tpe0: Type, flipVariance: Boolean = false): Type = {
+
+    /* We want to narrow the list of type parameters tparams to only those which are either
+     * (a) directly contained by tpe, or
+     * (b) contained by the typeInfo of another parameter from tparams, known to be referred by tpe
+     */
+    def transitiveReferredFrom(tpe: Type): List[Symbol] = tparams match {
+      case tparam :: Nil =>
+        // This is for optimisationa: should be equivalent to general one.
+        if (tpe contains tparam) tparams else Nil
+      case _ =>
+        /* Algorithm to compute transitive closure, using several temporary lists (mutable ListBuffer)
+         *  - pending: elements from tparams not yet known to be in the transitiveClosure
+         *  - border: we know they are in closure, but we use them for search new elements
+         *  - closed: already in closure, and we already searched for new elements.
+         *
+         * Invariant: pending, closed, and border form a partition of `tparams`.
+         * Each element in tparams goes from pending to border, and from border to closed
+         * We separate border from closed to avoid recomputing `Type.contains` for same elements.
+         */
+        val pending   = mutable.ListBuffer.empty[Symbol]
+        var border  = mutable.ListBuffer.empty[Symbol]
+        partitionInto(tparams, tpe.contains, border, pending)
+        val closed    = mutable.ListBuffer.empty[Symbol]
+        var borderAux = mutable.ListBuffer.empty[Symbol]
+        while (border.nonEmpty) {
+          borderAux.clear
+          pending.filterInPlace { paramTodo =>
+            !border.exists(_.info contains paramTodo) || {
+              borderAux += paramTodo;
+              false
+            }
+          }
+          closed ++= border
+          val swap = border
+          border = borderAux
+          borderAux = swap
+        }
+        if (closed.length == tparams.length) tparams else closed.toList
+    }
+
+    if (tparams.isEmpty || (tpe0 eq NoType) ) tpe0
     else {
       val tpe      = normalizeAliases(tpe0)
       val extrapolation = new ExistentialExtrapolation(tparams)
       if (flipVariance) extrapolation.variance = Contravariant
       val tpe1     = extrapolation extrapolate tpe
-
-      val tparamClosure = mutable.ListBuffer.empty[Symbol]
-      val tparamsTodo   = mutable.ListBuffer.empty[Symbol]
-      val tparamsBord1  = mutable.ListBuffer.empty[Symbol]
-      partitionInto(tparams, tpe1.contains, tparamsBord1, tparamsTodo)
-      val tparamsBord2  = mutable.ListBuffer.empty[Symbol]
-      while (tparamsBord1.nonEmpty) {
-        tparamsBord2.clear
-        tparamsTodo.filterInPlace { paramTodo =>
-          // If our closure is not yet complete (there's a tparam in tparamsClosed whose info refers to a tparam in paramTodo),
-          // add `paramTodo` to `tparamBord2`, and drop it from `tparamsTodo`
-          !tparamsBord1.exists(_.info contains paramTodo) || {
-            tparamsBord2 += paramTodo;
-            false
-          }
-        }
-        tparamClosure ++= tparamsBord1
-        tparamsBord1.clear
-        tparamsBord1 ++= tparamsBord2
-      }
-      newExistentialType(tparamClosure.toList, tpe1)
+      newExistentialType(transitiveReferredFrom(tpe1), tpe1)
     }
-
+  }
 
 
 // Hash consing --------------------------------------------------------------
