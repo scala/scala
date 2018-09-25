@@ -653,38 +653,38 @@ trait Implicits {
       loop(tp0, pt0)
     }
 
-    /** This expresses more cleanly in the negative: there's a linear path
-     *  to a final true or false.
-     */
-    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = tp1.dealiasWiden match {
-      // We can only rule out a subtype relationship if the left hand
-      // side is a class, else we may not know enough.
-      case tr1 @ TypeRef(_, sym1, args1) if sym1.isClass =>
-        def typeRefHasMember(tp: TypeRef, name: Name) = {
-          tp.baseClasses.exists(_.info.decls.lookupEntry(name) != null)
-        }
-
-        def existentialUnderlying(t: Type) = t match {
-          case et: ExistentialType => et.underlying
-          case tp => tp
-        }
-        val tp2Bounds = existentialUnderlying(tp2.dealiasWiden.bounds.hi)
-        tp2Bounds match {
-          case TypeRef(_, sym2, args2) if sym2 ne SingletonClass =>
-            val impossible = if ((sym1 eq sym2) && (args1 ne Nil)) !corresponds3(sym1.typeParams, args1, args2) {(tparam, arg1, arg2) =>
-              if (tparam.isCovariant) isPlausiblySubType(arg1, arg2) else isPlausiblySubType(arg2, arg1)
-            } else {
-              ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
+    private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = !isPlausiblySubType(tp1, tp2)
+    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean =
+      tp1.dealiasWiden match {
+        // We only know enough to rule out a subtype relationship if the left hand side is a class.
+        case tr1@TypeRef(_, sym1, args1) if sym1.isClass =>
+          val tp2Wide =
+            tp2.dealiasWiden.bounds.hi match {
+              case et: ExistentialType => et.underlying // OPT meant as cheap approximation of skolemizeExistential?
+              case tp                  => tp
             }
-            impossible
-          case RefinedType(parents, decls) =>
-            val impossible = decls.nonEmpty && !typeRefHasMember(tr1, decls.head.name) // opt avoid full call to .member
-            impossible
-          case _                           => false
-        }
-      case _ => false
-    }
+          tp2Wide match {
+            case TypeRef(_, sym2, args2) if sym2 ne SingletonClass =>
+              // The order of these two checks can be material for performance (scala/bug#8478)
+              def isSubArg(tparam: Symbol, t1: Type, t2: Type) =
+                (!tparam.isContravariant || isPlausiblySubType(t2, t1)) &&
+                (!tparam.isCovariant || isPlausiblySubType(t1, t2))
+
+              if ((sym1 eq sym2) && (args1 ne Nil)) corresponds3(sym1.typeParams, args1, args2)(isSubArg)
+              else (sym1 eq ByNameParamClass) == (sym2 eq ByNameParamClass) && (!sym2.isClass || (sym1 isWeakSubClass sym2))
+            case RefinedType(parents, decls)                       =>
+              // OPT avoid full call to .member
+              decls.isEmpty || {
+                // Do any of the base classes of the class on the left declare the first member in the refinement on the right?
+                // (We randomly pick the first member as a good candidate for eliminating this subtyping pair.)
+                val firstDeclName = decls.head.name
+                tr1.baseClasses.exists(_.info.decls.lookupEntry(firstDeclName) != null)
+              }
+
+            case _ => true
+          }
+        case _ => true
+      }
 
     private def typedImplicit0(info: ImplicitInfo, ptChecked: Boolean, isLocalToCallsite: Boolean): SearchResult = {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(plausiblyCompatibleImplicits)
