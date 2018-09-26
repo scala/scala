@@ -2,7 +2,6 @@ package scala.build
 
 import sbt._
 import Keys._
-import java.util.function.Supplier
 
 object Quiet {
   // Workaround sbt issue described:

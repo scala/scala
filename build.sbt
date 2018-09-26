@@ -370,8 +370,8 @@ lazy val reflect = configureAsSubproject(project)
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
     Osgi.headers +=
-      "Import-Package" -> ("scala.*;version=\"${range;[==,=+);${ver}}\","+
-                           "scala.tools.nsc;resolution:=optional;version=\"${range;[==,=+);${ver}}\","+
+      "Import-Package" -> (raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
+                           raw"""scala.tools.nsc;resolution:=optional;version="$${range;[==,=+);$${ver}}",""" +
                            "*"),
     fixPom(
       "/project/name" -> <name>Scala Compiler</name>,
@@ -450,7 +450,7 @@ lazy val compiler = configureAsSubproject(project)
     ),
     Osgi.headers ++= Seq(
       "Import-Package" -> ("jline.*;resolution:=optional," +
-                           "scala.*;version=\"${range;[==,=+);${ver}}\"," +
+                           raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
     ),
@@ -1149,7 +1149,7 @@ intellij := {
       }
 
       override def transform(n: Node): Seq[Node] = n match {
-        case e @ Elem(_, "library", attrs, _, _, _*) if checkAttrs(attrs) =>
+        case e @ Elem(_, "library", attrs, _, _*) if checkAttrs(attrs) =>
           transformed = true
           XML.loadString(newContent)
         case other =>

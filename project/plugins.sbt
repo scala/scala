@@ -1,5 +1,5 @@
-scalacOptions ++= Seq("-unchecked", "-feature", /*"-deprecation",*/
-  /* "-Xlint" */ /*, "-Xfatal-warnings"*/)
+scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation",
+  "-Xlint:-unused,_", "-Xfatal-warnings")
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
 
