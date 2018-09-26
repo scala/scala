@@ -124,4 +124,8 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
     val hmb = HashMap.newBuilder[K, V].addAll(xs)
     (mb.result() eq mb.result()) && (hmb.result() eq hmb.result())
   }
+
+  property("transform(f) == map { (k, v) => (k, f(k, v)) }") = forAll { (xs: HashMap[K, V], f: (K, V) => String) =>
+    xs.transform(f) == xs.map{ case (k, v) => (k, f(k, v)) }
+  }
 }

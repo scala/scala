@@ -154,6 +154,8 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     }
   }
 
+  override def transform[W](f: (K, V) => W) = new HashMap(rootNode.transform(f), cachedJavaKeySetHashCode)
+
   override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean): HashMap[K, V] = {
     // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
     // in a minor release without breaking binary compatibility.
@@ -171,15 +173,6 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     // element in `keys`, and potentially to take advantage of the structure of `keys`, if it happens to be a HashSet
     // which would allow us to skip hashing keys all together.
     super.removeAll(keys)
-  }
-
-  override def transform[W](f: (K, V) => W): HashMap[K, W] = {
-    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
-    // in a minor release without breaking binary compatibility.
-    //
-    // In particular, `transform` could be optimized to traverse the trie node-by-node, swapping out the values of each
-    // key with the result of applying `f`.
-    super.transform(f)
   }
 
   override def partition(p: ((K, V)) => Boolean): (HashMap[K, V], HashMap[K, V]) = {
@@ -255,6 +248,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     // checks.
     super.span(p)
   }
+
 }
 
 private[immutable] object MapNode {
@@ -302,6 +296,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def size: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
+
+  def transform[W](f: (K, V) => W): MapNode[K, W]
 
   def copy(): MapNode[K, V]
 }
@@ -655,6 +651,26 @@ private final class BitmapIndexedMapNode[K, +V](
     }
   }
 
+  override def transform[W](f: (K, V) => W): BitmapIndexedMapNode[K, W] = {
+    val newContent = content.clone()
+    val _payloadArity = payloadArity
+    val _nodeArity = nodeArity
+    val newContentLength = newContent.length
+    var i = 0
+    while (i < _payloadArity) {
+      newContent(TupleLength * i + 1) = f(getKey(i), getValue(i))
+      i += 1
+    }
+
+    var j = 0
+    while (j < _nodeArity) {
+      newContent(newContentLength - j - 1) = getNode(j).transform(f)
+      j += 1
+    }
+
+    new BitmapIndexedMapNode[K, W](dataMap, nodeMap, newContent, originalHashes, size)
+  }
+
   override def equals(that: Any): Boolean =
     that match {
       case node: BitmapIndexedMapNode[K, V] =>
@@ -800,6 +816,16 @@ private final class HashCollisionMapNode[K, +V ](
   def sizePredicate: Int = SizeMoreThanOne
 
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
+
+  override def transform[W](f: (K, V) => W): HashCollisionMapNode[K, W] = {
+    val newContent = Vector.newBuilder[(K, W)]
+    val contentIter = content.iterator
+    while(contentIter.hasNext) {
+      val (k, v) = contentIter.next()
+      newContent.addOne((k, f(k, v)))
+    }
+    new HashCollisionMapNode(originalHash, hash, newContent.result())
+  }
 
   override def equals(that: Any): Boolean =
     that match {
