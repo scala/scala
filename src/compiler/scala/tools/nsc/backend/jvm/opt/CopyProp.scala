@@ -21,7 +21,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class CopyProp {
   val postProcessor: PostProcessor
 
-  import postProcessor.{backendUtils, callGraph}
+  import postProcessor.{backendUtils, callGraph, bTypes}
   import postProcessor.bTypes.frontendAccess.compilerSettings
   import backendUtils._
 
@@ -266,9 +266,11 @@ abstract class CopyProp {
    *   NEW scala/Tuple1; DUP; ALOAD 0; INVOKESPECIAL scala/Tuple1.<init>; POP
    * The POP has a single producer (the DUP), it's easy to eliminate these two. A special case
    * is needed to eliminate the INVOKESPECIAL and NEW.
+   *
+   * Returns (pushPopChanged, castAdded, nullCheckAdded)
    */
-  def eliminatePushPop(method: MethodNode, owner: InternalName): Boolean = {
-    AsmAnalyzer.sizeOKForSourceValue(method) && {
+  def eliminatePushPop(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
+    if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
       // A queue of instructions producing a value that has to be eliminated. If possible, the
       // instruction (and its inputs) will be removed, otherwise a POP is inserted after
       val queue = mutable.Queue.empty[ProducedValue]
@@ -279,9 +281,12 @@ abstract class CopyProp {
       // running the ProdConsAnalyzer only once.)
       val toRemove = mutable.Set.empty[AbstractInsnNode]
       // instructions to insert before some instruction
-      val toInsertBefore = mutable.Map.empty[AbstractInsnNode, List[InsnNode]]
+      val toInsertBefore = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
       // an instruction to insert after some instruction
       val toInsertAfter = mutable.Map.empty[AbstractInsnNode, AbstractInsnNode]
+
+      var castAdded = false
+      var nullCheckAdded = false
 
       lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
 
@@ -447,6 +452,25 @@ abstract class CopyProp {
               callGraph.removeCallsite(methodInsn, method)
               val receiver = if (methodInsn.getOpcode == INVOKESTATIC) 0 else 1
               handleInputs(prod, Type.getArgumentTypes(methodInsn.desc).length + receiver)
+            } else if (isScalaUnbox(methodInsn)) {
+              val tp = primitiveAsmTypeToBType(Type.getReturnType(methodInsn.desc))
+              val boxTp = bTypes.coreBTypes.boxedClassOfPrimitive(tp)
+              toInsertBefore(methodInsn) = List(new TypeInsnNode(CHECKCAST, boxTp.internalName), new InsnNode(POP))
+              toRemove += prod
+              callGraph.removeCallsite(methodInsn, method)
+              castAdded = true
+            } else if (isJavaUnbox(methodInsn)) {
+              val nullCheck = mutable.ListBuffer.empty[AbstractInsnNode]
+              val nonNullLabel = newLabelNode
+              nullCheck += new JumpInsnNode(IFNONNULL, nonNullLabel)
+              nullCheck += new InsnNode(ACONST_NULL)
+              nullCheck += new InsnNode(ATHROW)
+              nullCheck += nonNullLabel
+              toInsertBefore(methodInsn) = nullCheck.toList
+              toRemove += prod
+              callGraph.removeCallsite(methodInsn, method)
+              method.maxStack = math.max(method.maxStack, prodCons.frameAt(methodInsn).getStackSize + 1)
+              nullCheckAdded = true
             } else
               popAfterProd()
 
@@ -528,8 +552,7 @@ abstract class CopyProp {
       toInsertAfter foreach {
         case (target, insn) =>
           nextExecutableInstructionOrLabel(target) match {
-            // `insn` is of type `InsnNode`, so we only need to check the Opcode when comparing to another instruction
-            case Some(next) if next.getOpcode == insn.getOpcode && toRemove(next) =>
+            case Some(next) if insn.getType == AbstractInsnNode.INSN && next.getOpcode == insn.getOpcode && toRemove(next) =>
               // Inserting and removing a POP at the same place should not enable `changed`. This happens
               // when a POP directly follows a producer that cannot be eliminated, e.g. INVOKESTATIC A.m ()I; POP
               // The POP is initially added to `toRemove`, and the `INVOKESTATIC` producer is added to the queue.
@@ -551,7 +574,7 @@ abstract class CopyProp {
         method.instructions.remove(insn)
       }
       if (changed) analyzerCache.invalidate(method)
-      changed
+      (changed, castAdded, nullCheckAdded)
     }
   }
 
