@@ -98,6 +98,8 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *     - stale stores (if a LOAD is removed, a corresponding STORE may become stale)
  *     - box-unbox elimination (push-pop may eliminate a closure allocation, rendering a captured
  *       box non-escaping)
+ *     - redundant casts (Int.unbox(x) is replaced by `x.asInstanceOf[Integer]; pop`)
+ *     - nullness (`x.intValue` is replaced by `if (x == null) throw null`)
  *   + enables downstream:
  *     - store-load pairs (a variable may become non-live)
  *     - stale handlers (push-pop removes code)
@@ -325,7 +327,7 @@ abstract class LocalOpt {
 
       // PUSH-POP
       val runPushPop = compilerSettings.optCopyPropagation && (requestPushPop || storesRemoved || typeInsnChanged)
-      val pushPopRemoved = runPushPop && eliminatePushPop(method, ownerClassName)
+      val (pushPopRemoved, pushPopCastAdded, pushPopNullCheckAdded) = if (!runPushPop) (false, false, false) else eliminatePushPop(method, ownerClassName)
       traceIfChanged("pushPop")
 
       // STORE-LOAD PAIRS
@@ -346,12 +348,12 @@ abstract class LocalOpt {
       traceIfChanged("simplifyJumps")
 
       // See doc comment in the beginning of this file (optimizations marked UPSTREAM)
-      val runNullnessAgain = boxUnboxChanged || callInlinedByStaleStores
+      val runNullnessAgain = boxUnboxChanged || callInlinedByStaleStores || pushPopNullCheckAdded
       val runDCEAgain = removeHandlersResult.liveHandlerRemoved || jumpsChanged
       val runBoxUnboxAgain = boxUnboxChanged || typeInsnChanged || pushPopRemoved || removeHandlersResult.liveHandlerRemoved
       val runCopyPropAgain = typeInsnChanged
       val runStaleStoresAgain = pushPopRemoved
-      val runRedundantCastsAgain = typeInsnChanged
+      val runRedundantCastsAgain = typeInsnChanged || pushPopCastAdded
       val runPushPopAgain = jumpsChanged
       val runStoreLoadAgain = jumpsChanged
       val runAgain = runNullnessAgain || runDCEAgain || runBoxUnboxAgain || runCopyPropAgain || runStaleStoresAgain || runRedundantCastsAgain || runPushPopAgain || runStoreLoadAgain

@@ -244,7 +244,7 @@ abstract class BackendUtils extends PerRunInit {
 
   def getBoxedUnit: FieldInsnNode = new FieldInsnNode(GETSTATIC, srBoxedUnitRef.internalName, "UNIT", srBoxedUnitRef.descriptor)
 
-  private def primitiveAsmTypeToBType(primitiveType: Type): PrimitiveBType = (primitiveType.getSort: @switch) match {
+  def primitiveAsmTypeToBType(primitiveType: Type): PrimitiveBType = (primitiveType.getSort: @switch) match {
     case Type.BOOLEAN => BOOL
     case Type.BYTE    => BYTE
     case Type.CHAR    => CHAR
@@ -313,8 +313,8 @@ abstract class BackendUtils extends PerRunInit {
   def runtimeRefClassBoxedType(refClass: InternalName): Type = Type.getArgumentTypes(srRefCreateMethods(refClass).methodType.descriptor)(0)
 
   def isSideEffectFreeCall(mi: MethodInsnNode): Boolean = {
-    isScalaBox(mi) || isScalaUnbox(mi) ||
-      isJavaBox(mi) || // not java unbox, it may NPE
+    isScalaBox(mi) ||  // not Scala unbox, it may CCE
+      isJavaBox(mi) || // not Java unbox, it may NPE
       isSideEffectFreeConstructorCall(mi) ||
       isClassTagApply(mi)
   }
