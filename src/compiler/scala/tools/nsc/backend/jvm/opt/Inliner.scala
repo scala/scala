@@ -12,6 +12,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
+import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis.Value
 import scala.tools.nsc.backend.jvm.AsmUtils._
@@ -1170,12 +1171,18 @@ abstract class Inliner {
           fieldDeclClass                  =  classBTypeFromParsedClassfile(fieldDeclClassNode)
           res                             <- memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass, destinationClass)
         } yield {
+          // ensure the result ClassBType is cached (for stack map frame calculation)
+          if (res) bTypeForDescriptorFromClassfile(fi.desc)
           res
         }
 
       case mi: MethodInsnNode =>
-        if (mi.owner.charAt(0) == '[') Right(true) // array methods are accessible
-        else {
+        if (mi.owner.charAt(0) == '[') {
+          // ensure the result ClassBType is cached (for stack map frame calculation)
+          if (mi.name == "getClass") bTypeForDescriptorFromClassfile("Ljava/lang/Class;")
+          // array methods are accessible
+          Right(true)
+        } else {
           def canInlineCall(opcode: Int, methodFlags: Int, methodDeclClass: ClassBType, methodRefClass: ClassBType): Either[OptimizerWarning, Boolean] = {
             opcode match {
               case INVOKESPECIAL if mi.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME =>
@@ -1194,16 +1201,20 @@ abstract class Inliner {
             methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
             res                               <- canInlineCall(mi.getOpcode, methodNode.access, methodDeclClass, methodRefClass)
           } yield {
+            // ensure the result ClassBType is cached (for stack map frame calculation)
+            if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(mi.desc).getDescriptor)
             res
           }
         }
 
       case _: InvokeDynamicInsnNode if destinationClass == calleeDeclarationClass =>
-        // within the same class, any indy instruction can be inlined
-         Right(true)
+        // Within the same class, any indy instruction can be inlined. Since that class is currently
+        // being emitted, we don't need to worry about caching BTypes (for stack map frame calculation).
+        // The necessary BTypes were cached during code gen.
+        Right(true)
 
       // does the InvokeDynamicInsnNode call LambdaMetaFactory?
-      case LambdaMetaFactoryCall(_, _, implMethod, _, _) =>
+      case LambdaMetaFactoryCall(indy, _, implMethod, _, _) =>
         // an indy instr points to a "call site specifier" (CSP) [1]
         //  - a reference to a bootstrap method [2]
         //    - bootstrap method name
@@ -1255,6 +1266,8 @@ abstract class Inliner {
           methodDeclClass                   =  classBTypeFromParsedClassfile(methodDeclClassNode)
           res                               <- memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass, destinationClass)
         } yield {
+          // ensure the result ClassBType is cached (for stack map frame calculation)
+          if (res) bTypeForDescriptorFromClassfile(Type.getReturnType(indy.desc).getDescriptor)
           res
         }
 
