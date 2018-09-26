@@ -11,7 +11,7 @@ else
 fi
 
 SBT_CMD=${SBT_CMD-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
+SBT_CMD="$SBT_CMD -sbt-version 1.2.3"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}

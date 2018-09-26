@@ -7,6 +7,7 @@ import java.io.File
 trait ScalaOsgiHelper {
 
   private def allBundleFiles = {
+    println(new File(".").getAbsolutePath)
     def bundleLocation = new File(sys.props.getOrElse("scala.bundle.dir", "build/osgi"))
     bundleLocation.listFiles filter (_.getName endsWith ".jar")
   }
