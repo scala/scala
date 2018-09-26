@@ -67,7 +67,7 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
     else Nil
   },
   // Add a "default" Ivy configuration because sbt expects the Scala distribution to have one:
-  ivyConfigurations += Configuration("default", "Default", true, List(Configurations.Runtime), true),
+  ivyConfigurations += Configuration.of("Default", "default", "Default", true, Vector(Configurations.Runtime), true),
   publishMavenStyle := true
 )
 
@@ -97,20 +97,17 @@ lazy val instanceSettings = Seq[Setting[_]](
     // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
-      val jars = s.jars
-      val libraryJar = jars.find(_.getName contains "-library").get
-      val compilerJar = jars.find(_.getName contains "-compiler").get
-      val extraJars = jars.filter(f => (f ne libraryJar) && (f ne compilerJar))
-      val s2 = new ScalaInstance(s.version, s.loader, libraryJar, compilerJar, extraJars, Some(s.actualVersion))
+      import sbt.internal.inc.ScalaInstance
+      val s2 = new ScalaInstance(s.version, s.loader, s.libraryJar, s.compilerJar, s.allJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
   },
-  // As of sbt 0.13.12 (sbt/sbt#2634) sbt endeavours to align both scalaOrganization and scalaVersion
+  // sbt endeavours to align both scalaOrganization and scalaVersion
   // in the Scala artefacts, for example scala-library and scala-compiler.
   // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
   // scala-library are correct to be different. So disable overriding.
-  ivyScala ~= (_ map (_ copy (overrideScalaVersion = false))),
+  scalaModuleInfo ~= (_ map (_ withOverrideScalaVersion false)),
   Quiet.silenceScalaBinaryVersionWarning
 )
 
@@ -137,25 +134,6 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // to make sure they are being cleaned properly
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
-  // SBT 0.13.17+ doesn't seem to respect `cleanFiles` anymore: https://github.com/sbt/sbt/pull/3834/files#r172686677
-  // Let's override `cleanFilesTask`.
-  cleanFilesTask := {
-    val filesAndDirs = (Vector(managedDirectory.value, target.value) ++ cleanFiles.value).distinct
-
-    // START: Copy/pasted from SBT
-    val preserve = cleanKeepFiles.value
-    val (dirs, fs) = filesAndDirs.filter(_.exists).partition(_.isDirectory)
-    val preserveSet = preserve.filter(_.exists).toSet
-    // performance reasons, only the direct items under `filesAndDirs` are allowed to be preserved.
-    val dirItems = dirs flatMap { _.*("*").get }
-    (preserveSet diff dirItems.toSet) match {
-      case xs if xs.isEmpty => ()
-      case xs               => sys.error(s"cleanKeepFiles contains directory/file that are not directly under cleanFiles: $xs")
-    }
-    val toClean = (dirItems filterNot { preserveSet(_) }) ++ fs
-    toClean
-    // END: Copy/pasted from SBT
-  },
   fork in run := true,
   //scalacOptions in Compile += "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_",
   //scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
@@ -363,7 +341,7 @@ lazy val library = configureAsSubproject(project)
     // Include *.txt files in source JAR:
     mappings in Compile in packageSrc ++= {
       val base = (unmanagedResourceDirectories in Compile).value
-      base ** "*.txt" pair relativeTo(base)
+      base ** "*.txt" pair Path.relativeTo(base)
     },
     Osgi.headers += "Import-Package" -> "sun.misc;resolution:=optional, *",
     Osgi.jarlist := true,
@@ -455,7 +433,7 @@ lazy val compiler = configureAsSubproject(project)
         (unmanagedResourceDirectories in Compile in LocalProject("interactive")).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("scaladoc")).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("repl")).value
-      base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair relativeTo(base)
+      base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair Path.relativeTo(base)
     },
     // Include the additional projects in the scaladoc JAR:
     sources in Compile in doc ++= {
@@ -702,7 +680,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
       val mappings = ((mkPack in dist).value / "lib").listFiles.collect {
         case f if f.getName.startsWith("scala-") && f.getName.endsWith(".jar") => (f, targetDir / f.getName)
       }
-      IO.copy(mappings, overwrite = true)
+      IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "osgi"
@@ -750,12 +728,15 @@ lazy val test = project
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
-    testOptions in IntegrationTest += Tests.Setup { () =>
+    testOptions in IntegrationTest += {
       val cp = (dependencyClasspath in Test).value
       val baseDir = (baseDirectory in ThisBuild).value
-      // Copy code.jar (resolved in the otherwise unused scope "test") and instrumented.jar (from specLib) to the location where partest expects them
-      copyBootstrapJar(cp, baseDir, "test/files/codelib", "code")
-      IO.copyFile((packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2, baseDir / "test/files/speclib/instrumented.jar")
+      val instrumentedJar = (packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2
+      Tests.Setup { () =>
+        // Copy code.jar (resolved in the otherwise unused scope "test") and instrumented.jar (from specLib)to the location where partest expects them
+        copyBootstrapJar(cp, baseDir, "test/files/codelib", "code")
+        IO.copyFile(instrumentedJar, baseDir / "test/files/speclib/instrumented.jar")
+      }
     },
     definedTests in IntegrationTest += new sbt.TestDefinition(
       "partest",
@@ -767,12 +748,13 @@ lazy val test = project
       }, true, Array()
     ),
     executeTests in IntegrationTest := {
+      val log = streams.value.log
       val result = (executeTests in IntegrationTest).value
+      val result2 = (executeTests in Test).value
       if (result.overall != TestResult.Error && result.events.isEmpty) {
         // workaround for https://github.com/sbt/sbt/issues/2722
-        val result = (executeTests in Test).value
-        (streams.value.log.error("No test events found"))
-        result.copy(overall = TestResult.Error)
+        log.error("No test events found")
+        result2.copy(overall = TestResult.Error)
       }
       else result
     },
@@ -793,13 +775,13 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
   .settings(
     mappings in Compile in packageBin ++= {
       val binBaseDir = buildDirectory.value / "pack"
-      val binMappings = (mkBin in dist).value.pair(relativeTo(binBaseDir), errorIfNone = false)
+      val binMappings = (mkBin in dist).value.pair(Path.relativeTo(binBaseDir), errorIfNone = false)
       // With the way the resource files are spread out over the project sources we can't just add
       // an unmanagedResourceDirectory, so we generate the mappings manually:
       val docBaseDir = (baseDirectory in ThisBuild).value
-      val docMappings = (docBaseDir / "doc").*** pair relativeTo(docBaseDir)
+      val docMappings = (docBaseDir / "doc").allPaths pair Path.relativeTo(docBaseDir)
       val resBaseDir = (baseDirectory in ThisBuild).value / "src/manual/scala/tools/docutil/resources"
-      val resMappings = resBaseDir ** ("*.html" | "*.css" | "*.gif" | "*.png") pair (p => relativeTo(resBaseDir)(p).map("doc/tools/" + _))
+      val resMappings = resBaseDir ** ("*.html" | "*.css" | "*.gif" | "*.png") pair (p => Path.relativeTo(resBaseDir)(p).map("doc/tools/" + _))
       docMappings ++ resMappings ++ binMappings
     },
     resourceGenerators in Compile += Def.task {
@@ -812,8 +794,8 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       runner.value.run("scala.tools.docutil.ManMaker",
         (fullClasspath in Compile in manual).value.files,
         Seq(command, htmlOut.getAbsolutePath, manOut.getAbsolutePath),
-        streams.value.log).foreach(sys.error)
-      (manOut ** "*.1" pair rebase(manOut, fixedManOut)).foreach { case (in, out) =>
+        streams.value.log).failed foreach (sys error _.getMessage)
+      (manOut ** "*.1" pair Path.rebase(manOut, fixedManOut)).foreach { case (in, out) =>
         // Generated manpages should always use LF only. There doesn't seem to be a good reason
         // for generating them with the platform EOL first and then converting them but that's
         // what the old Ant build did.
@@ -893,9 +875,9 @@ lazy val root: Project = (project in file("."))
           doc in Compile in scalap
         ).result map (_ -> "doc")
       )).value
+      val log = streams.value.log
       val failed = results.collect { case (Inc(i), d) => (i, d) }
       if (failed.nonEmpty) {
-        val log = streams.value.log
         def showScopedKey(k: Def.ScopedKey[_]): String =
           Vector(
             k.scope.project.toOption.map {
@@ -933,11 +915,9 @@ lazy val root: Project = (project in file("."))
         throw new RuntimeException
       }
     },
-    antStyle := false,
     incOptions := {
       incOptions.value
-        .withNameHashing(!antStyle.value).withAntStyle(antStyle.value)
-        .withRecompileOnMacroDef(false) //     // macros in library+reflect are hard-wired to implementations with `FastTrack`.
+        .withRecompileOnMacroDef(Some(Boolean box false).asJava) // macros in library+reflect are hard-wired to implementations with `FastTrack`.
     }
   )
   .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replFrontend,
@@ -969,7 +949,7 @@ lazy val dist = (project in file("dist"))
       val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
       val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
       val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
-      IO.copy(mappings, overwrite = true)
+      IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },
     cleanFiles += (buildDirectory in ThisBuild).value / "quick",
@@ -1104,6 +1084,7 @@ intellij := {
   import xml.transform._
 
   val s = streams.value
+  val compilerScalaInstance = (scalaInstance in LocalProject("compiler")).value
 
   val modules: List[(String, Seq[File])] = {
     // for the sbt build module, the dependencies are fetched from the project's build using sbt-buildinfo
@@ -1187,20 +1168,20 @@ intellij := {
   if (!ipr.exists) {
     scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/N)? ")
     scala.Console.flush()
-    if (scala.Console.readLine() == "y") {
+    if (scala.io.StdIn.readLine() == "y") {
       intellijCreateFromSample((baseDirectory in ThisBuild).value)
       continue = true
     }
   } else {
     scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/N)? ")
     scala.Console.flush()
-    continue = scala.Console.readLine() == "y"
+    continue = scala.io.StdIn.readLine() == "y"
   }
   if (continue) {
     s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
     val content = XML.loadFile(ipr)
 
-    val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep((scalaInstance in LocalProject("compiler")).value.jars))
+    val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep(compilerScalaInstance.allJars))
     val newModules = modules.foldLeft(newStarr)({
       case (res, (modName, jars)) =>
         if (jars.isEmpty) res // modules without dependencies
@@ -1219,7 +1200,7 @@ intellijFromSample := {
   val s = streams.value
   scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/N)? ")
   scala.Console.flush()
-  if (scala.Console.readLine() == "y")
+  if (scala.io.StdIn.readLine() == "y")
     intellijCreateFromSample((baseDirectory in ThisBuild).value)
   else
     s.log.info("Aborting.")
@@ -1228,7 +1209,7 @@ intellijFromSample := {
 def intellijCreateFromSample(basedir: File): Unit = {
   val files = basedir / "src/intellij" * "*.SAMPLE"
   val copies = files.get.map(f => (f, new File(f.getAbsolutePath.stripSuffix(".SAMPLE"))))
-  IO.copy(copies, overwrite = true)
+  IO.copy(copies, CopyOptions() withOverwrite true)
 }
 
 lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using the current IntelliJ project files.")
@@ -1237,7 +1218,7 @@ intellijToSample := {
   val s = streams.value
   scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/N)? ")
   scala.Console.flush()
-  if (scala.Console.readLine() == "y") {
+  if (scala.io.StdIn.readLine() == "y") {
     val basedir = (baseDirectory in ThisBuild).value
     val existing = basedir / "src/intellij" * "*.SAMPLE"
     IO.delete(existing.get)

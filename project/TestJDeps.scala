@@ -8,7 +8,7 @@ object TestJDeps {
     val reflectJar = (packageBin in Compile in LocalProject("reflect")).value
 
     // jdeps -s -P build/pack/lib/scala-{library,reflect}.jar | grep -v build/pack | perl -pe 's/.*\((.*)\)$/$1/' | sort -u
-    val jdepsOut = Process("jdeps", Seq("-s", "-P", libraryJar.getPath, reflectJar.getPath)).lines
+    val jdepsOut = scala.sys.process.Process("jdeps", Seq("-s", "-P", libraryJar.getPath, reflectJar.getPath)).lineStream
 
     val profilePart = ".*\\((.*)\\)$".r
     val profiles = jdepsOut.collect {
