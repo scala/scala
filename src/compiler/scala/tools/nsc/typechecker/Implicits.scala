@@ -1018,7 +1018,7 @@ trait Implicits {
             if(wildPtNotInstantiable || matchesPtInst(firstPending))
               typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
             else SearchFailure
-          if (typedFirstPending.isFailure)
+          if (typedFirstPending.isFailure && settings.isScala213)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
