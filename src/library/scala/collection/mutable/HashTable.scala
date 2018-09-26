@@ -13,6 +13,8 @@ package collection
 package mutable
 
 import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
+
+import scala.runtime.BoxesRunTime
 import scala.util.hashing.byteswap32
 
 /** This class can be used to construct data structures that are based
@@ -360,7 +362,17 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /* End of size map handling code */
 
-  protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
+  protected def elemEquals(key1: A, key2: A): Boolean = {
+    // Hand crafted version of `key1 == key2` to optimize the the common case of keys of identical class
+    if (key1.asInstanceOf[AnyRef] eq key2.asInstanceOf[AnyRef]) true
+    else if ((key1.asInstanceOf[AnyRef] eq null) || (key2.asInstanceOf[AnyRef] eq null)) false
+    else if (key1.getClass eq key2.getClass) key1.equals(key2)
+    else if (key1.isInstanceOf[java.lang.Number])
+        BoxesRunTime.equalsNumObject(key1.asInstanceOf[java.lang.Number], key2)
+    else if (key1.isInstanceOf[java.lang.Character])
+      BoxesRunTime.equalsCharObject(key1.asInstanceOf[java.lang.Character], key2)
+    else key1.equals(key2);
+  }
 
   /**
     * Note: we take the most significant bits of the hashcode, not the lower ones
