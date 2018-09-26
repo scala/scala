@@ -48,4 +48,17 @@ class HashMapTest {
 
     assertEquals(List((key, "value2")), map.toList)
   }
+
+  @Test def nullKey(): Unit = {
+    assert(Int.box(0).## == null.##)
+    val m1 = collection.mutable.HashMap[Any, Any]()
+    m1.put(0, 0)
+    assert(!m1.contains(null))
+    assert(m1.contains(0))
+
+    val m2 = collection.mutable.HashMap[Any, Any]()
+    m2.put(null, null)
+    assert(m2.contains(null))
+    assert(!m2.contains(0))
+  }
 }
