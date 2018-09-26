@@ -127,7 +127,7 @@ lazy val instanceSettings = Seq[Setting[_]](
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
       import sbt.internal.inc.ScalaInstance
-      val s2 = new ScalaInstance(s.version, s.loader, s.libraryJar, s.compilerJar, s.allJars, Some(s.actualVersion))
+      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJar, s.compilerJar, s.allJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
@@ -149,6 +149,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   sourceDirectory in Compile := baseDirectory.value,
   unmanagedSourceDirectories in Compile := List(baseDirectory.value),
   unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / thisProject.value.id,
+  sourcesInBase := false,
   scalaSource in Compile := (sourceDirectory in Compile).value,
   javaSource in Compile := (sourceDirectory in Compile).value,
   // resources are stored along source files in our current layout
@@ -178,32 +179,24 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   apiURL := Some(url("https://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
-    val base =
-      <scm>
-        <connection>scm:git:git://github.com/scala/scala.git</connection>
-        <url>https://github.com/scala/scala.git</url>
-      </scm>
-        <issueManagement>
-          <system>GitHub</system>
-          <url>https://github.com/scala/bug/issues</url>
-        </issueManagement>
-        <developers>
-          <developer>
-            <id>lamp</id>
-            <name>LAMP/EPFL</name>
-          </developer>
-          <developer>
-            <id>Lightbend</id>
-            <name>Lightbend, Inc.</name>
-          </developer>
-        </developers>
-    apiURL.value match {
-      case Some(url) => base ++
-        <properties>
-          <info.apiURL>{url.toString}</info.apiURL>
-        </properties>
-      case None => base
-    }
+    <scm>
+      <connection>scm:git:git://github.com/scala/scala.git</connection>
+      <url>https://github.com/scala/scala.git</url>
+    </scm>
+      <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/scala/bug/issues</url>
+      </issueManagement>
+      <developers>
+        <developer>
+          <id>lamp</id>
+          <name>LAMP/EPFL</name>
+        </developer>
+        <developer>
+          <id>Lightbend</id>
+          <name>Lightbend, Inc.</name>
+        </developer>
+      </developers>
   },
   headerLicense := (headerLicense in ThisBuild).value,
   // Remove auto-generated manifest attributes
@@ -212,10 +205,6 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
 
   // Lets us CTRL-C partest without exiting SBT entirely
   cancelable in Global := true,
-  // When we fork subprocesses, use the base directory as the working directory.
-  // This enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
-  baseDirectory in Compile := (baseDirectory in ThisBuild).value,
-  baseDirectory in Test := (baseDirectory in ThisBuild).value,
 
   // Don't pick up source files from the project root.
   sourcesInBase := false,
@@ -223,7 +212,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
   outputStrategy in run := Some(StdoutOutput)
-) ++ removePomDependencies
+) ++ removePomDependencies ++ setForkedWorkingDirectory
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the Ant build. In the long term this should be removed and
@@ -338,6 +327,13 @@ def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
 def regexFileFilter(s: String): FileFilter = new FileFilter {
   val pat = s.r.pattern
   def accept(f: File) = pat.matcher(f.getAbsolutePath.replace('\\', '/')).matches()
+}
+
+def setForkedWorkingDirectory: Seq[Setting[_]] = {
+  // When we fork subprocesses, use the base directory as the working directory.
+  // This“ enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
+  val setting = (forkOptions in Compile) := (forkOptions in Compile).value.withWorkingDirectory((baseDirectory in ThisBuild).value)
+  setting ++ inTask(run)(setting)
 }
 
 // This project provides the STARR scalaInstance for bootstrapping
@@ -746,6 +742,8 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     },
     Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
+    javaOptions in Test += "-Dscala.bundle.dir=" + (buildDirectory in ThisBuild).value / "osgi",
+    (forkOptions in Test in test) := (forkOptions in Test in test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
     includeFilter in unmanagedResources in Compile := "*.xml",

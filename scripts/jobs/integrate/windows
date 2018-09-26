@@ -10,8 +10,8 @@ generateRepositoriesConfig
 SBT="java $JAVA_OPTS -Dsbt.ivy.home=$WORKSPACE/.ivy2 -jar $sbtLauncher -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
 
 # Build locker with STARR
-$SBT --warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
+$SBT -warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
 
 # Build quick and run the tests
 parseScalaProperties buildcharacter.properties
-$SBT -Dstarr.version=$maven_version_number --warn "setupValidateTest" testAll
+$SBT -Dstarr.version=$maven_version_number -warn "setupValidateTest" testAll
