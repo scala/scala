@@ -136,7 +136,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
   private final val JarUtils = new JarUtils(outputDirs)
 
-  private final val jaredClassesFromPrevCompilation =
+  private final val classesInJarFromPrevCompilation =
     perRunCaches.recordCache(new JarUtils.PrevJarCache(settings.classpath.value))
 
   private final val fqnsToAssociatedFiles = perRunCaches.newMap[String, (AbstractFile, Boolean)]()
@@ -146,9 +146,9 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     def getOutputClass(name: String): Option[AbstractFile] = {
       val relPathToClass = name.replace('.', '/') + ".class"
       if (JarUtils.isCompilingToJar) {
-        val jaredClass = JarUtils.JaredClass(relPathToClass)
-        if (jaredClassesFromPrevCompilation.contains(jaredClass)) {
-          Some(new PlainFile(jaredClass))
+        val classInJar = JarUtils.ClassInJar(relPathToClass)
+        if (classesInJarFromPrevCompilation.contains(classInJar)) {
+          Some(new PlainFile(classInJar))
         } else None
       } else {
         // This could be improved if a hint where to look is given.

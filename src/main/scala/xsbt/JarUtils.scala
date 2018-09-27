@@ -11,21 +11,21 @@ import java.util.zip.ZipFile
  * duplicates some of the code, as it is difficult to share it.
  */
 final class JarUtils(outputDirs: Iterable[File]) {
-  type JaredClass = String
+  type ClassInJar = String
   type RelClass = String
 
   /**
    * Creates an identifier for a class located inside a jar.
-   * Mimics the behavior of [[sbt.internal.inc.JarUtils.JaredClass]].
+   * Mimics the behavior of [[sbt.internal.inc.JarUtils.ClassInJar]].
    */
-  def JaredClass(jar: File, cls: RelClass): JaredClass = {
+  def ClassInJar(jar: File, cls: RelClass): ClassInJar = {
     val relClass = if (File.separatorChar == '/') cls else cls.replace('/', File.separatorChar)
     s"$jar!$relClass"
   }
 
   /** Creates an identifier for a class located inside the current output jar. */
-  def JaredClass(cls: RelClass): JaredClass = {
-    JaredClass(outputJar.get, cls)
+  def ClassInJar(cls: RelClass): ClassInJar = {
+    ClassInJar(outputJar.get, cls)
   }
 
   /**
@@ -72,28 +72,28 @@ final class JarUtils(outputDirs: Iterable[File]) {
    * @param rawClasspath the classpath in a single string (entries separated with [[File.pathSeparator]])
    */
   class PrevJarCache(rawClasspath: String) extends scala.collection.generic.Clearable {
-    private var cache: Set[JaredClass] = _
+    private var cache: Set[ClassInJar] = _
 
     private lazy val prevJar = {
       val classpath = rawClasspath.split(File.pathSeparator)
       findPrevJar(classpath)
     }
 
-    def contains(jaredClass: JaredClass): Boolean = {
+    def contains(classInJar: ClassInJar): Boolean = {
       if (cache == null) {
         cache = loadEntriesFromPrevJar()
       }
-      cache.contains(jaredClass)
+      cache.contains(classInJar)
     }
 
     def clear(): Unit = cache = null
 
-    private def loadEntriesFromPrevJar(): Set[JaredClass] = {
+    private def loadEntriesFromPrevJar(): Set[ClassInJar] = {
       prevJar
         .filter(_.exists())
-        .fold(Set.empty[JaredClass]) { prevJar =>
+        .fold(Set.empty[ClassInJar]) { prevJar =>
           val classes = listFiles(prevJar)
-          classes.map(JaredClass)
+          classes.map(ClassInJar)
         }
     }
   }

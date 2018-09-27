@@ -120,7 +120,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
           val classFileName = s"${names.binaryName}.class"
           val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
           val classFile = if (JarUtils.isCompilingToJar) {
-            new java.io.File(JarUtils.JaredClass(outputDir, classFileName))
+            new java.io.File(JarUtils.ClassInJar(outputDir, classFileName))
           } else {
             new java.io.File(outputDir, classFileName)
           }

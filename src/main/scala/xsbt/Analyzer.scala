@@ -25,11 +25,11 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       "Finds concrete instances of provided superclasses, and application entry points."
     def name = Analyzer.name
 
-    private lazy val existingJaredClasses: Set[JarUtils.JaredClass] = {
+    private lazy val existingClassesInJar: Set[JarUtils.ClassInJar] = {
       JarUtils.outputJar
         .map { jar =>
           val classes = JarUtils.listFiles(jar)
-          classes.map(JarUtils.JaredClass(jar, _))
+          classes.map(JarUtils.ClassInJar(jar, _))
         }
         .getOrElse(Set.empty)
     }
@@ -77,9 +77,9 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       val classFile =
         fileForClass(new File("."), sym, separatorRequired).toString
           .drop(2) // stripPrefix ./ or .\
-      val jaredClass = JarUtils.JaredClass(classFile)
-      if (existingJaredClasses.contains(jaredClass)) {
-        Some(new File(jaredClass))
+      val classInJar = JarUtils.ClassInJar(classFile)
+      if (existingClassesInJar.contains(classInJar)) {
+        Some(new File(classInJar))
       } else {
         None
       }
