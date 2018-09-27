@@ -5,7 +5,7 @@
 // Before it used to do a third stage
 //   3. scalc *.scala
 //
-// Because he inliner doesn't has access to the bytecode of `bar`, it cannot verify whether the
+// Because the inliner doesn't have access to the bytecode of `bar`, it cannot verify whether the
 // invocation of `bar` can be safely copied to a differnet place, so `flop` is not inlined to `B.g`
 // or `C.h`.
 
