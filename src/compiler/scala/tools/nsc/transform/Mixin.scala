@@ -25,7 +25,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   /** Some trait methods need to be implemented in subclasses, so they cannot be private.
     *
     * We used to publicize during explicitouter (for some reason), so the condition is a bit more involved now it's done here
-    * (need to exclude lambdaLIFTED methods, as they do no exist during explicitouter and thus did not need to be excluded...)
+    * (need to exclude lambdaLIFTED methods, as they do not exist during explicitouter and thus did not need to be excluded...)
     *
     * They may be protected, now that traits are compiled 1:1 to interfaces.
     * The same disclaimers about mapping Scala's notion of visibility to Java's apply:

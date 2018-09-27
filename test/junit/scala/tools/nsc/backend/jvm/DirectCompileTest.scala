@@ -23,7 +23,7 @@ class DirectCompileTest extends BytecodeTesting {
         |}
       """.stripMargin)
     def s(i: Int, n: Int) = (bytes(i) & 0xff) << n
-    assertTrue((s(0, 24) | s(1, 16) | s(2, 8) | s(3, 0)) == 0xcafebabe) // mocha java latte macchiato surpreme dark roasted espresso
+    assertTrue((s(0, 24) | s(1, 16) | s(2, 8) | s(3, 0)) == 0xcafebabe) // mocha java latte macchiato supreme dark roasted espresso
   }
 
   @Test
