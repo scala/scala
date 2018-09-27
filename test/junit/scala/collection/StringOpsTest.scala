@@ -58,7 +58,7 @@ class StringOpsTest {
     check(string = "", start = 1, array = Array(), copied = 0, after = Array())
     check(string = "", start = -1, array = Array(), copied = 0, after = Array())
 
-    assertThrows[ArrayIndexOutOfBoundsException](check(string = "abcd", start = -13, array = Array('x', 'y'), copied = 0, after = Array('x', 'y')))
+    assertThrows[IndexOutOfBoundsException](check(string = "abcd", start = -13, array = Array('x', 'y'), copied = 0, after = Array('x', 'y')))
     check(string = "abcd", start = 0, array = Array('x', 'y'), copied = 2, after = Array('a', 'b'))
     check(string = "abcd", start = 1, array = Array('x', 'y'), copied = 1, after = Array('x', 'a'))
     check(string = "abcd", start = 2, array = Array('x', 'y'), copied = 0, after = Array('x', 'y'))
