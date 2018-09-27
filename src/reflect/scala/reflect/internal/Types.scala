@@ -4141,23 +4141,23 @@ trait Types
          * Each element in tparams goes from pending to border, and from border to closed
          * We separate border from closed to avoid recomputing `Type.contains` for same elements.
          */
-        val pending   = mutable.ListBuffer.empty[Symbol]
+        val pending = mutable.ListBuffer.empty[Symbol]
         var border  = mutable.ListBuffer.empty[Symbol]
         partitionInto(tparams, tpe.contains, border, pending)
         val closed    = mutable.ListBuffer.empty[Symbol]
-        var borderAux = mutable.ListBuffer.empty[Symbol]
+        var nextBorder = mutable.ListBuffer.empty[Symbol]
         while (border.nonEmpty) {
-          borderAux.clear
+          nextBorder.clear
           pending.filterInPlace { paramTodo =>
             !border.exists(_.info contains paramTodo) || {
-              borderAux += paramTodo;
+              nextBorder += paramTodo;
               false
             }
           }
           closed ++= border
           val swap = border
-          border = borderAux
-          borderAux = swap
+          border = nextBorder
+          nextBorder = swap
         }
         if (closed.length == tparams.length) tparams else closed.toList
     }
