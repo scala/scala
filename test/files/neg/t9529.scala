@@ -2,6 +2,6 @@
 @deprecated("bar", "")
 class `scala ftw`
 
-@javax.annotation.Resource(name = "baz")
-@javax.annotation.Resource(name = "quux")
+@java.lang.Deprecated
+@java.lang.Deprecated
 class TooMany
