@@ -43,8 +43,7 @@ abstract class CopyProp {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
-      // Re-uses an existing nullness analysis if one exists in the cache.
-      lazy val aliasAnalysis = analyzerCache.getCond(method, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(method, owner))
+      lazy val aliasAnalysis = new BasicAliasingAnalyzer(method, owner)
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
       //
@@ -87,7 +86,6 @@ abstract class CopyProp {
         case _ =>
       }
 
-      if (changed) analyzerCache.invalidate(method)
       changed
     }
   }
@@ -114,7 +112,7 @@ abstract class CopyProp {
    */
   def eliminateStaleStoresAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
     if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
-      lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
+      lazy val prodCons = new ProdConsAnalyzer(method, owner)
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
       def popFor(vi: VarInsnNode): AbstractInsnNode = getPop(if (isSize2LoadOrStore(vi.getOpcode)) 2 else 1)
@@ -244,9 +242,6 @@ abstract class CopyProp {
         }
       }
 
-      val changed = toReplace.nonEmpty || toNullOut.nonEmpty
-      if (changed) analyzerCache.invalidate(method) // invalidate before running inliner!
-
       if (toInline.nonEmpty) {
         import postProcessor._
         val methodCallsites = callGraph.callsites(method)
@@ -295,7 +290,7 @@ abstract class CopyProp {
       var castAdded = false
       var nullCheckAdded = false
 
-      lazy val prodCons = analyzerCache.get[ProdConsAnalyzer](method)(new ProdConsAnalyzer(method, owner))
+      lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
       /**
        * Returns the producers for the stack value `inputSlot` consumed by `cons`, if the consumer
@@ -580,7 +575,6 @@ abstract class CopyProp {
         changed = true
         method.instructions.remove(insn)
       }
-      if (changed) analyzerCache.invalidate(method)
       (changed, castAdded, nullCheckAdded)
     }
   }
@@ -752,7 +746,6 @@ abstract class CopyProp {
     }
 
     val changed = removePairs.nonEmpty
-    if (changed) analyzerCache.invalidate(method)
     changed
   }
 }

@@ -360,7 +360,7 @@ abstract class Inliner {
 
         val rsWithAliasFrames = {
           val cs = rs.head.callsite
-          val a = analyzerCache.getCond(cs.callsiteMethod, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(cs.callsiteMethod, cs.callsiteClass.internalName))
+          val a = new BasicAliasingAnalyzer(cs.callsiteMethod, cs.callsiteClass.internalName)
           rs.map(r => (r, a.frameAt(r.callsite.callsiteInstruction).asInstanceOf[AliasingFrame[Value]]))
         }
 
@@ -648,7 +648,6 @@ abstract class Inliner {
         methodNode.maxStack = currentMaxStack
 
         BackendUtils.clearDceDone(methodNode)
-        analyzerCache.invalidate(methodNode)
         callGraph.refresh(methodNode, ownerClass)
 
         onIndyLambdaImplMethodIfPresent(ownerClass.internalName)(_.remove(methodNode))
@@ -705,7 +704,7 @@ abstract class Inliner {
     val calleeParamTypes = calleAsmType.getArgumentTypes
 
     val f = aliasFrame.getOrElse({
-      val aliasAnalysis = analyzerCache.getCond(callsiteMethod, _.isInstanceOf[AliasingAsmAnalyzerMarker])(new BasicAliasingAnalyzer(callsiteMethod, callsiteClass.internalName))
+      val aliasAnalysis = new BasicAliasingAnalyzer(callsiteMethod, callsiteClass.internalName)
       aliasAnalysis.frameAt(callsiteInstruction).asInstanceOf[AliasingFrame[Value]]
     })
 
@@ -859,7 +858,7 @@ abstract class Inliner {
     // of the values on the stack.
     // We don't need to worry about the method being too large for running an analysis. Callsites of
     // large methods are not added to the call graph.
-    val analyzer = analyzerCache.getAny(callee, calleeDeclarationClass.internalName)
+    val analyzer = new BasicAnalyzer(callee, calleeDeclarationClass.internalName)
 
     for (originalReturn <- callee.instructions.iterator.asScala if isReturn(originalReturn)) {
       val frame = analyzer.frameAt(originalReturn)
@@ -949,7 +948,6 @@ abstract class Inliner {
 
     // Inlining a method body can render some code unreachable, see example above in this method.
     BackendUtils.clearDceDone(callsiteMethod)
-    analyzerCache.invalidate(callsiteMethod)
 
     instructionMap
   }
