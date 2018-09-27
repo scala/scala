@@ -40,6 +40,8 @@ sealed abstract class CallbackGlobal(settings: Settings,
     }
   }
 
+  lazy val JarUtils = new JarUtils(outputDirs)
+
   /**
    * Defines the sbt phase in which the dependency analysis is performed.
    * The reason why this is exposed in the callback global is because it's used
@@ -133,8 +135,6 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     }
     this.computePhaseDescriptors
   }
-
-  private final val JarUtils = new JarUtils(outputDirs)
 
   private final val classesInJarFromPrevCompilation =
     perRunCaches.recordCache(new JarUtils.PrevJarCache(settings.classpath.value))

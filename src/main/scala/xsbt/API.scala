@@ -20,7 +20,6 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
 
   import scala.collection.mutable
   private val nonLocalClassSymbolsInCurrentUnits = new mutable.HashSet[Symbol]()
-  private val JarUtils = new JarUtils(outputDirs)
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
   class ApiPhase(prev: Phase) extends GlobalPhase(prev) {

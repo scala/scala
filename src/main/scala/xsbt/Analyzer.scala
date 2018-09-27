@@ -17,7 +17,6 @@ object Analyzer {
 
 final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
   import global._
-  private val JarUtils = new JarUtils(outputDirs)
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
   private class AnalyzerPhase(prev: Phase) extends GlobalPhase(prev) {
