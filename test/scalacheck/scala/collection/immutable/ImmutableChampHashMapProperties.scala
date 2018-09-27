@@ -128,4 +128,7 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
   property("transform(f) == map { (k, v) => (k, f(k, v)) }") = forAll { (xs: HashMap[K, V], f: (K, V) => String) =>
     xs.transform(f) == xs.map{ case (k, v) => (k, f(k, v)) }
   }
+  property("xs.transform((_, v) => v) eq xs") = forAll { xs: HashMap[K, V] =>
+    xs.transform((_, v) => v) eq xs
+  }
 }

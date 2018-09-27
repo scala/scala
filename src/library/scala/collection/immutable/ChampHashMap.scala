@@ -840,7 +840,7 @@ private final class HashCollisionMapNode[K, +V ](
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
 
   override def transform[W](f: (K, V) => W): HashCollisionMapNode[K, W] = {
-    var newContent = Vector.newBuilder[(K, W)]
+    val newContent = Vector.newBuilder[(K, W)]
     val contentIter = content.iterator
     // true if any values have been transformed to a different value via `f`
     var anyChanges = false
