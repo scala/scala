@@ -292,6 +292,15 @@ trait Collections {
     true
   }
 
+  final def partitionInto[A](xs: List[A], pred: A => Boolean, ayes: ListBuffer[A], nays: ListBuffer[A]): Unit = {
+    var ys = xs
+    while (!ys.isEmpty) {
+      val y = ys.head
+      if (pred(y)) ayes.addOne(y) else nays.addOne(y)
+      ys = ys.tail
+    }
+  }
+
   final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
     if (as.exists (_.isEmpty)) None
     else Some(as.flatten)

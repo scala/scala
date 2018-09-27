@@ -2695,7 +2695,9 @@ trait Types
   private final class ClassArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args)
   private final class AliasNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AliasTypeRef
   private final class AbstractNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AbstractTypeRef
-  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym)
+  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym){
+    override def contains(sym0: Symbol): Boolean = (sym eq sym0) || pre.contains(sym0)
+  }
 
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
@@ -4119,25 +4121,56 @@ trait Types
    *  indirectly referenced by type `tpe1`. If there are no remaining type
    *  parameters, simply returns result type `tpe`.
    */
-  def existentialAbstraction(tparams: List[Symbol], tpe0: Type, flipVariance: Boolean = false): Type =
-    if (tparams.isEmpty) tpe0
+  def existentialAbstraction(tparams: List[Symbol], tpe0: Type, flipVariance: Boolean = false): Type = {
+
+    /* We want to narrow the list of type parameters tparams to only those which are either
+     * (a) directly contained by tpe, or
+     * (b) contained by the typeInfo of another parameter from tparams, known to be referred by tpe
+     */
+    def transitiveReferredFrom(tpe: Type): List[Symbol] = tparams match {
+      case tparam :: Nil =>
+        // This is for optimisationa: should be equivalent to general one.
+        if (tpe contains tparam) tparams else Nil
+      case _ =>
+        /* Algorithm to compute transitive closure, using several temporary lists (mutable ListBuffer)
+         *  - pending: elements from tparams not yet known to be in the transitiveClosure
+         *  - border: we know they are in closure, but we use them for search new elements
+         *  - closed: already in closure, and we already searched for new elements.
+         *
+         * Invariant: pending, closed, and border form a partition of `tparams`.
+         * Each element in tparams goes from pending to border, and from border to closed
+         * We separate border from closed to avoid recomputing `Type.contains` for same elements.
+         */
+        val pending = mutable.ListBuffer.empty[Symbol]
+        var border  = mutable.ListBuffer.empty[Symbol]
+        partitionInto(tparams, tpe.contains, border, pending)
+        val closed    = mutable.ListBuffer.empty[Symbol]
+        var nextBorder = mutable.ListBuffer.empty[Symbol]
+        while (border.nonEmpty) {
+          nextBorder.clear
+          pending.filterInPlace { paramTodo =>
+            !border.exists(_.info contains paramTodo) || {
+              nextBorder += paramTodo;
+              false
+            }
+          }
+          closed ++= border
+          val swap = border
+          border = nextBorder
+          nextBorder = swap
+        }
+        if (closed.length == tparams.length) tparams else closed.toList
+    }
+
+    if (tparams.isEmpty || (tpe0 eq NoType) ) tpe0
     else {
       val tpe      = normalizeAliases(tpe0)
       val extrapolation = new ExistentialExtrapolation(tparams)
       if (flipVariance) extrapolation.variance = Contravariant
       val tpe1     = extrapolation extrapolate tpe
-      var tparams0 = tparams
-      var tparams1 = tparams0 filter tpe1.contains
-
-      while (tparams1 != tparams0) {
-        tparams0 = tparams1
-        tparams1 = tparams filter { p =>
-          tparams1 exists { p1 => p1 == p || (p1.info contains p) }
-        }
-      }
-      newExistentialType(tparams1, tpe1)
+      newExistentialType(transitiveReferredFrom(tpe1), tpe1)
     }
-
+  }
 
 
 // Hash consing --------------------------------------------------------------
