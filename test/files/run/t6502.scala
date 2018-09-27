@@ -10,7 +10,7 @@ object Test extends StoreReporterDirectTest {
     compileString(newCompiler("-cp", classpath, "-d", s"${testOutput.path}/$jarFileName"))(code)
   }
   private def runAdded(codeToRun: String): String = {
-    val lines = ILoop.run(codeToRun, settings).lines.toList
+    val lines = ILoop.run(codeToRun, settings).linesIterator.toList
     val (added, output) = lines.partition(l => l.contains("Added") && l.contains("test1.jar"))
     assert(added.nonEmpty, lines)
     output.mkString("\n")

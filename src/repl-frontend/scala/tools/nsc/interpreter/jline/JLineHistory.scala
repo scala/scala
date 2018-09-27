@@ -39,7 +39,7 @@ trait JLineHistory extends JHistory with History {
   def moveToEnd(): Unit
 
   override def historicize(text: String): Boolean = {
-    text.lines foreach add
+    text.linesIterator foreach add
     moveToEnd()
     true
   }

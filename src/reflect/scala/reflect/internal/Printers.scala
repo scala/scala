@@ -1049,7 +1049,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
         case Literal(k @ Constant(s: String)) if s.contains(Chars.LF) =>
           val tq = "\"" * 3
-          val lines = s.lines.toList
+          val lines = s.linesIterator.toList
           if (lines.lengthCompare(1) <= 0) print(k.escapedStringValue)
           else {
             val tqp = """["]{3}""".r

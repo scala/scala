@@ -26,7 +26,7 @@ class SourceTest {
   private def in = new ByteArrayInputStream(sampler.getBytes)
 
   @Test def canIterateLines() = {
-    assertEquals(sampler.lines.size, (Source fromString sampler).getLines.size)
+    assertEquals(sampler.linesIterator.size, (Source fromString sampler).getLines.size)
   }
   @Test def loadFromResource() = {
     val res = Source.fromResource("rootdoc.txt")

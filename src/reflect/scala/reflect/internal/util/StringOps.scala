@@ -45,7 +45,7 @@ trait StringOps {
     else s.substring(0, end)
   }
   /** Breaks the string into lines and strips each line before reassembling. */
-  def trimAllTrailingSpace(s: String): String = s.lines.map(trimTrailingSpace).mkString(EOL)
+  def trimAllTrailingSpace(s: String): String = s.linesIterator.map(trimTrailingSpace).mkString(EOL)
 
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =

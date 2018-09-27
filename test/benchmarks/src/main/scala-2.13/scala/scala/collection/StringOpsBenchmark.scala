@@ -106,7 +106,7 @@ class StringOpsBenchmark {
   }
 
   @Benchmark def lines: Any = {
-    testObject.lines
+    testObject.linesIterator
   }
 
   @Benchmark def capitalize: Any = {

@@ -56,7 +56,7 @@ object Pretty {
     else s.substring(0, length) / break(lead+s.substring(length), lead, length)
 
   def format(s: String, lead: String, trail: String, width: Int) =
-    s.lines.map(l => break(lead+l+trail, "  ", width)).mkString("\n")
+    s.linesIterator.map(l => break(lead+l+trail, "  ", width)).mkString("\n")
 
   private def toStrOrNull(s: Any) = if (s == null) "null" else s.toString
 

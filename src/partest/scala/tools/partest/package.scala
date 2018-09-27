@@ -47,7 +47,7 @@ package object partest {
   private val GroupPattern = """.*_(\d+)""".r
 
   implicit class `special string ops`(private val s: String) extends AnyVal {
-    def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.lines else Iterator.empty
+    def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.linesIterator else Iterator.empty
   }
 
   implicit class FileOps(val f: File) {
