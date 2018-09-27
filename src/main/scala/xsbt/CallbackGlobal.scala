@@ -225,6 +225,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
         if (sym.isNestedClass) b.append(nme.MODULE_SUFFIX_STRING) else b.append(separator)
         b.append(chrs, symName.start, nSize)
       }
+      ()
     }
     loop(suffix.length(), symbol)
     b.append(suffix)
