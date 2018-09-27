@@ -125,7 +125,7 @@ Once you've started an `sbt` session you can run one of the core commands:
 If a command results in an error message like `a module is not authorized to depend on
 itself`, it may be that a global SBT plugin (such as [Ensime](http://ensime.org/)) is
 resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
-temporarily commenting them out in `~/.sbt/0.13/plugins/plugins.sbt`).
+temporarily commenting them out in `~/.sbt/1.0/plugins/plugins.sbt`).
 
 #### Sandbox
 
