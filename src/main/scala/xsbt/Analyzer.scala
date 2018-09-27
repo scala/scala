@@ -17,7 +17,7 @@ object Analyzer {
 
 final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
   import global._
-  private val STJ = new STJ(outputDirs)
+  private val JarUtils = new JarUtils(outputDirs)
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
   private class AnalyzerPhase(prev: Phase) extends GlobalPhase(prev) {
@@ -25,11 +25,11 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       "Finds concrete instances of provided superclasses, and application entry points."
     def name = Analyzer.name
 
-    private lazy val existingJaredClasses: Set[STJ.JaredClass] = {
-      STJ.outputJar
+    private lazy val existingJaredClasses: Set[JarUtils.JaredClass] = {
+      JarUtils.outputJar
         .map { jar =>
-          val classes = STJ.listFiles(jar)
-          classes.map(STJ.JaredClass(jar, _))
+          val classes = JarUtils.listFiles(jar)
+          classes.map(JarUtils.JaredClass(jar, _))
         }
         .getOrElse(Set.empty)
     }
@@ -40,7 +40,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
-            val locatedClass = if (STJ.enabled) {
+            val locatedClass = if (JarUtils.isCompilingToJar) {
               locateClassInJar(sym, separatorRequired)
             } else {
               locatePlainClassFile(sym, separatorRequired)
@@ -77,7 +77,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       val classFile =
         fileForClass(new File("."), sym, separatorRequired).toString
           .drop(2) // stripPrefix ./ or .\
-      val jaredClass = STJ.JaredClass(classFile)
+      val jaredClass = JarUtils.JaredClass(classFile)
       if (existingJaredClasses.contains(jaredClass)) {
         Some(new File(jaredClass))
       } else {

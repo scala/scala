@@ -20,7 +20,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
 
   import scala.collection.mutable
   private val nonLocalClassSymbolsInCurrentUnits = new mutable.HashSet[Symbol]()
-  private val STJ = new STJ(outputDirs)
+  private val JarUtils = new JarUtils(outputDirs)
 
   def newPhase(prev: Phase) = new ApiPhase(prev)
   class ApiPhase(prev: Phase) extends GlobalPhase(prev) {
@@ -119,8 +119,8 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
         if (!symbol.isLocalClass) {
           val classFileName = s"${names.binaryName}.class"
           val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
-          val classFile = if (STJ.enabled) {
-            new java.io.File(STJ.JaredClass(outputDir, classFileName))
+          val classFile = if (JarUtils.isCompilingToJar) {
+            new java.io.File(JarUtils.JaredClass(outputDir, classFileName))
           } else {
             new java.io.File(outputDir, classFileName)
           }

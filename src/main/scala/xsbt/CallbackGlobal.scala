@@ -134,10 +134,10 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     this.computePhaseDescriptors
   }
 
-  private final val STJ = new STJ(outputDirs)
+  private final val JarUtils = new JarUtils(outputDirs)
 
   private final val jaredClassesFromPrevCompilation =
-    perRunCaches.recordCache(new STJ.PrevJarCache(settings.classpath.value))
+    perRunCaches.recordCache(new JarUtils.PrevJarCache(settings.classpath.value))
 
   private final val fqnsToAssociatedFiles = perRunCaches.newMap[String, (AbstractFile, Boolean)]()
 
@@ -145,8 +145,8 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   def findAssociatedFile(fqn: String): Option[(AbstractFile, Boolean)] = {
     def getOutputClass(name: String): Option[AbstractFile] = {
       val relPathToClass = name.replace('.', '/') + ".class"
-      if (STJ.enabled) {
-        val jaredClass = STJ.JaredClass(relPathToClass)
+      if (JarUtils.isCompilingToJar) {
+        val jaredClass = JarUtils.JaredClass(relPathToClass)
         if (jaredClassesFromPrevCompilation.contains(jaredClass)) {
           Some(new PlainFile(jaredClass))
         } else None

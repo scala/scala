@@ -4,21 +4,19 @@ import java.io.File
 import java.util.zip.ZipFile
 
 /**
- * STJ stands for Straight to Jar compilation.
- *
  * This is a utility class that provides a set of functions that
- * are used to implement this feature.
+ * are used to implement straight to jar compilation.
  *
- * [[sbt.internal.inc.STJ]] is an object that has similar purpose and
+ * [[sbt.internal.inc.JarUtils]] is an object that has similar purpose and
  * duplicates some of the code, as it is difficult to share it.
  */
-final class STJ(outputDirs: Iterable[File]) {
+final class JarUtils(outputDirs: Iterable[File]) {
   type JaredClass = String
   type RelClass = String
 
   /**
    * Creates an identifier for a class located inside a jar.
-   * Mimics the behavior of [[sbt.internal.inc.STJ.JaredClass]].
+   * Mimics the behavior of [[sbt.internal.inc.JarUtils.JaredClass]].
    */
   def JaredClass(jar: File, cls: RelClass): JaredClass = {
     val relClass = if (File.separatorChar == '/') cls else cls.replace('/', File.separatorChar)
@@ -63,11 +61,11 @@ final class STJ(outputDirs: Iterable[File]) {
    * Informs if the Straight to Jar compilation feature is enabled,
    * i.e. if the output is set to a jar file.
    */
-  val enabled: Boolean = outputJar.isDefined
+  val isCompilingToJar: Boolean = outputJar.isDefined
 
   /**
    * Class that holds cached list of paths located within previous jar for quick lookup.
-   * See [[sbt.internal.inc.STJ#withPreviousJar]] for details on what previous jar is.
+   * See [[sbt.internal.inc.JarUtils#withPreviousJar]] for details on what previous jar is.
    * The previous jar is located using the classpath (if it exists it is a first entry
    * and has a special prefix.
    *
