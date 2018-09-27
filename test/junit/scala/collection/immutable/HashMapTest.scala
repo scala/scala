@@ -112,5 +112,18 @@ class HashMapTest {
     val expected = OldHashMap(A(0) -> 1, A(1) -> 1)
     assertEquals(merged, expected)
   }
+  @Test
+  def transformReturnsOriginalMap() {
+    case class A(i: Int, j: Int) { override def hashCode = j }
+
+    val hashMap = HashMap(
+      A(1, 1) -> 1,
+      A(1, 2) -> 1,
+      A(2, 1) -> 1,
+      A(2, 2) -> 1
+    )
+
+    assert(hashMap.transform((_, v) => v) eq hashMap)
+  }
 }
 
