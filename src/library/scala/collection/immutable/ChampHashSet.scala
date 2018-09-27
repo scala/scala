@@ -101,6 +101,78 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJ
     //assert(hash == super.hashCode())
     hash
   }
+
+  override def diff(that: collection.Set[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.diff(that)
+  }
+
+  override def removeAll(that: IterableOnce[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.removeAll(that)
+  }
+
+  override def partition(p: A => Boolean): (HashSet[A], HashSet[A]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.partition(p)
+  }
+
+  override def span(p: A => Boolean): (HashSet[A], HashSet[A]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.span(p)
+  }
+
+  override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.filterImpl(pred, isFlipped)
+  }
+
+  override def intersect(that: collection.Set[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.intersect(that)
+  }
+
+  override def take(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.take(n)
+  }
+
+  override def takeRight(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.takeRight(n)
+  }
+
+  override def takeWhile(p: A => Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.takeWhile(p)
+  }
+
+  override def drop(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.drop(n)
+  }
+
+  override def dropRight(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.dropRight(n)
+  }
+
+  override def dropWhile(p: A => Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.dropWhile(p)
+  }
 }
 
 private[immutable] final object SetNode {

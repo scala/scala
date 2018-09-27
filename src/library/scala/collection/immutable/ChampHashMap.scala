@@ -153,6 +153,108 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
       that.removeAll(thisKeys) ++ this.removeAll(thatKeys) ++ thisKeys.intersect(thatKeys).map { case k => mergef((k, this(k)), (k, that(k))) }
     }
   }
+
+  override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `filterImpl` could be optimized to filter and reconstruct the trie node-by-node, without having to
+    // perform any hashing or equality checks.
+    super.filterImpl(pred, flipped)
+  }
+
+  override def removeAll(keys: IterableOnce[K]): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `removeAll` could be optimized to avoid reallocating the `HashMap` wrapper of the rootNode on each
+    // element in `keys`, and potentially to take advantage of the structure of `keys`, if it happens to be a HashSet
+    // which would allow us to skip hashing keys all together.
+    super.removeAll(keys)
+  }
+
+  override def transform[W](f: (K, V) => W): HashMap[K, W] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `transform` could be optimized to traverse the trie node-by-node, swapping out the values of each
+    // key with the result of applying `f`.
+    super.transform(f)
+  }
+
+  override def partition(p: ((K, V)) => Boolean): (HashMap[K, V], HashMap[K, V]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `partition` could be optimized to traverse the trie node-by-node, splitting each node into two,
+    // based on the result of applying `p` to its elements and subnodes.
+    super.partition(p)
+  }
+
+  override def take(n: Int): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `take` could be optimized to construct a new trie structure by visiting each node, and including
+    // those nodes in the resulting trie, until `n` total elements have been included.
+    super.take(n)
+  }
+
+  override def takeRight(n: Int): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `take` could be optimized to construct a new trie structure by visiting each node in reverse, and
+    // and including those nodes in the resulting trie, until `n` total elements have been included.
+    super.takeRight(n)
+  }
+
+  override def takeWhile(p: ((K, V)) => Boolean): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `takeWhile` could be optimized to construct a new trie structure by visiting each node, and
+    // including those nodes in the resulting trie, until `p` returns `false`
+    super.takeWhile(p)
+  }
+
+  override def dropWhile(p: ((K, V)) => Boolean): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `dropWhile` could be optimized to construct a new trie structure by visiting each node, and
+    // dropping those nodes in the resulting trie, until `p` returns `true`
+    super.dropWhile(p)
+  }
+
+  override def dropRight(n: Int): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `dropRight` could be optimized to construct a new trie structure by visiting each node, in reverse
+    // order, and dropping all nodes until `n` elements have been dropped
+    super.dropRight(n)
+  }
+
+  override def drop(n: Int): HashMap[K, V] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `dropRight` could be optimized to construct a new trie structure by visiting each node, and
+    // dropping all nodes until `n` elements have been dropped
+    super.drop(n)
+  }
+
+  override def span(p: ((K, V)) => Boolean): (HashMap[K, V], HashMap[K, V]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    //
+    // In particular, `scan` could be optimized to construct a new trie structure by visiting each node, and
+    // keeping each node and element until `p` returns false, then including the remaining nodes in the second result.
+    // This would avoid having to rebuild most of the trie, and would eliminate the need to perform hashing and equality
+    // checks.
+    super.span(p)
+  }
 }
 
 private[immutable] object MapNode {
