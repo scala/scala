@@ -125,7 +125,7 @@ abstract class CallGraph {
 
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
     if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode) && AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
-      lazy val typeAnalyzer = backendUtils.analyzerCache.get[NonLubbingTypeFlowAnalyzer](methodNode)(new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName))
+      lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName)
 
       var methodCallsites = Map.empty[MethodInsnNode, Callsite]
       var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]

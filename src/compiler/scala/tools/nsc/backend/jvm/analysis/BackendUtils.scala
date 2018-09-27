@@ -46,60 +46,6 @@ abstract class BackendUtils extends PerRunInit {
   private val indyLambdaImplMethods: ConcurrentHashMap[InternalName, mutable.Map[MethodNode, mutable.Map[InvokeDynamicInsnNode, asm.Handle]]] =
     recordPerRunJavaMapCache(new ConcurrentHashMap)
 
-  object analyzerCache {
-    val enabled: LazyVar[Boolean] = perRunLazy(BackendUtils.this)(compilerSettings.optUseAnalyzerCache)
-
-    // TODO: should remove keys where the soft references are empty
-    private val cache: ConcurrentHashMap[MethodNode, SoftReference[mutable.Set[AsmAnalyzer[_]]]] =
-      recordPerRunJavaMapCache(new ConcurrentHashMap)
-
-    private def getImpl[A <: AsmAnalyzer[_]](methodNode: MethodNode, cond: AsmAnalyzer[_] => Boolean, constr: => A): A = {
-      if (!enabled.get) constr
-      else {
-        var as: mutable.Set[AsmAnalyzer[_]] = null
-        cache.compute(methodNode, (_, ref) => {
-          if (ref == null) {
-            as = mutable.Set.empty // keep a live reference to the set
-            new SoftReference(as)
-          } else {
-            as = ref.get()
-            if (as == null) {
-              as = mutable.Set.empty
-              new SoftReference(as)
-            } else ref
-          }
-        })
-        as.synchronized {
-          as.find(cond) match {
-            case Some(a) =>
-              a.asInstanceOf[A]
-            case _ =>
-              val a = constr
-              as += a
-              a
-          }
-        }
-      }
-    }
-
-    def get[A <: AsmAnalyzer[_] : ClassTag](methodNode: MethodNode)(constr: => A): A = {
-      val c = implicitly[ClassTag[A]].runtimeClass
-      getImpl[A](methodNode, _.getClass == c, constr)
-    }
-
-    def getCond(methodNode: MethodNode, cond: AsmAnalyzer[_] => Boolean)(constr: => AsmAnalyzer[_ <: Value]): AsmAnalyzer[_ <: Value] = {
-      getImpl(methodNode, cond, constr)
-    }
-
-    def getAny(methodNode: MethodNode, classInternalName: InternalName): AsmAnalyzer[_ <: Value] = {
-      getImpl(methodNode, _ => true, new BasicAnalyzer(methodNode, classInternalName))
-    }
-
-    def invalidate(methodNode: MethodNode): Unit = {
-      if (enabled.get) cache.remove(methodNode)
-    }
-  }
-
   // unused objects created by these constructors are eliminated by pushPop
   private[this] lazy val sideEffectFreeConstructors: LazyVar[Set[(String, String)]] = perRunLazy(this) {
     val ownerDesc = (p: (InternalName, MethodNameAndType)) => (p._1, p._2.methodType.descriptor)
