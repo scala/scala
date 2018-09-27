@@ -1,5 +1,5 @@
 A: List()
-B: List(@javax.annotation.Resource(shareable=true, lookup=, name=B, description=, authenticationType=CONTAINER, type=class java.lang.Object, mappedName=))
+B: List(@java.lang.Deprecated())
 C: List(@anns.Ann_0(name=C, value=see))
 D: List(@anns.Ann_0$Container(value=[@anns.Ann_0(name=D, value=dee), @anns.Ann_0(name=D, value=dye)]))
 

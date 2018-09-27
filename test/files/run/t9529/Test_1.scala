@@ -2,7 +2,7 @@ import java.lang.reflect._
 import anns._
 
 class A
-@javax.annotation.Resource(name = "B") class B
+@java.lang.Deprecated class B
 @Ann_0(name = "C", value = "see") class C
 @Ann_0(name = "D", value = "dee") @Ann_0(name = "D", value = "dye") class D
 
