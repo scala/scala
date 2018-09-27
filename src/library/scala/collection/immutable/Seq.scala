@@ -52,8 +52,8 @@ trait IndexedSeq[+A] extends Seq[A]
           // but if apply is more efficient than Iterators then we can use the apply for all the comparison
           // we default to the minimum preferred length
           val maxApplyCompare = {
-            val preferredLength = Math.min(applyPreferredMaxLength, that.applyPreferredMaxLength).toLong
-            if (preferredLength <= (length << 1)) Math.min(preferredLength, length) else length
+            val preferredLength = Math.min(applyPreferredMaxLength, that.applyPreferredMaxLength)
+            if (length > (preferredLength.toLong << 1)) preferredLength else length
           }
           while (index < maxApplyCompare && equal) {
             equal = this (index) == that(index)
