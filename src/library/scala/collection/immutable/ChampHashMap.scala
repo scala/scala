@@ -154,6 +154,12 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     }
   }
 
+  override def transform[W](f: (K, V) => W) = {
+    val transformed = rootNode.transform(f)
+    if (transformed eq rootNode) this.asInstanceOf[HashMap[K, W]]
+    else new HashMap(transformed, cachedJavaKeySetHashCode)
+  }
+
   override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean): HashMap[K, V] = {
     // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
     // in a minor release without breaking binary compatibility.
@@ -171,15 +177,6 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     // element in `keys`, and potentially to take advantage of the structure of `keys`, if it happens to be a HashSet
     // which would allow us to skip hashing keys all together.
     super.removeAll(keys)
-  }
-
-  override def transform[W](f: (K, V) => W): HashMap[K, W] = {
-    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
-    // in a minor release without breaking binary compatibility.
-    //
-    // In particular, `transform` could be optimized to traverse the trie node-by-node, swapping out the values of each
-    // key with the result of applying `f`.
-    super.transform(f)
   }
 
   override def partition(p: ((K, V)) => Boolean): (HashMap[K, V], HashMap[K, V]) = {
@@ -255,6 +252,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     // checks.
     super.span(p)
   }
+
 }
 
 private[immutable] object MapNode {
@@ -302,6 +300,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def size: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
+
+  def transform[W](f: (K, V) => W): MapNode[K, W]
 
   def copy(): MapNode[K, V]
 }
@@ -655,6 +655,44 @@ private final class BitmapIndexedMapNode[K, +V](
     }
   }
 
+  override def transform[W](f: (K, V) => W): BitmapIndexedMapNode[K, W] = {
+    var newContent: Array[Any] = null
+    val _payloadArity = payloadArity
+    val _nodeArity = nodeArity
+    val newContentLength = content.length
+    var i = 0
+    while (i < _payloadArity) {
+      val key = getKey(i)
+      val value = getValue(i)
+      val newValue = f(key, value)
+      if (newContent eq null) {
+        if (newValue.asInstanceOf[AnyRef] ne value.asInstanceOf[AnyRef]) {
+          newContent = content.clone()
+          newContent(TupleLength * i + 1) = newValue
+        }
+      } else {
+        newContent(TupleLength * i + 1) = newValue
+      }
+      i += 1
+    }
+
+    var j = 0
+    while (j < _nodeArity) {
+      val node = getNode(j)
+      val newNode = node.transform(f)
+      if (newContent eq null) {
+        if (newNode ne node) {
+          newContent = content.clone()
+          newContent(newContentLength - j - 1) = newNode
+        }
+      } else
+        newContent(newContentLength - j - 1) = newNode
+      j += 1
+    }
+    if (newContent eq null) this.asInstanceOf[BitmapIndexedMapNode[K, W]]
+    else new BitmapIndexedMapNode[K, W](dataMap, nodeMap, newContent, originalHashes, size)
+  }
+
   override def equals(that: Any): Boolean =
     that match {
       case node: BitmapIndexedMapNode[K, V] =>
@@ -800,6 +838,21 @@ private final class HashCollisionMapNode[K, +V ](
   def sizePredicate: Int = SizeMoreThanOne
 
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
+
+  override def transform[W](f: (K, V) => W): HashCollisionMapNode[K, W] = {
+    val newContent = Vector.newBuilder[(K, W)]
+    val contentIter = content.iterator
+    // true if any values have been transformed to a different value via `f`
+    var anyChanges = false
+    while(contentIter.hasNext) {
+      val (k, v) = contentIter.next()
+      val newValue = f(k, v)
+      newContent.addOne((k, newValue))
+      anyChanges ||= (v.asInstanceOf[AnyRef] ne newValue.asInstanceOf[AnyRef])
+    }
+    if (anyChanges) new HashCollisionMapNode(originalHash, hash, newContent.result())
+    else this.asInstanceOf[HashCollisionMapNode[K, W]]
+  }
 
   override def equals(that: Any): Boolean =
     that match {
