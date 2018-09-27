@@ -2157,4 +2157,20 @@ class InlinerTest extends BytecodeTesting {
     assertEquals(getAsmMethod(c, "priv$2").access & (ACC_PRIVATE | ACC_STATIC), ACC_PRIVATE | ACC_STATIC)
     assertSameCode(getMethod(c, "t5"), List(Invoke(INVOKESTATIC, "C", "priv$2", "()I", false), Op(IRETURN))) // TODO: should not inline here...
   }
+
+  @Test
+  def inlineSizeLimit(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f = 0
+        |  @inline final def g = f + f + f + f + f + f + f + f + f + f
+        |  @inline final def h = g + g + g + g + g + g + g + g + g + g
+        |  @inline final def i = h + h + h + h + h + h + h + h + h + h
+        |  final def j = i + i + i
+        |}
+      """.stripMargin
+    // Inlining stops when a method grows too large
+    assertInvokedMethods(getMethod(compileClass(code), "j"),
+      List("C.h", "C.h", "C.h", "C.h", "C.h", "C.h", "C.h", "C.i", "C.i"))
+  }
 }

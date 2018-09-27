@@ -114,7 +114,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
       """.stripMargin
     val c :: _ = optCompiler.compileClasses(code)
     assertSameSummary(getMethod(c, "a"), List(
-      NEW, DUP, ICONST_1, "boxToInteger", LDC, "<init>", ASTORE /*1*/,
+      NEW, DUP, ICONST_1, "valueOf", LDC, "<init>", ASTORE /*1*/,
       ALOAD /*1*/, "y", ASTORE /*2*/,
       ALOAD /*1*/, "x", INSTANCEOF, IFNE /*R*/,
       NEW, DUP, ALOAD /*1*/, "<init>", ATHROW,
