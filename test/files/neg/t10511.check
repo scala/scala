@@ -1,0 +1,12 @@
+t10511.scala:3: warning: object DeprecatedFloatOrdering in object Ordering is deprecated (since 2.13.0): There are multiple ways to order Floats (Ordering.Float.TotalOrdering, Ordering.Float.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it explicitly. See the documentation for details.
+  val f = Ordering[Float]
+                  ^
+t10511.scala:4: warning: object DeprecatedDoubleOrdering in object Ordering is deprecated (since 2.13.0): There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it explicitly. See the documentation for details.
+  val d = Ordering[Double]
+                  ^
+t10511.scala:7: warning: object DeprecatedDoubleOrdering in object Ordering is deprecated (since 2.13.0): There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it explicitly. See the documentation for details.
+  list.sorted
+       ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

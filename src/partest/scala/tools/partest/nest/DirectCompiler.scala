@@ -119,12 +119,14 @@ class DirectCompiler(val runner: Runner) {
         runner genFail "compilation stopped with info"
       } else {
         new global.Run compile sources.map(_.getPath)
-        if (!reporter.hasErrors) runner.genPass()
-        else {
-          reporter.finish()
-          reporter.close()
-          runner.genFail(s"compilation failed with $errorCount errors")
-        }
+        val result =
+          if (!reporter.hasErrors) runner.genPass()
+          else {
+            reporter.finish()
+            runner.genFail(s"compilation failed with $errorCount errors")
+          }
+        reporter.close()
+        result
       }
 
     try     { execCompile() }

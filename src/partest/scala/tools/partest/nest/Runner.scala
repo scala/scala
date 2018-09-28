@@ -521,35 +521,26 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     List(round1, round2).flatten
   }
 
+  def runPosTest(): TestState =
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    else runTestCommon()
+
   def runNegTest(): TestState = runInContext {
     // pass if it checks and didn't crash the compiler
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
     def checked(r: CompileRound) = r.result match {
       case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
-      case dnc => diffIsOk
+      case dnc @ _ => diffIsOk
     }
 
     compilationRounds(testFile).find(!_.result.isOk).map(checked).getOrElse(genFail("expected compilation failure"))
   }
 
-  /*
-  def runTestCommon(andAlso: => Boolean): (Boolean, LogContext) = runInContext {
-    compilationRounds(testFile).forall {
-      case r if r.result.isInstanceOf[Crash] => println("CRASH"); ???
-      case x => nextTestActionExpectTrue("compilation failed", x.isOk) && andAlso
-    }
-    //compilationRounds(testFile).forall(x => nextTestActionExpectTrue("compilation failed", x.isOk)) && andAlso
-  }
-  */
-
+  // run compilation until failure, evaluate `andAlso` on success
   def runTestCommon(andAlso: => TestState = genPass): TestState = runInContext {
     // DirectCompiler already says compilation failed
-    //compilationRounds(testFile).foldLeft(genPass)((result, round) => if (result.isOk) round.result else result)
-    val res = compilationRounds(testFile).foldLeft(genPass) {(result, round) =>
-      if (result.isOk) round.result else result
-    }
-
-    if (res.isOk) andAlso else res
+    val res = compilationRounds(testFile).find(!_.result.isOk).map(_.result).getOrElse(genPass)
+    res andAlso andAlso
   }
 
   def extraClasspath = kind match {
@@ -632,7 +623,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     stopwatch.start()
 
     val state =  kind match {
-      case "pos"          => runTestCommon()
+      case "pos"          => runPosTest()
       case "neg"          => runNegTest()
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
