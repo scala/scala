@@ -115,7 +115,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         .map(_.newInstance(reporter))
         .getOrElse{
           reporter.warning(null, "Doclets should be created with the Reporter constructor, otherwise logging reporters will not be shared by the creating parent")
-          docletClass.newInstance()
+          docletClass.getConstructor().newInstance()
         }
         .asInstanceOf[Generator]
 

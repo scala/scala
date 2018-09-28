@@ -99,7 +99,7 @@ package object partest {
      */
     def instantiate[A >: Null](name: String): A = (
       catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
-      (loader loadClass name).newInstance.asInstanceOf[A] orNull
+      (loader loadClass name).getConstructor().newInstance().asInstanceOf[A] orNull
     )
   }
 
