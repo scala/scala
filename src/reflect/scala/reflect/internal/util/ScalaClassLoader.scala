@@ -46,7 +46,7 @@ trait ScalaClassLoader extends JClassLoader {
 
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
-    tryToInitializeClass[AnyRef](path).map(_.newInstance()).orNull
+    tryToInitializeClass[AnyRef](path).map(_.getConstructor().newInstance()).orNull
 
   /** Create an instance with ctor args, or invoke errorFn before throwing. */
   def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T = {

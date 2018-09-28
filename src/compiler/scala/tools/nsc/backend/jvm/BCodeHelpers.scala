@@ -852,7 +852,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         "serialVersionUID",
         "J",
         null, // no java-generic-signature
-        new java.lang.Long(id)
+        java.lang.Long.valueOf(id)
       ).visitEnd()
     }
   } // end of trait BCClassGen
