@@ -136,8 +136,11 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     this.computePhaseDescriptors
   }
 
-  private final val classesInJarFromPrevCompilation =
-    perRunCaches.recordCache(new JarUtils.PrevJarCache(settings.classpath.value))
+  private final lazy val classesInJarFromPrevCompilation = {
+    val prevJarOptional = callback.previousJar()
+    val prevJar = if (prevJarOptional.isPresent) Some(prevJarOptional.get) else None
+    perRunCaches.recordCache(new JarUtils.PrevJarCache(prevJar))
+  }
 
   private final val fqnsToAssociatedFiles = perRunCaches.newMap[String, (AbstractFile, Boolean)]()
 

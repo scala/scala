@@ -65,19 +65,10 @@ final class JarUtils(outputDirs: Iterable[File]) {
 
   /**
    * Class that holds cached list of paths located within previous jar for quick lookup.
-   * See [[sbt.internal.inc.JarUtils#withPreviousJar]] for details on what previous jar is.
-   * The previous jar is located using the classpath (if it exists it is a first entry
-   * and has a special prefix.
-   *
-   * @param rawClasspath the classpath in a single string (entries separated with [[File.pathSeparator]])
+   * @see sbt.internal.inc.JarUtils#withPreviousJar for details on what previous jar is
    */
-  class PrevJarCache(rawClasspath: String) extends scala.collection.generic.Clearable {
+  class PrevJarCache(prevJar: Option[File]) extends scala.collection.generic.Clearable {
     private var cache: Set[ClassInJar] = _
-
-    private lazy val prevJar = {
-      val classpath = rawClasspath.split(File.pathSeparator)
-      findPrevJar(classpath)
-    }
 
     def contains(classInJar: ClassInJar): Boolean = {
       if (cache == null) {
@@ -97,14 +88,5 @@ final class JarUtils(outputDirs: Iterable[File]) {
         }
     }
   }
-
-  private def findPrevJar(classpath: Seq[String]): Option[File] = {
-    classpath.headOption.map(new File(_)).filter { path =>
-      val fileName = path.getName
-      fileName.startsWith(prevJarPrefix) && fileName.endsWith(".jar")
-    }
-  }
-
-  private val prevJarPrefix: String = "prev-jar"
 
 }
