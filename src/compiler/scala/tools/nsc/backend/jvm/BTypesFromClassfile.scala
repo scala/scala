@@ -26,7 +26,13 @@ abstract class BTypesFromClassfile {
    *
    * This method supports both descriptors and internal names.
    */
-  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
+  def bTypeForDescriptorOrInternalNameFromClassfile(descOrIntN: String): BType = (descOrIntN(0): @switch) match {
+    case '['                           => ArrayBType(bTypeForDescriptorFromClassfile(descOrIntN.substring(1)))
+    case 'L' if descOrIntN.last == ';' => bTypeForDescriptorFromClassfile(descOrIntN)
+    case _                             => classBTypeFromParsedClassfile(descOrIntN)
+  }
+
+  def bTypeForDescriptorFromClassfile(desc: String): BType = (desc(0): @switch) match {
     case 'V'                     => UNIT
     case 'Z'                     => BOOL
     case 'C'                     => CHAR
@@ -36,9 +42,9 @@ abstract class BTypesFromClassfile {
     case 'F'                     => FLOAT
     case 'J'                     => LONG
     case 'D'                     => DOUBLE
-    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
+    case '['                     => ArrayBType(bTypeForDescriptorFromClassfile(desc.substring(1)))
     case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
-    case _                       => classBTypeFromParsedClassfile(desc)
+    case _                       => throw new IllegalArgumentException(s"Not a descriptor: $desc")
   }
 
   /**

@@ -329,4 +329,27 @@ class BoxUnboxTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t9"))
   }
 
+  @Test
+  def unboxKeepCCE(): Unit = {
+    val code =
+      """def f(b: java.lang.Byte) = {
+        |  Int.unbox(new Object)
+        |  Long.unbox("")
+        |  Byte.unbox(b)                  // eliminated: push-pop replaces it by a checkcast, which is then eliminated
+        |  Int.unbox(null)                // eliminated by box-unbox
+        |  Int.unbox(Integer.valueOf(1))  // eliminated by box-unbox
+        |
+        |  b.byteValue                    // replaced by null check
+        |  Long.box(10l).longValue        // eliminated by box-unbox
+        |  this.asInstanceOf[Integer].intValue // replaced by null check, which is then eliminated (this is known to be non-null)
+        |  0
+        |}""".stripMargin
+    val m = compileMethod(code)
+    assertSameCode(m, List(
+      TypeOp(NEW, "java/lang/Object"), Op(DUP), Invoke(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
+      Ldc(LDC, ""), TypeOp(CHECKCAST, "java/lang/Long"), Op(POP),
+      VarOp(ALOAD, 1), Jump(IFNONNULL, Label(18)), Op(ACONST_NULL), Op(ATHROW), Label(18),
+      VarOp(ALOAD, 0), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
+      Op(ICONST_0), Op(IRETURN)))
+  }
 }

@@ -3,6 +3,7 @@ package backend.jvm
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
@@ -50,9 +51,9 @@ abstract class PostProcessor extends PerRunInit {
     val bytes = try {
       if (!clazz.isArtifact) {
         localOptimizations(classNode)
-        backendUtils.onIndyLambdaImplMethodIfPresent(internalName) {
-          methods => if (methods.nonEmpty) backendUtils.addLambdaDeserialize(classNode, methods)
-        }
+        val indyLambdaBodyMethods = backendUtils.indyLambdaBodyMethods(internalName)
+        if (indyLambdaBodyMethods.nonEmpty)
+          backendUtils.addLambdaDeserialize(classNode, indyLambdaBodyMethods)
       }
 
       warnCaseInsensitiveOverwrite(clazz)
@@ -111,9 +112,9 @@ abstract class PostProcessor extends PerRunInit {
         callGraph.addClass(c.classNode)
       }
       if (compilerSettings.optInlinerEnabled)
-        inliner.runInliner()
-      if (compilerSettings.optClosureInvocations)
-        closureOptimizer.rewriteClosureApplyInvocations()
+        inliner.runInlinerAndClosureOptimizer()
+      else if (compilerSettings.optClosureInvocations)
+        closureOptimizer.rewriteClosureApplyInvocations(None, mutable.Map.empty)
     }
   }
 

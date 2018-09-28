@@ -17,7 +17,7 @@ import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.nsc.backend.jvm.analysis.BackendUtils
+import scala.tools.nsc.backend.jvm.analysis.{AsmAnalyzer, BackendUtils, ProdConsAnalyzer}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class ClosureOptimizer {
@@ -35,6 +35,8 @@ abstract class ClosureOptimizer {
 
   private object closureInitOrdering extends Ordering[ClosureInstantiation] {
     override def compare(x: ClosureInstantiation, y: ClosureInstantiation): Int = {
+      if (x eq y) return 0
+
       val cls = x.ownerClass.internalName compareTo y.ownerClass.internalName
       if (cls != 0) return cls
 
@@ -77,8 +79,12 @@ abstract class ClosureOptimizer {
    *   [load captured values from locals]
    *   [load argument values from locals]
    *   [invoke the closure body method]
+   *
+   * @param methods The methods to check for rewrites. If not defined, check all methods with closure
+   *                instantiations.
+   * @return The changed methods. The order of the resulting sequence is deterministic.
    */
-  def rewriteClosureApplyInvocations(): Unit = {
+  def rewriteClosureApplyInvocations(methods: Option[Iterable[MethodNode]], inlinerState: mutable.Map[MethodNode, inliner.MethodInlinerState]): mutable.LinkedHashSet[MethodNode] = {
 
     // sort all closure invocations to rewrite to ensure bytecode stability
     val toRewrite = mutable.TreeMap.empty[ClosureInstantiation, mutable.ArrayBuffer[(MethodInsnNode, Int)]](closureInitOrdering)
@@ -87,13 +93,15 @@ abstract class ClosureOptimizer {
       callsites += ((invocation, stackHeight))
     }
 
+    // the `toList` prevents modifying closureInstantiations while iterating it.
+    // minimalRemoveUnreachableCode (called in the loop) removes elements
+    val methodsToRewrite = methods.getOrElse(closureInstantiations.keysIterator.toList)
+
     // For each closure instantiation find callsites of the closure and add them to the toRewrite
     // buffer (cannot change a method's bytecode while still looking for further invocations to
     // rewrite, the frame indices of the ProdCons analysis would get out of date). If a callsite
-    // cannot be rewritten, for example because the lambda body method is not accessible, issue a
-    // warning. The `toList` in the next line prevents modifying closureInstantiations while
-    // iterating it: minimalRemoveUnreachableCode (called in the loop) removes elements.
-    for (method <- closureInstantiations.keysIterator.toList if AsmAnalyzer.sizeOKForBasicValue(method)) closureInstantiations.get(method) match {
+    // cannot be rewritten, e.g., because the lambda body method is not accessible, issue a warning.
+    for (method <- methodsToRewrite if AsmAnalyzer.sizeOKForBasicValue(method)) closureInstantiations.get(method) match {
       case Some(closureInitsBeforeDCE) if closureInitsBeforeDCE.nonEmpty =>
         val ownerClass = closureInitsBeforeDCE.head._2.ownerClass.internalName
 
@@ -119,12 +127,25 @@ abstract class ClosureOptimizer {
       case _ =>
     }
 
+    val changedMethods = mutable.LinkedHashSet.empty[MethodNode]
+    var previousMethod: MethodNode = null
+
     for ((closureInit, invocations) <- toRewrite) {
       // Local variables that hold the captured values and the closure invocation arguments.
       val (localsForCapturedValues, argumentLocalsList) = localsForClosureRewrite(closureInit)
       for ((invocation, stackHeight) <- invocations)
         rewriteClosureApplyInvocation(closureInit, invocation, stackHeight, localsForCapturedValues, argumentLocalsList)
+
+      // toInit is sorted by `closureInitOrdering`, so multiple closure inits within a method are next to each other
+      if (closureInit.ownerMethod != previousMethod) {
+        previousMethod = closureInit.ownerMethod
+        changedMethods += previousMethod
+        val state = inlinerState.getOrElseUpdate(previousMethod, new inliner.MethodInlinerState)
+        state.inlineLog.logClosureRewrite(closureInit, invocations, invocations.headOption.flatMap(p => state.outerCallsite(p._1)))
+      }
     }
+
+    changedMethods
   }
 
   /**
@@ -370,7 +391,7 @@ abstract class ClosureOptimizer {
           sourceFilePath = sourceFilePath,
           annotatedInline = false,
           annotatedNoInline = false,
-          samParamTypes = callGraph.samParamTypes(bodyMethodNode, bodyDeclClassType),
+          samParamTypes = callGraph.samParamTypes(bodyMethodNode, Type.getArgumentTypes(bodyMethodNode.desc), bodyDeclClassType),
           calleeInfoWarning = None)
     })
     val argInfos = closureInit.capturedArgInfos ++ originalCallsite.map(cs => cs.argInfos map {
@@ -398,9 +419,6 @@ abstract class ClosureOptimizer {
     // Rewriting a closure invocation may render code unreachable. For example, the body method of
     // (x: T) => ??? has return type Nothing$, and an ATHROW is added (see fixLoadedNothingOrNullValue).
     BackendUtils.clearDceDone(ownerMethod)
-
-    if (hasAdaptedImplMethod(closureInit) && inliner.canInlineCallsite(bodyMethodCallsite).isEmpty)
-      inliner.inlineCallsite(bodyMethodCallsite)
   }
 
   /**

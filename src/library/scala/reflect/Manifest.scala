@@ -88,9 +88,9 @@ object ManifestFactory {
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
   @SerialVersionUID(1L)
-  private class ByteManifest extends AnyValManifest[scala.Byte]("Byte") {
+  final private[reflect] class ByteManifest extends AnyValManifest[scala.Byte]("Byte") {
     def runtimeClass = java.lang.Byte.TYPE
-    override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
+    @inline override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): ArraySeq[Byte] = new ArraySeq.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
     override def unapply(x: Any): Option[Byte] = {
@@ -101,12 +101,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Byte
   }
-  val Byte: AnyValManifest[Byte] = new ByteManifest
+  val Byte: ByteManifest = new ByteManifest
 
   @SerialVersionUID(1L)
-  private class ShortManifest extends AnyValManifest[scala.Short]("Short") {
+  final private[reflect] class ShortManifest extends AnyValManifest[scala.Short]("Short") {
     def runtimeClass = java.lang.Short.TYPE
-    override def newArray(len: Int): Array[Short] = new Array[Short](len)
+    @inline override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): ArraySeq[Short] = new ArraySeq.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
     override def unapply(x: Any): Option[Short] = {
@@ -117,12 +117,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Short
   }
-  val Short: AnyValManifest[Short] = new ShortManifest
+  val Short: ShortManifest = new ShortManifest
 
   @SerialVersionUID(1L)
-  private class CharManifest extends AnyValManifest[scala.Char]("Char") {
+  final private[reflect] class CharManifest extends AnyValManifest[scala.Char]("Char") {
     def runtimeClass = java.lang.Character.TYPE
-    override def newArray(len: Int): Array[Char] = new Array[Char](len)
+    @inline override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): ArraySeq[Char] = new ArraySeq.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
     override def unapply(x: Any): Option[Char] = {
@@ -133,12 +133,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Char
   }
-  val Char: AnyValManifest[Char] = new CharManifest
+  val Char: CharManifest = new CharManifest
 
   @SerialVersionUID(1L)
-  private class IntManifest extends AnyValManifest[scala.Int]("Int") {
+  final private[reflect] class IntManifest extends AnyValManifest[scala.Int]("Int") {
     def runtimeClass = java.lang.Integer.TYPE
-    override def newArray(len: Int): Array[Int] = new Array[Int](len)
+    @inline override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): ArraySeq[Int] = new ArraySeq.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
     override def unapply(x: Any): Option[Int] = {
@@ -149,12 +149,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Int
   }
-  val Int: AnyValManifest[Int] = new IntManifest
+  val Int: IntManifest = new IntManifest
 
   @SerialVersionUID(1L)
-  private class LongManifest extends AnyValManifest[scala.Long]("Long") {
+  final private[reflect] class LongManifest extends AnyValManifest[scala.Long]("Long") {
     def runtimeClass = java.lang.Long.TYPE
-    override def newArray(len: Int): Array[Long] = new Array[Long](len)
+    @inline override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): ArraySeq[Long] = new ArraySeq.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
     override def unapply(x: Any): Option[Long] = {
@@ -165,12 +165,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Long
   }
-  val Long: AnyValManifest[Long] = new LongManifest
+  val Long: LongManifest = new LongManifest
 
   @SerialVersionUID(1L)
-  private class FloatManifest extends AnyValManifest[scala.Float]("Float") {
+  final private[reflect] class FloatManifest extends AnyValManifest[scala.Float]("Float") {
     def runtimeClass = java.lang.Float.TYPE
-    override def newArray(len: Int): Array[Float] = new Array[Float](len)
+    @inline override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): ArraySeq[Float] = new ArraySeq.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
     override def unapply(x: Any): Option[Float] = {
@@ -181,12 +181,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Float
   }
-  val Float: AnyValManifest[Float] = new FloatManifest
+  val Float: FloatManifest = new FloatManifest
 
   @SerialVersionUID(1L)
-  private class DoubleManifest extends AnyValManifest[scala.Double]("Double") {
+  final private[reflect] class DoubleManifest extends AnyValManifest[scala.Double]("Double") {
     def runtimeClass = java.lang.Double.TYPE
-    override def newArray(len: Int): Array[Double] = new Array[Double](len)
+    @inline override def newArray(len: Int): Array[Double] = new Array[Double](len)
     override def newWrappedArray(len: Int): ArraySeq[Double] = new ArraySeq.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
 
@@ -198,12 +198,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Double
   }
-  val Double: AnyValManifest[Double] = new DoubleManifest
+  val Double: DoubleManifest = new DoubleManifest
 
   @SerialVersionUID(1L)
-  private class BooleanManifest extends AnyValManifest[scala.Boolean]("Boolean") {
+  final private[reflect] class BooleanManifest extends AnyValManifest[scala.Boolean]("Boolean") {
     def runtimeClass = java.lang.Boolean.TYPE
-    override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
+    @inline override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): ArraySeq[Boolean] = new ArraySeq.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
     override def unapply(x: Any): Option[Boolean] = {
@@ -214,12 +214,12 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Boolean
   }
-  val Boolean: AnyValManifest[Boolean] = new BooleanManifest
+  val Boolean: BooleanManifest = new BooleanManifest
 
   @SerialVersionUID(1L)
-  private class UnitManifest extends AnyValManifest[scala.Unit]("Unit") {
+  final private[reflect] class UnitManifest extends AnyValManifest[scala.Unit]("Unit") {
     def runtimeClass = java.lang.Void.TYPE
-    override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
+    @inline override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): ArraySeq[Unit] = new ArraySeq.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
     override protected def arrayClass[T](tp: Class[_]): Class[Array[T]] =
@@ -233,14 +233,14 @@ object ManifestFactory {
     }
     private def readResolve(): Any = Manifest.Unit
   }
-  val Unit: AnyValManifest[Unit] = new UnitManifest
+  val Unit: UnitManifest = new UnitManifest
 
   private[this] val ObjectTYPE = classOf[java.lang.Object]
   private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
   private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
   @SerialVersionUID(1L)
-  private class AnyManifest extends PhantomManifest[scala.Any](ObjectTYPE, "Any") {
+  final private class AnyManifest extends PhantomManifest[scala.Any](ObjectTYPE, "Any") {
     override def newArray(len: Int) = new Array[scala.Any](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     private def readResolve(): Any = Manifest.Any
@@ -248,7 +248,7 @@ object ManifestFactory {
   val Any: Manifest[scala.Any] = new AnyManifest
 
   @SerialVersionUID(1L)
-  private class ObjectManifest extends PhantomManifest[java.lang.Object](ObjectTYPE, "Object") {
+  final private class ObjectManifest extends PhantomManifest[java.lang.Object](ObjectTYPE, "Object") {
     override def newArray(len: Int) = new Array[java.lang.Object](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.Object
@@ -258,7 +258,7 @@ object ManifestFactory {
   val AnyRef: Manifest[scala.AnyRef] = Object.asInstanceOf[Manifest[scala.AnyRef]]
 
   @SerialVersionUID(1L)
-  private class AnyValPhantomManifest extends PhantomManifest[scala.AnyVal](ObjectTYPE, "AnyVal") {
+  final private class AnyValPhantomManifest extends PhantomManifest[scala.AnyVal](ObjectTYPE, "AnyVal") {
     override def newArray(len: Int) = new Array[scala.AnyVal](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     private def readResolve(): Any = Manifest.AnyVal
@@ -266,7 +266,7 @@ object ManifestFactory {
   val AnyVal: Manifest[scala.AnyVal] = new AnyValPhantomManifest
 
   @SerialVersionUID(1L)
-  private class NullManifest extends PhantomManifest[scala.Null](NullTYPE, "Null") {
+  final private class NullManifest extends PhantomManifest[scala.Null](NullTYPE, "Null") {
     override def newArray(len: Int) = new Array[scala.Null](len)
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
@@ -275,7 +275,7 @@ object ManifestFactory {
   val Null: Manifest[scala.Null] = new NullManifest
 
   @SerialVersionUID(1L)
-  private class NothingManifest extends PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
+  final private class NothingManifest extends PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
     override def newArray(len: Int) = new Array[scala.Nothing](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     private def readResolve(): Any = Manifest.Nothing
@@ -283,7 +283,7 @@ object ManifestFactory {
   val Nothing: Manifest[scala.Nothing] = new NothingManifest
 
   @SerialVersionUID(1L)
-  private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
+  final private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val runtimeClass = value.getClass
     override lazy val toString = value.toString + ".type"
   }
