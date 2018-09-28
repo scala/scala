@@ -421,7 +421,7 @@ type by [eta expansion](#eta-expansion). If $e$ is a
 parameterless method or call-by-name parameter of type
 `=>$T$`, `$e$ _` represents the function of type
 `() => $T$`, which evaluates $e$ when it is applied to the empty
-parameterlist `()`.
+parameter list `()`.
 
 ###### Example
 The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.

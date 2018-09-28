@@ -104,7 +104,7 @@ class HashMapTest {
   }
 
   @Test
-  def canMergeHashMapCollision1WithCorrectMerege() {
+  def canMergeHashMapCollision1WithCorrectMerge() {
     case class A(k: Int) { override def hashCode = 0 }
     val m1 = OldHashMap(A(0) -> 2, A(1) -> 2)
     val m2 = OldHashMap(A(0) -> 1, A(1) -> 1)
