@@ -147,7 +147,7 @@ private[html] object SyntaxHigh {
     def strlit(i: Int): String = {
       val out = new StringBuilder()
 
-      def rawstrlit0(i: Int, bslash: Boolean): Unit = {
+      @tailrec def rawstrlit0(i: Int, bslash: Boolean): Unit = {
         if (i == buf.length) return
         val ch = buf(i)
         out.append(ch)
@@ -161,7 +161,7 @@ private[html] object SyntaxHigh {
         }
       }
 
-      def strlit0(i: Int, bslash: Boolean): Unit = {
+      @tailrec def strlit0(i: Int, bslash: Boolean): Unit = {
         if (i == buf.length) return
         val ch = buf(i)
         out append ch
