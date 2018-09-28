@@ -346,8 +346,6 @@ lazy val library = configureAsSubproject(project)
       "/project/description" -> <description>Standard library for the Scala Programming Language</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
-    pomDependencyExclusions += ((organization.value, "forkjoin")),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both"
   )
