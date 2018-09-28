@@ -590,7 +590,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val classNameRegex = s"$lineRegex.*".r
       def isWrapperCode(x: StackTraceElement) = cond(x.getClassName) {
         case classNameRegex() =>
-          x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == printName
+          x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName
       }
       val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
 
