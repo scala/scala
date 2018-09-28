@@ -301,15 +301,13 @@ private[internal] trait TypeMaps {
       val tp1 = mapOver(tp)
       if (variance.isInvariant) tp1
       else tp1 match {
-        case TypeRef(pre, sym, args) if tparams contains sym =>
+        case TypeRef(pre, sym, args) if tparams.contains(sym) && occurCount(sym) == 1 =>
           val repl = if (variance.isPositive) dropSingletonType(tp1.upperBound) else tp1.lowerBound
-          val count = occurCount(sym)
-          val containsTypeParam = tparams exists (repl contains _)
           def msg = {
             val word = if (variance.isPositive) "upper" else "lower"
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
-          if (!repl.typeSymbol.isBottomClass && count == 1 && !containsTypeParam)
+          if (!repl.typeSymbol.isBottomClass && !tparams.exists(repl.contains))
             debuglogResult(msg)(repl)
           else
             tp1
