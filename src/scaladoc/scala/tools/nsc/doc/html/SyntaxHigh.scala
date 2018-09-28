@@ -147,8 +147,8 @@ private[html] object SyntaxHigh {
     def strlit(i: Int): String = {
       val out = new StringBuilder()
 
-      def rawstrlit0(i: Int, bslash: Boolean): Int = {
-        if (i == buf.length) return i
+      def rawstrlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
         val ch = buf(i)
         out.append(ch)
         ch match {
@@ -156,21 +156,19 @@ private[html] object SyntaxHigh {
             rawstrlit0(i+1, bslash = true)
           case '"' if !bslash && buf.slice(i+1, i+3).toString == "\"\"" =>
             out.append("\"\"")
-            i
           case _ =>
             rawstrlit0(i+1, bslash = false)
         }
       }
 
-      def strlit0(i: Int, bslash: Boolean): Int = {
-        if (i == buf.length) return i
+      def strlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
         val ch = buf(i)
         out append ch
         ch match {
           case '\\' =>
             strlit0(i+1, bslash = true)
           case '"' if !bslash =>
-            i
           case _ =>
             strlit0(i+1, bslash = false)
         }
