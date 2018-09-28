@@ -104,7 +104,7 @@ abstract class BCodeIdiomatic {
         emit(Opcodes.ICONST_M1)
         emit(Opcodes.IXOR)
       } else if (bType == LONG) {
-        jmethod.visitLdcInsn(new java.lang.Long(-1))
+        jmethod.visitLdcInsn(java.lang.Long.valueOf(-1))
         jmethod.visitInsn(Opcodes.LXOR)
       } else {
         abort(s"Impossible to negate a $bType")
@@ -291,7 +291,7 @@ abstract class BCodeIdiomatic {
       } else if (cst >= java.lang.Short.MIN_VALUE && cst <= java.lang.Short.MAX_VALUE) {
         jmethod.visitIntInsn(Opcodes.SIPUSH, cst)
       } else {
-        jmethod.visitLdcInsn(new Integer(cst))
+        jmethod.visitLdcInsn(Integer.valueOf(cst))
       }
     }
 
@@ -300,7 +300,7 @@ abstract class BCodeIdiomatic {
       if (cst == 0L || cst == 1L) {
         emit(Opcodes.LCONST_0 + cst.asInstanceOf[Int])
       } else {
-        jmethod.visitLdcInsn(new java.lang.Long(cst))
+        jmethod.visitLdcInsn(java.lang.Long.valueOf(cst))
       }
     }
 
@@ -310,7 +310,7 @@ abstract class BCodeIdiomatic {
       if (bits == 0L || bits == 0x3f800000 || bits == 0x40000000) { // 0..2
         emit(Opcodes.FCONST_0 + cst.asInstanceOf[Int])
       } else {
-        jmethod.visitLdcInsn(new java.lang.Float(cst))
+        jmethod.visitLdcInsn(java.lang.Float.valueOf(cst))
       }
     }
 
@@ -320,7 +320,7 @@ abstract class BCodeIdiomatic {
       if (bits == 0L || bits == 0x3ff0000000000000L) { // +0.0d and 1.0d
         emit(Opcodes.DCONST_0 + cst.asInstanceOf[Int])
       } else {
-        jmethod.visitLdcInsn(new java.lang.Double(cst))
+        jmethod.visitLdcInsn(java.lang.Double.valueOf(cst))
       }
     }
 
