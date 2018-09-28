@@ -28,7 +28,7 @@ import scala.language.implicitConversions"""
         case _     => Nil
       }
       if (coercions.isEmpty) Nil
-      else coercionComment.lines.toList ++ coercions
+      else coercionComment.linesIterator.toList ++ coercions
     }
 
     def isCardinal: Boolean = isIntegerType(this)
@@ -176,7 +176,7 @@ import scala.language.implicitConversions"""
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ (implicitCoercions map interpolate)
+      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.linesIterator.toList ++ (implicitCoercions map interpolate)
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
@@ -222,7 +222,7 @@ import scala.language.implicitConversions"""
     def representation = repr.map(", a " + _).getOrElse("")
 
     def indent(s: String)  = if (s == "") "" else "  " + s
-    def indentN(s: String) = s.lines map indent mkString "\n"
+    def indentN(s: String) = s.linesIterator map indent mkString "\n"
 
     def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> """
@@ -446,9 +446,9 @@ def ^(x: Boolean): Boolean
 
 // Provide a more specific return type for Scaladoc
 override def getClass(): Class[Boolean] = ???
-    """.trim.lines.toList
+    """.trim.linesIterator.toList
 
-    def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).lines.toList
+    def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).linesIterator.toList
   }
   object U extends AnyValRep("Unit", None, "void") {
     override def classDoc = """
@@ -462,7 +462,7 @@ override def getClass(): Class[Boolean] = ???
       "// Provide a more specific return type for Scaladoc",
       "override def getClass(): Class[Unit] = ???"
     )
-    def objectLines = interpolate(allCompanions).lines.toList
+    def objectLines = interpolate(allCompanions).linesIterator.toList
 
     override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",

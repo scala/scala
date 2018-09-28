@@ -32,3 +32,5 @@ concurrentRestrictions in Global := Seq(
 )
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.3")
+
+scalaVersion := "2.12.7"
