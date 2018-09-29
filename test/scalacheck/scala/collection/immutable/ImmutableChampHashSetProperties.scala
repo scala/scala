@@ -6,7 +6,7 @@ import org.scalacheck._
 
 object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSet") {
 
-  type K = String
+  type K = Int
 
 //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
 //    p.withMinSuccessfulTests(1000)
@@ -228,6 +228,59 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
 
       smallerSet.subsetOf(inputSet)
     }
+  }
+
+  property("building element-wise is the same as in bulk") = forAll { seq: Seq[K] =>
+    val xs = (HashSet.newBuilder[K] ++= seq).result()
+    val ys = {
+      val b = HashSet.newBuilder[K]
+      seq.foreach(b += _)
+      b.result()
+    }
+    var zs = HashSet.empty[K]
+    seq.foreach(zs += _)
+    xs == ys && xs == zs
+  }
+  property("adding elems twice to builder is the same as adding them once") = forAll { seq: Seq[K] =>
+    val b = HashSet.newBuilder[K].addAll(seq)
+    b.result == b.addAll(seq).result()
+  }
+  property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[K],ys: Seq[K]) =>
+    (xs ++ ys).toSet == xs.toSet ++ ys.toSet
+  }
+  property("HashMapBuilder produces the same Map as MapBuilder") = forAll { (xs: Seq[K]) =>
+    HashSet.newBuilder[K].addAll(xs).result() == HashSet.newBuilder[K].addAll(xs).result()
+  }
+  property("HashSetBuilder does not mutate after releasing") = forAll { (xs: Seq[K], ys: Seq[K], single: K, addSingleFirst: Boolean) =>
+    val b = HashSet.newBuilder[K].addAll(xs)
+    val hashSetA = b.result()
+    val cloneOfA: Set[K] = hashSetA.foldLeft(Set.empty[K])(_ + _)
+    if (addSingleFirst) {
+      b.addOne(single)
+      b.addAll(ys)
+    } else {
+      b.addAll(ys)
+      b.addOne(single)
+    }
+    (b.result().size >= hashSetA.size) && hashSetA == cloneOfA
+  }
+  property("Set does not mutate after releasing") = forAll { (xs: Seq[K], ys: Seq[K], single: K, addSingleFirst: Boolean) =>
+    val b = Set.newBuilder[K].addAll(xs)
+    val setA = b.result()
+    val cloneOfA: Set[K] = setA.foldLeft(Set.empty[K])(_ + _)
+    if (addSingleFirst) {
+      b.addOne(single)
+      b.addAll(ys)
+    } else {
+      b.addAll(ys)
+      b.addOne(single)
+    }
+    (b.result().size >= setA.size) && setA == cloneOfA
+  }
+  property("calling result() twice returns the same instance") = forAll { xs: Seq[K] =>
+    val mb = Set.newBuilder[K].addAll(xs)
+    val hmb = Set.newBuilder[K].addAll(xs)
+    (mb.result() eq mb.result()) && (hmb.result() eq hmb.result())
   }
 
 }
