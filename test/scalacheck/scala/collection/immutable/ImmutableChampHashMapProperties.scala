@@ -7,8 +7,8 @@ import scala.language.higherKinds
 
 object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
 
-  type K = String
-  type V = String
+  type K = Int
+  type V = Int
   type T = (K, V)
 
   property("convertToScalaMapAndCheckSize") = forAll { input: HashMap[K, V] =>
