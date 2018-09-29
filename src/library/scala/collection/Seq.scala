@@ -20,6 +20,11 @@ trait Seq[+A]
 
   override def iterableFactory: SeqFactory[IterableCC] = Seq
 
+  override final def +: [B >: A](elem: B): IterableCC[B] = prepended(elem)
+
+  override final def :+ [B >: A](elem: B): IterableCC[B] = appended(elem)
+
+
   /** Method called from equality methods, so that user-defined subclasses can
     *  refuse to be equal to other collections of the same kind.
     *  @param   that   The object with which this $coll should be compared
@@ -112,7 +117,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
     */
-  @`inline` final def +: [B >: A](elem: B): CC[B] = prepended(elem)
+  def +: [B >: A](elem: B): CC[B] = prepended(elem)
 
   /** A copy of this $coll with an element appended.
     *
@@ -142,7 +147,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * Note that :-ending operators are right associative (see example).
     * A mnemonic for `+:` vs. `:+` is: the COLon goes on the COLlection side.
     */
-  @`inline` final def :+ [B >: A](elem: B): CC[B] = appended(elem)
+  def :+ [B >: A](elem: B): CC[B] = appended(elem)
 
   /** As with `:++`, returns a new collection containing the elements from the left operand followed by the
     *  elements from the right operand.

@@ -705,7 +705,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   })
 
   /** Alias for `concat` */
-  @`inline` final def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
+  def ++ [B >: A](suffix: IterableOnce[B]): CC[B] = concat(suffix)
 
   /** Returns a $coll formed from this $coll and another iterable collection
     *  by combining corresponding elements in pairs.

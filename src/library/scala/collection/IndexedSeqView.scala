@@ -23,6 +23,10 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   def concat[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(prefix, this)
+
+  override def +: [B >: A](elem: B): IndexedSeqView[B] = prepended(elem)
+  override def :+ [B >: A](elem: B): IndexedSeqView[B] = appended(elem)
+  def ++ [B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = concat(suffix)
 }
 
 object IndexedSeqView {

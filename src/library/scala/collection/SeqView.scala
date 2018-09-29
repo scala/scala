@@ -15,6 +15,10 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(prefix, this)
+
+  override def +: [B >: A](elem: B): SeqView[B] = prepended(elem)
+  override def :+ [B >: A](elem: B): SeqView[B] = appended(elem)
+  def ++ [B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = concat(suffix)
 }
 
 object SeqView {

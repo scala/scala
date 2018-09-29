@@ -23,6 +23,8 @@ import scala.collection.IterableFactory
 trait Iterable[+A] extends collection.Iterable[A]
                       with collection.IterableOps[A, Iterable, Iterable[A]] {
 
+  override final def ++ [B >: A](suffix: IterableOnce[B]): IterableCC[B] = concat(suffix)
+
   override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
