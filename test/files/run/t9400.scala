@@ -1,6 +1,9 @@
 
 class Deprecation extends Deprecated {
   final val annotationType = classOf[Deprecated]
+
+  def forRemoval(): Boolean = false
+  def since(): String = ""
 }
 
 class Suppression extends SuppressWarnings {
