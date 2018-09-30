@@ -4911,10 +4911,10 @@ trait Types
               NoType  // something is wrong: an array without a type arg.
             }
             else {
-              val args = argss map (_.head)
-              if (args.tail forall (_ =:= args.head)) typeRef(pre, sym, List(args.head))
-              else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) ObjectTpe
-              else typeRef(pre, sym, List(lub(args)))
+              val argH = argss.head.head
+              if (argss.tail forall (_.head =:= argH)) typeRef(pre, sym, List(argH))
+              else if (argss exists (args => isPrimitiveValueClass(args.head.typeSymbol))) ObjectTpe
+              else typeRef(pre, sym, List(lub(argss.map(_.head))))
             }
           }
           else transposeSafe(argss) match {
