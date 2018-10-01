@@ -13,6 +13,8 @@ import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
 
+import PartialFunction.cond
+
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
  *
@@ -241,68 +243,76 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
   /*
    * must-single-thread
+   *
+   * TODO: make this next claim true, if possible
+   *   by generating valid main methods as static in module classes
+   *   not sure what the jvm allows here
+   * + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
    */
   object isJavaEntryPoint {
 
     /*
      * must-single-thread
      */
-    def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = {
-      def fail(msg: String, pos: Position = sym.pos) = {
-        reporter.warning(sym.pos,
-          sym.name +
-          s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
-          // TODO: make this next claim true, if possible
-          //   by generating valid main methods as static in module classes
-          //   not sure what the jvm allows here
-          // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
-        )
-        false
-      }
-      def failNoForwarder(msg: String) = {
-        fail(s"$msg, which means no static forwarder can be generated.\n")
-      }
-      val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
-      val hasApproximate = possibles exists { m =>
-        m.info match {
-          case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass
-          case _                       => false
-        }
-      }
-      // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
-      hasApproximate && {
-        // Before erasure so we can identify generic mains.
-        enteringErasure {
-          val companion     = sym.linkedClassOfClass
+    def apply(sym: Symbol, csymCompUnit: CompilationUnit, mainClass: Option[String]): Boolean = sym.hasModuleFlag && {
+      val warn = mainClass.fold(true)(_ == sym.fullNameString)
+      def warnBadMain(msg: String, pos: Position): Unit = if (warn) reporter.warning(pos,
+        s"""|not a valid main method for ${sym.fullName('.')},
+            |  because $msg.
+            |  To define an entry point, please define the main method as:
+            |    def main(args: Array[String]): Unit
+            |""".stripMargin
+      )
+      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = if (warn) reporter.warning(sym.pos,
+        s"""|${sym.name.decoded} has a ${if (hasExact) "valid " else ""}main method${if (mainly != NoType) " "+mainly else ""},
+            |  but ${sym.fullName('.')} will not have an entry point on the JVM.
+            |  Reason: $msg, which means no static forwarder can be generated.
+            |""".stripMargin
+      )
+      val possibles = (sym.tpe nonPrivateMember nme.main).alternatives
+      val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
 
-          if (definitions.hasJavaMainMethod(companion))
-            failNoForwarder("companion contains its own main method")
+      // Before erasure so we can identify generic mains.
+      def check(): Boolean = enteringErasure {
+        val companion = sym.linkedClassOfClass
+        val exactly   = possibles.find(definitions.isJavaMainMethod)
+        val hasExact  = exactly.isDefined
+        def alternate = if (possibles.size == 1) possibles.head.info else NoType
+
+        val companionAdvice =
+          if (companion.isTrait)
+            Some("companion is a trait")
+          else if (definitions.hasJavaMainMethod(companion))
+            Some("companion contains its own main method")
           else if (companion.tpe.member(nme.main) != NoSymbol)
             // this is only because forwarders aren't smart enough yet
-            failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
-          else if (companion.isTrait)
-            failNoForwarder("companion is a trait")
-          // Now either succeed, or issue some additional warnings for things which look like
-          // attempts to be java main methods.
-        else (possibles exists definitions.isJavaMainMethod) || {
-            possibles exists { m =>
-              m.info match {
-                case PolyType(_, _) =>
-                  fail("main methods cannot be generic.")
-                case MethodType(params, res) =>
-                  if (res.typeSymbol :: params exists (_.isAbstractType))
-                    fail("main methods cannot refer to type parameters or abstract types.", m.pos)
-                  else
-                    definitions.isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
-                case tp =>
-                  fail(s"don't know what this is: $tp", m.pos)
-              }
+            Some("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
+          else
+            None
+
+        // some additional warnings for things which look like attempts to be java main methods.
+        val mainAdvice =
+          if (hasExact) Nil
+          else possibles.map { m =>
+            m.info match {
+              case PolyType(_, _) =>
+                ("main methods cannot be generic", m)
+              case MethodType(params, res) if res.typeSymbol :: params exists (_.isAbstractType) =>
+                ("main methods cannot refer to type parameters or abstract types", m)
+              case MethodType(_, _) =>
+                ("main methods must have the exact signature (Array[String])Unit", m)
+              case tp =>
+                (s"don't know what this is: $tp", m)
             }
           }
-        }
-      }
-    }
 
+        companionAdvice.foreach(msg => warnNoForwarder(msg, hasExact, exactly.fold(alternate)(_.info)))
+        mainAdvice.foreach { case (msg, m) => warnBadMain(msg, m.pos) }
+        companionAdvice.isEmpty && mainAdvice.isEmpty
+      }
+      // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
+      hasApproximate && check()
+    }
   }
 
   /*

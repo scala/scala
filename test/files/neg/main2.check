@@ -1,0 +1,9 @@
+main2.scala:7: warning: X has a valid main method (args: Array[String])Unit,
+  but p.X will not have an entry point on the JVM.
+  Reason: companion is a trait, which means no static forwarder can be generated.
+
+  object X {
+         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
