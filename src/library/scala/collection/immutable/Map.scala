@@ -134,11 +134,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
 @SerialVersionUID(3L)
 object Map extends MapFactory[Map] {
 
-  // getenv not getProperty for Scala.js friendliness.
-  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
-  private final val useBaseline: Boolean =
-    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
-
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
     extends AbstractMap[K, V]
       with MapOps[K, V, Map, WithDefault[K, V]] {
@@ -389,7 +384,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
-      else (if (useBaseline) OldHashMap.empty[K, V1] else HashMap.empty[K, V1]).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
+      else HashMap.empty[K, V1].updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def remove(key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)
