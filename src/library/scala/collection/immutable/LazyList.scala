@@ -630,6 +630,28 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *             a cycle at the fourth element.
     */
   override def toString(): String = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
+
+  @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
+  override def hasDefiniteSize: Boolean = {
+    if (!stateDefined) false
+    else if (isEmpty) true
+    else {
+      // Two-iterator trick (2x & 1x speed) for cycle detection.
+      var those = this
+      var these = tail
+      while (those ne these) {
+        if (!these.stateDefined) return false
+        else if (these.isEmpty) return true
+        these = these.tail
+        if (!these.stateDefined) return false
+        else if (these.isEmpty) return true
+        these = these.tail
+        if (those eq these) return false
+        those = those.tail
+      }
+      false  // Cycle detected
+    }
+  }
 }
 
 /**
