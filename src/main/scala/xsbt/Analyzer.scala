@@ -25,12 +25,12 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
     def name = Analyzer.name
 
     private lazy val existingClassesInJar: Set[JarUtils.ClassInJar] = {
-      JarUtils.outputJar
-        .map { jar =>
+      JarUtils.outputJar match {
+        case Some(jar) =>
           val classes = JarUtils.listFiles(jar)
           classes.map(JarUtils.ClassInJar(jar, _))
-        }
-        .getOrElse(Set.empty)
+        case None => Set.empty
+      }
     }
 
     def apply(unit: CompilationUnit): Unit = {
