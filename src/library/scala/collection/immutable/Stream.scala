@@ -74,7 +74,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   @inline final def append[B >: A](suffix: IterableOnce[B]): Stream[B] = lazyAppendedAll(suffix)
 
   override protected[this] def writeReplace(): AnyRef =
-    if(headDefined && tailDefined) new Stream.SerializationProxy[A](this) else this
+    if(nonEmpty && tailDefined) new Stream.SerializationProxy[A](this) else this
 
   /** Prints elements of this stream one by one, separated by commas. */
   @deprecated(message = """Use print(stream.force.mkString(", ")) instead""", since = "2.13.0")
@@ -196,7 +196,6 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
 
   override final def zipWithIndex: Stream[(A, Int)] = this.zip(LazyList.from(0))
 
-  protected def headDefined: Boolean
   protected def tailDefined: Boolean
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
@@ -222,11 +221,11 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
     b.append(start)
     if (nonEmpty) {
-      if (headDefined) b.append(head) else b.append('_')
+      b.append(head)
       var cursor = this
       def appendCursorElement() = {
         b.append(sep)
-        if (cursor.headDefined) b.append(cursor.head) else b.append('_')
+        if (cursor.nonEmpty) b.append(cursor.head) else b.append('_')
       }
       if (tailDefined) {  // If tailDefined, also !isEmpty
         var scout = tail
@@ -330,7 +329,6 @@ object Stream extends SeqFactory[Stream] {
       */
     def force: this.type = this
     override def knownSize: Int = 0
-    protected def headDefined: Boolean = false
     protected def tailDefined: Boolean = false
   }
 
@@ -342,7 +340,6 @@ object Stream extends SeqFactory[Stream] {
       tlEvaluated = true
       tl
     }
-    protected def headDefined: Boolean = true
     protected def tailDefined: Boolean = tlEvaluated
     /** Forces evaluation of the whole `Stream` and returns it.
       *
@@ -498,7 +495,7 @@ object Stream extends SeqFactory[Stream] {
     private[this] def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
       var these = coll
-      while(these.headDefined && these.tailDefined) {
+      while(these.nonEmpty && these.tailDefined) {
         out.writeObject(these.head)
         these = these.tail
       }
