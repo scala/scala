@@ -18,8 +18,7 @@ trait Parsers { self: Quasiquotes =>
   } with ScalaParser {
     def parse(code: String): Tree = {
       try {
-        val file = new BatchSourceFile(nme.QUASIQUOTE_FILE, code)
-        val parser = new QuasiquoteParser(file)
+        val parser = new QuasiquoteParser(new BatchSourceFile(nme.QUASIQUOTE_FILE, code))
         parser.checkNoEscapingPlaceholders { parser.parseRule(entryPoint) }
       } catch {
         case mi: MalformedInput => c.abort(correspondingPosition(mi.offset), mi.msg)
@@ -212,8 +211,7 @@ trait Parsers { self: Quasiquotes =>
 
   object PatternParser extends Parser {
     def entryPoint = { parser =>
-      val pat = parser.noSeq.pattern()
-      gen.patvarTransformer.transform(pat)
+      gen.patvarTransformer.transform(parser.noSeq.pattern())
     }
   }
 
