@@ -15,7 +15,7 @@ package <empty> {
       B.super.<init>();
       ()
     };
-    def unapplySeq(a: Int): Some[scala.collection.immutable.ArraySeq[Int]] = scala.Some.apply[scala.collection.immutable.ArraySeq[Int]](scala.collection.immutable.ArraySeq.apply[Int](1, 2, 3)((ClassTag.Int: scala.reflect.ClassTag[Int])))
+    def unapplySeq(a: Int): Some[scala.collection.immutable.ArraySeq[Int]] = new Some[scala.collection.immutable.ArraySeq[Int]](scala.collection.immutable.ArraySeq.apply[Int](1, 2, 3)((ClassTag.Int: scala.reflect.ClassTag[Int])))
   };
   class Foo[T] extends scala.AnyRef {
     def <init>(): Foo[T] = {
@@ -41,7 +41,7 @@ package <empty> {
       D.super.<init>();
       ()
     };
-    def unapplySeq[T](a: Int): Some[Foo[T]] = scala.Some.apply[Foo[T]](new Foo[T]())
+    def unapplySeq[T](a: Int): Some[Foo[T]] = new Some[Foo[T]](new Foo[T]())
   };
   object E extends scala.AnyRef {
     def <init>(): E.type = {
@@ -55,7 +55,7 @@ package <empty> {
       F.super.<init>();
       ()
     };
-    def unapplySeq(a: Int): Some[String] = scala.Some.apply[String]("123")
+    def unapplySeq(a: Int): Some[String] = new Some[String]("123")
   };
   class T extends scala.AnyRef {
     def <init>(): T = {
@@ -80,7 +80,7 @@ package <empty> {
           {
             val x: Int = o20.get.apply(0);
             val y: Int = o20.get.apply(1);
-            matchEnd15(scala.Tuple2.apply[Int, Int](x, y))
+            matchEnd15(new (Int, Int)(x, y))
           }
         else
           case19()
@@ -91,7 +91,7 @@ package <empty> {
           {
             val x: Int = o22.get.apply(0);
             val xs: Seq[Int] = o22.get.drop(1);
-            matchEnd15(scala.Tuple2.apply[Int, Seq[Int]](x, xs))
+            matchEnd15(new (Int, Seq[Int])(x, xs))
           }
         else
           case21()
@@ -112,7 +112,7 @@ package <empty> {
           {
             val x: Int = o26.get.apply(0);
             val y: Int = o26.get.apply(1);
-            matchEnd15(scala.Tuple2.apply[Int, Int](x, y))
+            matchEnd15(new (Int, Int)(x, y))
           }
         else
           case25()
@@ -123,7 +123,7 @@ package <empty> {
           {
             val x: Int = o28.get.apply(0);
             val xs: Seq[Int] = o28.get.drop(1);
-            matchEnd15(scala.Tuple2.apply[Int, Seq[Int]](x, xs))
+            matchEnd15(new (Int, Seq[Int])(x, xs))
           }
         else
           case27()
@@ -144,7 +144,7 @@ package <empty> {
           {
             val x: Int = o32.get.apply(0);
             val y: Int = o32.get.apply(1);
-            matchEnd15(scala.Tuple2.apply[Int, Int](x, y))
+            matchEnd15(new (Int, Int)(x, y))
           }
         else
           case31()
@@ -155,7 +155,7 @@ package <empty> {
           {
             val x: Int = o34.get.apply(0);
             val xs: Seq[Int] = o34.get.drop(1);
-            matchEnd15(scala.Tuple2.apply[Int, Seq[Int]](x, xs))
+            matchEnd15(new (Int, Seq[Int])(x, xs))
           }
         else
           case33()
@@ -176,7 +176,7 @@ package <empty> {
           {
             val x: Nothing = o38.get.apply(0);
             val y: Nothing = o38.get.apply(1);
-            matchEnd15(scala.Tuple2.apply[Nothing, Nothing](x, y))
+            matchEnd15(new (Nothing, Nothing)(x, y))
           }
         else
           case37()
@@ -187,7 +187,7 @@ package <empty> {
           {
             val x: Nothing = o40.get.apply(0);
             val xs: Seq[Nothing] = o40.get.drop(1);
-            matchEnd15(scala.Tuple2.apply[Nothing, Seq[Nothing]](x, xs))
+            matchEnd15(new (Nothing, Seq[Nothing])(x, xs))
           }
         else
           case39()

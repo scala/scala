@@ -466,16 +466,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     if (settings.YmacroAnnotations) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
     else new { val global: Global.this.type = Global.this } with Analyzer
 
-  // phaseName = "patmat"
-  object patmat extends {
-    val global: Global.this.type = Global.this
-    // patmat does not need to run before the superaccessors phase, because
-    // patmat never emits `this.x` where `x` is a ParamAccessor.
-    // (However, patmat does need to run before outer accessors generation).
-    val runsAfter = List("superaccessors")
-    val runsRightAfter = None
-  } with PatternMatching
-
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
@@ -487,7 +477,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   // phaseName = "extmethods"
   object extensionMethods extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("patmat")
+    val runsAfter = List("superaccessors")
     val runsRightAfter = None
   } with ExtensionMethods
 
@@ -505,10 +495,20 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val runsRightAfter = None
   } with RefChecks
 
+  // phaseName = "patmat"
+  object patmat extends {
+    val global: Global.this.type = Global.this
+    // patmat does not need to run before the superaccessors phase, because
+    // patmat never emits `this.x` where `x` is a ParamAccessor.
+    // (However, patmat does need to run before outer accessors generation).
+    val runsAfter = List("refchecks")
+    val runsRightAfter = None
+  } with PatternMatching
+
   // phaseName = "uncurry"
   override object uncurry extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("refchecks")
+    val runsAfter = List("patmat")
     val runsRightAfter = None
   } with UnCurry
 
