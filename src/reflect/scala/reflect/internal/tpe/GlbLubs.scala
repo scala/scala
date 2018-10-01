@@ -4,6 +4,7 @@ package internal
 package tpe
 
 import scala.collection.mutable
+import scala.reflect.internal.util.Arrays._
 import scala.annotation.tailrec
 import scala.reflect.internal.util.StatisticsStatics
 import Variance._
@@ -160,21 +161,15 @@ private[internal] trait GlbLubs {
 
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
   private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
-    def loop(ts: List[Type]): List[Type] = ts match {
-      case t :: ts1 =>
-        val ts2 = loop(ts1.filterNot(po(_, t)))
-        if (ts2.exists(po(t, _))) ts2 else t :: ts2
-      case Nil => Nil
-    }
-
-    // The order here matters because type variables and
-    // wildcards can act both as subtypes and supertypes.
-    val (ts2, ts1) = ts.partition(_ exists {
+    // Partition:: quick-sort style
+    def goesAfter(tv: Type): Boolean = tv match {
       case tv: TypeVar => !tv.isGround
       case t => t.isWildcard
-    })
-
-    loop(ts1 ::: ts2)
+    }
+    val tarr = listToArray[Type](ts)
+    partitionInPlace(tarr)(! _.exists(goesAfter))
+    val admitted = maxByPartialOrder(tarr, po)
+    arrayToList(tarr, 0, admitted)
   }
 
   /** Eliminate from list of types all elements which are a supertype

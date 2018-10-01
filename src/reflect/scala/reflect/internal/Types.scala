@@ -786,7 +786,8 @@ trait Types
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
      */
-    def find(p: Type => Boolean): Option[Type] = new FindTypeCollector(p).collect(this)
+    def find(p: Type => Boolean): Option[Type] =
+      if (p(this)) Some(this) else new FindTypeCollector(p).collect(this)
 
     /** Apply `f` to each part of this type */
     def foreach(f: Type => Unit): Unit = { new ForEachTypeTraverser(f).traverse(this) }
@@ -800,7 +801,7 @@ trait Types
     } apply this
 
     /** Is there part of this type which satisfies predicate `p`? */
-    def exists(p: Type => Boolean): Boolean = !find(p).isEmpty
+    def exists(p: Type => Boolean): Boolean = p(this) || !find(p).isEmpty
 
     /** Does this type contain a reference to this symbol? */
     def contains(sym: Symbol): Boolean = new ContainsCollector(sym).collect(this)
