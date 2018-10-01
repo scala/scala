@@ -127,8 +127,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
           //
           // This is not necessary in the top level because the resulting hash in that case is already computed. It is
           // the hash of the right HashMap
-          val canReturnEarly = shift == 0
-          if (canReturnEarly && (left eq right)) {
+          if (shift == 0 && (left eq right)) {
             right
           } else left match {
             case leftBm: BitmapIndexedMapNode[K, V] =>
@@ -215,12 +214,6 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
                       leftNodeOnly |
                       rightNodeOnly |
                       dataToNodeMigrationTargets
-
-
-                  if (canReturnEarly && (newDataMap == (rightDataOnly | leftDataRightDataRightOverwrites)) && (newNodeMap == rightNodeOnly)) {
-                    // nothing from left will make it into the result -- return early
-                    return right
-                  }
 
                   val newDataSize = bitCount(newDataMap)
                   val newContentSize = (MapNode.TupleLength * newDataSize) + bitCount(newNodeMap)
