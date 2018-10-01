@@ -566,23 +566,39 @@ trait Implicits {
      }
 
     private def matchesPtInst(info: ImplicitInfo): Boolean = {
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
+
       def isViewLike = pt match {
         case Function1(_, _) => true
         case _ => false
       }
 
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
-        info.tpe match {
-          case PolyType(tparams, restpe) =>
-            try {
-              val allUndetparams = (undetParams ++ tparams).distinct
-              val tvars = allUndetparams map freshVar
-              val tp = ApproximateDependentMap(restpe)
-              val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+      info.tpe match {
+        case PolyType(tparams, restpe) =>
+          try {
+            val allUndetparams = (undetParams ++ tparams).distinct
+            val tvars = allUndetparams map freshVar
+            val tp = ApproximateDependentMap(restpe)
+            val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+
+            if(isView || isViewLike) {
+              tpInstantiated match {
+                case MethodType(_, tv: TypeVar) if !tv.instValid =>
+                  // views with result types which have an uninstantiated type variable as their outer type
+                  // constructor might not match correctly against the view template until they have been
+                  // fully applied so we fall back to the slow path.
+                  true
+                case _ =>
+                  matchesPt(tpInstantiated, wildPt, allUndetparams) || {
+                    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
+                    false
+                  }
+              }
+            } else {
               if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
                 if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
                 false
-              } else if(!isView && !isViewLike) {
+              } else {
                 // we can't usefully prune views any further because we would need to type an application
                 // of the view to the term as is done in the computation of itree2 in typedImplicit1.
                 val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
@@ -593,12 +609,13 @@ trait Implicits {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
                 } else true
-              } else true
-            } catch {
-              case _: NoInstance => false
+              }
             }
-          case _ => true
-        }
+          } catch {
+            case _: NoInstance => false
+          }
+        case _ => true
+      }
     }
 
     /** Capturing the overlap between isPlausiblyCompatible and normSubType.
