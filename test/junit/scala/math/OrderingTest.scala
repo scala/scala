@@ -5,10 +5,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import java.{lang => jl}
+
+import scala.collection.SortedSet
 import scala.math.Ordering.Float.TotalOrdering
 import scala.math.Ordering.Double.TotalOrdering
-
-import java.{lang => jl}
 
 @RunWith(classOf[JUnit4])
 class OrderingTest {
@@ -226,9 +227,9 @@ class OrderingTest {
     check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
     check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
     check(Ordering[Option[Int]])
-    check(Ordering[Iterable[Int]])
 
     import Ordering.Implicits._
     check(Ordering[Seq[Int]])
+    check(Ordering[SortedSet[Int]])
   }
 }

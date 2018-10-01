@@ -255,7 +255,10 @@ object Ordering extends LowPriorityOrderingImplicits {
     /** Not in the standard scope due to the potential for divergence:
       * For instance `implicitly[Ordering[Any]]` diverges in its presence.
       */
-    implicit def seqDerivedOrdering[CC[X] <: scala.collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+    implicit def seqOrdering[CC[X] <: scala.collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+      new IterableOrdering[CC, T](ord)
+
+    implicit def sortedSetOrdering[CC[X] <: scala.collection.SortedSet[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
       new IterableOrdering[CC, T](ord)
 
     /** This implicit creates a conversion from any value for which an
@@ -494,6 +497,13 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
     new OptionOrdering[T] { val optionOrdering = ord }
 
+  /** @deprecated Iterables are not guaranteed to have a consistent order, so the `Ordering`
+    *             returned by this method may not be stable or meaningful. If you are using a type
+    *             with a consistent order (such as `Seq`), use its `Ordering` (found in the
+    *             [[Implicits]] object) instead.
+    */
+  @deprecated("Iterables are not guaranteed to have a consistent order; if using a type with a " +
+    "consistent order (e.g. Seq), use its Ordering (found in the Ordering.Implicits object)", since = "2.13.0")
   implicit def Iterable[T](implicit ord: Ordering[T]): Ordering[Iterable[T]] =
     new IterableOrdering[Iterable, T](ord)
 
