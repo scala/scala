@@ -43,12 +43,25 @@ object Reporter {
   /** Adapt a reporter to legacy reporter API. Handle `info` by forwarding to `echo`. */
   class AdaptedReporter(val delegate: InternalReporter) extends Reporter with ForwardingReporter {
     override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = delegate.echo(pos, msg)
+    private def other(severity: Severity): delegate.Severity = severity match {
+      case ERROR   => delegate.ERROR
+      case WARNING => delegate.WARNING
+      case _       => delegate.INFO
+    }
+    override def count(severity: Severity)      = delegate.count(other(severity))
+    override def resetCount(severity: Severity) = delegate.resetCount(other(severity))
+
+    override def errorCount   = delegate.errorCount
+    override def warningCount = delegate.warningCount
+    override def hasErrors    = delegate.hasErrors
+    override def hasWarnings  = delegate.hasWarnings
+
     override def toString() = s"AdaptedReporter($delegate)"
   }
   /** A marker trait for adapted reporters that respect maxerrs. */
   trait LimitedReporter { _: Reporter => }
   /** A legacy `Reporter` adapter that respects `-Xmaxerrs` and `-Xmaxwarns`.  */
-  class LimitingReporter(settings: Settings, protected val delegate: Reporter) extends Reporter with FilteringReporter with LimitedReporter {
+  class LimitingReporter(settings: Settings, delegate0: Reporter) extends AdaptedReporter(delegate0) with FilteringReporter with LimitedReporter {
     override protected def filter(pos: Position, msg: String, severity: Severity) =
       severity match {
         case ERROR   => errorCount   < settings.maxerrs.value

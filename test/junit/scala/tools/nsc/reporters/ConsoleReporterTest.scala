@@ -159,7 +159,7 @@ class ConsoleReporterTest {
       settings.maxerrs.value  = 1
       settings.maxwarns.value = 1
 
-      new Reporter.LimitingReporter(settings, reporter)
+      new Reporter.LimitingReporter(settings, reporter) with CountingReporter
     }
 
     // pass one message
@@ -193,5 +193,26 @@ class ConsoleReporterTest {
     val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
     // test obsolete API, make sure it doesn't throw
     reporter.info(NoPosition, "goodbye, cruel world", force = false)
+  }
+
+  @Test
+  def adaptedReporterTest(): Unit = {
+    val reporter = createConsoleReporter("r", writerOut)
+    val adapted  = new Reporter.AdaptedReporter(reporter)
+
+    // pass one message
+    testHelper(msg = "Testing display")(adapted.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(adapted.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(adapted.error(_, "Testing display"))
+
+    assertTrue(adapted.hasErrors)
+    assertEquals(1, adapted.errorCount)
+    assertTrue(adapted.hasWarnings)
+    assertEquals(1, adapted.warningCount)
+    adapted.reset()
+    assertFalse(adapted.hasErrors)
+    assertEquals(0, adapted.errorCount)
+    assertFalse(adapted.hasWarnings)
+    assertEquals(0, adapted.warningCount)
   }
 }

@@ -23,7 +23,7 @@ object Test extends DirectTest {
 
   override def show(): Unit = {
     compile()
-    assert(store.infos.size == limit)
+    assert(store.infos.size == limit, s"${store.infos.size} should be $limit")
   }
   override def newSettings(args: List[String]) = {
     val s = super.newSettings(args)
