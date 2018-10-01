@@ -41,7 +41,12 @@ object Depth {
   }
 
   def maximumBy[A](xs: List[A])(ff: DepthFunction[A]): Depth = {
-    def maxDepth(d: Depth, x: A) = d max ff(x)
-    xs.foldLeft(Zero)(maxDepth)
+    var ys: List[A] = xs
+    var mm: Depth = Zero
+    while (!ys.isEmpty){
+      mm = mm max ff(ys.head)
+      ys = ys.tail
+    }
+    mm
   }
 }
