@@ -1,6 +1,0 @@
-indy-symbol-literal.scala:10: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-      'foo.name
-           ^
-indy-symbol-literal.scala:6: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-    'warmup
-    ^
