@@ -758,7 +758,7 @@ trait Types
     def substThis(from: Symbol, to: Type): Type =
       new SubstThisMap(from, to) apply this
     def substThis(from: Symbol, to: Symbol): Type =
-      substThis(from, to.thisType)
+      if (from eq to) this else substThis(from, to.thisType)
 
     /** Performs both substThis and substSym, in that order.
      *

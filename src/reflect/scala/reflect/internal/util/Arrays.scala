@@ -19,12 +19,12 @@ trait Arrays {
 
   /* Partition: in-place partition the elements of arr and returns a boundary b, such that
    *  the segment arr(0..b) contains elements for which pred is true, 
-   *  the segment arr(b..L), where l is the length of the array, are elements for which pred is false.
+   *  the segment arr(b..Size), where l is the length of the array, are elements for which pred is false.
    * This is base on the partition step for Quick-Sort
    */
-  final def partitionInPlace[A](arr: Array[A])(pred: A => Boolean): Int = {
+  final def partitionInPlace[A](arr: Array[A], size: Int)(pred: A => Boolean): Int = {
     var beg = 0
-    var end = arr.length
+    var end = size
     while (beg < end) {
       while (beg < end &&   pred(arr(beg)))
         beg += 1
@@ -52,10 +52,10 @@ trait Arrays {
     xs
   }
 
-  final def maxByPartialOrder[A](arr: Array[A], po: (A, A) => Boolean): Int  = {
+  final def maxByPartialOrder[A](arr: Array[A], size: Int, po: (A, A) => Boolean): Int  = {
     // dominating set by po
     var admitted: Int = 0
-    var pending = arr.length
+    var pending = size
     while (admitted < pending){
       val curr = arr(admitted)
       admitted += 1
@@ -102,6 +102,23 @@ trait Arrays {
       admitted -= pending
     }
     admitted
+  }
+
+  /* mapInPlace: applies operation to each element (in place)
+   and returns whether any of them was changed or not. */
+  def mapInPlace[A <: AnyRef](arr: Array[A], size: Int, op: A => A): Boolean = {
+    var bb = false
+    var ix = 0
+    while (ix < size) {
+      val old = arr(ix)
+      val neu = op(old)
+      if (! (old eq neu)){
+        bb = true
+        arr(ix) = neu
+      }
+      ix += 1
+    }
+    bb
   }
 
 }

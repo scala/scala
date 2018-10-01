@@ -160,30 +160,38 @@ private[internal] trait GlbLubs {
   }
 
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
-  private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
+  private def maxTypes(tarr: Array[Type], size: Int)(po: (Type, Type) => Boolean): Int = {
     // Partition:: quick-sort style
     def goesAfter(tv: Type): Boolean = tv match {
       case tv: TypeVar => !tv.isGround
       case t => t.isWildcard
     }
-    val tarr = listToArray[Type](ts)
-    partitionInPlace(tarr)(! _.exists(goesAfter))
-    val admitted = maxByPartialOrder(tarr, po)
-    arrayToList(tarr, 0, admitted)
+    // val tarr = listToArray[Type](ts)
+    // arrayToList(tarr, 0, admitted)
+    partitionInPlace(tarr, size )(! _.exists(goesAfter))
+    maxByPartialOrder(tarr, size, po)
   }
 
   /** Eliminate from list of types all elements which are a supertype
     *  of some other element of the list. */
-  private def elimSuper(ts: List[Type]): List[Type] =
-    maxTypes(ts)((t1, t2) => t2 <:< t1)
+  private def elimSuper(tarr: Array[Type], size: Int): Int =
+    maxTypes(tarr,size)((t1, t2) => t2 <:< t1)
 
   /** Eliminate from list of types all elements which are a subtype
     *  of some other element of the list. */
-  @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
-    val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
-    if (ts1.lengthCompare(1) <= 0) ts1 else {
-      val ts2 = ts1.mapConserve(t => elimAnonymousClass(t.dealiasWiden))
-      if (ts1 eq ts2) ts1 else elimSub(ts2, depth)
+  private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
+    val tarr = listToArray[Type](ts)
+    val size = elimSubAux(tarr, tarr.length, depth)
+    arrayToList(tarr, 0, size)
+  }
+
+  @tailrec private def elimSubAux(tarr: Array[Type], size: Int, depth: Depth): Int = {
+    val nsize = maxTypes(tarr, size)(isSubType(_, _, depth.decr))
+    if (nsize <= 1)
+      nsize
+    else {
+      val b = mapInPlace(tarr, nsize, (t: Type) => elimAnonymousClass(t.dealiasWiden) )
+      if (b) elimSubAux(tarr, nsize, depth) else nsize
     }
   }
 
@@ -399,27 +407,46 @@ private[internal] trait GlbLubs {
   private var globalGlbDepth = Depth.Zero
   private final val globalGlbLimit = Depth(2)
 
-  /** The greatest lower bound of a list of types (as determined by `<:<`). */
-  def glb(ts: List[Type]): Type = elimSuper(ts) match {
-    case List() => AnyTpe
-    case List(t) => t
-    case ts0 =>
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(lubCount)
-      val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
-      try {
-        glbNorm(ts0, lubDepth(ts0))
-      } finally {
-        lubResults.clear()
-        glbResults.clear()
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
-      }
+  def glb(ts: List[Type]): Type = {
+    val tarr = listToArray[Type](ts)
+    val size = elimSuper(tarr, tarr.length)
+    size match {
+      case 0 => AnyTpe
+      case 1 => tarr(0)
+      case n =>
+        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(lubCount)
+        val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, lubNanos) else null
+        val ts0 = arrayToList(tarr, 0, n)
+        try {
+          glbNorm(ts0, lubDepth(ts0))
+        } finally {
+          lubResults.clear()
+          glbResults.clear()
+          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.popTimer(typeOpsStack, start)
+        }
+    }
   }
 
-  protected[internal] def glb(ts: List[Type], depth: Depth): Type = elimSuper(ts) match {
-    case List() => AnyTpe
-    case List(t) => t
-    case ts0 => glbNorm(ts0, depth)
+  protected[internal] def glb(ts: List[Type], depth: Depth): Type = {
+    val tarr = listToArray[Type](ts)
+    glb(tarr, tarr.length, depth)
   }
+
+  private def glb(tarr: Array[Type], size: Int, depth: Depth): Type = {
+    val size = elimSuper(tarr, tarr.length)
+    size match {
+      case 0 => AnyTpe
+      case 1 => tarr(0)
+      case n =>
+        val ts0 = arrayToList(tarr, 0, n)
+        glbNorm(ts0, depth)
+    }
+  }
+
+//  protected def glbNorm(ts: List[Type], depth: Depth): Type = {
+//    val tarr = listToArray[Type](ts)
+//    glb(tarr, tarr.length, depth)
+//  }
 
   /** The greatest lower bound of a list of types (as determined by `<:<`), which have been normalized
     *  with regard to `elimSuper`. */
