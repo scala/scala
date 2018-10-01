@@ -12,7 +12,7 @@ private[reflect] trait ThreadLocalStorage {
   private class MyThreadLocalStorage[T](initialValue: => T) extends ThreadLocalStorage[T] {
     // TODO: how do we use org.cliffc.high_scale_lib.NonBlockingHashMap here?
     //       (we would need a version that uses weak keys)
-    private val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
+    private[this] val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
     def get: T = {
       if (values containsKey currentThread) values.get(currentThread)
       else {

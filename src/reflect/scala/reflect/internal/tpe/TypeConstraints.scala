@@ -83,11 +83,11 @@ private[internal] trait TypeConstraints {
       *  guarding addLoBound/addHiBound somehow broke raw types so it
       *  only guards against being created with them.]
       */
-    private var lobounds = lo0 filterNot typeIsNothing
-    private var hibounds = hi0 filterNot typeIsAny
-    private var numlo = numlo0
-    private var numhi = numhi0
-    private var avoidWidening = avoidWidening0
+    private[this] var lobounds = lo0 filterNot typeIsNothing
+    private[this] var hibounds = hi0 filterNot typeIsAny
+    private[this] var numlo = numlo0
+    private[this] var numhi = numhi0
+    private[this] var avoidWidening = avoidWidening0
 
     def loBounds: List[Type] = if (numlo == NoType) lobounds else numlo :: lobounds
     def hiBounds: List[Type] = if (numhi == NoType) hibounds else numhi :: hibounds

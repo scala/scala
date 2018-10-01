@@ -194,9 +194,9 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class LeftPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A1] {
     def iterator = new AbstractIterator[A1] {
-      private val self = partitionWith.underlying.iterator
-      private var hd: A1 = _
-      private var hdDefined: Boolean = false
+      private[this] val self = partitionWith.underlying.iterator
+      private[this] var hd: A1 = _
+      private[this] var hdDefined: Boolean = false
       def hasNext = hdDefined || {
         def findNext(): Boolean =
           if (self.hasNext) {
@@ -218,9 +218,9 @@ object View extends IterableFactory[View] {
   @SerialVersionUID(3L)
   class RightPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A2] {
       def iterator = new AbstractIterator[A2] {
-        private val self = partitionWith.underlying.iterator
-        private var hd: A2 = _
-        private var hdDefined: Boolean = false
+        private[this] val self = partitionWith.underlying.iterator
+        private[this] var hd: A2 = _
+        private[this] var hdDefined: Boolean = false
         def hasNext = hdDefined || {
           def findNext(): Boolean =
             if (self.hasNext) {

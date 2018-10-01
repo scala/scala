@@ -119,7 +119,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     // package scopes need to synchronize on the GIL
     // because lookupEntry might cause changes to the global symbol table
     override def syncLockSynchronized[T](body: => T): T = gilSynchronized(body)
-    private val negatives = new mutable.HashSet[Name]
+    private[this] val negatives = new mutable.HashSet[Name]
     override def lookupEntry(name: Name): ScopeEntry = syncLockSynchronized {
       val e = super.lookupEntry(name)
       if (e != null)

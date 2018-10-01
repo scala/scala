@@ -256,7 +256,7 @@ trait Contexts { self: Analyzer =>
       */
     var enclMethod: Context = _
 
-    private var _undetparams: List[Symbol] = List()
+    private[this] var _undetparams: List[Symbol] = List()
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
 

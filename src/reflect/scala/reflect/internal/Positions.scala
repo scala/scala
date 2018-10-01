@@ -128,7 +128,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
     throw new ValidateException(msg)
   }
 
-  private val posStartOrdering: Ordering[Tree] = new Ordering[Tree] {
+  private[this] val posStartOrdering: Ordering[Tree] = new Ordering[Tree] {
     override def compare(x: Tree, y: Tree): Int = {
       @inline def posOf(t: Tree): Int = {
         val pos = t.pos

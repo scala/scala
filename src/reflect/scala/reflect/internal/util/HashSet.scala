@@ -14,8 +14,8 @@ object HashSet {
 }
 
 class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] with scala.collection.mutable.Clearable {
-  private var used = 0
-  private var table = new Array[AnyRef](initialCapacity)
+  private[this] var used = 0
+  private[this] var table = new Array[AnyRef](initialCapacity)
   private def index(x: Int): Int = math.abs(x % table.length)
 
   def size: Int = used
@@ -67,7 +67,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   }
 
   def iterator: Iterator[T] = new collection.AbstractIterator[T] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (table(i) eq null)) i += 1
       i < table.length

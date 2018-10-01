@@ -202,8 +202,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
       annots foreach (annot => print(s"@$annot "))
     }
 
-    private var currentOwner: Symbol = NoSymbol
-    private var selectorType: Type = NoType
+    private[this] var currentOwner: Symbol = NoSymbol
+    private[this] var selectorType: Type = NoType
 
     protected def printPackageDef(tree: PackageDef, separator: String) = {
       val PackageDef(packaged, stats) = tree
@@ -1139,10 +1139,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
   private class Footnotes {
     import scala.collection.mutable.{Map, WeakHashMap, SortedSet}
 
-    private val index = Map[Class[_], WeakHashMap[Any, Int]]()
+    private[this] val index = Map[Class[_], WeakHashMap[Any, Int]]()
     private def classIndex[T: ClassTag] = index.getOrElseUpdate(classTag[T].runtimeClass, WeakHashMap[Any, Int]())
 
-    private val counters = Map[Class[_], Int]()
+    private[this] val counters = Map[Class[_], Int]()
     private def nextCounter[T: ClassTag] = {
       val clazz = classTag[T].runtimeClass
       counters.getOrElseUpdate(clazz, 0)
@@ -1150,7 +1150,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       counters(clazz)
     }
 
-    private val footnotes = Map[Class[_], SortedSet[Int]]()
+    private[this] val footnotes = Map[Class[_], SortedSet[Int]]()
     private def classFootnotes[T: ClassTag] = footnotes.getOrElseUpdate(classTag[T].runtimeClass, SortedSet[Int]())
 
     def put[T: ClassTag](any: T): Int = {
@@ -1177,10 +1177,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
   // emits more or less verbatim representation of the provided tree
   class RawTreePrinter(out: PrintWriter) extends super.TreePrinter {
-    private var depth = 0
-    private var printTypesInFootnotes = true
-    private var printingFootnotes = false
-    private val footnotes = new Footnotes()
+    private[this] var depth = 0
+    private[this] var printTypesInFootnotes = true
+    private[this] var printingFootnotes = false
+    private[this] val footnotes = new Footnotes()
 
     def print(args: Any*): Unit = {
       // don't print type footnotes if the argument is a mere type

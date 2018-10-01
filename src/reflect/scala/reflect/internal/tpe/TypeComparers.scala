@@ -16,7 +16,7 @@ trait TypeComparers {
 
   private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
-  private val _pendingSubTypes = new mutable.HashSet[SubTypePair]
+  private[this] val _pendingSubTypes = new mutable.HashSet[SubTypePair]
   def pendingSubTypes = _pendingSubTypes
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
@@ -31,7 +31,7 @@ trait TypeComparers {
     override def toString = tp1.toString+" <:<? "+tp2
   }
 
-  private var _subsametypeRecursions: Int = 0
+  private[this] var _subsametypeRecursions: Int = 0
   def subsametypeRecursions = _subsametypeRecursions
   def subsametypeRecursions_=(value: Int) = _subsametypeRecursions = value
 

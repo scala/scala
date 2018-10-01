@@ -242,7 +242,7 @@ object Map extends MapFactory[Map] {
     }
 
     private abstract class Map2Iterator[A] extends AbstractIterator[A] {
-      var i = 0
+      private[this] var i = 0
       override def hasNext: Boolean = i < 2
       override def next(): A = {
         val result = i match {
@@ -299,7 +299,7 @@ object Map extends MapFactory[Map] {
     }
 
     private abstract class Map3Iterator[A] extends AbstractIterator[A] {
-      var i = 0
+      private[this] var i = 0
       override def hasNext: Boolean = i < 3
       override def next(): A = {
         val result = i match {
@@ -364,7 +364,7 @@ object Map extends MapFactory[Map] {
     }
 
     private abstract class Map4Iterator[A] extends AbstractIterator[A] {
-      var i = 0
+      private[this] var i = 0
       override def hasNext: Boolean = i < 4
       override def next(): A = {
         val result = i match {

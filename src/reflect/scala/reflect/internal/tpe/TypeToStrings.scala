@@ -12,11 +12,11 @@ private[internal] trait TypeToStrings {
     */
   final val maxToStringRecursions = 50
 
-  private var _toStringRecursions = 0
+  private[this] var _toStringRecursions = 0
   def toStringRecursions = _toStringRecursions
   def toStringRecursions_=(value: Int) = _toStringRecursions = value
 
-  private val _toStringSubjects = HashSet[Type]()
+  private[this] val _toStringSubjects = HashSet[Type]()
   def toStringSubjects = _toStringSubjects
 
   protected def typeToString(tpe: Type): String =

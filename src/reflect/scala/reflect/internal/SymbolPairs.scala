@@ -92,8 +92,8 @@ abstract class SymbolPairs {
     cursor =>
 
       final val self  = base.thisType   // The type relative to which symbols are seen.
-    private val decls = newScope        // all the symbols which can take part in a pair.
-    private val size  = bases.length
+    private[this] val decls = newScope        // all the symbols which can take part in a pair.
+    private[this] val size  = bases.length
 
     /** A symbol for which exclude returns true will not appear as
      *  either end of a pair.
@@ -127,18 +127,18 @@ abstract class SymbolPairs {
      *     p isSubClass b
      *     p.baseType(b).typeSymbol == self.baseType(b).typeSymbol
      */
-    private val subParents = new Array[BitSet](size)
+    private[this] val subParents = new Array[BitSet](size)
 
     /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
      *  linearization order. Symbols that are not baseclasses map to -1.
      */
-    private val index = new mutable.HashMap[Symbol, Int] { override def default(key: Symbol) = -1 }
+    private[this] val index = new mutable.HashMap[Symbol, Int] { override def default(key: Symbol) = -1 }
 
     /** The scope entries that have already been visited as highSymbol
      *  (but may have been excluded via hasCommonParentAsSubclass.)
      *  These will not appear as lowSymbol.
      */
-    private val visited = HashSet[ScopeEntry]("visited", 64)
+    private[this] val visited = HashSet[ScopeEntry]("visited", 64)
 
     /** Initialization has to run now so decls is populated before
      *  the declaration of curEntry.

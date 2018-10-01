@@ -178,8 +178,8 @@ quant)
   }
 
   class Timer(val prefix: String, val phases: Seq[String]) extends Quantity {
-    private val totalThreads = new AtomicInteger()
-    private val threadNanos = new ThreadLocal[LongRef] {
+    private[this] val totalThreads = new AtomicInteger()
+    private[this] val threadNanos = new ThreadLocal[LongRef] {
       override def initialValue() = {
         totalThreads.incrementAndGet()
         new LongRef(0)
@@ -254,7 +254,7 @@ quant)
    *  Note: Not threadsafe
    */
   class TimerStack {
-    private var elems: List[(StackableTimer, Long)] = Nil
+    private[this] var elems: List[(StackableTimer, Long)] = Nil
     /** Start given timer and push it onto the stack */
     def push(t: StackableTimer): TimerSnapshot = {
       elems = (t, 0L) :: elems
@@ -278,7 +278,7 @@ quant)
     }
   }
 
-  private val qs = new mutable.HashMap[String, Quantity]
+  private[this] val qs = new mutable.HashMap[String, Quantity]
   private[scala] var areColdStatsLocallyEnabled: Boolean = false
   private[scala] var areHotStatsLocallyEnabled: Boolean = false
 

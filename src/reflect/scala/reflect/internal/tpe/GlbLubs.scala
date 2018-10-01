@@ -230,10 +230,10 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
-  private val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def lubResults = _lubResults
 
-  private val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def glbResults = _glbResults
 
   def lub(ts: List[Type]): Type = ts match {
@@ -401,7 +401,7 @@ private[internal] trait GlbLubs {
     *  The counter breaks this recursion after two calls.
     *  If the recursion is broken, no member is added to the glb.
     */
-  private var globalGlbDepth = Depth.Zero
+  private[this] var globalGlbDepth = Depth.Zero
   private final val globalGlbLimit = Depth(2)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */

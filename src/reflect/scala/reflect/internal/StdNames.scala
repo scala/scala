@@ -31,7 +31,7 @@ trait StdNames {
    *  CommonNames constructor out of the starting gate.  This is its builder.
    */
   private class KeywordSetBuilder {
-    private var kws: Set[TermName] = Set()
+    private[this] var kws: Set[TermName] = Set()
     def apply(s: String): TermName = {
       val result = newTermNameCached(s)
       kws = kws + result
@@ -168,7 +168,7 @@ trait StdNames {
   /** This should be the first trait in the linearization. */
   // abstract class Keywords extends CommonNames {
   abstract class Keywords extends {
-    private val kw = new KeywordSetBuilder
+    private[this] val kw = new KeywordSetBuilder
 
     final val ABSTRACTkw: TermName  = kw("abstract")
     final val CASEkw: TermName      = kw("case")
@@ -1120,7 +1120,7 @@ trait StdNames {
   }
 
   class JavaKeywords {
-    private val kw = new KeywordSetBuilder
+    private[this] val kw = new KeywordSetBuilder
 
     final val ABSTRACTkw: TermName     = kw("abstract")
     final val ASSERTkw: TermName       = kw("assert")

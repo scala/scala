@@ -12,7 +12,7 @@ final class Precedence private (val level: Int) extends AnyVal with Ordered[Prec
 
 
 object Precedence extends (Int => Precedence) {
-  private val ErrorName = "<error>"
+  private[this] val ErrorName = "<error>"
   private def isAssignmentOp(name: String) = name match {
     case "!=" | "<=" | ">=" | "" => false
     case _                       => name.last == '=' && name.head != '=' && isOperatorPart(name.head)

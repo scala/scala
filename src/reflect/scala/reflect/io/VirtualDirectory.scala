@@ -45,7 +45,7 @@ extends AbstractFile {
    */
   def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = unsupported()
 
-  private val files = mutable.Map.empty[String, AbstractFile]
+  private[this] val files = mutable.Map.empty[String, AbstractFile]
 
   // the toList is so that the directory may continue to be
   // modified while its elements are iterated

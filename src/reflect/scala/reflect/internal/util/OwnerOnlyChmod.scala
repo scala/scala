@@ -17,8 +17,8 @@ object OwnerOnlyChmod {
   private def canPosix(path: Path) =
     Files.getFileStore(path).supportsFileAttributeView(classOf[PosixFileAttributeView])
 
-  private val posixDir  = EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE)
-  private val posixFile = EnumSet.of(OWNER_READ, OWNER_WRITE)
+  private[this] val posixDir  = EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE)
+  private[this] val posixFile = EnumSet.of(OWNER_READ, OWNER_WRITE)
 
   /** Remove group/other permissions for `file`, it if exists, and if the runtime environment supports modifying permissions. */
   def chmod(path: Path): Unit = {
