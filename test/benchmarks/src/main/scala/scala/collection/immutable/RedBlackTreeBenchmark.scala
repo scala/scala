@@ -22,6 +22,9 @@ class RedBlackTreeBenchmark {
   var nums: Range = _
   val rnd = new Random(0)
   var set1: TreeSet[Int] = _
+  var set2: TreeSet[Int] = _
+  var set3: TreeSet[Int] = _
+  var set4: TreeSet[Int] = _
   var perm: Array[Int] = _ // repeatably pseudo-random permutation
 
   @Setup(Level.Trial) def init: Unit = {
@@ -32,6 +35,9 @@ class RedBlackTreeBenchmark {
     perm = Array.fill(size)(rem.remove(rnd.nextInt(rem.size)))
     assert(rem.size == 0)
     assert(perm.sum == nums.sum)
+    set2 = set1.take(size/4)
+    set3 = set1.take(size*3/4)
+    set4 = set1.drop(size/2)
   }
 
   @Benchmark
@@ -63,5 +69,15 @@ class RedBlackTreeBenchmark {
     var s = set1
     perm.foreach(i => s = s.excl(i))
     bh.consume(s)
+  }
+
+  @Benchmark
+  def union(bh: Blackhole): Unit = {
+    bh.consume(
+      set1.union(set1).size +
+      set2.union(set3).size +
+      set2.union(set4).size +
+      set4.union(set2).size
+    )
   }
 }

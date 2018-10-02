@@ -245,3 +245,54 @@ object TestSlice extends RedBlackTreeTest with RedBlackTreeInvariants  {
     iterator(tree).slice(parm._1, parm._2).toList == iterator(newTree).toList
   }
 }
+
+abstract class BulkTest(pName: String) extends RedBlackTreeTest with RedBlackTreeInvariants {
+  import RB._
+
+  override type ModifyParm = Tree[String, Int]
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = genTree
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = treeOp(tree, parm)
+
+  def treeOp(t1: Tree[String, Int], t2: Tree[String, Int]): Tree[String, Int]
+  def setOp(s1: Set[(String, Int)], s2: Set[(String, Int)]): Set[(String, Int)]
+
+  // Using our own setup here because genTree can't minimize - great when it works but useless when it fails
+  // and you have to debug it
+
+  def gen(l1: List[Int], l2: List[Int]) = {
+    var t1: Tree[String, Int] = null
+    l1.foreach { case i => t1 = update(t1, ""+i, i, false) }
+    var t2: Tree[String, Int] = null
+    l2.foreach { case i => t2 = update(t2, ""+i, i, false) }
+    val t3 = modify(t1, t2)
+    (t1, t2, t3)
+  }
+
+  override def setup(invariant: Tree[String, Int] => Boolean) = forAll { (l1: List[Int], l2: List[Int]) =>
+    val (t1, t2, t3) = gen(l1, l2)
+    invariant(t3)
+  }
+
+  property(pName) = forAll { (l1: List[Int], l2: List[Int]) =>
+    val (t1, t2, t3) = gen(l1, l2)
+    setOp(iterator(t1).toSet, iterator(t2).toSet).toList.sorted == iterator(t3).toList
+  }
+}
+
+object TestUnion extends BulkTest("union") {
+  import RB._
+  def treeOp(t1: Tree[String, Int], t2: Tree[String, Int]): Tree[String, Int] = union(t1, t2)
+  def setOp(s1: Set[(String, Int)], s2: Set[(String, Int)]): Set[(String, Int)] = s1.union(s2)
+}
+
+object TestIntersect extends BulkTest("intersect") {
+  import RB._
+  def treeOp(t1: Tree[String, Int], t2: Tree[String, Int]): Tree[String, Int] = intersect(t1, t2)
+  def setOp(s1: Set[(String, Int)], s2: Set[(String, Int)]): Set[(String, Int)] = s1.intersect(s2)
+}
+
+object TestDifference extends BulkTest("difference") {
+  import RB._
+  def treeOp(t1: Tree[String, Int], t2: Tree[String, Int]): Tree[String, Int] = difference(t1, t2)
+  def setOp(s1: Set[(String, Int)], s2: Set[(String, Int)]): Set[(String, Int)] = s1.diff(s2)
+}

@@ -2,7 +2,7 @@ package scala
 package collection
 package immutable
 
-import mutable.{Builder, ImmutableBuilder}
+import mutable.{Builder, ReusableBuilder}
 import immutable.{RedBlackTree => RB}
 
 
@@ -23,7 +23,7 @@ import immutable.{RedBlackTree => RB}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-final class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
@@ -133,10 +133,32 @@ final class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: O
   }
 
   override def concat(that: collection.IterableOnce[A]): TreeSet[A] = {
-    val it = that.iterator
-    var t = tree
-    while (it.hasNext) t = RB.update(t, it.next(), null, overwrite = false)
+    val t = that match {
+      case ts: TreeSet[A] if ordering eq ts.ordering =>
+        RB.union(tree, ts.tree)
+      case _ =>
+        val it = that.iterator
+        var t = tree
+        while (it.hasNext) t = RB.update(t, it.next(), null, overwrite = false)
+        t
+    }
     if(t eq tree) this else newSet(t)
+  }
+
+  override def intersect(that: collection.Set[A]): TreeSet[A] = that match {
+    case ts: TreeSet[A] if ordering eq ts.ordering =>
+      val t = RB.intersect(tree, ts.tree)
+      if(t eq tree) this else newSet(t)
+    case _ =>
+      super.intersect(that)
+  }
+
+  override def diff(that: collection.Set[A]): TreeSet[A] = that match {
+    case ts: TreeSet[A] if ordering eq ts.ordering =>
+      val t = RB.difference(tree, ts.tree)
+      if(t eq tree) this else newSet(t)
+    case _ =>
+      super.diff(that)
   }
 
   override protected[this] def className = "TreeSet"
@@ -163,10 +185,20 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         new TreeSet[E](t)
     }
 
-  def newBuilder[A : Ordering]: Builder[A, TreeSet[A]] =
-    new ImmutableBuilder[A, TreeSet[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems.incl(elem); this }
-      override def addAll(xs: IterableOnce[A]): this.type = { elems = elems.concat(xs); this }
+  def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = new ReusableBuilder[A, TreeSet[A]] {
+    private[this] var tree: RB.Tree[A, Null] = null
+    def addOne(elem: A): this.type = { tree = RB.update(tree, elem, null, overwrite = false); this }
+    override def addAll(xs: IterableOnce[A]): this.type = {
+      xs match {
+        case ts: TreeSet[A] if ordering eq ts.ordering =>
+          tree = RB.union(tree, ts.tree)
+        case _ =>
+          val it = xs.iterator
+          while (it.hasNext) tree = RB.update(tree, it.next(), null, overwrite = false)
+      }
+      this
     }
-
+    def result(): TreeSet[A] = if(tree eq null) TreeSet.empty else new TreeSet[A](tree)
+    def clear(): Unit = { tree = null }
+  }
 }

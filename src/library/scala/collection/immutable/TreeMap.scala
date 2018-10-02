@@ -3,7 +3,7 @@ package collection
 package immutable
 
 import scala.collection.immutable.{RedBlackTree => RB}
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.mutable.{Builder, ReusableBuilder}
 
 
 /** This class implements immutable maps using a tree.
@@ -25,7 +25,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
+final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends AbstractMap[K, V]
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
@@ -58,13 +58,27 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   }
 
   override def concat[V1 >: V](that: collection.IterableOnce[(K, V1)]): TreeMap[K, V1] = {
-    val it = that.iterator
-    var t: RB.Tree[K, V1] = tree
-    while (it.hasNext) {
-      val (k, v) = it.next()
-      t = RB.update(t, k, v, overwrite = true)
+    val t = that match {
+      case tm: TreeMap[K, V] if ordering eq tm.ordering =>
+        RB.union(tree, tm.tree)
+      case _ =>
+        val it = that.iterator
+        var t: RB.Tree[K, V1] = tree
+        while (it.hasNext) {
+          val (k, v) = it.next()
+          t = RB.update(t, k, v, overwrite = true)
+        }
+        if(t eq tree) this else new TreeMap(t)
+        t
     }
     if(t eq tree) this else new TreeMap(t)
+  }
+
+  override def removeAll(keys: IterableOnce[K]): TreeMap[K, V] = keys match {
+    case ts: TreeSet[K] if ordering eq ts.ordering =>
+      val t = RB.difference(tree, ts.tree)
+      if(t eq tree) this else new TreeMap(t)
+    case _ => super.removeAll(keys)
   }
 
   /** A new TreeMap with the entry added is returned,
@@ -181,10 +195,23 @@ object TreeMap extends SortedMapFactory[TreeMap] {
         new TreeMap[K, V](t)
     }
 
-  def newBuilder[K : Ordering, V]: Builder[(K, V), TreeMap[K, V]] =
-    new ImmutableBuilder[(K, V), TreeMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-      override def addAll(xs: IterableOnce[(K, V)]): this.type = { elems = elems.concat(xs); this }
+  def newBuilder[K, V](implicit ordering: Ordering[K]): Builder[(K, V), TreeMap[K, V]] = new ReusableBuilder[(K, V), TreeMap[K, V]] {
+    private[this] var tree: RB.Tree[K, V] = null
+    def addOne(elem: (K, V)): this.type = { tree = RB.update(tree, elem._1, elem._2, overwrite = true); this }
+    override def addAll(xs: IterableOnce[(K, V)]): this.type = {
+      xs match {
+        case tm: TreeMap[K, V] if ordering eq tm.ordering =>
+          tree = RB.union(tree, tm.tree)
+        case _ =>
+          val it = xs.iterator
+          while (it.hasNext) {
+            val (k, v) = it.next()
+            tree = RB.update(tree, k, v, overwrite = true)
+          }
+      }
+      this
     }
-
+    def result(): TreeMap[K, V] = if(tree eq null) TreeMap.empty else new TreeMap[K, V](tree)
+    def clear(): Unit = { tree = null }
+  }
 }
