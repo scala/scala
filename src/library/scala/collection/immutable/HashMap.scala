@@ -36,13 +36,13 @@ import scala.runtime.Statics.releaseFence
   *  @define coll immutable champ hash map
   */
 
-final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: MapNode[K, V], private val cachedJavaKeySetHashCode: Int)
+final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: MapNode[K, V])
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]] {
 
-  def this() = this(MapNode.empty, 0)
+  def this() = this(MapNode.empty)
 
   releaseFence()
 
@@ -100,342 +100,27 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
-
     val newRootNode = rootNode.updated(key, value, keyUnimprovedHash, keyHash, 0)
-
-    if (newRootNode ne rootNode) {
-      val replaced = rootNode.size == newRootNode.size
-      val newCachedJavaKeySetHashCode = cachedJavaKeySetHashCode + (if (replaced) 0 else keyHash)
-      HashMap(newRootNode, newCachedJavaKeySetHashCode)
-    } else
-      this
+    if (newRootNode ne rootNode) new HashMap(newRootNode) else this
   }
 
   def remove(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
-
     val newRootNode = rootNode.removed(key, keyUnimprovedHash, keyHash, 0)
-
-    if (newRootNode ne rootNode)
-      HashMap(newRootNode, cachedJavaKeySetHashCode - keyHash)
-    else this
+    if (newRootNode ne rootNode) new HashMap(newRootNode) else this
   }
 
-  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = {
-    if (this eq that.asInstanceOf[AnyRef]) {
-      return this
-    }
-
-    /** Fall back to slow concatenation in case of error, or non-hashmap `that` */
-    def slowConcat = mapFactory.newBuilder[K, V1].addAll(this).addAll(that).result()
-
-    that match {
-      case hm: HashMap[K, V1] =>
-
-        // We start with the assumption that the maps are distinct, and then subtract the hash code of keys
-        // in this are overwritten by keys in that.
-        var newHash = cachedJavaKeySetHashCode + hm.cachedJavaKeySetHashCode
-
-        /** Recursively, immutably concatenates two MapNodes, node-by-node as to visit the least number of nodes possible */
-        def concat(left: MapNode[K, V1], right: MapNode[K, V1], shift: Int): MapNode[K, V1] = {
-          // Whenever possible, we would like to return early when it is known that the left will not contribute anything
-          // to the final result of the map. However, this is only possible when we are at the top level of the trie,
-          // because otherwise we must traverse the entire node in order to update the new hash value (see `newHash`)
-          //
-          // This is not necessary in the top level because the resulting hash in that case is already computed. It is
-          // the hash of the right HashMap
-          if (shift == 0 && (left eq right)) {
-            right
-          } else left match {
-            case leftBm: BitmapIndexedMapNode[K, V] =>
-              // if we go through the merge and the result does not differ from `right`, we can just return `right`, to improve sharing
-              var anyChangesMadeSoFar = false
-
-              right match {
-                case rightBm: BitmapIndexedMapNode[K, V1] =>
-                  val allMap = leftBm.dataMap | rightBm.dataMap | leftBm.nodeMap | rightBm.nodeMap
-
-                  // minimumIndex is inclusive -- it is the first index for which there is data or nodes
-                  val minimumBitPos: Int = Node.bitposFrom(Integer.numberOfTrailingZeros(allMap))
-                  // maximumIndex is inclusive -- it is the last index for which there is data or nodes
-                  // it could not be exclusive, because then upper bound in worst case (32) would be out-of-bound of int
-                  // bitposition representation
-                  val maximumBitPos: Int = Node.bitposFrom(Node.BranchingFactor - Integer.numberOfLeadingZeros(allMap) - 1)
-
-                  var leftNodeRightNode = 0
-                  var leftDataRightNode = 0
-                  var leftNodeRightData = 0
-                  var leftDataOnly = 0
-                  var rightDataOnly = 0
-                  var leftNodeOnly = 0
-                  var rightNodeOnly = 0
-                  var leftDataRightDataMigrateToNode = 0
-                  var leftDataRightDataRightOverwrites = 0
-
-                  var dataToNodeMigrationTargets = 0
-
-                  {
-                    var bitpos = minimumBitPos
-                    var leftIdx = 0
-                    var rightIdx = 0
-                    var finished = false
-
-                    while (!finished) {
-
-                      if ((bitpos & leftBm.dataMap) != 0) {
-                        if ((bitpos & rightBm.dataMap) != 0) {
-                          if (leftBm.getKey(leftIdx) == rightBm.getKey(rightIdx)) {
-                            leftDataRightDataRightOverwrites |= bitpos
-                          } else {
-                            leftDataRightDataMigrateToNode |= bitpos
-                            dataToNodeMigrationTargets |= Node.bitposFrom(Node.maskFrom(improve(leftBm.getHash(leftIdx)), shift))
-                          }
-                          rightIdx += 1
-                        } else if ((bitpos & rightBm.nodeMap) != 0) {
-                          leftDataRightNode |= bitpos
-                        } else {
-                          leftDataOnly |= bitpos
-                        }
-                        leftIdx += 1
-                      } else if ((bitpos & leftBm.nodeMap) != 0) {
-                        if ((bitpos & rightBm.dataMap) != 0) {
-                          leftNodeRightData |= bitpos
-                          rightIdx += 1
-                        } else if ((bitpos & rightBm.nodeMap) != 0) {
-                          leftNodeRightNode |= bitpos
-                        } else {
-                          leftNodeOnly |= bitpos
-                        }
-                      } else if ((bitpos & rightBm.dataMap) != 0) {
-                        rightDataOnly |= bitpos
-                        rightIdx += 1
-                      } else if ((bitpos & rightBm.nodeMap) != 0) {
-                        rightNodeOnly |= bitpos
-                      }
-
-                      if (bitpos == maximumBitPos) {
-                        finished = true
-                      } else {
-                        bitpos = bitpos << 1
-                      }
-                    }
-                  }
-
-
-                  val newDataMap = leftDataOnly | rightDataOnly | leftDataRightDataRightOverwrites
-
-                  val newNodeMap =
-                    leftNodeRightNode |
-                      leftDataRightNode |
-                      leftNodeRightData |
-                      leftNodeOnly |
-                      rightNodeOnly |
-                      dataToNodeMigrationTargets
-
-                  val newDataSize = bitCount(newDataMap)
-                  val newContentSize = (MapNode.TupleLength * newDataSize) + bitCount(newNodeMap)
-
-                  val result = new BitmapIndexedMapNode[K, V1](
-                    dataMap = newDataMap,
-                    nodeMap = newNodeMap,
-                    content = new Array[Any](newContentSize),
-                    originalHashes = new Array[Int](newDataSize),
-                    size = 0
-                  )
-
-                  {
-                    var leftDataIdx = 0
-                    var rightDataIdx = 0
-                    var leftNodeIdx = 0
-                    var rightNodeIdx = 0
-
-                    val nextShift = shift + Node.BitPartitionSize
-
-                    var compressedDataIdx = 0
-                    var compressedNodeIdx = 0
-
-                    var bitpos = minimumBitPos
-                    var finished = false
-
-                    while (!finished) {
-
-                      if ((bitpos & leftNodeRightNode) != 0) {
-                        val rightNode = rightBm.getNode(rightNodeIdx)
-                        val newNode = concat(leftBm.getNode(leftNodeIdx), rightNode, nextShift)
-                        if (rightNode ne newNode) {
-                          anyChangesMadeSoFar = true
-                        }
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        rightNodeIdx += 1
-                        leftNodeIdx += 1
-                        result.size += newNode.size
-
-                      } else if ((bitpos & leftDataRightNode) != 0) {
-                        val newNode = {
-                          val n = rightBm.getNode(rightNodeIdx)
-                          val leftKey = leftBm.getKey(leftDataIdx)
-                          val leftValue = leftBm.getValue(leftDataIdx)
-                          val leftOriginalHash = leftBm.getHash(leftDataIdx)
-                          val leftImproved = improve(leftOriginalHash)
-
-                          // TODO: Implement MapNode#updatedIfNotContains
-                          val updated = if (n.containsKey(leftKey, leftOriginalHash, leftImproved, nextShift)) {
-                            newHash -= leftImproved
-                            n
-                          } else {
-                            n.updated(leftKey, leftValue, leftOriginalHash, leftImproved, nextShift)
-                          }
-
-                          if (updated ne n) {
-                            anyChangesMadeSoFar = true
-                          }
-
-                          updated
-                        }
-
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        rightNodeIdx += 1
-                        leftDataIdx += 1
-                        result.size += newNode.size
-                      }
-                      else if ((bitpos & leftNodeRightData) != 0) {
-                        anyChangesMadeSoFar = true
-                        val newNode = {
-                          val n = leftBm.getNode(leftNodeIdx)
-                          val rightKey = rightBm.getKey(rightDataIdx)
-                          val rightValue = rightBm.getValue(rightDataIdx)
-                          val rightOriginalHash = rightBm.getHash(rightDataIdx)
-                          val rightImproved = improve(rightOriginalHash)
-
-                          val updated = n.updated(rightKey, rightValue, rightOriginalHash, rightImproved, nextShift)
-
-                          if (updated.size == n.size) {
-                            newHash -= rightImproved
-                          }
-
-                          updated
-                        }
-
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        leftNodeIdx += 1
-                        rightDataIdx += 1
-                        result.size += newNode.size
-
-                      } else if ((bitpos & leftDataOnly) != 0) {
-                        anyChangesMadeSoFar = true
-                        result.content(MapNode.TupleLength * compressedDataIdx) =
-                          leftBm.getKey(leftDataIdx).asInstanceOf[AnyRef]
-                        result.content(MapNode.TupleLength * compressedDataIdx + 1) =
-                          leftBm.getValue(leftDataIdx).asInstanceOf[AnyRef]
-                        result.originalHashes(compressedDataIdx) = leftBm.originalHashes(leftDataIdx)
-
-                        compressedDataIdx += 1
-                        leftDataIdx += 1
-                        result.size += 1
-                      } else if ((bitpos & rightDataOnly) != 0) {
-                        result.content(MapNode.TupleLength * compressedDataIdx) =
-                          rightBm.getKey(rightDataIdx).asInstanceOf[AnyRef]
-                        result.content(MapNode.TupleLength * compressedDataIdx + 1) =
-                          rightBm.getValue(rightDataIdx).asInstanceOf[AnyRef]
-                        result.originalHashes(compressedDataIdx) = rightBm.originalHashes(rightDataIdx)
-
-                        compressedDataIdx += 1
-                        rightDataIdx += 1
-                        result.size += 1
-                      } else if ((bitpos & leftNodeOnly) != 0) {
-                        anyChangesMadeSoFar = true
-                        val newNode = leftBm.getNode(leftNodeIdx)
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        leftNodeIdx += 1
-                        result.size += newNode.size
-                      } else if ((bitpos & rightNodeOnly) != 0) {
-                        val newNode = rightBm.getNode(rightNodeIdx)
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        rightNodeIdx += 1
-                        result.size += newNode.size
-                      } else if ((bitpos & leftDataRightDataMigrateToNode) != 0) {
-                        anyChangesMadeSoFar = true
-                        val newNode = {
-                          val leftOriginalHash = leftBm.getHash(leftDataIdx)
-                          val rightOriginalHash = rightBm.getHash(rightDataIdx)
-
-                          rightBm.mergeTwoKeyValPairs(
-                            leftBm.getKey(leftDataIdx), leftBm.getValue(leftDataIdx), leftOriginalHash, improve(leftOriginalHash),
-                            rightBm.getKey(rightDataIdx), rightBm.getValue(rightDataIdx), rightOriginalHash, improve(rightOriginalHash),
-                            nextShift
-                          )
-                        }
-
-                        result.content(newContentSize - compressedNodeIdx - 1) = newNode
-                        compressedNodeIdx += 1
-                        leftDataIdx += 1
-                        rightDataIdx += 1
-                        result.size += newNode.size
-                      } else if ((bitpos & leftDataRightDataRightOverwrites) != 0) {
-                        result.content(MapNode.TupleLength * compressedDataIdx) =
-                          rightBm.getKey(rightDataIdx).asInstanceOf[AnyRef]
-                        result.content(MapNode.TupleLength * compressedDataIdx + 1) =
-                          rightBm.getValue(rightDataIdx).asInstanceOf[AnyRef]
-                        result.originalHashes(compressedDataIdx) = rightBm.originalHashes(rightDataIdx)
-
-                        compressedDataIdx += 1
-                        rightDataIdx += 1
-                        result.size += 1
-
-                        newHash -= improve(leftBm.getHash(leftDataIdx))
-                        leftDataIdx += 1
-                      }
-
-                      if (bitpos == maximumBitPos) {
-                        finished = true
-                      } else {
-                        bitpos = bitpos << 1
-                      }
-                    }
-                  }
-
-                  if (anyChangesMadeSoFar) result else right
-
-                case rightHc: HashCollisionMapNode[K, V1] =>
-                  // should never happen -- hash collisions are never at the same level as bitmapIndexedMapNodes
-                  var current: MapNode[K, V1] = leftBm
-                  rightHc.content.foreach { case (k, v) =>
-                    current = current.updated(k, v, rightHc.originalHash, rightHc.hash, shift)
-                  }
-                  current
-              }
-            case leftHc: HashCollisionMapNode[K, V] => right match {
-              case rightBm: BitmapIndexedMapNode[K, V1] =>
-                // should never happen -- hash collisions are never at the same level as bitmapIndexedMapNodes
-                var current: MapNode[K, V1] = rightBm
-                leftHc.content.foreach { case (k, v) =>
-                  current = current.updated(k, v, leftHc.originalHash, leftHc.hash, shift)
-                }
-                current
-              case rightHc: HashCollisionMapNode[K, V1] =>
-                var result: MapNode[K, V1] = leftHc
-                var i = 0
-                val improved = improve(leftHc.originalHash)
-                while (i < leftHc.size) {
-                  result = result.updated(rightHc.getKey(i), rightHc.getValue(i), rightHc.originalHash, improved, shift)
-                  i += 1
-                }
-                result
-            }
-          }
-        }
-
-        val newRootNode = concat(rootNode, hm.rootNode, 0)
-        if (newRootNode eq rootNode) this else new HashMap(newRootNode, newHash)
-      case _ =>
-        slowConcat
-    }
+  override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = that match {
+    case hm: HashMap[K, V1] =>
+      if (this eq that.asInstanceOf[AnyRef]) {
+        this
+      } else {
+        val newRootNode = rootNode.concat(hm.rootNode, 0)
+        if (newRootNode eq rootNode) this else new HashMap(newRootNode)
+      }
+    case _ =>
+      mapFactory.newBuilder[K, V1].addAll(this).addAll(that).result()
   }
 
 
@@ -451,11 +136,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def equals(that: Any): Boolean =
     that match {
-      case map: HashMap[K, V] =>
-        (this eq map) ||
-          (this.size == map.size) &&
-            (this.cachedJavaKeySetHashCode == map.cachedJavaKeySetHashCode) &&
-            (this.rootNode == map.rootNode)
+      case map: HashMap[K, V] => (this eq map) || (this.rootNode == map.rootNode)
       case _ => super.equals(that)
     }
 
@@ -484,7 +165,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   override def transform[W](f: (K, V) => W) = {
     val transformed = rootNode.transform(f)
     if (transformed eq rootNode) this.asInstanceOf[HashMap[K, W]]
-    else new HashMap(transformed, cachedJavaKeySetHashCode)
+    else new HashMap(transformed)
   }
 
   override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean): HashMap[K, V] = {
@@ -584,7 +265,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
 private[immutable] object MapNode {
 
-  private final val EmptyMapNode = new BitmapIndexedMapNode(0, 0, Array.empty, Array.empty, 0)
+  private final val EmptyMapNode = new BitmapIndexedMapNode(0, 0, Array.empty, Array.empty, 0, 0)
 
   def empty[K, V]: MapNode[K, V] =
     EmptyMapNode.asInstanceOf[MapNode[K, V]]
@@ -596,7 +277,9 @@ private[immutable] object MapNode {
 
 private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] {
   def apply(key: K, originalHash: Int, hash: Int, shift: Int): V
+
   def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V]
+
   def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1
 
   def containsKey(key: K, originalHash: Int, hash: Int, shift: Int): Boolean
@@ -630,6 +313,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def transform[W](f: (K, V) => W): MapNode[K, W]
 
   def copy(): MapNode[K, V]
+
+  def concat[V1 >: V](that: MapNode[K, V1], shift: Int): MapNode[K, V1]
 }
 
 private final class BitmapIndexedMapNode[K, +V](
@@ -637,7 +322,8 @@ private final class BitmapIndexedMapNode[K, +V](
   var nodeMap: Int,
   var content: Array[Any],
   var originalHashes: Array[Int],
-  var size: Int) extends MapNode[K, V] {
+  var size: Int,
+  var cachedJavaKeySetHashCode: Int) extends MapNode[K, V] {
 
   releaseFence()
 
@@ -766,7 +452,7 @@ private final class BitmapIndexedMapNode[K, +V](
         val key0Hash = improve(key0UnimprovedHash)
 
         val subNodeNew = mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
-        return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
+        return copyAndMigrateFromInlineToNode(bitpos, key0Hash, subNodeNew)
       }
     }
 
@@ -801,11 +487,11 @@ private final class BitmapIndexedMapNode[K, +V](
            */
           val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(keyHash, 0))
           if (index == 0)
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)), Array(originalHashes(1)), 1)
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(1), getValue(1)), Array(originalHashes(1)), 1, improve(getHash(1)))
           else
-            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)), Array(originalHashes(0)), 1)
+            return new BitmapIndexedMapNode[K, V1](newDataMap, 0, Array(getKey(0), getValue(0)), Array(originalHashes(0)), 1, improve(getHash(0)))
         }
-        else return copyAndRemoveValue(bitpos)
+        else return copyAndRemoveValue(bitpos, keyHash)
       } else return this
     }
 
@@ -843,21 +529,22 @@ private final class BitmapIndexedMapNode[K, +V](
     } else {
       val mask0 = maskFrom(keyHash0, shift)
       val mask1 = maskFrom(keyHash1, shift)
+      val newCachedHash = keyHash0 + keyHash1
 
       if (mask0 != mask1) {
         // unique prefixes, payload fits on same level
         val dataMap = bitposFrom(mask0) | bitposFrom(mask1)
 
         if (mask0 < mask1) {
-          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key0, value0, key1, value1), Array(originalHash0, originalHash1), 2)
+          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key0, value0, key1, value1), Array(originalHash0, originalHash1), 2, newCachedHash)
         } else {
-          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key1, value1, key0, value0), Array(originalHash1, originalHash0), 2)
+          new BitmapIndexedMapNode[K, V1](dataMap, 0, Array(key1, value1, key0, value0), Array(originalHash1, originalHash0), 2, newCachedHash)
         }
       } else {
         // identical prefixes, payload must be disambiguated deeper in the trie
         val nodeMap = bitposFrom(mask0)
         val node = mergeTwoKeyValPairs(key0, value0, originalHash0, keyHash0, key1, value1, originalHash1, keyHash1, shift + BitPartitionSize)
-        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node), Array(), node.size)
+        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node), Array(), node.size, node.cachedJavaKeySetHashCode)
       }
     }
   }
@@ -892,7 +579,7 @@ private final class BitmapIndexedMapNode[K, +V](
     arraycopy(src, 0, dst, 0, src.length)
     dst(idx) = newKey
     dst(idx + 1) = newValue
-    new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, originalHashes, size)
+    new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, originalHashes, size, cachedJavaKeySetHashCode)
   }
 
   def copyAndSetNode[V1 >: V](bitpos: Int, oldNode: MapNode[K, V1], newNode: MapNode[K, V1]): MapNode[K, V1] = {
@@ -904,7 +591,14 @@ private final class BitmapIndexedMapNode[K, +V](
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
     dst(idx) = newNode
-    new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, originalHashes, size - oldNode.size + newNode.size)
+    new BitmapIndexedMapNode[K, V1](
+      dataMap,
+      nodeMap,
+      dst,
+      originalHashes,
+      size - oldNode.size + newNode.size,
+      cachedJavaKeySetHashCode - oldNode.cachedJavaKeySetHashCode + newNode.cachedJavaKeySetHashCode
+    )
   }
 
   def copyAndInsertValue[V1 >: V](bitpos: Int, key: K, originalHash: Int, keyHash: Int, value: V1): BitmapIndexedMapNode[K, V1] = {
@@ -922,10 +616,10 @@ private final class BitmapIndexedMapNode[K, +V](
 
     val dstHashes = insertElement(originalHashes, dataIx, originalHash)
 
-    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap, dst, dstHashes, size + 1)
+    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap, dst, dstHashes, size + 1, cachedJavaKeySetHashCode + keyHash)
   }
 
-  def copyAndRemoveValue(bitpos: Int): BitmapIndexedMapNode[K, V] = {
+  def copyAndRemoveValue(bitpos: Int, keyHash: Int): BitmapIndexedMapNode[K, V] = {
     val dataIx = dataIndex(bitpos)
     val idx = TupleLength * dataIx
 
@@ -938,10 +632,10 @@ private final class BitmapIndexedMapNode[K, +V](
 
     val dstHashes = removeElement(originalHashes, dataIx)
 
-    new BitmapIndexedMapNode[K, V](dataMap ^ bitpos, nodeMap, dst, dstHashes, size - 1)
+    new BitmapIndexedMapNode[K, V](dataMap ^ bitpos, nodeMap, dst, dstHashes, size - 1, cachedJavaKeySetHashCode - keyHash)
   }
 
-  def copyAndMigrateFromInlineToNode[V1 >: V](bitpos: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
+  def copyAndMigrateFromInlineToNode[V1 >: V](bitpos: Int, keyHash: Int, node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
     val dataIx = dataIndex(bitpos)
     val idxOld = TupleLength * dataIx
     val idxNew = this.content.length - TupleLength - nodeIndex(bitpos)
@@ -959,7 +653,14 @@ private final class BitmapIndexedMapNode[K, +V](
 
     val dstHashes = removeElement(originalHashes, dataIx)
 
-    new BitmapIndexedMapNode[K, V1](dataMap ^ bitpos, nodeMap | bitpos, dst, dstHashes, size - 1 + node.size)
+    new BitmapIndexedMapNode[K, V1](
+      dataMap = dataMap ^ bitpos,
+      nodeMap = nodeMap | bitpos,
+      content = dst,
+      originalHashes = dstHashes,
+      size = size - 1 + node.size,
+      cachedJavaKeySetHashCode = cachedJavaKeySetHashCode - keyHash + node.cachedJavaKeySetHashCode
+    )
   }
 
   def copyAndMigrateFromNodeToInline[V1 >: V](bitpos: Int, originalHash: Int, keyHash: Int, oldNode: MapNode[K, V1], node: MapNode[K, V1]): BitmapIndexedMapNode[K, V1] = {
@@ -982,7 +683,14 @@ private final class BitmapIndexedMapNode[K, +V](
     arraycopy(src, idxOld + 1, dst, idxOld + TupleLength, src.length - idxOld - 1)
     val hash = node.getHash(0)
     val dstHashes = insertElement(originalHashes, dataIxNew, hash)
-    new BitmapIndexedMapNode[K, V1](dataMap | bitpos, nodeMap ^ bitpos, dst, dstHashes, size - oldNode.size + 1)
+    new BitmapIndexedMapNode[K, V1](
+      dataMap = dataMap | bitpos,
+      nodeMap = nodeMap ^ bitpos,
+      content = dst,
+      originalHashes = dstHashes,
+      size = size - oldNode.size + 1,
+      cachedJavaKeySetHashCode = cachedJavaKeySetHashCode - oldNode.cachedJavaKeySetHashCode + node.cachedJavaKeySetHashCode
+    )
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
@@ -1034,13 +742,14 @@ private final class BitmapIndexedMapNode[K, +V](
       j += 1
     }
     if (newContent eq null) this.asInstanceOf[BitmapIndexedMapNode[K, W]]
-    else new BitmapIndexedMapNode[K, W](dataMap, nodeMap, newContent, originalHashes, size)
+    else new BitmapIndexedMapNode[K, W](dataMap, nodeMap, newContent, originalHashes, size, cachedJavaKeySetHashCode)
   }
 
   override def equals(that: Any): Boolean =
     that match {
       case node: BitmapIndexedMapNode[K, V] =>
         (this eq node) ||
+          (this.cachedJavaKeySetHashCode == node.cachedJavaKeySetHashCode) &&
           (this.nodeMap == node.nodeMap) &&
             (this.dataMap == node.dataMap) &&
               (this.size == node.size) &&
@@ -1068,6 +777,277 @@ private final class BitmapIndexedMapNode[K, +V](
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
+  override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): MapNode[K, V1] = that match {
+    case bm: BitmapIndexedMapNode[K, V] if bm eq this => this
+    case bm: BitmapIndexedMapNode[K, V] =>
+      // if we go through the merge and the result does not differ from `bm`, we can just return `bm`, to improve sharing
+      // So, `anyChangesMadeSoFar` will be set to `true` as soon as we encounter a difference between the
+      // currently-being-computed result, and `bm`
+      var anyChangesMadeSoFar = false
+
+      val allMap = dataMap | bm.dataMap | nodeMap | bm.nodeMap
+
+      // minimumIndex is inclusive -- it is the first index for which there is data or nodes
+      val minimumBitPos: Int = Node.bitposFrom(Integer.numberOfTrailingZeros(allMap))
+      // maximumIndex is inclusive -- it is the last index for which there is data or nodes
+      // it could not be exclusive, because then upper bound in worst case (32) would be out-of-bound of int
+      // bitposition representation
+      val maximumBitPos: Int = Node.bitposFrom(Node.BranchingFactor - Integer.numberOfLeadingZeros(allMap) - 1)
+
+      var leftNodeRightNode = 0
+      var leftDataRightNode = 0
+      var leftNodeRightData = 0
+      var leftDataOnly = 0
+      var rightDataOnly = 0
+      var leftNodeOnly = 0
+      var rightNodeOnly = 0
+      var leftDataRightDataMigrateToNode = 0
+      var leftDataRightDataRightOverwrites = 0
+
+      var dataToNodeMigrationTargets = 0
+
+      {
+        var bitpos = minimumBitPos
+        var leftIdx = 0
+        var rightIdx = 0
+        var finished = false
+
+        while (!finished) {
+
+          if ((bitpos & dataMap) != 0) {
+            if ((bitpos & bm.dataMap) != 0) {
+              if (getKey(leftIdx) == bm.getKey(rightIdx)) {
+                leftDataRightDataRightOverwrites |= bitpos
+              } else {
+                leftDataRightDataMigrateToNode |= bitpos
+                dataToNodeMigrationTargets |= Node.bitposFrom(Node.maskFrom(improve(getHash(leftIdx)), shift))
+              }
+              rightIdx += 1
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              leftDataRightNode |= bitpos
+            } else {
+              leftDataOnly |= bitpos
+            }
+            leftIdx += 1
+          } else if ((bitpos & nodeMap) != 0) {
+            if ((bitpos & bm.dataMap) != 0) {
+              leftNodeRightData |= bitpos
+              rightIdx += 1
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              leftNodeRightNode |= bitpos
+            } else {
+              leftNodeOnly |= bitpos
+            }
+          } else if ((bitpos & bm.dataMap) != 0) {
+            rightDataOnly |= bitpos
+            rightIdx += 1
+          } else if ((bitpos & bm.nodeMap) != 0) {
+            rightNodeOnly |= bitpos
+          }
+
+          if (bitpos == maximumBitPos) {
+            finished = true
+          } else {
+            bitpos = bitpos << 1
+          }
+        }
+      }
+
+
+      val newDataMap = leftDataOnly | rightDataOnly | leftDataRightDataRightOverwrites
+
+      val newNodeMap =
+        leftNodeRightNode |
+          leftDataRightNode |
+          leftNodeRightData |
+          leftNodeOnly |
+          rightNodeOnly |
+          dataToNodeMigrationTargets
+
+
+      if ((newDataMap == (rightDataOnly | leftDataRightDataRightOverwrites)) && (newNodeMap == rightNodeOnly)) {
+        // nothing from `this` will make it into the result -- return early
+        return bm
+      }
+
+      val newDataSize = bitCount(newDataMap)
+      val newContentSize = (MapNode.TupleLength * newDataSize) + bitCount(newNodeMap)
+
+      val newContent = new Array[Any](newContentSize)
+      val newOriginalHashes = new Array[Int](newDataSize)
+      var newSize = 0
+      var newCachedHashCode = 0
+
+      {
+        var leftDataIdx = 0
+        var rightDataIdx = 0
+        var leftNodeIdx = 0
+        var rightNodeIdx = 0
+
+        val nextShift = shift + Node.BitPartitionSize
+
+        var compressedDataIdx = 0
+        var compressedNodeIdx = 0
+
+        var bitpos = minimumBitPos
+        var finished = false
+
+        while (!finished) {
+
+          if ((bitpos & leftNodeRightNode) != 0) {
+            val rightNode = bm.getNode(rightNodeIdx)
+            val newNode = getNode(leftNodeIdx).concat(rightNode, nextShift)
+            if (rightNode ne newNode) {
+              anyChangesMadeSoFar = true
+            }
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            leftNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+
+          } else if ((bitpos & leftDataRightNode) != 0) {
+            val newNode = {
+              val n = bm.getNode(rightNodeIdx)
+              val leftKey = getKey(leftDataIdx)
+              val leftValue = getValue(leftDataIdx)
+              val leftOriginalHash = getHash(leftDataIdx)
+              val leftImproved = improve(leftOriginalHash)
+
+              // TODO: Implement MapNode#updatedIfNotContains
+              val updated = if (n.containsKey(leftKey, leftOriginalHash, leftImproved, nextShift)) {
+                n
+              } else {
+                n.updated(leftKey, leftValue, leftOriginalHash, leftImproved, nextShift)
+              }
+
+              if (updated ne n) {
+                anyChangesMadeSoFar = true
+              }
+
+              updated
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            leftDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          }
+          else if ((bitpos & leftNodeRightData) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = {
+              val rightOriginalHash = bm.getHash(rightDataIdx)
+              getNode(leftNodeIdx).updated(
+                key = bm.getKey(rightDataIdx),
+                value = bm.getValue(rightDataIdx),
+                originalHash = bm.getHash(rightDataIdx),
+                hash = improve(rightOriginalHash),
+                shift = nextShift
+              )
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftNodeIdx += 1
+            rightDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+
+          } else if ((bitpos & leftDataOnly) != 0) {
+            anyChangesMadeSoFar = true
+            val originalHash = originalHashes(leftDataIdx)
+            newContent(MapNode.TupleLength * compressedDataIdx) = getKey(leftDataIdx).asInstanceOf[AnyRef]
+            newContent(MapNode.TupleLength * compressedDataIdx + 1) = getValue(leftDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            leftDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+          } else if ((bitpos & rightDataOnly) != 0) {
+            val originalHash = bm.originalHashes(rightDataIdx)
+            newContent(MapNode.TupleLength * compressedDataIdx) = bm.getKey(rightDataIdx).asInstanceOf[AnyRef]
+            newContent(MapNode.TupleLength * compressedDataIdx + 1) = bm.getValue(rightDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            rightDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+          } else if ((bitpos & leftNodeOnly) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = getNode(leftNodeIdx)
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & rightNodeOnly) != 0) {
+            val newNode = bm.getNode(rightNodeIdx)
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & leftDataRightDataMigrateToNode) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = {
+              val leftOriginalHash = getHash(leftDataIdx)
+              val rightOriginalHash = bm.getHash(rightDataIdx)
+
+              bm.mergeTwoKeyValPairs(
+                getKey(leftDataIdx), getValue(leftDataIdx), leftOriginalHash, improve(leftOriginalHash),
+                bm.getKey(rightDataIdx), bm.getValue(rightDataIdx), rightOriginalHash, improve(rightOriginalHash),
+                nextShift
+              )
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftDataIdx += 1
+            rightDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & leftDataRightDataRightOverwrites) != 0) {
+            val originalHash = bm.originalHashes(rightDataIdx)
+            newContent(MapNode.TupleLength * compressedDataIdx) = bm.getKey(rightDataIdx).asInstanceOf[AnyRef]
+            newContent(MapNode.TupleLength * compressedDataIdx + 1) = bm.getValue(rightDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            rightDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+            leftDataIdx += 1
+          }
+
+          if (bitpos == maximumBitPos) {
+            finished = true
+          } else {
+            bitpos = bitpos << 1
+          }
+        }
+      }
+
+      if (anyChangesMadeSoFar)
+        new BitmapIndexedMapNode(
+          dataMap = newDataMap,
+          nodeMap = newNodeMap,
+          content = newContent,
+          originalHashes = newOriginalHashes,
+          size = newSize,
+          cachedJavaKeySetHashCode = newCachedHashCode
+        )
+      else bm
+
+    case _ =>
+      // should never happen -- hash collisions are never at the same level as bitmapIndexedMapNodes
+      throw new UnsupportedOperationException("Cannot concatenate a HashCollisionMapNode with a BitmapIndexedMapNode")
+  }
+
   override def copy(): BitmapIndexedMapNode[K, V] = {
     val contentClone = new Array[Any](content.length)
     val dataIndices = bitCount(dataMap) * TupleLength
@@ -1077,7 +1057,7 @@ private final class BitmapIndexedMapNode[K, +V](
       contentClone(i) = content(i).asInstanceOf[MapNode[K, V]].copy()
       i += 1
     }
-    new BitmapIndexedMapNode[K, V](dataMap, nodeMap, contentClone, originalHashes.clone(), size)
+    new BitmapIndexedMapNode[K, V](dataMap, nodeMap, contentClone, originalHashes.clone(), size, cachedJavaKeySetHashCode)
   }
 }
 
@@ -1155,7 +1135,7 @@ private final class HashCollisionMapNode[K, +V ](
       updatedContent.size match {
         case 1 =>
           val (k, v) = updatedContent(0)
-          new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, Array(k, v), Array(originalHash), 1)
+          new BitmapIndexedMapNode[K, V1](bitposFrom(maskFrom(hash, 0)), 0, Array(k, v), Array(originalHash), 1, hash)
         case _ => new HashCollisionMapNode[K, V1](originalHash, hash, updatedContent)
       }
     }
@@ -1216,10 +1196,36 @@ private final class HashCollisionMapNode[K, +V ](
       case _ => false
     }
 
+  override def concat[V1 >: V](that: MapNode[K, V1], shift: Int) = that match {
+    case hc: HashCollisionMapNode[K, V1] =>
+      if (hc eq this) {
+        this
+      } else {
+        var newContent: VectorBuilder[(K, V1)] = null
+        val iter = content.iterator
+        while (iter.hasNext) {
+          val nextPayload = iter.next()
+          if (hc.indexOf(nextPayload._1) < 0) {
+            if (newContent eq null) {
+              newContent = new VectorBuilder[(K, V1)]()
+              newContent.addAll(hc.content)
+            }
+            newContent.addOne(nextPayload)
+          }
+        }
+        if (newContent eq null) hc else new HashCollisionMapNode(originalHash, hash, newContent.result())
+      }
+    case _: BitmapIndexedMapNode[K, V1] =>
+      // should never happen -- hash collisions are never at the same level as bitmapIndexedMapNodes
+      throw new UnsupportedOperationException("Cannot concatenate a HashCollisionMapNode with a BitmapIndexedMapNode")
+  }
+
   override def copy(): HashCollisionMapNode[K, V] = new HashCollisionMapNode[K, V](originalHash, hash, content)
 
   override def hashCode(): Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
+
+  override def cachedJavaKeySetHashCode: Int = size * hash
 
 }
 
@@ -1313,10 +1319,10 @@ private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
 @SerialVersionUID(3L)
 object HashMap extends MapFactory[HashMap] {
 
-  private[HashMap] def apply[K, V](rootNode: MapNode[K, V], cachedJavaHashCode: Int) =
-    new HashMap[K, V](rootNode, cachedJavaHashCode)
+  private[HashMap] def apply[K, V](rootNode: MapNode[K, V]) =
+    new HashMap[K, V](rootNode)
 
-  private final val EmptyMap = new HashMap(MapNode.empty, 0)
+  private final val EmptyMap = new HashMap(MapNode.empty)
 
   def empty[K, V]: HashMap[K, V] =
     EmptyMap.asInstanceOf[HashMap[K, V]]
@@ -1335,7 +1341,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
   import Node._
   import MapNode._
 
-  private def newEmptyRootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0)
+  private def newEmptyRootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0, 0)
 
   /** The last given out HashMap as a return value of `result()`, if any, otherwise null.
     * Indicates that on next add, the elements should be copied to an identical structure, before continuing
@@ -1346,9 +1352,6 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
 
   /** The root node of the partially build hashmap */
   private var rootNode: MapNode[K, V] = newEmptyRootNode
-
-  /** The cached hash of the partially-built hashmap */
-  private var hash: Int = 0
 
   /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
   private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
@@ -1381,6 +1384,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     bm.content = dst
     bm.originalHashes = dstHashes
     bm.size += 1
+    bm.cachedJavaKeySetHashCode += keyHash
   }
 
   /** Removes element at index `ix` from array `as`, shifting the trailing elements right */
@@ -1394,7 +1398,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
   }
 
   /** Mutates `bm` to replace inline data at bit position `bitpos` with node `node` */
-  private def migrateFromInlineToNode(bm: BitmapIndexedMapNode[K, V], bitpos: Int, node: MapNode[K, V]): Unit = {
+  private def migrateFromInlineToNode(bm: BitmapIndexedMapNode[K, V], keyHash: Int, bitpos: Int, node: MapNode[K, V]): Unit = {
     val dataIx = bm.dataIndex(bitpos)
     val idxOld = TupleLength * dataIx
     val idxNew = bm.content.length - TupleLength - bm.nodeIndex(bitpos)
@@ -1417,6 +1421,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     bm.content = dst
     bm.originalHashes = dstHashes
     bm.size = bm.size - 1 + node.size
+    bm.cachedJavaKeySetHashCode += node.cachedJavaKeySetHashCode - keyHash
   }
 
   /** Mutates `bm` to replace inline data at bit position `bitpos` with updated key/value */
@@ -1447,24 +1452,23 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
             val subNodeNew: MapNode[K, V] =
               bm.mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, value, originalHash, keyHash, shift + BitPartitionSize)
 
-            hash += keyHash
-            migrateFromInlineToNode(bm, bitpos, subNodeNew)
+            migrateFromInlineToNode(bm, key0Hash, bitpos, subNodeNew)
           }
 
         } else if ((bm.nodeMap & bitpos) != 0) {
           val index = indexFrom(bm.nodeMap, mask, bitpos)
           val subNode = bm.getNode(index)
           val beforeSize = subNode.size
+          val beforeHash = subNode.cachedJavaKeySetHashCode
           update(subNode, key, value, originalHash, keyHash, shift + BitPartitionSize)
           bm.size += subNode.size - beforeSize
+          bm.cachedJavaKeySetHashCode += subNode.cachedJavaKeySetHashCode - beforeHash
         } else {
           insertValue(bm, bitpos, key, originalHash, keyHash, value)
-          hash += keyHash
         }
       case hc: HashCollisionMapNode[K, V] =>
         val index = hc.indexOf(key)
         if (index < 0) {
-          hash += keyHash
           hc.content = hc.content.appended((key, value))
         } else {
           hc.content = hc.content.updated(index, (key, value))
@@ -1489,7 +1493,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     } else if (aliased != null) {
       aliased
     } else {
-      aliased = new HashMap(rootNode, hash)
+      aliased = new HashMap(rootNode)
       releaseFence()
       aliased
     }
@@ -1540,7 +1544,6 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
     if (rootNode.size > 0) {
       rootNode = newEmptyRootNode
     }
-    hash = 0
   }
 
   private[collection] def size: Int = rootNode.size

@@ -4,10 +4,12 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 import org.scalacheck._
 
+import scala.collection.Hashing
+
 object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
 
-  type K = String
-  type V = String
+  type K = Int
+  type V = Int
   type T = (K, V)
 
   //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
@@ -129,9 +131,7 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
     xs.transform(f) == xs.map{ case (k, v) => (k, f(k, v)) }
   }
 
-  // Warning: This is not necessarily true if `V` is a primitive, because equality is checked
-  // by `eq`, which may not return `true` for boxed primitives that otherwise would be equal.
-  property("xs.transform((_, v) => v) eq xs") = forAll { xs: HashMap[K, V] =>
+  property("xs.transform((_, v) => v) eq xs") = forAll { xs: HashMap[K, String] =>
     xs.transform((_, v) => v) eq xs
   }
 
@@ -161,5 +161,14 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
       val merged = left.merged(right){ case (_, (k, _)) => k -> mergedValue }
 
       intersected.forall { case (k, _) => merged.get(k).contains(mergedValue) }
+    }
+
+  property("rootnode hashCode should be sum of key improved hashcodes") =
+    forAll { (seq: Seq[(K, V)]) =>
+      val distinct = seq.distinctBy(_._1)
+      val expectedHash = distinct.map(_._1.hashCode).map(Hashing.improve).sum
+      val b = HashMap.newBuilder[K, V]
+      distinct.foreach(b.addOne)
+      b.result().rootNode.cachedJavaKeySetHashCode == expectedHash
     }
 }

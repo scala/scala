@@ -230,7 +230,6 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
   private def assertSameEqHash(expected: HashSet[Any], actual: HashSet[Any]) = {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
-    assertEquals(expected.cachedJavaHashCode, actual.cachedJavaHashCode)
     assertEquals(expected.hashCode(), actual.hashCode())
   }
 
@@ -250,7 +249,7 @@ class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
     var set1 = set
     for (c <- cs) {
       set1 = set1 + c
-      assertEquals(set.cachedJavaHashCode, set1.cachedJavaHashCode)
+      assertEquals(set.rootNode.cachedJavaKeySetHashCode, set1.rootNode.cachedJavaKeySetHashCode)
       if (c.i % 41 == 0)
         assertEquals(set, set1)
     }

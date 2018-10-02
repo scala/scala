@@ -63,6 +63,8 @@ private[immutable] abstract class Node[T <: Node[T]] {
 
   def sizePredicate: Int
 
+  def cachedJavaKeySetHashCode: Int
+
   protected final def removeElement(as: Array[Int], ix: Int): Array[Int] = {
     if (ix < 0) throw new ArrayIndexOutOfBoundsException
     if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
