@@ -662,10 +662,18 @@ abstract class BTypes {
 
     def isInterface: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_INTERFACE) != 0)
 
-    def superClassesTransitive: Either[NoClassBTypeInfo, List[ClassBType]] = info.flatMap(i => i.superClass match {
-      case None => Right(Nil)
-      case Some(sc) =>  sc.superClassesTransitive.map(sc :: _)
-    })
+    /** The super class chain of this type, starting with Object, ending with `this`. */
+    def superClassesChain: Either[NoClassBTypeInfo, List[ClassBType]] = try {
+      var res = List(this)
+      var sc = info.orThrow.superClass
+      while (sc.nonEmpty) {
+        res ::= sc.get
+        sc = sc.get.info.orThrow.superClass
+      }
+      Right(res)
+    } catch {
+      case Invalid(noInfo: NoClassBTypeInfo) => Left(noInfo)
+    }
 
     /**
      * The prefix of the internal name until the last '/', or the empty string.
@@ -737,7 +745,7 @@ abstract class BTypes {
      * Background:
      *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-     *   https://github.com/scala/bug/issues/3872
+     *   https://github.com/scala/bug/issues/3872#issuecomment-292386375
      */
     def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
@@ -758,14 +766,7 @@ abstract class BTypes {
             if (this.isSubtypeOf(other).orThrow) other else ObjectRef
 
           case _ =>
-            // TODO @lry I don't really understand the reasoning here.
-            // Both this and other are classes. The code takes (transitively) all superclasses and
-            // finds the first common one.
-            // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
-            //  - https://github.com/scala/bug/issues/3872
-            // @jz Wouldn't it be better to walk the superclass chain of both types in reverse (starting from Object), and
-            //     finding the last common link? That would be O(N), whereas this looks O(N^2)
-            firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
+            firstCommonSuffix(superClassesChain.orThrow, other.superClassesChain.orThrow)
         }
 
         assert(isNotNullOrNothing(res), s"jvmWiseLUB computed: $res")
@@ -774,17 +775,16 @@ abstract class BTypes {
     }
 
     private def firstCommonSuffix(as: List[ClassBType], bs: List[ClassBType]): ClassBType = {
-      var chainA = as
-      var chainB = bs
-      var fcs: ClassBType = null
-      do {
-        if      (chainB contains chainA.head) fcs = chainA.head
-        else if (chainA contains chainB.head) fcs = chainB.head
-        else {
-          chainA = chainA.tail
-          chainB = chainB.tail
-        }
-      } while (fcs == null)
+      // assert(as.head == ObjectRef, as.head)
+      // assert(bs.head == ObjectRef, bs.head)
+      var chainA = as.tail
+      var chainB = bs.tail
+      var fcs = ObjectRef
+      while (chainA.nonEmpty && chainB.nonEmpty && chainA.head == chainB.head) {
+        fcs = chainA.head
+        chainA = chainA.tail
+        chainB = chainB.tail
+      }
       fcs
     }
   }
