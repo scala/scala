@@ -125,7 +125,7 @@ private[collection] trait Wrappers {
       }
       this
     }
-    def patchInPlace(from: Int, patch: scala.collection.Seq[A], replaced: Int): this.type = {
+    def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type = {
       remove(from, replaced)
       insertAll(from, patch)
       this

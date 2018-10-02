@@ -116,7 +116,7 @@ trait Buffer[A]
     remove(length - norm, norm)
   }
 
-  def patchInPlace(from: Int, patch: scala.collection.Seq[A], replaced: Int): this.type
+  def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type
 
   // +=, ++=, clear inherited from Growable
   // Per remark of @ichoran, we should preferably not have these:
@@ -189,16 +189,16 @@ trait IndexedBuffer[A] extends IndexedSeq[A]
     if (i == j) this else takeInPlace(j)
   }
 
-  def patchInPlace(from: Int, patch: scala.collection.Seq[A], replaced: Int): this.type = {
+  def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type = {
     val replaced0 = math.min(math.max(replaced, 0), length)
     val i = math.min(math.max(from, 0), length)
     var j = 0
-    val n = math.min(patch.length, replaced0)
-    while (j < n && i + j < length) {
-      update(i + j, patch(j))
+    val iter = patch.iterator
+    while (iter.hasNext && j < replaced0 && i + j < length) {
+      update(i + j, iter.next())
       j += 1
     }
-    if (j < patch.length) insertAll(i + j, patch.iterator.drop(j))
+    if (iter.hasNext) insertAll(i + j, iter)
     else if (j < replaced0) remove(i + j, math.min(replaced0 - j, length - i - j))
     this
   }
