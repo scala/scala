@@ -1,3 +1,5 @@
+import language.higherKinds
+
 object Test {
   class A[T[_]]
   object B extends A[List]
