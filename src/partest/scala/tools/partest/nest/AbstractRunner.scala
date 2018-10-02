@@ -214,7 +214,11 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         else if (miscTests.isEmpty && invalid.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all, unless there were invalid files specified
         else Nil
       )
-      val kindsTests = kinds flatMap testsFor
+      val kindsTests = kinds.flatMap { k =>
+        val (good, bad) = testsFor(k)
+        bad.foreach(baddie => echoWarning(s"Extraneous file: $baddie"))
+        good
+      }
 
       def testContributors = {
         List(
