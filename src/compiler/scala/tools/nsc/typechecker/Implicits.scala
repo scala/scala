@@ -566,39 +566,45 @@ trait Implicits {
      }
 
     private def matchesPtInst(info: ImplicitInfo): Boolean = {
-      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
-
       def isViewLike = pt match {
         case Function1(_, _) => true
         case _ => false
       }
 
-      info.tpe match {
-        case PolyType(tparams, restpe) =>
-          try {
-            val allUndetparams = (undetParams ++ tparams).distinct
-            val tvars = allUndetparams map freshVar
-            val tp = ApproximateDependentMap(restpe)
-            val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+      object tvarToHiBoundMap extends TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case tv@TypeVar(_, constr) if !constr.instValid =>
+            val upper = glb(constr.hiBounds)
+            if(tv.typeArgs.isEmpty) upper
+            else appliedType(upper, tv.typeArgs)
+          case _ => mapOver(tp)
+        }
+      }
 
-            if(isView || isViewLike) {
-              tpInstantiated match {
-                case MethodType(_, tv: TypeVar) if !tv.instValid =>
-                  // views with result types which have an uninstantiated type variable as their outer type
-                  // constructor might not match correctly against the view template until they have been
-                  // fully applied so we fall back to the slow path.
-                  true
-                case _ =>
-                  matchesPt(tpInstantiated, wildPt, allUndetparams) || {
-                    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
-                    false
-                  }
+      if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
+        info.tpe match {
+          case PolyType(tparams, restpe) =>
+            try {
+              val allUndetparams = (undetParams ++ tparams).distinct
+              val tvars = allUndetparams map freshVar
+              val tp = ApproximateDependentMap(restpe)
+              val tpInstantiated = {
+                val tpInstantiated0 = tp.instantiateTypeParams(allUndetparams, tvars)
+                if(!isView) tpInstantiated0
+                else {
+                  // Implicits to satisfy views are matched against a search template. To
+                  // match correctly against the template, TypeVars in the candidates type
+                  // are replaced by their upper bounds once those bounds have solved as
+                  // far as possible against the template.
+                  normSubType(tpInstantiated0, wildPt)
+                  tvarToHiBoundMap(tpInstantiated0)
+                }
               }
-            } else {
+
               if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
                 if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
                 false
-              } else {
+              } else if(!isView && !isViewLike) {
                 // we can't usefully prune views any further because we would need to type an application
                 // of the view to the term as is done in the computation of itree2 in typedImplicit1.
                 val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
@@ -609,13 +615,12 @@ trait Implicits {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
                 } else true
-              }
+              } else true
+            } catch {
+              case _: NoInstance => false
             }
-          } catch {
-            case _: NoInstance => false
-          }
-        case _ => true
-      }
+          case _ => true
+        }
     }
 
     /** Capturing the overlap between isPlausiblyCompatible and normSubType.
