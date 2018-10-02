@@ -1,7 +1,6 @@
 package xsbt
 
 import java.io.File
-import java.util.zip.ZipFile
 
 /**
  * This is a utility class that provides a set of functions that
@@ -29,24 +28,6 @@ final class JarUtils(outputDirs: Iterable[File]) {
   }
 
   /**
-   * Lists regular files (not directories) inside the given jar.
-   *
-   * @param jar the file to list jars from
-   * @return list of paths to files in jar
-   */
-  def listFiles(jar: File): Set[RelClass] = {
-    import scala.collection.JavaConverters._
-    // ZipFile is slightly slower than IndexBasedZipFsOps but it is quite difficult to use reuse
-    // IndexBasedZipFsOps in compiler bridge.
-    val zip = new ZipFile(jar)
-    try {
-      zip.entries().asScala.filterNot(_.isDirectory).map(_.getName).toSet
-    } finally {
-      zip.close()
-    }
-  }
-
-  /**
    * The jar file that is used as output for classes. If the output is
    * not set to a single .jar file, value of this field is [[None]].
    */
@@ -62,31 +43,5 @@ final class JarUtils(outputDirs: Iterable[File]) {
    * i.e. if the output is set to a jar file.
    */
   val isCompilingToJar: Boolean = outputJar.isDefined
-
-  /**
-   * Class that holds cached list of paths located within previous jar for quick lookup.
-   * @see sbt.internal.inc.JarUtils#withPreviousJar for details on what previous jar is
-   */
-  class PrevJarCache(prevJar: Option[File]) extends scala.collection.generic.Clearable {
-    private var cache: Set[ClassInJar] = _
-
-    def contains(classInJar: ClassInJar): Boolean = {
-      if (cache == null) {
-        cache = loadEntriesFromPrevJar()
-      }
-      cache.contains(classInJar)
-    }
-
-    def clear(): Unit = cache = null
-
-    private def loadEntriesFromPrevJar(): Set[ClassInJar] = {
-      prevJar
-        .filter(_.exists())
-        .fold(Set.empty[ClassInJar]) { prevJar =>
-          val classes = listFiles(prevJar)
-          classes.map(ClassInJar)
-        }
-    }
-  }
 
 }

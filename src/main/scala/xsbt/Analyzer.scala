@@ -10,6 +10,7 @@ package xsbt
 import java.io.File
 
 import scala.tools.nsc.Phase
+import scala.collection.JavaConverters._
 
 object Analyzer {
   def name = "xsbt-analyzer"
@@ -27,8 +28,8 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
     private lazy val existingClassesInJar: Set[JarUtils.ClassInJar] = {
       JarUtils.outputJar match {
         case Some(jar) =>
-          val classes = JarUtils.listFiles(jar)
-          classes.map(JarUtils.ClassInJar(jar, _))
+          val classes = global.callback.classesInJar().asScala
+          classes.map(JarUtils.ClassInJar(jar, _)).toSet
         case None => Set.empty
       }
     }
