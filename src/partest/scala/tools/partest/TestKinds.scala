@@ -35,8 +35,15 @@ class TestKinds(pathSettings: PathSettings) {
     (candidates exists matches)
   }
 
-  def testsFor(kind: String): List[Path] = (pathSettings.srcDir / kind toDirectory).list.toList filter denotesTestPath
+  def testsFor(kind: String): (List[Path], List[Path]) = {
+    val (ti, others) = (pathSettings.srcDir / kind).toDirectory.list.partition(denotesTestPath)
+    val ts = ti.toList
+    val names = ts.toSet
+    def warnable(p: Path) = (p.hasExtension("flags") || p.hasExtension("check")) &&
+      !names(p.changeExtension("scala")) && !names(p.parent / p.stripExtension)
+    (ts, others.filter(warnable).toList)
+  }
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))
-  def standardTests: List[Path]          = standardKinds flatMap testsFor
+  def standardTests: List[Path]          = standardKinds flatMap (k => testsFor(k)._1)
   def failedTests: List[Path]            = standardTests filter (p => logOf(p).isFile)
 }
