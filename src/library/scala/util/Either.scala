@@ -168,7 +168,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *
    *  Because `Either` is right-biased, this method is not normally needed.
    */
-  @deprecated("Either is now right-biased", "2.13.0")
+  @deprecated("Either is now right-biased, use methods directly on Either", "2.13.0")
   def right = Either.RightProjection(this)
 
   /** Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
@@ -512,7 +512,7 @@ object Either {
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    *  @see [[scala.util.Either#left]]
    */
-  @deprecated("use swap instead", "2.13.0")
+  @deprecated("use `swap` instead", "2.13.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
      *  if this is a `Right`.
@@ -524,6 +524,7 @@ object Either {
      *
      *  @throws java.util.NoSuchElementException if the projection is [[scala.util.Right]]
      */
+    @deprecated("use `Either.swap.getOrElse` instead", "2.13.0")
     def get: A = e match {
       case Left(a) => a
       case _       => throw new NoSuchElementException("Either.left.get on Right")
@@ -656,7 +657,7 @@ object Either {
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    */
-  @deprecated("Either is now right-biased", "2.13.0")
+  @deprecated("Either is now right-biased, calls to `right` should be removed", "2.13.0")
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 
     /** Returns the value from this `Right` or throws
@@ -669,6 +670,7 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is `Left`.
      */
+    @deprecated("Use `Either.getOrElse` instead", "2.13.0")
     def get: B = e match {
       case Right(b) => b
       case _        => throw new NoSuchElementException("Either.right.get on Left")
