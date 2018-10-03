@@ -39,6 +39,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
   }
 
   override def updated[B >: A](index: Int, elem: B): CC[B] = {
+    if (index < 0) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${if (knownSize>=0) knownSize else "unknown"})")
     val b = iterableFactory.newBuilder[B]
     if (knownSize >= 0) {
       b.sizeHint(size)
@@ -49,7 +50,7 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
       b += it.next()
       i += 1
     }
-    if (index < 0 || !it.hasNext) throw new IndexOutOfBoundsException(s"can't update at $index since bound is 0-$i")
+    if (!it.hasNext) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${i-1})")
     b += elem
     it.next()
     while (it.hasNext) b += it.next()

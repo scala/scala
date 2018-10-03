@@ -65,7 +65,12 @@ private[immutable] abstract class Node[T <: Node[T]] {
 
   def cachedJavaKeySetHashCode: Int
 
+  private final def arrayIndexOutOfBounds(as: Array[_], ix:Int): ArrayIndexOutOfBoundsException =
+    new ArrayIndexOutOfBoundsException(s"$ix is out of bounds (min 0, max ${as.length-1}")
+
   protected final def removeElement(as: Array[Int], ix: Int): Array[Int] = {
+    if (ix < 0) throw arrayIndexOutOfBounds(as, ix)
+    if (ix > as.length - 1) throw arrayIndexOutOfBounds(as, ix)
     val result = new Array[Int](as.length - 1)
     arraycopy(as, 0, result, 0, ix)
     arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
@@ -73,8 +78,8 @@ private[immutable] abstract class Node[T <: Node[T]] {
   }
 
   protected final def removeAnyElement(as: Array[Any], ix: Int): Array[Any] = {
-    if (ix < 0) throw new ArrayIndexOutOfBoundsException
-    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    if (ix < 0) throw arrayIndexOutOfBounds(as, ix)
+    if (ix > as.length - 1) throw arrayIndexOutOfBounds(as, ix)
     val result = new Array[Any](as.length - 1)
     arraycopy(as, 0, result, 0, ix)
     arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
@@ -82,6 +87,8 @@ private[immutable] abstract class Node[T <: Node[T]] {
   }
 
   protected final def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
+    if (ix < 0) throw arrayIndexOutOfBounds(as, ix)
+    if (ix > as.length) throw arrayIndexOutOfBounds(as, ix)
     val result = new Array[Int](as.length + 1)
     arraycopy(as, 0, result, 0, ix)
     result(ix) = elem
@@ -89,8 +96,8 @@ private[immutable] abstract class Node[T <: Node[T]] {
     result
   }
   protected final def insertAnyElement(as: Array[Any], ix: Int, elem: Int): Array[Any] = {
-    if (ix < 0) throw new ArrayIndexOutOfBoundsException
-    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    if (ix < 0) throw arrayIndexOutOfBounds(as, ix)
+    if (ix > as.length) throw arrayIndexOutOfBounds(as, ix)
     val result = new Array[Any](as.length + 1)
     arraycopy(as, 0, result, 0, ix)
     result(ix) = elem
