@@ -605,17 +605,17 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
 
   /* quiescently consistent - don't call concurrently to anything involving a GCAS!! */
   private def collectElems: Seq[(K, V)] = array.flatMap({
-    case sn: SNode[K, V] => Some(sn.kvPair): IterableOnce[(K, V)]
+    case sn: SNode[K, V] => Iterable.single(sn.kvPair)
     case in: INode[K, V] => in.mainnode match {
-      case tn: TNode[K, V] => Some(tn.kvPair): IterableOnce[(K, V)]
+      case tn: TNode[K, V] => Iterable.single(tn.kvPair)
       case ln: LNode[K, V] => ln.entries.to(immutable.List)
       case cn: CNode[K, V] => cn.collectElems
     }
   })
 
   private def collectLocalElems: Seq[String] = array.flatMap({
-    case sn: SNode[K, V] => Some(sn.kvPair._2.toString): IterableOnce[String]
-    case in: INode[K, V] => Some(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")"): IterableOnce[String]
+    case sn: SNode[K, V] => Iterable.single(sn.kvPair._2.toString)
+    case in: INode[K, V] => Iterable.single(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")")
   })
 
   override def toString = {
