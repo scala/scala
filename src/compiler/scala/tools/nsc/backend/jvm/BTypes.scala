@@ -774,10 +774,33 @@ abstract class BTypes {
     }
 
     private def firstCommonSuffix(as: List[ClassBType], bs: List[ClassBType]): ClassBType = {
+      def shiftOf(str: String): Int /*Result between 0 and 63 */ = {
+        val len = str.length // array: O(1)
+        val mid: Int = str.codePointAt(len >> 1)  // middle character
+        (len & 7) | ((mid & 7) << 3)
+      }
+      def insertFilter(filter: Long, str: String): Long = filter | (1L << shiftOf(str))
+      def containsFilter(filter: Long, str: String): Boolean = (filter & (1L << shiftOf(str))) != 0
+
+      def computeFilter(xs: List[ClassBType]): Long = {
+        var filter: Long = 0L
+        var ys = xs
+        while (!ys.isEmpty) {
+          filter = insertFilter(filter, ys.head.internalName)
+          ys = ys.tail
+        }
+        filter
+      }
+
+      val filterA: Long = computeFilter(as)
+      val filterB: Long = computeFilter(bs)
       var chainA = as
       var chainB = bs
       var fcs: ClassBType = null
       do {
+        while ( ! containsFilter(filterB, chainA.head.internalName)) chainA = chainA.tail ;
+        while ( ! containsFilter(filterA, chainB.head.internalName)) chainB = chainB.tail ;
+        // AT this point, we should have, if nothing else, object at the head
         if      (chainB contains chainA.head) fcs = chainA.head
         else if (chainA contains chainB.head) fcs = chainB.head
         else {
