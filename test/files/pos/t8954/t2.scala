@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 package scala.foo
 
 // 1.2 deprecated children should be fine...

@@ -1,4 +1,4 @@
-Test_1.scala:2: warning: match may not be exhaustive.
+Test_1.scala:3: warning: match may not be exhaustive.
 It would fail on the following input: (_ : this.<local child>)
   def foo(t: A.T) = t match {
                     ^

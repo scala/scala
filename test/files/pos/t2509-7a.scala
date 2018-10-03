@@ -1,3 +1,5 @@
+// scalac: -Xsource:3.0
+
 class Both[-A, +B]
 
 trait Factory[A] {

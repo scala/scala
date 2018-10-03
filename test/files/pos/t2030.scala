@@ -1,3 +1,4 @@
+// scalac: -Xsource:3.0
 import scala.collection.immutable._
 
 object Test extends App {

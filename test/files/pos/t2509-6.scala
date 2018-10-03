@@ -1,3 +1,4 @@
+// scalac: -Xsource:3.0
 class A
 class B extends A
 
@@ -31,3 +32,10 @@ object Test {
     println("B: " + b.value)
   }
 }
+
+/*
+t2509-6.scala:31: error: value value is not a member of B
+    println("B: " + b.value)
+                      ^
+one error found
+ */
