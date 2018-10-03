@@ -29,8 +29,8 @@ final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends
     else throw new ArrayIndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${xs.length - 1})")
   }
   def subSequence(start0: Int, end0: Int): CharSequence = {
-    if (start0 < 0) throw new ArrayIndexOutOfBoundsException(s"$start0 given but the start of subSequence must be >= 0.")
-    else if (end0 > length) throw new ArrayIndexOutOfBoundsException(s"$end0 given but the end of subSequence must be <= length ${xs.length -1}")
+    if (start0 < 0) throw new ArrayIndexOutOfBoundsException(s"$start0 is out of bounds (min 0, max ${length -1})")
+    else if (end0 > length) throw new ArrayIndexOutOfBoundsException(s"$end0 is out of bounds (min 0, max ${xs.length -1})")
     else if (end0 <= start0) new ArrayCharSequence(xs, 0, 0)
     else {
       val newlen = end0 - start0

@@ -82,7 +82,7 @@ object SeqView {
     def apply(idx: Int): A = if (idx < n) {
       underlying(idx)
     } else {
-      throw new IndexOutOfBoundsException(if (underlying.knownSize >= 0) s"$idx is out of bounds (min 0, max ${knownSize - 1})" else idx.toString)
+      throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${if (underlying.knownSize >= 0) knownSize - 1 else "unknown"})")
     }
     def length: Int = underlying.length min normN
   }
