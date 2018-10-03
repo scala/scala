@@ -1523,7 +1523,10 @@ trait Types
     }
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
-      val lo1 = map.flipped(map(lo))
+      val lo1 = map match {
+        case VariancedTypeMap(vtm) => vtm.flipped(vtm(lo))
+        case _ => map(lo)
+      }
       val hi1 = map(hi)
       if ((lo1 eq lo) && (hi1 eq hi)) this
       else TypeBounds(lo1, hi1)
@@ -2337,17 +2340,16 @@ trait Types
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
     override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
-      val args1 = (
-        if (map.trackVariance && args.nonEmpty && !map.variance.isInvariant) {
+      val args1 =  map match {
+        case _: VariancedTypeMap if args.nonEmpty && !map.asInstanceOf[VariancedTypeMap].variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
             args mapConserve map
           else
             map.mapOverArgs(args, tparams)
-        } else {
+        case _ =>
           args mapConserve map
-        }
-      )
+      }
       if ((pre1 eq pre) && (args1 eq args)) this
       else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
     }
@@ -2867,7 +2869,10 @@ trait Types
 
     override def kind = "MethodType"
     override def mapOver(map: TypeMap): Type = {
-      val params1 = map.flipped(map.mapOver(params))
+      val params1 = map match {
+        case VariancedTypeMap(vtm) => vtm.flipped(vtm.mapOver(params))
+        case _ => map.mapOver(params)
+      }
       val result1 = map(resultType)
       if ((params1 eq params) && (result1 eq resultType)) this
       else copyMethodType(this, params1, result1.substSym(params, params1))
@@ -2969,7 +2974,10 @@ trait Types
 
     override def kind = "PolyType"
     override def mapOver(map: TypeMap): Type = {
-      val tparams1 = map.flipped(map.mapOver(typeParams))
+      val tparams1 = map match {
+        case VariancedTypeMap(vtm) => vtm.flipped(vtm.mapOver(typeParams))
+        case _ => map.mapOver(typeParams)
+      }
       val result1 = map(resultType)
       if ((tparams1 eq typeParams) && (result1 eq resultType)) this
       else PolyType(tparams1, result1.substSym(typeParams, tparams1))

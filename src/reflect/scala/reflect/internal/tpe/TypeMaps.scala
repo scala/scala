@@ -87,79 +87,11 @@ private[internal] trait TypeMaps {
 
   /** A prototype for mapping a function over all possible types
     */
-  abstract class TypeMap(val trackVariance: Boolean) extends (Type => Type) {
-    def this() = this(trackVariance = false)
+  abstract class TypeMap extends (Type => Type) {
     def apply(tp: Type): Type
-
-    private[this] var _variance: Variance = if (trackVariance) Covariant else Invariant
-
-    def variance_=(x: Variance) = { assert(trackVariance, this) ; _variance = x }
-    def variance = _variance
 
     /** Map this function over given type */
     def mapOver(tp: Type): Type = if (tp eq null) tp else tp.mapOver(this)
-
-    @inline final def withVariance[T](v: Variance)(body: => T): T = {
-      val saved = variance
-      variance = v
-      try body finally variance = saved
-    }
-    @inline final def flipped[T](body: => T): T = {
-      if (trackVariance) variance = variance.flip
-      try body
-      finally if (trackVariance) variance = variance.flip
-    }
-    final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = (
-      if (trackVariance)
-        map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
-      else
-        args mapConserve this
-      )
-    /** Applies this map to the symbol's info, setting variance = Invariant
-      *  if necessary when the symbol is an alias.
-      */
-    private def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
-      if (trackVariance && !variance.isInvariant && sym.isAliasType)
-        withVariance(Invariant)(this(info))
-      else
-        this(info)
-    }
-
-    /** The index of the first symbol in `origSyms` which would have its info
-      * transformed by this type map.
-      */
-    private def firstChangedSymbol(origSyms: List[Symbol]): Int = {
-      @tailrec def loop(i: Int, syms: List[Symbol]): Int = syms match {
-        case x :: xs =>
-          val info = x.info
-          if (applyToSymbolInfo(x, info) eq info) loop(i+1, xs)
-          else i
-        case _ => -1
-      }
-      loop(0, origSyms)
-    }
-
-    /** Map this function over given scope */
-    def mapOver(scope: Scope): Scope = {
-      val elems = scope.toList
-      val elems1 = mapOver(elems)
-      if (elems1 eq elems) scope
-      else newScopeWith(elems1: _*)
-    }
-
-    /** Map this function over given list of symbols */
-    def mapOver(origSyms: List[Symbol]): List[Symbol] = {
-      val firstChange = firstChangedSymbol(origSyms)
-      // fast path in case nothing changes due to map
-      if (firstChange < 0) origSyms
-      else {
-        // map is not the identity --> do cloning properly
-        val cloned = cloneSymbols(origSyms)
-        // but we don't need to run the map again on the unchanged symbols
-        cloned.drop(firstChange).foreach(_ modifyInfo this)
-        cloned
-      }
-    }
 
     def mapOver(annot: AnnotationInfo): AnnotationInfo = {
       val AnnotationInfo(atp, args, assocs) = annot
@@ -186,8 +118,50 @@ private[internal] trait TypeMaps {
       else args1
     }
 
+    /** The index of the first symbol in `origSyms` which would have its info
+      * transformed by this type map.
+      */
+    private def firstChangedSymbol(origSyms: List[Symbol]): Int = {
+      @tailrec def loop(i: Int, syms: List[Symbol]): Int = syms match {
+        case x :: xs =>
+          val info = x.info
+          if (applyToSymbolInfo(x, info) eq info) loop(i+1, xs)
+          else i
+        case _ => -1
+      }
+      loop(0, origSyms)
+    }
+
     def mapOver(tree: Tree): Tree =
       mapOver(tree, () => return UnmappableTree)
+
+    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      args mapConserve this
+
+    /** Map this function over given scope */
+    def mapOver(scope: Scope): Scope = {
+      val elems = scope.toList
+      val elems1 = mapOver(elems)
+      if (elems1 eq elems) scope
+      else newScopeWith(elems1: _*)
+    }
+
+    /** Map this function over given list of symbols */
+    def mapOver(origSyms: List[Symbol]): List[Symbol] = {
+      val firstChange = firstChangedSymbol(origSyms)
+      // fast path in case nothing changes due to map
+      if (firstChange < 0) origSyms
+      else {
+        // map is not the identity --> do cloning properly
+        val cloned = cloneSymbols(origSyms)
+        // but we don't need to run the map again on the unchanged symbols
+        cloned.drop(firstChange).foreach(_ modifyInfo this)
+        cloned
+      }
+    }
+
+    private def applyToSymbolInfo(sym: Symbol, info: Type): Type =
+      this(info)
 
     /** Map a tree that is part of an annotation argument.
       *  If the tree cannot be mapped, then invoke giveup().
@@ -209,6 +183,45 @@ private[internal] trait TypeMaps {
           tree1.shallowDuplicate.setType(tpe1)
       }
     }
+
+  }
+
+  abstract class VariancedTypeMap extends TypeMap {
+
+    private[this] var _variance: Variance = Covariant
+
+    def variance_=(x: Variance) = { _variance = x }
+    def variance = _variance
+
+    @inline final def withVariance[T](v: Variance)(body: => T): T = {
+      val saved = variance
+      variance = v
+      try body finally variance = saved
+    }
+    @inline final def flipped[T](body: => T): T = {
+      variance = variance.flip
+      try body
+      finally variance = variance.flip
+    }
+
+    final override def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
+
+    /** Applies this map to the symbol's info, setting variance = Invariant
+      *  if necessary when the symbol is an alias.
+      */
+    private def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
+      if (!variance.isInvariant && sym.isAliasType)
+        withVariance(Invariant)(this(info))
+      else
+        this(info)
+    }
+
+  }
+
+  object VariancedTypeMap {
+    def unapply(tm: TypeMap): Option[VariancedTypeMap] =
+      if (tm.isInstanceOf[VariancedTypeMap]) Some(tm.asInstanceOf[VariancedTypeMap]) else None
   }
 
   abstract class TypeTraverser extends TypeMap {
@@ -271,7 +284,7 @@ private[internal] trait TypeMaps {
 
   /** Used by existentialAbstraction.
     */
-  class ExistentialExtrapolation(tparams: List[Symbol]) extends TypeMap(trackVariance = true) {
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends VariancedTypeMap {
     private[this] val occurCount = mutable.HashMap[Symbol, Int]()
     private def countOccs(tp: Type) = {
       tp foreach {
@@ -343,7 +356,7 @@ private[internal] trait TypeMaps {
    * For example, the MethodType given by `def bla(x: (_ >: String)): (_ <: Int)`
    * is both a subtype and a supertype of `def bla(x: String): Int`.
    */
-  object wildcardExtrapolation extends TypeMap(trackVariance = true) {
+  object wildcardExtrapolation extends VariancedTypeMap {
     def apply(tp: Type): Type =
       tp match {
         case BoundedWildcardType(TypeBounds(lo, AnyTpe)) if variance.isContravariant => lo
@@ -504,9 +517,10 @@ private[internal] trait TypeMaps {
     // are not influenced by the prefix through which they are seen. Note that type params of
     // anonymous type functions, which currently can only arise from normalising type aliases, are
     // owned by the type alias of which they are the eta-expansion.
-    private def classParameterAsSeen(classParam: Type): Type = {
-      val TypeRef(_, tparam, _) = classParam
+    private def classParameterAsSeen(classParam: TypeRef): Type = {
+      val tparam = classParam.sym
 
+      @tailrec
       def loop(pre: Type, clazz: Symbol): Type = {
         // have to deconst because it may be a Class[T]
         def nextBase = (pre baseType clazz).deconst

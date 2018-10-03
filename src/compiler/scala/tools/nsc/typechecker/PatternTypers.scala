@@ -168,7 +168,7 @@ trait PatternTypers {
         case _         => wrapClassTagUnapply(treeTyped, extractor, tpe)
       }
     }
-    private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
+    private class VariantToSkolemMap extends VariancedTypeMap {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
       // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see scala/bug#5189
