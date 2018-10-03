@@ -193,7 +193,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     this
   }
 
-  def patchInPlace(from: Int, patch: scala.collection.Seq[T], replaced: Int): this.type = {
+  def patchInPlace(from: Int, patch: collection.IterableOnce[T], replaced: Int): this.type = {
     remove(from, replaced)
     insertAll(from, patch)
     this

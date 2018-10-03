@@ -328,21 +328,22 @@ class ArrayBufferTest {
     for {
       size <- 0 to 10
       patchSize <- 0 to 12
-      patch = 100 until (100 + patchSize)
+      patchRange = 100 until (100 + patchSize)
+      patch <- Seq(() => patchRange.toVector, () => patchRange.iterator)
       from <- -1 to 11
       replaced <- -1 to 13
     } {
       def createBuf = (0 until size).to(ArrayBuffer)
 
-      val fromPatch = createBuf.patch(from, patch, replaced)
-      val fromPatchInPlace = createBuf.patchInPlace(from, patch, replaced)
+      val fromPatch = createBuf.patch(from, patch(), replaced)
+      val fromPatchInPlace = createBuf.patchInPlace(from, patch(), replaced)
 
       assert(fromPatch == fromPatchInPlace,
         s"""Failed on:
            |  size: $size
            |  targetBuffer: $createBuf
            |  from: $from
-           |  patch sequence: $patch
+           |  patch sequence: ${patch()} (${patch().toVector})
            |  replaced: $replaced
            |  patch returned: $fromPatch
            |  patchInPlace returned: $fromPatchInPlace

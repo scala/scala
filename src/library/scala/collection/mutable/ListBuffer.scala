@@ -270,7 +270,7 @@ class ListBuffer[A]
     this
   }
 
-  def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
+  def patchInPlace(from: Int, patch: collection.IterableOnce[A], replaced: Int): this.type = {
     val i = math.min(math.max(from, 0), length)
     val n = math.min(math.max(replaced, 0), length)
     ensureUnaliased()
