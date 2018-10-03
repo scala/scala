@@ -1207,8 +1207,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
       // Create phases and link them together. We supply the previous, and the ctor sets prev.next.
       val last  = components.foldLeft(NoPhase: Phase)((prev, c) => c newPhase prev)
-      // rewind (Iterator.iterate(last)(_.prev) dropWhile (_.prev ne NoPhase)).next
-      val first = { var p = last ; while (p.prev ne NoPhase) p = p.prev ; p }
+      val phaseList = Iterator.iterate(last)(_.prev).takeWhile(_ != NoPhase).toList.reverse
+      val maxId = phaseList.map(_.id).max
+      nextFrom = Array.tabulate(maxId)(i => infoTransformers.nextFrom(i))
+      val first = phaseList.head
       val ss    = settings
 
       // As a final courtesy, see if the settings make any sense at all.
