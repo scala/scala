@@ -46,7 +46,7 @@ abstract class FormatInterpolator {
    *
    *  In any other position, the only permissible conversions are
    *  the literals (%% and %n) or an index reference (%1$ or %<).
-   *A
+   *
    *  A conversion specifier has the form:
    *
    *  [index$][flags][width][.precision]conversion
