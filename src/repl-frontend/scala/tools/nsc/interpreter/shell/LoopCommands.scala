@@ -24,7 +24,7 @@ class ProcessResult(val line: String) {
 
   val builder  = Process(line)
   val logger   = ProcessLogger(buffer += _)
-  val exitCode = builder ! logger
+  val exitCode = builder runBlocking logger
   def lines    = buffer.toList
 
   override def toString = "`%s` (%d lines, exit %d)".format(line, buffer.size, exitCode)

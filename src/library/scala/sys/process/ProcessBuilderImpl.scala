@@ -104,23 +104,23 @@ private[process] trait ProcessBuilderImpl {
 
     private[this] val defaultStreamCapacity = 4096
 
-    def #|(other: ProcessBuilder): ProcessBuilder  = {
+    def pipeTo(other: ProcessBuilder): ProcessBuilder  = {
       require(other.canPipeTo, "Piping to multiple processes is not supported.")
       new PipedBuilder(this, other, false)
     }
-    def #||(other: ProcessBuilder): ProcessBuilder = new OrBuilder(this, other)
-    def #&&(other: ProcessBuilder): ProcessBuilder = new AndBuilder(this, other)
-    def ###(other: ProcessBuilder): ProcessBuilder = new SequenceBuilder(this, other)
+    def ifFailsThen(other: ProcessBuilder): ProcessBuilder = new OrBuilder(this, other)
+    def ifSucceedsThen(other: ProcessBuilder): ProcessBuilder = new AndBuilder(this, other)
+    def andThen(other: ProcessBuilder): ProcessBuilder = new SequenceBuilder(this, other)
 
     def run(): Process                                          = run(connectInput = false)
     def run(connectInput: Boolean): Process                     = run(BasicIO.standard(connectInput))
     def run(log: ProcessLogger): Process                        = run(log, connectInput = false)
     def run(log: ProcessLogger, connectInput: Boolean): Process = run(BasicIO(connectInput, log))
 
-    def !!                      = slurp(None, withIn = false)
-    def !!(log: ProcessLogger)  = slurp(Some(log), withIn = false)
-    def !!<                     = slurp(None, withIn = true)
-    def !!<(log: ProcessLogger) = slurp(Some(log), withIn = true)
+    def outputString                      = slurp(None, withIn = false)
+    def outputString(log: ProcessLogger)  = slurp(Some(log), withIn = false)
+    def outputStringFromStdin                     = slurp(None, withIn = true)
+    def outputStringFromStdin(log: ProcessLogger) = slurp(Some(log), withIn = true)
 
     def lazyLines: LazyList[String]                       = lazyLines(withInput = false, nonZeroException = true, None, defaultStreamCapacity)
     def lazyLines(log: ProcessLogger): LazyList[String]   = lazyLines(withInput = false, nonZeroException = true, Some(log), defaultStreamCapacity)
@@ -140,11 +140,11 @@ private[process] trait ProcessBuilderImpl {
     def lineStream_!(capacity: Integer) : Stream[String]                    = lineStream(withInput = false, nonZeroException = false, None, capacity)
     def lineStream_!(log: ProcessLogger, capacity: Integer): Stream[String] = lineStream(withInput = false, nonZeroException = false, Some(log), capacity)
 
-    def !                      = run(connectInput = false).exitValue()
+    def runBlocking                      = run(connectInput = false).exitValue()
     def !(io: ProcessIO)       = run(io).exitValue()
-    def !(log: ProcessLogger)  = runBuffered(log, connectInput = false)
-    def !<                     = run(connectInput = true).exitValue()
-    def !<(log: ProcessLogger) = runBuffered(log, connectInput = true)
+    def runBlocking(log: ProcessLogger)  = runBuffered(log, connectInput = false)
+    def runBlockingFromStdin                     = run(connectInput = true).exitValue()
+    def runBlockingFromStdin(log: ProcessLogger) = runBuffered(log, connectInput = true)
 
     /** Constructs a new builder which runs this command with all input/output threads marked
      *  as daemon threads.  This allows the creation of a long running process while still
@@ -203,10 +203,10 @@ private[process] trait ProcessBuilderImpl {
     protected def toSource = new FileInput(base)
     protected def toSink   = new FileOutput(base, false)
 
-    def #<<(f: File): ProcessBuilder           = #<<(new FileInput(f))
-    def #<<(u: URL): ProcessBuilder            = #<<(new URLInput(u))
-    def #<<(s: => InputStream): ProcessBuilder = #<<(new IStreamBuilder(s, "<input stream>"))
-    def #<<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, new FileOutput(base, true), false)
+    def redirect(f: File): ProcessBuilder           = redirect(new FileInput(f))
+    def redirect(u: URL): ProcessBuilder            = redirect(new URLInput(u))
+    def redirect(s: => InputStream): ProcessBuilder = redirect(new IStreamBuilder(s, "<input stream>"))
+    def redirect(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, new FileOutput(base, true), false)
   }
 
   private[process] abstract class BasicBuilder extends AbstractBuilder {
@@ -234,7 +234,7 @@ private[process] trait ProcessBuilderImpl {
     first: ProcessBuilder,
     second: ProcessBuilder,
     toError: Boolean
-  ) extends SequentialBuilder(first, second, if (toError) "#|!" else "#|") {
+  ) extends SequentialBuilder(first, second, if (toError) "#|!" else "pipeTo") {
 
     override def createProcess(io: ProcessIO) = new PipedProcesses(first, second, io, toError)
   }
@@ -242,21 +242,21 @@ private[process] trait ProcessBuilderImpl {
   private[process] class AndBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
-  ) extends SequentialBuilder(first, second, "#&&") {
+  ) extends SequentialBuilder(first, second, "ifSuceedsThen") {
     override def createProcess(io: ProcessIO) = new AndProcess(first, second, io)
   }
 
   private[process] class OrBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
-  ) extends SequentialBuilder(first, second, "#||") {
+  ) extends SequentialBuilder(first, second, "ifFailsThen") {
     override def createProcess(io: ProcessIO) = new OrProcess(first, second, io)
   }
 
   private[process] class SequenceBuilder(
     first: ProcessBuilder,
     second: ProcessBuilder
-  ) extends SequentialBuilder(first, second, "###") {
+  ) extends SequentialBuilder(first, second, "andThen") {
     override def createProcess(io: ProcessIO) = new ProcessSequence(first, second, io)
   }
 }
