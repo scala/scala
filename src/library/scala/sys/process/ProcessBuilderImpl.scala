@@ -68,7 +68,17 @@ private[process] trait ProcessBuilderImpl {
   /** Represents a simple command without any redirection or combination. */
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
-      val process = p.start() // start the external process
+      val process = try {
+        p.start() // start the external process
+      } catch {
+        case _: IndexOutOfBoundsException
+             | _: IOException
+             | _: NullPointerException
+             | _: SecurityException
+             | _: UnsupportedOperationException
+        => return FailedProcess
+      }
+
       import io._
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
