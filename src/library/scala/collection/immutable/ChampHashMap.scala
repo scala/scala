@@ -1008,8 +1008,9 @@ private final class BitmapIndexedMapNode[K, +V](
         (this eq node) ||
           (this.nodeMap == node.nodeMap) &&
             (this.dataMap == node.dataMap) &&
-              java.util.Arrays.equals(this.originalHashes, node.originalHashes) &&
-                deepContentEquality(this.content, node.content, content.length)
+              (this.size == node.size) &&
+                java.util.Arrays.equals(this.originalHashes, node.originalHashes) &&
+                  deepContentEquality(this.content, node.content, content.length)
       case _ => false
     }
 
