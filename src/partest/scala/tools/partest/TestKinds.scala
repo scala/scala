@@ -39,8 +39,10 @@ class TestKinds(pathSettings: PathSettings) {
     val (ti, others) = (pathSettings.srcDir / kind).toDirectory.list.partition(denotesTestPath)
     val ts = ti.toList
     val names = ts.toSet
-    def warnable(p: Path) = (p.hasExtension("flags") || p.hasExtension("check")) &&
-      !names(p.changeExtension("scala")) && !names(p.parent / p.stripExtension)
+    def warnable(p: Path) = ((p.hasExtension("flags") || p.hasExtension("check"))
+      && List("scala", "res").forall(x => !names(p.changeExtension(x)))
+      && !names(p.parent / p.stripExtension)
+    )
     (ts, others.filter(warnable).toList)
   }
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))
