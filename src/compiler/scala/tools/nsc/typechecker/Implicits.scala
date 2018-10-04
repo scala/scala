@@ -566,21 +566,6 @@ trait Implicits {
      }
 
     private def matchesPtInst(info: ImplicitInfo): Boolean = {
-      def isViewLike = pt match {
-        case Function1(_, _) => true
-        case _ => false
-      }
-
-      object tvarToHiBoundMap extends TypeMap {
-        def apply(tp: Type): Type = tp match {
-          case tv@TypeVar(_, constr) if !constr.instValid =>
-            val upper = glb(constr.hiBounds)
-            if(tv.typeArgs.isEmpty) upper
-            else appliedType(upper, tv.typeArgs)
-          case _ => mapOver(tp)
-        }
-      }
-
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
         info.tpe match {
           case PolyType(tparams, restpe) =>
@@ -588,25 +573,11 @@ trait Implicits {
               val allUndetparams = (undetParams ++ tparams).distinct
               val tvars = allUndetparams map freshVar
               val tp = ApproximateDependentMap(restpe)
-              val tpInstantiated = {
-                val tpInstantiated0 = tp.instantiateTypeParams(allUndetparams, tvars)
-                if(!isView) tpInstantiated0
-                else {
-                  // Implicits to satisfy views are matched against a search template. To
-                  // match correctly against the template, TypeVars in the candidates type
-                  // are replaced by their upper bounds once those bounds have solved as
-                  // far as possible against the template.
-                  normSubType(tpInstantiated0, wildPt)
-                  tvarToHiBoundMap(tpInstantiated0)
-                }
-              }
-
+              val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
               if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
                 if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
                 false
-              } else if(!isView && !isViewLike) {
-                // we can't usefully prune views any further because we would need to type an application
-                // of the view to the term as is done in the computation of itree2 in typedImplicit1.
+              } else {
                 val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(allUndetparams, tvars, targs)
                 val remainingUndet = allUndetparams diff okParams
@@ -615,7 +586,7 @@ trait Implicits {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
                 } else true
-              } else true
+              }
             } catch {
               case _: NoInstance => false
             }
@@ -1015,9 +986,9 @@ trait Implicits {
        *   - if it matches, forget about all others it improves upon
        */
 
-      // the pt for views can have embedded unification type variables, BoundedWildcardTypes or
-      // Nothings which can't be solved for. Rather than attempt to patch things up later we
-      // just skip those cases altogether.
+      // the pt can have embedded unification type variables, BoundedWildcardTypes or Nothings
+      // which can't be solved for. Rather than attempt to patch things up later we just skip
+      // those cases altogether.
       lazy val wildPtNotInstantiable =
         wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
 
@@ -1037,7 +1008,7 @@ trait Implicits {
 
           val mark = undoLog.log
           val typedFirstPending =
-            if(wildPtNotInstantiable || matchesPtInst(firstPending))
+            if(isView || wildPtNotInstantiable || matchesPtInst(firstPending))
               typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
             else SearchFailure
           if (typedFirstPending.isFailure && settings.isScala213)
