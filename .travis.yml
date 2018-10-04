@@ -6,6 +6,9 @@ jdk:
   - openjdk8
   - openjdk11
 
+script:
+  - sbt test
+
 cache:
   directories:
     - $HOME/.ivy2/cache
