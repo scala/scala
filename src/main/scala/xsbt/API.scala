@@ -116,13 +116,17 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       def registerProductNames(names: FlattenedNames): Unit = {
         // Guard against a local class in case it surreptitiously leaks here
         if (!symbol.isLocalClass) {
-          val classFileName = s"${names.binaryName}.class"
-          val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
-          val classFile = if (JarUtils.isCompilingToJar) {
-            new java.io.File(JarUtils.ClassInJar(outputDir, classFileName))
-          } else {
-            new java.io.File(outputDir, classFileName)
+          val pathToClassFile = s"${names.binaryName}.class"
+          val classFile = {
+            JarUtils.outputJar match {
+              case Some(outputJar) =>
+                new java.io.File(JarUtils.classNameInJar(outputJar, pathToClassFile))
+              case None =>
+                val outputDir = global.settings.outputDirs.outputDirFor(sourceFile).file
+                new java.io.File(outputDir, pathToClassFile)
+            }
           }
+
           val zincClassName = names.className
           val srcClassName = classNameAsString(symbol)
           callback.generatedNonLocalClass(sourceJavaFile, classFile, zincClassName, srcClassName)

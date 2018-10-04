@@ -43,4 +43,7 @@ abstract class LocateClassFile extends Compat with ClassName {
 
   protected def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
     new File(outputDirectory, flatclassName(s, File.separatorChar, separatorRequired) + ".class")
+
+  protected def pathToClassFile(s: Symbol, separatorRequired: Boolean): String =
+    flatclassName(s, File.separatorChar, separatorRequired) + ".class"
 }
