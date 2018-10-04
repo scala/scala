@@ -240,7 +240,7 @@ abstract class UnCurry extends InfoTransform
         }
       }
 
-    def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]) = {
+    def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]): List[Tree] = {
       val isJava = fun.isJavaDefined
       def transformVarargs(varargsElemType: Type) = {
         def mkArrayValue(ts: List[Tree], elemtp: Type) =
@@ -475,10 +475,16 @@ abstract class UnCurry extends InfoTransform
               super.transform(tree)
 
           case Apply(fn, args) =>
-            val needLift = needTryLift || !fn.symbol.isLabel // scala/bug#6749, no need to lift in args to label jumps.
+            // Read formals before `transform(fn)`, because UnCurry replaces T* by Seq[T] (see DesugaredParameterType).
+            // The call to `transformArgs` below needs `formals` that still have varargs.
+            val formals = fn.tpe.paramTypes
+            val transformedFn = transform(fn)
+            // scala/bug#6479: no need to lift in args to label jumps
+            // scala/bug#11127: boolean && / || are emitted using jumps, the lhs stack value is consumed by the conditional jump
+            val noReceiverOnStack = fn.symbol.isLabel || fn.symbol == currentRun.runDefinitions.Boolean_and || fn.symbol == currentRun.runDefinitions.Boolean_or
+            val needLift = needTryLift || !noReceiverOnStack
             withNeedLift(needLift) {
-              val formals = fn.tpe.paramTypes
-              treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
+              treeCopy.Apply(tree, transformedFn, transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
             }
 
           case Assign(_: RefTree, _) =>
