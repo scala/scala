@@ -1,3 +1,5 @@
+scalaVersion := "2.10.7"
+
 scalacOptions ++= Seq("-unchecked", "-feature", /*"-deprecation",*/
   "-Xlint" /*, "-Xfatal-warnings"*/)
 
