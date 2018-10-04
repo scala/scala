@@ -134,7 +134,7 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
 
   override def concat(that: collection.IterableOnce[A]): TreeSet[A] = {
     val t = that match {
-      case ts: TreeSet[A] if ordering eq ts.ordering =>
+      case ts: TreeSet[A] if ordering == ts.ordering =>
         RB.union(tree, ts.tree)
       case _ =>
         val it = that.iterator
@@ -146,7 +146,7 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
   }
 
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {
-    case ts: TreeSet[A] if ordering eq ts.ordering =>
+    case ts: TreeSet[A] if ordering == ts.ordering =>
       val t = RB.intersect(tree, ts.tree)
       if(t eq tree) this else newSet(t)
     case _ =>
@@ -154,7 +154,7 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
   }
 
   override def diff(that: collection.Set[A]): TreeSet[A] = that match {
-    case ts: TreeSet[A] if ordering eq ts.ordering =>
+    case ts: TreeSet[A] if ordering == ts.ordering =>
       val t = RB.difference(tree, ts.tree)
       if(t eq tree) this else newSet(t)
     case _ =>
@@ -175,9 +175,14 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
 
   def empty[A: Ordering]: TreeSet[A] = new TreeSet[A]
 
-  def from[E: Ordering](it: scala.collection.IterableOnce[E]): TreeSet[E] =
+  def from[E](it: scala.collection.IterableOnce[E])(implicit ordering: Ordering[E]): TreeSet[E] =
     it match {
-      case ts: TreeSet[E] => ts
+      case ts: TreeSet[E] if ordering == ts.ordering => ts
+      case ss: scala.collection.SortedSet[E] if ordering == ss.ordering =>
+        new TreeSet[E](RB.fromOrderedKeys(ss.iterator, ss.size))
+      case r: Range if (ordering eq Ordering.Int) || (ordering eq Ordering.Int.reverse) =>
+        val it = if((ordering eq Ordering.Int) == (r.step > 0)) r.iterator else r.reverseIterator
+        new TreeSet[E](RB.fromOrderedKeys(it, r.size))
       case _ =>
         var t: RB.Tree[E, Null] = null
         val i = it.iterator
@@ -190,7 +195,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
     def addOne(elem: A): this.type = { tree = RB.update(tree, elem, null, overwrite = false); this }
     override def addAll(xs: IterableOnce[A]): this.type = {
       xs match {
-        case ts: TreeSet[A] if ordering eq ts.ordering =>
+        case ts: TreeSet[A] if ordering == ts.ordering =>
           tree = RB.union(tree, ts.tree)
         case _ =>
           val it = xs.iterator

@@ -572,6 +572,40 @@ private[collection] object RedBlackTree {
     override def nextResult(tree: Tree[A, B]) = tree.value
   }
 
+  /** Build a Tree suitable for a TreeSet from an ordered sequence of keys */
+  def fromOrderedKeys[A](xs: Iterator[A], size: Int): Tree[A, Null] = {
+    val maxUsedDepth = 32 - Integer.numberOfLeadingZeros(size) // maximum depth of non-leaf nodes
+    def f(level: Int, size: Int): Tree[A, Null] = size match {
+      case 0 => null
+      case 1 => mkTree(level != maxUsedDepth || level == 1, xs.next(), null, null, null)
+      case n =>
+        val leftSize = (size-1)/2
+        val left = f(level+1, leftSize)
+        val x = xs.next()
+        val right = f(level+1, size-1-leftSize)
+        BlackTree(x, null, left, right)
+    }
+    f(1, size)
+  }
+
+  /** Build a Tree suitable for a TreeMap from an ordered sequence of key/value pairs */
+  def fromOrderedEntries[A, B](xs: Iterator[(A, B)], size: Int): Tree[A, B] = {
+    val maxUsedDepth = 32 - Integer.numberOfLeadingZeros(size) // maximum depth of non-leaf nodes
+    def f(level: Int, size: Int): Tree[A, B] = size match {
+      case 0 => null
+      case 1 =>
+        val (k, v) = xs.next()
+        mkTree(level != maxUsedDepth || level == 1, k, v, null, null)
+      case n =>
+        val leftSize = (size-1)/2
+        val left = f(level+1, leftSize)
+        val (k, v) = xs.next()
+        val right = f(level+1, size-1-leftSize)
+        BlackTree(k, v, left, right)
+    }
+    f(1, size)
+  }
+
   // Bulk operations based on "Just Join for Parallel Ordered Sets" (https://www.cs.cmu.edu/~guyb/papers/BFS16.pdf)
   // We don't store the black height in the tree so we pass it down into the join methods and derive the black height
   // of child nodes from it. Where possible the black height is used directly instead of deriving the rank from it.

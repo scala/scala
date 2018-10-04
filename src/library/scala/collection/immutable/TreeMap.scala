@@ -59,7 +59,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   override def concat[V1 >: V](that: collection.IterableOnce[(K, V1)]): TreeMap[K, V1] = {
     val t = that match {
-      case tm: TreeMap[K, V] if ordering eq tm.ordering =>
+      case tm: TreeMap[K, V] if ordering == tm.ordering =>
         RB.union(tree, tm.tree)
       case _ =>
         val it = that.iterator
@@ -75,7 +75,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   }
 
   override def removeAll(keys: IterableOnce[K]): TreeMap[K, V] = keys match {
-    case ts: TreeSet[K] if ordering eq ts.ordering =>
+    case ts: TreeSet[K] if ordering == ts.ordering =>
       val t = RB.difference(tree, ts.tree)
       if(t eq tree) this else new TreeMap(t)
     case _ => super.removeAll(keys)
@@ -182,9 +182,11 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
 
-  def from[K : Ordering, V](it: IterableOnce[(K, V)]): TreeMap[K, V] =
+  def from[K, V](it: IterableOnce[(K, V)])(implicit ordering: Ordering[K]): TreeMap[K, V] =
     it match {
-      case tm: TreeMap[K, V] => tm
+      case tm: TreeMap[K, V] if ordering == tm.ordering => tm
+      case sm: scala.collection.SortedMap[K, V] if ordering == sm.ordering =>
+        new TreeMap[K, V](RB.fromOrderedEntries(sm.iterator, sm.size))
       case _ =>
         var t: RB.Tree[K, V] = null
         val i = it.iterator
@@ -200,7 +202,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
     def addOne(elem: (K, V)): this.type = { tree = RB.update(tree, elem._1, elem._2, overwrite = true); this }
     override def addAll(xs: IterableOnce[(K, V)]): this.type = {
       xs match {
-        case tm: TreeMap[K, V] if ordering eq tm.ordering =>
+        case tm: TreeMap[K, V] if ordering == tm.ordering =>
           tree = RB.union(tree, tm.tree)
         case _ =>
           val it = xs.iterator
