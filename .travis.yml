@@ -7,7 +7,7 @@ jdk:
   - openjdk11
 
 script:
-  - sbt test
+  - sbt -warn setupValidateTest test:compile info testAll
 
 cache:
   directories:
