@@ -183,7 +183,6 @@ private[internal] trait TypeMaps {
           tree1.shallowDuplicate.setType(tpe1)
       }
     }
-
   }
 
   abstract class VariancedTypeMap extends TypeMap {
@@ -217,11 +216,6 @@ private[internal] trait TypeMaps {
         this(info)
     }
 
-  }
-
-  object VariancedTypeMap {
-    def unapply(tm: TypeMap): Option[VariancedTypeMap] =
-      if (tm.isInstanceOf[VariancedTypeMap]) Some(tm.asInstanceOf[VariancedTypeMap]) else None
   }
 
   abstract class TypeTraverser extends TypeMap {

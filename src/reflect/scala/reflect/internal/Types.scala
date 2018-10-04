@@ -1524,7 +1524,7 @@ trait Types
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
       val lo1 = map match {
-        case VariancedTypeMap(vtm) => vtm.flipped(vtm(lo))
+        case vtm: VariancedTypeMap => vtm.flipped(vtm(lo))
         case _ => map(lo)
       }
       val hi1 = map(hi)
@@ -2341,7 +2341,7 @@ trait Types
     override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
       val args1 =  map match {
-        case _: VariancedTypeMap if args.nonEmpty && !map.asInstanceOf[VariancedTypeMap].variance.isInvariant =>
+        case vtm: VariancedTypeMap if args.nonEmpty && ! vtm.variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
             args mapConserve map
@@ -2870,7 +2870,7 @@ trait Types
     override def kind = "MethodType"
     override def mapOver(map: TypeMap): Type = {
       val params1 = map match {
-        case VariancedTypeMap(vtm) => vtm.flipped(vtm.mapOver(params))
+        case vtm: VariancedTypeMap => vtm.flipped(vtm.mapOver(params))
         case _ => map.mapOver(params)
       }
       val result1 = map(resultType)
@@ -2975,7 +2975,7 @@ trait Types
     override def kind = "PolyType"
     override def mapOver(map: TypeMap): Type = {
       val tparams1 = map match {
-        case VariancedTypeMap(vtm) => vtm.flipped(vtm.mapOver(typeParams))
+        case vtm: VariancedTypeMap => vtm.flipped(vtm.mapOver(typeParams))
         case _ => map.mapOver(typeParams)
       }
       val result1 = map(resultType)
