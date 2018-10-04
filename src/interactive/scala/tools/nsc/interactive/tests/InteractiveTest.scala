@@ -83,7 +83,7 @@ abstract class InteractiveTest
         loadSources()
         runDefaultTests()
       }
-    }.lines.map(normalize).foreach(println)
+    }.linesIterator.map(normalize).foreach(println)
   }
 
   protected def normalize(s: String) = s

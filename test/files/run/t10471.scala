@@ -21,7 +21,7 @@ object Test extends StoreReporterDirectTest {
     Console.withOut(baos)(Console.withErr(baos)(compile()))
     val out = baos.toString("UTF-8")
 
-    val fooDefs = out.lines.filter(_.contains("private[this] val foo")).map(_.trim).toList
+    val fooDefs = out.linesIterator.filter(_.contains("private[this] val foo")).map(_.trim).toList
     assert(fooDefs.length == 2)
     assert(fooDefs.forall(_.startsWith("@blort private[this] val foo: String =")), fooDefs)
   }
