@@ -1530,7 +1530,10 @@ trait Types
     }
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
-      val lo1 = map.flipped(map(lo))
+      val lo1 = map match {
+        case vtm: VariancedTypeMap => vtm.flipped(vtm(lo))
+        case _ => map(lo)
+      }
       val hi1 = map(hi)
       if ((lo1 eq lo) && (hi1 eq hi)) this
       else TypeBounds(lo1, hi1)
@@ -2344,17 +2347,16 @@ trait Types
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
     override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
-      val args1 = (
-        if (map.trackVariance && args.nonEmpty && !map.variance.isInvariant) {
+      val args1 =  map match {
+        case vtm: VariancedTypeMap if args.nonEmpty && ! vtm.variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
-            args mapConserve map
+            args mapConserve vtm
           else
-            map.mapOverArgs(args, tparams)
-        } else {
+            vtm.mapOverArgs(args, tparams)
+        case _ =>
           args mapConserve map
-        }
-      )
+      }
       if ((pre1 eq pre) && (args1 eq args)) this
       else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
     }
@@ -2874,7 +2876,10 @@ trait Types
 
     override def kind = "MethodType"
     override def mapOver(map: TypeMap): Type = {
-      val params1 = map.flipped(map.mapOver(params))
+      val params1 = map match {
+        case vtm: VariancedTypeMap => vtm.flipped(vtm.mapOver(params))
+        case _ => map.mapOver(params)
+      }
       val result1 = map(resultType)
       if ((params1 eq params) && (result1 eq resultType)) this
       else copyMethodType(this, params1, result1.substSym(params, params1))
@@ -2976,7 +2981,10 @@ trait Types
 
     override def kind = "PolyType"
     override def mapOver(map: TypeMap): Type = {
-      val tparams1 = map.flipped(map.mapOver(typeParams))
+      val tparams1 = map match {
+        case vtm: VariancedTypeMap => vtm.flipped(vtm.mapOver(typeParams))
+        case _ => map.mapOver(typeParams)
+      }
       val result1 = map(resultType)
       if ((tparams1 eq typeParams) && (result1 eq resultType)) this
       else PolyType(tparams1, result1.substSym(typeParams, tparams1))
@@ -3721,10 +3729,13 @@ trait Types
         TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
-    override def mapOver(map: TypeMap): Type = {
+    override def mapOver(map: TypeMap): Type =
       if (constr.instValid) map(constr.inst)
-      else this.applyArgs(map.mapOverArgs(this.typeArgs, this.params))  //@M !args.isEmpty implies !typeParams.isEmpty
-    }
+      else map match {
+        case vtm: VariancedTypeMap =>
+          this.applyArgs(vtm.mapOverArgs(this.typeArgs, this.params)) //@M !args.isEmpty implies !typeParams.isEmpty
+        case _ => this.applyArgs(this.typeArgs mapConserve map)
+      }
   }
 
   /** A type carrying some annotations. Created by the typechecker

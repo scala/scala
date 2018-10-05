@@ -850,7 +850,7 @@ trait Infer extends Checkable {
             val e1 = existentialAbstraction(undef1, tpe1)
             val e2 = existentialAbstraction(undef2, tpe2)
 
-            val flip = new TypeMap(trackVariance = true) {
+            val flip = new VariancedTypeMap {
               def apply(tp: Type): Type = tp match {
                 case TypeRef(pre, sym, args) if variance > 0 && sym.typeParams.exists(_.isContravariant) =>
                   mapOver(TypeRef(pre, sym.flipped, args))
