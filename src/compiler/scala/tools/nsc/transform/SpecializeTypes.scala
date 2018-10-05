@@ -314,7 +314,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def isSpecializedIn(sym: Symbol, site: Type) =
     specializedTypeVars(sym) exists { tvar =>
       val concretes = concreteTypes(tvar)
-      (concretes contains AnyRefClass) || (concretes contains site.memberType(tvar))
+      (concretes contains AnyRefTpe) || (concretes contains site.memberType(tvar))
     }
 
 
@@ -408,7 +408,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     else
       specializedOn(sym).map(s => specializesClass(s).tpe).sorted
 
-    if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
+    if (isBoundedGeneric(sym.tpe) && (types contains AnyRefTpe))
       reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefTpe + ".")
 
     types
@@ -979,23 +979,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specMember
     }
 
-    if (sym.isMethod) {
-      if (hasUnspecializableAnnotation(sym)) {
-        List()
-      } else {
-        val stvars = specializedTypeVars(sym)
-        if (stvars.nonEmpty)
-          debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
+    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym)) {
+      Nil
+    } else {
+      val stvars = specializedTypeVars(sym)
+      if (stvars.nonEmpty)
+        debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
 
-        val tps1 = if (sym.isConstructor) tps filter (sym.info.paramTypes contains _) else tps
-        val tps2 = tps1 filter stvars
-        if (!sym.isDeferred)
-          addConcreteSpecMethod(sym)
+      if (!sym.isDeferred)
+        addConcreteSpecMethod(sym)
 
-        specializeOn(tps2)
-      }
+      specializeOn(tps filter stvars)
     }
-    else Nil
   }
 
   /** Return the specialized overload of `m`, in the given environment. */
