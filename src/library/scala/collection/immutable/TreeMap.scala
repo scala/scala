@@ -35,6 +35,8 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
+  private[this] def newMapOrSelf[V1 >: V](t: RB.Tree[K, V1]) = if(t eq tree) this else new TreeMap[K, V1](t)
+
   override def sortedMapFactory = TreeMap
 
   def iterator: Iterator[(K, V)] = RB.iterator(tree)
@@ -47,18 +49,14 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
-  def remove(key: K): TreeMap[K,V] = {
-    val t = RB.delete(tree, key)
-    if(t eq tree) this else new TreeMap(t)
-  }
+  def remove(key: K): TreeMap[K,V] =
+    newMapOrSelf(RB.delete(tree, key))
 
-  def updated[V1 >: V](key: K, value: V1): TreeMap[K, V1] = {
-    val t = RB.update(tree, key, value, overwrite = true)
-    if(t eq tree) this else new TreeMap(t)
-  }
+  def updated[V1 >: V](key: K, value: V1): TreeMap[K, V1] =
+    newMapOrSelf(RB.update(tree, key, value, overwrite = true))
 
-  override def concat[V1 >: V](that: collection.IterableOnce[(K, V1)]): TreeMap[K, V1] = {
-    val t = that match {
+  override def concat[V1 >: V](that: collection.IterableOnce[(K, V1)]): TreeMap[K, V1] =
+    newMapOrSelf(that match {
       case tm: TreeMap[K, V] if ordering == tm.ordering =>
         RB.union(tree, tm.tree)
       case _ =>
@@ -68,16 +66,12 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
           val (k, v) = it.next()
           t = RB.update(t, k, v, overwrite = true)
         }
-        if(t eq tree) this else new TreeMap(t)
         t
-    }
-    if(t eq tree) this else new TreeMap(t)
-  }
+    })
 
   override def removeAll(keys: IterableOnce[K]): TreeMap[K, V] = keys match {
     case ts: TreeSet[K] if ordering == ts.ordering =>
-      val t = RB.difference(tree, ts.tree)
-      if(t eq tree) this else new TreeMap(t)
+      newMapOrSelf(RB.difference(tree, ts.tree))
     case _ => super.removeAll(keys)
   }
 
@@ -95,7 +89,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     updated(key, value)
   }
 
-  def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = new TreeMap[K, V](RB.rangeImpl(tree, from, until))
+  def rangeImpl(from: Option[K], until: Option[K]): TreeMap[K, V] = newMapOrSelf(RB.rangeImpl(tree, from, until))
 
   override def minAfter(key: K): Option[(K, V)] = RB.minAfter(tree, key) match {
     case null => Option.empty
@@ -107,7 +101,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     case x => Some((x.key, x.value))
   }
 
-  override def range(from: K, until: K): TreeMap[K,V] = new TreeMap[K, V](RB.range(tree, from, until))
+  override def range(from: K, until: K): TreeMap[K,V] = newMapOrSelf(RB.range(tree, from, until))
 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 

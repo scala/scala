@@ -80,4 +80,36 @@ class RedBlackTreeBenchmark {
       set4.union(set2).size
     )
   }
+
+  @Benchmark
+  def range(bh: Blackhole): Unit = {
+    var s = set1
+    var res = 0
+    for(i <- 0 to 5; j <- 0 to 5) res += s.range(s.size*i/5, s.size*j/5).size
+    bh.consume(res)
+  }
+
+  @Benchmark
+  def slice(bh: Blackhole): Unit = {
+    var s = set1
+    var res = 0
+    for(i <- 0 to 5; j <- 0 to 5) res += s.slice(s.size*i/5, s.size*j/5).size
+    bh.consume(res)
+  }
+
+  @Benchmark
+  def take(bh: Blackhole): Unit = {
+    var s = set1
+    var res = 0
+    for(i <- 0 to 10) res += s.take(s.size*i/10).size
+    bh.consume(res)
+  }
+
+  @Benchmark
+  def drop(bh: Blackhole): Unit = {
+    var s = set1
+    var res = 0
+    for(i <- 0 to 10) res += s.drop(s.size*i/10).size
+    bh.consume(res)
+  }
 }

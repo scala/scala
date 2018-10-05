@@ -36,7 +36,7 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
 
   override def sortedIterableFactory = TreeSet
 
-  private def newSet(t: RB.Tree[A, Null]) = new TreeSet[A](t)
+  private[this] def newSetOrSelf(t: RB.Tree[A, Null]) = if(t eq tree) this else new TreeSet[A](t)
 
   override def size: Int = RB.count(tree)
 
@@ -53,20 +53,20 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
   override def drop(n: Int): TreeSet[A] = {
     if (n <= 0) this
     else if (n >= size) empty
-    else newSet(RB.drop(tree, n))
+    else new TreeSet(RB.drop(tree, n))
   }
 
   override def take(n: Int): TreeSet[A] = {
     if (n <= 0) empty
     else if (n >= size) this
-    else newSet(RB.take(tree, n))
+    else new TreeSet(RB.take(tree, n))
   }
 
   override def slice(from: Int, until: Int): TreeSet[A] = {
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
-    else newSet(RB.slice(tree, from, until))
+    else new TreeSet(RB.slice(tree, from, until))
   }
 
   override def dropRight(n: Int): TreeSet[A] = take(size - math.max(n, 0))
@@ -108,29 +108,25 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
     */
   def contains(elem: A): Boolean = RB.contains(tree, elem)
 
-  override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
+  override def range(from: A, until: A): TreeSet[A] = newSetOrSelf(RB.range(tree, from, until))
 
-  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
+  def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSetOrSelf(RB.rangeImpl(tree, from, until))
 
   /** Creates a new `TreeSet` with the entry added.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing `elem` and all the elements of this $coll.
     */
-  def incl(elem: A): TreeSet[A] = {
-    val t = RB.update(tree, elem, null, overwrite = false)
-    if(t eq tree) this else newSet(t)
-  }
+  def incl(elem: A): TreeSet[A] =
+    newSetOrSelf(RB.update(tree, elem, null, overwrite = false))
 
   /** Creates a new `TreeSet` with the entry removed.
     *
     *  @param elem    a new element to add.
     *  @return        a new $coll containing all the elements of this $coll except `elem`.
     */
-  def excl(elem: A): TreeSet[A] = {
-    val t = RB.delete(tree, elem)
-    if(t eq tree) this else newSet(t)
-  }
+  def excl(elem: A): TreeSet[A] =
+    newSetOrSelf(RB.delete(tree, elem))
 
   override def concat(that: collection.IterableOnce[A]): TreeSet[A] = {
     val t = that match {
@@ -142,21 +138,19 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
         while (it.hasNext) t = RB.update(t, it.next(), null, overwrite = false)
         t
     }
-    if(t eq tree) this else newSet(t)
+    newSetOrSelf(t)
   }
 
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
-      val t = RB.intersect(tree, ts.tree)
-      if(t eq tree) this else newSet(t)
+      newSetOrSelf(RB.intersect(tree, ts.tree))
     case _ =>
       super.intersect(that)
   }
 
   override def diff(that: collection.Set[A]): TreeSet[A] = that match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
-      val t = RB.difference(tree, ts.tree)
-      if(t eq tree) this else newSet(t)
+      newSetOrSelf(RB.difference(tree, ts.tree))
     case _ =>
       super.diff(that)
   }
