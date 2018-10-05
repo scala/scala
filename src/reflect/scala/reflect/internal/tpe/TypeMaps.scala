@@ -135,9 +135,6 @@ private[internal] trait TypeMaps {
     def mapOver(tree: Tree): Tree =
       mapOver(tree, () => return UnmappableTree)
 
-    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      args mapConserve this
-
     /** Map this function over given scope */
     def mapOver(scope: Scope): Scope = {
       val elems = scope.toList
@@ -160,7 +157,7 @@ private[internal] trait TypeMaps {
       }
     }
 
-    private def applyToSymbolInfo(sym: Symbol, info: Type): Type =
+    protected def applyToSymbolInfo(sym: Symbol, info: Type): Type =
       this(info)
 
     /** Map a tree that is part of an annotation argument.
@@ -203,13 +200,15 @@ private[internal] trait TypeMaps {
       finally variance = variance.flip
     }
 
-    final override def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams)((arg, tparam) => withVariance(variance * tparam.variance)(this(arg)))
+    final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] = {
+      val oldVariance = variance
+      map2Conserve(args, tparams)((arg, tparam) => withVariance(oldVariance * tparam.variance)(this(arg)))
+    }
 
     /** Applies this map to the symbol's info, setting variance = Invariant
       *  if necessary when the symbol is an alias.
       */
-    private def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
+    override protected final def applyToSymbolInfo(sym: Symbol, info: Type): Type = {
       if (!variance.isInvariant && sym.isAliasType)
         withVariance(Invariant)(this(info))
       else

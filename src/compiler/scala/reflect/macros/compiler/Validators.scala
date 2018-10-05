@@ -171,7 +171,7 @@ trait Validators {
           def apply(tp: Type): Type = tp match {
             case TypeRef(pre, sym, args) =>
               val pre1  = mapPrefix(pre)
-              val args1 = mapOverArgs(args, sym.typeParams)
+              val args1 = args mapConserve this
               if ((pre eq pre1) && (args eq args1)) tp
               else typeRef(pre1, sym, args1)
             case _ =>

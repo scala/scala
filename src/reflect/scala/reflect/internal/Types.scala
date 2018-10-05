@@ -2344,9 +2344,9 @@ trait Types
         case vtm: VariancedTypeMap if args.nonEmpty && ! vtm.variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
-            args mapConserve map
+            args mapConserve vtm
           else
-            map.mapOverArgs(args, tparams)
+            vtm.mapOverArgs(args, tparams)
         case _ =>
           args mapConserve map
       }
@@ -3722,10 +3722,13 @@ trait Types
         TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
-    override def mapOver(map: TypeMap): Type = {
+    override def mapOver(map: TypeMap): Type =
       if (constr.instValid) map(constr.inst)
-      else this.applyArgs(map.mapOverArgs(this.typeArgs, this.params))  //@M !args.isEmpty implies !typeParams.isEmpty
-    }
+      else map match {
+        case vtm: VariancedTypeMap =>
+          this.applyArgs(vtm.mapOverArgs(this.typeArgs, this.params)) //@M !args.isEmpty implies !typeParams.isEmpty
+        case _ => this.applyArgs(this.typeArgs mapConserve map)
+      }
   }
 
   /** A type carrying some annotations. Created by the typechecker
