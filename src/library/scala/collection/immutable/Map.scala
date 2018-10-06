@@ -105,6 +105,29 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
 
   /**
+   * Update a mapping for the specified key and its current optionally-mapped value
+   * (`Some` if there is current mapping, `None` if not).
+   *
+   * If the remapping function returns `Some(v)`, the mapping is updated with the new value `v`.
+   * If the remapping function returns `None`, the mapping is removed (or remains absent if initially absent).
+   * If the function itself throws an exception, the exception is rethrown, and the current mapping is left unchanged.
+   *
+   * @param key the key value
+   * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
+   * @return A new map with the updated mapping with the key
+   * @since 2.13.0
+   */
+  def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K,V1] = {
+    val previousValue = this.get(key)
+    val nextValue = remappingFunction(previousValue)
+    (previousValue, nextValue) match {
+      case (None, None) => coll
+      case (Some(_), None) => this.removed(key).coll
+      case (_, Some(v)) => this.updated(key, v)
+    }
+  }
+
+  /**
     * Alias for `updated`
     *
     * @param kv the key/value pair.

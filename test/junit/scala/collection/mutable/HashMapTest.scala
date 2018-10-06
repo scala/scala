@@ -110,4 +110,22 @@ class HashMapTest {
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
+  @Test
+  def testUpdateWith(): Unit = {
+    val insertIfAbsent: Option[String] => Option[String] = _.orElse(Some("b"))
+    val hashMap1 = mutable.HashMap(1 -> "a")
+    assertEquals(hashMap1.updateWith(1)(insertIfAbsent), Some("a"))
+    assertEquals(hashMap1, mutable.HashMap(1 -> "a"))
+    val hashMap2 = mutable.HashMap(1 -> "a")
+    assertEquals(hashMap2.updateWith(2)(insertIfAbsent), Some("b"))
+    assertEquals(hashMap2, mutable.HashMap(1 -> "a", 2 -> "b"))
+
+    val noneAnytime: Option[String] => Option[String] =  _ => None
+    val hashMap3 = mutable.HashMap(1 -> "a")
+    assertEquals(hashMap3.updateWith(1)(noneAnytime), None)
+    assertEquals(hashMap3, mutable.HashMap())
+    val hashMap4 = mutable.HashMap(1 -> "a")
+    assertEquals(hashMap4.updateWith(2)(noneAnytime), None)
+    assertEquals(hashMap4, mutable.HashMap(1 -> "a"))
+  }
 }

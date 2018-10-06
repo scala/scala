@@ -639,4 +639,23 @@ class TrieMapTest {
     check(newTrieMap - null, null, None, "new value", Set("a" -> null, "c" -> "c"))
     check(newTrieMap - null, null, None, null, Set("a" -> null, "c" -> "c"))
   }
+
+  @Test
+  def testUpdateWith(): Unit = {
+    val insertIfAbsent: Option[String] => Option[String] = _.orElse(Some("b"))
+    val hashMap1 = TrieMap(1 -> "a")
+    assertEquals(hashMap1.updateWith(1)(insertIfAbsent), Some("a"))
+    assertEquals(hashMap1, TrieMap(1 -> "a"))
+    val hashMap2 = TrieMap(1 -> "a")
+    assertEquals(hashMap2.updateWith(2)(insertIfAbsent), Some("b"))
+    assertEquals(hashMap2, TrieMap(1 -> "a", 2 -> "b"))
+
+    val noneAnytime: Option[String] => Option[String] = _ => None
+    val hashMap3 = TrieMap(1 -> "a")
+    assertEquals(hashMap3.updateWith(1)(noneAnytime), None)
+    assertEquals(hashMap3, TrieMap())
+    val hashMap4 = TrieMap(1 -> "a")
+    assertEquals(hashMap4.updateWith(2)(noneAnytime), None)
+    assertEquals(hashMap4, TrieMap(1 -> "a"))
+  }
 }
