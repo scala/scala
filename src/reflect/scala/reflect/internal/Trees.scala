@@ -1767,8 +1767,7 @@ trait Trees extends api.Trees {
     var result: Option[Tree] = None
     override def traverse(t: Tree): Unit = {
       if (result.isEmpty) {
-        if (p(t)) result = Some(t)
-        t.traverse(this)
+        if (p(t)) result = Some(t) else t.traverse(this)
       }
     }
   }

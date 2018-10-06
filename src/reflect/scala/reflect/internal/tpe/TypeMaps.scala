@@ -1014,12 +1014,22 @@ private[internal] trait TypeMaps {
       }
     }
 
-    override def mapOver(arg: Tree) = {
-      for (t <- arg) {
-        traverse(t.tpe)
-        if (t.symbol == sym)
-          result = true
+    private[this] def inTree(t: Tree): Boolean = {
+      if (t.symbol == sym) result = true else traverse(t.tpe)
+      result
+    }
+
+    private[this] object findInTree extends FindTreeTraverser(inTree) {
+      def collect(arg: Tree): Boolean = {
+        result = None // This is the FindTreeTraverser's result
+        traverse(arg)
+        result.isDefined
       }
+    }
+
+    override def mapOver(arg: Tree) = {
+      if (! result)
+        findInTree.collect(arg)
       arg
     }
   }
@@ -1053,20 +1063,15 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `filter` method. */
   class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
-    def traverse(tp: Type): Unit = {
-      if (result.isEmpty) {
-        if (p(tp)) result = Some(tp)
-        tp.mapOver(this)
-      }
-    }
+    def traverse(tp: Type): Unit =
+      if (result.isEmpty)
+        if (p(tp)) result = Some(tp) else tp.mapOver(this)
   }
 
-  /** A map to implement the `contains` method. */
   object ErroneousCollector extends TypeCollector(false) {
     def traverse(tp: Type): Unit = {
       if (!result) {
-        result = tp.isError
-        tp.mapOver(this)
+        if (tp.isError) result = true else tp.mapOver(this)
       }
     }
   }
