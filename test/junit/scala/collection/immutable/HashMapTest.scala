@@ -120,5 +120,17 @@ class HashMapTest {
 
     assert(hashMap.transform((_, v) => v) eq hashMap)
   }
+  @Test
+  def testUpdatedWith(): Unit = {
+    val hashMap = HashMap(1 -> "a")
+
+    val insertIfAbesent: Option[String] => Option[String] = _.orElse(Some("b"))
+    assertEquals(hashMap.updatedWith(1)(insertIfAbesent), HashMap(1 -> "a"))
+    assertEquals(hashMap.updatedWith(2)(insertIfAbesent), HashMap(1 -> "a", 2 -> "b"))
+
+    val noneAnytime: Option[String] => Option[String] = _ => None
+    assertEquals(hashMap.updatedWith(1)(noneAnytime), HashMap())
+    assertEquals(hashMap.updatedWith(2)(noneAnytime), HashMap(1 -> "a"))
+  }
 }
 

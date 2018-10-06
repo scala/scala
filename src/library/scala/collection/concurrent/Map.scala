@@ -13,6 +13,8 @@
 package scala
 package collection.concurrent
 
+import scala.annotation.tailrec
+
 
 /** A template trait for mutable maps that allow concurrent access.
   *
@@ -102,4 +104,33 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
       }
   }
 
+  /**
+   * Update a mapping for the specified key and its current optionally-mapped value
+   * (`Some` if there is current mapping, `None` if not).
+   *
+   * If the remapping function returns `Some(v)`, the mapping is updated with the new value `v`.
+   * If the remapping function returns `None`, the mapping is removed (or remains absent if initially absent).
+   * If the function itself throws an exception, the exception is rethrown, and the current mapping is left unchanged.
+   *
+   * If the map is updated by another concurrent access, the remapping function will be retried until successfully updated.
+   *
+   * @param key the key value
+   * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
+   * @return the new value associated with the specified key
+   * @since 2.13.0
+   */
+  override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = updateWithAux(key)(remappingFunction)
+
+  @tailrec
+  private def updateWithAux(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
+    val previousValue = this.get(key)
+    val nextValue = remappingFunction(previousValue)
+    (previousValue, nextValue) match {
+      case (None, None) => None
+      case (None, Some(next)) if this.putIfAbsent(key, next).isEmpty => nextValue
+      case (Some(prev), None) if this.remove(key, prev) => None
+      case (Some(prev), Some(next)) if this.replace(key, prev, next) => nextValue
+      case _ => this.updateWithAux(key)(remappingFunction)
+    }
+  }
 }
