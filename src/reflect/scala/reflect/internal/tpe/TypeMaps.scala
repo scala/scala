@@ -286,6 +286,7 @@ private[internal] trait TypeMaps {
     */
   class ExistentialExtrapolation(tparams: List[Symbol]) extends VariancedTypeMap {
     private[this] val occurCount = mutable.HashMap[Symbol, Int]()
+    private[this] val anyContains = new ContainsAnyKeyCollector(occurCount)
     private def countOccs(tp: Type) = {
       tp foreach {
         case TypeRef(_, sym, _) =>
@@ -320,7 +321,7 @@ private[internal] trait TypeMaps {
             val word = if (variance.isPositive) "upper" else "lower"
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
-          if (!repl.typeSymbol.isBottomClass && !tparams.exists(repl.contains))
+          if (!repl.typeSymbol.isBottomClass && ! anyContains.collect(repl))
             debuglogResult(msg)(repl)
           else
             tp1
@@ -989,8 +990,10 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to implement the `contains` method. */
-  class ContainsCollector(sym: Symbol) extends TypeCollector(false) {
+  abstract class ExistsTypeRefCollector extends TypeCollector(false) {
+
+    protected def pred(sym: Symbol): Boolean
+
     def traverse(tp: Type): Unit = {
       if (!result) {
         tp match {
@@ -1001,15 +1004,15 @@ private[internal] trait TypeMaps {
             // We can just map over the components and wait until we see the underlying type before we call
             // normalize.
             tp.mapOver(this)
-          case TypeRef(_, sym1, _) if (sym == sym1) => result = true // catch aliases before normalization
+          case TypeRef(_, sym1, _) if pred(sym1) => result = true // catch aliases before normalization
           case _ =>
             tp.normalize match {
-              case TypeRef(_, sym1, _) if (sym == sym1) => result = true
+              case TypeRef(_, sym1, _) if pred(sym1) => result = true
               case refined: RefinedType =>
                 tp.prefix.mapOver(this) // Assumption is that tp was a TypeRef prior to normalization so we should
                                         // mapOver its prefix
                 refined.mapOver(this)
-              case SingleType(_, sym1) if (sym == sym1) => result = true
+              case SingleType(_, sym1) if pred(sym1) => result = true
               case _ => tp.mapOver(this)
             }
         }
@@ -1017,7 +1020,7 @@ private[internal] trait TypeMaps {
     }
 
     private[this] def inTree(t: Tree): Boolean = {
-      if (t.symbol == sym) result = true else traverse(t.tpe)
+      if (pred(t.symbol)) result = true else traverse(t.tpe)
       result
     }
 
@@ -1034,6 +1037,17 @@ private[internal] trait TypeMaps {
         findInTree.collect(arg)
       arg
     }
+  }
+
+  /** A map to implement the `contains` method. */
+  class ContainsCollector(sym: Symbol) extends ExistsTypeRefCollector {
+    override protected def pred(sym1: Symbol): Boolean = sym1 == sym
+  }
+  class ContainsAnyCollector(syms: List[Symbol]) extends ExistsTypeRefCollector {
+    override protected def pred(sym1: Symbol): Boolean = syms.contains(sym1)
+  }
+  class ContainsAnyKeyCollector(symMap: mutable.HashMap[Symbol, _]) extends ExistsTypeRefCollector {
+    override protected def pred(sym1: Symbol): Boolean = symMap.contains(sym1)
   }
 
   /** A map to implement the `filter` method. */
