@@ -65,4 +65,13 @@ trait SeqOps[A, +CC[_], +C <: AnyRef]
 
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
-abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]
+abstract class AbstractSeq[A]
+  extends scala.collection.AbstractSeq[A]
+    with Seq[A]
+    with SeqOps[A, AbstractSeq, AbstractSeq[A]]
+
+trait AbstractIndexedSeq[A]
+  extends AbstractSeq[A]
+    with scala.collection.AbstractIndexedSeq[A]
+    with IndexedSeq[A]
+    with IndexedSeqOps[A, AbstractIndexedSeq, AbstractIndexedSeq[A]]

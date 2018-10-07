@@ -34,8 +34,7 @@ import java.util.Arrays
   * @define Coll `ArraySeq`
   */
 sealed abstract class ArraySeq[+A]
-  extends AbstractSeq[A]
-    with IndexedSeq[A]
+  extends AbstractIndexedSeq[A]
     with IndexedSeqOps[A, ArraySeq, ArraySeq[A]]
     with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]] {
 

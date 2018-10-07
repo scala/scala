@@ -99,7 +99,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
+  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] {
     def length = underlying.size
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def isEmpty = underlying.isEmpty

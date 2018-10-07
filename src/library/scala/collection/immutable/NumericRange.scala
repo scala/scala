@@ -45,11 +45,8 @@ sealed class NumericRange[T](
   val isInclusive: Boolean
 )(implicit
   num: Integral[T]
-)
-  extends AbstractSeq[T]
-    with IndexedSeq[T]
-    with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
-    with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]] { self =>
+) extends AbstractIndexedSeq[T]
+    with StrictOptimizedSeqOps[T, AbstractIndexedSeq, AbstractIndexedSeq[T]] { self =>
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
 

@@ -48,9 +48,6 @@ import scala.collection.immutable.Nil
   */
 sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   extends AbstractBuffer[T]
-    with Buffer[T]
-    with Seq[T]
-    with SeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
     with StrictOptimizedSeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
     with Builder[T, UnrolledBuffer[T]] {
 

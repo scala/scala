@@ -44,8 +44,7 @@ class ArrayDeque[A] protected (
     private[ArrayDeque] var array: Array[AnyRef],
     private[ArrayDeque] var start: Int,
     private[ArrayDeque] var end: Int
-) extends AbstractBuffer[A]
-    with IndexedBuffer[A]
+) extends AbstractIndexedBuffer[A]
     with IndexedSeqOps[A, ArrayDeque, ArrayDeque[A]]
     with StrictOptimizedSeqOps[A, ArrayDeque, ArrayDeque[A]] {
 

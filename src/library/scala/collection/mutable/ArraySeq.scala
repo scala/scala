@@ -37,8 +37,7 @@ import java.util.Arrays
   */
 @SerialVersionUID(3L)
 sealed abstract class ArraySeq[T]
-  extends AbstractSeq[T]
-    with IndexedSeq[T]
+  extends AbstractIndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
     with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]] {
 

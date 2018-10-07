@@ -36,8 +36,7 @@ package mutable
   *  @define willNotTerminateInf
   */
 class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
-  extends AbstractBuffer[A]
-    with IndexedBuffer[A]
+  extends AbstractIndexedBuffer[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
 

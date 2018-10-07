@@ -39,7 +39,6 @@ import scala.runtime.Statics.releaseFence
   */
 class ListBuffer[A]
   extends AbstractBuffer[A]
-     with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
      with ReusableBuilder[A, immutable.List[A]] {
 

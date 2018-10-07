@@ -58,11 +58,8 @@ sealed abstract class Range(
   val start: Int,
   val end: Int,
   val step: Int
-)
-  extends AbstractSeq[Int]
-    with IndexedSeq[Int]
-    with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
-    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]] { range =>
+) extends AbstractIndexedSeq[Int]
+    with StrictOptimizedSeqOps[Int, AbstractIndexedSeq, AbstractIndexedSeq[Int]] { range =>
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
@@ -135,7 +132,7 @@ sealed abstract class Range(
     else new Range.Exclusive(start + step, end, step)
   }
 
-  override def map[B](f: Int => B): IndexedSeq[B] = {
+  override def map[B](f: Int => B): AbstractIndexedSeq[B] = {
     validateMaxLength()
     super.map(f)
   }
@@ -453,7 +450,7 @@ sealed abstract class Range(
     }
   }
 
-  override def sorted[B >: Int](implicit ord: Ordering[B]): IndexedSeq[Int] =
+  override def sorted[B >: Int](implicit ord: Ordering[B]): AbstractIndexedSeq[Int] =
     if (ord eq Ordering.Int) {
       if (step > 0) {
         this

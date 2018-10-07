@@ -29,8 +29,9 @@ import mutable.{Builder, StringBuilder}
   *  @define Coll `WrappedString`
   *  @define coll wrapped string
   */
-final class WrappedString(private val self: String) extends AbstractSeq[Char] with IndexedSeq[Char]
-  with IndexedSeqOps[Char, IndexedSeq, WrappedString] {
+final class WrappedString(private val self: String)
+  extends AbstractIndexedSeq[Char]
+    with IndexedSeqOps[Char, AbstractIndexedSeq, WrappedString] {
 
   def apply(i: Int): Char = self.charAt(i)
 
@@ -97,7 +98,7 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
       case _                => super.copyToArray(xs, start, len)
     }
 
-  override def appendedAll[B >: Char](suffix: IterableOnce[B]): IndexedSeq[B] =
+  override def appendedAll[B >: Char](suffix: IterableOnce[B]): AbstractIndexedSeq[B] =
     suffix match {
       case s: WrappedString => new WrappedString(self concat s.self)
       case _                => super.appendedAll(suffix)

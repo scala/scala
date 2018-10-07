@@ -62,7 +62,8 @@ object Util {
       a.tree))
   }
 
-  def prettyArray(a: Array[_]): collection.IndexedSeq[Any] = new collection.AbstractSeq[Any] with collection.IndexedSeq[Any] {
+  def prettyArray(a: Array[_]): collection.IndexedSeq[Any] = new collection.AbstractIndexedSeq[Any] {
+
     def length = a.length
 
     def apply(idx: Int): Any = a(idx) match {

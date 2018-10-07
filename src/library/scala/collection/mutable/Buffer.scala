@@ -224,4 +224,15 @@ object IndexedBuffer extends SeqFactory.Delegate[IndexedBuffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
-abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]
+abstract class AbstractBuffer[A]
+  extends AbstractSeq[A]
+    with Buffer[A]
+    with SeqOps[A, AbstractBuffer, AbstractBuffer[A]]
+
+/** Explicit instantiation of the `IndexedBuffer` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
+abstract class AbstractIndexedBuffer[A]
+  extends AbstractBuffer[A]
+    with AbstractIndexedSeq[A]
+    with IndexedBuffer[A]
+    with IndexedSeqOps[A, AbstractIndexedBuffer, AbstractIndexedBuffer[A]]

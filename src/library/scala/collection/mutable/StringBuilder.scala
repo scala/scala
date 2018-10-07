@@ -39,11 +39,11 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
   *  section on `StringBuilders` for more information.
   */
 @SerialVersionUID(3L)
-final class StringBuilder(val underlying: java.lang.StringBuilder) extends AbstractSeq[Char]
-  with Builder[Char, String]
-  with IndexedSeq[Char]
-  with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
-  with java.lang.CharSequence {
+final class StringBuilder(val underlying: java.lang.StringBuilder)
+  extends AbstractIndexedSeq[Char]
+    with Builder[Char, String]
+    with IndexedSeqOps[Char, AbstractIndexedSeq, StringBuilder]
+    with java.lang.CharSequence {
 
   def this() = this(new java.lang.StringBuilder)
 
