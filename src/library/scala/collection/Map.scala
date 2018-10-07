@@ -309,6 +309,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] =
     mapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
+  @deprecated("Use xs ++ ys instead of ys ++: xs for xs of type Iterable", "2.13.0")
+  def ++: [V1 >: V](prefix: IterableOnce[(K,V1)]): CC[K,V1] =
+    mapFactory.from(new View.Concat(this.toIterable, prefix.iterator.to(Iterable)))
+
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
     lazy val keysSet = keys.toSet

@@ -37,4 +37,13 @@ class MapTest {
     assert(Map(1 -> 1, 2 -> 2).mkString("foo [", ", ", "] bar").toString ==
       "foo [1 -> 1, 2 -> 2] bar")
   }
+
+  @Test def t11188(): Unit = {
+    import scala.collection.immutable.ListMap
+
+    val m = ListMap(1 -> "one")
+    val mm = Map(2 -> "two") ++: m
+    assert(mm.isInstanceOf[ListMap[Int,String]])
+    assertEquals(mm.mkString("[", ", ", "]"), "[1 -> one, 2 -> two]")
+  }
 }
