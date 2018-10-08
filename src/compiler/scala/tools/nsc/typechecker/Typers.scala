@@ -2907,6 +2907,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // first, try to define param types from expected function's arg types if needed
         foreach2(vparams, argProtos) { (vparam, argpt) =>
+          // TODO: do we need to exclude vparam.symbol.isError? (I don't think so,
+          // because I don't see how we could recurse after the `setError(vparam)` call below
           if (vparam.tpt.isEmpty) {
             if (isFullyDefined(argpt)) vparam.tpt setType argpt
             else paramsMissingType += vparam
@@ -2921,12 +2923,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // we ran out of things to try, missing parameter types are an irrevocable error
             var issuedMissingParameterTypeError = false
             paramsMissingType.foreach { vparam =>
-              vparam.tpt setType ErrorType
+              setError(vparam) //  see neg/t8675b.scala (we used to set vparam.tpt to ErrorType, but that isn't as effective)
               MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
               issuedMissingParameterTypeError = true
             }
 
-            doTypedFunction(fun, resProto) // TODO: why is it not enough to do setError(fun)?  (for test case, see neg/t8675b.scala)
+            setError(fun)
           }
         } else {
           fun.body match {

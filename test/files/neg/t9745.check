@@ -1,4 +1,4 @@
-t9745.scala:2: error: missing parameter type for expanded function ((x$1: <error>) => Seq({
+t9745.scala:2: error: missing parameter type for expanded function ((<x$1: error>) => Seq({
   <x: error>.<$plus$eq: error>(1);
   42
 }).apply(x$1))
