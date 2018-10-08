@@ -113,8 +113,12 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
-      if (required) reporter.error(pos, msg)
-      else featureWarning(pos, msg)
+      // don't error on postfix in pre-0.13.18 xsbt/Compat.scala
+      def isSbtCompat =
+        (featureName == "postfixOps" && pos.source.path.endsWith("/xsbt/Compat.scala") && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt.")))
+      if (required && !isSbtCompat) {
+        reporter.error(pos, msg)
+      } else featureWarning(pos, msg)
     }
 
     /** Has any macro expansion used a fallback during this run? */
