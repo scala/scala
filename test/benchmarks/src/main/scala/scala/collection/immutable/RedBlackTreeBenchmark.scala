@@ -10,8 +10,8 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.AverageTime))
 @Fork(2)
 @Threads(1)
-@Warmup(iterations = 30)
-@Measurement(iterations = 30)
+@Warmup(iterations = 10)
+@Measurement(iterations = 10)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 class RedBlackTreeBenchmark {
@@ -26,6 +26,7 @@ class RedBlackTreeBenchmark {
   var set3: TreeSet[Int] = _
   var set4: TreeSet[Int] = _
   var perm: Array[Int] = _ // repeatably pseudo-random permutation
+  var map1: TreeMap[Int, Int] = _
 
   @Setup(Level.Trial) def init: Unit = {
     nums = 1 to size
@@ -38,6 +39,7 @@ class RedBlackTreeBenchmark {
     set2 = set1.take(size/4)
     set3 = set1.take(size*3/4)
     set4 = set1.drop(size/2)
+    map1 = TreeMap.from(nums.map(i => (i, i)))
   }
 
   @Benchmark
@@ -112,4 +114,28 @@ class RedBlackTreeBenchmark {
     for(i <- 0 to 10) res += s.drop(s.size*i/10).size
     bh.consume(res)
   }
+
+  @Benchmark
+  def filterKeep(bh: Blackhole): Unit =
+    bh.consume(set1.filter(_ => true))
+
+  @Benchmark
+  def filterDrop(bh: Blackhole): Unit =
+    bh.consume(set1.filter(_ => false))
+
+  @Benchmark
+  def filterPartial(bh: Blackhole): Unit =
+    bh.consume(set1.filter(i => i % 2 == 0))
+
+  @Benchmark
+  def transformNone(bh: Blackhole): Unit =
+    bh.consume(map1.transform((k, v) => v))
+
+  @Benchmark
+  def transformAll(bh: Blackhole): Unit =
+    bh.consume(map1.transform((k, v) => v+1))
+
+  @Benchmark
+  def transformHalf(bh: Blackhole): Unit =
+    bh.consume(map1.transform((k, v) => if(k % 2 == 0) v else v+1))
 }

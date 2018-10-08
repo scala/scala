@@ -337,3 +337,29 @@ object TestDifference extends BulkTest("RedBlackTree.difference") {
   def treeOp(t1: Tree[String, Int], t2: Tree[String, Int]): Tree[String, Int] = difference(t1, t2)
   def setOp(s1: Set[(String, Int)], s2: Set[(String, Int)]): Set[(String, Int)] = s1.diff(s2)
 }
+
+object TestFilter extends RedBlackTreeTest("RedBlackTree.filterEntries") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    filterEntries[String, Int](tree, (k, _) => k.hashCode % 2 == 0)
+
+  property("filter") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).filter(t => t._1.hashCode % 2 == 0).toList == iterator(newTree).toList
+  }
+}
+
+object TestTransform extends RedBlackTreeTest("RedBlackTree.transform") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, count(tree))
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    transform[String, Int, Int](tree, (k, v) => if(v < parm) v else v+1)
+
+  property("transform") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).toList.map { case (k, v) => if(v < parm) (k, v) else (k, v+1) } == iterator(newTree).toList
+  }
+}

@@ -164,6 +164,15 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   override def span(p: ((K, V)) => Boolean): (TreeMap[K, V], TreeMap[K, V]) = splitAt(countWhile(p))
 
+  override def filter(f: ((K, V)) => Boolean): TreeMap[K, V] =
+    newMapOrSelf(RB.filterEntries[K, V](tree, (k, v) => f((k, v))))
+
+  override def transform[W](f: (K, V) => W): TreeMap[K, W] = {
+    val t2 = RB.transform[K, V, W](tree, f)
+    if(t2 eq tree) this.asInstanceOf[TreeMap[K, W]]
+    else new TreeMap(t2)
+  }
+
   override protected[this] def className = "TreeMap"
 }
 

@@ -155,6 +155,8 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
       super.diff(that)
   }
 
+  override def filter(f: A => Boolean): TreeSet[A] = newSetOrSelf(RB.filterKeys(tree, f))
+
   override protected[this] def className = "TreeSet"
 }
 

@@ -498,6 +498,55 @@ private[collection] object RedBlackTree {
     f(1, size)
   }
 
+  def transform[A, B, C](t: Tree[A, B], f: (A, B) => C): Tree[A, C] =
+    if(t eq null) null
+    else {
+      val k = t.key
+      val v = t.value
+      val l = t.left
+      val r = t.right
+      val l2 = transform(l, f)
+      val v2 = f(k, v)
+      val r2 = transform(r, f)
+      if((v2.asInstanceOf[AnyRef] eq v.asInstanceOf[AnyRef])
+          && (l2 eq l)
+          && (r2 eq r)) t.asInstanceOf[Tree[A, C]]
+      else mkTree(isBlackTree(t), k, v2, l2, r2)
+    }
+
+  def filterEntries[A, B](t: Tree[A, B], f: (A, B) => Boolean): Tree[A, B] = if(t eq null) null else {
+    def fk(t: Tree[A, B]): Tree[A, B] = {
+      val k = t.key
+      val v = t.value
+      val l = t.left
+      val r = t.right
+      val l2 = if(l eq null) null else fk(l)
+      val keep = f(k, v)
+      val r2 = if(r eq null) null else fk(r)
+      if(!keep) join2(l2, r2)
+      else if((l2 eq l) && (r2 eq r)) t
+      else join(l2, k, v, r2)
+    }
+    fk(t)
+  }
+
+  def filterKeys[A, B](t: Tree[A, B], f: A => Boolean): Tree[A, B] = if(t eq null) null else {
+    def fk(t: Tree[A, B]): Tree[A, B] = {
+      val k = t.key
+      val l = t.left
+      val r = t.right
+      val l2 = if(l eq null) null else fk(l)
+      val keep = f(k)
+      val r2 = if(r eq null) null else fk(r)
+      if(!keep) join2(l2, r2)
+      else if((l2 eq l) && (r2 eq r)) t
+      else join(l2, k, t.value, r2)
+    }
+    fk(t)
+  }
+
+
+
   // Bulk operations based on "Just Join for Parallel Ordered Sets" (https://www.cs.cmu.edu/~guyb/papers/BFS16.pdf)
   // We don't store the black height in the tree so we pass it down into the join methods and derive the black height
   // of child nodes from it. Where possible the black height is used directly instead of deriving the rank from it.
