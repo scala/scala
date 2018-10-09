@@ -457,7 +457,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         hrule()
       else if (checkList)
         listBlock
-      else if (check(TableCellStart))
+      else if (checkTableRow)
         table()
       else {
         para()
@@ -551,6 +551,18 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       HorizontalRule()
     }
 
+    /** Starts and end with a cell separator matching the minimal row || and all other possible rows */
+    private val TableRow = """^\|.*\|$""".r
+
+    /* Checks for a well-formed table row */
+    private def checkTableRow = {
+      check(TableCellStart) && {
+        val newlineIdx = buffer.indexOf('\n', offset)
+        newlineIdx != -1 &&
+          TableRow.findFirstIn(buffer.substring(offset, newlineIdx)).isDefined
+      }
+    }
+
     /** {{{
       * table         ::= headerRow '\n' delimiterRow '\n' dataRows '\n'
       * content       ::= inline-content
@@ -571,8 +583,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val limitedPeek = peek.substring(0, limit min peek.length)
         println(s"peek: $tag: '$limitedPeek'")
       }
-
-      def nextIsCellStart = check(TableCellStart)
 
       /* Accumulated state */
 
@@ -603,7 +613,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val escapeChar = "\\"
 
       /* Poor man's negative lookbehind */
-      def checkInlineEnd = check(TableCellStart) && !check(escapeChar, -1)
+      def checkInlineEnd =
+        (check(TableCellStart) && !check(escapeChar, -1)) || check("\n")
 
       def decodeEscapedCellMark(text: String) = text.replace(escapeChar + TableCellStart, TableCellStart)
 
@@ -624,8 +635,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       def contentNonEmpty(content: Inline) = content != Text("")
 
       /**
-        * @param cellStartMark   The char indicating the start or end of a cell
-        * @param finalizeRow     Function to invoke when the row has been fully parsed
+        * @param cellStartMark The char indicating the start or end of a cell
+        * @param finalizeRow   Function to invoke when the row has been fully parsed
         */
       def parseCells(cellStartMark: String, finalizeRow: () => Unit): Unit = {
         def jumpCellStartMark() = {
@@ -646,7 +657,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       // Continue parsing a table row.
       //
-      // After reading inline content the follow conditions will be encountered,
+      // After reading inline content the following conditions will be encountered,
       //
       //    Case : Next Chars
       //    ..................
@@ -666,10 +677,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       // Case 3.
       // State : The cell separator not followed by a newline
       // Action: Store the current contents, skip the cell separator, continue parsing the row.
-      //
-      // Case 4.
-      // State : A newline followed by anything
-      // Action: Store the current contents, report warning, skip the newline, close the row, stop parsing.
       //
       @tailrec def parseCells0(
                                 contents: List[Block],
@@ -693,12 +700,12 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           finalizeRow()
           reportError(pos, "unclosed table row")
         } else if (isStartMarkNewline) {
-          // peek("2/1: start-mark-new-line")
+          // peek("2: start-mark-new-line/before")
           // Case 2
           storeContents()
           finalizeRow()
           skipStartMarkNewline()
-          // peek("2/2: start-mark-new-line")
+          // peek("2: start-mark-new-line/after")
         } else if (isStartMark) {
           // peek("3: start-mark")
           // Case 3
@@ -708,14 +715,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           // TrailingCellsEmpty produces empty content
           val accContents = if (contentNonEmpty(content)) Paragraph(content) :: Nil else Nil
           parseCells0(accContents, finalizeRow, startPos, offset)
-        } else if (isNewline) {
-          // peek("4: newline")
-          // Case 4
-          /* Fix and continue as there is no option to not return a table at present. */
-          reportError(pos, "missing trailing cell marker")
-          storeContents()
-          finalizeRow()
-          skipNewline()
         } else {
           // Case π√ⅈ
           // When the impossible happens leave some clues.
@@ -732,7 +731,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       parseCells(TableCellStart, finalizeHeaderCells)
 
-      while (nextIsCellStart) {
+      while (checkTableRow) {
         val initialOffset = offset
 
         parseCells(TableCellStart, finalizeCells)
@@ -814,6 +813,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
               defaultColumnOption
           }
       }
+
+      if (check("\n", -1)) {
+        prevChar()
+      } else {
+        peek("expected-newline-missing")
+        sys.error("table parsing left buffer in unexpected state")
+      }
+
       blockEnded("table")
       Table(header.get, columnOptions, constrainedDataRows)
     }
@@ -1086,6 +1093,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     final def nextChar() {
       offset += 1
+    }
+
+    final def prevChar() {
+      offset -= 1
     }
 
     final def check(chars: String): Boolean = {

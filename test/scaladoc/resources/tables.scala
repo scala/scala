@@ -67,6 +67,15 @@ package scala.test.scaladoc.tables {
     */
   trait TrailingCellsEmpty
 
+  /**
+    * ||Header 1|Header 2|
+    * |---|---|---|
+    * |||Fig|
+    * ||Cherry||
+    * |Walnut|||
+    */
+  trait LeadingCellsEmpty
+
   // Headers
 
   /**
@@ -164,20 +173,8 @@ package scala.test.scaladoc.tables {
     */
   trait CellMarkerEscapeEscapesOnlyMarker
 
-  // Known suboptimal behaviour. Candidates for improving later.
-
   /**
-    * ||Header 1|Header 2|
-    * |---|---|---|
-    * |||Fig|
-    * ||Cherry||
-    * |Walnut|||
-    */
-  trait LeadingCellsEmpty
-
-  // Should not lose r2c1 or warn
-  /**
-    * |Unstarted|
+    * |Unstarted Row|
     * |-|
     * |r1c1|
     * r2c1|
@@ -191,16 +188,25 @@ package scala.test.scaladoc.tables {
     * |-|
     * |Accidental
     * newline|
-    * |~FIN~|
     *
     */
   trait SplitCellContent
 
   /**
+    * |Split|
+    * |-|
+    * |Accidental
+    * newline|
+    * |~FIN~|
+    *
+    */
+  trait SplitInternalCellContent
+
+  /**
     * |Hill Dweller|
     * |---|
     * |Ant|
-    * Ants are cool.
+    * Ants are cool
     * |Hive Dweller|
     * |---|
     * |Bee|
@@ -208,7 +214,11 @@ package scala.test.scaladoc.tables {
     */
   trait MixedContentUnspaced
 
-  // Should parse to table with a header, defaulted delimiter and no rows.
+  // Known suboptimal behaviour. Candidates for improving later.
+
+  // Because table rows must not have leading whitespace this
+  // should parse to a table with a header, defaulted delimiter and no rows
+  // while the ignored content is parsed as non-table content.
   /**
     * |Leading|
     *  |-|
