@@ -79,6 +79,12 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     rootNode.containsKey(key, keyUnimprovedHash, keyHash, 0)
   }
 
+  override def apply(key: K): V = {
+    val keyUnimprovedHash = key.##
+    val keyHash = improve(keyUnimprovedHash)
+    rootNode.apply(key, keyUnimprovedHash, keyHash, 0)
+  }
+
   def get(key: K): Option[V] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
@@ -100,7 +106,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     if (newRootNode ne rootNode) {
       val replaced = rootNode.size == newRootNode.size
       val newCachedJavaKeySetHashCode = cachedJavaKeySetHashCode + (if (replaced) 0 else keyHash)
-      HashMap(newRootNode.get, newCachedJavaKeySetHashCode)
+      HashMap(newRootNode, newCachedJavaKeySetHashCode)
     } else
       this
   }
@@ -589,8 +595,7 @@ private[immutable] object MapNode {
 
 
 private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, V @uV]] {
-  final def get: MapNode[K, V] = this
-
+  def apply(key: K, originalHash: Int, hash: Int, shift: Int): V
   def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V]
   def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1
 
@@ -670,6 +675,24 @@ private final class BitmapIndexedMapNode[K, +V](
 
   def getNode(index: Int) =
     content(content.length - 1 - index).asInstanceOf[MapNode[K, V]]
+
+  def apply(key: K, originalHash: Int, keyHash: Int, shift: Int): V = {
+    val mask = maskFrom(keyHash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val key0 = this.getKey(index)
+      return if (key == key0) this.getValue(index) else throw new NoSuchElementException
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      return this.getNode(index).apply(key, originalHash, keyHash, shift + BitPartitionSize)
+    }
+
+    throw new NoSuchElementException
+  }
 
   def get(key: K, originalHash: Int, keyHash: Int, shift: Int): Option[V] = {
     val mask = maskFrom(keyHash, shift)
@@ -1081,6 +1104,8 @@ private final class HashCollisionMapNode[K, +V ](
   }
 
   def size = content.length
+
+  def apply(key: K, originalHash: Int, hash: Int, shift: Int): V = get(key, originalHash, hash, shift).getOrElse(throw new NoSuchElementException)
 
   def get(key: K, originalHash: Int, hash: Int, shift: Int): Option[V] =
     if (this.hash == hash) {
