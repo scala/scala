@@ -124,9 +124,9 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     (greatest.key, greatest.value)
   }
 
-  override def tail: TreeMap[K, V] = new TreeMap(RB.delete(tree, firstKey))
+  override def tail: TreeMap[K, V] = new TreeMap(RB.tail(tree))
 
-  override def init: TreeMap[K, V] = new TreeMap(RB.delete(tree, lastKey))
+  override def init: TreeMap[K, V] = new TreeMap(RB.init(tree))
 
   override def drop(n: Int): TreeMap[K, V] = {
     if (n <= 0) this
@@ -166,6 +166,11 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   override def filter(f: ((K, V)) => Boolean): TreeMap[K, V] =
     newMapOrSelf(RB.filterEntries[K, V](tree, (k, v) => f((k, v))))
+
+  override def partition(p: ((K, V)) => Boolean): (TreeMap[K, V], TreeMap[K, V]) = {
+    val (l, r) = RB.partitionEntries[K, V](tree, (k, v) => p((k, v)))
+    (newMapOrSelf(l), newMapOrSelf(r))
+  }
 
   override def transform[W](f: (K, V) => W): TreeMap[K, W] = {
     val t2 = RB.transform[K, V, W](tree, f)

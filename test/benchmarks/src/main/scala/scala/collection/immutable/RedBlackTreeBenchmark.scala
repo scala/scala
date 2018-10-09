@@ -128,6 +128,10 @@ class RedBlackTreeBenchmark {
     bh.consume(set1.filter(i => i % 2 == 0))
 
   @Benchmark
+  def partition(bh: Blackhole): Unit =
+    bh.consume(set1.partition(i => i % 2 == 0))
+
+  @Benchmark
   def transformNone(bh: Blackhole): Unit =
     bh.consume(map1.transform((k, v) => v))
 
@@ -138,4 +142,10 @@ class RedBlackTreeBenchmark {
   @Benchmark
   def transformHalf(bh: Blackhole): Unit =
     bh.consume(map1.transform((k, v) => if(k % 2 == 0) v else v+1))
+
+  @Benchmark
+  def tails(bh: Blackhole): Unit = {
+    val it = set1.tails
+    while(it.hasNext) bh.consume(it.next())
+  }
 }

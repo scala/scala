@@ -46,9 +46,9 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
 
   override def last: A = RB.greatest(tree).key
 
-  override def tail: TreeSet[A] = new TreeSet(RB.delete(tree, firstKey))
+  override def tail: TreeSet[A] = new TreeSet(RB.tail(tree))
 
-  override def init: TreeSet[A] = new TreeSet(RB.delete(tree, lastKey))
+  override def init: TreeSet[A] = new TreeSet(RB.init(tree))
 
   override def drop(n: Int): TreeSet[A] = {
     if (n <= 0) this
@@ -141,6 +141,12 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
     newSetOrSelf(t)
   }
 
+  override def removeAll(that: IterableOnce[A]): TreeSet[A] = that match {
+    case ts: TreeSet[A] if ordering == ts.ordering =>
+      newSetOrSelf(RB.difference(tree, ts.tree))
+    case _ => super.removeAll(that)
+  }
+
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
       newSetOrSelf(RB.intersect(tree, ts.tree))
@@ -156,6 +162,11 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
   }
 
   override def filter(f: A => Boolean): TreeSet[A] = newSetOrSelf(RB.filterKeys(tree, f))
+
+  override def partition(p: A => Boolean): (TreeSet[A], TreeSet[A]) = {
+    val (l, r) = RB.partitionKeys(tree, p)
+    (newSetOrSelf(l), newSetOrSelf(r))
+  }
 
   override protected[this] def className = "TreeSet"
 }

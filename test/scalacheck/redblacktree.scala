@@ -222,6 +222,32 @@ object TestDrop extends RedBlackTreeTest("RedBlackTree.drop") {
   }
 }
 
+object TestTail extends RedBlackTreeTest("RedBlackTree.tail") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    if(tree eq null) null else tail(tree)
+
+  property("tail") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).drop(1).toList == iterator(newTree).toList
+  }
+}
+
+object TestInit extends RedBlackTreeTest("RedBlackTree.init") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    if(tree eq null) null else init(tree)
+
+  property("tail") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).toList.dropRight(1) == iterator(newTree).toList
+  }
+}
+
 object TestTake extends RedBlackTreeTest("RedBlackTree.take") {
   import RB._
 
@@ -348,6 +374,32 @@ object TestFilter extends RedBlackTreeTest("RedBlackTree.filterEntries") {
 
   property("filter") = forAll(genInput) { case (tree, parm, newTree) =>
     iterator(tree).filter(t => t._1.hashCode % 2 == 0).toList == iterator(newTree).toList
+  }
+}
+
+object TestPartitionLeft extends RedBlackTreeTest("RedBlackTree.partitionKeysLeft") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    partitionKeys[String, Int](tree, k => k.hashCode % 2 == 0)._1
+
+  property("partition") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).filter(t => t._1.hashCode % 2 == 0).toList == iterator(newTree).toList
+  }
+}
+
+object TestPartitionRight extends RedBlackTreeTest("RedBlackTree.partitionKeysRight") {
+  import RB._
+
+  override type ModifyParm = Int
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, 0)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] =
+    partitionKeys[String, Int](tree, k => k.hashCode % 2 == 0)._2
+
+  property("partition") = forAll(genInput) { case (tree, parm, newTree) =>
+    iterator(tree).filter(t => t._1.hashCode % 2 != 0).toList == iterator(newTree).toList
   }
 }
 
