@@ -23,12 +23,10 @@ class ChainingOpsTest extends RunTesting {
 
   @Test
   def testAnyPipe: Unit = {
-    val times6 = (_: Int) * 6
-    val result = (1 - 2 - 3)
-      .pipe(times6)
-      .pipe(scala.math.abs)
+    val plus3 = (_: Int) + 3
+    val result = (1 - 2) |> plus3 |> scala.math.abs
 
-    assertEquals(24, result)
+    assertEquals(2, result)
   }
 
   @Test(expected = classOf[ToolBoxError]) def testNoSelf: Unit =

@@ -17,7 +17,9 @@ trait ChainingSyntax {
   implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }
 
-/** Adds chaining methods `tap` and `pipe` to every type.
+/** Adds chaining methods `tap`, `pipe` (aliased as `|>`) to every type.
+ *
+ * Note: these methods may have a small amount of overhead compared their expanded forms.
  */
 final class ChainingOps[A](private val self: A) extends AnyVal {
   /** Applies `f` to the value for its side effects, and returns the original value.
@@ -32,26 +34,53 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
    *  @tparam U     the result type of the function `f`.
    *  @return       the original value `self`.
    */
-  def tap[U](f: A => U): A = {
+  @inline def tap[U](f: A => U): A = {
     f(self)
     self
   }
 
-  /** Converts the value by applying the function `f`.
+
+  /** Applies function `f` to the value.
    *
    *    {{{
-   *    val times6 = (_: Int) * 6
-   *    val i = (1 - 2 - 3).pipe(times6).pipe(scala.math.abs)
-   *    // i == 24
+   *    val i = (1 - 2).pipe(_ + 3).pipe(scala.math.abs)
+   *    // i == 2
    *    }}}
    *
-   * Note: `(1 - 2 - 3).pipe(times6)` may have a small amount of overhead at
-   * runtime compared to the equivalent  `{ val temp = 1 - 2 - 3; times6(temp) }`.
+   * It is equivalent to:
+   *
+   *    {{{
+   *    val i = scala.math.abs((1 - 2) + 3)
+   *    // i == 2
+   *    }}}
    *
    *  @param f      the function to apply to the value.
    *  @tparam B     the result type of the function `f`.
-   *  @return       a new value resulting from applying the given function
-   *                `f` to this value.
+   *  @return       the result of applying `f` to the value.
    */
-  def pipe[B](f: A => B): B = f(self)
+  @inline def pipe[B](f: A => B): B = f(self)
+
+
+  /** Applies function `f` to the value.
+   *
+   *    {{{
+   *    val i = (1 - 2) |> (_ + 3) |> scala.math.abs
+   *    // i == 2
+   *    }}}
+   *
+   * It is equivalent to:
+   *
+   *    {{{
+   *    val i = scala.math.abs((1 - 2) + 3)
+   *    // i == 2
+   *    }}}
+   *
+   * The `|>` syntax is inspired by that of F#, Bash, OCaml, ReasonML, Elixir and PowerShell.
+   * It is an alias of [[pipe]].
+   *
+   *  @param f      the function to apply to the value.
+   *  @tparam B     the result type of the function `f`.
+   *  @return       the result of applying `f` to the value.
+   */
+  @inline def |>[B](f: A => B): B = pipe(f)
 }
