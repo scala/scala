@@ -7,6 +7,7 @@ package scala.tools.nsc
 package util
 
 import scala.reflect.internal.Chars._
+import scala.tools.nsc.ast.parser.Scanners
 
 trait CharArrayReaderData {
   /** the last read character */
@@ -14,6 +15,12 @@ trait CharArrayReaderData {
 
   /** The offset one past the last read character */
   var charOffset: Int = 0
+
+  /** the offset of the character following the token preceding this one */
+  final def curOffset: Int = this match {
+    case td: Scanners#TokenData => td.lastOffset
+    case _ => charOffset - 1
+  }
 
   /** The start offset of the current line */
   var lineStartOffset: Int = 0
