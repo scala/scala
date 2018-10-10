@@ -66,7 +66,7 @@ trait MarkupParsers {
 
     import parser.{ symbXMLBuilder => handle, o2p, r2p }
 
-    def curOffset : Int = input.charOffset - 1
+    def curOffset : Int = input.curOffset
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
