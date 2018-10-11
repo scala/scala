@@ -91,7 +91,7 @@ abstract class Duplicators extends Analyzer {
           )
           if (sym1.exists) {
             debuglog(s"fixing $sym -> $sym1")
-            typeRef(NoPrefix, sym1, mapOverArgs(args, sym1.typeParams))
+            typeRef(NoPrefix, sym1, args mapConserve this)
           }
           else super.mapOver(tpe)
 
@@ -99,7 +99,7 @@ abstract class Duplicators extends Analyzer {
           val newsym = updateSym(sym)
           if (newsym ne sym) {
             debuglog("fixing " + sym + " -> " + newsym)
-            typeRef(mapOver(pre), newsym, mapOverArgs(args, newsym.typeParams))
+            typeRef(mapOver(pre), newsym, args mapConserve this)
           } else
             super.mapOver(tpe)
 
