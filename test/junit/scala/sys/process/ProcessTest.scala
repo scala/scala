@@ -17,22 +17,22 @@ class ProcessTest {
   private def testily(body: => Unit) = if (!isWin) body
   private val tempFiles = Seq(File.createTempFile("foo", "tmp"), File.createTempFile("bar", "tmp"))
   @Test def t10007(): Unit = testily {
-    val res = ("cat" read new ByteArrayInputStream("lol".getBytes)).outputString
+    val res = ("cat" #< new ByteArrayInputStream("lol".getBytes)).!!
     assertEquals("lol\n", res)
   }
   // test non-hanging
   @Test def t10055(): Unit = testily {
-    val res = ("cat" read (() => -1 ) ).runBlocking
+    val res = ("cat" #< ( () => -1 ) ).!
     assertEquals(0, res)
   }
 
   @Test def t10953(): Unit = {
-    val res = Process.cat(tempFiles).runBlocking
+    val res = Process.cat(tempFiles).!
     assertEquals(0, res)
   }
 
   @Test def processApply(): Unit = {
-    val res = Process("cat", tempFiles.map(_.getAbsolutePath)).runBlocking
+    val res = Process("cat", tempFiles.map(_.getAbsolutePath)).!
     assertEquals(0, res)
   }
 

@@ -29,7 +29,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" pipeTo "grep .scala" ifSuceedsThen Seq("sh", "-c", "scalac *.scala") ifFailsThen "echo nothing found" lazyLines
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lazyLines
     * }}}
     *
     * We describe below the general concepts and architecture of the package,
@@ -73,7 +73,7 @@ package scala.sys {
     * implements the process execution DSL, that creates the
     * [[scala.sys.process.Process]] that will handle the execution, and return
     * the results of such execution to the caller. We can see that DSL in the
-    * introductory example: `pipeTo`, `ifSuceedsThen` and `#!!` are methods on
+    * introductory example: `#|`, `#&&` and `#!!` are methods on
     * `ProcessBuilder` used to create a new `ProcessBuilder` through
     * composition.
     *
@@ -186,7 +186,7 @@ package scala.sys {
     * import java.io.File
     * import java.net.URL
     * import scala.sys.process._
-    * new URL("http://www.scala-lang.org/") overwrite new File("scala-lang.html") !
+    * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
     * More information about the other ways of controlling I/O can be found
@@ -199,7 +199,7 @@ package scala.sys {
     * [[scala.sys.process.Process]], and it provides only two methods:
     *
     *   - `exitValue()`: blocks until the process exit, and then returns the exit
-    *   value. This is what happens when one uses the `runBlocking` method of
+    *   value. This is what happens when one uses the `!` method of
     *   `ProcessBuilder`.
     *   - `destroy()`: this will kill the external process and close the streams
     *   associated with it.

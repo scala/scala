@@ -11,5 +11,5 @@ object Test extends App {
   assert(new File(testClassesDir).exists, testClassesDir)
   val fullTestClassesClasspath = testClassesDir + prop("path.separator") + prop("java.class.path")
   val javaBinary = if (new File(prop("javacmd")).isAbsolute) prop("javacmd") else prop("java.home") + "/bin/" + prop("javacmd")
-  List(javaBinary, "-cp", testClassesDir, "-Dlaunch.classpath=" + fullTestClassesClasspath, "StepOne").runBlocking
+  List(javaBinary, "-cp", testClassesDir, "-Dlaunch.classpath=" + fullTestClassesClasspath, "StepOne").!
 }

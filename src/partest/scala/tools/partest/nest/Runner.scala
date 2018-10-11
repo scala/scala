@@ -200,7 +200,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  error out to output file.
    */
   protected def runCommand(args: Seq[String], outFile: File): Boolean = {
-    //(Process(args) overwrite outFile !) == 0 or (Process(args) runBlocking pl) == 0
+    //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
     val pl = ProcessLogger(outFile)
     val nonzero = 17     // rounding down from 17.3
     def run: Int = {
@@ -690,7 +690,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
     val args = file2String(testFile changeExtension "args")
     val cmdFile = if (isWin) testFile changeExtension "bat" else testFile
-    val succeeded = (((cmdFile + " " + args) overwrite logFile !) == 0)
+    val succeeded = (((cmdFile + " " + args).overwrite(logFile) !) == 0)
 
     val result = if (succeeded) genPass else genFail(s"script $cmdFile failed to run")
 

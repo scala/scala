@@ -11,7 +11,7 @@ class ProcessBuilderTest {
   def t8406: Unit = {
     import java.io.ByteArrayInputStream
     import scala.util.Try
-    assert(Try(("does-not-exist" read new ByteArrayInputStream("foo".getBytes("utf-8"))).lazyLines).isSuccess)
-    assert(Try(("does-not-exist" read new ByteArrayInputStream("foo".getBytes("utf-8"))).lazyLines.toList).isFailure)
+    assert(Try(("does-not-exist" #< new ByteArrayInputStream("foo".getBytes("utf-8"))).lazyLines).isSuccess)
+    assert(Try(("does-not-exist" #< new ByteArrayInputStream("foo".getBytes("utf-8"))).lazyLines.toList).isFailure)
   }
 }

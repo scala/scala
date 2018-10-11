@@ -20,7 +20,7 @@ import scala.language.implicitConversions
 
 
 /** Represents a process that is running or has finished running.
- *  It may be a compound process with several underlying native processes (such as `a ifSuceedsThen b`).
+ *  It may be a compound process with several underlying native processes (such as `a #&& b`).
  *
  *  This trait is often not used directly, though its companion object contains
  *  factories for [[scala.sys.process.ProcessBuilder]], the main component of this
@@ -163,7 +163,7 @@ trait ProcessCreation {
     * val spde = new URL("http://technically.us/spde.html")
     * val dispatch = new URL("https://dispatchhttp.org/Dispatch.html")
     * val build = new File("project/build.properties")
-    * cat(spde, dispatch, build) pipeTo "grep -i scala" !
+    * cat(spde, dispatch, build) #| "grep -i scala" !
     * }}}
     */
   def cat(file: Source, files: Source*): ProcessBuilder = cat(file +: files)
@@ -176,7 +176,7 @@ trait ProcessCreation {
     */
   def cat(files: scala.collection.Seq[Source]): ProcessBuilder = {
     require(files.nonEmpty)
-    files map (_.cat) reduceLeft (_ ifSucceedsThen _)
+    files map (_.cat) reduceLeft (_ #&& _)
   }
 }
 
@@ -201,7 +201,7 @@ trait ProcessImplicits {
     * either input or output of a process. For example:
     * {{{
     * import scala.sys.process._
-    * "ls" overwrite new java.io.File("dirContents.txt") !
+    * "ls" #> new java.io.File("dirContents.txt") !
     * }}}
     */
   implicit def fileToProcess(file: File): FileBuilder                     = apply(file)
@@ -211,7 +211,7 @@ trait ProcessImplicits {
     * input to a process. For example:
     * {{{
     * import scala.sys.process._
-    * Seq("xmllint", "--html", "-") read new java.net.URL("http://www.scala-lang.org") overwrite new java.io.File("fixed.html") !
+    * Seq("xmllint", "--html", "-") #< new java.net.URL("http://www.scala-lang.org") #> new java.io.File("fixed.html") !
     * }}}
     */
   implicit def urlToProcess(url: URL): URLBuilder                         = apply(url)

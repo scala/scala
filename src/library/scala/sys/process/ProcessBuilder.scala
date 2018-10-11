@@ -31,13 +31,13 @@ import ProcessBuilder.{Sink, Source}
   * import scala.sys.process._
   *
   * // Executes "ls" and sends output to stdout
-  * "ls".runBlocking
+  * "ls".!
   *
   * // Execute "ls" and assign a `LazyList[String]` of its output to "contents".
   * val contents = Process("ls").lazyLines
   *
   * // Here we use a `Seq` to make the parameter whitespace-safe
-  * def contentsOf(dir: String): String = Seq("ls", dir).outputString
+  * def contentsOf(dir: String): String = Seq("ls", dir).!!
   * }}}
   *
   * The methods of `ProcessBuilder` are divided in three categories: the ones that
@@ -50,24 +50,24 @@ import ProcessBuilder.{Sink, Source}
   * Two existing `ProcessBuilder` can be combined in the following ways:
   *
   *   - They can be executed in parallel, with the output of the first being fed
-  *     as input to the second, like Unix pipes. This is achieved with the `pipeTo`
+  *     as input to the second, like Unix pipes. This is achieved with the `#|`
   *     method.
   *   - They can be executed in sequence, with the second starting as soon as
-  *     the first ends. This is done by the `andThen` method.
+  *     the first ends. This is done by the `###` method.
   *   - The execution of the second one can be conditioned by the return code
   *     (exit status) of the first, either only when it's zero, or only when it's
-  *     not zero. The methods `ifSuceedsThen` and `ifFailsThen` accomplish these tasks.
+  *     not zero. The methods `#&&` and `#||` accomplish these tasks.
   *
   * ==Redirecting Input/Output==
   *
   * Though control of input and output can be done when executing the process,
   * there's a few methods that create a new `ProcessBuilder` with a
-  * pre-configured input or output. They are `read, `overwrite` and `append`, and may take
+  * pre-configured input or output. They are `#<`, `#>` and `#>>`, and may take
   * as input either another `ProcessBuilder` (like the pipe described above), or
   * something else such as a `java.io.File` or a `java.io.InputStream`.
   * For example:
   * {{{
-  * new URL("http://databinder.net/dispatch/About") overwrite "grep JSON" append new File("About_JSON") runBlocking
+  * new URL("http://databinder.net/dispatch/About") #> "grep JSON" #>> new File("About_JSON") !
   * }}}
   *
   * ==Starting Processes==
@@ -80,9 +80,9 @@ import ProcessBuilder.{Sink, Source}
   *   - `run`: the most general method, it returns a
   *     [[scala.sys.process.Process]] immediately, and the external command
   *     executes concurrently.
-  *   - `runBlocking`: blocks until all external commands exit, and returns the exit code
+  *   - `!`: blocks until all external commands exit, and returns the exit code
   *     of the last one in the chain of execution.
-  *   - `outputString`: blocks until all external commands exit, and returns a `String`
+  *   - `!!`: blocks until all external commands exit, and returns a `String`
   *     with the output generated.
   *   - `lazyLines`: returns immediately like `run`, and the output being generated
   *     is provided through a `LazyList[String]`. Getting the next element of that
@@ -93,13 +93,13 @@ import ProcessBuilder.{Sink, Source}
   * ==Handling Input and Output==
   *
   * If not specified, the input of the external commands executed with `run` or
-  * `runBlocking` will not be tied to anything, and the output will be redirected to the
-  * stdout and stderr of the Scala process. For the methods `outputString` and `lazyLines`, no
+  * `!` will not be tied to anything, and the output will be redirected to the
+  * stdout and stderr of the Scala process. For the methods `!!` and `lazyLines`, no
   * input will be provided, and the output will be directed according to the
   * semantics of these methods.
   *
   * Some methods will cause stdin to be used as input. Output can be controlled
-  * with a [[scala.sys.process.ProcessLogger]] -- `outputString` and `lazyLines` will only
+  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lazyLines` will only
   * redirect error output when passed a `ProcessLogger`. If one desires full
   * control over input and output, then a [[scala.sys.process.ProcessIO]] can be
   * used with `run`.
@@ -114,25 +114,25 @@ import ProcessBuilder.{Sink, Source}
   * Let's examine in detail one example of usage:
   * {{{
   * import scala.sys.process._
-  * "find src -name *.scala -exec grep null {} ;" pipeTo "xargs test -z" ifSuceedsThen "echo null-free" ifFailsThen "echo null detected" runBlocking
+  * "find src -name *.scala -exec grep null {} ;"  #|  "xargs test -z"  #&&  "echo null-free"  #||  "echo null detected"  !
   * }}}
   * Note that every `String` is implicitly converted into a `ProcessBuilder`
   * through the implicits imported from [[scala.sys.process]]. These `ProcessBuilder` are then
   * combined in three different ways.
   *
-  *   1. `pipeTo` pipes the output of the first command into the input of the second command. It
+  *   1. `#|` pipes the output of the first command into the input of the second command. It
   *      mirrors a shell pipe (`|`).
-  *   1. `ifSuceedsThen` conditionally executes the second command if the previous one finished with
+  *   1. `#&&` conditionally executes the second command if the previous one finished with
   *      exit value 0. It mirrors shell's `&&`.
-  *   1. `ifFailsThen` conditionally executes the third command if the exit value of the previous
+  *   1. `#||` conditionally executes the third command if the exit value of the previous
   *      command is different than zero. It mirrors shell's `||`.
   *
-  * Finally, `runBlocking` at the end executes the commands, and returns the exit value.
+  * Finally, `!` at the end executes the commands, and returns the exit value.
   * Whatever is printed will be sent to the Scala process standard output. If
-  * we wanted to capture it, we could run that with `outputString` instead.
+  * we wanted to capture it, we could run that with `!!` instead.
   *
   * Note: though it is not shown above, the equivalent of a shell's `;` would be
-  * `andThen`. The reason for this name is that `;` is a reserved token in Scala.
+  * `###`. The reason for this name is that `;` is a reserved token in Scala.
   *
   */
 trait ProcessBuilder extends Source with Sink {
@@ -140,39 +140,27 @@ trait ProcessBuilder extends Source with Sink {
     * returns the output as a String.  Standard error is sent to the console.  If
     * the exit code is non-zero, an exception is thrown.
     */
-  def outputString : String
-
-  @deprecated("Use outputString", since = "2.13.0")
-  def !! : String = outputString
+  def !! : String
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the output as a String.  Standard error is sent to the provided
     * ProcessLogger.  If the exit code is non-zero, an exception is thrown.
     */
-  def outputString(log: ProcessLogger): String
-
-  @deprecated("Use outputString", since = "2.13.0")
-  def !!(log: ProcessLogger): String = outputString(log)
+  def !!(log: ProcessLogger): String
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the output as a String.  Standard error is sent to the console.  If
     * the exit code is non-zero, an exception is thrown.  The newly started
     * process reads from standard input of the current process.
     */
-  def outputStringFromStdin : String
-
-  @deprecated("Use outputStringFromStdin", since = "2.13.0")
-  def !!< : String = outputStringFromStdin
+  def !!< : String
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the output as a String.  Standard error is sent to the provided
     * ProcessLogger.  If the exit code is non-zero, an exception is thrown.  The
     * newly started process reads from standard input of the current process.
     */
-  def outputStringFromStdin(log: ProcessLogger): String
-
-  @deprecated("Use outputStringFromStdin", since = "2.13.0")
-  def !!<(log: ProcessLogger): String = outputStringFromStdin(log)
+  def !!<(log: ProcessLogger): String
 
   /** Starts the process represented by this builder.  The output is returned as
     * a LazyList that blocks when lines are not available but the process has not
@@ -337,38 +325,26 @@ trait ProcessBuilder extends Source with Sink {
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the console.
     */
-  def runBlocking : Int
-
-  @deprecated("use runBlocking", since = "2.13.0")
-  def ! : Int = runBlocking
+  def ! : Int
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the given
     * ProcessLogger.
     */
-  def runBlocking(log: ProcessLogger): Int
-
-  @deprecated("use runBlocking", since = "2.13.0")
-  def !(log: ProcessLogger): Int = runBlocking(log)
+  def !(log: ProcessLogger): Int
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the console.
     * The newly started process reads from standard input of the current process.
     */
-  def runBlockingFromStdin : Int
-
-  @deprecated("use runBlockingFromStdin", since = "2.13.0")
-  def !< : Int = runBlockingFromStdin
+  def !< : Int
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the given
     * ProcessLogger.  The newly started process reads from standard input of the
     * current process.
     */
-  def runBlockingFromStdin(log: ProcessLogger): Int
-
-  @deprecated("use runBlockingFromStdin", since = "2.13.0")
-  def !<(log: ProcessLogger): Int = runBlockingFromStdin(log)
+  def !<(log: ProcessLogger): Int
 
   /** Starts the process represented by this builder.  Standard output and error
    * are sent to the console.*/
@@ -399,34 +375,23 @@ trait ProcessBuilder extends Source with Sink {
   /** Constructs a command that runs this command first and then `other` if this
     * command succeeds.
     */
-  def ifSucceedsThen(other: ProcessBuilder): ProcessBuilder
-
-  @deprecated("Use ifSucceedsThen", since = "2.13.0")
-  def #&&(other: ProcessBuilder): ProcessBuilder = ifSucceedsThen(other)
+  def #&& (other: ProcessBuilder): ProcessBuilder
 
   /** Constructs a command that runs this command first and then `other` if this
     * command does not succeed.
     */
-  def ifFailsThen(other: ProcessBuilder): ProcessBuilder
-
-  @deprecated("Use ifFailsThen", since = "2.13.0")
-  def #||(other: ProcessBuilder): ProcessBuilder = ifFailsThen(other)
+  def #|| (other: ProcessBuilder): ProcessBuilder
 
   /** Constructs a command that will run this command and pipes the output to
     * `other`.  `other` must be a simple command.
     */
-  def pipeTo(other: ProcessBuilder): ProcessBuilder
-
-  @deprecated("Use pipeTo", since = "2.13.0")
-  def #|(other: ProcessBuilder): ProcessBuilder = pipeTo(other)
+  def #| (other: ProcessBuilder): ProcessBuilder
 
   /** Constructs a command that will run this command and then `other`.  The
     * exit code will be the exit code of `other`.
     */
-  def andThen(other: ProcessBuilder): ProcessBuilder
+  def ### (other: ProcessBuilder): ProcessBuilder
 
-  @deprecated("Use andThen", since = "2.13.0")
-  def ###(other: ProcessBuilder): ProcessBuilder = andThen(other)
 
   /** True if this command can be the target of a pipe.  */
   def canPipeTo: Boolean
@@ -452,28 +417,16 @@ object ProcessBuilder extends ProcessBuilderImpl {
     */
   trait FileBuilder extends Sink with Source {
     /** Append the contents of a `java.io.File` to this file */
-    def redirect(f: File): ProcessBuilder
-
-    @deprecated("Use redirect", since = "2.13.0")
-    def #<<(f: File): ProcessBuilder = redirect(f)
+    def #<<(f: File): ProcessBuilder
 
     /** Append the contents from a `java.net.URL` to this file */
-    def redirect(u: URL): ProcessBuilder
-
-    @deprecated("Use redirect", since = "2.13.0")
-    def #<<(u: URL): ProcessBuilder = redirect(u)
+    def #<<(u: URL): ProcessBuilder
 
     /** Append the contents of a `java.io.InputStream` to this file */
-    def redirect(i: => InputStream): ProcessBuilder
-
-    @deprecated("Use redirect", since = "2.13.0")
-    def #<<(i: => InputStream): ProcessBuilder = redirect(i)
+    def #<<(i: => InputStream): ProcessBuilder
 
     /** Append the contents of a [[scala.sys.process.ProcessBuilder]] to this file */
-    def redirect(p: ProcessBuilder): ProcessBuilder
-
-    @deprecated("Use redirect", since = "2.13.0")
-    def #<<(p: ProcessBuilder): ProcessBuilder = redirect(p)
+    def #<<(p: ProcessBuilder): ProcessBuilder
   }
 
   /** Represents everything that can be used as an input to a
@@ -489,10 +442,7 @@ object ProcessBuilder extends ProcessBuilderImpl {
     def #>(f: File): ProcessBuilder = overwrite(f)
 
     /** Appends the output stream of this process to the given file. */
-    def append(f: File): ProcessBuilder = toFile(f, append = true)
-
-    @deprecated("Use append", since = "2.13.0")
-    def #>>(f: File):  ProcessBuilder = append(f)
+    def #>> (f: File): ProcessBuilder = toFile(f, append = true)
 
     /** Writes the output stream of this process to the given OutputStream. The
       * argument is call-by-name, so the stream is recreated, written, and closed each
@@ -521,30 +471,18 @@ object ProcessBuilder extends ProcessBuilderImpl {
     protected def toSink: ProcessBuilder
 
     /** Reads the given file into the input stream of this process. */
-    def read(f: File): ProcessBuilder = read (new FileInput(f))
-
-    @deprecated("Use read", since = "2.13.0")
-    def #<(f: File): ProcessBuilder = read (new FileInput(f))
+    def #< (f: File): ProcessBuilder = #< (new FileInput(f))
 
     /** Reads the given URL into the input stream of this process. */
-    def read(f: URL): ProcessBuilder = read (new URLInput(f))
-
-    @deprecated("Use read", since = "2.13.0")
-    def #<(f: URL): ProcessBuilder = read (new URLInput(f))
+    def #< (f: URL): ProcessBuilder = #< (new URLInput(f))
 
     /** Reads the given InputStream into the input stream of this process. The
       * argument is call-by-name, so the stream is recreated, read, and closed each
       * time this process is executed.
       */
-    def read(in: => InputStream): ProcessBuilder = read (new IStreamBuilder(in, "<input stream>"))
-
-    @deprecated("Use read", since = "2.13.0")
-    def #<(in: => InputStream): ProcessBuilder = read (new IStreamBuilder(in, "<input stream>"))
+    def #<(in: => InputStream): ProcessBuilder = #< (new IStreamBuilder(in, "<input stream>"))
 
     /** Reads the output of a [[scala.sys.process.ProcessBuilder]] into the input stream of this process. */
-    def read(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, toSink, false)
-
-    @deprecated("Use read", since = "2.13.0")
     def #<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, toSink, false)
   }
 }
