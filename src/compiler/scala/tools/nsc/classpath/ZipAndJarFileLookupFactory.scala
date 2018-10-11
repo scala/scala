@@ -190,6 +190,7 @@ final class FileBasedCache[T] {
   import java.nio.file.Path
   private case class Stamp(lastModified: FileTime, fileKey: Object)
   private val cache = collection.mutable.Map.empty[Seq[Path], (Seq[Stamp], T)]
+  def owns(t: T): Boolean = cache.valuesIterator.exists(_._2.asInstanceOf[AnyRef] eq t.asInstanceOf[AnyRef])
 
   def getOrCreate(paths: Seq[Path], create: () => T): T = cache.synchronized {
     val stamps = paths.map { path =>

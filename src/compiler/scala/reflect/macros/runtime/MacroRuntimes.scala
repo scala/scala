@@ -60,10 +60,14 @@ trait MacroRuntimes extends JavaReflectionRuntimes {
    *  a classloader mapped to that virtual directory.
    */
   private lazy val defaultMacroClassloaderCache = {
-    def attemptClose(loader: ClassLoader): Unit = loader match {
-      case u: URLClassLoader => debuglog("Closing macro runtime classloader"); u.close()
-      case afcl: AbstractFileClassLoader => attemptClose(afcl.getParent)
-      case _ => ???
+    def attemptClose(loader: ClassLoader): Unit = {
+      if (!scala.tools.nsc.typechecker.Macros.macroClassLoadersCache.owns(loader)) {
+        loader match {
+          case u: URLClassLoader => debuglog("Closing macro runtime classloader"); u.close()
+          case afcl: AbstractFileClassLoader => attemptClose(afcl.getParent)
+          case _ => ???
+        }
+      }
     }
     perRunCaches.newGeneric(findMacroClassLoader, attemptClose _)
   }

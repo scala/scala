@@ -67,9 +67,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
-  private final val macroClassLoadersCache =
-    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
-
   /** Obtains a `ClassLoader` instance used for macro expansion.
    *
    *  By default a new `ScalaClassLoader` is created using the classpath
@@ -109,7 +106,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
           newLoader()
         } else {
-          macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
+          Macros.macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
         }
       }
     }
@@ -942,6 +939,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           tree
       })
     }.transform(expandee)
+}
+
+object Macros {
+  final val macroClassLoadersCache =
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
+
 }
 
 trait MacrosStats {
