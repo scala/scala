@@ -69,12 +69,18 @@ trait MarkupParsers {
       else reportSyntaxError(msg)
 
     var input : CharArrayReader = _
+
     def lookahead(): BufferedIterator[Char] =
       (input.buf drop input.charOffset).iterator.buffered
 
     import parser.{ symbXMLBuilder => handle, o2p, r2p }
 
-    def curOffset : Int = input.charOffset - 1
+    // consistent with scanner.nextToken in CRNL handling,
+    // but curOffset does not report correct position for last token (compare lastOffset)
+    def curOffset: Int = {
+      val res = input.charOffset - 1
+      if (res > 0 && input.buf(res) == '\n' && input.buf(res-1) == '\r') res - 1 else res
+    }
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
@@ -358,12 +364,13 @@ trait MarkupParsers {
 
     /** Use a lookahead parser to run speculative body, and return the first char afterward. */
     private def charComingAfter(body: => Unit): Char = {
+      val saved = input
       try {
         input = input.lookaheadReader
         body
         ch
       }
-      finally input = parser.in
+      finally input = saved
     }
 
     /** xLiteral = element { element }
@@ -376,7 +383,6 @@ trait MarkupParsers {
 
         val ts = new ArrayBuffer[Tree]
         val start = curOffset
-        tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
         content_LT(ts)
 
         // parse more XML?
