@@ -47,4 +47,27 @@ class HashSetTest {
     assertTrue(hs.remove(1))
     assertFalse(hs.remove(1))
   }
+
+  @Test
+  def iterator: Unit = {
+    val hs = HashSet.from(1 to 5)
+    val it = hs.iterator
+    var s = 0
+    while(it.hasNext) s += it.next()
+    assertEquals((1 to 5).sum, s)
+  }
+
+  @Test
+  def equality: Unit = {
+    val hs = HashSet[Any](1)
+    assertTrue(hs.contains(1.0))
+  }
+
+  case class PackageEntryImpl(name: String)
+
+  @Test
+  def addConflicting: Unit = {
+    val hs = HashSet[PackageEntryImpl](PackageEntryImpl("javax"), PackageEntryImpl("java"))
+    assertFalse(hs.add(PackageEntryImpl("java")))
+  }
 }

@@ -152,12 +152,12 @@ x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = HashMap(A -> 1, C -> 3, B -> 2)
-y = HashMap(A -> 1, C -> 3, B -> 2)
+x = HashMap(A -> 1, B -> 2, C -> 3)
+y = HashMap(A -> 1, B -> 2, C -> 3)
 x equals y: true, y equals x: true
 
-x = HashSet(buffers, title, layers)
-y = HashSet(buffers, title, layers)
+x = HashSet(buffers, layers, title)
+y = HashSet(buffers, layers, title)
 x equals y: true, y equals x: true
 
 x = LinkedHashMap(Linked -> 1, Hash -> 2, Map -> 3)

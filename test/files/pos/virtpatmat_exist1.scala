@@ -1,7 +1,7 @@
 import annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.{StrictOptimizedIterableOps, mutable}
 import scala.collection.immutable.{ListMap, ListSet}
-import scala.collection.mutable.{FlatHashTable, HashMap, HashSet, Set, SetOps}
+import scala.collection.mutable.{HashMap, HashSet, Set, SetOps}
 
 // Stub of HashSet, but not final, so we can extend from it (in Test below)
 class HS[A]
