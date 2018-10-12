@@ -113,7 +113,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         callback.binaryDependency(file, binaryClassName, fromClassName, sourceFile, context)
 
       import scala.tools.nsc.io.AbstractFile
-      def processExternalDependency(binaryClassName: String, at: AbstractFile) = {
+      def processExternalDependency(binaryClassName: String, at: AbstractFile): Unit = {
         at match {
           case zipEntry: ZipArchive#Entry =>
             // The dependency comes from a JAR
@@ -126,10 +126,13 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
             // The dependency comes from a class file
             binaryDependency(pf.file, binaryClassName)
           case _ =>
-            reporter.error(
-              NoPosition,
-              s"Internal error: ${binaryClassName} comes from unknown origin ${at}"
-            )
+          // On Scala 2.10 you get Internal error: <none> comes from unknown origin null
+          // if you uncomment the following:
+
+          // reporter.error(
+          //   NoPosition,
+          //   s"Internal error: ${binaryClassName} comes from unknown origin ${at}"
+          // )
         }
       }
 
