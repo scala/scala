@@ -23,7 +23,7 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
-import mutable.ListBuffer
+import mutable.{ArrayBuffer, ListBuffer}
 import symtab.Flags._
 import Mode._
 
@@ -2898,12 +2898,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             (List.fill(numVparams)(dummyPt), WildcardType) // dummyPt is in CBN position
         }
 
-      if (!FunctionSymbol.exists) MaxFunctionArityError(fun, s", but ${numVparams} given")
+      // After typer, no need for further checks, parameter type inference or PartialFunction synthesis.
+      if (isPastTyper) doTypedFunction(fun, resProto)
+      else if (!FunctionSymbol.exists) MaxFunctionArityError(fun, s", but ${numVparams} given")
       else if (argProtos.lengthCompare(numVparams) != 0) WrongNumberOfParametersError(fun, argProtos)
       else {
         val paramsMissingType = mutable.ArrayBuffer.empty[ValDef] //.sizeHint(numVparams) probably useless, since initial size is 16 and max fun arity is 22
+
         // first, try to define param types from expected function's arg types if needed
         foreach2(vparams, argProtos) { (vparam, argpt) =>
+          // TODO: do we need to exclude vparam.symbol.isError? (I don't think so,
+          // because I don't see how we could recurse after the `setError(vparam)` call below
           if (vparam.tpt.isEmpty) {
             if (isFullyDefined(argpt)) vparam.tpt setType argpt
             else paramsMissingType += vparam
@@ -2912,53 +2917,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 
-        // If we're typing `(a1: T1, ..., aN: TN) => m(a1,..., aN)`, where some Ti are not fully defined,
-        // type `m` directly (undoing eta-expansion of method m) to determine the argument types.
-        // This tree is the result from one of:
-        //   - manual eta-expansion with named arguments (x => f(x));
-        //   - wildcard-style eta expansion (`m(_, _,)`);
-        //   - (I don't think it can result from etaExpand, because we know the argument types there.)
-        //
-        // Note that method values are a separate thing (`m _`): they have the idiosyncratic shape
-        // of `Typed(expr, Function(Nil, EmptyTree))`
-        val ptUnrollingEtaExpansion =
-          if (paramsMissingType.nonEmpty && pt != ErrorType) fun.body match {
-            // we can compare arguments and parameters by name because there cannot be a binder between
-            // the function's valdefs and the Apply's arguments
-            case Apply(meth, args) if (vparams corresponds args) { case (p, Ident(name)) => p.name == name case _ => false } =>
-              // We're looking for a method (as indicated by FUNmode in the silent typed below),
-              // so let's make sure our expected type is a MethodType
-              val methArgs = NoSymbol.newSyntheticValueParams(argProtos map { case NoType => WildcardType case tp => tp })
+        if (paramsMissingType.nonEmpty && pt != ErrorType) {
+          // If we can resolve the missing parameter type by undoing eta-expansion and recursing, do that -- otherwise, report error and bail
+          typedFunctionUndoingEtaExpansion(fun, mode, pt, argProtos, resProto) orElse {
+            // we ran out of things to try, missing parameter types are an irrevocable error
+            var issuedMissingParameterTypeError = false
+            paramsMissingType.foreach { vparam =>
+              setError(vparam) //  see neg/t8675b.scala (we used to set vparam.tpt to ErrorType, but that isn't as effective)
+              MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
+              issuedMissingParameterTypeError = true
+            }
 
-              val result = silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, resProto)))
-              // we can't have results with undetermined type params
-              val resultMono = result filter (_ => context.undetparams.isEmpty)
-              resultMono map { methTyped =>
-                // if context.undetparams is not empty, the method was polymorphic,
-                // so we need the missing arguments to infer its type. See #871
-                val funPt = methodToExpressionTp(methTyped.tpe) baseType FunctionClass(numVparams) // numVparams could be > 22...
-                // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
-
-                // If we are sure this function type provides all the necessary info, so that we won't have
-                // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
-                // and rest assured we won't end up right back here (and keep recursing)
-                if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined)) funPt
-                else null
-              } orElse { _ => null }
-            case _ => null
-          } else null
-
-
-        if (ptUnrollingEtaExpansion ne null) typedFunction(fun, mode, ptUnrollingEtaExpansion)
-        else {
-          // we ran out of things to try, missing parameter types are an irrevocable error
-          var issuedMissingParameterTypeError = false
-          paramsMissingType.foreach { vparam =>
-            vparam.tpt setType ErrorType
-            MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
-            issuedMissingParameterTypeError = true
+            setError(fun)
           }
-
+        } else {
           fun.body match {
             // translate `x => x match { <cases> }` : PartialFunction to
             // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
@@ -2972,28 +2944,87 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
 
-            case _ =>
-              val vparamSyms = vparams map { vparam =>
-                enterSym(context, vparam)
-                if (context.retyping) context.scope enter vparam.symbol
-                vparam.symbol
-              }
-              val vparamsTyped = vparams mapConserve typedValDef
-              val formals = vparamSyms map (_.tpe)
-              val body1 = typed(fun.body, resProto)
-              val restpe = {
-                val restpe0 = packedType(body1, fun.symbol).deconst.resultType
-                restpe0 match {
-                  case ct: ConstantType if (resProto eq WildcardType) || (ct.widen <:< resProto) => ct.widen
-                  case tp => tp
-                }
-              }
-              val funtpe = phasedAppliedType(FunctionSymbol, formals :+ restpe)
-
-              treeCopy.Function(fun, vparamsTyped, body1) setType funtpe
+            case _ => doTypedFunction(fun, resProto)
           }
         }
       }
+    }
+
+    /** Retry typedFunction when parameter types are missing, and they might be recovered from
+      * the method selection that was eta-expanded into `fun`.
+      *
+      * When typing `(a1: T1, ..., aN: TN) => m(a1,..., aN)`, where some Ti are not fully defined,
+      * type `m` directly (undoing eta-expansion of method m) to determine the argument types.
+      * We have to be careful to use the result of typing the method selection, as its tree
+      * may be rewritten.
+      *
+      * This tree is the result from one of:
+      *   - manual eta-expansion with named arguments (x => f(x));
+      *   - wildcard-style eta expansion (`m(_, _,)`);
+      *   - (I don't think it can result from etaExpand, because we know the argument types there.)
+      *
+      * Note that method values are a separate thing (`m _`): they have the idiosyncratic shape
+      * of `Typed(expr, Function(Nil, EmptyTree))`
+      *
+      * @return EmptyTree on failure, or a typed version of `fun` if we are successful
+      */
+    private def typedFunctionUndoingEtaExpansion(fun: Function, mode: Mode, pt: Type, argProtos: List[Type], resProto: Type) = {
+      val vparams = fun.vparams
+
+      fun.body match {
+        // we can compare arguments and parameters by name because there cannot be a binder between
+        // the function's valdefs and the Apply's arguments
+        case Apply(meth, args) if (vparams corresponds args) { case (p, Ident(name)) => p.name == name case _ => false } =>
+          // We're looking for a method (as indicated by FUNmode in the silent typed below),
+          // so let's make sure our expected type is a MethodType
+          val methArgs = NoSymbol.newSyntheticValueParams(argProtos map { case NoType => WildcardType case tp => tp })
+
+          silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, resProto))).fold(EmptyTree: Tree){ methTyped =>
+            if (context.undetparams.isEmpty) {
+              val numVparams = vparams.length
+              // if context.undetparams is not empty, the method was polymorphic,
+              // so we need the missing arguments to infer its type. See #871
+              val funPt = methodToExpressionTp(methTyped.tpe) baseType FunctionClass(numVparams) // numVparams could be > 22...
+              // println(s"typeUnEtaExpanded $meth : ${methTyped.tpe} --> normalized: $funPt")
+
+              // If we are sure this function type provides all the necessary info, so that we won't have
+              // any undetermined argument types, go ahead an recurse below (`typedFunction(fun, mode, ptUnrollingEtaExpansion)`)
+              // and rest assured we won't end up right back here (and keep recursing).
+              // Be careful to reuse methTyped -- it may have changed from meth (scala/bug#9745)!
+              if (isFunctionType(funPt) && funPt.typeArgs.iterator.take(numVparams).forall(isFullyDefined))
+                typedFunction(treeCopy.Function(fun, vparams, treeCopy.Apply(fun.body, methTyped, args)), mode, funPt)
+              else EmptyTree
+            } else EmptyTree
+          }
+        case _ => EmptyTree
+      }
+    }
+
+    // Assuming the expected number of parameters, which all have type annotations, do the happy path.
+    private def doTypedFunction(fun: Function, bodyPt: Type) = {
+      val vparams = fun.vparams
+      val vparamSyms = vparams map { vparam =>
+        enterSym(context, vparam)
+        if (context.retyping) context.scope enter vparam.symbol
+        vparam.symbol
+      }
+      val vparamsTyped = vparams mapConserve typedValDef
+      val bodyTyped = typed(fun.body, bodyPt)
+
+      val funSym = FunctionClass(vparams.length)
+      val funTp =
+        if (phase.erasedTypes) funSym.tpe
+        else {
+          val resTp =
+            packedType(bodyTyped, fun.symbol).deconst.resultType match {
+              case ct: ConstantType if (bodyPt eq WildcardType) || (ct.widen <:< bodyPt) => ct.widen
+              case tp                                                                    => tp
+            }
+
+          appliedType(funSym, vparamSyms.map(_.tpe) :+ resTp)
+        }
+
+      treeCopy.Function(fun, vparamsTyped, bodyTyped) setType funTp
     }
 
     // #2624: need to infer type arguments for eta expansion of a polymorphic method
@@ -4588,6 +4619,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               return tryTypedApply(fun setType newtpe, args)
             }
           }
+          // TODO: case to recurse into Function?
           def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
             case Block(_, r)                        => treesInResult(r)
             case Match(_, cases)                    => cases
