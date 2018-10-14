@@ -1602,16 +1602,15 @@ abstract class RefChecks extends Transform {
                 try {
                   val treated = lits.mapConserve { lit =>
                     val stringVal = lit.asInstanceOf[Literal].value.stringValue
-                    treeCopy.Literal(lit, Constant(StringContext.processEscapes(stringVal)))
+                    val k = Constant(StringContext.processEscapes(stringVal))
+                    treeCopy.Literal(lit, k).setType(ConstantType(k))
                   }
                   Some((treated, args))
                 } catch {
-                  case _: StringContext.InvalidEscapeException =>
-                    None
+                  case _: StringContext.InvalidEscapeException => None
                 }
               }
             case _ => None
-
           }
         } else None
       }
