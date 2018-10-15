@@ -778,7 +778,7 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
   /** @group conversions-array-to-wrapped-array */
   implicit def wrapRefArray[T <: AnyRef](xs: Array[T]): ArraySeq.ofRef[T] = {
     if (xs eq null) null
-    else if (xs.length == 0) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq.ofRef[T]]
+    else if (xs.isEmpty) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq.ofRef[T]]
     else new ArraySeq.ofRef[T](xs)
   }
 

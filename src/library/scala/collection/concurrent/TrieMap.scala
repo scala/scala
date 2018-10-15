@@ -504,7 +504,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
     var i = 0
     var sz = 0
     val offset =
-      if (array.length > 0)
+      if (array.nonEmpty)
       //util.Random.nextInt(array.length) /* <-- benchmarks show that this causes observable contention */
         java.util.concurrent.ThreadLocalRandom.current.nextInt(0, array.length)
       else 0

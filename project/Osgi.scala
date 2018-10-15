@@ -66,7 +66,7 @@ object Osgi {
     def resourceDirectoryRef(f: File) = (if (f.isDirectory) "" else "@") + f.getAbsolutePath
 
     val includeRes = resourceDirectories.filter(_.exists).map(resourceDirectoryRef).mkString(",")
-    if(!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
+    if(includeRes.nonEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
     builder.getProperties.asScala.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
     // builder.build is not thread-safe because it uses a static SimpleDateFormat.  This ensures
     // that all calls to builder.build are serialized.

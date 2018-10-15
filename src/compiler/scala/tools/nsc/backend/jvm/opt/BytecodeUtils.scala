@@ -336,7 +336,7 @@ object BytecodeUtils {
           // keep at least 5 characters per method name
           val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
           val usedMethNames =
-            if (methNames.length < maxNumMethNames) methNames
+            if (methNames.lengthCompare(maxNumMethNames) < 0) methNames
             else {
               val half = maxNumMethNames / 2
               methNames.take(half) ++ methNames.takeRight(half)

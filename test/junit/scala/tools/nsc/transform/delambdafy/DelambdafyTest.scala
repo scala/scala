@@ -66,6 +66,6 @@ object Delambdafy {
   def shouldFindOutputFoldersForAllPromotedLambdasAsMethod(): Unit = {
     val actual = compileToMultipleOutputWithDelamdbafyMethod()
 
-    assertTrue(actual.length > 0)
+    assertTrue(actual.nonEmpty)
   }
 }

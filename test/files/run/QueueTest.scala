@@ -33,7 +33,7 @@ object Test {
     queue.enqueue(10)
     assert(queue.nonEmpty)
     assert(queue.size == 1)
-    assert(queue.length == 1)
+    assert(queue.lengthCompare(1) == 0)
     assert(queue.head == 10)
     assert(queue(0) == 10)
     assert(queue.init.isEmpty)

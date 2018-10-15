@@ -240,11 +240,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     ): Comment = remaining match {
 
       case CodeBlockStartRegex(before, marker, after) :: ls if (!inCodeBlock) =>
-        if (!before.trim.isEmpty && !after.trim.isEmpty)
+        if (before.trim.nonEmpty && after.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = false)
-        else if (!before.trim.isEmpty)
+        else if (before.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: ls, inCodeBlock = false)
-        else if (!after.trim.isEmpty)
+        else if (after.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, marker :: after :: ls, inCodeBlock = true)
         else lastTagKey match {
           case Some(key) =>
@@ -259,11 +259,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         }
 
       case CodeBlockEndRegex(before, marker, after) :: ls => {
-        if (!before.trim.isEmpty && !after.trim.isEmpty)
+        if (before.trim.nonEmpty && after.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = true)
-        if (!before.trim.isEmpty)
+        if (before.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: ls, inCodeBlock = true)
-        else if (!after.trim.isEmpty)
+        else if (after.trim.nonEmpty)
           parse0(docBody, tags, lastTagKey, marker :: after :: ls, inCodeBlock = false)
         else lastTagKey match {
           case Some(key) =>
@@ -297,7 +297,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
 
       case line :: ls if (lastTagKey.isDefined) => {
-        val newtags = if (!line.isEmpty || inCodeBlock) {
+        val newtags = if (line.nonEmpty || inCodeBlock) {
           val key = lastTagKey.get
           val value =
             ((tags get key): @unchecked) match {

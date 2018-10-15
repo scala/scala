@@ -37,7 +37,7 @@ object Test1_scala {
     arr.mkString("Array[",",","]")
 
   private def arrayEquals[A, B](a1: Array[A], a2: Array[B]): Boolean =
-    (a1.length == a2.length) &&
+    (a1.lengthCompare(a2.length) == 0) &&
     (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) })
 
   object WeekDay extends Enumeration {

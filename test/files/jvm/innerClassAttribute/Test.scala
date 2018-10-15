@@ -317,7 +317,7 @@ object Test extends BytecodeTest {
     assertEnclosingMethod("SI_9105$K$2", "SI_9105", "m$4", "()Ljava/lang/Object;")
     assertEnclosingMethod("SI_9105$L$1", "SI_9105", "bnM", "()I")
 
-    assert(innerClassNodes("SI_9105").length == 13) // the 12 local classes, plus MethodHandles$Lookup
+    assert(innerClassNodes("SI_9105").lengthCompare(13) == 0) // the 12 local classes, plus MethodHandles$Lookup
   }
 
   def testSI_9124(): Unit = {

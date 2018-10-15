@@ -118,7 +118,7 @@ object Test4 {
       // against difference in the JVMs (e.g. Sun's vs IBM's)
       val anns = target.getAnnotations()
       anns foreach printSourceAnnotation
-      if (anns.length > 0) {
+      if (anns.nonEmpty) {
         println(target)
         println
       }
@@ -126,7 +126,7 @@ object Test4 {
     def printParamSourceAnnotations(target: { def getParameterAnnotations(): Array[Array[Annotation]] }): Unit = {
       val anns = target.getParameterAnnotations().flatten
       anns foreach printSourceAnnotation
-      if (anns.length > 0) {
+      if (anns.nonEmpty) {
         println(target)
         println
       }

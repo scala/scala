@@ -415,7 +415,7 @@ private final class BitmapIndexedMapNode[K, +V](
       }
     }
   }
-  
+
   def sizePredicate: Int =
     if (nodeArity == 0) payloadArity match {
       case 0 => SizeEmpty
@@ -608,7 +608,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   import Node._
 
-  require(content.length >= 2)
+  require(content.lengthCompare(2) >= 0)
 
   releaseFence()
 

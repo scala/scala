@@ -1,6 +1,6 @@
 class Foo(val str: String) {
   def this(arr: Array[Char]) = this({
-    if (arr.length == 0) sys.exit(1)
+    if (arr.isEmpty) sys.exit(1)
     new String(arr)
   })
 }

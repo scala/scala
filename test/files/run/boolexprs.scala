@@ -24,7 +24,7 @@ object Test2 {
   def run: Int = {
     val c = new Counter;
     c.incrThen(true && a(0));
-    c.incrThen(false || Nil.length > 0);
+    c.incrThen(false || Nil.nonEmpty);
     c.value
   }
 }

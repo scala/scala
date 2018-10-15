@@ -232,7 +232,7 @@ case class ConstantPool(len: Int) {
   private val buffer = new scala.collection.mutable.ArrayBuffer[ConstantPool => Any]
   private val values = Array.fill[Option[Any]](size)(None)
 
-  def isFull = buffer.length >= size
+  def isFull = buffer.lengthCompare(size) >= 0
 
   def apply(index: Int) = {
     // Note constant pool indices are 1-based

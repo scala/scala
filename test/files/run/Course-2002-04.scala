@@ -71,7 +71,7 @@ object M1 {
       if (j < r) sort1(i, r);
     }
 
-    if (xs.length > 0) sort1(0, xs.length - 1);
+    if (xs.nonEmpty) sort1(0, xs.length - 1);
   }
 
   def list2array(list: List[Int]): Array[Int] = {

@@ -256,7 +256,7 @@ object ScalaRunTime {
     else ArraySeq.unsafeWrapArray(xs)
   def wrapRefArray[T <: AnyRef](xs: Array[T]): ArraySeq[T] = {
     if (xs eq null) null
-    else if (xs.length == 0) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq[T]]
+    else if (xs.isEmpty) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq[T]]
     else new ArraySeq.ofRef[T](xs)
   }
   def wrapIntArray(xs: Array[Int]): ArraySeq[Int] = if (xs ne null) new ArraySeq.ofInt(xs) else null

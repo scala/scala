@@ -288,7 +288,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty || args.contains("-help")) usage()
 
-    val depth = if (args.length < 1) 2 else args(0).toInt
+    val depth = if (args.lengthCompare(1) < 0) 2 else args(0).toInt
 
     val header =
 """

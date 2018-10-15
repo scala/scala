@@ -80,7 +80,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     (iteratorWithSize(snd), newIterator(fst))
   }
   private[this] def splitArray(ad: Array[Iterable[T]]): SplitIterators =
-    if (ad.length > 1) arrayToIterators(ad)
+    if (ad.lengthCompare(1) > 0) arrayToIterators(ad)
     else ad(0) match {
       case _: OldHashMapCollision1[_, _] | _: OldHashSetCollision1[_] =>
         arrayToIterators(collisionToArray(ad(0)))
