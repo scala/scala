@@ -58,7 +58,7 @@ package object sys {
   def props: SystemProperties = new SystemProperties
 
   // TODO: consider whether layering a Map on top of Java's properties is really needed -- we could simply provide:
-  //  def prop(p: String) = Option(System.getProperty(p))
+  //  def prop(p: String) = Option.whenNonNull(System.getProperty(p))
 
   /** An immutable Map representing the current system environment.
    *

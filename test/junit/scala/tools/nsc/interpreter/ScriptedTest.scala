@@ -83,7 +83,7 @@ class ScriptedTest {
       |  s = scala.io.StdIn.readLine()
       |  val out = if ((i & 1) == 0) Console.out else Console.err
       |  i += 1
-      |  Option(s) foreach out.println
+      |  Option.whenNonNull(s) foreach out.println
       |} while (s != null)""".stripMargin
 
     ctx.setWriter(out)

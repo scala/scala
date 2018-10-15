@@ -37,7 +37,7 @@ trait ScalaSettings extends AbsScalaSettings
    *  defaults to the value of CLASSPATH env var if it is set, as in Java,
    *  or else to `"."` for the current user directory.
    */
-  protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
+  protected def defaultClasspath = Option.whenNonNull(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** Enabled under -Xfuture. */
   protected def futureSettings = List[BooleanSetting]()
@@ -93,7 +93,7 @@ trait ScalaSettings extends AbsScalaSettings
       // TODO validate release <= java.specification.version
     }
   } withAbbreviation "--release"
-  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
+  def releaseValue: Option[String] = Option.whenNonNull(release.value).filter(_ != "")
 
   /*
    * The previous "-source" option is intended to be used mainly

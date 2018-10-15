@@ -1608,7 +1608,7 @@ trait Namers extends MethodSynthesis {
       private val module = companionSymbolOf(meth.owner, context)
       if (initCompanionModule) module.initialize
       private val cda: Option[ConstructorDefaultsAttachment] = module.attachments.get[ConstructorDefaultsAttachment]
-      private val moduleNamer = cda.flatMap(x => Option(x.companionModuleClassNamer))
+      private val moduleNamer = cda.flatMap(x => Option.whenNonNull(x.companionModuleClassNamer))
 
       def createAndEnter(f: Symbol => Symbol): Unit = {
         val default = f(module.moduleClass)
@@ -1995,7 +1995,7 @@ trait Namers extends MethodSynthesis {
     val tree: Tree
     override def forceDirectSuperclasses: Unit = {
       tree.foreach {
-        case dt: DefTree => global.withPropagateCyclicReferences(Option(dt.symbol).map(_.maybeInitialize))
+        case dt: DefTree => global.withPropagateCyclicReferences(Option.whenNonNull(dt.symbol).map(_.maybeInitialize))
         case _ =>
       }
     }

@@ -193,7 +193,7 @@ private[jvm] object GeneratedClassHandler {
       javaExecutor.shutdownNow()
     }
 
-    def tryStealing: Option[Runnable] = Option(javaExecutor.getQueue.poll())
+    def tryStealing: Option[Runnable] = Option.whenNonNull(javaExecutor.getQueue.poll())
   }
 
 }

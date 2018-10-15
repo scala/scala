@@ -60,7 +60,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     val ctx = compileContext
     val terms = for {
       scope <- ctx.getScopes.asScala
-      binding <- Option(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
+      binding <- Option.whenNonNull(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
       key = binding._1
     } yield key
     Set.from(terms)

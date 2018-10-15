@@ -34,13 +34,13 @@ object OpenHashMapRunner extends JmhRunner {
     def size: String = r.getParams.getParam("size")
 
     /** Return the operation counts. Not every test tracks this. */
-    def operations = Option(r.getSecondaryResults.get("operations"))
+    def operations = Option.whenNonNull(r.getSecondaryResults.get("operations"))
 
     /** Return the number of map entries. */
     def entries = r.getSecondaryResults.get("mapEntries")
 
     /** Return the memory usage. Only defined if memory usage was measured. */
-    def memory = Option(r.getSecondaryResults.get("memory"))
+    def memory = Option.whenNonNull(r.getSecondaryResults.get("memory"))
   }
 
   /** Return the statistics of the given result as a string. */

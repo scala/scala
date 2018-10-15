@@ -58,7 +58,7 @@ trait MemberLookup extends base.MemberLookupBase {
         sym.info.member(newTermName("package"))
       else sym
     def classpathEntryFor(s: Symbol): Option[String] = {
-      Option(s.associatedFile).flatMap(_.underlyingSource).map { src =>
+      Option.whenNonNull(s.associatedFile).flatMap(_.underlyingSource).map { src =>
         val path = src.canonicalPath
         if(path.endsWith(".class")) { // Individual class file -> Classpath entry is root dir
           val nesting = s.ownerChain.count(_.hasPackageFlag)

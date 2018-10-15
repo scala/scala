@@ -204,7 +204,7 @@ class MutableSettings(val errorFn: String => Unit)
   * and `boot.class.path`.  These resources should contain the application
   * and boot classpaths in the same form as would be passed on the command line.*/
   def embeddedDefaults(loader: ClassLoader): Unit = {
-    explicitParentLoader = Option(loader) // for the Interpreter parentClassLoader
+    explicitParentLoader = Option.whenNonNull(loader) // for the Interpreter parentClassLoader
     getClasspath("app", loader) foreach { classpath.value = _ }
     getClasspath("boot", loader) foreach { bootclasspath append _ }
   }
@@ -215,7 +215,7 @@ class MutableSettings(val errorFn: String => Unit)
   /** Retrieves the contents of resource "${id}.class.path" from `loader`
   * (wrapped in Some) or None if the resource does not exist.*/
   private def getClasspath(id: String, loader: ClassLoader): Option[String] =
-    Option(loader).flatMap(ld => Option(ld.getResource(id + ".class.path"))).map { cp =>
+    Option.whenNonNull(loader).flatMap(ld => Option.whenNonNull(ld.getResource(id + ".class.path"))).map { cp =>
        Source.fromURL(cp).mkString
     }
 

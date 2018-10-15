@@ -46,7 +46,7 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
   def this(jfile: JFile) = this(File(jfile))
   def this(path: String) = this(File(path))
 
-  lazy val manifest = withJarInput(s => Option(s.getManifest))
+  lazy val manifest = withJarInput(s => Option.whenNonNull(s.getManifest))
 
   def mainClass     = manifest map (f => f(Name.MAIN_CLASS))
   /** The manifest-defined classpath String if available. */

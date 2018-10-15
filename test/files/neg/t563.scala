@@ -3,5 +3,5 @@ object Test {
 
     def split(sn : Iterable[List[Option[Int]]]) : Unit =
         for (n <- sn)
-            map(n,ptr => Option(ptr.get));
+            map(n,ptr => Option.whenNonNull(ptr.get));
 }

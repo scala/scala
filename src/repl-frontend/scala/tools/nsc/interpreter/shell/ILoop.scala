@@ -234,7 +234,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     def complete(buffer: String, cursor: Int): CompletionResult =
       buffer.substring(0, cursor) match {
         case emptyWord(s)        => listed(cursor, Directory.Current)
-        case directorily(s)      => listed(cursor, Option(Path(s)))
+        case directorily(s)      => listed(cursor, Option.whenNonNull(Path(s)))
         case trailingWord(s) =>
           val f = File(s)
           val (i, maybes) =
@@ -818,7 +818,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           case x :: Nil => x
           case _        => echo("usage: :paste [-raw] file | < EOF") ; return result
         }
-        (raw0, Option(file0), Option(margin0))
+        (raw0, Option.whenNonNull(file0), Option.whenNonNull(margin0))
       }
     val code = (file, margin) match {
       case (Some(name), None) =>

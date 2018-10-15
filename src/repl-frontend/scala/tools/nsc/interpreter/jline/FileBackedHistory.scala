@@ -40,7 +40,7 @@ trait FileBackedHistory extends JLineHistory with PersistentHistory {
     val fs = FileSystems.getDefault
 
     // This would really have been sufficient for our property getting infrastructure
-    def prop(p: String) = Option(System.getProperty(p))
+    def prop(p: String) = Option.whenNonNull(System.getProperty(p))
 
     (prop("scala.shell.histfile").map(fs.getPath(_)).map{ p => if (!Files.exists(p)) secure(p); p } orElse
       prop("user.home").map(n => fs.getPath(n + s"${fs.getSeparator}${FileBackedHistory.defaultFileName}")).map(secure)

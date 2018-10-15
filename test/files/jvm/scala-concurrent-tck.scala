@@ -23,7 +23,7 @@ trait TestBase {
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
-    assert(Option(q.poll(2000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
+    assert(Option.whenNonNull(q.poll(2000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
     // Check that we don't get more than one completion
     assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
   }

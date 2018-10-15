@@ -24,7 +24,7 @@ object Test2 {
 }
 
 object Test3 {
-  implicit def toOption[T](v: T): Option[T] = Option(v)
+  implicit def toOption[T](v: T): Option[T] = Option.whenNonNull(v)
   val a: Int = 123
   val b: Option[Long] = a // Works under 2.12.6 but not with the implicit-poly-prune-2.12.x PR
 }

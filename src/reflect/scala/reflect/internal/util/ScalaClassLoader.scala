@@ -163,7 +163,7 @@ object ScalaClassLoader {
 
   /** Finding what jar a clazz or instance came from */
   def originOfClass(x: Class[_]): Option[URL] =
-    Option(x.getProtectionDomain.getCodeSource) flatMap (x => Option(x.getLocation))
+    Option.whenNonNull(x.getProtectionDomain.getCodeSource) flatMap (x => Option.whenNonNull(x.getLocation))
 
   private[this] val bootClassLoader: ClassLoader = {
     if (!util.Properties.isJavaAtLeast("9")) null

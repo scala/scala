@@ -180,14 +180,14 @@ trait Boundings {
 
 trait Forever {
   def f = {
-    val t = Option((17, 42))
+    val t = Some((17, 42))
     for {
       ns <- t
       (i, j) = ns                        // no warn
     } yield (i + j)
   }
   def g = {
-    val t = Option((17, 42))
+    val t = Some((17, 42))
     for {
       ns <- t
       (i, j) = ns                        // no warn
@@ -207,7 +207,7 @@ trait CaseyKasem {
   }
 }
 trait CaseyAtTheBat {
-  def f = Option(42) match {
+  def f = Option.whenNonNull(42) match {
     case Some(x) if x < 25 => "no warn"
     case Some(y @ _) if toString.nonEmpty => "no warn"
     case Some(z) => "warn"

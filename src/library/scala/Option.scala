@@ -26,8 +26,19 @@ object Option {
    *
    *  @param  x the value
    *  @return   Some(value) if value != null, None if value == null
+   *  @deprecated if you intend to filter out null, use [[whenNonNull]] instead,
+   *              as its meaning is clearer; otherwise use [[Some.apply Some]]
    */
-  def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
+  @deprecated("Use `whenNonNull` or `Some.apply` instead", since = "2.13.0")
+  @inline def apply[A](x: A): Option[A] = whenNonNull(x)
+
+  /** An Option factory which creates Some(x) if the argument is not null,
+    *  and None if it is null.
+    *
+    *  @param  a the value
+    *  @return   Some(value) if value != null, None if value == null
+    */
+  def whenNonNull[A](a: A): Option[A] = if (a == null) None else Some(a)
 
   /** An Option factory which returns `None` in a manner consistent with
    *  the collections hierarchy.
@@ -308,7 +319,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  If either of the two options is empty, $none is returned.
    *
    *  @example {{{
-   *  // Returns Option(("foo", "bar")) because both options are nonempty.
+   *  // Returns Some(("foo", "bar")) because both options are nonempty.
    *  Some("foo") zip Some("bar")
    *
    *  // Returns None because `that` option is empty.

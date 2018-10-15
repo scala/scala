@@ -9,5 +9,5 @@ object Test {
   def flop[F[_], G <: F[String]](f: F[String], g: G) = ???
 
   flip(Tails("scala"): Coin[Int, String], Heads(50))
-  flop(Option("scala"), None)
+  flop(Some("scala"): Option[String], None)
 }

@@ -458,7 +458,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def groupSearch[T](extractor: Comment => Option[T]): Option[T] = {
       val comments = comment +: linearizationTemplates.collect { case dtpl: DocTemplateImpl => dtpl.comment }
       comments.flatten.map(extractor).flatten.headOption orElse {
-        Option(inTpl) flatMap (_.groupSearch(extractor))
+        Option.whenNonNull(inTpl) flatMap (_.groupSearch(extractor))
       }
     }
 
@@ -492,7 +492,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val inRealTpl = (
         conversion.flatMap(conv => nonRootTemplate(conv.toType.typeSymbol))
           orElse nonRootTemplate(sym.owner)
-          orElse Option(inTpl))
+          orElse Option.whenNonNull(inTpl))
 
       inRealTpl flatMap (tpl => thisFactory.comment(commentCarryingSymbol(sym), tpl, tpl))
     }

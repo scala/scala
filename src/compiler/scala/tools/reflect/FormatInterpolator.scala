@@ -227,7 +227,7 @@ abstract class FormatInterpolator {
     def argc: Int
 
     import SpecifierGroups.{ Value => SpecGroup, _ }
-    private def maybeStr(g: SpecGroup) = Option(m group g.id)
+    private def maybeStr(g: SpecGroup) = Option.whenNonNull(m group g.id)
     private def maybeInt(g: SpecGroup) = maybeStr(g) map (_.toInt)
     val index: Option[Int]     = maybeInt(Index)
     val flags: Option[String]  = maybeStr(Flags)
@@ -310,8 +310,8 @@ abstract class FormatInterpolator {
           badCC(s"illegal conversion character '$cc'")
           null
       }
-      Option(m group CC.id) map (cc => cv(cc(0))) match {
-        case Some(x) => Option(x) filter (_.verify)
+      Option.whenNonNull(m group CC.id) map (cc => cv(cc(0))) match {
+        case Some(x) => Option.whenNonNull(x) filter (_.verify)
         case None    =>
           badCC(s"Missing conversion operator in '${m.matched}'; $literalHelp")
           None

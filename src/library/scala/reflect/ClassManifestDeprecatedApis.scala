@@ -28,7 +28,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     def loop(left: Set[jClass[_]], seen: Set[jClass[_]]): Boolean = {
       left.nonEmpty && {
         val next = left.head
-        val supers = next.getInterfaces.toSet ++ Option(next.getSuperclass)
+        val supers = next.getInterfaces.toSet ++ Option.whenNonNull(next.getSuperclass)
         supers(sup) || {
           val xs = left ++ supers filterNot seen
           loop(xs - next, seen + next)

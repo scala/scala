@@ -430,7 +430,7 @@ abstract class SymbolTable extends macros.Universe
 
     def clearAll() = {
       debuglog("Clearing " + (caches.size + javaCaches.size) + " caches.")
-      caches foreach (ref => Option(ref.get).foreach(_.clear))
+      caches foreach (ref => Option.whenNonNull(ref.get).foreach(_.clear))
       caches = caches.filterNot(_.get == null)
 
       javaCaches foreach (_.clear)

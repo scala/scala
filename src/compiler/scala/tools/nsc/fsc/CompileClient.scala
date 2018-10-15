@@ -46,7 +46,7 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
     info(fscArgs.mkString("[Transformed arguments: ", " ", "]"))
     info(vmArgs.mkString("[VM arguments: ", " ", "]"))
 
-    val socket = Option(settings.server.value).filter(_.nonEmpty)
+    val socket = Option.whenNonNull(settings.server.value).filter(_.nonEmpty)
                  .map(compileSocket.getSocket)
                  .getOrElse(
       compileSocket.getOrCreateSocket(vmArgs.mkString(" "), !shutdown, settings.port.value)

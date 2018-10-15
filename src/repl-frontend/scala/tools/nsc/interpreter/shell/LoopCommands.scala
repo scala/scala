@@ -174,7 +174,7 @@ trait LoopCommands {
     val default = Result(keepRunning = true, None)
 
     // "keep running, and record this line"
-    def recording(line: String) = Result(keepRunning = true, Option(line))
+    def recording(line: String) = Result(keepRunning = true, Option.whenNonNull(line))
 
     // most commands do not want to micromanage the Result, but they might want
     // to print something to the console, so we accommodate Unit and String returns.

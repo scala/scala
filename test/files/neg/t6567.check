@@ -1,9 +1,9 @@
-t6567.scala:10: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
-  Option[B](a)
-           ^
-t6567.scala:12: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
-  val b: Option[B] = Option(a)
-                           ^
+t6567.scala:10: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.whenNonNull.
+  Option.whenNonNull[B](a)
+                       ^
+t6567.scala:12: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.whenNonNull.
+  val b: Option[B] = Option.whenNonNull(a)
+                                       ^
 warning: there was one feature warning; re-run with -feature for details
 error: No warnings can be incurred under -Xfatal-warnings.
 three warnings found

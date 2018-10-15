@@ -203,7 +203,7 @@ abstract class InlinerHeuristics extends PerRunInit {
               val what = if (callee.annotatedInline) "callee" else "callsite"
               s"the $what is annotated `@inline`"
             } else {
-              val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
+              val paramNames = Option.whenNonNull(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
               def param(i: Int) = {
                 def syn = s"<param $i>"
                 paramNames.fold(syn)(v => v.applyOrElse(i, (_: Int) => syn))

@@ -69,7 +69,7 @@ object Test extends App {
   println("qwe".filterMap((c: Char) => Some(c)))
   println(Array(2, 0).filterMap((c: Int) => Some(c.toInt)).toList)
   println(Seq(2, 0).filterMap((c: Int) => if (c < 2) Some(s"$c!") else None))
-  def test(i:Int) = Option(i)
+  def test(i:Int) = Some(i)
   println(BitSet(2,0).filterMap(test))
 
   println(toFM2("qwe").filterMap2(c => Some(c)))

@@ -285,7 +285,7 @@ class IterableTest {
     import scala.collection.{mutable => m, immutable => i}
     assertEquals(true, Some(1).hasDefiniteSize)
     assertEquals(true, None.hasDefiniteSize)
-    assertEquals(true, Option(1).hasDefiniteSize)
+    assertEquals(true, Option.whenNonNull(1).hasDefiniteSize)
     assertEquals(true, Array(1).hasDefiniteSize)
     assertEquals(true, "a".hasDefiniteSize)
     assertEquals(true, c.BitSet(1).hasDefiniteSize)

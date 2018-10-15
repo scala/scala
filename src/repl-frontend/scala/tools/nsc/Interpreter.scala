@@ -50,7 +50,7 @@ class InterpreterLoop {
   def interpreter_= (interpreter: Interpreter) = {
     val config = interpreter.config
     compilerSettings = config._1 match { case null => interpreterSettings case cs => cs }
-    parentClassLoader = Option(config._2)
+    parentClassLoader = Option.whenNonNull(config._2)
   }
 
   @volatile private var intp: Repl = _

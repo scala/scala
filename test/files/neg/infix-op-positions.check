@@ -1,7 +1,7 @@
-infix-op-positions.scala:2: error: value -! is not a member of Option[Int]
-  Option(1) -! "test" // left associative operator
-            ^
-infix-op-positions.scala:3: error: value -!: is not a member of Option[Int]
-  "test" -!: Option(1) // right associative operators
+infix-op-positions.scala:2: error: value -! is not a member of Some[Int]
+  Some(1) -! "test" // left associative operator
+          ^
+infix-op-positions.scala:3: error: value -!: is not a member of Some[Int]
+  "test" -!: Some(1) // right associative operators
          ^
 two errors found

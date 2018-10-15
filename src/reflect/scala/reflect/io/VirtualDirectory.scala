@@ -63,14 +63,14 @@ extends AbstractFile {
     (files get name filter (_.isDirectory == directory)).orNull
 
   override def fileNamed(name: String): AbstractFile =
-    Option(lookupName(name, directory = false)) getOrElse {
+    Option.whenNonNull(lookupName(name, directory = false)) getOrElse {
       val newFile = new VirtualFile(name, path+'/'+name)
       files(name) = newFile
       newFile
     }
 
   override def subdirectoryNamed(name: String): AbstractFile =
-    Option(lookupName(name, directory = true)) getOrElse {
+    Option.whenNonNull(lookupName(name, directory = true)) getOrElse {
       val dir = new VirtualDirectory(name, Some(this))
       files(name) = dir
       dir

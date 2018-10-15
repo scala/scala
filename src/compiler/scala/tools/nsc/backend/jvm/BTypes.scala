@@ -42,7 +42,7 @@ abstract class BTypes {
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
   def cachedClassBType(internalName: InternalName): Option[ClassBType] =
-    Option(cachedClassBTypeOrNull(internalName))
+    Option.whenNonNull(cachedClassBTypeOrNull(internalName))
 
   def cachedClassBTypeOrNull(internalName: InternalName): ClassBType =
     classBTypeCache.map.get(internalName)

@@ -162,11 +162,11 @@ object ASMConverters {
     private def convertMethodHandle(h: asm.Handle): MethodHandle = MethodHandle(h.getTag, h.getOwner, h.getName, h.getDesc, h.isInterface)
 
     private def convertHandlers(method: t.MethodNode): List[ExceptionHandler] = {
-      method.tryCatchBlocks.iterator.asScala.map(h => ExceptionHandler(applyLabel(h.start), applyLabel(h.end), applyLabel(h.handler), Option(h.`type`))).toList
+      method.tryCatchBlocks.iterator.asScala.map(h => ExceptionHandler(applyLabel(h.start), applyLabel(h.end), applyLabel(h.handler), Option.whenNonNull(h.`type`))).toList
     }
 
     private def convertLocalVars(method: t.MethodNode): List[LocalVariable] = {
-      method.localVariables.iterator.asScala.map(v => LocalVariable(v.name, v.desc, Option(v.signature), applyLabel(v.start), applyLabel(v.end), v.index)).toList
+      method.localVariables.iterator.asScala.map(v => LocalVariable(v.name, v.desc, Option.whenNonNull(v.signature), applyLabel(v.start), applyLabel(v.end), v.index)).toList
     }
   }
 

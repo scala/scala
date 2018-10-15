@@ -307,7 +307,7 @@ trait Solving extends Logic {
       object ToDisjunction {
         def unapply(f: Prop): Option[Array[Clause]] = f match {
           case Or(fv)         =>
-            val cl = fv.foldLeft(Option(clause())) {
+            val cl = fv.foldLeft(Option.whenNonNull(clause())) {
               case (Some(clause), ToLiteral(lit)) =>
                 Some(clause + lit)
               case (_, _)                         =>
@@ -328,7 +328,7 @@ trait Solving extends Logic {
         def unapply(f: Prop): Option[Solvable] = f match {
           case ToDisjunction(clauses) => Some(Solvable(clauses, symbolMapping) )
           case And(fv)                =>
-            val clauses = fv.foldLeft(Option(mutable.ArrayBuffer[Clause]())) {
+            val clauses = fv.foldLeft(Some(mutable.ArrayBuffer[Clause]()): Option[ArrayBuffer[Clause]]) {
               case (Some(cnf), ToDisjunction(clauses)) =>
                 Some(cnf ++= clauses)
               case (_, _)                              =>

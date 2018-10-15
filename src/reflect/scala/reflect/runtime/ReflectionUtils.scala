@@ -92,7 +92,7 @@ object ReflectionUtils {
   }
 
   class EnclosedIn[T](enclosure: jClass[_] => T) {
-    def unapply(jclazz: jClass[_]): Option[T] = Option(enclosure(jclazz))
+    def unapply(jclazz: jClass[_]): Option[T] = Option.whenNonNull(enclosure(jclazz))
   }
 
   object EnclosedInMethod extends EnclosedIn(_.getEnclosingMethod)

@@ -130,7 +130,7 @@ abstract class BTypesFromClassfile {
             classBTypeFromParsedClassfile(classNode.outerClass)
           }
         val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
-        NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
+        NestedInfo(enclosingClass, Option.whenNonNull(innerEntry.outerName), Option.whenNonNull(innerEntry.innerName), staticFlag)
     }
 
     val inlineInfo = inlineInfoFromClassfile(classNode)

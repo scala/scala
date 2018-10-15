@@ -232,7 +232,7 @@ private[concurrent] final object Promise {
 
     override final def isCompleted: Boolean = value0 ne null
 
-    override final def value: Option[Try[T]] = Option(value0)
+    override final def value: Option[Try[T]] = Option.whenNonNull(value0)
 
     @tailrec // returns null if not completed
     private final def value0: Try[T] = {

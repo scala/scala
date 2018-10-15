@@ -421,7 +421,7 @@ abstract class LocalOpt {
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
       // frames of unreachable instructions are `null`.
-      def frameAt(insn: AbstractInsnNode): Option[Frame[NullnessValue]] = Option(nullnessAnalyzer.frameAt(insn))
+      def frameAt(insn: AbstractInsnNode): Option[Frame[NullnessValue]] = Option.whenNonNull(nullnessAnalyzer.frameAt(insn))
 
       def nullness(insn: AbstractInsnNode, slot: Int): Option[NullnessValue] = {
         frameAt(insn).map(_.getValue(slot))

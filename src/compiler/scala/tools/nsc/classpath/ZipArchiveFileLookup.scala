@@ -52,7 +52,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
   protected def file(inPackage: String, name: String): Option[FileEntryType] =
     for {
       dirEntry <- findDirEntry(inPackage)
-      entry <- Option(dirEntry.lookupName(name, directory = false))
+      entry <- Option.whenNonNull(dirEntry.lookupName(name, directory = false))
       if isRequiredFileType(entry)
     } yield createFileEntry(entry)
 

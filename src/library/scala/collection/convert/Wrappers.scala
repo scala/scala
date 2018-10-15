@@ -333,11 +333,11 @@ private[collection] trait Wrappers {
     def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
 
-    override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
+    override def put(k: K, v: V): Option[V] = Option.whenNonNull(underlying.put(k, v))
 
     override def update(k: K, v: V): Unit = { underlying.put(k, v) }
 
-    override def remove(k: K): Option[V] = Option(underlying remove k)
+    override def remove(k: K): Option[V] = Option.whenNonNull(underlying remove k)
 
     def iterator: Iterator[(K, V)] = new AbstractIterator[(K, V)] {
       val ui = underlying.entrySet.iterator
@@ -397,17 +397,17 @@ private[collection] trait Wrappers {
     extends AbstractJMapWrapper[K, V]
       with concurrent.Map[K, V] {
 
-    override def get(k: K) = Option(underlying get k)
+    override def get(k: K) = Option.whenNonNull(underlying get k)
 
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[K, V])
 
-    def putIfAbsent(k: K, v: V): Option[V] = Option(underlying.putIfAbsent(k, v))
+    def putIfAbsent(k: K, v: V): Option[V] = Option.whenNonNull(underlying.putIfAbsent(k, v))
 
     def remove(k: K, v: V): Boolean = underlying.remove(k, v)
 
-    def replace(k: K, v: V): Option[V] = Option(underlying.replace(k, v))
+    def replace(k: K, v: V): Option[V] = Option.whenNonNull(underlying.replace(k, v))
 
     def replace(k: K, oldvalue: V, newvalue: V): Boolean =
       underlying.replace(k, oldvalue, newvalue)
@@ -447,16 +447,16 @@ private[collection] trait Wrappers {
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
 
-    def get(k: K) = Option(underlying get k)
+    def get(k: K) = Option.whenNonNull(underlying get k)
 
     def addOne(kv: (K, V)): this.type = { underlying.put(kv._1, kv._2); this }
     def subtractOne(key: K): this.type = { underlying remove key; this }
 
-    override def put(k: K, v: V): Option[V] = Option(underlying.put(k, v))
+    override def put(k: K, v: V): Option[V] = Option.whenNonNull(underlying.put(k, v))
 
     override def update(k: K, v: V): Unit = { underlying.put(k, v) }
 
-    override def remove(k: K): Option[V] = Option(underlying remove k)
+    override def remove(k: K): Option[V] = Option.whenNonNull(underlying remove k)
     def iterator = enumerationAsScalaIterator(underlying.keys) map (k => (k, underlying get k))
 
     override def clear() = iterator.foreach(entry => underlying.remove(entry._1))

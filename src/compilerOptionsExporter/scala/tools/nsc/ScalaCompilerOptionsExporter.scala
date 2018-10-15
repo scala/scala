@@ -89,7 +89,7 @@ object ScalaCompilerOptionsExporter {
       } yield {
         Choice(
           choice,
-          description = Option(d).map(markdownifyBackquote).map(dehtmlfy).filter(_.nonEmpty),
+          description = Option.whenNonNull(d).map(markdownifyBackquote).map(dehtmlfy).filter(_.nonEmpty),
           deprecated = Some("EXPLAIN_ALTERNATIVE").filter(_ => d.toLowerCase.contains("deprecated"))
         )
       }
@@ -104,12 +104,12 @@ object ScalaCompilerOptionsExporter {
             Schema(_type="Int", default = Some(i.default), min = i.range.map(_._1), max = i.range.map(_._2))
           case c: settings.ChoiceSetting =>
             val choices = mergeChoice(c.choices, c.choicesHelp)
-            Schema(_type="Choice", arg = Some(c.helpArg).map(dehtmlfy), default = Option(c.default), choices = choices)
+            Schema(_type="Choice", arg = Some(c.helpArg).map(dehtmlfy), default = Option.whenNonNull(c.default), choices = choices)
           case mc: settings.MultiChoiceSetting[_] =>
             val choices = mergeChoice(mc.choices, mc.descriptions)
             Schema(_type="Choice", multiple = Some(true), arg = Some(mc.helpArg).map(dehtmlfy), choices = choices)
           case ps: settings.PhasesSetting =>
-            Schema(_type="Phases", default = Option(ps.default))
+            Schema(_type="Phases", default = Option.whenNonNull(ps.default))
           case px: settings.PrefixSetting =>
             Schema(_type="Prefix")
           case sv: settings.ScalaVersionSetting =>

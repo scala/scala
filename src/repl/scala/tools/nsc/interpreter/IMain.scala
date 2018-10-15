@@ -251,7 +251,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     // might be null if we're on the boot classpath
     parentClassLoaderOverride.
       orElse(settings.explicitParentLoader).
-      orElse(Option(replClass.getClassLoader())).
+      orElse(Option.whenNonNull(replClass.getClassLoader())).
       getOrElse(ClassLoader.getSystemClassLoader)
   }
 
@@ -1022,7 +1022,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       }
       loop(null, top, rest)
     }
-    Option(symbolOfTerm(id)).filter(_.exists).flatMap(s => Trying(value(originalPath(s))).toOption.flatten)
+    Option.whenNonNull(symbolOfTerm(id)).filter(_.exists).flatMap(s => Trying(value(originalPath(s))).toOption.flatten)
   }
 
   /** It's a bit of a shotgun approach, but for now we will gain in

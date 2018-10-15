@@ -52,23 +52,23 @@ private[scala] trait PropertiesTrait {
 
   def propIsSet(name: String)                   = System.getProperty(name) != null
   def propIsSetTo(name: String, value: String)  = propOrNull(name) == value
-  def propOrElse(name: String, alt: => String)     = Option(System.getProperty(name)).getOrElse(alt)
+  def propOrElse(name: String, alt: => String)     = Option.whenNonNull(System.getProperty(name)).getOrElse(alt)
   def propOrEmpty(name: String)                 = propOrElse(name, "")
   def propOrNull(name: String)                  = propOrElse(name, null)
-  def propOrNone(name: String)                  = Option(propOrNull(name))
+  def propOrNone(name: String)                  = Option.whenNonNull(propOrNull(name))
   def propOrFalse(name: String)                 = propOrNone(name) exists (x => List("yes", "on", "true") contains x.toLowerCase)
   def setProp(name: String, value: String)      = System.setProperty(name, value)
   def clearProp(name: String)                   = System.clearProperty(name)
 
-  def envOrElse(name: String, alt: => String)      = Option(System getenv name) getOrElse alt
-  def envOrNone(name: String)                   = Option(System getenv name)
+  def envOrElse(name: String, alt: => String)      = Option.whenNonNull(System getenv name) getOrElse alt
+  def envOrNone(name: String)                   = Option.whenNonNull(System getenv name)
 
   def envOrSome(name: String, alt: => Option[String])       = envOrNone(name) orElse alt
 
   // for values based on propFilename, falling back to System properties
   def scalaPropOrElse(name: String, alt: => String): String = scalaPropOrNone(name).getOrElse(alt)
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
-  def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name)).orElse(propOrNone("scala." + name))
+  def scalaPropOrNone(name: String): Option[String]      = Option.whenNonNull(scalaProps.getProperty(name)).orElse(propOrNone("scala." + name))
 
   /** The numeric portion of the runtime Scala version, if this is a final
    *  release.  If for instance the versionString says "version 2.9.0.final",

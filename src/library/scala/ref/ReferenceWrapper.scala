@@ -17,7 +17,7 @@ package scala.ref
  */
 trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
   val underlying: java.lang.ref.Reference[_ <: T]
-  override def get = Option(underlying.get)
+  override def get = Option.whenNonNull(underlying.get)
   def apply() = {
     val ret = underlying.get
     if (ret eq null) throw new NoSuchElementException

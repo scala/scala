@@ -93,7 +93,7 @@ class BoxUnboxTest extends RunTesting {
 
   @Test
   def boxUnboxBoolean(): Unit = {
-    val n1 = Option(null.asInstanceOf[Boolean])
+    val n1 = Option.whenNonNull(null.asInstanceOf[Boolean])
     assertEquals(n1, Some(false))
   }
 

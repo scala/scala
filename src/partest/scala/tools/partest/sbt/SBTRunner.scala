@@ -25,7 +25,7 @@ class SBTRunner(config: RunnerSpec.Config,
                 srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File,
                 scalacArgs: Array[String], args: Array[String]) extends AbstractRunner(
   config,
-  config.optSourcePath orElse Option(srcDir) getOrElse PartestDefaults.sourcePath,
+  config.optSourcePath orElse Option.whenNonNull(srcDir) getOrElse PartestDefaults.sourcePath,
   new FileManager(testClassLoader = testClassLoader)
 ) {
 
@@ -62,8 +62,8 @@ class SBTRunner(config: RunnerSpec.Config,
     else l.mkString(" ")
   }
 
-  override val javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd
-  override val javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd
+  override val javaCmdPath = Option.whenNonNull(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd
+  override val javacCmdPath = Option.whenNonNull(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd
   override val scalacExtraArgs = scalacArgs.toIndexedSeq
 
   override def onFinishTest(testFile: File, result: TestState, durationMs: Long): TestState = {

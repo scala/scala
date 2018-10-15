@@ -74,7 +74,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   private[this] def computeThreshold: Int = (table.size * loadFactor).ceil.toInt
 
-  def get(elem: A): Option[A] = Option(findEntry(elem))
+  def get(elem: A): Option[A] = Option.whenNonNull(findEntry(elem))
 
   /**
    * find the bucket associated with an element's hash code

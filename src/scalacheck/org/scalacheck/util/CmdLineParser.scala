@@ -73,7 +73,7 @@ private[scalacheck] trait CmdLineParser {
         case Some(o: IntOpt) => getInt(a2).map(v => parse(as, om.set(o -> v), us))
         case Some(o: FloatOpt) => getFloat(a2).map(v => parse(as, om.set(o -> v), us))
         case Some(o: StrOpt) => getStr(a2).map(v => parse(as, om.set(o -> v), us))
-        case Some(o: OpStrOpt) => getStr(a2).map(v => parse(as, om.set(o -> Option(v)), us))
+        case Some(o: OpStrOpt) => getStr(a2).map(v => parse(as, om.set(o -> Option.whenNonNull(v)), us))
         case _ => None
       }).getOrElse(parse(a2::as, om, us :+ a1))
     }

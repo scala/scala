@@ -25,10 +25,10 @@ class C {
   val m = M("foo")()
 
   // reported
-  //def model = Option(M("foo")()).getOrElse(M("bar")()).copy(currentUser = "")()
+  //def model = Option.whenNonNull(M("foo")()).getOrElse(M("bar")()).copy(currentUser = "")()
 
   // the bug
-  def model = Option(m).getOrElse(M("bar")()).copy("baz")("empty")
+  def model = Option.whenNonNull(m).getOrElse(M("bar")()).copy("baz")("empty")
 
   // style points for this version
   def modish = ((null: Option[M]) getOrElse new M()()).copy()("empty")
@@ -36,7 +36,7 @@ class C {
   // various simplifications are too simple
   case class N(currentUser: String = "anon")
   val n = N("fun")
-  def nudel = Option(n).getOrElse(N()).copy()
+  def nudel = Option.whenNonNull(n).getOrElse(N()).copy()
 }
 
 object Test {

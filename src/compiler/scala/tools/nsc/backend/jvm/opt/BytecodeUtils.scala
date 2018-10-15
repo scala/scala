@@ -163,13 +163,13 @@ object BytecodeUtils {
 
   @tailrec def nextExecutableInstruction(insn: AbstractInsnNode, alsoKeep: AbstractInsnNode => Boolean = Set()): Option[AbstractInsnNode] = {
     val next = insn.getNext
-    if (next == null || isExecutable(next) || alsoKeep(next)) Option(next)
+    if (next == null || isExecutable(next) || alsoKeep(next)) Option.whenNonNull(next)
     else nextExecutableInstruction(next, alsoKeep)
   }
 
   @tailrec def nextExecutableInstructionOrLabel(insn: AbstractInsnNode): Option[AbstractInsnNode] = {
     val next = insn.getNext
-    if (next == null || isExecutable(next) || next.isInstanceOf[LabelNode]) Option(next)
+    if (next == null || isExecutable(next) || next.isInstanceOf[LabelNode]) Option.whenNonNull(next)
     else nextExecutableInstructionOrLabel(next)
   }
 

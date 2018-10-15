@@ -367,7 +367,7 @@ abstract class NodePrinters {
 
   def printUnit(unit: CompilationUnit): Unit = {
     print("// Scala source: " + unit.source + "\n")
-    println(Option(unit.body) map (x => nodeToString(x) + "\n") getOrElse "<null>")
+    println(Option.whenNonNull(unit.body) map (x => nodeToString(x) + "\n") getOrElse "<null>")
   }
 
   def printAll(): Unit = {

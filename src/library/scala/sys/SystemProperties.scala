@@ -48,7 +48,7 @@ extends mutable.AbstractMap[String, String] {
   ) getOrElse Iterator.empty
 
   def get(key: String) =
-    wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
+    wrapAccess(Option.whenNonNull(System.getProperty(key))) flatMap (x => x)
   override def contains(key: String) =
     wrapAccess(super.contains(key)) exists (x => x)
 

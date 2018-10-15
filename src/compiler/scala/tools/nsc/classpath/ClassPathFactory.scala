@@ -34,7 +34,7 @@ class ClassPathFactory(settings: Settings) {
   def sourcesInPath(path: String): List[ClassPath] =
     for {
       file <- expandPath(path, expandStar = false)
-      dir <- Option(AbstractFile getDirectory file)
+      dir <- Option.whenNonNull(AbstractFile getDirectory file)
     } yield createSourcePath(dir)
 
 
@@ -46,7 +46,7 @@ class ClassPathFactory(settings: Settings) {
     for {
       dir <- expandPath(path, expandStar = false)
       name <- expandDir(dir)
-      entry <- Option(AbstractFile.getDirectory(name))
+      entry <- Option.whenNonNull(AbstractFile.getDirectory(name))
     } yield newClassPath(entry)
 
   def classesInExpandedPath(path: String): IndexedSeq[ClassPath] =
@@ -64,7 +64,7 @@ class ClassPathFactory(settings: Settings) {
       file <- expandPath(path, expand)
       dir <- {
         def asImage = if (file.endsWith(".jimage")) Some(AbstractFile.getFile(file)) else None
-        Option(AbstractFile.getDirectory(file)).orElse(asImage)
+        Option.whenNonNull(AbstractFile.getDirectory(file)).orElse(asImage)
       }
     } yield newClassPath(dir)
 

@@ -82,7 +82,7 @@ class SplashLoop(in: InteractiveReader, prompt: String) extends Runnable {
         }
       }
     finally {
-      try result.put(Option(input))
+      try result.put(Option.whenNonNull(input))
       catch { case ie: InterruptedException =>  } // we may have been interrupted because the interpreter reported an error
     }
   }

@@ -39,14 +39,14 @@ trait Boundings {
 
 trait Forever {
   def f = {
-    val t = Option((17, 42))
+    val t = Some((17, 42))
     for {
       ns <- t
       (i, j) = ns                        // no warn
     } yield (i + j)
   }
   def g = {
-    val t = Option((17, 42))
+    val t = Some((17, 42))
     for {
       ns <- t
       (i, j) = ns                        // no warn

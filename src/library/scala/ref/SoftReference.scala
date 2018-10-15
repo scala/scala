@@ -32,7 +32,7 @@ object SoftReference {
   def apply[T <: AnyRef](value: T) = new SoftReference(value)
 
   /** Optionally returns the referenced value, or `None` if that value no longer exists */
-  def unapply[T <: AnyRef](sr: SoftReference[T]): Option[T] = Option(sr.underlying.get)
+  def unapply[T <: AnyRef](sr: SoftReference[T]): Option[T] = Option.whenNonNull(sr.underlying.get)
 }
 
 /**

@@ -7,7 +7,7 @@ object Test {
   val a: A = null
   implicit def a2b(a: A) = new B
 
-  Option[B](a)
+  Option.whenNonNull[B](a)
 
-  val b: Option[B] = Option(a)
+  val b: Option[B] = Option.whenNonNull(a)
 }
