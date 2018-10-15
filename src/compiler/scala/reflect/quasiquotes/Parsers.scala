@@ -6,9 +6,9 @@ import scala.tools.nsc.ast.parser.Tokens._
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile, FreshNameCreator}
 
 /** Builds upon the vanilla Scala parser and teams up together with Placeholders.scala to emulate holes.
-  *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.
-  *  Unfortunately, that's outside of our reach in Scala 2.11, so we have to emulate.
-  */
+ *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.
+ *  Unfortunately, that's outside of our reach in Scala 2.11, so we have to emulate.
+ */
 trait Parsers { self: Quasiquotes =>
   import global.{Try => _, _}
   import build.implodePatDefs
@@ -18,7 +18,8 @@ trait Parsers { self: Quasiquotes =>
   } with ScalaParser {
     def parse(code: String): Tree = {
       try {
-        val parser = new QuasiquoteParser(new BatchSourceFile(nme.QUASIQUOTE_FILE, code))
+        val file = new BatchSourceFile(nme.QUASIQUOTE_FILE, code)
+        val parser = new QuasiquoteParser(file)
         parser.checkNoEscapingPlaceholders { parser.parseRule(entryPoint) }
       } catch {
         case mi: MalformedInput => c.abort(correspondingPosition(mi.offset), mi.msg)
@@ -152,8 +153,9 @@ trait Parsers { self: Quasiquotes =>
 
       override def refineStat(): List[Tree] =
         if (isHole && !isDclIntro) {
+          val result = RefineStatPlaceholder(in.name) :: Nil
           in.nextToken()
-          return RefineStatPlaceholder(in.name) :: Nil
+          result
         } else super.refineStat()
 
       override def ensureEarlyDef(tree: Tree) = tree match {
@@ -168,14 +170,16 @@ trait Parsers { self: Quasiquotes =>
 
       override def topStat = super.topStat.orElse {
         case _ if isHole =>
+          val stats = PackageStatPlaceholder(in.name) :: Nil
           in.nextToken()
-          PackageStatPlaceholder(in.name) :: Nil
+          stats
       }
 
       override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
         if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
+          val res = ForEnumPlaceholder(in.name) :: Nil
           in.nextToken()
-          ForEnumPlaceholder(in.name) :: Nil
+          res
         } else super.enumerator(isFirst, allowNestedIf)
     }
   }
@@ -208,7 +212,8 @@ trait Parsers { self: Quasiquotes =>
 
   object PatternParser extends Parser {
     def entryPoint = { parser =>
-      gen.patvarTransformer.transform(parser.noSeq.pattern())
+      val pat = parser.noSeq.pattern()
+      gen.patvarTransformer.transform(pat)
     }
   }
 
