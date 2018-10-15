@@ -37,7 +37,7 @@ trait Plugins { global: Global =>
       def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
       asPath(settings.pluginsDir.value) map injectDefault map Path.apply
     }
-    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value, settings.YcachePluginClassLoader.value == settings.CachePolicy.None.name)
+    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value, findPluginClassLoader(_))
     val (goods, errors) = maybes partition (_.isSuccess)
     // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
@@ -51,6 +51,10 @@ trait Plugins { global: Global =>
     // is to register annotation checkers during object construction, so
     // creating multiple plugin instances will leave behind stale checkers.
     classes map (Plugin.instantiate(_, this))
+  }
+
+  protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
+    Plugin.loaderFor(classpath, settings.YcachePluginClassLoader.value == settings.CachePolicy.None.name)
   }
 
   protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()

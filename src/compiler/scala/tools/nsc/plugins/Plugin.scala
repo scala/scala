@@ -103,7 +103,7 @@ object Plugin {
    *  mitigate the cost of dynamic classloading as it has been
    *  measured in https://github.com/scala/scala-dev/issues/458.
    */
-  private def loaderFor(locations: Seq[Path], disableCache: Boolean): ScalaClassLoader = {
+  def loaderFor(locations: Seq[Path], disableCache: Boolean): ScalaClassLoader = {
     def newLoader = () => {
       val compilerLoader = classOf[Plugin].getClassLoader
       val urls = locations map (_.toURL)
@@ -155,7 +155,7 @@ object Plugin {
     paths: List[List[Path]],
     dirs: List[Path],
     ignoring: List[String],
-    disableClassLoaderCache: Boolean): List[Try[AnyClass]] =
+    findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
   {
     // List[(jar, Try(descriptor))] in dir
     def scan(d: Directory) =
@@ -166,7 +166,7 @@ object Plugin {
     // scan plugin dirs for jars containing plugins, ignoring dirs with none and other jars
     val fromDirs: PDResults = dirs filter (_.isDirectory) flatMap { d =>
       scan(d.toDirectory) collect {
-        case (j, Success(pd)) => Success((pd, loaderFor(Seq(j), disableClassLoaderCache)))
+        case (j, Success(pd)) => Success((pd, findPluginClassloader(Seq(j))))
       }
     }
 
@@ -183,7 +183,7 @@ object Plugin {
       loop(ps)
     }
     val fromPaths: PDResults = paths map (p => (p, findDescriptor(p))) map {
-      case (p, Success(pd)) => Success((pd, loaderFor(p, disableClassLoaderCache)))
+      case (p, Success(pd)) => Success((pd, findPluginClassloader(p)))
       case (_, Failure(e))  => Failure(e)
     }
 
