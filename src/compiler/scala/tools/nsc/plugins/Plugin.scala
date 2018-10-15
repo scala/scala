@@ -17,7 +17,9 @@ import scala.tools.nsc.io.Jar
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{Directory, File, Path}
 import java.io.InputStream
+import java.net.URL
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.tools.nsc.classpath.FileBasedCache
 import scala.util.{Failure, Success, Try}
@@ -157,38 +159,24 @@ object Plugin {
     ignoring: List[String],
     findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
   {
-    // List[(jar, Try(descriptor))] in dir
-    def scan(d: Directory) =
-      d.files.toList sortBy (_.name) filter (Jar isJarOrZip _) map (j => (j, loadDescriptionFromJar(j)))
-
     type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
 
-    // scan plugin dirs for jars containing plugins, ignoring dirs with none and other jars
-    val fromDirs: PDResults = dirs filter (_.isDirectory) flatMap { d =>
-      scan(d.toDirectory) collect {
-        case (j, Success(pd)) => Success((pd, findPluginClassloader(Seq(j))))
+    val fromLoaders = paths.map {path =>
+      val loader = findPluginClassloader(path)
+      loader.getResource(PluginXML) match {
+        case null => Failure(new MissingPluginException(path))
+        case url =>
+          val inputStream = url.openStream
+          try {
+            Try((PluginDescription.fromXML(inputStream), loader))
+          } finally {
+            inputStream.close()
+          }
       }
-    }
-
-    // scan jar paths for plugins, taking the first plugin you find.
-    // a path element can be either a plugin.jar or an exploded dir.
-    def findDescriptor(ps: List[Path]) = {
-      def loop(qs: List[Path]): Try[PluginDescription] = qs match {
-        case Nil       => Failure(new MissingPluginException(ps))
-        case p :: rest =>
-          if (p.isDirectory) loadDescriptionFromFile(p.toDirectory / PluginXML) orElse loop(rest)
-          else if (p.isFile) loadDescriptionFromJar(p.toFile) orElse loop(rest)
-          else loop(rest)
-      }
-      loop(ps)
-    }
-    val fromPaths: PDResults = paths map (p => (p, findDescriptor(p))) map {
-      case (p, Success(pd)) => Success((pd, findPluginClassloader(p)))
-      case (_, Failure(e))  => Failure(e)
     }
 
     val seen = mutable.HashSet[String]()
-    val enabled = (fromPaths ::: fromDirs) map {
+    val enabled = fromLoaders map {
       case Success((pd, loader)) if seen(pd.classname)        =>
         // a nod to scala/bug#7494, take the plugin classes distinctly
         Failure(new PluginLoadException(pd.name, s"Ignoring duplicate plugin ${pd.name} (${pd.classname})"))

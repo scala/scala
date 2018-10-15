@@ -67,51 +67,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
-  /** Obtains a `ClassLoader` instance used for macro expansion.
-   *
-   *  By default a new `ScalaClassLoader` is created using the classpath
-   *  from global and the classloader of self as parent.
-   *
-   *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
-   */
-  protected def findMacroClassLoader(): ClassLoader = {
-    val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
-      for {
-        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
-        af <- Option(AbstractFile getDirectory file)
-      } yield af.file.toURI.toURL
-    } else global.classPath.asURLs
-    def newLoader = () => {
-      macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-    }
-
-    val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
-    if (disableCache) newLoader()
-    else {
-      import scala.tools.nsc.io.Jar
-      import scala.reflect.io.{AbstractFile, Path}
-
-      val urlsAndFiles = classpath.map(u => u -> AbstractFile.getURL(u))
-      val hasNullURL = urlsAndFiles.filter(_._2 eq null)
-      if (hasNullURL.nonEmpty) {
-        // TODO if the only null is jrt:// we can still cache
-        // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
-        macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
-        newLoader()
-      } else {
-        val locations = urlsAndFiles.map(t => Path(t._2.file))
-        val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
-        if (nonJarZips.nonEmpty) {
-          macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
-          newLoader()
-        } else {
-          Macros.macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
-        }
-      }
-    }
-  }
-
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
    *
