@@ -152,9 +152,8 @@ trait Parsers { self: Quasiquotes =>
 
       override def refineStat(): List[Tree] =
         if (isHole && !isDclIntro) {
-          val result = RefineStatPlaceholder(in.name) :: Nil
           in.nextToken()
-          result
+          return RefineStatPlaceholder(in.name) :: Nil
         } else super.refineStat()
 
       override def ensureEarlyDef(tree: Tree) = tree match {
@@ -169,16 +168,14 @@ trait Parsers { self: Quasiquotes =>
 
       override def topStat = super.topStat.orElse {
         case _ if isHole =>
-          val stats = PackageStatPlaceholder(in.name) :: Nil
           in.nextToken()
-          stats
+          PackageStatPlaceholder(in.name) :: Nil
       }
 
       override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
         if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
-          val res = ForEnumPlaceholder(in.name) :: Nil
           in.nextToken()
-          res
+          ForEnumPlaceholder(in.name) :: Nil
         } else super.enumerator(isFirst, allowNestedIf)
     }
   }
