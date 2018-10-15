@@ -22,7 +22,7 @@ package mutable
 @SerialVersionUID(3L)
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
-  def empty[A, B] = new LinkedHashMap[A, B]
+  def empty[K, V] = new LinkedHashMap[K, V]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]) =
     it match {

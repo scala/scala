@@ -63,8 +63,8 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     //   List[String] <: AnyRef
     //   Map[Int, Int] <: Iterable[(Int, Int)]
     //
-    // Given the manifest for Map[A, B] how do I determine that a
-    // supertype has single type argument (A, B) ? I don't see how we
+    // Given the manifest for Map[K, V] how do I determine that a
+    // supertype has single type argument (K, V) ? I don't see how we
     // can say whether X <:< Y when type arguments are involved except
     // when the erasure is the same, even before considering variance.
     !cannotMatch && {

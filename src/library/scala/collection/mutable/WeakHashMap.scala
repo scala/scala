@@ -20,8 +20,8 @@ import convert.Wrappers._
  *  removed from this map when the key is no longer (strongly) referenced. This class wraps
  *  `java.util.WeakHashMap`.
  *
- *  @tparam A      type of keys contained in this map
- *  @tparam B      type of values associated with the keys
+ *  @tparam K      type of keys contained in this map
+ *  @tparam V      type of values associated with the keys
  *
  *  @since 2.8
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#weak-hash-maps "Scala's Collection Library overview"]]
@@ -32,9 +32,9 @@ import convert.Wrappers._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
-    with JMapWrapperLike[A, B, WeakHashMap, WeakHashMap[A, B]] {
-  override def empty = new WeakHashMap[A, B]
+class WeakHashMap[K, V] extends JMapWrapper[K, V](new java.util.WeakHashMap)
+    with JMapWrapperLike[K, V, WeakHashMap, WeakHashMap[K, V]] {
+  override def empty = new WeakHashMap[K, V]
   override def mapFactory: MapFactory[WeakHashMap] = WeakHashMap
   override protected[this] def stringPrefix = "WeakHashMap"
 }
