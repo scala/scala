@@ -160,7 +160,7 @@ object Predef extends LowPriorityImplicits {
   type Function[-A, +B] = Function1[A, B]
 
   /**  @group aliases */
-  type Map[A, +B] = immutable.Map[A, B]
+  type Map[K, +V] = immutable.Map[K, V]
   /**  @group aliases */
   type Set[A]     = immutable.Set[A]
   /**  @group aliases */

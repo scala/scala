@@ -87,27 +87,27 @@ trait DecorateAsJava extends AsJavaConverters {
    * Adds an `asJava` method that implicitly converts a Scala mutable `Map` to a Java `Map`.
    * @see [[mutableMapAsJavaMap]]
    */
-  implicit def mutableMapAsJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] =
+  implicit def mutableMapAsJavaMapConverter[K, V](m : mutable.Map[K, V]): AsJava[ju.Map[K, V]] =
     new AsJava(mutableMapAsJavaMap(m))
 
   /**
    * Adds an `asJavaDictionary` method that implicitly converts a Scala mutable `Map` to a Java `Dictionary`.
    * @see [[asJavaDictionary]]
    */
-  implicit def asJavaDictionaryConverter[A, B](m : mutable.Map[A, B]): AsJavaDictionary[A, B] =
+  implicit def asJavaDictionaryConverter[K, V](m : mutable.Map[K, V]): AsJavaDictionary[K, V] =
     new AsJavaDictionary(m)
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala `Map` to a Java `Map`.
    * @see [[mapAsJavaMap]]
    */
-  implicit def mapAsJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
+  implicit def mapAsJavaMapConverter[K, V](m : Map[K, V]): AsJava[ju.Map[K, V]] =
     new AsJava(mapAsJavaMap(m))
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable `concurrent.Map` to a Java `ConcurrentMap`.
    * @see [[mapAsJavaConcurrentMap]].
    */
-  implicit def mapAsJavaConcurrentMapConverter[A, B](m: concurrent.Map[A, B]): AsJava[juc.ConcurrentMap[A, B]] =
+  implicit def mapAsJavaConcurrentMapConverter[K, V](m: concurrent.Map[K, V]): AsJava[juc.ConcurrentMap[K, V]] =
     new AsJava(mapAsJavaConcurrentMap(m))
 }

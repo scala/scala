@@ -178,7 +178,7 @@ You may wish to define T2 as +T2 instead. (SLS 4.5)
 found-req-variance.scala:105: error: type mismatch;
  found   : scala.collection.immutable.Map[AnyRef,String]
  required: Map[String,String]
-Note: AnyRef >: String, but trait Map is invariant in type A.
+Note: AnyRef >: String, but trait Map is invariant in type K.
 You may wish to investigate a wildcard type such as `_ >: String`. (SLS 3.2.10)
   def g2 = Set[Map[String, String]]() + Map[AnyRef, String]()
                                                            ^
