@@ -377,7 +377,7 @@ trait Commands {
     }
 
     def actionsPrecond(as: Actions) =
-      as.parCmds.length != 1 && as.parCmds.forall(_.nonEmpty) &&
+      as.parCmds.lengthIs != 1 && as.parCmds.forall(_.nonEmpty) &&
       initialPreCondition(as.s) && (cmdsPrecond(as.s, as.seqCmds) match {
         case (s,true) => as.parCmds.forall(cmdsPrecond(s,_)._2)
         case _ => false

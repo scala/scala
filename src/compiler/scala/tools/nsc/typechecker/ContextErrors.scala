@@ -677,7 +677,7 @@ trait ContextErrors {
         val f = meth.name.decoded
         val paf = s"$f(${ meth.asMethod.paramLists map (_ map (_ => "_") mkString ",") mkString ")(" })"
         val advice =
-          if (meth.isConstructor || meth.info.params.length > definitions.MaxFunctionArity) ""
+          if (meth.isConstructor || meth.info.params.lengthIs > definitions.MaxFunctionArity) ""
           else s"""
             |Unapplied methods are only converted to functions when a function type is expected.
             |You can make this conversion explicit by writing `$f _` or `$paf` instead of `$f`.""".stripMargin

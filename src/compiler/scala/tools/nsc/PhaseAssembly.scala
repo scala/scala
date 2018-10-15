@@ -153,7 +153,7 @@ trait PhaseAssembly {
           val sanity = Nil ++ hl.to.before.filter(_.hard)
           if (sanity.length == 0) {
             throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-          } else if (sanity.length > 1) {
+          } else if (sanity.lengthIs > 1) {
             dump("phase-order")
             val following = (sanity map (_.frm.phasename)).sorted mkString ","
             throw new FatalError(s"Multiple phases want to run right after ${sanity.head.to.phasename}; followers: $following; created phase-order.dot")

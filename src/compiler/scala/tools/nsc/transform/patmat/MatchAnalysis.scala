@@ -606,7 +606,7 @@ trait MatchAnalysis extends MatchApproximation {
       override def coveredBy(other: CounterExample): Boolean =
         other match {
           case other@ListExample(_) =>
-            this == other || ((elems.length == other.elems.length) && (elems zip other.elems).forall{case (a, b) => a coveredBy b})
+            this == other || ((elems.sizeCompare(other.elems) == 0) && (elems zip other.elems).forall{case (a, b) => a coveredBy b})
           case _ => super.coveredBy(other)
         }
 
@@ -618,7 +618,7 @@ trait MatchAnalysis extends MatchApproximation {
       override def coveredBy(other: CounterExample): Boolean =
         other match {
           case TupleExample(otherArgs) =>
-            this == other || ((ctorArgs.length == otherArgs.length) && (ctorArgs zip otherArgs).forall{case (a, b) => a coveredBy b})
+            this == other || ((ctorArgs.sizeCompare(otherArgs) == 0) && (ctorArgs zip otherArgs).forall{case (a, b) => a coveredBy b})
           case _ => super.coveredBy(other)
         }
     }

@@ -163,7 +163,7 @@ trait ModelFactoryImplicitSupport {
       val (viewSimplifiedType, viewImplicitTypes) = removeImplicitParameters(viewFullType)
 
       // TODO: Isolate this corner case :) - Predef.<%< and put it in the testsuite
-      if (viewSimplifiedType.params.length != 1) {
+      if (viewSimplifiedType.params.lengthIs != 1) {
         // This is known to be caused by the `<%<` object in Predef:
         // {{{
         //    sealed abstract class <%<[-From, +To] extends (From => To) with Serializable
@@ -373,7 +373,7 @@ trait ModelFactoryImplicitSupport {
       convertorOwner match {
         case doc: DocTemplateImpl =>
           val convertors = members.collect { case m: MemberImpl if m.sym == convSym => m }
-          if (convertors.length == 1)
+          if (convertors.lengthIs == 1)
             convertor = convertors.head
         case _ =>
       }

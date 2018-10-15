@@ -1051,7 +1051,7 @@ abstract class Erasure extends InfoTransform
               targ.tpe match {
                 case SingletonInstanceCheck(cmpOp, cmpArg) =>
                   atPos(tree.pos) { Apply(Select(cmpArg, cmpOp), List(qual)) }
-                case RefinedType(parents, decls) if (parents.length >= 2) =>
+                case RefinedType(parents, decls) if (parents.lengthIs >= 2) =>
                   gen.evalOnce(qual, currentOwner, localTyper.fresh) { q =>
                     // Optimization: don't generate isInstanceOf tests if the static type
                     // conforms, because it always succeeds.  (Or at least it had better.)
