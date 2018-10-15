@@ -2,7 +2,12 @@
 sudo: required
 
 language: scala
-jdk: openjdk8
+jdk:
+  - openjdk8
+  - openjdk11
+
+script:
+  - sbt -warn setupValidateTest test:compile info testAll
 
 cache:
   directories:

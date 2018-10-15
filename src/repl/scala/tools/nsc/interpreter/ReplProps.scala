@@ -52,7 +52,7 @@ class ReplProps {
   val continueString = Prop[String]("scala.repl.continue").option getOrElse "| "
   val continueText   = {
     val text   = enversion(continueString)
-    val margin = promptText.lines.toList.last.length - text.length
+    val margin = promptText.linesIterator.toList.last.length - text.length
     if (margin > 0) " " * margin + text else text
   }
   val continuePrompt = encolor(continueText)
