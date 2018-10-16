@@ -110,6 +110,7 @@ Once you've started an `sbt` session you can run one of the core commands:
   - `dist/mkPack` creates a build in the Scala distribution format in `build/pack`
   - `test` runs the JUnit test, `testOnly *immutable.ListTest` runs a subset
   - `partest` runs partest tests (accepts options, try `partest --help`)
+  - `scalacheck/test` runs scalacheck tests, `scalacheck/testOnly *FloatFormatTest` runs a subset
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
     - Optionally `set baseVersionSuffix := "-bin-abcd123-SNAPSHOT"`
