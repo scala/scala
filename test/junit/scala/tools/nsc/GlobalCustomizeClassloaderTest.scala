@@ -48,6 +48,7 @@ class GlobalCustomizeClassloaderTest {
       case Typed(Literal(Constant(s: String)), _) => Assert.assertEquals(SampleMacro.data, s)
       case _ => Assert.fail()
     }
+    g.close()
   }
 }
 

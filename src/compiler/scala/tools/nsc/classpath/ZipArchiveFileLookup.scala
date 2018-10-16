@@ -12,8 +12,9 @@
 
 package scala.tools.nsc.classpath
 
-import java.io.File
+import java.io.{Closeable, File}
 import java.net.URL
+
 import scala.reflect.io.AbstractFile
 import scala.reflect.io.FileZipArchive
 import FileUtils.AbstractFileOps
@@ -24,7 +25,7 @@ import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
  * It provides common logic for classes handling class and source files.
  * It's aware of things like e.g. META-INF directory which is correctly skipped.
  */
-trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPath {
+trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPath with Closeable {
   val zipFile: File
   def release: Option[String]
 
@@ -32,8 +33,8 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
 
   override def asURLs: Seq[URL] = Seq(zipFile.toURI.toURL)
   override def asClassPathStrings: Seq[String] = Seq(zipFile.getPath)
-
   private val archive = new FileZipArchive(zipFile, release)
+  override def close(): Unit = archive.close()
 
   override private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
     val prefix = PackageNameUtils.packagePrefix(inPackage)

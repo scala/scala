@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package util
 
+import java.io.Closeable
+
 import io.{AbstractFile, Directory, File, Jar}
 import java.net.MalformedURLException
 import java.net.URL

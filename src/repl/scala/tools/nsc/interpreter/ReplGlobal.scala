@@ -37,7 +37,7 @@ trait ReplGlobal extends Global {
       case None => base
       case Some(out) =>
         // Make bytecode of previous lines available to the inliner
-        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings)
+        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry)
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }

@@ -95,26 +95,7 @@ object Plugin {
 
   private val PluginXML = "scalac-plugin.xml"
 
-  private val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader]()
-
-  /** Create a class loader with the specified locations plus
-   *  the loader that loaded the Scala compiler.
-   *
-   *  If the class loader has already been created before and the
-   *  file stamps are the same, the previous loader is returned to
-   *  mitigate the cost of dynamic classloading as it has been
-   *  measured in https://github.com/scala/scala-dev/issues/458.
-   */
-  def loaderFor(locations: Seq[Path], disableCache: Boolean): ScalaClassLoader = {
-    def newLoader = () => {
-      val compilerLoader = classOf[Plugin].getClassLoader
-      val urls = locations map (_.toURL)
-      ScalaClassLoader fromURLs (urls, compilerLoader)
-    }
-
-    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) newLoader()
-    else pluginClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
-  }
+  private[nsc] val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader.URLClassLoader]()
 
   /** Try to load a plugin description from the specified location.
    */

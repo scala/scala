@@ -898,8 +898,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
 object Macros {
   final val macroClassLoadersCache =
-    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
-
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader.URLClassLoader]()
 }
 
 trait MacrosStats {
