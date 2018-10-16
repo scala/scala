@@ -164,13 +164,13 @@ trait Plugins { global: Global =>
         // TODO if the only null is jrt:// we can still cache
         // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
         analyzer.macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
-        newLoader()
+        perRunCaches.recordClassloader(newLoader())
       } else {
         val locations = urlsAndFiles.map(t => Path(t._2.file))
         val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
         if (nonJarZips.nonEmpty) {
           analyzer.macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
-          newLoader()
+          perRunCaches.recordClassloader(newLoader())
         } else {
           Macros.macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
         }

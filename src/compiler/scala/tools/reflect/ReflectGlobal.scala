@@ -32,7 +32,7 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
     */
   override protected[scala] def findMacroClassLoader(): ClassLoader = {
     val classpath = classPath.asURLs
-    ScalaClassLoader.fromURLs(classpath, rootClassLoader)
+    perRunCaches.recordClassloader(ScalaClassLoader.fromURLs(classpath, rootClassLoader))
   }
 
   override def transformedType(sym: Symbol) =
