@@ -1654,7 +1654,8 @@ object ContextMode {
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
     TypeConstructorAllowed -> "TypeConstructorAllowed",
-    SuppressDeadArgWarning -> "SuppressDeadArgWarning"
+    SuppressDeadArgWarning -> "SuppressDeadArgWarning",
+    DiagUsedDefaults       -> "DiagUsedDefaults"
   )
 }
 
