@@ -47,13 +47,13 @@ object Duration {
   private[this] final val maxPreciseDouble = 9007199254740992d
 
   /**
-    * Parse String into Duration.  Format is `"<length><unit>"`, where
-    * whitespace is allowed before, between and after the parts. Infinities are
-    * designated by `"Inf"`, `"PlusInf"`, `"+Inf"`, `"Duration.Inf"` and `"-Inf"`, `"MinusInf"` or `"Duration.MinusInf"`.
-    * Undefined is designated by `"Duration.Undefined"`.
-    *
-    * @throws NumberFormatException if format is not parsable
-    */
+   * Parse String into Duration.  Format is `"<length><unit>"`, where
+   * whitespace is allowed before, between and after the parts. Infinities are
+   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"`, `"Duration.Inf"` and `"-Inf"`, `"MinusInf"` or `"Duration.MinusInf"`.
+   * Undefined is designated by `"Duration.Undefined"`.
+   *
+   * @throws NumberFormatException if format is not parsable
+   */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
     s1 match {
