@@ -110,6 +110,7 @@ Once you've started an `sbt` session you can run one of the core commands:
   - `dist/mkPack` creates a build in the Scala distribution format in `build/pack`
   - `test` runs the JUnit test, `testOnly *immutable.ListTest` runs a subset
   - `partest` runs partest tests (accepts options, try `partest --help`)
+  - `scalacheck/test` runs scalacheck tests, `scalacheck/testOnly *FloatFormatTest` runs a subset
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
     - Optionally `set baseVersionSuffix := "-bin-abcd123-SNAPSHOT"`
@@ -123,7 +124,7 @@ Once you've started an `sbt` session you can run one of the core commands:
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on
-itself`, it may be that a global SBT plugin (such as [Ensime](http://ensime.org/)) is
+itself`, it may be that a global SBT plugin (such as [ENSIME](https://ensime.github.io/)) is
 resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
 temporarily commenting them out in `~/.sbt/1.0/plugins/plugins.sbt`).
 
@@ -170,7 +171,7 @@ be easily executed locally.
 ### IDE setup
 
 You may use IntelliJ IDEA (see [src/intellij/README.md](src/intellij/README.md)),
-or ENSIME (see [this page on the ENSIME site](http://ensime.org/editors/)).
+or ENSIME (see [this page on the ENSIME site](https://ensime.github.io/editors/)).
 (Support for Eclipse has decayed and been removed, but could be resurrected by
 a volunteer.)
 
