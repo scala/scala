@@ -205,9 +205,4 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
   private final class SerializationProxy(coll: BitSet) extends scala.collection.BitSet.SerializationProxy(coll) {
     protected[this] def readResolve(): Any = BitSet.fromBitMaskNoCopy(elems)
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

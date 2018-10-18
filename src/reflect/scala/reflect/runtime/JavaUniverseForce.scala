@@ -348,6 +348,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SomeClass
     definitions.NoneModule
     definitions.SomeModule
+    definitions.ModuleSerializationProxyClass
     definitions.VarArityClass
     definitions.ProductClass
     definitions.TupleClass

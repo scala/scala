@@ -175,9 +175,4 @@ object ListMap extends MapFactory[ListMap] {
     new ImmutableBuilder[(K, V), ListMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

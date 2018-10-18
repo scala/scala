@@ -789,11 +789,6 @@ object HashSet extends IterableFactory[HashSet] {
     }
 
   def newBuilder[A]: Builder[A, HashSet[A]] = new HashSetBuilder
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]] {
