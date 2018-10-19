@@ -3080,13 +3080,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (!vd.tpt.isEmpty) Right(vd.tpt.tpe)
               else Left(args.indexWhere {
                 case Ident(name) => name == vd.name
-                case _           => false // TODO: i think we need to deal with widening conversions too??
+                case _           => false // TODO: this does not catch eta-expansion of an overloaded method that involves numeric widening scala/bug#9738 (and maybe similar patterns?)
               })
             }
 
           // If some of the vparams without type annotation was not applied to `meth`,
           // we're not going to learn enough from typing `meth` to determine them.
-          if (formalsFromApply.exists{ case Left(-1) => true case _ => false }) EmptyTree
+          if (formalsFromApply.contains(Left(-1))) EmptyTree
           else {
             // We're looking for a method (as indicated by FUNmode in the silent typed below),
             // so let's make sure our expected type is a MethodType (of the right arity, but we can't easily say more about the argument types)
