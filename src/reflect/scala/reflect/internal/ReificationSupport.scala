@@ -433,7 +433,7 @@ trait ReificationSupport { self: SymbolTable =>
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case Literal(Constant(())) =>
-          Some(Nil)
+          SomeOfNil
         case Apply(MaybeTypeTreeOriginal(SyntacticTypeApplied(MaybeSelectApply(TupleCompanionRef(sym)), targs)), args)
           if sym == TupleClass(args.length).companionModule
           && (targs.isEmpty || targs.length == args.length) =>
@@ -453,7 +453,7 @@ trait ReificationSupport { self: SymbolTable =>
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case MaybeTypeTreeOriginal(UnitClassRef(_)) =>
-          Some(Nil)
+          SomeOfNil
         case MaybeTypeTreeOriginal(AppliedTypeTree(TupleClassRef(sym), args))
           if sym == TupleClass(args.length) =>
           Some(args)
@@ -507,7 +507,7 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case bl @ self.Block(stats, SyntheticUnit()) => Some(treeInfo.untypecheckedBlockBody(bl))
         case bl @ self.Block(stats, expr)            => Some(treeInfo.untypecheckedBlockBody(bl) :+ expr)
-        case SyntheticUnit()                         => Some(Nil)
+        case SyntheticUnit()                         => SomeOfNil
         case _ if tree.isTerm && tree.nonEmpty       => Some(tree :: Nil)
         case _                                       => None
       }

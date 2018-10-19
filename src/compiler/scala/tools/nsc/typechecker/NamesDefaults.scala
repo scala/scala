@@ -181,7 +181,7 @@ trait NamesDefaults { self: Analyzer =>
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: scala/bug#5720, scala/bug#5727
-        qual changeOwner (blockTyper.context.owner -> sym)
+        qual changeOwner (blockTyper.context.owner, sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
         val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {

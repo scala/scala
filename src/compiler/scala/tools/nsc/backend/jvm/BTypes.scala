@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.{concurrent, mutable}
+import java.{util => ju}
+import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
@@ -23,7 +24,7 @@ import scala.tools.nsc.backend.jvm.opt._
  */
 abstract class BTypes {
   val frontendAccess: PostProcessorFrontendAccess
-  import frontendAccess.{frontendSynch, recordPerRunCache}
+  import frontendAccess.{frontendSynch, recordPerRunJavaMapCache}
 
   val coreBTypes: CoreBTypes { val bTypes: BTypes.this.type }
   import coreBTypes._
@@ -35,13 +36,15 @@ abstract class BTypes {
    * `getCommonSuperClass`. In this method we need to obtain the ClassBType for a given internal
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
-  def cachedClassBType(internalName: InternalName): Option[ClassBType] =
+  // OPT: not returning Option[ClassBType] because the Some allocation shows up as a hotspot
+  def cachedClassBType(internalName: InternalName): ClassBType =
     classBTypeCache.get(internalName)
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
   // Note usage should be private to this file, except for tests
-  val classBTypeCache: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
+  val classBTypeCache: ju.concurrent.ConcurrentHashMap[InternalName, ClassBType] =
+    recordPerRunJavaMapCache(new ju.concurrent.ConcurrentHashMap[InternalName, ClassBType])
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -809,17 +812,23 @@ abstract class BTypes {
     def unapply(cr:ClassBType) = Some(cr.internalName)
 
     def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
-      val newRes = if (fromSymbol) new ClassBTypeFromSymbol(internalName) else new ClassBTypeFromClassfile(internalName)
-      // synchronized s required to ensure proper initialisation if info.
-      // see comment on def info
-      newRes.synchronized {
-        classBTypeCache.putIfAbsent(internalName, newRes) match {
-          case None =>
-            newRes._info = init(newRes)
-            newRes.checkInfoConsistency()
-            newRes
-          case Some(old) =>
-            old
+      val cached = classBTypeCache.get(internalName)
+      if (cached ne null) cached
+      else {
+        val newRes =
+          if (fromSymbol) new ClassBTypeFromSymbol(internalName)
+          else new ClassBTypeFromClassfile(internalName)
+        // synchronized is required to ensure proper initialisation of info.
+        // see comment on def info
+        newRes.synchronized {
+          classBTypeCache.putIfAbsent(internalName, newRes) match {
+            case null =>
+              newRes._info = init(newRes)
+              newRes.checkInfoConsistency()
+              newRes
+            case old =>
+              old
+          }
         }
       }
     }

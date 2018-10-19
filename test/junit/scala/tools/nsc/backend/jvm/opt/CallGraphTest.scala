@@ -9,6 +9,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
+import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
@@ -24,7 +25,7 @@ class CallGraphTest extends BytecodeTesting {
 
 
   compiler.keepPerRunCachesAfterRun(List(
-    bTypes.classBTypeCache,
+    JavaClearable.forMap(bTypes.classBTypeCache),
     postProcessor.byteCodeRepository.compilingClasses,
     postProcessor.byteCodeRepository.parsedClasses,
     postProcessor.callGraph.callsites))
@@ -142,7 +143,7 @@ class CallGraphTest extends BytecodeTesting {
     val m = getAsmMethod(c, "m")
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
-    val classTp = cachedClassBType("java/lang/Class").get
+    val classTp = cachedClassBType("java/lang/Class")
     val r = callGraph.callsites(m)(fn)
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }

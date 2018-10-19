@@ -932,7 +932,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def genLoadArguments(args: List[Tree], btpes: List[BType]) {
-      (args zip btpes) foreach { case (arg, btpe) => genLoad(arg, btpe) }
+      foreach2(args, btpes) { case (arg, btpe) => genLoad(arg, btpe) }
     }
 
     def genLoadModule(tree: Tree): BType = {

@@ -600,7 +600,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       val computerSym =
         owner.newMethod(lazyName append nme.LAZY_SLOW_SUFFIX, pos, ARTIFACT | PRIVATE) setInfo MethodType(Nil, lazyValType)
 
-      val rhsAtComputer = rhs.changeOwner(lazySym -> computerSym)
+      val rhsAtComputer = rhs.changeOwner(lazySym, computerSym)
 
       val computer = mkAccessor(computerSym)(gen.mkSynchronized(Ident(holderSym))(
         If(initialized, getValue,
@@ -690,7 +690,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     }
 
     def rhsAtOwner(stat: ValOrDefDef, newOwner: Symbol): Tree =
-      atOwner(newOwner)(super.transform(stat.rhs.changeOwner(stat.symbol -> newOwner)))
+      atOwner(newOwner)(super.transform(stat.rhs.changeOwner(stat.symbol, newOwner)))
 
     override def transform(stat: Tree): Tree = {
       val currOwner = currentOwner // often a class, but not necessarily

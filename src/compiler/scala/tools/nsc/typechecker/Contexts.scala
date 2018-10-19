@@ -8,7 +8,7 @@ package typechecker
 
 import scala.collection.{ immutable, mutable }
 import scala.annotation.tailrec
-import scala.reflect.internal.util.shortClassOfInstance
+import scala.reflect.internal.util.{ shortClassOfInstance, SomeOfNil }
 import scala.tools.nsc.reporters.Reporter
 
 /**
@@ -938,7 +938,7 @@ trait Contexts { self: Analyzer =>
         // the corresponding package object may contain implicit members.
         val pre = owner.packageObject.typeOfThis
         Some(collectImplicits(pre.implicitMembers, pre))
-      } else SomeNil
+      } else SomeOfNil
     }
 
     //
@@ -1567,7 +1567,6 @@ trait Contexts { self: Analyzer =>
     private def imp1Explicit = imp1 isExplicitImport name
     private def imp2Explicit = imp2 isExplicitImport name
   }
-  private final val SomeNil = Some(Nil)
 }
 
 object ContextMode {
