@@ -58,15 +58,11 @@ abstract class BTypesFromClassfile {
    * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    cachedClassBTypeOrNull(internalName) match {
-      case null =>
-        ClassBType(internalName, false){ res:ClassBType =>
-          byteCodeRepository.classNode(internalName) match {
-            case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
-            case Right(c) => computeClassInfoFromClassNode(c, res)
-          }
-        }
-      case tp => tp
+    ClassBType(internalName, fromSymbol = false) { res: ClassBType =>
+      byteCodeRepository.classNode(internalName) match {
+        case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
+        case Right(c) => computeClassInfoFromClassNode(c, res)
+      }
     }
   }
 
@@ -74,11 +70,8 @@ abstract class BTypesFromClassfile {
    * Construct the [[ClassBType]] for a parsed classfile.
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
-    cachedClassBTypeOrNull(classNode.name) match {
-      case null => ClassBType(classNode.name, false) { res: ClassBType =>
-        computeClassInfoFromClassNode(classNode, res)
-      }
-      case tp => tp
+    ClassBType(classNode.name, fromSymbol = false) { res: ClassBType =>
+      computeClassInfoFromClassNode(classNode, res)
     }
   }
 

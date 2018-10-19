@@ -958,7 +958,7 @@ abstract class ClassfileParser {
     def addParamNames(): Unit =
       if ((paramNames ne null) && sym.hasRawInfo && sym.isMethod) {
         val params = sym.rawInfo.params
-        (paramNames zip params).foreach {
+        foreach2(paramNames.toList, params) {
           case (nme.NO_NAME, _) => // param was ACC_SYNTHETIC; ignore
           case (name, param) =>
             param.resetFlag(SYNTHETIC)
@@ -1087,6 +1087,16 @@ abstract class ClassfileParser {
         mod.moduleClass setInfo loaders.moduleClassLoader
         cls.associatedFile = file
         mod.moduleClass.associatedFile = file
+
+        /**
+          * need to set privateWithin here because the classfile of a nested protected class is public in bytecode,
+          * so propagatePackageBoundary will not set it when the symbols are completed
+          */
+        if (jflags.isProtected) {
+          cls.privateWithin = cls.enclosingPackage
+          mod.privateWithin = cls.enclosingPackage
+        }
+
         (cls, mod)
       }
 

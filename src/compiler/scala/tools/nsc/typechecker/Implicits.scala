@@ -1444,7 +1444,7 @@ trait Implicits {
 
       /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicitFor(appliedType(manifestClass, tp), tree, context).tree
+        inferImplicitFor(appliedType(manifestClass, tp :: Nil), tree, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
       def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {

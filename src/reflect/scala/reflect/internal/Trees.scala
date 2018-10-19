@@ -223,6 +223,9 @@ trait Trees extends api.Trees {
       }
     }
 
+    def changeOwner(from: Symbol, to: Symbol): Tree =
+      new ChangeOwnerTraverser(from, to) apply this
+
     def shallowDuplicate: Tree = new ShallowDuplicator(this) transform this
     def shortClass: String = (getClass.getName split "[.$]").last
 

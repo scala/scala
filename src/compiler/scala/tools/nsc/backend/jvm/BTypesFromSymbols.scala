@@ -100,20 +100,16 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryNameString
-      cachedClassBTypeOrNull(internalName) match {
-        case null =>
-          // The new ClassBType is added to the map via its apply, before we set its info. This
-          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-          ClassBType(internalName, true) { res:ClassBType =>
-            if (completeSilentlyAndCheckErroneous(classSym))
-              Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-            else computeClassInfo(classSym, res)
-          }
-        case bType =>
-          if (currentRun.compiles(classSym))
-            assert(bType.fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
-          bType
+      // The new ClassBType is added to the map via its apply, before we set its info. This
+      // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+      val btype = ClassBType(internalName, fromSymbol = true) { res:ClassBType =>
+        if (completeSilentlyAndCheckErroneous(classSym))
+          Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+        else computeClassInfo(classSym, res)
       }
+      if (currentRun.compiles(classSym))
+        assert(btype.fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+      btype
     }
   }
 
@@ -616,20 +612,16 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    cachedClassBTypeOrNull(internalName) match {
-      case null =>
-        ClassBType(internalName, true) { c: ClassBType =>
-          val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
-          val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
-          Right(ClassInfo(
-            superClass = Some(ObjectRef),
-            interfaces = Nil,
-            flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
-            nestedClasses = nested,
-            nestedInfo = Lazy.eagerNone,
-            inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
-        }
-      case tp => tp
+    ClassBType(internalName, fromSymbol = true) { c: ClassBType =>
+      val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
+      val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
+      Right(ClassInfo(
+        superClass = Some(ObjectRef),
+        interfaces = Nil,
+        flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
+        nestedClasses = nested,
+        nestedInfo = Lazy.eagerNone,
+        inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
     }
   }
 

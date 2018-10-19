@@ -19,7 +19,7 @@ package settings
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.collection.mutable.Clearable
 import scala.io.Source
-import scala.reflect.internal.util.StringOps
+import scala.reflect.internal.util.{ SomeOfNil, StringOps }
 import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
@@ -134,7 +134,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // -Xfoo: clears Clearables
     def clearIfExists(cmd: String): Option[List[String]] = lookupSetting(cmd) match {
-      case Some(c: Clearable) => c.clear() ; Some(Nil)
+      case Some(c: Clearable) => c.clear() ; SomeOfNil
       case Some(s)            => s.errorAndValue(s"Missing argument to $cmd", None)
       case None               => None
     }
@@ -465,10 +465,10 @@ class MutableSettings(val errorFn: String => Unit)
       case List(x) =>
         if (x.equalsIgnoreCase("true")) {
           value = true
-          Some(Nil)
+          SomeOfNil
         } else if (x.equalsIgnoreCase("false")) {
           value = false
-          Some(Nil)
+          SomeOfNil
         } else errorAndValue(s"'$x' is not a valid choice for '$name'", None)
       case _       => errorAndValue(s"'$name' accepts only one boolean value", None)
     }
@@ -869,8 +869,8 @@ class MutableSettings(val errorFn: String => Unit)
 
     override def tryToSetColon(args: List[String]) = args match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
-      case List("help")                   => sawHelp = true; Some(Nil)
-      case List(x) if choices contains x  => value = x ; Some(Nil)
+      case List("help")                   => sawHelp = true; SomeOfNil
+      case List(x) if choices contains x  => value = x ; SomeOfNil
       case List(x)                        => errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
       case xs                             => errorAndValue("'" + name + "' does not accept multiple arguments.", None)
     }
@@ -935,7 +935,7 @@ class MutableSettings(val errorFn: String => Unit)
       args match {
         case Nil  => if (default == "") errorAndValue("missing phase", None)
                      else tryToSetColon(splitDefault)
-        case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
+        case xs   => value = (value ++ xs).distinct.sorted ; SomeOfNil
       }
     } catch { case _: NumberFormatException => None }
 
