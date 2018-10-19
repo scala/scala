@@ -49,16 +49,18 @@ object Duration {
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
    * whitespace is allowed before, between and after the parts. Infinities are
-   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
+   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"`, `"Duration.Inf"` and `"-Inf"`, `"MinusInf"` or `"Duration.MinusInf"`.
+   * Undefined is designated by `"Duration.Undefined"`.
    *
    * @throws NumberFormatException if format is not parsable
    */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
     s1 match {
-      case "Inf" | "PlusInf" | "+Inf" => Inf
-      case "MinusInf" | "-Inf"        => MinusInf
-      case _                          =>
+      case "Inf" | "PlusInf" | "+Inf" | "Duration.Inf" => Inf
+      case "MinusInf" | "-Inf" | "Duration.MinusInf"   => MinusInf
+      case "Duration.Undefined"                        => Undefined
+      case _                                           =>
         val unitName = s1.reverse.takeWhile(_.isLetter).reverse
         timeUnit get unitName match {
           case Some(unit) =>
