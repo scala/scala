@@ -299,6 +299,24 @@ trait Collections {
     true
   }
 
+  // "Opt" suffix or traverse clashes with the various traversers' traverses
+  final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
+  final def traverseOpt[A, B](as: List[A])(f: A => Option[B]): Option[List[B]] =
+    if (as eq Nil) SomeOfNil else {
+      var result: ListBuffer[B] = null
+      var curr = as
+      while (curr ne Nil) {
+        f(curr.head) match {
+          case Some(b) =>
+            if (result eq null) result = ListBuffer.empty
+            result += b
+          case None => return None
+        }
+        curr = curr.tail
+      }
+      Some(result.toList)
+    }
+
   final def partitionInto[A](xs: List[A], pred: A => Boolean, ayes: ListBuffer[A], nays: ListBuffer[A]): Unit = {
     var ys = xs
     while (!ys.isEmpty) {
@@ -319,11 +337,6 @@ trait Collections {
       i += 1
     }
     bs
-  }
-
-  final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
-    if (as.exists (_.isEmpty)) None
-    else Some(as.flatten)
   }
 
   final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {

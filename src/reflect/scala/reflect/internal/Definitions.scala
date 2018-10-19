@@ -604,10 +604,10 @@ trait Definitions extends api.StandardDefinitions {
       private[this] val symSet = new SymbolSet(seq.toList)
       def contains(sym: Symbol): Boolean = symSet.contains(sym)
       def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
-      def specificType(args: List[Type], others: Type*): Type = {
+      def specificType(args: List[Type], others: List[Type] = Nil): Type = {
         val arity = args.length
         if (!isDefinedAt(arity)) NoType
-        else appliedType(apply(arity), args ++ others: _*)
+        else appliedType(apply(arity), args ::: others)
       }
     }
     // would be created synthetically for the default args. We call all objects in this method from the generated code
@@ -625,8 +625,8 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Creators for TupleN, ProductN, FunctionN. */
     def tupleType(elems: List[Type])                            = TupleClass.specificType(elems)
-    def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe)
-    def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe)
+    def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe :: Nil)
+    def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe :: Nil)
 
     def wrapVarargsArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
       case ByteClass    => nme.wrapByteArray
@@ -1005,13 +1005,13 @@ trait Definitions extends api.StandardDefinitions {
         case pt               => samOf(pt)
       }
 
-    def arrayType(arg: Type)         = appliedType(ArrayClass, arg)
-    def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
-    def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
-    def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg)
-    def optionType(tp: Type)         = appliedType(OptionClass, tp)
-    def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
-    def seqType(arg: Type)           = appliedType(SeqClass, arg)
+    def arrayType(arg: Type)         = appliedType(ArrayClass, arg :: Nil)
+    def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg :: Nil)
+    def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp :: Nil)
+    def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg :: Nil)
+    def optionType(tp: Type)         = appliedType(OptionClass, tp :: Nil)
+    def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg :: Nil)
+    def seqType(arg: Type)           = appliedType(SeqClass, arg :: Nil)
 
     // For name-based pattern matching, derive the "element type" (type argument of Option/Seq)
     // from the relevant part of the signature of various members (get/head/apply/drop)
@@ -1046,7 +1046,9 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
 
-    def ClassType(arg: Type) = if (phase.erasedTypes) ClassClass.tpe else appliedType(ClassClass, arg)
+    def ClassType(arg: Type) =
+      if (phase.erasedTypes) ClassClass.tpe
+      else appliedType(ClassClass, arg :: Nil)
 
     /** Can we tell by inspecting the symbol that it will never
      *  at any phase have type parameters?
@@ -1440,7 +1442,7 @@ trait Definitions extends api.StandardDefinitions {
       newPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
     }
     def newT1NoParamsMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
-      newPolyMethod(1, owner, name, flags)(tparams => (Some(Nil), createFn(tparams.head)))
+      newPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
     }
 
     /** Is symbol a phantom class for which no runtime representation exists? */

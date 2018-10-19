@@ -33,16 +33,16 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   protected def PerRunReporting = new PerRunReporting
   class PerRunReporting extends PerRunReportingBase {
     /** Collects for certain classes of warnings during this run. */
-    private class ConditionalWarning(what: String, doReport: () => Boolean, setting: Settings#Setting) {
+    private class ConditionalWarning(what: String, doReport: Boolean, setting: Settings#Setting) {
       def this(what: String, booleanSetting: Settings#BooleanSetting) {
-        this(what, () => booleanSetting, booleanSetting)
+        this(what, booleanSetting.value, booleanSetting)
       }
       val warnings = mutable.LinkedHashMap[Position, (String, String)]()
       def warn(pos: Position, msg: String, since: String = "") =
-        if (doReport()) reporter.warning(pos, msg)
+        if (doReport) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, (msg, since)))
       def summarize() =
-        if (warnings.nonEmpty && (setting.isDefault || doReport())) {
+        if (warnings.nonEmpty && (setting.isDefault || doReport)) {
           val sinceAndAmount = mutable.TreeMap[String, Int]()
           warnings.valuesIterator.foreach { case (_, since) =>
             val value = sinceAndAmount.get(since)
@@ -72,7 +72,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val _deprecationWarnings    = new ConditionalWarning("deprecation", settings.deprecation)
     private val _uncheckedWarnings      = new ConditionalWarning("unchecked", settings.unchecked)
     private val _featureWarnings        = new ConditionalWarning("feature", settings.feature)
-    private val _inlinerWarnings        = new ConditionalWarning("inliner", () => !settings.optWarningsSummaryOnly, settings.optWarnings)
+    private val _inlinerWarnings        = new ConditionalWarning("inliner", !settings.optWarningsSummaryOnly, settings.optWarnings)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
     // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)

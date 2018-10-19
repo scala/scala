@@ -607,7 +607,12 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         cells.clear()
       }
 
-      def checkAny(terminators: List[String]) = terminators.exists(check)
+      val escapeChar = "\\"
+
+      /* Poor man's negative lookbehind */
+      def checkInlineEnd = check(TableCellStart) && !check(escapeChar, -1)
+
+      def decodeEscapedCellMark(text: String) = text.replace(escapeChar + TableCellStart, TableCellStart)
 
       def isEndOfText = char == endOfText
 
@@ -615,35 +620,35 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       def skipNewline() = jump(endOfLine)
 
+      def isStartMarkNewline = check(TableCellStart + endOfLine)
+
+      def skipStartMarkNewline() = jump(TableCellStart + endOfLine)
+
+      def isStartMark = check(TableCellStart)
+
+      def skipStartMark() = jump(TableCellStart)
+
       def contentNonEmpty(content: Inline) = content != Text("")
 
       /**
-        * @param nextIsStartMark True if the next char is a cell mark prefix and not any non-cell mark.
-        * @param cellStartMark   The char the cell start mark is based on
+        * @param cellStartMark   The char indicating the start or end of a cell
         * @param finalizeRow     Function to invoke when the row has been fully parsed
         */
-      def parseCells(nextIsStartMark: => Boolean, cellStartMark: Char, finalizeRow: () => Unit): Unit = {
-        /* The first sequence of cellStartMark characters defines the markdown for new cells. */
-        def parseStartMark() = {
+      def parseCells(cellStartMark: String, finalizeRow: () => Unit): Unit = {
+        def jumpCellStartMark() = {
           if (!jump(cellStartMark)) {
-            peek("Expected startMark")
-            sys.error("Precondition violated: Expected startMark.")
+            peek(s"Expected $cellStartMark")
+            sys.error(s"Precondition violated: Expected $cellStartMark.")
           }
-          cellStartMark.toString
         }
-
-        /* startMark is the only mark not requiring a newline first */
-        def makeInlineTerminators(startMark: String) = startMark :: Nil
 
         val startPos = offset
 
-        val startMark = parseStartMark()
+        jumpCellStartMark()
 
-        val inlineTerminators = makeInlineTerminators(startMark)
+        val content = Paragraph(inline(isInlineEnd = checkInlineEnd, textTransform = decodeEscapedCellMark))
 
-        val content = Paragraph(inline(isInlineEnd = checkAny(inlineTerminators)))
-
-        parseCells0(content :: Nil, startMark, cellStartMark, inlineTerminators, nextIsStartMark, finalizeRow, startPos, offset)
+        parseCells0(content :: Nil, finalizeRow, startPos, offset)
       }
 
       // Continue parsing a table row.
@@ -675,24 +680,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       //
       @tailrec def parseCells0(
                                 contents: List[Block],
-                                startMark: String,
-                                cellStartMark: Char,
-                                inlineTerminators: List[String],
-                                nextIsStartMark: => Boolean,
                                 finalizeRow: () => Unit,
                                 progressPreParse: Int,
                                 progressPostParse: Int
                               ): Unit = {
-
-        def isStartMarkNewline = check(startMark + endOfLine)
-
-        def skipStartMarkNewline() = jump(startMark + endOfLine)
-
-        def isStartMark = check(startMark)
-
-        def skipStartMark() = jump(startMark)
-
-        def isNewlineCellStart = check(endOfLine.toString + cellStartMark)
 
         def storeContents() = cells += Cell(contents.reverse)
 
@@ -720,10 +711,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           // Case 3
           storeContents()
           skipStartMark()
-          val content = inline(isInlineEnd = checkAny(inlineTerminators))
+          val content = inline(isInlineEnd = checkInlineEnd, textTransform = decodeEscapedCellMark)
           // TrailingCellsEmpty produces empty content
           val accContents = if (contentNonEmpty(content)) Paragraph(content) :: Nil else Nil
-          parseCells0(accContents, startMark, cellStartMark, inlineTerminators, nextIsStartMark, finalizeRow, startPos, offset)
+          parseCells0(accContents, finalizeRow, startPos, offset)
         } else if (isNewline) {
           // peek("4: newline")
           // Case 4
@@ -746,12 +737,12 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       jumpWhitespace()
 
-      parseCells(nextIsCellStart, TableCellStart(0), () => finalizeHeaderCells())
+      parseCells(TableCellStart, () => finalizeHeaderCells())
 
       while (nextIsCellStart) {
         val initialOffset = offset
 
-        parseCells(nextIsCellStart, TableCellStart(0), () => finalizeCells())
+        parseCells(TableCellStart, () => finalizeCells())
 
         /* Progress should always be made */
         if (offset == initialOffset) {
@@ -762,9 +753,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       /* Finalize */
 
-      /* Structural consistency checks */
-
-      /* Structural coercion */
+      /* Structural consistency checks and coercion */
 
       // https://github.github.com/gfm/#tables-extension-
       // TODO: The header row must match the delimiter row in the number of cells. If not, a table will not be recognized:
@@ -802,7 +791,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       val constrainedDelimiterRow = applyColumnCountConstraint(delimiterRow, delimiterRow.cells(0), "delimiter")
 
-      val constrainedDataRows = dataRows.toList.map(applyColumnCountConstraint(_, Cell(Nil), "data"))
+      val constrainedDataRows = dataRows.map(applyColumnCountConstraint(_, Cell(Nil), "data"))
 
       /* Convert the row following the header row to column options */
 
@@ -892,7 +881,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       list mkString ""
     }
 
-    def inline(isInlineEnd: => Boolean): Inline = {
+    def inline(isInlineEnd: => Boolean, textTransform: String => String = identity): Inline = {
 
       def inline0(): Inline = {
         if (char == safeTagMarker) {
@@ -908,7 +897,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else if (check("[[")) link()
         else {
           val str = readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
-          Text(str)
+          Text(textTransform(str))
         }
       }
 
@@ -1106,6 +1095,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     final def check(chars: String): Boolean = {
       val poff = offset
+      val ok = jump(chars)
+      offset = poff
+      ok
+    }
+
+    final def check(chars: String, checkOffset: Int): Boolean = {
+      val poff = offset
+      offset += checkOffset
       val ok = jump(chars)
       offset = poff
       ok

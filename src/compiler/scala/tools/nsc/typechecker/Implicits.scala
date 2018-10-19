@@ -660,11 +660,6 @@ trait Implicits {
      }
 
     private def matchesPtInst(info: ImplicitInfo): Boolean = {
-      def isViewLike = pt match {
-        case Function1(_, _) => true
-        case _ => false
-      }
-
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstCalls)
       info.tpe match {
         case PolyType(tparams, restpe) =>
@@ -676,7 +671,7 @@ trait Implicits {
             if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
               if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
               false
-            } else if(!isView && !isViewLike) {
+            } else {
               // we can't usefully prune views any further because we would need to type an application
               // of the view to the term as is done in the computation of itree2 in typedImplicit1.
               tvars.foreach(_.constr.stopWideningIfPrecluded)
@@ -688,7 +683,7 @@ trait Implicits {
                 if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                 false
               } else true
-            } else true
+              }
           } catch {
             case _: NoInstance => false
           }
@@ -748,38 +743,38 @@ trait Implicits {
       loop(tp0, pt0)
     }
 
-    /** This expresses more cleanly in the negative: there's a linear path
-     *  to a final true or false.
-     */
-    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = tp1.dealiasWiden match {
-      // We can only rule out a subtype relationship if the left hand
-      // side is a class, else we may not know enough.
-      case tr1 @ TypeRef(_, sym1, args1) if sym1.isClass =>
-        def typeRefHasMember(tp: TypeRef, name: Name) = {
-          tp.baseClasses.exists(_.info.decls.lookupEntry(name) != null)
-        }
-
-        def existentialUnderlying(t: Type) = t match {
-          case et: ExistentialType => et.underlying
-          case tp => tp
-        }
-        val tp2Bounds = existentialUnderlying(tp2.dealiasWiden.upperBound)
-        tp2Bounds match {
-          case TypeRef(_, sym2, args2) if sym2 ne SingletonClass =>
-            val impossible = if ((sym1 eq sym2) && (args1 ne Nil)) !corresponds3(sym1.typeParams, args1, args2) {(tparam, arg1, arg2) =>
-              if (tparam.isCovariant) isPlausiblySubType(arg1, arg2) else isPlausiblySubType(arg2, arg1)
-            } else {
-              (sym2.isClass && !(sym1 isWeakSubClass sym2))
+    private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = !isPlausiblySubType(tp1, tp2)
+    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean =
+      tp1.dealiasWiden match {
+        // We only know enough to rule out a subtype relationship if the left hand side is a class.
+        case tr1@TypeRef(_, sym1, args1) if sym1.isClass =>
+          val tp2Wide =
+            tp2.dealiasWiden.upperBound match {
+              case et: ExistentialType => et.underlying // OPT meant as cheap approximation of skolemizeExistential?
+              case tp                  => tp
             }
-            impossible
-          case RefinedType(parents, decls) =>
-            val impossible = decls.nonEmpty && !typeRefHasMember(tr1, decls.head.name) // opt avoid full call to .member
-            impossible
-          case _                           => false
-        }
-      case _ => false
-    }
+          tp2Wide match {
+            case TypeRef(_, sym2, args2) if sym2 ne SingletonClass =>
+              // The order of these two checks can be material for performance (scala/bug#8478)
+              def isSubArg(tparam: Symbol, t1: Type, t2: Type) =
+                (!tparam.isContravariant || isPlausiblySubType(t2, t1)) &&
+                (!tparam.isCovariant || isPlausiblySubType(t1, t2))
+
+              if ((sym1 eq sym2) && (args1 ne Nil)) corresponds3(sym1.typeParams, args1, args2)(isSubArg)
+              else (sym1 eq ByNameParamClass) == (sym2 eq ByNameParamClass) && (!sym2.isClass || (sym1 isWeakSubClass sym2))
+            case RefinedType(parents, decls)                       =>
+              // OPT avoid full call to .member
+              decls.isEmpty || {
+                // Do any of the base classes of the class on the left declare the first member in the refinement on the right?
+                // (We randomly pick the first member as a good candidate for eliminating this subtyping pair.)
+                val firstDeclName = decls.head.name
+                tr1.baseClasses.exists(_.info.decls.lookupEntry(firstDeclName) != null)
+              }
+
+            case _ => true
+          }
+        case _ => true
+      }
 
     private def typedImplicit0(info: ImplicitInfo, ptChecked: Boolean, isLocalToCallsite: Boolean): SearchResult = {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(plausiblyCompatibleImplicits)
@@ -1093,9 +1088,9 @@ trait Implicits {
        *   - if it matches, forget about all others it improves upon
        */
 
-      // the pt for views can have embedded unification type variables, BoundedWildcardTypes or
-      // Nothings which can't be solved for. Rather than attempt to patch things up later we
-      // just skip those cases altogether.
+      // the pt can have embedded unification type variables, BoundedWildcardTypes or Nothings
+      // which can't be solved for. Rather than attempt to patch things up later we just skip
+      // those cases altogether.
       lazy val wildPtNotInstantiable =
         wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
 
@@ -1116,14 +1111,14 @@ trait Implicits {
           val savedInfos = undetParams.map(_.info)
           val typedFirstPending = {
             try {
-              if(wildPtNotInstantiable || matchesPtInst(firstPending))
+              if(isView || wildPtNotInstantiable || matchesPtInst(firstPending))
                 typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
               else SearchFailure
             } finally {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
             }
           }
-          if (typedFirstPending.isFailure)
+          if (typedFirstPending.isFailure && settings.isScala213)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
@@ -1449,7 +1444,7 @@ trait Implicits {
 
       /* Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
-        inferImplicitFor(appliedType(manifestClass, tp), tree, context).tree
+        inferImplicitFor(appliedType(manifestClass, tp :: Nil), tree, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
       def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {

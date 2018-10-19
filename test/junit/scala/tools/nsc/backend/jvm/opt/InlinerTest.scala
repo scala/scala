@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
+import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
@@ -26,7 +27,7 @@ class InlinerTest extends BytecodeTesting {
 
 
   compiler.keepPerRunCachesAfterRun(List(
-    bTypes.classBTypeCache,
+    JavaClearable.forMap(bTypes.classBTypeCache),
     postProcessor.byteCodeRepository.compilingClasses,
     postProcessor.byteCodeRepository.parsedClasses,
     postProcessor.callGraph.callsites))
