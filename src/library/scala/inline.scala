@@ -13,8 +13,17 @@
 package scala
 
 /**
- * An annotation on methods that requests that the compiler should try especially hard to inline the
- * annotated method. The annotation can be used at definition site or at callsite.
+ * An annotation for methods that the optimizer should inline.
+ *
+ * Note that by default, the Scala optimizer is disabled and no callsites are inlined. See
+ * `-opt:help` for information on how to enable the optimizer and inliner.
+ *
+ * When inlining is enabled, the inliner will always try to inline methods or callsites annotated
+ * `@inline` (under the condition that inlining from the defining class is allowed, see
+ * `-opt-inline-from:help`). If inlining is not possible, for example because the method is not
+ * final, an optimizer warning will be issued. See `-opt-warnings:help` for details.
+ *
+ * Examples:
  *
  * {{{
  * @inline   final def f1(x: Int) = x
@@ -23,7 +32,7 @@ package scala
  *
  *  def t1 = f1(1)              // inlined if possible
  *  def t2 = f2(1)              // not inlined
- *  def t3 = f3(1)              // may be inlined (heuristics)
+ *  def t3 = f3(1)              // may be inlined (the inliner heuristics can select the callsite)
  *  def t4 = f1(1): @noinline   // not inlined (override at callsite)
  *  def t5 = f2(1): @inline     // inlined if possible (override at callsite)
  *  def t6 = f3(1): @inline     // inlined if possible
