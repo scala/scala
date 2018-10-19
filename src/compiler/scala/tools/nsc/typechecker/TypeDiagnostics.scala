@@ -713,7 +713,7 @@ trait TypeDiagnostics {
           import ds._ ; (
             p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
           ||
-            p.isImplicit && cond(p.tpe.typeSymbol) { case Predef_=:= | Predef_<:< | Predef_Dummy => true }
+            p.isImplicit && cond(p.tpe.typeSymbol) { case SameTypeClass | SubTypeClass | DummyImplicitClass => true }
         )}
         def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
         def warnable(s: Symbol) = (

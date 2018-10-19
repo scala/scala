@@ -455,6 +455,11 @@ trait Definitions extends api.StandardDefinitions {
     def isArrayOfSymbol(tp: Type, elem: Symbol)              = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
 
+    // Classes treated specially with respect to -Ywarn-unused
+    lazy val SubTypeClass       = requiredClass[scala.<:<[_,_]]
+    lazy val SameTypeClass      = requiredClass[scala.=:=[_,_]]
+    lazy val DummyImplicitClass = requiredClass[scala.DummyImplicit]
+
     // collections classes
     private[this] lazy val _isNewCollections = getClassIfDefined("scala.collection.IterableOnce") != NoSymbol
     private[scala] def isNewCollections = _isNewCollections
@@ -1579,10 +1584,6 @@ trait Definitions extends api.StandardDefinitions {
       lazy val StringContext_s = getMemberMethod(StringContextClass, nme.s)
       lazy val StringContext_raw = getMemberMethod(StringContextClass, nme.raw_)
       lazy val StringContext_apply = getMemberMethod(StringContextModule, nme.apply)
-
-      lazy val Predef_=:= = getMemberClass(PredefModule, nme.=:=)
-      lazy val Predef_<:< = getMemberClass(PredefModule, nme.<:<)
-      lazy val Predef_Dummy = getMemberClass(PredefModule, nme.DummyImplicit)
 
       lazy val ArrowAssocClass = getMemberClass(PredefModule, TypeName("ArrowAssoc")) // scala/bug#5731
       def isArrowAssoc(sym: Symbol) = sym.owner == ArrowAssocClass
