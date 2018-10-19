@@ -11,6 +11,10 @@ import scala.reflect.ClassTag
 @RunWith(classOf[JUnit4])
 class ArraySeqTest {
   @Test
+  def t11187(): Unit = {
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sorted)
+  }
+  @Test
   def t10851(): Unit = {
     val s1 = ArraySeq.untagged(1,2,3)
     assertTrue(s1.array.getClass == classOf[Array[AnyRef]])
