@@ -192,11 +192,10 @@ final class VectorMap[K, +V] private (
     new VectorMap(fields.dropRight(size - 1 - slot + 1), underlying - key, false)
   }
 
-  def keyIterator: Iterator[K] = iterator.map(_._1)
-  override def keys: Vector[K] = keyIterator.toVector
+  override def keys: Vector[K] = keysIterator.toVector
 
   override def values: Iterable[V] = new Iterable[V] {
-    override def iterator: Iterator[V] = keyIterator.map(underlying(_)._2)
+    override def iterator: Iterator[V] = keysIterator.map(underlying(_)._2)
   }
 }
 
