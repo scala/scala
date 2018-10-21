@@ -80,8 +80,8 @@ final class VectorMap[K, +V] private (
         (-1, null.asInstanceOf[K])
       case Tombstone.NextOfKin(distance) =>
         field(slot + distance)
-      case k: K =>
-        (slot, k)
+      case k =>
+        (slot, k.asInstanceOf[K])
     }
   }
 
@@ -125,6 +125,7 @@ final class VectorMap[K, +V] private (
       var fs = fields
       val sz = fs.size
       underlying.get(key) match {
+        case Some(_) if size == 1 => empty
         case Some((slot, _)) =>
           val s = field(slot)._1
           // Calculate distance to next of kin
@@ -188,8 +189,9 @@ final class VectorMap[K, +V] private (
   }
 
   override def init: VectorMap[K, V] = {
-    val (slot, key) = field(size - 1)
-    new VectorMap(fields.dropRight(size - 1 - slot + 1), underlying - key, false)
+    val lastSlot = size - 1
+    val (slot, key) = field(lastSlot)
+    new VectorMap(fields.dropRight(slot - lastSlot + 1), underlying - key, false)
   }
 
   override def keys: Vector[K] = keysIterator.toVector
