@@ -922,6 +922,8 @@ object LazyList extends SeqFactory[LazyList] {
     case _                        => newLL(stateFromColl(coll))
   }
 
+  def empty[A]: LazyList[A] = _empty
+
   /** Creates a State from an IterableOnce, with another State appended after the
     * elements of the collection.
     */
@@ -958,7 +960,21 @@ object LazyList extends SeqFactory[LazyList] {
   private def stateFromColl[A](coll: IterableOnce[A]): State[A] =
     stateFromCollConcatSuffix(coll)(State.Empty)
 
-  def empty[A]: LazyList[A] = _empty
+  override def concat[A](xss: collection.Iterable[A]*): LazyList[A] = {
+    if (xss.knownSize == 0) empty
+    else xss match {
+      case seq: collection.LinearSeq[collection.Iterable[A]] => newLL(concatLinearSeq(seq))
+      case _                                                 => newLL(concatIterator(xss.iterator))
+    }
+  }
+
+  private def concatLinearSeq[A](seq: collection.LinearSeq[collection.Iterable[A]]): State[A] =
+    if (seq.isEmpty) State.Empty
+    else stateFromCollConcatSuffix(seq.head)(concatLinearSeq(seq.tail))
+
+  private def concatIterator[A](it: Iterator[collection.Iterable[A]]): State[A] =
+    if (!it.hasNext) State.Empty
+    else stateFromCollConcatSuffix(it.next())(concatIterator(it))
 
   private final class WithFilter[A] private[LazyList](lazyList: LazyList[A], p: A => Boolean)
     extends collection.WithFilter[A, LazyList] {
@@ -1006,10 +1022,9 @@ object LazyList extends SeqFactory[LazyList] {
     * @param elem the element composing the resulting LazyList
     * @return the LazyList containing an infinite number of elem
     */
-  def continually[A](elem: => A): LazyList[A] = newLL(sCons(elem, continually(elem)))
+  def continually[A](elem: => A): LazyList[A] = from(Iterator.continually(elem))
 
-  override def fill[A](n: Int)(elem: => A): LazyList[A] =
-    if (n > 0) newLL(sCons(elem, fill(n - 1)(elem))) else empty
+  override def fill[A](n: Int)(elem: => A): LazyList[A] = from(Iterator.fill(n)(elem))
 
   override def tabulate[A](n: Int)(f: Int => A): LazyList[A] = {
     def at(index: Int): LazyList[A] =

@@ -929,15 +929,12 @@ class LazyListLazinessTest {
       })
     }
     assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
   }
 
   @Test
   def fromLazyList_properlyLazy(): Unit = {
-    val op = lazyListOp(ll => LazyList.from(ll))
-    assertRepeatedlyFullyLazy(op)
-    assertLazyNextStateWhenHeadEvaluated(op)
-    assertLazyHeadWhenNextStateEvaluated(op)
-    assertLazyHeadWhenNextHeadEvaluated(op)
+    genericElementIndependentOp_properlyLazy(LazyList from _)
   }
 
   @Test
@@ -952,6 +949,7 @@ class LazyListLazinessTest {
       }
     }
     assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
   }
 
   @Test
@@ -960,6 +958,7 @@ class LazyListLazinessTest {
       LazyList.iterate(0) { i => init.evaluateIndex(i); i + 1 }
     }
     assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
   }
 
   @Test
@@ -968,6 +967,7 @@ class LazyListLazinessTest {
       LazyList.iterate(0, 10) { i => init.evaluateIndex(i); i + 1 }
     }
     assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
   }
 
   @Test
@@ -975,6 +975,7 @@ class LazyListLazinessTest {
     val factory = lazyListFactory { init =>
       LazyList.tabulate(LazinessChecker.count) { i => init.evaluateIndex(i); i }
     }
+    assertLazyNextStateWhenHeadEvaluated(factory)
     assertLazyHeadWhenNextStateEvaluated(factory)
     assertLazyHeadWhenNextHeadEvaluated(factory)
   }
@@ -1002,26 +1003,94 @@ class LazyListLazinessTest {
 
   @Test
   def fill_properlyLazy(): Unit = {
-    var counter = 0
-    val lazyList = LazyList.fill(10) { counter += 1; counter }
-    lazyList.length
-    assertEquals(0, counter)
-    assertEquals(1, lazyList(4))
-    assertEquals(1, counter)
-    assertEquals(2, lazyList.head)
-    assertEquals(2, counter)
+    val factory = lazyListFactory { init =>
+      var counter = 0
+      LazyList.fill(10) {
+        init.evaluateIndex(counter)
+        counter += 1
+        counter
+      }
+    }
+    assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
   }
 
   @Test
   def continually_properlyLazy(): Unit = {
+    val factory = lazyListFactory { init =>
+      var counter = 0
+      LazyList.continually {
+        init.evaluateIndex(counter)
+        counter += 1
+        counter
+      }
+    }
+    assertLazyNextStateWhenHeadEvaluated(factory)
+    assertDependentEvaluation(factory)
+  }
+
+  @Test
+  def apply_companion_properlyLazy(): Unit = {
+    genericElementIndependentOp_properlyLazy(LazyList(_: _*))
+  }
+
+  @Test
+  def concat_companion_properlyLazy(): Unit = {
+    val quarterCount = LazinessChecker.count / 4
+    assertEquals(0, LazyList.concat().knownSize)
+
+    val factory = lazyListFactory { init =>
+      val lists = (0 until 4) map { i =>
+        LazyList.tabulate(quarterCount) { j =>
+          val index = i * 4 + j
+          init.evaluateIndex(index)
+          index
+        }
+      }
+      LazyList.concat(Nil ++: lists: _*)
+    }
+
+    assertLazyNextStateWhenHeadEvaluated(factory)
+    assertLazyHeadWhenNextStateEvaluated(factory)
+    assertLazyHeadWhenNextHeadEvaluated(factory)
+  }
+
+  @Test
+  def range_properlyLazy(): Unit = {
     var counter = 0
-    val lazyList = LazyList continually { counter += 1; counter }
-    lazyList.lengthCompare(10) // evaluate first 10 states
-    assertEquals(0, counter)
-    assertEquals(1, lazyList(4))
-    assertEquals(1, counter)
-    assertEquals(2, lazyList.head)
-    assertEquals(2, counter)
+    case class CustomLong(value: Long) {
+      counter += 1
+    }
+    object CustomLong {
+      import scala.language.implicitConversions
+      implicit def long2CustomInt(long: Long): CustomLong = CustomLong(long)
+
+      implicit val customIntegralIsIntegral: Integral[CustomLong] = new Integral[CustomLong] {
+        private val I = Integral[Long]
+
+        override def quot(x: CustomLong, y: CustomLong) = I.quot(x.value, y.value)
+        override def rem(x: CustomLong, y: CustomLong) = I.rem(x.value, y.value)
+        override def plus(x: CustomLong, y: CustomLong) = I.plus(x.value, y.value)
+        override def minus(x: CustomLong, y: CustomLong) = I.minus(x.value, y.value)
+        override def times(x: CustomLong, y: CustomLong) = I.times(x.value, y.value)
+        override def negate(x: CustomLong) = I.negate(x.value)
+        override def fromInt(x: Int) = I.fromInt(x)
+        override def parseString(str: String) = I.parseString(str).map(CustomLong.apply)
+        override def toInt(x: CustomLong) = I.toInt(x.value)
+        override def toLong(x: CustomLong) = I.toLong(x.value)
+        override def toFloat(x: CustomLong) = I.toFloat(x.value)
+        override def toDouble(x: CustomLong) = I.toDouble(x.value)
+        override def compare(x: CustomLong, y: CustomLong) = I.compare(x.value, y.value)
+      }
+    }
+
+    LazyList.range(0, 1000)
+    assert(counter < 10)
+  }
+
+  @Test
+  def unapplySeq_properlyLazy(): Unit = {
+    genericElementIndependentOp_properlyLazy(LazyList.unapplySeq(_).toSeq.to(LazyList))
   }
 }
 
@@ -1384,5 +1453,15 @@ private object LazyListLazinessTest {
     checker.assertHead(evaluated = false, 1)
     checker.lazyList.tail.head
     checker.assertHead(evaluated = false, 0)
+    checker.lazyList.drop(LazinessChecker.halfCount).head
+    checker.assertHead(evaluated = false, LazinessChecker.halfCount - 1)
+  }
+
+  def assertDependentEvaluation(factory: FactoryLazinessChecker.Factory): Unit = {
+    val checker = new FactoryLazinessChecker().initialize(factory)
+    checker.lazyList.tail.head
+    checker.assertHead(evaluated = true, 0)
+    checker.lazyList.tail.tail.head
+    checker.assertHead(evaluated = true, 1)
   }
 }
