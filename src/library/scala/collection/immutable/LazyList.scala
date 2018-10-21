@@ -572,8 +572,40 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (knownIsEmpty) LazyList.empty
     else super.intersect(that)
 
-  // TODO: override to detect cycles
-  override def distinctBy[B](f: A => B): LazyList[A] = super.distinctBy(f)
+  override def distinctBy[B](f: A => B): LazyList[A] =
+    if (knownIsEmpty) LazyList.empty
+    else distinctByTrampoline(f, mutable.HashSet.empty[B])
+
+  @inline private def distinctByTrampoline[B](f: A => B, seen: mutable.Set[B]): LazyList[A] =
+    newLL(distinctByState(f, seen))
+
+  private def distinctByState[B](f: A => B, seen: mutable.Set[B]): State[A] = {
+    if (isEmpty) State.Empty
+    else {
+      val elem = head
+      val by = f(elem)
+      if (seen contains by) tail.distinctDetectCycle(f, seen, this, advanceLag = true)
+      else {
+        seen += by
+        sCons(elem, tail.distinctByTrampoline(f, seen))
+      }
+    }
+  }
+
+  // Use standard 2x 1x iteration trick for cycle detection (`lag` is slow one)
+  @tailrec
+  private def distinctDetectCycle[B](f: A => B, seen: mutable.Set[B], lag: LazyList[_], advanceLag: Boolean): State[A] = {
+    if (isEmpty || (this eq lag)) State.Empty
+    else {
+      val elem = head
+      val by = f(elem)
+      if (seen contains by) tail.distinctDetectCycle(f, seen, if (advanceLag) lag.tail else lag, !advanceLag)
+      else {
+        seen += by
+        sCons(elem, tail.distinctByTrampoline(f, seen))
+      }
+    }
+  }
 
   override def grouped(size: Int): Iterator[LazyList[A]] = {
     require(size > 0, "size must be positive, but was " + size)

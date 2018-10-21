@@ -365,6 +365,24 @@ class LazyListTest {
   }
 
   @Test
+  def distinct(): Unit = {
+    val ll = LazyList from 1 take 10
+
+    assertEquals(1 to 10, ll.distinct)
+    assertEquals(1 to 10, ll.distinctBy(_ + 1))
+    assertEquals(List(1), ll.distinctBy(_ => 1))
+  }
+
+  @Test
+  def cyclicDistinctIsFinite(): Unit = {
+    lazy val ll: LazyList[Int] = (LazyList from 1 take 10) #::: ll
+
+    assertEquals(1 to 10, ll.distinct)
+    assertEquals(1 to 10, ll.distinctBy(_ + 1))
+    assertEquals(List(1), ll.distinctBy(_ => 1))
+  }
+
+  @Test
   def tapEach(): Unit = {
     /** @param makeLL must make a lazylist that evaluates to Seq(1,2,3,4,5) */
     def check(makeLL: => LazyList[Int]): Unit = {
