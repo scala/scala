@@ -312,13 +312,12 @@ class LazyListTest {
     assertEquals(9, fCounter)
   }
 
-  // TODO: fix to use LazyList
   @Test
   def t8680: Unit = {
-    def pre(n: Int) = (-n to -1).to(Stream)
+    def pre(n: Int) = (-n to -1).to(LazyList)
 
     def cyc(m: Int) = {
-      lazy val s: Stream[Int] = (0 until m).to(Stream) #::: s
+      lazy val s: LazyList[Int] = (0 until m).to(LazyList) #::: s
       s
     }
 
@@ -327,19 +326,19 @@ class LazyListTest {
     def goal(n: Int, m: Int) = (-n until m).mkString + "..."
 
     // Check un-forced cyclic and non-cyclic streams
-    assertEquals("Stream(-2, ?)", pre(2).toString)
-    assertEquals("Stream(0, ?)", cyc(2).toString)
-    assertEquals("Stream(-2, ?)", precyc(2,2).toString)
+    assertEquals("LazyList(?)", pre(2).toString)
+    assertEquals("LazyList(?)", cyc(2).toString)
+    assertEquals("LazyList(?)", precyc(2,2).toString)
 
     // Check forced cyclic and non-cyclic streams
-    assertEquals("Stream(-2, -1)", pre(2).force.toString)
-    assertEquals("Stream(0, 1, ...)", cyc(2).force.toString)
-    assertEquals("Stream(-2, -1, 0, 1, ...)", precyc(2,2).force.toString)
+    assertEquals("LazyList(-2, -1)", pre(2).force.toString)
+    assertEquals("LazyList(0, 1, ...)", cyc(2).force.toString)
+    assertEquals("LazyList(-2, -1, 0, 1, ...)", precyc(2,2).force.toString)
 
     // Special cases
-    assertEquals("Stream(0, ...)", cyc(1).force.toString)
-    assertEquals("Stream(-1, 0, 1, 2, 3, 4, 5, ...)", precyc(1,6).force.toString)
-    assertEquals("Stream(-6, -5, -4, -3, -2, -1, 0, ...)", precyc(6,1).force.toString)
+    assertEquals("LazyList(0, ...)", cyc(1).force.toString)
+    assertEquals("LazyList(-1, 0, 1, 2, 3, 4, 5, ...)", precyc(1,6).force.toString)
+    assertEquals("LazyList(-6, -5, -4, -3, -2, -1, 0, ...)", precyc(6,1).force.toString)
 
     // Make sure there are no odd/even problems
     for (n <- 3 to 4; m <- 3 to 4) {

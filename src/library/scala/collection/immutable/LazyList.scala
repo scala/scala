@@ -730,12 +730,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       }
       var scout = tail
       @inline def scoutNonEmpty: Boolean = scout.stateDefined && scout.nonEmpty
-      if (cursor ne scout) {
+      if ((cursor ne scout) && (!scout.stateDefined || (cursor.state ne scout.state))) {
         cursor = scout
         if (scoutNonEmpty) {
           scout = scout.tail
           // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
-          while ((cursor ne scout) && scoutNonEmpty) {
+          while ((cursor ne scout) && scoutNonEmpty && (cursor.state ne scout.state)) {
             appendCursorElement()
             cursor = cursor.tail
             scout = scout.tail
@@ -751,6 +751,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
         // if cursor (eq scout) has state defined, it is empty; else unknown state
         if (!cursor.stateDefined) b.append(sep).append('?')
       } else {
+        @inline def same(a: LazyList[A], b: LazyList[A]): Boolean = (a eq b) || (a.state eq b.state)
         // Cycle.
         // If we have a prefix of length P followed by a cycle of length C,
         // the scout will be at position (P%C) in the cycle when the cursor
@@ -762,7 +763,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
         // the start of the loop.
         var runner = this
         var k = 0
-        while (runner ne scout) {
+        while (!same(runner, scout)) {
           runner = runner.tail
           scout = scout.tail
           k += 1
@@ -772,11 +773,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
         // everything once.  If cursor is already at beginning, we'd better
         // advance one first unless runner didn't go anywhere (in which case
         // we've already looped once).
-        if ((cursor eq scout) && (k > 0)) {
+        if (same(cursor, scout) && (k > 0)) {
           appendCursorElement()
           cursor = cursor.tail
         }
-        while (cursor ne scout) {
+        while (!same(cursor, scout)) {
           appendCursorElement()
           cursor = cursor.tail
         }
