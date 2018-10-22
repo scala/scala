@@ -22,9 +22,9 @@ private[process] trait ProcessImpl {
 
   /** Runs provided code in a new Thread and returns the Thread instance. */
   private[process] object Spawn {
-    def apply(f: => Unit): Thread = apply(f, daemon = false)
-    def apply(f: => Unit, daemon: Boolean): Thread = {
-      val thread = new Thread() { override def run() = { f } }
+    def apply(prefix: String, daemon: Boolean = false)(f: => Unit): Thread = {
+      val thread = new Thread() { override def run() = f }
+      thread.setName(prefix + "-spawn-" + thread.getName)
       thread.setDaemon(daemon)
       thread.start()
       thread
@@ -37,7 +37,7 @@ private[process] trait ProcessImpl {
         try result.put(Right(f))
         catch { case e: Exception => result.put(Left(e)) }
 
-      val t = Spawn(run())
+      val t = Spawn("Future")(run())
 
       (t, () => result.get match {
         case Right(value)    => value
@@ -95,7 +95,7 @@ private[process] trait ProcessImpl {
 
     protected lazy val (processThread, (futureThread, futureValue), destroyer) = {
       val code = new SyncVar[Option[Int]]()
-      val thread = Spawn {
+      val thread = Spawn("CompoundProcess") {
         var value: Option[Int] = None
         try value = runAndExitValue()
         finally code.put(value)
@@ -180,6 +180,7 @@ private[process] trait ProcessImpl {
   }
 
   private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
+    setName(s"PipeSource($label)-$getName")
     protected[this] val pipe = new PipedOutputStream
     protected[this] val source = new LinkedBlockingQueue[Option[InputStream]]
     override def run(): Unit = {
@@ -201,6 +202,7 @@ private[process] trait ProcessImpl {
     }
   }
   private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
+    setName(s"PipeSink($label)-$getName")
     protected[this] val pipe = new PipedInputStream
     protected[this] val sink = new LinkedBlockingQueue[Option[OutputStream]]
     override def run(): Unit = {
