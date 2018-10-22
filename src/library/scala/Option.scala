@@ -323,6 +323,43 @@ sealed abstract class Option[+A] extends Product with Serializable {
   final def zip[A1 >: A, B](that: Option[B]): Option[(A1, B)] =
     if (isEmpty || that.isEmpty) None else Some((this.get, that.get))
 
+  /** Converts an Option of pairs into an Option of first elements and an Option of second elements.
+    *
+    *  @tparam A1    the type of the first half of the element pairs
+    *  @tparam A2    the type of the second half of the element pairs
+    *  @param asPair an implicit conversion which asserts that the element type
+    *                of this Option is a pair.
+    *  @return       a pair of Options, containing, respectively, the first and second half
+    *                of each element pair of this Option.
+    */
+  final def unzip[A1, A2](implicit asPair: A => (A1, A2)): (Option[A1], Option[A2]) = {
+    if (isEmpty)
+      (None, None)
+    else {
+      val e = asPair(this.get)
+      (Some(e._1), Some(e._2))
+    }
+  }
+
+  /** Converts an Option of triples into three Options, one containing the elements from each position of the triple.
+    *
+    *  @tparam A1      the type of the first of three elements in the triple
+    *  @tparam A2      the type of the second of three elements in the triple
+    *  @tparam A3      the type of the third of three elements in the triple
+    *  @param asTriple an implicit conversion which asserts that the element type
+    *                  of this Option is a triple.
+    *  @return         a triple of Options, containing, respectively, the first, second, and third
+    *                  elements from each element triple of this Option.
+    */
+  final def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (Option[A1], Option[A2], Option[A3]) = {
+    if (isEmpty)
+      (None, None, None)
+    else {
+      val e = asTriple(this.get)
+      (Some(e._1), Some(e._2), Some(e._3))
+    }
+  }
+
   /** Returns a singleton iterator returning the $option's value
    * if it is nonempty, or an empty iterator if the option is empty.
    */
