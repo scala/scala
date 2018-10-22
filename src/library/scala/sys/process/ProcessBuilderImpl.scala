@@ -19,6 +19,7 @@ import Process._
 import java.io.{ FileInputStream, FileOutputStream }
 import BasicIO.{ LazilyListed, Streamed, Uncloseable }
 import Uncloseable.protect
+import scala.util.control.NonFatal
 
 private[process] trait ProcessBuilderImpl {
   self: ProcessBuilder.type =>
@@ -72,18 +73,9 @@ private[process] trait ProcessBuilderImpl {
   /** Represents a simple command without any redirection or combination. */
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
-      val process = try {
-        p.start() // start the external process
-      } catch {
-        case _: IndexOutOfBoundsException
-             | _: IOException
-             | _: NullPointerException
-             | _: SecurityException
-             | _: UnsupportedOperationException
-        => return FailedProcess
-      }
-
       import io._
+
+      val process = p.start() // start the external process
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
       val inThread  = Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
@@ -172,7 +164,14 @@ private[process] trait ProcessBuilderImpl {
       val lazilyListed = LazilyListed[String](nonZeroException, capacity)
       val process      = run(BasicIO(withInput, lazilyListed.process, log))
 
-      Spawn("LazyLines")(lazilyListed done process.exitValue())
+      Spawn("LazyLines") {
+        lazilyListed.done {
+          try process.exitValue()
+          catch {
+            case NonFatal(_) => -2
+          }
+        }
+      }
       lazilyListed.lazyList
     }
 

@@ -98,6 +98,14 @@ private[process] trait ProcessImpl {
       val thread = Spawn("CompoundProcess") {
         var value: Option[Int] = None
         try value = runAndExitValue()
+        catch {
+          case _: IndexOutOfBoundsException
+             | _: IOException
+             | _: NullPointerException
+             | _: SecurityException
+             | _: UnsupportedOperationException
+          => value = Some(-1)
+        }
         finally code.put(value)
       }
 
@@ -260,11 +268,5 @@ private[process] trait ProcessImpl {
     override def isAlive()   = thread.isAlive()
     override def exitValue() = if (success.get) 0 else 1   // thread.join()
     override def destroy()   = thread.interrupt()
-  }
-
-  private[process] object FailedProcess extends Process {
-    override def isAlive() = false
-    override def exitValue() = 1
-    override def destroy(): Unit = ()
   }
 }

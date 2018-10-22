@@ -11,7 +11,7 @@ import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
 import scala.util.Properties.javaSpecVersion
 import java.lang.ref._
-import java.lang.reflect._
+import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
 
 /** This module contains additional higher-level assert statements
@@ -97,4 +97,30 @@ object AssertUtil {
   def assert8(b: => Boolean, msg: => Any) =
     if (ScalaVersion(javaSpecVersion) == version8) assert(b, msg)
     else if (!b) println(s"assert not $msg")
+
+
+  /** Assert no new threads, with some margin for arbitrary threads to exit. */
+  def assertZeroNetThreads(body: => Unit): Unit = {
+    val beforeCount = Thread.activeCount
+    val beforeThreads = new Array[Thread](beforeCount)
+    assertEquals("Spurious early thread creation.", beforeCount, Thread.enumerate(beforeThreads))
+
+    body
+
+    val afterCount = {
+      var n = 1
+      while (Thread.activeCount > beforeCount && n < 5) {
+        //println("Wait for quiescence")
+        Thread.sleep(250L * n)
+        n += 1
+      }
+      Thread.activeCount
+    }
+    val afterThreads = new Array[Thread](afterCount)
+    assertEquals("Spurious late thread creation.", afterCount, Thread.enumerate(afterThreads))
+    val staleThreads = afterThreads.toList.diff(beforeThreads)
+    //staleThreads.headOption.foreach(_.getStackTrace.foreach(println))
+    assertEquals(staleThreads.mkString("There are stale threads: ",",",""), beforeCount, afterCount)
+    assertTrue(staleThreads.mkString("There are stale threads: ",",",""), staleThreads.isEmpty)
+  }
 }
