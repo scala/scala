@@ -379,7 +379,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     "-sourcepath", (baseDirectory in ThisBuild).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
-  incOptions := (incOptions in LocalProject("root")).value,
+  setIncOptions,
   apiURL := Some(url("https://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
@@ -1204,10 +1204,7 @@ lazy val root: Project = (project in file("."))
         throw new RuntimeException
       }
     },
-    incOptions := {
-      incOptions.value
-        .withRecompileOnMacroDef(Some(Boolean box false).asJava) // macros in library+reflect are hard-wired to implementations with `FastTrack`.
-    }
+    setIncOptions
   )
   .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replJline, replJlineEmbedded,
     scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
@@ -1215,6 +1212,11 @@ lazy val root: Project = (project in file("."))
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
   )
+
+def setIncOptions = incOptions := {
+  incOptions.value
+    .withRecompileOnMacroDef(Some(Boolean box false).asJava) // macros in library+reflect are hard-wired to implementations with `FastTrack`.
+}
 
 // The following subprojects' binaries are required for building "pack":
 lazy val distDependencies = Seq(replJline, replJlineEmbedded, compiler, library, reflect, scalap, scaladoc)
