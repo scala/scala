@@ -618,7 +618,8 @@ lazy val bench = project.in(file("test") / "benchmarks")
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
     scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:**")
-  )
+  ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
+
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partest, scaladoc)
