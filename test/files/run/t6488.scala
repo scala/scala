@@ -1,7 +1,7 @@
 import scala.sys.process._
 import scala.util.Try
-import scala.util.Properties.{ javaHome, javaClassPath }
-import java.io.{ File, IOException }
+import scala.util.Properties.{javaHome, javaClassPath, userDir}
+import java.io.{File, IOException}, File.pathSeparator
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit._
 import java.util.concurrent.atomic._
@@ -39,9 +39,10 @@ object Test {
     val reading = new CountDownLatch(1)
     val count   = new AtomicInteger
     def counted = count.get
-    val command = s"${f.getAbsolutePath} -classpath ${javaClassPath} Test data"
+    val outdir  = s"$userDir/test/files/run/t6488-run.obj"
+    val command = s"${f.getAbsolutePath} -classpath ${javaClassPath}${pathSeparator}${outdir} Test data"
     Try {
-      Process(command) run ProcessLogger { (s: String) =>
+      Process(command.split(" ").toSeq) run ProcessLogger { (s: String) =>
         //Console println s"[[$s]]"     // java help
         count.getAndIncrement
         reading.countDown
