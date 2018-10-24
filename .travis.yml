@@ -39,7 +39,7 @@ jobs:
       - stage: build
         if: type = pull_request
         script:
-          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile publishLocal
+          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 

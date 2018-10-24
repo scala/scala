@@ -106,14 +106,30 @@ lazy val publishSettings : Seq[Setting[_]] = Seq(
 // should not be set directly. It is the same as the Maven version and derived automatically from `baseVersion` and
 // `baseVersionSuffix`.
 globalVersionSettings
-baseVersion in Global := "2.12.8"
+baseVersion in Global       := "2.12.8"
 baseVersionSuffix in Global := "SNAPSHOT"
+organization in ThisBuild   := "org.scala-lang"
+homepage in ThisBuild       := Some(url("https://www.scala-lang.org"))
+startYear in ThisBuild      := Some(2002)
+licenses in ThisBuild       += (("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0")))
+headerLicense in ThisBuild  := Some(HeaderLicense.Custom(
+  s"""Scala (${(homepage in ThisBuild).value.get})
+     |
+     |Copyright EPFL and Lightbend, Inc.
+     |
+     |Licensed under Apache License 2.0
+     |(http://www.apache.org/licenses/LICENSE-2.0).
+     |
+     |See the NOTICE file distributed with this work for
+     |additional information regarding copyright ownership.
+     |""".stripMargin
+))
+
 mimaReferenceVersion in Global := Some("2.12.0")
 
-scalaVersion in Global := versionProps("starr.version")
+scalaVersion in Global         := versionProps("starr.version")
 
 lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
-  organization := "org.scala-lang",
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -191,9 +207,6 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
   ),
   incOptions := (incOptions in LocalProject("root")).value,
-  homepage := Some(url("http://www.scala-lang.org")),
-  startYear := Some(2002),
-  licenses += (("BSD 3-Clause", url("http://www.scala-lang.org/license.html"))),
   apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
@@ -224,6 +237,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
       case None => base
     }
   },
+  headerLicense := (headerLicense in ThisBuild).value,
   // Remove auto-generated manifest attributes
   packageOptions in Compile in packageBin := Seq.empty,
   packageOptions in Compile in packageSrc := Seq.empty,
@@ -593,7 +607,23 @@ lazy val scalap = configureAsSubproject(project)
       "/project/name" -> <name>Scalap</name>,
       "/project/description" -> <description>bytecode analysis tool</description>,
       "/project/properties" -> scala.xml.Text("")
-    )
+    ),
+    headerLicense  := Some(HeaderLicense.Custom(
+      s"""Scala classfile decoder (${(homepage in ThisBuild).value.get})
+         |
+         |Copyright EPFL and Lightbend, Inc.
+         |
+         |Licensed under Apache License 2.0
+         |(http://www.apache.org/licenses/LICENSE-2.0).
+         |
+         |See the NOTICE file distributed with this work for
+         |additional information regarding copyright ownership.
+         |""".stripMargin)),
+    (headerSources in Compile) ~= { xs =>
+      val excluded = Set("Memoisable.scala", "Result.scala", "Rule.scala", "Rules.scala", "SeqRule.scala")
+      xs filter { x => !excluded(x.getName) }
+    },
+    (headerResources in Compile) := Nil
   )
   .dependsOn(compiler)
 
