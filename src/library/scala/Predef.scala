@@ -77,10 +77,6 @@ import scala.annotation.meta.companionMethod
  * @groupprio console-output 30
  * @groupdesc console-output These methods provide output via the console.
  *
- * @groupname type-constraints Type Constraints
- * @groupprio type-constraints 40
- * @groupdesc type-constraints These entities allows constraints between types to be stipulated.
- *
  * @groupname aliases Aliases
  * @groupprio aliases 50
  * @groupdesc aliases These aliases bring selected immutable types into scope without any imports.
@@ -489,17 +485,13 @@ object Predef extends LowPriorityImplicits {
   /** @group conversions-java-to-anyval */
   implicit def Boolean2boolean(x: java.lang.Boolean): Boolean = x.asInstanceOf[Boolean]
 
-  // Type Constraints --------------------------------------------------------------
-
-  /** `A <: A` for all `A` (subtyping is reflexive). This also provides implicit views `A => B`
-   *  when `A <: B`, because `(A <:< A) <: (A <:< B) <: (A => B)`.
-   *
-   *  @group type-constraints
+  /** An implicit of type `A => A` is available for all `A` because it can always
+   *  be implemented using the identity function. This also means that an
+   *  implicit of type `A => B` is always available when `A <: B`, because
+   *  `(A => A) <: (A => B)`.
    */
   // $ to avoid accidental shadowing (e.g. scala/bug#7788)
-  // ideally implicit def $conforms[A]: A => A, with a <:< implicit in the companion
-  // but $conforms is a bit too magic for that
-  implicit def $conforms[A]: A <:< A = =:=.refl
+  implicit def $conforms[A]: A => A = <:<.refl
 }
 
 /** The `LowPriorityImplicits` class provides implicit values that
