@@ -107,7 +107,7 @@ object StringOps {
       var i = 0
       while (i < len) {
         val x = s.charAt(i)
-        if(p(x)) sb.append(x)
+        if(p(x)) sb.append(f(x))
         i += 1
       }
       sb.toString

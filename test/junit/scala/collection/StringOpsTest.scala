@@ -93,4 +93,8 @@ class StringOpsTest {
     assertEquals("", "a" * 0)
     assertEquals("", "a" * -1)
   }
+
+  @Test def withFilterAndThenMap(): Unit = {
+    assertEquals("hello".withFilter(_ != 'e').map(_.toUpper), "HLLO")
+  }
 }
