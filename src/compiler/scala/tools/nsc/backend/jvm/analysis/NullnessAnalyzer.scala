@@ -18,7 +18,7 @@ import java.util
 
 import scala.annotation.switch
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode}
+import scala.tools.asm.tree.{AbstractInsnNode, LdcInsnNode, MethodInsnNode, MethodNode, LabelNode}
 import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -146,14 +146,36 @@ final class NullnessInterpreter(knownNonNullInvocation: MethodInsnNode => Boolea
 }
 
 class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessValue](nLocals, nStack) {
+  private[this] var ifNullAliases: AliasSet = null
+
   // Auxiliary constructor required for implementing `NullnessAnalyzer.newFrame`
   def this(src: Frame[_ <: NullnessValue]) {
     this(src.getLocals, src.getMaxStackSize)
     init(src)
   }
 
+  private def setNullness(s: AliasSet, v: NullnessValue) = {
+    val it = s.iterator
+    while (it.hasNext)
+      this.setValue(it.next(), v)
+  }
+
+  override def initJumpTarget(opcode: Int, target: LabelNode): Unit = {
+    // when `target` is defined, we're in the case where the branch condition is true
+    val conditionTrue = target != null
+    if (opcode == Opcodes.IFNULL)
+      setNullness(ifNullAliases, if (conditionTrue) NullValue else NotNullValue)
+    else if (opcode == Opcodes.IFNONNULL)
+      setNullness(ifNullAliases, if (conditionTrue) NotNullValue else NullValue)
+  }
+
   override def execute(insn: AbstractInsnNode, interpreter: Interpreter[NullnessValue]): Unit = {
     import Opcodes._
+
+    ifNullAliases = insn.getOpcode match {
+      case IFNULL | IFNONNULL => aliasesOf(this.stackTop)
+      case _ => null
+    }
 
     // get the alias set the object that is known to be not-null after this operation.
     // alias sets are mutable / mutated, so after super.execute, this set contains the remaining
@@ -203,11 +225,8 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
 
     super.execute(insn, interpreter)
 
-    if (nullCheckedAliases != null) {
-      val it = nullCheckedAliases.iterator
-      while (it.hasNext)
-        this.setValue(it.next(), NotNullValue)
-    }
+    if (nullCheckedAliases != null)
+      setNullness(nullCheckedAliases, NotNullValue)
   }
 }
 
