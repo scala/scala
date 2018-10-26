@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -158,31 +170,37 @@ private[internal] trait GlbLubs {
         rest filter (t => !first.typeSymbol.isSubClass(t.typeSymbol)))
   }
 
+  /** From a list of types, retain only maximal types as determined by the partial order `po`. */
+  private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
+    def loop(ts: List[Type]): List[Type] = ts match {
+      case t :: ts1 =>
+        val ts2 = loop(ts1.filterNot(po(_, t)))
+        if (ts2.exists(po(t, _))) ts2 else t :: ts2
+      case Nil => Nil
+    }
+
+    // The order here matters because type variables and
+    // wildcards can act both as subtypes and supertypes.
+    val (ts2, ts1) = ts.partition(_ exists {
+      case tv: TypeVar => !tv.isGround
+      case t => t.isWildcard
+    })
+
+    loop(ts1 ::: ts2)
+  }
+
   /** Eliminate from list of types all elements which are a supertype
     *  of some other element of the list. */
-  private def elimSuper(ts: List[Type]): List[Type] = ts match {
-    case List() | List(_) => ts
-    case t :: ts1 =>
-      val rest = elimSuper(ts1 filter (t1 => !(t <:< t1)))
-      if (rest exists (t1 => t1 <:< t)) rest else t :: rest
-  }
+  private def elimSuper(ts: List[Type]): List[Type] =
+    maxTypes(ts)((t1, t2) => t2 <:< t1)
 
   /** Eliminate from list of types all elements which are a subtype
     *  of some other element of the list. */
-  private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
-    def elimSub0(ts: List[Type]): List[Type] = ts match {
-      case List() => ts
-      case List(t) => ts
-      case t :: ts1 =>
-        val rest = elimSub0(ts1 filter (t1 => !isSubType(t1, t, depth.decr)))
-        if (rest exists (t1 => isSubType(t, t1, depth.decr))) rest else t :: rest
-    }
-    val ts0 = elimSub0(ts)
-    if (ts0.isEmpty || ts0.tail.isEmpty) ts0
-    else {
-      val ts1 = ts0 mapConserve (t => elimAnonymousClass(t.dealiasWiden))
-      if (ts1 eq ts0) ts0
-      else elimSub(ts1, depth)
+  @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
+    val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
+    if (ts1.lengthCompare(1) <= 0) ts1 else {
+      val ts2 = ts1.mapConserve(t => elimAnonymousClass(t.dealiasWiden))
+      if (ts1 eq ts2) ts1 else elimSub(ts2, depth)
     }
   }
 
@@ -224,10 +242,10 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
-  private val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def lubResults = _lubResults
 
-  private val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def glbResults = _glbResults
 
   def lub(ts: List[Type]): Type = ts match {
@@ -271,7 +289,7 @@ private[internal] trait GlbLubs {
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
+        TypeBounds(glb(ts map (_.lowerBound), depth), lub(ts map (_.upperBound), depth))
       case ts @ AnnotatedType(annots, tpe) :: rest =>
         annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
@@ -322,10 +340,12 @@ private[internal] trait GlbLubs {
               else if (symtypes.tail forall (symtypes.head =:= _))
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
-                def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                  TypeBounds(glb(bnds map (_.lo), depth.decr), lub(bnds map (_.hi), depth.decr))
+                val lubBs = TypeBounds(
+                  glb(symtypes.map(_.lowerBound), depth.decr),
+                  lub(symtypes.map(_.upperBound), depth.decr)
+                )
                 lubRefined.typeSymbol.newAbstractType(proto.name.toTypeName, proto.pos)
-                  .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
+                  .setInfoOwnerAdjusted(lubBs)
               }
             }
           }
@@ -393,7 +413,7 @@ private[internal] trait GlbLubs {
     *  The counter breaks this recursion after two calls.
     *  If the recursion is broken, no member is added to the glb.
     */
-  private var globalGlbDepth = Depth.Zero
+  private[this] var globalGlbDepth = Depth.Zero
   private final val globalGlbLimit = Depth(2)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
@@ -433,7 +453,7 @@ private[internal] trait GlbLubs {
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(glbNorm(matchingRestypes(ts, Nil), depth))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
+        TypeBounds(lub(ts map (_.lowerBound), depth), glb(ts map (_.upperBound), depth))
       case ts =>
         glbResults get ((depth, ts)) match {
           case Some(glbType) =>
@@ -482,8 +502,8 @@ private[internal] trait GlbLubs {
                     case _ => false
                   }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
-                    val lo = lub(bnds map (_.bounds.lo), depth.decr)
-                    val hi = glb(bnds map (_.bounds.hi), depth.decr)
+                    val lo = lub(bnds map (_.lowerBound), depth.decr)
+                    val hi = glb(bnds map (_.upperBound), depth.decr)
                     if (lo <:< hi) TypeBounds(lo, hi)
                     else throw GlbFailure
                   }

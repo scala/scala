@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 // $Id$
 
 package scala.tools
@@ -11,7 +19,7 @@ package settings
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
 import scala.collection.mutable.Clearable
 import scala.io.Source
-import scala.reflect.internal.util.StringOps
+import scala.reflect.internal.util.{ SomeOfNil, StringOps }
 import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
@@ -126,7 +134,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // -Xfoo: clears Clearables
     def clearIfExists(cmd: String): Option[List[String]] = lookupSetting(cmd) match {
-      case Some(c: Clearable) => c.clear() ; Some(Nil)
+      case Some(c: Clearable) => c.clear() ; SomeOfNil
       case Some(s)            => s.errorAndValue(s"Missing argument to $cmd", None)
       case None               => None
     }
@@ -358,17 +366,17 @@ class MutableSettings(val errorFn: String => Unit)
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
     /** Will be called after this Setting is set for any extra work. */
-    private var _postSetHook: this.type => Unit = (x: this.type) => ()
+    private[this] var _postSetHook: this.type => Unit = (x: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)
     def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
     /** The syntax defining this setting in a help string */
-    private var _helpSyntax = name
+    private[this] var _helpSyntax = name
     override def helpSyntax: String = _helpSyntax
     def withHelpSyntax(s: String): this.type    = { _helpSyntax = s ; this }
 
     /** Abbreviations for this setting */
-    private var _abbreviations: List[String] = Nil
+    private[this] var _abbreviations: List[String] = Nil
     override def abbreviations = _abbreviations
     def withAbbreviation(s: String): this.type  = { _abbreviations ++= List(s) ; this }
 
@@ -377,7 +385,7 @@ class MutableSettings(val errorFn: String => Unit)
     override def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
 
-    private var _deprecationMessage: Option[String] = None
+    private[this] var _deprecationMessage: Option[String] = None
     override def deprecationMessage = _deprecationMessage
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
   }
@@ -457,10 +465,10 @@ class MutableSettings(val errorFn: String => Unit)
       case List(x) =>
         if (x.equalsIgnoreCase("true")) {
           value = true
-          Some(Nil)
+          SomeOfNil
         } else if (x.equalsIgnoreCase("false")) {
           value = false
-          Some(Nil)
+          SomeOfNil
         } else errorAndValue(s"'$x' is not a valid choice for '$name'", None)
       case _       => errorAndValue(s"'$name' accepts only one boolean value", None)
     }
@@ -524,7 +532,7 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     val arg: String,
     descr: String,
-    initial: ScalaVersion,
+    val initial: ScalaVersion,
     default: Option[ScalaVersion])
   extends Setting(name, descr) {
     type T = ScalaVersion
@@ -625,7 +633,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   class MultiChoiceSetting[E <: MultiChoiceEnumeration] private[nsc](
     name: String,
-    helpArg: String,
+    val helpArg: String,
     descr: String,
     val domain: E,
     val default: Option[List[String]]
@@ -832,7 +840,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   class ChoiceSetting private[nsc](
     name: String,
-    helpArg: String,
+    val helpArg: String,
     descr: String,
     override val choices: List[String],
     val default: String,
@@ -861,8 +869,8 @@ class MutableSettings(val errorFn: String => Unit)
 
     override def tryToSetColon(args: List[String]) = args match {
       case Nil                            => errorAndValue(usageErrorMessage, None)
-      case List("help")                   => sawHelp = true; Some(Nil)
-      case List(x) if choices contains x  => value = x ; Some(Nil)
+      case List("help")                   => sawHelp = true; SomeOfNil
+      case List(x) if choices contains x  => value = x ; SomeOfNil
       case List(x)                        => errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
       case xs                             => errorAndValue("'" + name + "' does not accept multiple arguments.", None)
     }
@@ -887,7 +895,7 @@ class MutableSettings(val errorFn: String => Unit)
   class PhasesSetting private[nsc](
     name: String,
     descr: String,
-    default: String
+    val default: String
   ) extends Setting(name, mkPhasesHelp(descr, default)) with Clearable {
     private[nsc] def this(name: String, descr: String) = this(name, descr, "")
 
@@ -927,7 +935,7 @@ class MutableSettings(val errorFn: String => Unit)
       args match {
         case Nil  => if (default == "") errorAndValue("missing phase", None)
                      else tryToSetColon(splitDefault)
-        case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
+        case xs   => value = (value ++ xs).distinct.sorted ; SomeOfNil
       }
     } catch { case _: NumberFormatException => None }
 

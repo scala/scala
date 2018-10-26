@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -96,15 +103,16 @@ abstract class Pickler extends SubComponent {
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
 
-    /** Returns usually symbol's owner, but picks classfile root instead
-     *  for existentially bound variables that have a non-local owner.
-     *  Question: Should this be done for refinement class symbols as well?
-     *
-     *  Note: tree pickling also finds its way here; e.g. in scala/bug#7501 the pickling
-     *  of trees in annotation arguments considers the parameter symbol of a method
-     *  called in such a tree as "local". The condition `sym.isValueParameter` was
-     *  added to fix that bug, but there may be a better way.
-     */
+    /** Usually `sym.owner`, except when `sym` is pickle-local, while `sym.owner` is not.
+      *
+      * In the latter case, the alternative owner is the pickle root,
+      * or a non-class owner of root (so that term-owned parameters remain term-owned).
+      *
+      * Note: tree pickling also finds its way here; e.g. in scala/bug#7501 the pickling
+      * of trees in annotation arguments considers the parameter symbol of a method
+      * called in such a tree as "local". The condition `sym.isValueParameter` was
+      * added to fix that bug, but there may be a better way.
+      */
     private def localizedOwner(sym: Symbol) =
       if (isLocalToPickle(sym) && !isRootSym(sym) && !isLocalToPickle(sym.owner))
         // don't use a class as the localized owner for type parameters that are not owned by a class: those are not instantiated by asSeenFrom
@@ -299,7 +307,6 @@ abstract class Pickler extends SubComponent {
     private def putConstant(c: Constant): Unit = {
       if (putEntry(c)) {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
-        else if (c.tag == SSymbolTag) putEntry(newTermName(c.scalaSymbolValue.name))
         else if (c.tag == ClazzTag) putType(c.typeValue)
         else if (c.tag == EnumTag) putSymbol(c.symbolValue)
       }
@@ -490,7 +497,6 @@ abstract class Pickler extends SubComponent {
         case FloatTag   => writeLong(floatToIntBits(c.floatValue).toLong)
         case DoubleTag  => writeLong(doubleToLongBits(c.doubleValue))
         case StringTag  => writeRef(newTermName(c.stringValue))
-        case SSymbolTag => writeRef(newTermName(c.scalaSymbolValue.name))
         case ClazzTag   => writeRef(c.typeValue)
         case EnumTag    => writeRef(c.symbolValue)
         case tag        => if (ByteTag <= tag && tag <= LongTag) writeLong(c.longValue)

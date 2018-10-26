@@ -1,3 +1,5 @@
+// scalac: -nowarn
+//
 package foo;
 
 public enum Bar {

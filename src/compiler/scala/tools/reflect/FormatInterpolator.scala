@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context
@@ -58,7 +70,7 @@ abstract class FormatInterpolator {
    *  5) "...${smth}%%" => okay, equivalent to "...${smth}%s%%"
    *  6) "...${smth}[%legalJavaConversion]" => okay*
    *  7) "...${smth}[%illegalJavaConversion]" => error
-   *  *Legal according to [[http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html]]
+   *  *Legal according to [[https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html]]
    */
   def interpolated(parts: List[Tree], args: List[Tree]) = {
     val fstring  = new StringBuilder

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.doc.html
 
 import java.io.Writer
@@ -9,7 +21,7 @@ import scala.collection.Iterator
 object HtmlTags {
   def textOf(elems: Elems) = elems.map(_.toText).foldLeft("")(_ + _)
 
-  trait Elem {
+  trait Elem extends Product {
     def toXhtml(xsw: XMLStreamWriter, raw: Writer): Unit = {
       if (elems.isEmpty && attribs.isEmpty) xsw.writeEmptyElement(tagName)
       else {
@@ -24,15 +36,12 @@ object HtmlTags {
 
     def elems: Elems
 
-    def productIterator: Iterator[Any]
-
-    private def cls = scala.reflect.runtime.currentMirror.classSymbol(getClass)
-    def tagName = cls.name.decodedName.toString.toLowerCase
-    def attribNames = cls.primaryConstructor.asMethod.paramLists.head.map(_.name.decodedName.toString)
+    def tagName = productPrefix.toLowerCase
+    def attribNames = productElementNames.toList
     def attribValues = productIterator.toList
 
     def attribs: Seq[(String, String)] = {
-      (attribNames, attribValues).zipped.collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toSeq
+      attribNames.lazyZip(attribValues).collect { case (k, v) if k != "elems" && v != null => (k, v.toString)}.toSeq
     }
   }
 
@@ -109,4 +118,11 @@ object HtmlTags {
   case class Svg(elems: Elems = Nil, id: String = null, `class`: String = null, width: String, height: String) extends Elem
   case object Hr extends Elem { def elems = Nil; override def tagName = "hr" }
   case object Br extends Elem { def elems = Nil; override def tagName = "br" }
+
+  case class Table(thead: THead = null, tbody: TBody = null, `class`: String = null) extends Elem { def elems = (thead :: tbody :: Nil).filterNot(_ == null)}
+  case class THead(elems: List[Tr]) extends Elem
+  case class TBody(elems: List[Tr]) extends Elem
+  case class Tr(elems: Elems = NoElems) extends Elem
+  case class Th(elems: Elems, `class`: String = null) extends Elem
+  case class Td(elems: Elems, `class`: String = null) extends Elem
 }

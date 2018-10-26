@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
@@ -19,7 +23,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
 
 /**
   * This class implements immutable maps using a list-based data structure. List map iterators and
-  * traversal methods visit key-value pairs in the order whey were first inserted.
+  * traversal methods visit key-value pairs in the order they were first inserted.
   *
   * Entries are stored internally in reversed insertion order, which means the newest key is at the
   * head of the list. As such, methods such as `head` and `tail` are O(n), while `last` and `init`
@@ -42,6 +46,7 @@ import scala.collection.mutable.{Builder, ImmutableBuilder}
   */
 sealed class ListMap[K, +V]
   extends AbstractMap[K, V]
+    with SeqMap[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
     with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]] {
@@ -52,6 +57,7 @@ sealed class ListMap[K, +V]
 
   override def isEmpty: Boolean = true
 
+  override def knownSize: Int = 0
   def get(key: K): Option[V] = None
 
   def updated[B1 >: V](key: K, value: B1): ListMap[K, B1] = new Node[B1](key, value)
@@ -61,11 +67,21 @@ sealed class ListMap[K, +V]
   def iterator: Iterator[(K, V)] = {
     var curr: ListMap[K, V] = this
     var res: List[(K, V)] = Nil
-    while (!curr.isEmpty) {
+    while (curr.nonEmpty) {
       res = (curr.key, curr.value) :: res
       curr = curr.next
     }
     res.iterator
+  }
+
+  override def keys: Iterable[K] = {
+    var curr: ListMap[K, V] = this
+    var res: List[K] = Nil
+    while (curr.nonEmpty) {
+      res = curr.key :: res
+      curr = curr.next
+    }
+    res
   }
 
   protected def key: K = throw new NoSuchElementException("key of empty map")
@@ -87,7 +103,7 @@ sealed class ListMap[K, +V]
       else sizeInternal(cur.next, acc + 1)
 
     override def isEmpty: Boolean = false
-
+    override def knownSize: Int = -1
     @throws[NoSuchElementException]
     override def apply(k: K): V1 = applyInternal(this, k)
 
@@ -159,9 +175,4 @@ object ListMap extends MapFactory[ListMap] {
     new ImmutableBuilder[(K, V), ListMap[K, V]](empty) {
       def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
     }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

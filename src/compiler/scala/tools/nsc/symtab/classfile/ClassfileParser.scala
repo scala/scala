@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -476,11 +483,9 @@ abstract class ClassfileParser {
       val sflags = jflags.toScalaFlags // includes JAVA
 
       def parseParents(): List[Type] = raiseLoaderLevel {
-        val superType = if (jflags.isAnnotation) { u2; AnnotationClass.tpe }
-                        else pool.getSuperClass(u2).tpe_*
+        val superType = pool.getSuperClass(u2).tpe_*
         val ifaceCount = u2
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
-        if (jflags.isAnnotation) ifaces ::= StaticAnnotationClass.tpe
+        val ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
         superType :: ifaces
       }
 
@@ -518,7 +523,7 @@ abstract class ClassfileParser {
         val needsConstructor = (
              !sawPrivateConstructor
           && !(instanceScope containsName nme.CONSTRUCTOR)
-          && (sflags & INTERFACE) == 0
+          && ((sflags & INTERFACE) == 0 || (sflags | JAVA_ANNOTATION) != 0)
         )
         if (needsConstructor)
           instanceScope enter clazz.newClassConstructor(NoPosition)
@@ -953,7 +958,7 @@ abstract class ClassfileParser {
     def addParamNames(): Unit =
       if ((paramNames ne null) && sym.hasRawInfo && sym.isMethod) {
         val params = sym.rawInfo.params
-        (paramNames zip params).foreach {
+        foreach2(paramNames.toList, params) {
           case (nme.NO_NAME, _) => // param was ACC_SYNTHETIC; ignore
           case (name, param) =>
             param.resetFlag(SYNTHETIC)
@@ -1082,6 +1087,16 @@ abstract class ClassfileParser {
         mod.moduleClass setInfo loaders.moduleClassLoader
         cls.associatedFile = file
         mod.moduleClass.associatedFile = file
+
+        /**
+          * need to set privateWithin here because the classfile of a nested protected class is public in bytecode,
+          * so propagatePackageBoundary will not set it when the symbols are completed
+          */
+        if (jflags.isProtected) {
+          cls.privateWithin = cls.enclosingPackage
+          mod.privateWithin = cls.enclosingPackage
+        }
+
         (cls, mod)
       }
 

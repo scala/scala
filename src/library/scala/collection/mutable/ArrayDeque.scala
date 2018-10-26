@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package mutable
@@ -138,6 +150,7 @@ class ArrayDeque[A] protected (
         copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
         array2(idx) = elem.asInstanceOf[AnyRef]
         copySliceToArray(srcStart = idx, dest = array2, destStart = idx + 1, maxItems = n)
+        reset(array = array2, start = 0, end = finalLength)
       } else if (n <= idx * 2) {
         var i = n - 1
         while(i >= idx) {
@@ -164,7 +177,7 @@ class ArrayDeque[A] protected (
     val n = length
     if (idx == 0) {
       prependAll(elems)
-    } else if (idx == n - 1) {
+    } else if (idx == n) {
       addAll(elems)
     } else {
       // Get both an iterator and the length of the source (by copying the source to an IndexedSeq if needed)
@@ -366,6 +379,43 @@ class ArrayDeque[A] protected (
     elems.result()
   }
 
+  /** Returns the first element which satisfies the given predicate after or at some start index
+    * and removes this element from the collections
+    *
+    *  @param p   the predicate used for choosing the first element
+    *  @param from the start index
+    *  @return the first element of the queue for which p yields true
+    */
+  def removeFirst(p: A => Boolean, from: Int = 0): Option[A] = {
+    val i = indexWhere(p, from)
+    if (i < 0) None else Some(remove(i))
+  }
+
+  /** Returns all elements in this collection which satisfy the given predicate
+    * and removes those elements from this collections.
+    *
+    *  @param p   the predicate used for choosing elements
+    *  @return    a sequence of all elements in the queue for which
+    *             p yields true.
+    */
+  def removeAll(p: A => Boolean): scala.collection.immutable.Seq[A] = {
+    val res = scala.collection.immutable.Seq.newBuilder[A]
+    var i, j = 0
+    while (i < size) {
+      if (p(this(i))) {
+        res += this(i)
+      } else {
+        if (i != j) {
+          this(j) = this(i)
+        }
+        j += 1
+      }
+      i += 1
+    }
+    if (i != j) takeInPlace(j)
+    res.result()
+  }
+
   override def reverse: IterableCC[A] = {
     val n = length
     val arr = ArrayDeque.alloc(n)
@@ -398,7 +448,7 @@ class ArrayDeque[A] protected (
   }
 
   /**
-    * clears this buffer and shrinks to @param size
+    * Clears this buffer and shrinks to @param size
     *
     * @param size
     * @return
@@ -429,13 +479,19 @@ class ArrayDeque[A] protected (
   override def sliding(window: Int, step: Int): Iterator[IterableCC[A]] = {
     require(window > 0 && step > 0, s"window=$window and step=$step, but both must be positive")
     val lag = if (window > step) window - step else 0
-    Iterator.range(start = 0, end = length - lag, step = step).map(i => slice(i, i + window))
+    if (length <= window) Iterator.single(slice(0, length))
+    else Iterator.range(start = 0, end = length - lag, step = step).map(i => slice(i, i + window))
   }
 
   override def grouped(n: Int): Iterator[IterableCC[A]] = sliding(n, n)
 
-  override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): dest.type =
-    copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)
+  override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, dest.length, destStart, len)
+    if (copied > 0) {
+      copySliceToArray(srcStart = 0, dest = dest, destStart = destStart, maxItems = len)
+    }
+    copied
+  }
 
   override def toArray[B >: A: ClassTag]: Array[B] =
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
@@ -547,9 +603,4 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     require(size >= 0, s"ArrayDeque too big - cannot allocate ArrayDeque of length $len")
     new Array[AnyRef](Math.max(size, DefaultInitialSize))
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

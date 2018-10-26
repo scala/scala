@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -10,7 +17,7 @@ import scala.annotation.switch
 import scala.reflect.internal.Flags
 import scala.tools.asm
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
+import scala.tools.asm.tree.{InvokeDynamicInsnNode, MethodInsnNode, MethodNode}
 import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.GenBCode._
@@ -444,10 +451,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
           mnode.visitLdcInsn(const.stringValue) // `stringValue` special-cases null, but not for a const with StringTag
 
-        case SSymbolTag =>
-          mnode.visitLdcInsn(const.scalaSymbolValue.name)
-          genCallMethod(SSymbol_apply, InvokeStyle.Static, NoPosition)
-
         case NullTag    => emit(asm.Opcodes.ACONST_NULL)
 
         case ClazzTag   =>
@@ -572,7 +575,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             }
           }
 
-          // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not jsut ALOAD_0)
+          // scala/bug#10290: qual can be `this.$outer()` (not just `this`), so we call genLoad (not just ALOAD_0)
           genLoad(superQual)
           genLoadArguments(args, paramTKs(app))
           generatedType = genCallMethod(fun.symbol, InvokeStyle.Super, app.pos, sup.tpe.typeSymbol)
@@ -628,14 +631,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           genInvokeDynamicLambda(attachment)
           generatedType = methodBTypeFromSymbol(fun.symbol).returnType
 
-        case Apply(fun, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
+        case Apply(fun, expr :: Nil) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = typeToBType(fun.symbol.firstParam.info)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, methodType) = srBoxesRuntimeBoxToMethods(nativeKind)
           bc.invokestatic(srBoxesRunTimeRef.internalName, mname, methodType.descriptor, itf = false, app.pos)
           generatedType = boxResultType(fun.symbol)
 
-        case Apply(fun, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
+        case Apply(fun, expr :: Nil) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
           genLoad(expr)
           val boxType = unboxResultType(fun.symbol)
           generatedType = boxType
@@ -705,7 +708,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               def recordInlineAnnotated(t: Tree): Unit = {
                 if (t.hasAttachment[InlineAnnotatedAttachment]) lastInsn match {
                   case m: MethodInsnNode =>
-                    if (app.hasAttachment[NoInlineCallsiteAttachment.type]) noInlineAnnotatedCallsites += m
+                    if (t.hasAttachment[NoInlineCallsiteAttachment.type]) noInlineAnnotatedCallsites += m
                     else inlineAnnotatedCallsites += m
                   case _ =>
                 } else t match {
@@ -818,12 +821,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def adapt(from: BType, to: BType): Unit = {
-      if (!from.conformsTo(to).get) {
-        to match {
-          case UNIT => bc drop from
-          case _    => bc.emitT2T(from, to)
-        }
-      } else if (from.isNothingType) {
+      if (from.isNothingType) {
         /* There are two possibilities for from.isNothingType: emitting a "throw e" expressions and
          * loading a (phantom) value of type Nothing.
          *
@@ -883,12 +881,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          */
         if (lastInsn.getOpcode != asm.Opcodes.ACONST_NULL) {
           bc drop from
-          emit(asm.Opcodes.ACONST_NULL)
+          if (to != UNIT)
+            emit(asm.Opcodes.ACONST_NULL)
+        } else if (to == UNIT) {
+          bc drop from
         }
-      }
-      else (from, to) match  {
-        case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => bc.emitT2T(INT, LONG)
-        case _ => ()
+      } else if (!from.conformsTo(to).get) {
+        to match {
+          case UNIT => bc drop from
+          case _    => bc.emitT2T(from, to)
+        }
       }
     }
 
@@ -930,8 +932,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     }
 
-    def genLoadArguments(args: List[Tree], btpes: List[BType]): Unit = {
-      (args zip btpes) foreach { case (arg, btpe) => genLoad(arg, btpe) }
+    def genLoadArguments(args: List[Tree], btpes: List[BType]): Unit ={
+      foreach2(args, btpes) { case (arg, btpe) => genLoad(arg, btpe) }
     }
 
     def genLoadModule(tree: Tree): BType = {
@@ -1366,8 +1368,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable, markers)
-      if (isSerializable)
-        addIndyLambdaImplMethod(cnode.name, implMethodHandle)
+      if (isSerializable) {
+        val indy = bc.jmethod.instructions.getLast.asInstanceOf[InvokeDynamicInsnNode]
+        addIndyLambdaImplMethod(cnode.name, bc.jmethod, indy, implMethodHandle)
+      }
     }
   }
 

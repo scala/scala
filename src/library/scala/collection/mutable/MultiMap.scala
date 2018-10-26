@@ -1,10 +1,22 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection.mutable
 
 
 /** A trait for mutable maps with multiple values assigned to a key.
   *
-  *  This class is typically used as a mixin. It turns maps which map `A`
-  *  to `Set[B]` objects into multimaps that map `A` to `B` objects.
+  *  This class is typically used as a mixin. It turns maps which map `K`
+  *  to `Set[V]` objects into multimaps that map `K` to `V` objects.
   *
   *  @example {{{
   *  // first import all necessary types from package `collection.mutable`
@@ -41,16 +53,16 @@ package scala.collection.mutable
   *  @author  Martin Odersky
   *  @since   1
   */
-trait MultiMap[A, B] extends Map[A, Set[B]] {
+trait MultiMap[K, V] extends Map[K, Set[V]] {
   /** Creates a new set.
     *
     *  Classes that use this trait as a mixin can override this method
     *  to have the desired implementation of sets assigned to new keys.
     *  By default this is `HashSet`.
     *
-    *  @return An empty set of values of type `B`.
+    *  @return An empty set of values of type `V`.
     */
-  protected def makeSet: Set[B] = new HashSet[B]
+  protected def makeSet: Set[V] = new HashSet[V]
 
   /** Assigns the specified `value` to a specified `key`.  If the key
     *  already has a binding to equal to `value`, nothing is changed;
@@ -60,7 +72,7 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
     *  @param value  The value to bind to the key.
     *  @return       A reference to this multimap.
     */
-  def addBinding(key: A, value: B): this.type = {
+  def addBinding(key: K, value: V): this.type = {
     get(key) match {
       case None =>
         val set = makeSet
@@ -82,7 +94,7 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
     *  @param value   The value to remove.
     *  @return        A reference to this multimap.
     */
-  def removeBinding(key: A, value: B): this.type = {
+  def removeBinding(key: K, value: V): this.type = {
     get(key) match {
       case None =>
       case Some(set) =>
@@ -98,7 +110,7 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
     *  @param p     The predicate which a value assigned to the key must satisfy.
     *  @return      A boolean if such a binding exists
     */
-  def entryExists(key: A, p: B => Boolean): Boolean = get(key) match {
+  def entryExists(key: K, p: V => Boolean): Boolean = get(key) match {
     case None => false
     case Some(set) => set exists p
   }

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -711,7 +723,7 @@ abstract class TreeGen {
         val rhss = valeqs map { case ValEq(_, rhs) => rhs }
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
-        val pdefs = (defpats, rhss).zipped flatMap mkPatDef
+        val pdefs = defpats.lazyZip(rhss).flatMap(mkPatDef)
         val ids = (defpat1 :: defpats) map makeValue
         val rhs1 = mkFor(
           List(ValFrom(defpat1, rhs).setPos(t.pos)),

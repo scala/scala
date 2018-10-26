@@ -1,0 +1,4 @@
+yimports-predef.scala:6: error: value + is not a member of type parameter A
+  def f[A](x: A) = x + 42
+                     ^
+one error found

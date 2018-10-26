@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -36,19 +48,19 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
   // Override transformation operations to use more efficient views than the default ones
   override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedSeqView.Prepended(elem, this))
 
-  override def take(n: Int): C = fromSpecificIterable(new IndexedSeqView.Take(this, n))
+  override def take(n: Int): C = fromSpecific(new IndexedSeqView.Take(this, n))
 
-  override def takeRight(n: Int): C = fromSpecificIterable(new IndexedSeqView.TakeRight(this, n))
+  override def takeRight(n: Int): C = fromSpecific(new IndexedSeqView.TakeRight(this, n))
 
-  override def drop(n: Int): C = fromSpecificIterable(new IndexedSeqView.Drop(this, n))
+  override def drop(n: Int): C = fromSpecific(new IndexedSeqView.Drop(this, n))
 
-  override def dropRight(n: Int): C = fromSpecificIterable(new IndexedSeqView.DropRight(this, n))
+  override def dropRight(n: Int): C = fromSpecific(new IndexedSeqView.DropRight(this, n))
 
   override def map[B](f: A => B): CC[B] = iterableFactory.from(new IndexedSeqView.Map(this, f))
 
-  override def reverse: C = fromSpecificIterable(new IndexedSeqView.Reverse(this))
+  override def reverse: C = fromSpecific(new IndexedSeqView.Reverse(this))
 
-  override def slice(from: Int, until: Int): C = fromSpecificIterable(new IndexedSeqView.Slice(this, from, until))
+  override def slice(from: Int, until: Int): C = fromSpecific(new IndexedSeqView.Slice(this, from, until))
 
   override def last: A = apply(length - 1)
 

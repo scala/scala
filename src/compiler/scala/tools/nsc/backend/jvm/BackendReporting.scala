@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package backend.jvm
 
@@ -180,8 +192,9 @@ object BackendReporting {
       val reason = this match {
         case CalleeNotFinal(_, _, _, _) =>
           s"The method is not final and may be overridden."
-        case IllegalAccessInstruction(_, _, _, _, callsiteClass, instruction) =>
-          s"The callee $calleeMethodSig contains the instruction ${AsmUtils.textify(instruction)}" +
+        case IllegalAccessInstructions(_, _, _, _, callsiteClass, instructions) =>
+          val suffix = if (instructions.lengthCompare(1) > 0) "s" else ""
+          s"The callee $calleeMethodSig contains the instruction$suffix ${instructions.map(AsmUtils.textify).mkString(", ")}" +
             s"\nthat would cause an IllegalAccessError when inlined into class $callsiteClass."
 
         case IllegalAccessCheckFailed(_, _, _, _, callsiteClass, instruction, cause) =>
@@ -214,8 +227,8 @@ object BackendReporting {
     }
   }
   case class CalleeNotFinal(calleeDeclarationClass: InternalName, name: String, descriptor: String,  annotatedInline: Boolean) extends CannotInlineWarning
-  case class IllegalAccessInstruction(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
-                                      callsiteClass: InternalName, instruction: AbstractInsnNode) extends CannotInlineWarning
+  case class IllegalAccessInstructions(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
+                                       callsiteClass: InternalName, instructions: List[AbstractInsnNode]) extends CannotInlineWarning
   case class IllegalAccessCheckFailed(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                       callsiteClass: InternalName, instruction: AbstractInsnNode, cause: OptimizerWarning) extends CannotInlineWarning
   case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,

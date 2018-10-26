@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -34,7 +46,61 @@ trait IndexedSeq[+A] extends Seq[A]
 
   final override def toIndexedSeq: IndexedSeq[A] = this
 
+  override def canEqual(that: Any): Boolean = that match {
+    case otherIndexedSeq: IndexedSeq[_] => length == otherIndexedSeq.length && super.canEqual(that)
+    case _ => super.canEqual (that)
+  }
+
+
+  override def sameElements[B >: A](o: IterableOnce[B]): Boolean = o match {
+    case that: IndexedSeq[_] =>
+      (this eq that) || {
+        val length = this.length
+        var equal = length == that.length
+        if (equal) {
+          var index = 0
+          // some IndexedSeq apply is less efficient than using Iterators
+          // e.g. Vector so we can compare the first few with apply and the rest with an iterator
+          // but if apply is more efficient than Iterators then we can use the apply for all the comparison
+          // we default to the minimum preferred length
+          val maxApplyCompare = {
+            val preferredLength = Math.min(applyPreferredMaxLength, that.applyPreferredMaxLength).toLong
+            if (preferredLength <= (length << 1)) Math.min(preferredLength, length) else length
+          }
+          while (index < maxApplyCompare && equal) {
+            equal = this (index) == that(index)
+            index += 1
+          }
+          if ((index < length) && equal) {
+            val thisIt = this.iterator.drop(index)
+            val thatIt = that.iterator.drop(index)
+            while (equal && thisIt.hasNext) {
+              equal = thisIt.next() == thatIt.next()
+            }
+          }
+        }
+        equal
+      }
+    case _ => super.sameElements(o)
+  }
+
+  /** a hint to the runtime when scanning values
+    * [[apply]] is perferred for scan with a max index less than this value
+    * [[iterator]] is preferred for scans above this range
+    * @return a hint about when to use [[apply]] or [[iterator]]
+    */
+  protected def applyPreferredMaxLength: Int = IndexedSeqDefaults.defaultApplyPreferredMaxLength
+
   override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
+}
+
+object IndexedSeqDefaults {
+  val defaultApplyPreferredMaxLength: Int =
+    try System.getProperty(
+      "scala.collection.immutable.IndexedSeq.defaultApplyPreferredMaxLength", "64").toInt
+    catch {
+      case _: SecurityException => 64
+    }
 }
 
 @SerialVersionUID(3L)

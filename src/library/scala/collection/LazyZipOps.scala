@@ -1,31 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 import scala.language.implicitConversions
 
-final class LazyZipOps[A, C1 <: Iterable[A]] private[collection](val `this`: C1) extends AnyVal {
-
-  /** Analogous to `zip` except that the elements in each collection are not consumed until a strict operation is
-    * invoked on the returned `LazyZip2` decorator.
-    *
-    * Calls to `lazyZip` can be chained to support higher arities (up to 4) without incurring the expense of
-    * constructing and deconstructing intermediary tuples.
-    *
-    * {{{
-    *    val xs = List(1, 2, 3)
-    *    val res = (xs lazyZip xs lazyZip xs lazyZip xs).map((a, b, c, d) => a + b + c + d)
-    *    // res == List(4, 8, 12)
-    * }}}
-    *
-    * @param that the iterable providing the second element of each eventual pair
-    * @tparam B   the type of the second element in each eventual pair
-    * @return a decorator `LazyZip2` that allows strict operations to be performed on the lazily evaluated pairs
-    *         or chained calls to `lazyZip`. Implicit conversion to `Iterable[(A, B)]` is also supported.
-    */
-  def lazyZip[B](that: Iterable[B]): LazyZip2[A, B, C1] = new LazyZip2(`this`, that)
-}
-
 /** Decorator representing lazily zipped pairs. */
-final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C1, coll2: Iterable[El2]) {
+final class LazyZip2[+El1, +El2, C1] private[collection](src: C1, coll1: Iterable[El1], coll2: Iterable[El2]) {
 
   /** Zips `that` iterable collection with an existing `LazyZip2`. The elements in each collection are
     * not consumed until a strict operation is invoked on the returned `LazyZip3` decorator.
@@ -35,10 +25,10 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
     * @return a decorator `LazyZip3` that allows strict operations to be performed on the lazily evaluated tuples or
     *         chained calls to `lazyZip`. Implicit conversion to `Iterable[(El1, El2, B)]` is also supported.
     */
-  def lazyZip[B](that: Iterable[B]): LazyZip3[El1, El2, B, C1] = new LazyZip3(coll1, coll2, that)
+  def lazyZip[B](that: Iterable[B]): LazyZip3[El1, El2, B, C1] = new LazyZip3(src, coll1, coll2, that)
 
   def map[B, C](f: (El1, El2) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -46,11 +36,12 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
         def next() = f(elems1.next(), elems2.next())
       }
       override def knownSize: Int = coll1.knownSize min coll2.knownSize
+      override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty
     })
   }
 
   def flatMap[B, C](f: (El1, El2) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -63,11 +54,13 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
         def hasNext = current.hasNext
         def next() = current.next()
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty
     })
   }
 
   def filter[C](p: (El1, El2) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2), C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2)] {
+    bf.fromSpecific(src)(new AbstractView[(El1, El2)] {
       def iterator = new AbstractIterator[(El1, El2)] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -89,6 +82,8 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
           } else Iterator.empty.next()
         }
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.hasNext
     })
   }
 
@@ -119,6 +114,7 @@ final class LazyZip2[El1, El2, C1 <: Iterable[El1]] private[collection](coll1: C
       def next() = (elems1.next(), elems2.next())
     }
     override def knownSize: Int = coll1.knownSize min coll2.knownSize
+    override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty
   }
 
   override def toString = s"$coll1.lazyZip($coll2)"
@@ -130,9 +126,10 @@ object LazyZip2 {
 
 
 /** Decorator representing lazily zipped triples. */
-final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](coll1: C1,
-                                                                             coll2: Iterable[El2],
-                                                                             coll3: Iterable[El3]) {
+final class LazyZip3[+El1, +El2, +El3, C1] private[collection](src: C1,
+                                                               coll1: Iterable[El1],
+                                                               coll2: Iterable[El2],
+                                                               coll3: Iterable[El3]) {
 
   /** Zips `that` iterable collection with an existing `LazyZip3`. The elements in each collection are
     * not consumed until a strict operation is invoked on the returned `LazyZip4` decorator.
@@ -142,10 +139,10 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
     * @return a decorator `LazyZip4` that allows strict operations to be performed on the lazily evaluated tuples.
     *         Implicit conversion to `Iterable[(El1, El2, El3, B)]` is also supported.
     */
-  def lazyZip[B](that: Iterable[B]): LazyZip4[El1, El2, El3, B, C1] = new LazyZip4(coll1, coll2, coll3, that)
+  def lazyZip[B](that: Iterable[B]): LazyZip4[El1, El2, El3, B, C1] = new LazyZip4(src, coll1, coll2, coll3, that)
 
   def map[B, C](f: (El1, El2, El3) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -154,11 +151,12 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
         def next() = f(elems1.next(), elems2.next(), elems3.next())
       }
       override def knownSize: Int = coll1.knownSize min coll2.knownSize min coll3.knownSize
+      override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty
     })
   }
 
   def flatMap[B, C](f: (El1, El2, El3) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -172,11 +170,13 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
         def hasNext = current.hasNext
         def next() = current.next()
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 
   def filter[C](p: (El1, El2, El3) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2, El3), C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2, El3)] {
+    bf.fromSpecific(src)(new AbstractView[(El1, El2, El3)] {
       def iterator = new AbstractIterator[(El1, El2, El3)] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -200,6 +200,8 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
           } else Iterator.empty.next()
         }
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 
@@ -235,6 +237,7 @@ final class LazyZip3[El1, El2, El3, C1 <: Iterable[El1]] private[collection](col
       def next() = (elems1.next(), elems2.next(), elems3.next())
     }
     override def knownSize: Int = coll1.knownSize min coll2.knownSize min coll3.knownSize
+    override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty
   }
 
   override def toString = s"$coll1.lazyZip($coll2).lazyZip($coll3)"
@@ -247,13 +250,14 @@ object LazyZip3 {
 
 
 /** Decorator representing lazily zipped 4-tuples. */
-final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection](coll1: C1,
-                                                                                  coll2: Iterable[El2],
-                                                                                  coll3: Iterable[El3],
-                                                                                  coll4: Iterable[El4]) {
+final class LazyZip4[+El1, +El2, +El3, +El4, C1] private[collection](src: C1,
+                                                                     coll1: Iterable[El1],
+                                                                     coll2: Iterable[El2],
+                                                                     coll3: Iterable[El3],
+                                                                     coll4: Iterable[El4]) {
 
   def map[B, C](f: (El1, El2, El3, El4) => B)(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -263,11 +267,12 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
         def next() = f(elems1.next(), elems2.next(), elems3.next(), elems4.next())
       }
       override def knownSize: Int = coll1.knownSize min coll2.knownSize min coll3.knownSize min coll4.knownSize
+      override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty || coll4.isEmpty
     })
   }
 
   def flatMap[B, C](f: (El1, El2, El3, El4) => Iterable[B])(implicit bf: BuildFrom[C1, B, C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[B] {
+    bf.fromSpecific(src)(new AbstractView[B] {
       def iterator = new AbstractIterator[B] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -282,11 +287,13 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
         def hasNext = current.hasNext
         def next() = current.next()
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0 || coll4.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 
   def filter[C](p: (El1, El2, El3, El4) => Boolean)(implicit bf: BuildFrom[C1, (El1, El2, El3, El4), C]): C = {
-    bf.fromSpecificIterable(coll1)(new AbstractView[(El1, El2, El3, El4)] {
+    bf.fromSpecific(src)(new AbstractView[(El1, El2, El3, El4)] {
       def iterator = new AbstractIterator[(El1, El2, El3, El4)] {
         private[this] val elems1 = coll1.iterator
         private[this] val elems2 = coll2.iterator
@@ -312,6 +319,8 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
           } else Iterator.empty.next()
         }
       }
+      override def knownSize: Int = if (coll1.knownSize == 0 || coll2.knownSize == 0 || coll3.knownSize == 0 || coll4.knownSize == 0) 0 else super.knownSize
+      override def isEmpty: Boolean = iterator.isEmpty
     })
   }
 
@@ -350,6 +359,7 @@ final class LazyZip4[El1, El2, El3, El4, C1 <: Iterable[El1]] private[collection
       def next() = (elems1.next(), elems2.next(), elems3.next(), elems4.next())
     }
     override def knownSize: Int = coll1.knownSize min coll2.knownSize min coll3.knownSize min coll4.knownSize
+    override def isEmpty: Boolean = coll1.isEmpty || coll2.isEmpty || coll3.isEmpty || coll4.isEmpty
   }
 
   override def toString = s"$coll1.lazyZip($coll2).lazyZip($coll3).lazyZip($coll4)"

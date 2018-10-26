@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection.immutable
 
 import scala.collection.{AbstractIterator, Iterator}
@@ -145,48 +157,6 @@ sealed class NumericRange[T](
       else head
     } else super.max(ord)
 
-  // Motivated by the desire for Double ranges with BigDecimal precision,
-  // we need some way to map a Range and get another Range.  This can't be
-  // done in any fully general way because Ranges are not arbitrary
-  // sequences but step-valued, so we have a custom method only we can call
-  // which we promise to use responsibly.
-  //
-  // The point of it all is that
-  //
-  //   0.0 to 1.0 by 0.1
-  //
-  // should result in
-  //
-  //   NumericRange[Double](0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
-  //
-  // and not
-  //
-  //   NumericRange[Double](0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6000000000000001, 0.7000000000000001, 0.8, 0.9)
-  //
-  // or perhaps more importantly,
-  //
-  //   (0.1 to 0.3 by 0.1 contains 0.3) == true
-  //
-  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): NumericRange[A] = {
-    val self = this
-
-    // XXX This may be incomplete.
-    new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
-
-      private[this] lazy val underlyingRange: NumericRange[T] = self
-      override def foreach[@specialized(Unit) U](f: A => U): Unit = { underlyingRange foreach (x => f(fm(x))) }
-      override def isEmpty = underlyingRange.isEmpty
-      override def apply(idx: Int): A = fm(underlyingRange(idx))
-      override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
-
-      override def toString = {
-        def simpleOf(x: Any): String = x.getClass.getName.split("\\.").last
-        val stepped = simpleOf(underlyingRange.step)
-        s"${super.toString} (using $underlyingRange of $stepped)"
-      }
-    }
-  }
-
   // a well-typed contains method.
   def containsTyped(x: T): Boolean =
     isWithinBoundaries(x) && (((x - start) % step) == zero)
@@ -225,7 +195,7 @@ sealed class NumericRange[T](
         ans.asInstanceOf[B]
       }
       else if ((num eq scala.math.Numeric.BigIntIsIntegral) ||
-        (num eq scala.math.Numeric.BigDecimalIsFractional)) {
+        (num eq scala.math.Numeric.BigDecimalAsIfIntegral)) {
         // No overflow, so we can use arithmetic series formula directly
         // (not going to worry about running out of memory)
         val numAsIntegral = num.asInstanceOf[Integral[B]]
@@ -251,6 +221,8 @@ sealed class NumericRange[T](
   }
 
   override lazy val hashCode: Int = super.hashCode()
+  override protected final def applyPreferredMaxLength: Int = Int.MaxValue
+
   override def equals(other: Any): Boolean = other match {
     case x: NumericRange[_] =>
       (x canEqual this) && (length == x.length) && (

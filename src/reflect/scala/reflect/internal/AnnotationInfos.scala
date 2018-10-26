@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -36,7 +43,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         // monomorphic one by introducing existentials, see scala/bug#7009 for details
         existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)
       }
-      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe), List(Literal(Constant(throwableTpe))), Nil)
+      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe :: Nil), List(Literal(Constant(throwableTpe))), Nil)
     }
 
     /** Tests for, get, or remove an annotation */
@@ -144,7 +151,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     assert(args.isEmpty || assocs.isEmpty, atp)
 
     // necessary for reification, see Reifiers.scala for more info
-    private var orig: Tree = EmptyTree
+    private[this] var orig: Tree = EmptyTree
     def original = orig
     def setOriginal(t: Tree): this.type = {
       orig = t
@@ -166,7 +173,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  definitions) have to be lazy (#1782)
    */
   final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
-    private var forced = false
+    private[this] var forced = false
     private lazy val forcedInfo = try lazyInfo finally forced = true
 
     def atp: Type                               = forcedInfo.atp
@@ -215,7 +222,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // see annotationArgRewriter
     lazy val isTrivial = atp.isTrivial && !hasArgWhich(_.isInstanceOf[This])
 
-    private var rawpos: Position = NoPosition
+    private[this] var rawpos: Position = NoPosition
     def pos = rawpos
     def setPos(pos: Position): this.type = { // Syncnote: Setpos inaccessible to reflection, so no sync in rawpos necessary.
       rawpos = pos
@@ -269,7 +276,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether the type or any of the arguments are erroneous */
     def isErroneous = atp.isErroneous || args.exists(_.isErroneous)
 
-    def isStatic = symbol isNonBottomSubClass StaticAnnotationClass
+    final def isStatic = symbol.isStaticAnnotation
 
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
@@ -280,8 +287,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def symbolArg(index: Int) = argAtIndex(index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)
-      case Literal(Constant(s: scala.Symbol)) =>
-        newTermName(s.name)
     }
 
     // !!! when annotation arguments are not literals, but any sort of
@@ -292,6 +297,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None
+
+    def transformArgs(f: List[Tree] => List[Tree]): AnnotationInfo =
+      new CompleteAnnotationInfo(atp, f(args), assocs)
 
     override def hashCode = atp.## + args.## + assocs.##
     override def equals(other: Any) = other match {

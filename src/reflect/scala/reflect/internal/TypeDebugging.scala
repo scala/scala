@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -59,7 +66,7 @@ trait TypeDebugging {
   object typeDebug {
     import scala.io.AnsiColor._
 
-    private val colorsOk = scala.util.Properties.coloredOutputEnabled
+    private[this] val colorsOk = scala.util.Properties.coloredOutputEnabled
     private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
     private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
 

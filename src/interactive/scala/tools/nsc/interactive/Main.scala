@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools
@@ -21,7 +28,7 @@ object Main extends nsc.MainClass {
       val reloaded = new interactive.Response[Unit]
       compiler.askReload(sfs, reloaded)
 
-      reloaded.get.right.toOption match {
+      reloaded.get.toOption match {
         case Some(ex) => reporter.ERROR.count += 1 // Causes exit code to be non-0
         case None     => reporter.reset()          // Causes other compiler errors to be ignored
       }

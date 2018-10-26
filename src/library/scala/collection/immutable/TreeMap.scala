@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -30,15 +42,16 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with SortedMap[K, V]
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
+    with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
   override def sortedMapFactory = TreeMap
 
-  def iterator: collection.Iterator[(K, V)] = RB.iterator(tree)
+  def iterator: Iterator[(K, V)] = RB.iterator(tree)
 
-  def keysIteratorFrom(start: K): collection.Iterator[K] = RB.keysIterator(tree, Some(start))
+  def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
 
   def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
 
@@ -83,6 +96,7 @@ final class TreeMap[K, +V] private (tree: RB.Tree[K, V])(implicit val ordering: 
   override def foreach[U](f: ((K, V)) => U): Unit = RB.foreach(tree, f)
 
   override def size: Int = RB.count(tree)
+  override def knownSize: Int = size
 
   override def isEmpty = size == 0
 
@@ -152,7 +166,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
 
   def empty[K : Ordering, V]: TreeMap[K, V] = new TreeMap()
 
-  def from[K : Ordering, V](it: collection.IterableOnce[(K, V)]): TreeMap[K, V] =
+  def from[K : Ordering, V](it: IterableOnce[(K, V)]): TreeMap[K, V] =
     it match {
       case tm: TreeMap[K, V] => tm
       case _ => (newBuilder[K, V] ++= it).result()

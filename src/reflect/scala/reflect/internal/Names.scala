@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -28,17 +35,17 @@ trait Names extends api.Names {
   //
   // Discussion: https://groups.google.com/forum/#!search/biased$20scala-internals/scala-internals/0cYB7SkJ-nM/47MLhsgw8jwJ
   protected def synchronizeNames: Boolean = false
-  private val nameLock: Object = new Object
+  private[this] val nameLock: Object = new Object
 
   /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
-  private var nc = 0
+  private[this] var nc = 0
 
   /** Hashtable for finding term names quickly. */
-  private val termHashtable = new Array[TermName](HASH_SIZE)
+  private[this] val termHashtable = new Array[TermName](HASH_SIZE)
 
   /** Hashtable for finding type names quickly. */
-  private val typeHashtable = new Array[TypeName](HASH_SIZE)
+  private[this] val typeHashtable = new Array[TypeName](HASH_SIZE)
 
   /**
    * The hashcode of a name depends on the first, the last and the middle character,
@@ -191,7 +198,7 @@ trait Names extends api.Names {
     // compile loses track of this fact.
 
     /** Index into name table */
-    def start: Int = index
+    final def start: Int = index
 
     /** The next name in the same hash bucket. */
     def next: Name with ThisNameType

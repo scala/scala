@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package interactive
 package tests
@@ -57,7 +69,7 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
     val str = try File(optsFile).slurp() catch {
       case e: java.io.IOException => ""
     }
-    str.lines.filter(!_.startsWith(CommentStartDelimiter)).mkString(" ")
+    str.linesIterator.filter(!_.startsWith(CommentStartDelimiter)).mkString(" ")
   }
 
   override protected def printClassPath(implicit reporter: Reporter): Unit = {

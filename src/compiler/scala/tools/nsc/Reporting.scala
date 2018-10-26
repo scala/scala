@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL, Typesafe Inc.
- * @author  Adriaan Moors
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -26,16 +33,16 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   protected def PerRunReporting = new PerRunReporting
   class PerRunReporting extends PerRunReportingBase {
     /** Collects for certain classes of warnings during this run. */
-    private class ConditionalWarning(what: String, doReport: () => Boolean, setting: Settings#Setting) {
+    private class ConditionalWarning(what: String, doReport: Boolean, setting: Settings#Setting) {
       def this(what: String, booleanSetting: Settings#BooleanSetting) {
-        this(what, () => booleanSetting, booleanSetting)
+        this(what, booleanSetting.value, booleanSetting)
       }
       val warnings = mutable.LinkedHashMap[Position, (String, String)]()
       def warn(pos: Position, msg: String, since: String = "") =
-        if (doReport()) reporter.warning(pos, msg)
+        if (doReport) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, (msg, since)))
       def summarize() =
-        if (warnings.nonEmpty && (setting.isDefault || doReport())) {
+        if (warnings.nonEmpty && (setting.isDefault || doReport)) {
           val sinceAndAmount = mutable.TreeMap[String, Int]()
           warnings.valuesIterator.foreach { case (_, since) =>
             val value = sinceAndAmount.get(since)
@@ -65,7 +72,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val _deprecationWarnings    = new ConditionalWarning("deprecation", settings.deprecation)
     private val _uncheckedWarnings      = new ConditionalWarning("unchecked", settings.unchecked)
     private val _featureWarnings        = new ConditionalWarning("feature", settings.feature)
-    private val _inlinerWarnings        = new ConditionalWarning("inliner", () => !settings.optWarningsSummaryOnly, settings.optWarnings)
+    private val _inlinerWarnings        = new ConditionalWarning("inliner", !settings.optWarningsSummaryOnly, settings.optWarnings)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
     // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)
@@ -106,8 +113,12 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
-      if (required) reporter.error(pos, msg)
-      else featureWarning(pos, msg)
+      // don't error on postfix in pre-0.13.18 xsbt/Compat.scala
+      def isSbtCompat =
+        (featureName == "postfixOps" && pos.source.path.endsWith("/xsbt/Compat.scala") && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt.")))
+      if (required && !isSbtCompat) {
+        reporter.error(pos, msg)
+      } else featureWarning(pos, msg)
     }
 
     /** Has any macro expansion used a fallback during this run? */

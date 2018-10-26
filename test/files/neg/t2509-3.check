@@ -1,0 +1,4 @@
+t2509-3.scala:31: error: value value is not a member of B
+    println("B: " + b.value)
+                      ^
+one error found

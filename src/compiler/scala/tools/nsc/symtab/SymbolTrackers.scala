@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -46,8 +53,8 @@ trait SymbolTrackers {
     def dropSymbol(sym: Symbol) = sym.ownerChain exists (_ hasFlag Flags.SPECIALIZED)
 
     def symbolSnapshot(unit: CompilationUnit): Map[Symbol, Set[Tree]] = {
-      if (unit.body == null) Map()
-      else unit.body filter containsSymbol groupBy (_.symbol) mapValues (_.toSet) toMap
+      if (unit.body == null) Map.empty
+      else unit.body.filter(containsSymbol).groupBy(_.symbol).view.mapValues(_.toSet).toMap
     }
     def apply(unit: CompilationUnit) = new SymbolTracker(
       () => symbolSnapshot(unit) filterNot { case (k, _) => dropSymbol(k) }

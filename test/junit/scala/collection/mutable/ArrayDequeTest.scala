@@ -5,6 +5,8 @@ import scala.collection.immutable.List
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.collection.{SeqFactory, mutable}
+
 class ArrayDequeTest {
 
   @Test
@@ -14,9 +16,9 @@ class ArrayDequeTest {
 
     def apply[U](f: Buffer[Int] => U) = {
       //println(s"Before: [buffer1=${buffer}; buffer2=${buffer2}]")
-      assert(f(buffer) == f(buffer2))
-      assert(buffer == buffer2)
-      assert(buffer.reverse == buffer2.reverse)
+      assertEquals(f(buffer), f(buffer2))
+      assertEquals(buffer, buffer2)
+      assertEquals(buffer.reverse, buffer2.reverse)
     }
 
     apply(_ += (1, 2, 3, 4, 5))
@@ -40,15 +42,15 @@ class ArrayDequeTest {
     apply(_.addAll(collection.immutable.Vector.tabulate(10)(identity)))
 
     (-100 to 100) foreach {i =>
-      assert(buffer.splitAt(i) == buffer2.splitAt(i))
+      assertEquals(buffer.splitAt(i), buffer2.splitAt(i))
     }
 
     for {
       i <- -100 to 100
       j <- -100 to 100
     } {
-      assert(buffer.slice(i, j) == buffer2.slice(i, j))
-      if (i > 0 && j > 0) assert(List.from(buffer.sliding(i, j)) == List.from(buffer2.sliding(i, j)))
+      assertEquals(buffer.slice(i, j), buffer2.slice(i, j))
+      if (i > 0 && j > 0) assertEquals(List.from(buffer.sliding(i, j)), List.from(buffer2.sliding(i, j)))
     }
   }
 
@@ -65,4 +67,61 @@ class ArrayDequeTest {
     xs.insert(0, 0)
     assertEquals(Queue(0), xs)
   }
+
+  @Test
+  def copyToArrayOutOfBounds: Unit = {
+    val target = Array[Int]()
+    assertEquals(0, collection.mutable.ArrayDeque(1, 2).copyToArray(target, 1, 0))
+  }
+
+  @Test
+  def insertsWhenResizeIsNeeded: Unit = {
+    val arrayDeque = ArrayDeque.from(Array.range(0, 15))
+    arrayDeque.insert(1, -1)
+    assertEquals(ArrayDeque(0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), arrayDeque)
+  }
+
+  @Test
+  def insertAll: Unit = {
+    var a = ArrayDeque(0, 1)
+    a.insertAll(1, Seq(2))
+    assertEquals(ArrayDeque(0, 2, 1), a)
+    a = ArrayDeque(0, 1)
+    a.insertAll(2, Seq(2))
+    assertEquals(ArrayDeque(0, 1, 2), a)
+    var q = Queue(0, 1)
+    q.patchInPlace(1, Seq(2), 0)
+    assertEquals(Queue(0, 2, 1), q)
+    q = Queue(0, 1)
+    q.patchInPlace(2, Seq(2), 0)
+    assertEquals(Queue(0, 1, 2), q)
+  }
+
+  @Test
+  def sliding: Unit = ArrayDequeTest.genericSlidingTest(ArrayDeque, "ArrayDeque")
+}
+
+object ArrayDequeTest {
+
+  // tests scala/bug#11047
+  def genericSlidingTest(factory: SeqFactory[ArrayDeque], collectionName: String): Unit =
+    for {
+      i <- 1 to 40
+
+      range = 0 until i
+      iterable = collection.Iterable.from(range)
+      other = factory.from(range)
+
+      j <- 1 to 40
+      k <- 1 to 40
+
+      iterableSliding = iterable.sliding(j,k).to(Seq)
+      otherSliding = other.sliding(j, k).to(Seq)
+    }
+      assert(iterableSliding == otherSliding,
+        s"""Iterable.from($range)).sliding($j,$k) differs from $collectionName.from($range)).sliding($j,$k)
+           |Iterable yielded: $iterableSliding
+           |$collectionName yielded: $otherSliding
+       """.stripMargin
+      )
 }

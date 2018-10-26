@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.collection
 package mutable
@@ -39,7 +43,7 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
                                             var value: Option[Value])
 }
 
-/** A mutable hash map based on an open hashing scheme. The precise scheme is
+/** A mutable hash map based on an open addressing method. The precise scheme is
   *  undefined, but it should make a reasonable effort to ensure that an insert
   *  with consecutive hash codes is not unnecessarily penalised. In particular,
   *  mappings of consecutive integer keys should work without significant
@@ -90,8 +94,9 @@ class OpenHashMap[Key, Value](initialSize : Int)
   private[this] var modCount = 0
 
   override def size = _size
+  override def knownSize: Int = size
   private[this] def size_=(s : Int): Unit = _size = s
-
+  override def isEmpty: Boolean = _size == 0
   /** Returns a mangled hash code of the provided key. */
   protected def hashOf(key: Key) = {
     var h = key.##
@@ -220,9 +225,20 @@ class OpenHashMap[Key, Value](initialSize : Int)
     *
     *  @return   the iterator
     */
-  def iterator: Iterator[(Key, Value)] = new AbstractIterator[(Key, Value)] {
-    var index = 0
-    val initialModCount = modCount
+  def iterator: Iterator[(Key, Value)] = new OpenHashMapIterator[(Key, Value)] {
+    override protected def nextResult(node: Entry): (Key, Value) = (node.key, node.value.get)
+  }
+
+  override def keysIterator: Iterator[Key] = new OpenHashMapIterator[Key] {
+    override protected def nextResult(node: Entry): Key = node.key
+  }
+  override def valuesIterator: Iterator[Value] = new OpenHashMapIterator[Value] {
+    override protected def nextResult(node: Entry): Value = node.value.get
+  }
+
+  private abstract class OpenHashMapIterator[A] extends AbstractIterator[A] {
+    private[this] var index = 0
+    private[this] val initialModCount = modCount
 
     private[this] def advance(): Unit = {
       if (initialModCount != modCount) throw new ConcurrentModificationException
@@ -235,8 +251,9 @@ class OpenHashMap[Key, Value](initialSize : Int)
       advance()
       val result = table(index)
       index += 1
-      (result.key, result.value.get)
+      nextResult(result)
     }
+    protected def nextResult(node: Entry): A
   }
 
   override def clone() = {

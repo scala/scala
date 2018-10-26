@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect
 package runtime
 
@@ -14,8 +26,8 @@ import java.lang.ref.WeakReference
 private[runtime] trait TwoWayCaches { self: SymbolTable =>
   class TwoWayCache[J, S] {
 
-    private val toScalaMap = new WeakHashMap[J, WeakReference[S]]
-    private val toJavaMap = new WeakHashMap[S, WeakReference[J]]
+    private[this] val toScalaMap = new WeakHashMap[J, WeakReference[S]]
+    private[this] val toJavaMap = new WeakHashMap[S, WeakReference[J]]
 
     def enter(j: J, s: S) = gilSynchronized {
       // debugInfo("cached: "+j+"/"+s)

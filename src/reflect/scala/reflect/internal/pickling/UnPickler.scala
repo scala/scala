@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -49,7 +56,7 @@ abstract class UnPickler {
     *
     * Useful for reporting on stub errors and cyclic errors.
     */
-  private val completingStack = new mutable.ArrayBuffer[Symbol](24)
+  private[this] val completingStack = new mutable.ArrayBuffer[Symbol](24)
 
   class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
@@ -58,16 +65,16 @@ abstract class UnPickler {
 
     checkVersion()
 
-    private val loadingMirror = mirrorThatLoaded(classRoot)
+    private[this] val loadingMirror = mirrorThatLoaded(classRoot)
 
     /** A map from entry numbers to array offsets */
-    private val index = createIndex
+    private[this] val index = createIndex
 
     /** A map from entry numbers to symbols, types, or annotations */
-    private val entries = new Array[AnyRef](index.length)
+    private[this] val entries = new Array[AnyRef](index.length)
 
     /** A map from symbols to their associated `decls` scopes */
-    private val symScopes = mutable.HashMap[Symbol, Scope]()
+    private[this] val symScopes = mutable.HashMap[Symbol, Scope]()
 
     private def expect(expected: Int, msg: => String): Unit = {
       val tag = readByte()
@@ -434,7 +441,7 @@ abstract class UnPickler {
         case LITERALnull    => Constant(null)
         case LITERALclass   => Constant(readTypeRef())
         case LITERALenum    => Constant(readSymbolRef())
-        case LITERALsymbol  => Constant(scala.Symbol(readNameRef().toString))
+        case LITERALsymbol  => Constant(null) // TODO: needed until we have a STARR that does not emit it.
         case _              => noSuchConstantTag(tag, len)
       }
     }
@@ -709,8 +716,8 @@ abstract class UnPickler {
 
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType with FlagAgnosticCompleter {
-      private val definedAtRunId = currentRunId
-      private val p = phase
+      private[this] val definedAtRunId = currentRunId
+      private[this] val p = phase
       protected def completeInternal(sym: Symbol) : Unit = try {
         completingStack += sym
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`

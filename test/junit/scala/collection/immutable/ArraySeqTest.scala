@@ -63,6 +63,11 @@ class ArraySeqTest {
     a.toArray.update(0, 100)
     assertEquals(a, List(1,2,3))
   }
+  @Test
+  def copyToArrayReturnsNonNegative(): Unit = {
+    val a = ArraySeq(1,2,3)
+    assertEquals(a.copyToArray(Array(1,1,2), 0, -1), 0)
+  }
 
   private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
     assertEquals(array, array.slice(-1, 4))
@@ -75,4 +80,17 @@ class ArraySeqTest {
   }
   
   @Test def checkSearch: Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+
+  @Test
+  def testCooperativeEquality(): Unit = {
+    assertEquals(ArraySeq(1, 2, 3), ArraySeq(1L, 2L, 3L))
+    assertEquals(ArraySeq(1, 2) :+ 3, ArraySeq(1L, 2L) :+ 3L) // :+ makes it an ArraySeq.ofRef
+  }
+
+  @Test
+  def t10690(): Unit = {
+    val x = Seq[Byte](10)
+    val y = Array[Byte](10).toSeq
+    assertEquals(x.hashCode(), y.hashCode())
+  }
 }

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -108,7 +120,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def concat[B >: A](suffix: Iterable[B]): CC[B] =
+  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] =
     strictOptimizedConcat(suffix, iterableFactory.newBuilder[B])
 
   /**
@@ -118,7 +130,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @tparam C2 Type of the resulting collection (e.g. `List[Int]`)
     * @return The resulting collection
     */
-  @inline protected[this] final def strictOptimizedConcat[B >: A, C2](that: Iterable[B], b: mutable.Builder[B, C2]): C2 = {
+  @inline protected[this] final def strictOptimizedConcat[B >: A, C2](that: IterableOnce[B], b: mutable.Builder[B, C2]): C2 = {
     val it1 = iterator
     val it2 = that.iterator
     b ++= it1
@@ -165,7 +177,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def zip[B](that: Iterable[B]): CC[(A @uncheckedVariance, B)] =
+  override def zip[B](that: IterableOnce[B]): CC[(A @uncheckedVariance, B)] =
     strictOptimizedZip(that, iterableFactory.newBuilder[(A, B)])
 
   /**
@@ -175,7 +187,7 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @tparam C2 Type of the resulting collection (e.g. `List[(Int, String)]`)
     * @return The resulting collection
     */
-  @inline protected[this] final def strictOptimizedZip[B, C2](that: Iterable[B], b: mutable.Builder[(A, B), C2]): C2 = {
+  @inline protected[this] final def strictOptimizedZip[B, C2](that: IterableOnce[B], b: mutable.Builder[(A, B), C2]): C2 = {
     val it1 = iterator
     val it2 = that.iterator
     while (it1.hasNext && it2.hasNext) {
@@ -222,6 +234,19 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
       }
     }
     b.result()
+  }
+
+  // Optimized, push-based version of `partitionWith`
+  override def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
+    val l = iterableFactory.newBuilder[A1]
+    val r = iterableFactory.newBuilder[A2]
+    foreach { x =>
+      f(x) match {
+        case Left(x1) => l += x1
+        case Right(x2) => r += x2
+      }
+    }
+    (l.result(), r.result())
   }
 
 }

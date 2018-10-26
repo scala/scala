@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package api
@@ -39,7 +51,7 @@ package api
  *  For example, to look up the `map` method of `List`, one can do:
  *
  *  {{{
- *     scala> typeOf[List[_]].member("map": TermName)
+ *     scala> typeOf[List[_]].member(TermName("map"))
  *     res1: reflect.runtime.universe.Symbol = method map
  *  }}}
  *

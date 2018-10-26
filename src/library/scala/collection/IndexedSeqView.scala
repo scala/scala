@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -8,7 +20,9 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   override def view: IndexedSeqView[A] = this
 
   override def iterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewIterator(this)
+  override def reverseIterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewReverseIterator(this)
 
+  override def appended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Appended(this, elem)
   override def prepended[B >: A](elem: B): IndexedSeqView[B] = new IndexedSeqView.Prepended(elem, this)
   override def take(n: Int): IndexedSeqView[A] = new IndexedSeqView.Take(this, n)
   override def takeRight(n: Int): IndexedSeqView[A] = new IndexedSeqView.TakeRight(this, n)
@@ -17,6 +31,10 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   override def map[B](f: A => B): IndexedSeqView[B] = new IndexedSeqView.Map(this, f)
   override def reverse: IndexedSeqView[A] = new IndexedSeqView.Reverse(this)
   override def slice(from: Int, until: Int): IndexedSeqView[A] = new IndexedSeqView.Slice(this, from, until)
+
+  def concat[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
+  def appendedAll[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
+  def prependedAll[B >: A](prefix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(prefix, this)
 }
 
 object IndexedSeqView {
@@ -26,10 +44,33 @@ object IndexedSeqView {
     private[this] var current = 0
     override def knownSize: Int = self.size - current
     def hasNext = current < self.size
-    def next(): A = {
-      val r = self.apply(current)
-      current += 1
-      r
+    def next(): A =
+      if (hasNext) {
+        val r = self.apply(current)
+        current += 1
+        r
+      } else Iterator.empty.next()
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) current = Math.min(self.size, current + n)
+      this
+    }
+  }
+  @SerialVersionUID(3L)
+  private final class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
+    private[this] var pos = self.size - 1
+    def hasNext: Boolean = pos >= 0
+    def next(): A =
+      if (pos < 0) throw new NoSuchElementException
+      else {
+        val r = self(pos)
+        pos -= 1
+        r
+      }
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) pos = Math.max( -1, pos - n)
+      this
     }
   }
 
@@ -41,8 +82,16 @@ object IndexedSeqView {
     extends SeqView.Id(underlying) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
+  class Appended[+A](underlying: SomeIndexedSeqOps[A], elem: A)
+    extends SeqView.Appended(underlying, elem) with IndexedSeqView[A]
+
+  @SerialVersionUID(3L)
   class Prepended[+A](elem: A, underlying: SomeIndexedSeqOps[A])
     extends SeqView.Prepended(elem, underlying) with IndexedSeqView[A]
+
+  @SerialVersionUID(3L)
+  class Concat[A](prefix: SomeIndexedSeqOps[A], suffix: SomeIndexedSeqOps[A])
+    extends SeqView.Concat[A](prefix, suffix) with IndexedSeqView[A]
 
   @SerialVersionUID(3L)
   class Take[A](underlying: SomeIndexedSeqOps[A], n: Int)
@@ -76,10 +125,11 @@ object IndexedSeqView {
     extends SeqView.Map(underlying, f) with IndexedSeqView[B]
 
   @SerialVersionUID(3L)
-  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends AbstractIndexedSeqView[A] {
-    def length = underlying.size
-    @throws[IndexOutOfBoundsException]
-    def apply(i: Int) = underlying.apply(size - 1 - i)
+  class Reverse[A](underlying: SomeIndexedSeqOps[A]) extends SeqView.Reverse[A](underlying) with IndexedSeqView[A] {
+    override def reverse: IndexedSeqView[A] = underlying match {
+      case x: IndexedSeqView[A] => x
+      case _ => super.reverse
+    }
   }
 
   @SerialVersionUID(3L)

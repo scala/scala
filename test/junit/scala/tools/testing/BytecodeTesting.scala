@@ -6,7 +6,7 @@ import org.junit.Assert._
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.BatchSourceFile
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}

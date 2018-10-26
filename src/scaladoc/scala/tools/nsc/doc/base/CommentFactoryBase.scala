@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2017 LAMP/EPFL
- * @author  Manohar Jonnalagedda
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -8,10 +15,12 @@ package doc
 package base
 
 import base.comment._
+import scala.annotation.tailrec
 import scala.collection._
 import scala.util.matching.Regex
 import scala.reflect.internal.util.Position
 import scala.language.postfixOps
+
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
@@ -215,7 +224,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         SafeTags.replaceAllIn(javadoclessComment, { mtch =>
           java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
         })
-      markedTagComment.lines.toList map (cleanLine(_))
+      markedTagComment.linesIterator.toList map (cleanLine(_))
     }
 
     /** Parses a comment (in the form of a list of lines) to a `Comment`
@@ -332,7 +341,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         val tagsWithoutDiagram = tags.filterNot(pair => stripTags.contains(pair._1))
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tagsWithoutDiagram mapValues {tag => tag map (parseWikiAtSymbol(_, pos, site))} toSeq: _*)
+          tagsWithoutDiagram.view.mapValues(_.map(parseWikiAtSymbol(_, pos, site))).to(mutable.Map)
 
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
@@ -433,6 +442,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   protected final class WikiParser(val buffer: String, pos: Position, site: Symbol) extends CharReader(buffer) { wiki =>
     var summaryParsed = false
 
+    // TODO: Convert to Char
+    private val TableCellStart = "|"
+
     def document(): Body = {
       val blocks = new mutable.ListBuffer[Block]
       while (char != endOfText)
@@ -442,7 +454,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     /* BLOCKS */
 
-    /** {{{ block ::= code | title | hrule | listBlock | para }}} */
+    /** {{{ block ::= code | title | hrule | listBlock | table | para  }}} */
     def block(): Block = {
       if (checkSkipInitWhitespace("{{{"))
         code()
@@ -452,6 +464,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         hrule()
       else if (checkList)
         listBlock
+      else if (check(TableCellStart))
+        table()
       else {
         para()
       }
@@ -490,7 +504,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           jumpWhitespace()
           jump(style)
           val p = Paragraph(inline(isInlineEnd = false))
-          blockEnded("end of list line ")
+          blockEnded("end of list line")
           Some(p)
         }
 
@@ -542,6 +556,273 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       repeatJump('-')
       blockEnded("horizontal rule")
       HorizontalRule()
+    }
+
+    /** {{{
+      * table         ::= headerRow '\n' delimiterRow '\n' dataRows '\n'
+      * content       ::= inline-content
+      * row           ::= '|' { content '|' }+
+      * headerRow     ::= row
+      * dataRows      ::= row*
+      * align         ::= ':' '-'+ | '-'+ | '-'+ ':' | ':' '-'+ ':'
+      * delimiterRow :: = '|' { align '|' }+
+      * }}}
+      */
+    def table(): Block = {
+
+      /* Helpers */
+
+      def peek(tag: String): Unit = {
+        val peek: String = buffer.substring(offset)
+        val limit = 60
+        val limitedPeek = peek.substring(0, limit min peek.length)
+        println(s"peek: $tag: '$limitedPeek'")
+      }
+
+      def nextIsCellStart = check(TableCellStart)
+
+      /* Accumulated state */
+
+      var header: Option[Row] = None
+
+      val rows = mutable.ListBuffer.empty[Row]
+
+      val cells = mutable.ListBuffer.empty[Cell]
+
+      def finalizeCells(): Unit = {
+        if (cells.nonEmpty) {
+          rows += Row(cells.toList)
+        }
+        cells.clear()
+      }
+
+      def finalizeHeaderCells(): Unit = {
+        if (cells.nonEmpty) {
+          if (header.isDefined) {
+            reportError(pos, "more than one table header")
+          } else {
+            header = Some(Row(cells.toList))
+          }
+        }
+        cells.clear()
+      }
+
+      val escapeChar = "\\"
+
+      /* Poor man's negative lookbehind */
+      def checkInlineEnd = check(TableCellStart) && !check(escapeChar, -1)
+
+      def decodeEscapedCellMark(text: String) = text.replace(escapeChar + TableCellStart, TableCellStart)
+
+      def isEndOfText = char == endOfText
+
+      def isNewline = char == endOfLine
+
+      def skipNewline() = jump(endOfLine)
+
+      def isStartMarkNewline = check(TableCellStart + endOfLine)
+
+      def skipStartMarkNewline() = jump(TableCellStart + endOfLine)
+
+      def isStartMark = check(TableCellStart)
+
+      def skipStartMark() = jump(TableCellStart)
+
+      def contentNonEmpty(content: Inline) = content != Text("")
+
+      /**
+        * @param cellStartMark   The char indicating the start or end of a cell
+        * @param finalizeRow     Function to invoke when the row has been fully parsed
+        */
+      def parseCells(cellStartMark: String, finalizeRow: () => Unit): Unit = {
+        def jumpCellStartMark() = {
+          if (!jump(cellStartMark)) {
+            peek(s"Expected $cellStartMark")
+            sys.error(s"Precondition violated: Expected $cellStartMark.")
+          }
+        }
+
+        val startPos = offset
+
+        jumpCellStartMark()
+
+        val content = Paragraph(inline(isInlineEnd = checkInlineEnd, textTransform = decodeEscapedCellMark))
+
+        parseCells0(content :: Nil, finalizeRow, startPos, offset)
+      }
+
+      // Continue parsing a table row.
+      //
+      // After reading inline content the follow conditions will be encountered,
+      //
+      //    Case : Next Chars
+      //    ..................
+      //      1  : end-of-text
+      //      2  : '|' '\n'
+      //      3  : '|'
+      //      4  : '\n'
+      //
+      // Case 1.
+      // State : End of text
+      // Action: Store the current contents, close the row, report warning, stop parsing.
+      //
+      // Case 2.
+      // State : The cell separator followed by a newline
+      // Action: Store the current contents, skip the cell separator and newline, close the row, stop parsing.
+      //
+      // Case 3.
+      // State : The cell separator not followed by a newline
+      // Action: Store the current contents, skip the cell separator, continue parsing the row.
+      //
+      // Case 4.
+      // State : A newline followed by anything
+      // Action: Store the current contents, report warning, skip the newline, close the row, stop parsing.
+      //
+      @tailrec def parseCells0(
+                                contents: List[Block],
+                                finalizeRow: () => Unit,
+                                progressPreParse: Int,
+                                progressPostParse: Int
+                              ): Unit = {
+
+        def storeContents() = cells += Cell(contents.reverse)
+
+        val startPos = offset
+
+        // The ordering of the checks ensures the state checks are correct.
+        if (progressPreParse == progressPostParse) {
+          peek("no-progress-table-row-parsing")
+          sys.error("No progress while parsing table row")
+        } else if (isEndOfText) {
+          // peek("1: end-of-text")
+          // Case 1
+          storeContents()
+          finalizeRow()
+          reportError(pos, "unclosed table row")
+        } else if (isStartMarkNewline) {
+          // peek("2/1: start-mark-new-line")
+          // Case 2
+          storeContents()
+          finalizeRow()
+          skipStartMarkNewline()
+          // peek("2/2: start-mark-new-line")
+        } else if (isStartMark) {
+          // peek("3: start-mark")
+          // Case 3
+          storeContents()
+          skipStartMark()
+          val content = inline(isInlineEnd = checkInlineEnd, textTransform = decodeEscapedCellMark)
+          // TrailingCellsEmpty produces empty content
+          val accContents = if (contentNonEmpty(content)) Paragraph(content) :: Nil else Nil
+          parseCells0(accContents, finalizeRow, startPos, offset)
+        } else if (isNewline) {
+          // peek("4: newline")
+          // Case 4
+          /* Fix and continue as there is no option to not return a table at present. */
+          reportError(pos, "missing trailing cell marker")
+          storeContents()
+          finalizeRow()
+          skipNewline()
+        } else {
+          // Case π√ⅈ
+          // When the impossible happens leave some clues.
+          reportError(pos, "unexpected table row markdown")
+          peek("parseCell0")
+          storeContents()
+          finalizeRow()
+        }
+      }
+
+      /* Parsing */
+
+      jumpWhitespace()
+
+      parseCells(TableCellStart, () => finalizeHeaderCells())
+
+      while (nextIsCellStart) {
+        val initialOffset = offset
+
+        parseCells(TableCellStart, () => finalizeCells())
+
+        /* Progress should always be made */
+        if (offset == initialOffset) {
+          peek("no-progress-table-parsing")
+          sys.error("No progress while parsing table")
+        }
+      }
+
+      /* Finalize */
+
+      /* Structural consistency checks and coercion */
+
+      // https://github.github.com/gfm/#tables-extension-
+      // TODO: The header row must match the delimiter row in the number of cells. If not, a table will not be recognized:
+      // TODO: Break at following block level element: The table is broken at the first empty line, or beginning of another block-level structure:
+      // TODO: Do not return a table when: The header row must match the delimiter row in the number of cells. If not, a table will not be recognized
+
+      if (cells.nonEmpty) {
+        reportError(pos, s"Parsed and unused content: $cells")
+      }
+      assert(header.isDefined, "table header was not parsed")
+      val enforcedCellCount = header.get.cells.size
+
+      def applyColumnCountConstraint(row: Row, defaultCell: Cell, rowType: String): Row = {
+        if (row.cells.size == enforcedCellCount)
+          row
+        else if (row.cells.size > enforcedCellCount) {
+          val excess = row.cells.size - enforcedCellCount
+          reportError(pos, s"Dropping $excess excess table $rowType cells from row.")
+          Row(row.cells.take(enforcedCellCount))
+        } else {
+          val missing = enforcedCellCount - row.cells.size
+          Row(row.cells ++ List.fill(missing)(defaultCell))
+        }
+      }
+
+      // TODO: Abandon table parsing when the delimiter is missing instead of fixing and continuing.
+      val delimiterRow :: dataRows = if (rows.nonEmpty)
+        rows.toList
+      else {
+        reportError(pos, "Fixing missing delimiter row")
+        Row(Cell(Paragraph(Text("-")) :: Nil) :: Nil) :: Nil
+      }
+
+      if (delimiterRow.cells.isEmpty) sys.error("TODO: Handle table with empty delimiter row")
+
+      val constrainedDelimiterRow = applyColumnCountConstraint(delimiterRow, delimiterRow.cells(0), "delimiter")
+
+      val constrainedDataRows = dataRows.map(applyColumnCountConstraint(_, Cell(Nil), "data"))
+
+      /* Convert the row following the header row to column options */
+
+      val leftAlignmentPattern = "^:?-++$".r
+      val centerAlignmentPattern = "^:-++:$".r
+      val rightAlignmentPattern = "^-++:$".r
+
+      import ColumnOption._
+      /* Encourage user to fix by defaulting to least ignorable fix. */
+      val defaultColumnOption = ColumnOptionRight
+      val columnOptions = constrainedDelimiterRow.cells.map {
+        alignmentSpecifier =>
+          alignmentSpecifier.blocks match {
+            // TODO: Parse the second row without parsing inline markdown
+            // TODO: Save pos when delimiter row is parsed and use here in reported errors
+            case Paragraph(Text(as)) :: Nil =>
+              as.trim match {
+                case leftAlignmentPattern(_*) => ColumnOptionLeft
+                case centerAlignmentPattern(_*) => ColumnOptionCenter
+                case rightAlignmentPattern(_*) => ColumnOptionRight
+                case x =>
+                  reportError(pos, s"Fixing invalid column alignment: $x")
+                  defaultColumnOption
+              }
+            case x =>
+              reportError(pos, s"Fixing invalid column alignment: $x")
+              defaultColumnOption
+          }
+      }
+      blockEnded("table")
+      Table(header.get, columnOptions, constrainedDataRows)
     }
 
     /** {{{ para ::= inline '\n' }}} */
@@ -600,7 +881,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       list mkString ""
     }
 
-    def inline(isInlineEnd: => Boolean): Inline = {
+    def inline(isInlineEnd: => Boolean, textTransform: String => String = identity): Inline = {
 
       def inline0(): Inline = {
         if (char == safeTagMarker) {
@@ -616,7 +897,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else if (check("[[")) link()
         else {
           val str = readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
-          Text(str)
+          Text(textTransform(str))
         }
       }
 
@@ -781,6 +1062,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           checkSkipInitWhitespace('=') ||
           checkSkipInitWhitespace("{{{") ||
           checkList ||
+          check(TableCellStart) ||
           checkSkipInitWhitespace('\u003D')
         }
         offset = poff
@@ -813,6 +1095,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     final def check(chars: String): Boolean = {
       val poff = offset
+      val ok = jump(chars)
+      offset = poff
+      ok
+    }
+
+    final def check(chars: String, checkOffset: Int): Boolean = {
+      val poff = offset
+      offset += checkOffset
       val ok = jump(chars)
       offset = poff
       ok

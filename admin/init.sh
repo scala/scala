@@ -15,5 +15,5 @@ sensitive >/dev/null 2>&1
 gpg --list-keys
 gpg --list-secret-keys
 
-mkdir -p ~/.sbt/0.13/plugins
-cp files/gpg.sbt ~/.sbt/0.13/plugins/
+mkdir -p ~/.sbt/1.0/plugins
+cp files/gpg.sbt ~/.sbt/1.0/plugins/

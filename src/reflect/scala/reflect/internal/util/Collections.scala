@@ -1,14 +1,22 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package reflect.internal.util
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
+import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
  *  TODO - inlining doesn't work from here because of the bug that
@@ -58,6 +66,7 @@ trait Collections {
       tail = next
       rest = rest.tail
     }
+    releaseFence()
     head
   }
 
@@ -128,7 +137,9 @@ trait Collections {
         }
       }
     }
-    loop(null, xs, xs, ys)
+    val result = loop(null, xs, xs, ys)
+    releaseFence()
+    result
   }
 
   final def map3[A, B, C, D](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => D): List[D] = {
@@ -288,9 +299,44 @@ trait Collections {
     true
   }
 
-  final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
-    if (as.exists (_.isEmpty)) None
-    else Some(as.flatten)
+  // "Opt" suffix or traverse clashes with the various traversers' traverses
+  final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
+  final def traverseOpt[A, B](as: List[A])(f: A => Option[B]): Option[List[B]] =
+    if (as eq Nil) SomeOfNil else {
+      var result: ListBuffer[B] = null
+      var curr = as
+      while (curr ne Nil) {
+        f(curr.head) match {
+          case Some(b) =>
+            if (result eq null) result = ListBuffer.empty
+            result += b
+          case None => return None
+        }
+        curr = curr.tail
+      }
+      Some(result.toList)
+    }
+
+  final def partitionInto[A](xs: List[A], pred: A => Boolean, ayes: ListBuffer[A], nays: ListBuffer[A]): Unit = {
+    var ys = xs
+    while (!ys.isEmpty) {
+      val y = ys.head
+      if (pred(y)) ayes.addOne(y) else nays.addOne(y)
+      ys = ys.tail
+    }
+  }
+
+  final def bitSetByPredicate[A](xs: List[A])(pred: A => Boolean): mutable.BitSet = {
+    val bs = new mutable.BitSet()
+    var ys = xs
+    var i: Int = 0
+    while (! ys.isEmpty){
+      if (pred(ys.head))
+        bs.add(i)
+      ys = ys.tail
+      i += 1
+    }
+    bs
   }
 
   final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {

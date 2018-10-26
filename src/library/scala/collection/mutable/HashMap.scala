@@ -1,8 +1,19 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection.mutable
 
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, StrictOptimizedMapOps}
-import java.lang.String
 
 /** This class implements mutable maps using a hashtable.
   *
@@ -38,7 +49,22 @@ class HashMap[K, V]
       def createNewEntry(key: K, value: V): Entry = new Entry(key, value)
     }
 
-  def iterator: Iterator[(K, V)] = table.entriesIterator.map(e => (e.key, e.value))
+  override def isEmpty: Boolean = table.size == 0
+  override def knownSize: Int = table.size
+
+  def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(e => (e.key, e.value))
+  }
+
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(_.key)
+  }
+  override def valuesIterator: Iterator[V] = {
+    if (isEmpty) Iterator.empty
+    else table.entriesIterator.map(_.value)
+  }
 
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)
@@ -80,23 +106,39 @@ class HashMap[K, V]
   }
 
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
-    val hash = table.elemHashCode(key)
-    val i = table.index(hash)
-    val firstEntry = table.findEntry0(key, i)
-    if (firstEntry != null) firstEntry.value
-    else {
-      val table0 = table.table
-      val default = defaultValue
-      // Avoid recomputing index if the `defaultValue()` hasn't triggered
-      // a table resize.
-      val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
-      val e = table.createNewEntry(key, default)
-      // Repeat search
-      // because evaluation of `default` can bring entry with `key`
-      val secondEntry = table.findEntry0(key, newEntryIndex)
-      if (secondEntry == null) table.addEntry0(e, newEntryIndex)
-      else secondEntry.value = default
-      default
+    if (getClass != classOf[HashMap[_, _]]) {
+      // subclasses of HashMap might customise `get` ...
+      super.getOrElseUpdate(key, defaultValue)
+    } else {
+      val hash = table.elemHashCode(key)
+      val i = table.index(hash)
+      val firstEntry = table.findEntry0(key, i)
+      if (firstEntry != null) firstEntry.value
+      else {
+        val table0 = table.table
+        val default = defaultValue
+        // Avoid recomputing index if the `defaultValue()` hasn't triggered
+        // a table resize.
+        val newEntryIndex = if (table0 eq table.table) i else table.index(hash)
+        val e = table.createNewEntry(key, default)
+        // Repeat search
+        // because evaluation of `default` can bring entry with `key`
+        val secondEntry = table.findEntry0(key, newEntryIndex)
+        if (secondEntry == null) table.addEntry0(e, newEntryIndex)
+        else secondEntry.value = default
+        default
+      }
+    }
+  }
+
+  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
+    if (getClass != classOf[HashMap[_, _]]) {
+      // subclasses of HashMap might customise `get` ...
+      super.getOrElse(key, default)
+    } else {
+      // .. but in the common case, we can avoid the Option boxing.
+      val e = table.findEntry(key)
+      if (e eq null) default else e.value
     }
   }
 

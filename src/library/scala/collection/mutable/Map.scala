@@ -1,8 +1,19 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package mutable
 
-import scala.collection.{IterableOnce, MapFactory}
 import scala.language.higherKinds
 
 /** Base type of mutable Maps */
@@ -56,14 +67,19 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   extends IterableOps[(K, V), Iterable, C]
     with collection.MapOps[K, V, CC, C]
     with Cloneable[C]
+    with Builder[(K, V), C]
     with Growable[(K, V)]
     with Shrinkable[K] {
 
+  def result(): C = coll
+
   @deprecated("Use - or remove on an immutable Map", "2.13.0")
-  /* final */ def - (key: K): C = clone() -= key
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /*final*/ def - (key: K): C = clone() -= key
 
   @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
-  /* final */ def - (key1: K, key2: K, keys: K*): C = clone() -= key1 -= key2 --= keys
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /*final*/ def - (key1: K, key2: K, keys: K*): C = clone() -= key1 -= key2 --= keys
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
     *  If the map already contains a
@@ -158,6 +174,9 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     this
   }
 
+  @deprecated("Use m.clone().addOne((k,v)) instead of m.updated(k, v)", "2.13.0")
+  def updated[V1 >: V](key: K, value: V1): CC[K, V1] =
+    clone().asInstanceOf[CC[K, V1]].addOne((key, value))
 }
 
 /**
@@ -175,7 +194,8 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
     override def default(key: K): V = defaultValue(key)
 
     def iterator: scala.collection.Iterator[(K, V)] = underlying.iterator
-
+    override def isEmpty: Boolean = underlying.isEmpty
+    override def knownSize: Int = underlying.knownSize
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
 
     override def clear(): Unit = underlying.clear()
@@ -186,9 +206,12 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     def addOne(elem: (K, V)): WithDefault.this.type = { underlying.addOne(elem); this }
 
+    override def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
+      underlying.concat(suffix).withDefault(defaultValue)
+
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override protected def fromSpecific(coll: scala.collection.IterableOnce[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] =

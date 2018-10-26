@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2010-2013 LAMP/EPFL
- * @author  Stephane Micheloud
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -145,21 +152,43 @@ private[html] object SyntaxHigh {
     }
 
     def strlit(i: Int): String = {
-      val out = new StringBuilder("\"")
-      def strlit0(i: Int, bslash: Boolean): Int = {
-        if (i == buf.length) return i
+      val out = new StringBuilder()
+
+      @tailrec def rawstrlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
+        val ch = buf(i)
+        out.append(ch)
+        ch match {
+          case '\\' =>
+            rawstrlit0(i+1, bslash = true)
+          case '"' if !bslash && buf.slice(i+1, i+3).toString == "\"\"" =>
+            out.append("\"\"")
+          case _ =>
+            rawstrlit0(i+1, bslash = false)
+        }
+      }
+
+      @tailrec def strlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
         val ch = buf(i)
         out append ch
         ch match {
           case '\\' =>
             strlit0(i+1, bslash = true)
           case '"' if !bslash =>
-            i
           case _ =>
             strlit0(i+1, bslash = false)
         }
       }
-      strlit0(i, bslash = false)
+
+      buf.slice(i, i+3) match {
+        case Array('"','"','"') =>
+          out append "\"\"\""
+          rawstrlit0(i+3, bslash = false)
+        case _ =>
+          out append "\""
+          strlit0(i+1, bslash = false)
+      }
       out.toString
     }
 
@@ -250,7 +279,7 @@ private[html] object SyntaxHigh {
           else
             parse(buf(i).toString, i+1)
         case '"' =>
-          val s = strlit(i+1)
+          val s = strlit(i)
           parse("<span class=\"lit\">"+s+"</span>", i+s.length)
         case '@' =>
           val k = lookup(annotations, i+1)

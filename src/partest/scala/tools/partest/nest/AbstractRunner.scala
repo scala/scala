@@ -1,6 +1,13 @@
-/* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
- * @author Philipp Haller
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools
@@ -11,8 +18,7 @@ import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections.distinctBy
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration.Duration
+import scala.util.{Try, Success, Failure}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -73,26 +79,32 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     f"$word $testNumber - $testIdent%-40s$reasonString$durationString"
   }
 
-  def reportTest(state: TestState, info: TestInfo, durationMs: Long, diffOnFail: Boolean, logOnFail: Boolean): Unit = {
-    if (terse && state.isOk) printDot()
-    else {
-      echo(statusLine(state, durationMs))
-      if (!state.isOk) {
-        def showLog() = if (info.logFile.canRead) {
-          echo(bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")))
-          echo(info.logFile.fileContents)
-        }
+  def reportTest(state: TestState, info: TestInfo, durationMs: Long, diffOnFail: Boolean, logOnFail: Boolean): List[String] = {
+    def errInfo: List[String] = {
+      def showLog() =
+        if (info.logFile.canRead) List (
+          bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")),
+          info.logFile.fileContents
+        ) else Nil
+      val diffed = 
         if (diffOnFail) {
           val differ = bold(red("% ")) + "diff "
-          val diffed = state.transcript find (_ startsWith differ)
-          diffed match {
-            case Some(diff) => echo(diff)
+          state.transcript.find(_ startsWith differ) match {
+            case Some(diff) => diff :: Nil
             case None if !logOnFail && !verbose => showLog()
-            case _ => ()
+            case _ => Nil
           }
-        }
-        if (logOnFail) showLog()
-      }
+        } else Nil
+      val logged = if (logOnFail) showLog() else Nil
+      diffed ::: logged
+    }
+    if (terse) {
+      if (state.isOk) { printDot() ; Nil }
+      else { printEx() ; statusLine(state, durationMs) :: errInfo }
+    } else {
+      echo(statusLine(state, durationMs))
+      if (!state.isOk) errInfo.foreach(echo)
+      Nil
     }
   }
 
@@ -209,7 +221,11 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         else if (miscTests.isEmpty && invalid.isEmpty) standardKinds // If no kinds, --grep, or individual tests were given, assume --all, unless there were invalid files specified
         else Nil
       )
-      val kindsTests = kinds flatMap testsFor
+      val kindsTests = kinds.flatMap { k =>
+        val (good, bad) = testsFor(k)
+        bad.foreach(baddie => echoWarning(s"Extraneous file: $baddie"))
+        good
+      }
 
       def testContributors = {
         List(
@@ -244,6 +260,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           passedTests ++= passed
           failedTests ++= failed
           if (failed.nonEmpty) {
+            if (terse) failed.foreach(_.transcript.foreach(echo))
             comment(passFailString(passed.size, failed.size, 0) + " in " + kind)
           }
           echo("")
@@ -282,13 +299,14 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
 
   def runTest(testFile: File): TestState = {
     val start = System.nanoTime()
-    val runner = new Runner(testFile, this)
+    val info = TestInfo(testFile)
+    val runner = new Runner(info, this)
     var stopwatchDuration: Option[Long] = None
 
     // when option "--failed" is provided execute test only if log
     // is present (which means it failed before)
     val state =
-    if (config.optFailed && !runner.logFile.canRead)
+    if (config.optFailed && !info.logFile.canRead)
       runner.genPass()
     else {
       val (state, durationMs) =
@@ -297,9 +315,16 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)
         }
       stopwatchDuration = Some(durationMs)
-      reportTest(state, runner, durationMs, diffOnFail = config.optShowDiff || onlyIndividualTests , logOnFail = config.optShowLog || onlyIndividualTests)
-      runner.cleanup()
-      state
+      val verboseSummation = onlyIndividualTests && !terse
+      val more = reportTest(state, info, durationMs, diffOnFail = config.optShowDiff || verboseSummation , logOnFail = config.optShowLog || verboseSummation)
+      runner.cleanup(state)
+      if (more.isEmpty) state
+      else {
+        state match {
+          case f: TestState.Fail => f.copy(transcript = more.toArray)
+          case _ => state
+        }
+      }
     }
     val end = System.nanoTime()
     val durationMs = stopwatchDuration.getOrElse(TimeUnit.NANOSECONDS.toMillis(end - start))
@@ -313,19 +338,8 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     val futures           = kindFiles map (f => pool submit callable(runTest(f.getAbsoluteFile)))
 
     pool.shutdown()
-    Try (pool.awaitTermination(PartestDefaults.waitTime) {
-      throw TimeoutException(PartestDefaults.waitTime)
-    }) match {
-      case Success(_) => futures map (_.get)
-      case Failure(e) =>
-        e match {
-          case TimeoutException(d)      =>
-            warning("Thread pool timeout elapsed before all tests were complete!")
-          case ie: InterruptedException =>
-            warning("Thread pool was interrupted")
-            ie.printStackTrace()
-        }
-        pool.shutdownNow()     // little point in continuing
+    def aborted = {
+      pool.shutdownNow()     // little point in continuing
       // try to get as many completions as possible, in case someone cares
       val results = for (f <- futures) yield {
         try {
@@ -334,7 +348,23 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           case _: Throwable => None
         }
       }
-        results.flatten
+      results.flatten
+    }
+    Try (pool.awaitTermination(PartestDefaults.waitTime) {
+      throw TimeoutException(PartestDefaults.waitTime)
+    }) match {
+      case Success(_) => futures.map(_.get)
+      case Failure(TimeoutException(e)) =>
+        warning("Thread pool timeout elapsed before all tests were complete!")
+        aborted
+      case Failure(ie: InterruptedException) =>
+        warning("Thread pool was interrupted")
+        ie.printStackTrace()
+        aborted
+      case Failure(e) =>
+        warning("Unexpected failure")
+        e.printStackTrace()
+        aborted
     }
   }
 }

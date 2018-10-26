@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 package mutable
 
@@ -35,7 +47,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def this() = this(LongMap.exceptionDefault, 16, true)
 
   // TODO: override clear() with an optimization more tailored for effciency.
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[(Long, V)]): LongMap[V] = {
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[(Long, V)]): LongMap[V] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
     val b = newSpecificBuilder
     b.sizeHint(coll)
@@ -83,6 +95,8 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   override def size: Int = _size + (extraKeys+1)/2
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = size == 0
   override def empty: LongMap[V] = new LongMap()
 
   private def imbalanced: Boolean =
@@ -340,7 +354,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   /** Adds a new key/value pair to this map and returns the map. */
   def +=(key: Long, value: V): this.type = { update(key, value); this }
 
-  override def addOne(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
+  /** Adds a new key/value pair to this map and returns the map. */
+  @inline final def addOne(key: Long, value: V): this.type = { update(key, value); this }
+
+  @inline override final def addOne(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
 
   def subtractOne(key: Long): this.type = {
     if (key == -key) {
@@ -403,6 +420,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
+  // TODO PERF override these for efficiency. See immutable.LongMap for how to organize the code.
+  override def keysIterator: Iterator[Long] = super.keysIterator
+  override def valuesIterator: Iterator[V] = super.valuesIterator
+
   override def foreach[U](f: ((Long,V)) => U): Unit = {
     if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
     if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
@@ -435,20 +456,17 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   override def + [V1 >: V](elem1: (Long, V1), elem2: (Long, V1), elems: (Long, V1)*): LongMap[V1] = LongMap.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
-  override def concat[V1 >: V](xs: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = {
+  override def concat[V1 >: V](xs: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] = {
     val lm = clone().asInstanceOf[LongMap[V1]]
-    xs.foreach(kv => lm += kv)
+    xs.iterator.foreach(kv => lm += kv)
     lm
   }
 
   override def ++ [V1 >: V](xs: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(xs)
 
-  @deprecated("Use LongMap.from(m).add(k,v) instead of m.updated(k, v)", "2.13.0")
-  def updated[V1 >: V](key: Long, value: V1): LongMap[V1] = {
-    val lm = clone().asInstanceOf[LongMap[V1]]
-    lm += (key, value)
-    lm
-  }
+  @deprecated("Use m.clone().addOne(k,v) instead of m.updated(k, v)", "2.13.0")
+  override def updated[V1 >: V](key: Long, value: V1): LongMap[V1] =
+    clone().asInstanceOf[LongMap[V1]].addOne(key, value)
 
   /** Applies a function to all keys of this map. */
   def foreachKey[A](f: Long => A): Unit = {
@@ -622,15 +640,10 @@ object LongMap {
 
   implicit def toBuildFrom[V](factory: LongMap.type): BuildFrom[Any, (Long, V), LongMap[V]] = ToBuildFrom.asInstanceOf[BuildFrom[Any, (Long, V), LongMap[V]]]
   private object ToBuildFrom extends BuildFrom[Any, (Long, AnyRef), LongMap[AnyRef]] {
-    def fromSpecificIterable(from: Any)(it: scala.collection.Iterable[(Long, AnyRef)]) = LongMap.from(it)
+    def fromSpecific(from: Any)(it: IterableOnce[(Long, AnyRef)]) = LongMap.from(it)
     def newBuilder(from: Any) = LongMap.newBuilder[AnyRef]
   }
 
   implicit def iterableFactory[V]: Factory[(Long, V), LongMap[V]] = toFactory(this)
   implicit def buildFromLongMap[V]: BuildFrom[LongMap[_], (Long, V), LongMap[V]] = toBuildFrom(this)
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

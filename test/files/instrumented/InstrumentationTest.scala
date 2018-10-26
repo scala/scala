@@ -1,3 +1,4 @@
+// scalac: -opt:l:none
 import scala.tools.partest.instrumented.Instrumentation._
 
 /** We check if classes put in empty package are properly instrumented */
@@ -19,8 +20,12 @@ object Test {
       println("!!!TEST SKIPPED!!!")
       println("Instrumentation is not supported on Avian.")
     } else {
-      // force predef initialization before profiling
+      // Predef initialization before profiling (lots of noise otherwise)
       Predef
+      // Console initialization to make this test work if the library is built with / without optimizer.
+      // The inliner inlines the call to AnsiColor.$init$, so it would show up in the profile when using
+      // a library built without optimizer.
+      Console
       startProfiling()
       val foo1 = new Foo1
       foo1.someMethod

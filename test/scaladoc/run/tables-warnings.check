@@ -1,0 +1,19 @@
+newSource:3: warning: unclosed table row
+  /**
+  ^
+newSource:9: warning: missing trailing cell marker
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: ::-
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: -:-
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: ??
+  /**
+  ^
+newSource:26: warning: Fixing invalid column alignment: List(Paragraph(Italic(Text(---))))
+  /**
+  ^
+Done.

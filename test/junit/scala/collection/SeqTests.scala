@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.{Assert, Test}
+import org.junit.Assert
 
 object SeqTests {
   def checkSearch[A](seq: Seq[A], needle: A, ord: Ordering[A]): Unit = {

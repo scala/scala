@@ -160,7 +160,7 @@ class SettingsTest {
 
   // equal with stripped margins and normalized line endings
   private def marginallyEquals(s1: String, s2: String): Boolean = {
-    def normally(s: String): String = s.stripMargin.lines.mkString("\n")
+    def normally(s: String): String = s.stripMargin.linesIterator.mkString("\n")
     normally(s1) == normally(s2)
   }
 

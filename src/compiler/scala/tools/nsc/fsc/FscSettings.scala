@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.fsc
@@ -17,15 +24,15 @@ class FscSettings(error: String => Unit) extends Settings(error) {
     disable(resident)
   }
 
-  val currentDir   = StringSetting ("-current-dir", "path", "Base directory for resolving relative paths", "").internalOnly()
-  val reset        = BooleanSetting("-reset",    "Reset compile server caches")
-  val shutdown     = BooleanSetting("-shutdown", "Shutdown compile server")
-  val server       = StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "")
+  val currentDir   = StringSetting ("-current-dir", "path", "Base directory for resolving relative paths", "").internalOnly() withAbbreviation "--current-directory"
+  val reset        = BooleanSetting("-reset",    "Reset compile server caches") withAbbreviation "--reset"
+  val shutdown     = BooleanSetting("-shutdown", "Shutdown compile server") withAbbreviation "--shutdown"
+  val server       = StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "") withAbbreviation "--server"
   val port         = IntSetting    ("-port",     "Search and start compile server in given port only",
-                                       0, Some((0, Int.MaxValue)), (_: String) => None)
-  val preferIPv4   = BooleanSetting("-ipv4",     "Use IPv4 rather than IPv6 for the server socket")
+                                       0, Some((0, Int.MaxValue)), (_: String) => None) withAbbreviation "--port"
+  val preferIPv4   = BooleanSetting("-ipv4",     "Use IPv4 rather than IPv6 for the server socket") withAbbreviation "--ipv4"
   val idleMins     = IntSetting    ("-max-idle", "Set idle timeout in minutes for fsc (use 0 for no timeout)",
-                                       30, Some((0, Int.MaxValue)), (_: String) => None)
+                                       30, Some((0, Int.MaxValue)), (_: String) => None) withAbbreviation "--max-idle"
 
   // For improved help output, separating fsc options from the others.
   def fscSpecific = Set[Settings#Setting](

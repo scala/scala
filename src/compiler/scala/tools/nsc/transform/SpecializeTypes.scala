@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Iulian Dragos
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -165,7 +172,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Reduce the given environment to contain mappings only for type variables in tps. */
     def restrict(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv =
-      env.filterKeys(tps).toMap
+      env.view.filterKeys(tps).toMap
 
     /** Is the given environment a valid specialization for sym?
      *  It is valid if each binding is from a @specialized type parameter in sym (or its owner)
@@ -524,7 +531,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     sClassMap.getOrElseUpdate(tparam,
       tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
-        modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefTpe))
+        modifyInfo (info => TypeBounds(info.lowerBound, AnyRefTpe))
     ).tpe
   }
 
@@ -554,11 +561,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def produceTypeParameters(syms: List[Symbol], nowner: Symbol, env: TypeEnv) = {
     val cloned = for (s <- syms) yield if (!env.contains(s)) s.cloneSymbol(nowner) else env(s).typeSymbol
-    // log("producing type params: " + cloned.map(t => (t, t.tpe.bounds.hi)))
+    // log("producing type params: " + cloned.map(t => (t, t.tpe.upperBound)))
     foreach2(syms, cloned) { (orig, cln) =>
       cln.removeAnnotation(SpecializedClass)
       if (env.contains(orig))
-        cln modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefTpe))
+        cln modifyInfo (info => TypeBounds(info.lowerBound, AnyRefTpe))
     }
     cloned map (_ substInfo (syms, cloned))
   }
@@ -625,7 +632,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val specializedInfoType: Type = {
         oldClassTParams = survivingParams(clazz.info.typeParams, env)
         newClassTParams = produceTypeParameters(oldClassTParams, sClass, env) map subst(env)
-        // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.bounds.hi)}) + ", in env: " + env)
+        // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.upperBound)}) + ", in env: " + env)
 
         def applyContext(tpe: Type) =
           subst(env, tpe).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe))
@@ -1277,7 +1284,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  A conflicting type environment could still be satisfiable.
    */
   def nonConflicting(env: TypeEnv) = env forall { case (tvar, tpe) =>
-    (subst(env, tvar.info.bounds.lo) <:< tpe) && (tpe <:< subst(env, tvar.info.bounds.hi))
+    (subst(env, tvar.info.lowerBound) <:< tpe) && (tpe <:< subst(env, tvar.info.upperBound))
   }
 
   /** The type environment is sound w.r.t. to all type bounds or only soft
@@ -1297,15 +1304,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      }
 
     env forall { case (tvar, tpe) =>
-      matches(tvar.info.bounds.lo, tpe) && matches(tpe, tvar.info.bounds.hi) || {
+      matches(tvar.info.lowerBound, tpe) && matches(tpe, tvar.info.upperBound) || {
         if (warnings)
           reporter.warning(tvar.pos, s"Bounds prevent specialization of $tvar")
 
         debuglog("specvars: " +
-          tvar.info.bounds.lo + ": " +
-          specializedTypeVars(tvar.info.bounds.lo) + " " +
-          subst(env, tvar.info.bounds.hi) + ": " +
-          specializedTypeVars(subst(env, tvar.info.bounds.hi))
+          tvar.info.lowerBound + ": " +
+          specializedTypeVars(tvar.info.lowerBound) + " " +
+          subst(env, tvar.info.upperBound) + ": " +
+          specializedTypeVars(subst(env, tvar.info.upperBound))
         )
         false
       }
@@ -1329,8 +1336,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     env.foldLeft[Option[TypeEnv]](noconstraints) {
       case (constraints, (tvar, tpe)) =>
-        val loconstraints = matches(tvar.info.bounds.lo, tpe)
-        val hiconstraints = matches(tpe, tvar.info.bounds.hi)
+        val loconstraints = matches(tvar.info.lowerBound, tpe)
+        val hiconstraints = matches(tpe, tvar.info.upperBound)
         val allconstraints = for (c <- constraints; l <- loconstraints; h <- hiconstraints) yield c ++ l ++ h
         allconstraints
     }

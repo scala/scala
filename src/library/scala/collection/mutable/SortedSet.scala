@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package mutable
@@ -12,6 +24,8 @@ trait SortedSet[A]
     with collection.SortedSet[A]
     with SortedSetOps[A, SortedSet, SortedSet[A]] {
 
+  override def unsorted: Set[A] = this
+
   override def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
 }
 
@@ -21,7 +35,10 @@ trait SortedSet[A]
   */
 trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
-    with collection.SortedSetOps[A, CC, C]
+    with collection.SortedSetOps[A, CC, C] {
+
+  def unsorted: Set[A]
+}
 
 /**
   * $factoryInfo

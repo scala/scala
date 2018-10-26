@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2017 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -528,7 +534,7 @@ trait Solving extends Logic {
       *
       * See also [[https://en.wikipedia.org/wiki/DPLL_algorithm]].
       *
-      * This implementation uses a `List` to reify the seach stack, thus making
+      * This implementation uses a `List` to reify the search stack, thus making
       * it run in constant stack space. The stack is composed of pairs of
       * `(remaining clauses, variable assignments)`, and depth-first search
       * is achieved by using a stack rather than a queue.

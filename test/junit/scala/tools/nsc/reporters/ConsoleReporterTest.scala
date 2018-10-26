@@ -34,9 +34,9 @@ class ConsoleReporterTest {
       test(pos)
       val buf = writerOut.toString
       if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
-      else if (!pos.isDefined) assertEquals(severity + msg, buf.lines.next)
+      else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next)
       else {
-        val it = buf.lines
+        val it = buf.linesIterator
         assertEquals(source + ":1: " + severity + msg, it.next)
         assertEquals(content, it.next)
         assertEquals("    ^", it.next)
@@ -54,7 +54,7 @@ class ConsoleReporterTest {
   def echoTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut, echoWriterOut)
     reporter.echo("Hello World!")
-    assertEquals("Hello World!", echoWriterOut.toString.lines.next)
+    assertEquals("Hello World!", echoWriterOut.toString.linesIterator.next)
 
     /** Check with constructor which has the same writer and echoWriter */
     val reporter2 = createConsoleReporter("r", writerOut)
@@ -113,7 +113,7 @@ class ConsoleReporterTest {
     reporter.WARNING.count = 3
     reporter.finish()
     reporter.flush()
-    val it = writerOut.toString.lines
+    val it = writerOut.toString.linesIterator
     assertEquals("three warnings found", it.next)
     assertEquals("10 errors found", it.next)
     writerOut.reset
@@ -126,7 +126,7 @@ class ConsoleReporterTest {
     /** Check for stack trace */
     val reporter = createConsoleReporter("s", writerOut, echoWriterOut)
     reporter.displayPrompt()
-    val it = writerOut.toString.lines
+    val it = writerOut.toString.linesIterator
     assertTrue(it.next.isEmpty)
     assertEquals(output + "java.lang.Throwable", it.next)
     assertTrue(it.hasNext)
@@ -135,7 +135,7 @@ class ConsoleReporterTest {
     val writerOut2 = new ByteArrayOutputStream()
     val reporter2 = createConsoleReporter("w", writerOut2)
     reporter2.displayPrompt()
-    val it2 = writerOut2.toString.lines
+    val it2 = writerOut2.toString.linesIterator
     assertTrue(it2.next.isEmpty)
     assertEquals(output, it2.next)
     assertFalse(it2.hasNext)
@@ -144,7 +144,7 @@ class ConsoleReporterTest {
     val writerOut3 = new ByteArrayOutputStream()
     val reporter3 = createConsoleReporter("r", writerOut3)
     reporter3.displayPrompt()
-    val it3 = writerOut3.toString.lines
+    val it3 = writerOut3.toString.linesIterator
     assertTrue(it3.next.isEmpty)
     assertEquals(output, it3.next)
     assertFalse(it3.hasNext)
@@ -159,7 +159,7 @@ class ConsoleReporterTest {
       settings.maxerrs.value  = 1
       settings.maxwarns.value = 1
 
-      new Reporter.LimitingReporter(settings, reporter)
+      new Reporter.LimitingReporter(settings, reporter) with CountingReporter
     }
 
     // pass one message
@@ -193,5 +193,26 @@ class ConsoleReporterTest {
     val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
     // test obsolete API, make sure it doesn't throw
     reporter.info(NoPosition, "goodbye, cruel world", force = false)
+  }
+
+  @Test
+  def adaptedReporterTest(): Unit = {
+    val reporter = createConsoleReporter("r", writerOut)
+    val adapted  = new Reporter.AdaptedReporter(reporter)
+
+    // pass one message
+    testHelper(msg = "Testing display")(adapted.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(adapted.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(adapted.error(_, "Testing display"))
+
+    assertTrue(adapted.hasErrors)
+    assertEquals(1, adapted.errorCount)
+    assertTrue(adapted.hasWarnings)
+    assertEquals(1, adapted.warningCount)
+    adapted.reset()
+    assertFalse(adapted.hasErrors)
+    assertEquals(0, adapted.errorCount)
+    assertFalse(adapted.hasWarnings)
+    assertEquals(0, adapted.warningCount)
   }
 }

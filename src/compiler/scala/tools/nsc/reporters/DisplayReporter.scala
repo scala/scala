@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2002-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -108,7 +115,7 @@ object DisplayReporter {
   /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
   private def splitting(msg: String, explaining: Boolean): String =
     if (msg != null && msg.indexOf("\n----") > 0) {
-      val (err, exp) = msg.lines.span(!_.startsWith("----"))
+      val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
       if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
     } else {
       msg

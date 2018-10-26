@@ -1,8 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package backend.jvm
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.collection.mutable
 import scala.reflect.internal.util.{NoPosition, Position, StringContextStripMarginOps}
 import scala.reflect.io.AbstractFile
 import scala.tools.asm.ClassWriter
@@ -50,9 +63,9 @@ abstract class PostProcessor extends PerRunInit {
     val bytes = try {
       if (!clazz.isArtifact) {
         localOptimizations(classNode)
-        backendUtils.onIndyLambdaImplMethodIfPresent(internalName) {
-          methods => if (methods.nonEmpty) backendUtils.addLambdaDeserialize(classNode, methods)
-        }
+        val indyLambdaBodyMethods = backendUtils.indyLambdaBodyMethods(internalName)
+        if (indyLambdaBodyMethods.nonEmpty)
+          backendUtils.addLambdaDeserialize(classNode, indyLambdaBodyMethods)
       }
 
       warnCaseInsensitiveOverwrite(clazz)
@@ -111,9 +124,9 @@ abstract class PostProcessor extends PerRunInit {
         callGraph.addClass(c.classNode)
       }
       if (compilerSettings.optInlinerEnabled)
-        inliner.runInliner()
-      if (compilerSettings.optClosureInvocations)
-        closureOptimizer.rewriteClosureApplyInvocations()
+        inliner.runInlinerAndClosureOptimizer()
+      else if (compilerSettings.optClosureInvocations)
+        closureOptimizer.rewriteClosureApplyInvocations(None, mutable.Map.empty)
     }
   }
 
@@ -146,8 +159,8 @@ abstract class PostProcessor extends PerRunInit {
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
       // All types that appear in a class node need to have their ClassBType cached, see [[cachedClassBType]].
-      val a = cachedClassBType(inameA).get
-      val b = cachedClassBType(inameB).get
+      val a = cachedClassBType(inameA)
+      val b = cachedClassBType(inameB)
       val lub = a.jvmWiseLUB(b).get
       val lubName = lub.internalName
       assert(lubName != "scala/Any")

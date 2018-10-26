@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 import scala.language.higherKinds
@@ -42,10 +54,10 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def appendedAll[B >: A](suffix: Iterable[B]): CC[B] =
+  override def appendedAll[B >: A](suffix: IterableOnce[B]): CC[B] =
     strictOptimizedConcat(suffix, iterableFactory.newBuilder)
 
-  override def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = {
+  override def prependedAll[B >: A](prefix: IterableOnce[B]): CC[B] = {
     val b = iterableFactory.newBuilder[B]
     b ++= prefix
     b ++= this

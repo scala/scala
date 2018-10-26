@@ -18,7 +18,7 @@ class S2() {
 }
 /*
  *
-$ scalac -d /tmp test/files/pos/S1.scala 
+$ scalac -d /tmp test/files/pos/S1.scala
 test/files/pos/S1.scala:17: error: inferred type arguments [S2] do not conform to method foo's type parameter bounds [T <: S2.this.type]
   def f = foo(this)
           ^

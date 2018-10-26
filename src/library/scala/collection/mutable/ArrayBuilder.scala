@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 package mutable
 
@@ -70,7 +82,7 @@ object ArrayBuilder {
    *  @tparam T     type of the elements for the array builder, with a `ClassTag` context bound.
    *  @return       a new empty array builder.
    */
-  def make[T: ClassTag]: ArrayBuilder[T] = {
+  @inline def make[T: ClassTag]: ArrayBuilder[T] = {
     val tag = implicitly[ClassTag[T]]
     tag.runtimeClass match {
       case java.lang.Byte.TYPE      => new ArrayBuilder.ofByte().asInstanceOf[ArrayBuilder[T]]
@@ -98,9 +110,9 @@ object ArrayBuilder {
     protected var elems: Array[T] = _
 
     private def mkArray(size: Int): Array[T] = {
-      val newelems = new Array[T](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (capacity == size && capacity > 0) elems
+      else if (elems eq null) new Array[T](size)
+      else java.util.Arrays.copyOf[T](elems, size)
     }
 
     protected[this] def resize(size: Int): Unit = {

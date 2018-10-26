@@ -1,12 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Jason Zaugg
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.reflect.internal
 package tpe
 
 import util.StatisticsStatics
 import Flags._
+import scala.runtime.Statics.releaseFence
 
 trait FindMembers {
   this: SymbolTable =>
@@ -281,6 +290,7 @@ trait FindMembers {
     } else {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
       lastM.next = Nil
+      releaseFence()
       initBaseClasses.head.newOverloaded(tpe, members)
     }
   }

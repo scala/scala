@@ -1,28 +1,73 @@
-main1.scala:5: warning: Foo has a main method with parameter type Array[String], but foo1.Foo will not be a runnable program.
+main1.scala:5: warning: Foo has a valid main method (args: Array[String])Unit,
+  but foo1.Foo will not have an entry point on the JVM.
   Reason: companion is a trait, which means no static forwarder can be generated.
 
   object Foo {  // companion is trait
          ^
-main1.scala:12: warning: Foo has a main method with parameter type Array[String], but foo2.Foo will not be a runnable program.
+main1.scala:12: warning: Foo has a valid main method (args: Array[String])Unit,
+  but foo2.Foo will not have an entry point on the JVM.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo {  // companion has its own main
          ^
-main1.scala:24: warning: Foo has a main method with parameter type Array[String], but foo3.Foo will not be a runnable program.
+main1.scala:24: warning: Foo has a valid main method (args: Array[String])Unit,
+  but foo3.Foo will not have an entry point on the JVM.
   Reason: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
 
   object Foo {  // Companion contains main, but not an interfering main.
          ^
-main1.scala:33: warning: Foo has a main method with parameter type Array[String], but foo4.Foo will not be a runnable program.
+main1.scala:33: warning: Foo has a valid main method (args: Array[String])Unit,
+  but foo4.Foo will not have an entry point on the JVM.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Inherits main from the class
          ^
-main1.scala:41: warning: Foo has a main method with parameter type Array[String], but foo5.Foo will not be a runnable program.
+main1.scala:41: warning: Foo has a valid main method (args: Array[String])Unit,
+  but foo5.Foo will not have an entry point on the JVM.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Overrides main from the class
          ^
+main1.scala:53: warning: not a valid main method for p6.Main,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[Int]) = ()
+        ^
+main1.scala:59: warning: Main has a main method (args: Array[Int])Unit,
+  but p7.Main will not have an entry point on the JVM.
+  Reason: companion is a trait, which means no static forwarder can be generated.
+
+  object Main {
+         ^
+main1.scala:60: warning: not a valid main method for p7.Main,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[Int]) = ()
+        ^
+main1.scala:66: warning: Main has a main method,
+  but p8.Main will not have an entry point on the JVM.
+  Reason: companion is a trait, which means no static forwarder can be generated.
+
+  object Main {
+         ^
+main1.scala:68: warning: not a valid main method for p8.Main,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[Double]) = ()
+        ^
+main1.scala:67: warning: not a valid main method for p8.Main,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[Int]) = ()
+        ^
 error: No warnings can be incurred under -Xfatal-warnings.
-5 warnings found
+11 warnings found
 one error found

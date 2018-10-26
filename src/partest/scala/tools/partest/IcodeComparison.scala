@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.partest
@@ -53,7 +60,7 @@ abstract class IcodeComparison extends DirectTest {
     // here depends on it (collectIcode will be called multiple times, and we can't allow crosstalk
     // between calls).  So we are careful to use `slurp` which does call `close`, and careful to
     // check that `delete` returns true indicating successful deletion.
-    try     icodeFiles sortBy (_.name) flatMap (f => f.slurp().lines.toList)
+    try     icodeFiles sortBy (_.name) flatMap (f => f.slurp().linesIterator.toList)
     finally icodeFiles foreach (f => require(f.delete()))
   }
 

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -14,8 +21,8 @@ object HashSet {
 }
 
 class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] with scala.collection.mutable.Clearable {
-  private var used = 0
-  private var table = new Array[AnyRef](initialCapacity)
+  private[this] var used = 0
+  private[this] var table = new Array[AnyRef](initialCapacity)
   private def index(x: Int): Int = math.abs(x % table.length)
 
   def size: Int = used
@@ -66,8 +73,8 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     xs.iterator foreach addEntry
   }
 
-  def iterator = new Iterator[T] {
-    private var i = 0
+  def iterator: Iterator[T] = new collection.AbstractIterator[T] {
+    private[this] var i = 0
     def hasNext: Boolean = {
       while (i < table.length && (table(i) eq null)) i += 1
       i < table.length

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package mutable
@@ -38,6 +50,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
   def this() = this(0)
 
   def bitSetFactory = BitSet
+
+  override def unsorted: Set[Int] = this
 
   protected[collection] final def nwords: Int = elems.length
 
@@ -153,7 +167,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
     super[StrictOptimizedSortedSetOps].collect(pf)
 
   // necessary for disambiguation
-  override def zip[B](that: scala.Iterable[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
+  override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
     super.zip(that)
 
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
@@ -191,9 +205,4 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
   private final class SerializationProxy(coll: BitSet) extends scala.collection.BitSet.SerializationProxy(coll) {
     protected[this] def readResolve(): Any = BitSet.fromBitMaskNoCopy(elems)
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

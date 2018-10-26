@@ -23,7 +23,7 @@ object Test extends ScaladocModelTest {
     val A = base._class("A")
 
     conv = A._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 1)
+    assert(conv.members.length == 2)
     assert(conv.constraints.length == 1)
 
 //// class B ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ object Test extends ScaladocModelTest {
     val B = base._class("B")
 
     conv = B._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 1)
+    assert(conv.members.length == 2)
     assert(conv.constraints.length == 0)
 
 //// class C ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ object Test extends ScaladocModelTest {
     val D = base._class("D")
 
     conv = D._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 1)
+    assert(conv.members.length == 2)
     assert(conv.constraints.length == 0)
 
 //// class E ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ object Test extends ScaladocModelTest {
     val E = base._class("E")
 
     conv = E._conversion(base.qualifiedName + ".convertToZ")
-    assert(conv.members.length == 1)
+    assert(conv.members.length == 2)
     assert(conv.constraints.length == 0)
 
 //// class F ///////////////////////////////////////////////////////////////////////////////////////////////////////////

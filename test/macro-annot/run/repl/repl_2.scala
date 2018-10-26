@@ -8,7 +8,7 @@ object Test extends App {
     s.usejavacp.value = false
     s.classpath.value = sys.props("sbt.paths.tests.classpath")
     s.plugin.value = List(sys.props("sbt.paths.plugin.jar"))
-    val lines = ILoop.runForTranscript(code, s).lines.toList
+    val lines = ILoop.runForTranscript(code, s).linesIterator.toList
     lines.drop(3).dropRight(2).mkString("\n").trim.stripSuffix("scala>").trim
   }
 

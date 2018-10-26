@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
 import scala.language.higherKinds
 import scala.tools.testing.AssertUtil._
+import org.junit.Assert.assertEquals
 
 @RunWith(classOf[JUnit4])
 class IterableTest {
@@ -35,6 +36,13 @@ class IterableTest {
     val iterator = Iterator.concat(Seq(1, 2, 3), Seq(4, 5, 6))
     assert(iterator.toSeq == Seq(1, 2, 3, 4, 5, 6))
     assert(iterator.isEmpty)
+
+    assertEquals(Seq(1,2,3,4,5,6), Seq(1,2,3).concat(Seq(4,5,6)))
+    assertEquals(Seq(1,2,3,4,5,6), Seq(1,2,3).concat(Iterator(4,5,6)))
+    assertEquals(Seq(1,2,3,4,5,6), Seq.from(Iterator(1,2,3).concat(Iterator(4,5,6))))
+
+    assertEquals(Iterable(1,2,3), Iterable(1) ++: Iterable(2,3))
+    assertEquals(Iterable(1,2,3), Iterator(1) ++: Iterable(2,3))
   }
 
   @Test
@@ -57,7 +65,7 @@ class IterableTest {
 
     val xs = Seq('a', 'b', 'b', 'c', 'a', 'a', 'a', 'b')
     val expected = Map('a' -> 4, 'b' -> 3, 'c' -> 1)
-    Assert.assertEquals(expected, occurrences(xs))
+    assertEquals(expected, occurrences(xs))
   }
 
   @Test
@@ -89,54 +97,46 @@ class IterableTest {
   }
 
   @Test def copyToArray(): Unit = {
-    def check(a: Array[Int], start: Int, end: Int) = {
+    def check(a: Array[Int], copyToArray: Array[Int] => Int, elemsWritten: Int, start: Int, end: Int) = {
+
+      assertEquals(copyToArray(a), elemsWritten)
+
       var i = 0
       while (i < start) {
-        assert(a(i) == 0)
+        assertEquals(a(i),0)
         i += 1
       }
       while (i < a.length && i < end) {
-        assert(a(i) == i - start)
+        assertEquals(a(i), i - start)
         i += 1
       }
       while (i < a.length) {
-        assert(a(i) == 0)
+        assertEquals(a(i), 0)
         i += 1
       }
     }
 
     val far = 100000
     val l = Iterable.from(Range(0, 100))
-    check(l.copyToArray(new Array(100)),
-      0, far)
-    check(l.copyToArray(new Array(10)),
-      0, far)
-    check(l.copyToArray(new Array(1000)),
-      0, 100)
+    check(new Array(100), l.copyToArray(_), 100, 0, far)
+    check(new Array(10), l.copyToArray(_), 10, 0, far)
+    check(new Array(100), l.copyToArray(_), 100, 0, 100)
 
-    check(l.copyToArray(new Array(100), 5),
-      5, 105)
-    check(l.copyToArray(new Array(10), 5),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5),
-      5, 105)
+    check(new Array(100), l.copyToArray(_, 5), 95, 5, 105)
+    check(new Array(10), l.copyToArray(_, 5), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5), 100, 5, 105)
 
-    check(l.copyToArray(new Array(100), 5, 50),
-      5, 55)
-    check(l.copyToArray(new Array(10), 5, 50),
-      5, 10)
-    check(l.copyToArray(new Array(1000), 5, 50),
-      5, 55)
+    check(new Array(100), l.copyToArray(_, 5, 50), 50, 5, 55)
+    check(new Array(10), l.copyToArray(_, 5, 50), 5, 5, 10)
+    check(new Array(1000), l.copyToArray(_, 5, 50), 50, 5, 55)
 
-    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1))
-    assertThrows[ArrayIndexOutOfBoundsException](l.copyToArray(new Array(10), -1, 10))
+    assertThrows[ArrayIndexOutOfBoundsException]( l.copyToArray(new Array(10), -1))
+    assertThrows[ArrayIndexOutOfBoundsException]( l.copyToArray(new Array(10), -1, 10))
+    assertEquals(l.copyToArray(new Array(10), 1, -1), 0)
 
-    check(l.copyToArray(new Array(10), 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 10, 10),
-      0, 0)
-    check(l.copyToArray(new Array(10), 0, -1),
-      0, 0)
+    check(new Array(10), l.copyToArray(_, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 10, 10), 0, 0, 0)
+    check(new Array(10), l.copyToArray(_, 0, -1), 0, 0, 0)
   }
 
   @Test
@@ -219,6 +219,7 @@ class IterableTest {
     Assert.assertEquals(baselist.reverse, checklist)
   }
 
+  @Test
   def unzip(): Unit = {
     val zipped = Seq((1, 'a'), (2, 'b'), (3, 'c'))
     val (s1, s2) = zipped.unzip
@@ -266,5 +267,97 @@ class IterableTest {
     }
     val foo = new Foo
     Assert.assertEquals("Fu()", foo.toString)
+  }
+
+  @Test
+  def partitionWith: Unit = {
+    val (left, right) = Seq(1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionWith {
+      case i: Int => Left(i)
+      case s: String => Right(s)
+    }
+    Assert.assertEquals(left, Seq(1, 2, 3, 4 ,5))
+    Assert.assertEquals(right, Seq("1", "2", "3", "4" ,"5"))
+  }
+
+  @Test
+  def hasDefiniteSize: Unit = {
+    import scala.{collection => c}
+    import scala.collection.{mutable => m, immutable => i}
+    assertEquals(true, Some(1).hasDefiniteSize)
+    assertEquals(true, None.hasDefiniteSize)
+    assertEquals(true, Option(1).hasDefiniteSize)
+    assertEquals(true, Array(1).hasDefiniteSize)
+    assertEquals(true, "a".hasDefiniteSize)
+    assertEquals(true, c.BitSet(1).hasDefiniteSize)
+    assertEquals(false, scala.io.Source.fromString("a").buffered.hasDefiniteSize)
+    assertEquals(true, c.IndexedSeq(1).hasDefiniteSize)
+    assertEquals(true, c.IndexedSeq(1).view.hasDefiniteSize)
+    assertEquals(true, c.Iterable(1).hasDefiniteSize)
+    assertEquals(false, c.Iterator(1).hasDefiniteSize)
+    assertEquals(true, c.LinearSeq(1).hasDefiniteSize)
+    assertEquals(true, c.Map(1 -> 1).hasDefiniteSize)
+    assertEquals(true, c.Map(1 -> 1).view.hasDefiniteSize)
+    assertEquals(true, c.Seq(1).hasDefiniteSize)
+    assertEquals(true, c.Seq(1).view.hasDefiniteSize)
+    assertEquals(true, c.Set(1).hasDefiniteSize)
+    assertEquals(true, c.SortedMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, c.SortedSet(1).hasDefiniteSize)
+    assertEquals(true, i.BitSet(1).hasDefiniteSize)
+    assertEquals(true, i.HashMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.HashSet(1).hasDefiniteSize)
+    assertEquals(true, i.IndexedSeq(1).hasDefiniteSize)
+    assertEquals(true, i.IntMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.Iterable(1).hasDefiniteSize)
+    assertEquals(true, i.LinearSeq(1).hasDefiniteSize)
+    assertEquals(true, i.List(1).hasDefiniteSize)
+    assertEquals(true, i.ListMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.ListSet(1).hasDefiniteSize)
+    assertEquals(true, i.LongMap(1L -> 1).hasDefiniteSize)
+    assertEquals(true, i.Map(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.Nil.hasDefiniteSize)
+    assertEquals(true, (1L to 1L).hasDefiniteSize)
+    assertEquals(true, i.Queue(1).hasDefiniteSize)
+    assertEquals(true, (1 to 1).hasDefiniteSize)
+    assertEquals(true, i.Seq(1).hasDefiniteSize)
+    assertEquals(true, i.Set(1).hasDefiniteSize)
+    assertEquals(true, i.SortedMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.SortedSet(1).hasDefiniteSize)
+    assertEquals(false, i.Stream(1).hasDefiniteSize)
+    assertEquals(true, i.TreeMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, i.TreeSet(1).hasDefiniteSize)
+    assertEquals(true, i.Vector(1).hasDefiniteSize)
+    assertEquals(false, i.Vector(1).iterator.hasDefiniteSize)
+    assertEquals(true, m.AnyRefMap(Nil -> 1).hasDefiniteSize)
+    assertEquals(true, m.ArrayBuffer(1).hasDefiniteSize)
+    assertEquals(true, m.ArrayBuffer(1).view.hasDefiniteSize)
+    assertEquals(true, m.BitSet(1).hasDefiniteSize)
+    assertEquals(true, m.Buffer(1).hasDefiniteSize)
+    assertEquals(true, m.HashMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.HashSet(1).hasDefiniteSize)
+    assertEquals(true, m.IndexedSeq(1).hasDefiniteSize)
+    assertEquals(true, m.Iterable(1).hasDefiniteSize)
+    assertEquals(true, m.LinkedHashMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.LinkedHashSet(1).hasDefiniteSize)
+    assertEquals(true, m.ListBuffer(1).hasDefiniteSize)
+    assertEquals(true, m.ListMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.LongMap(1L -> 1).hasDefiniteSize)
+    assertEquals(true, m.Map(1 -> 1).hasDefiniteSize)
+    assertEquals(true, (new m.HashMap[Int, m.Set[Int]] with m.MultiMap[Int, Int]).hasDefiniteSize)
+    assertEquals(true, m.OpenHashMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.PriorityQueue(1).hasDefiniteSize)
+    assertEquals(true, m.Queue(1).hasDefiniteSize)
+    assertEquals(true, m.Seq(1).hasDefiniteSize)
+    assertEquals(true, m.Set(1).hasDefiniteSize)
+    assertEquals(true, m.SortedMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.SortedSet(1).hasDefiniteSize)
+    assertEquals(true, m.Stack(1).hasDefiniteSize)
+    assertEquals(true, (new m.StringBuilder()).hasDefiniteSize)
+    assertEquals(true, m.TreeMap(1 -> 1).hasDefiniteSize)
+    assertEquals(true, m.TreeSet(1).hasDefiniteSize)
+    assertEquals(true, m.UnrolledBuffer(1).hasDefiniteSize)
+    assertEquals(true, m.WeakHashMap(1 -> 1).hasDefiniteSize)
+    assertEquals(false, scala.io.Source.fromString("hello").hasDefiniteSize)
+    assertEquals(true, (List(1), List(2)).zipped.hasDefiniteSize)
+    assertEquals(true, (List(1), List(2), List(3)).zipped.hasDefiniteSize)
   }
 }

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2010-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection.concurrent
@@ -18,8 +22,8 @@ package collection.concurrent
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
   *  section on `Concurrent Maps` for more information.
   *
-  *  @tparam A  the key type of the map
-  *  @tparam B  the value type of the map
+  *  @tparam K  the key type of the map
+  *  @tparam V  the value type of the map
   *
   *  @define Coll `concurrent.Map`
   *  @define coll concurrent map
@@ -33,7 +37,7 @@ package collection.concurrent
   *  @define atomicop
   *  This is an atomic operation.
   */
-trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
+trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
 
   /**
     * Associates the given key with a given value, unless the key was already
@@ -47,7 +51,7 @@ trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
     *            associated with the specified key, or `None` if there was no
     *            mapping for the specified key
     */
-  def putIfAbsent(k: A, v: B): Option[B]
+  def putIfAbsent(k: K, v: V): Option[V]
 
   /**
     * Removes the entry for the specified key if it's currently mapped to the
@@ -60,7 +64,7 @@ trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
     *            the removal is to take place
     * @return    `true` if the removal took place, `false` otherwise
     */
-  def remove(k: A, v: B): Boolean
+  def remove(k: K, v: V): Boolean
 
   /**
     * Replaces the entry for the given key only if it was previously mapped to
@@ -74,7 +78,7 @@ trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
     * @param newvalue  value to be associated with the specified key
     * @return          `true` if the entry was replaced, `false` otherwise
     */
-  def replace(k: A, oldvalue: B, newvalue: B): Boolean
+  def replace(k: K, oldvalue: V, newvalue: V): Boolean
 
   /**
     * Replaces the entry for the given key only if it was previously mapped
@@ -86,9 +90,9 @@ trait Map[A, B] extends scala.collection.mutable.Map[A, B] {
     * @param v   value to be associated with the specified key
     * @return    `Some(v)` if the given key was previously mapped to some value `v`, or `None` otherwise
     */
-  def replace(k: A, v: B): Option[B]
+  def replace(k: K, v: V): Option[V]
 
-  override def getOrElseUpdate(key: A, op: =>B): B = get(key) match {
+  override def getOrElseUpdate(key: K, op: =>V): V = get(key) match {
     case Some(v) => v
     case None =>
       val v = op

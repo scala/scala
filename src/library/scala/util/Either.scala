@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -161,12 +165,14 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was $e")
    *   }}}
    */
+  @deprecated("use swap instead", "2.13.0")
   def left = Either.LeftProjection(this)
 
   /** Projects this `Either` as a `Right`.
    *
    *  Because `Either` is right-biased, this method is not normally needed.
    */
+  @deprecated("Either is now right-biased, use methods directly on Either", "2.13.0")
   def right = Either.RightProjection(this)
 
   /** Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
@@ -441,6 +447,16 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 final case class Left[+A, +B](value: A) extends Either[A, B] {
   def isLeft  = true
   def isRight = false
+
+  /**
+    * Upcasts this `Left[A, B]` to `Either[A, B1]`
+    * {{{
+    *   Left(1)                   // Either[Int, Nothing]
+    *   Left(1).withRight[String] // Either[Int, String]
+    * }}}
+    */
+  def withRight[B1 >: B]: Either[A, B1] = this
+
 }
 
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
@@ -450,6 +466,16 @@ final case class Left[+A, +B](value: A) extends Either[A, B] {
 final case class Right[+A, +B](value: B) extends Either[A, B] {
   def isLeft  = false
   def isRight = true
+
+  /**
+    * Upcasts this `Right[A, B]` to `Either[A1, B]`
+    * {{{
+    *   Right("x")               // Either[Nothing, String]
+    *   Right("x").withLeft[Int] // Either[Int, String]
+    * }}}
+    */
+  def withLeft[A1 >: A]: Either[A1, B] = this
+
 }
 
 object Either {
@@ -490,6 +516,7 @@ object Either {
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    *  @see [[scala.util.Either#left]]
    */
+  @deprecated("use `swap` instead", "2.13.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
      *  if this is a `Right`.
@@ -501,6 +528,7 @@ object Either {
      *
      *  @throws java.util.NoSuchElementException if the projection is [[scala.util.Right]]
      */
+    @deprecated("use `Either.swap.getOrElse` instead", "2.13.0")
     def get: A = e match {
       case Left(a) => a
       case _       => throw new NoSuchElementException("Either.left.get on Right")
@@ -633,6 +661,7 @@ object Either {
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    */
+  @deprecated("Either is now right-biased, calls to `right` should be removed", "2.13.0")
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 
     /** Returns the value from this `Right` or throws
@@ -645,6 +674,7 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is `Left`.
      */
+    @deprecated("Use `Either.getOrElse` instead", "2.13.0")
     def get: B = e match {
       case Right(b) => b
       case _        => throw new NoSuchElementException("Either.right.get on Left")

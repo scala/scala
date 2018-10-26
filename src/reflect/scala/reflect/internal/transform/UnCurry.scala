@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -68,7 +80,7 @@ trait UnCurry {
       }
   }
 
-  private val uncurryType = new TypeMap {
+  private[this] val uncurryType = new TypeMap {
     def apply(tp0: Type): Type = {
       val tp = expandAlias(tp0)
       tp match {

@@ -1,15 +1,20 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{tailrec, switch}
-
-import scala.PartialFunction.cond
+import scala.annotation.{switch, tailrec}
 import scala.reflect.internal.util.Collections._
 import scala.tools.asm.commons.CodeSizeEvaluator
 import scala.tools.asm.tree.analysis._
@@ -18,6 +23,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import GenBCode._
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
@@ -88,18 +94,18 @@ object BytecodeUtils {
 
   def isLoadOrStore(instruction: AbstractInsnNode): Boolean = isLoad(instruction) || isStore(instruction)
 
-  def isNonVirtualCall(instruction: AbstractInsnNode): Boolean = {
-    val op = instruction.getOpcode
-    op == INVOKESPECIAL || op == INVOKESTATIC
+  def isStaticCall(instruction: AbstractInsnNode): Boolean = {
+    instruction.getOpcode == INVOKESTATIC
   }
 
   def isVirtualCall(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
-    op == INVOKEVIRTUAL || op == INVOKEINTERFACE
+    // invokespecial
+    op == INVOKESPECIAL || op == INVOKEVIRTUAL || op == INVOKEINTERFACE
   }
 
   def isCall(instruction: AbstractInsnNode): Boolean = {
-    isNonVirtualCall(instruction) || isVirtualCall(instruction)
+    isStaticCall(instruction) || isVirtualCall(instruction)
   }
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
@@ -120,6 +126,8 @@ object BytecodeUtils {
 
   def isNativeMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_NATIVE) != 0
 
+  def isSyntheticMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_SYNTHETIC) != 0
+
   // cross-jdk
   def hasCallerSensitiveAnnotation(methodNode: MethodNode): Boolean =
     methodNode.visibleAnnotations != null &&
@@ -135,7 +143,7 @@ object BytecodeUtils {
 
   def isStrictfpMethod(methodNode: MethodNode): Boolean = (methodNode.access & ACC_STRICT) != 0
 
-  def isReference(t: Type) = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
+  def isReference(t: Type): Boolean = t.getSort == Type.OBJECT || t.getSort == Type.ARRAY
 
   /** Find the nearest preceding node to `insn` which is executable (i.e., not a label / line number)
     * and which is not selected by `stopBefore`. */
@@ -165,6 +173,23 @@ object BytecodeUtils {
     val next = insn.getNext
     if (next == null || isExecutable(next) || next.isInstanceOf[LabelNode]) Option(next)
     else nextExecutableInstructionOrLabel(next)
+  }
+
+  def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
+    @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
+      insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
+    }
+    @tailrec def find(insn: AbstractInsnNode): Option[MethodInsnNode] = {
+      if (insn == null) None
+      else insn match {
+        case mi: MethodInsnNode =>
+          if (such(mi) && noMoreInvoke(insn.getNext)) Some(mi)
+          else None
+        case _ =>
+          find(insn.getNext)
+      }
+    }
+    find(method.instructions.getFirst)
   }
 
   def sameTargetExecutableInstruction(a: JumpInsnNode, b: JumpInsnNode): Boolean = {
@@ -279,7 +304,7 @@ object BytecodeUtils {
     }
   }
 
-  def codeSizeOKForInlining(caller: MethodNode, callee: MethodNode): Boolean = {
+  def callsiteTooLargeAfterInlining(caller: MethodNode, callee: MethodNode): Boolean = {
     // Looking at the implementation of CodeSizeEvaluator, all instructions except tableswitch and
     // lookupswitch are <= 8 bytes. These should be rare enough for 8 to be an OK rough upper bound.
     def roughUpperBound(methodNode: MethodNode): Int = methodNode.instructions.size * 8
@@ -326,33 +351,38 @@ object BytecodeUtils {
    * Clone the local variable descriptors of `methodNode` and map their `start` and `end` labels
    * according to the `labelMap`.
    */
-  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, shift: Int): List[LocalVariableNode] = {
-    methodNode.localVariables.iterator.asScala.map(localVariable => {
-      val name =
-        if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
-          calleeMethodName + "_" + localVariable.name
-        } else {
-          val parts = localVariable.name.split("_").toVector
-          val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
-          // keep at least 5 characters per method name
-          val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
-          val usedMethNames =
-            if (methNames.length < maxNumMethNames) methNames
-            else {
-              val half = maxNumMethNames / 2
-              methNames.take(half) ++ methNames.takeRight(half)
-            }
-          val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLength / usedMethNames.length
-          usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
-        }
-      new LocalVariableNode(
-        name,
-        localVariable.desc,
-        localVariable.signature,
-        labelMap(localVariable.start),
-        labelMap(localVariable.end),
-        localVariable.index + shift)
-    }).toList
+  def cloneLocalVariableNodes(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode], calleeMethodName: String, localIndexMap: Int => Int): List[LocalVariableNode] = {
+    val res = mutable.ListBuffer.empty[LocalVariableNode]
+    for (localVariable <- methodNode.localVariables.iterator.asScala) {
+      val newIdx = localIndexMap(localVariable.index)
+      if (newIdx >= 0) {
+        val name =
+          if (calleeMethodName.length + localVariable.name.length < BTypes.InlinedLocalVariablePrefixMaxLength) {
+            calleeMethodName + "_" + localVariable.name
+          } else {
+            val parts = localVariable.name.split("_").toVector
+            val (methNames, varName) = (calleeMethodName +: parts.init, parts.last)
+            // keep at least 5 characters per method name
+            val maxNumMethNames = BTypes.InlinedLocalVariablePrefixMaxLength / 5
+            val usedMethNames =
+              if (methNames.length < maxNumMethNames) methNames
+              else {
+                val half = maxNumMethNames / 2
+                methNames.take(half) ++ methNames.takeRight(half)
+              }
+            val charsPerMethod = BTypes.InlinedLocalVariablePrefixMaxLength / usedMethNames.length
+            usedMethNames.foldLeft("")((res, methName) => res + methName.take(charsPerMethod) + "_") + varName
+          }
+        res += new LocalVariableNode(
+          name,
+          localVariable.desc,
+          localVariable.signature,
+          labelMap(localVariable.start),
+          labelMap(localVariable.end),
+          newIdx)
+      }
+    }
+    res.toList
   }
 
   /**

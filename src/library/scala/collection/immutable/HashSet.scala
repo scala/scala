@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -5,992 +17,977 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import mutable.{Builder, ImmutableBuilder}
-import Hashing.computeHash
-import java.lang.{Integer, System}
+import Hashing.improve
+import java.lang.Integer.{bitCount, numberOfTrailingZeros}
+import java.lang.System.arraycopy
 
-import scala.collection.generic.BitOperations
-import scala.annotation.tailrec
+import scala.collection.immutable.Set.Set4
+import scala.util.hashing.MurmurHash3
+import scala.runtime.Statics.releaseFence
 
-/** This class implements immutable sets using a hash trie.
-  *
-  *  '''Note:''' The builder of this hash set may return specialized representations for small sets.
+/** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.
+  * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
   *
   *  @tparam A      the type of the elements contained in this hash set.
   *
-  *  @author  Martin Odersky
-  *  @author  Tiark Rompf
-  *  @since   2.3
+  *  @author  Michael J. Steindorfer
+  *  @since   2.13
   *  @define Coll `immutable.HashSet`
-  *  @define coll immutable hash set
+  *  @define coll immutable champ hash set
   */
-sealed abstract class HashSet[A]
+final class HashSet[A] private[immutable] (val rootNode: SetNode[A], val cachedJavaHashCode: Int)
   extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
 
-  import HashSet.{bufferSize, LeafHashSet, nullToEmpty}
+  releaseFence()
 
-  override protected[this] def className: String = "HashSet"
+  override def iterableFactory: IterableFactory[HashSet] = HashSet
 
-  override def iterableFactory = HashSet
+  override def knownSize: Int = rootNode.size
 
-  def contains(elem: A): Boolean = get0(elem, computeHash(elem), 0)
+  override def size: Int = rootNode.size
 
-  def incl(elem: A): HashSet[A] = updated0(elem, computeHash(elem), 0)
+  override def isEmpty: Boolean = rootNode.size == 0
 
-  def excl(elem: A): HashSet[A] = nullToEmpty(removed0(elem, computeHash(elem), 0))
-
-  override def subsetOf(that: collection.Set[A]): Boolean = that match {
-    case that:HashSet[A] =>
-      // call the specialized implementation with a level of 0 since both this and that are top-level hash sets
-      subsetOf0(that, 0)
-    case _ =>
-      // call the generic implementation
-      super.subsetOf(that)
+  def iterator: Iterator[A] = {
+    if (isEmpty) Iterator.empty
+    else new SetIterator[A](rootNode)
   }
 
-  override def concat(that: collection.Iterable[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size + that.size))
-      nullToEmpty(union0(that, 0, buffer, 0))
-    case _ => super.concat(that)
+  protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
+
+  def contains(element: A): Boolean = {
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    rootNode.contains(element, elementUnimprovedHash, elementHash, 0)
   }
 
-  override def intersect(that: collection.Set[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size min that.size))
-      nullToEmpty(intersect0(that, 0, buffer, 0))
-    case _ => super.intersect(that)
+  def incl(element: A): HashSet[A] = {
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    val newRootNode = rootNode.updated(element, elementUnimprovedHash, elementHash, 0)
+
+    if (newRootNode ne rootNode) {
+      val newCachedJavaHashCode = cachedJavaHashCode + (if (newRootNode.size == rootNode.size) 0 else elementHash)
+      HashSet(newRootNode, newCachedJavaHashCode)
+    } else this
   }
 
-  override def diff(that: collection.Set[A]): HashSet[A] = that match {
-    case that: HashSet[A] =>
-      val buffer = new Array[HashSet[A]](bufferSize(this.size))
-      nullToEmpty(diff0(that, 0, buffer, 0))
-    case _ => super.diff(that)
+  def excl(element: A): HashSet[A] = {
+    val elementUnimprovedHash = element.##
+    val elementHash = improve(elementUnimprovedHash)
+    val newRootNode = rootNode.removed(element, elementUnimprovedHash, elementHash, 0)
+
+    if (rootNode ne newRootNode)
+      HashSet(newRootNode, cachedJavaHashCode - elementHash)
+    else this
   }
 
-  override def filter(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
-    nullToEmpty(filter0(p, false, 0, buffer, 0))
-  }
-
-  override def filterNot(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
-    nullToEmpty(filter0(p, true, 0, buffer, 0))
+  override def concat(that: IterableOnce[A]): HashSet[A] = {
+    val builder = iterableFactory.newBuilder[A]
+    builder ++= this
+    builder ++= that
+    builder.result()
   }
 
   override def tail: HashSet[A] = this - head
 
   override def init: HashSet[A] = this - last
 
-  protected def get0(key: A, hash: Int, level: Int): Boolean
+  override def head: A = iterator.next()
 
-  protected def updated0(key: A, hash: Int, level: Int): HashSet[A]
+  override def last: A = reverseIterator.next()
 
-  protected def removed0(key: A, hash: Int, level: Int): HashSet[A]
+  override def foreach[U](f: A => U): Unit = rootNode.foreach(f)
 
-  protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
+    case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
+    case _ => super.subsetOf(that)
+  }
 
-  /**
-    * A specialized implementation of subsetOf for when both this and that are HashSet[A] and we can take advantage
-    * of the tree structure of both operands and the precalculated hashcodes of the HashSet1 instances.
-    * @param that the other set
-    * @param level the level of this and that hashset
-    *              The purpose of level is to keep track of how deep we are in the tree.
-    *              We need this information for when we arrive at a leaf and have to call get0 on that
-    *              The value of level is 0 for a top-level HashSet and grows in increments of 5
-    * @return true if all elements of this set are contained in that set
-    */
-  protected def subsetOf0(that: HashSet[A], level: Int): Boolean
+  override def equals(that: Any): Boolean =
+    that match {
+      case set: HashSet[A] =>
+        (this eq set) ||
+          (this.size == set.size) &&
+            (this.cachedJavaHashCode == set.cachedJavaHashCode) &&
+            (this.rootNode == set.rootNode)
+      case _ => super.equals(that)
+    }
 
-  /**
-    * Union with a leaf HashSet at a given level.
-    * @param that a leaf HashSet
-    * @param level the depth in the tree. We need this when we have to create a branch node on top of this and that
-    * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
-    *         HashSet but needs to be stored at the correct depth
-    */
-  private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A]
+  override protected[this] def className = "HashSet"
 
-  /**
-    * Union with a HashSet at a given level
-    * @param that a HashSet
-    * @param level the depth in the tree. We need to keep track of the level to know how deep we are in the tree
-    * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
-    * @param offset0 the first offset into the buffer in which we are allowed to write
-    * @return The union of this and that at the given level. Unless level is zero, the result is not a self-contained
-    *         HashSet but needs to be stored at the correct depth
-    */
-  protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  override def hashCode(): Int = {
+    val it = new SetHashIterator(rootNode)
+    val hash = MurmurHash3.unorderedHash(it, MurmurHash3.setSeed)
+    //assert(hash == super.hashCode())
+    hash
+  }
 
-  /**
-    * Intersection with another hash set at a given level
-    * @param level the depth in the tree. We need to keep track of the level to know how deep we are in the tree
-    * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
-    * @param offset0 the first offset into the buffer in which we are allowed to write
-    * @return The intersection of this and that at the given level. Unless level is zero, the result is not a
-    *         self-contained HashSet but needs to be stored at the correct depth
-    */
-  protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  override def diff(that: collection.Set[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.diff(that)
+  }
 
-  /**
-    * Diff with another hash set at a given level
-    * @param level the depth in the tree. We need to keep track of the level to know how deep we are in the tree
-    * @param buffer a temporary buffer that is used for temporarily storing elements when creating new branch nodes
-    * @param offset0 the first offset into the buffer in which we are allowed to write
-    * @return The diff of this and that at the given level. Unless level is zero, the result is not a
-    *         self-contained HashSet but needs to be stored at the correct depth
-    */
-  protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A]
+  override def removeAll(that: IterableOnce[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.removeAll(that)
+  }
+
+  override def partition(p: A => Boolean): (HashSet[A], HashSet[A]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.partition(p)
+  }
+
+  override def span(p: A => Boolean): (HashSet[A], HashSet[A]) = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.span(p)
+  }
+
+  override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.filterImpl(pred, isFlipped)
+  }
+
+  override def intersect(that: collection.Set[A]): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.intersect(that)
+  }
+
+  override def take(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.take(n)
+  }
+
+  override def takeRight(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.takeRight(n)
+  }
+
+  override def takeWhile(p: A => Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.takeWhile(p)
+  }
+
+  override def drop(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.drop(n)
+  }
+
+  override def dropRight(n: Int): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.dropRight(n)
+  }
+
+  override def dropWhile(p: A => Boolean): HashSet[A] = {
+    // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
+    // in a minor release without breaking binary compatibility.
+    super.dropWhile(p)
+  }
+}
+
+private[immutable] final object SetNode {
+
+  private final val EmptySetNode = new BitmapIndexedSetNode(0, 0, Array.empty, Array.empty, 0)
+
+  def empty[A]: SetNode[A] =
+    EmptySetNode.asInstanceOf[SetNode[A]]
+
+  final val TupleLength = 1
 
 }
 
+private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
+
+  def contains(element: A, originalHash: Int, hash: Int, shift: Int): Boolean
+
+  def updated(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A]
+
+  def removed(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A]
+
+  def hasNodes: Boolean
+
+  def nodeArity: Int
+
+  def getNode(index: Int): SetNode[A]
+
+  def hasPayload: Boolean
+
+  def payloadArity: Int
+
+  def getPayload(index: Int): A
+
+  def sizePredicate: Int
+
+  def size: Int
+
+  def foreach[U](f: A => U): Unit
+
+  def subsetOf(that: SetNode[A], shift: Int): Boolean
+
+  def copy(): SetNode[A]
+}
+
+private final class BitmapIndexedSetNode[A](
+   var dataMap: Int,
+   var nodeMap: Int,
+   var content: Array[Any],
+   var originalHashes: Array[Int],
+   var size: Int) extends SetNode[A] {
+
+  import Node._
+  import SetNode._
+
+  /*
+  assert(checkInvariantContentIsWellTyped())
+  assert(checkInvariantSubNodesAreCompacted())
+
+  private final def checkInvariantSubNodesAreCompacted(): Boolean =
+    new SetIterator[A](this).size - payloadArity >= 2 * nodeArity
+
+  private final def checkInvariantContentIsWellTyped(): Boolean = {
+    val predicate1 = TupleLength * payloadArity + nodeArity == content.length
+
+    val predicate2 = Range(0, TupleLength * payloadArity)
+      .forall(i => content(i).isInstanceOf[SetNode[_]] == false)
+
+    val predicate3 = Range(TupleLength * payloadArity, content.length)
+      .forall(i => content(i).isInstanceOf[SetNode[_]] == true)
+
+    predicate1 && predicate2 && predicate3
+  }
+  */
+
+  def getPayload(index: Int) =
+    content(TupleLength * index).asInstanceOf[A]
+
+  override def getHash(index: Int): Int = originalHashes(index)
+
+  def getNode(index: Int) =
+    content(content.length - 1 - index).asInstanceOf[SetNode[A]]
+
+  def contains(element: A, originalHash: Int, elementHash: Int, shift: Int): Boolean = {
+    val mask = maskFrom(elementHash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      return originalHashes(index) == originalHash && element == this.getPayload(index)
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      return this.getNode(index).contains(element, originalHash, elementHash, shift + BitPartitionSize)
+    }
+
+    false
+  }
+
+  def updated(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+    val mask = maskFrom(elementHash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val element0 = this.getPayload(index)
+
+      if (element0.asInstanceOf[AnyRef] eq element.asInstanceOf[AnyRef]) {
+        return this
+      } else {
+        if (element0.equals(element)) {
+          val element0UnimprovedHash = element0.##
+          val element0Hash = improve(element0UnimprovedHash)
+          return copyAndSetValue(bitpos, element, originalHash, elementHash)
+        } else {
+          val element0UnimprovedHash = element0.##
+          val element0Hash = improve(element0UnimprovedHash)
+          val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
+          return copyAndMigrateFromInlineToNode(bitpos, subNodeNew)
+        }
+      }
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      val subNode = this.getNode(index)
+
+      val subNodeNew = subNode.updated(element, originalHash, elementHash, shift + BitPartitionSize)
+      if (subNode eq subNodeNew) {
+        return this
+      } else {
+        return copyAndSetNode(bitpos, subNode, subNodeNew)
+      }
+    }
+
+    copyAndInsertValue(bitpos, element, originalHash, elementHash)
+  }
+
+  def removed(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+    val mask = maskFrom(elementHash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val element0 = this.getPayload(index)
+
+      if (element0 == element) {
+        if (this.payloadArity == 2 && this.nodeArity == 0) {
+          /*
+           * Create new node with remaining pair. The new node will a) either become the new root
+           * returned, or b) unwrapped and inlined during returning.
+           */
+          val newDataMap = if (shift == 0) (dataMap ^ bitpos) else bitposFrom(maskFrom(elementHash, 0))
+          if (index == 0)
+            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(1)), Array(originalHashes(1)), size - 1)
+          else
+            return new BitmapIndexedSetNode[A](newDataMap, 0, Array(getPayload(0)), Array(originalHashes(0)), size - 1)
+        }
+        else return copyAndRemoveValue(bitpos)
+      } else return this
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      val subNode = this.getNode(index)
+
+      val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
+      // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
+
+      if (subNodeNew eq subNode) return this
+      subNodeNew.sizePredicate match {
+        case SizeOne =>
+          if (this.payloadArity == 0 && this.nodeArity == 1) { // escalate (singleton or empty) result
+            return subNodeNew
+          }
+          else { // inline value (move to front)
+            return copyAndMigrateFromNodeToInline(bitpos, elementHash, subNode, subNodeNew)
+          }
+
+        case SizeMoreThanOne =>
+          // modify current node (set replacement node)
+          return copyAndSetNode(bitpos, subNode, subNodeNew)
+      }
+    }
+
+    this
+  }
+
+  def mergeTwoKeyValPairs(key0: A, originalKeyHash0: Int, keyHash0: Int, key1: A, originalKeyHash1: Int, keyHash1: Int, shift: Int): SetNode[A] = {
+    // assert(key0 != key1)
+
+    if (shift >= HashCodeLength) {
+      new HashCollisionSetNode[A](originalKeyHash0, keyHash0, Vector(key0, key1))
+    } else {
+      val mask0 = maskFrom(keyHash0, shift)
+      val mask1 = maskFrom(keyHash1, shift)
+
+      if (mask0 != mask1) {
+        // unique prefixes, payload fits on same level
+        val dataMap = bitposFrom(mask0) | bitposFrom(mask1)
+
+        if (mask0 < mask1) {
+          new BitmapIndexedSetNode[A](dataMap, 0, Array(key0, key1), Array(originalKeyHash0, originalKeyHash1), 2)
+        } else {
+          new BitmapIndexedSetNode[A](dataMap, 0, Array(key1, key0), Array(originalKeyHash1, originalKeyHash0), 2)
+        }
+      } else {
+        // identical prefixes, payload must be disambiguated deeper in the trie
+        val nodeMap = bitposFrom(mask0)
+        val node = mergeTwoKeyValPairs(key0, originalKeyHash0, keyHash0, key1, originalKeyHash1, keyHash1, shift + BitPartitionSize)
+
+        new BitmapIndexedSetNode[A](0, nodeMap, Array(node), Array(), node.size)
+      }
+    }
+  }
+
+  def sizePredicate: Int =
+    if (nodeArity == 0) payloadArity match {
+      case 0 => SizeEmpty
+      case 1 => SizeOne
+      case _ => SizeMoreThanOne
+    } else SizeMoreThanOne
+
+  def hasPayload: Boolean = dataMap != 0
+
+  def payloadArity: Int = bitCount(dataMap)
+
+  def hasNodes: Boolean = nodeMap != 0
+
+  def nodeArity: Int = bitCount(nodeMap)
+
+  def dataIndex(bitpos: Int) = bitCount(dataMap & (bitpos - 1))
+
+  def nodeIndex(bitpos: Int) = bitCount(nodeMap & (bitpos - 1))
+
+  def copyAndSetNode(bitpos: Int, oldNode: SetNode[A], newNode: SetNode[A]) = {
+    val idx = this.content.length - 1 - this.nodeIndex(bitpos)
+
+    val src = this.content
+    val dst = new Array[Any](src.length)
+
+    // copy 'src' and set 1 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, src.length)
+    dst(idx) = newNode
+    new BitmapIndexedSetNode[A](dataMap, nodeMap, dst, originalHashes, size - oldNode.size + newNode.size)
+  }
+
+  def copyAndInsertValue(bitpos: Int, key: A, originalHash: Int, elementHash: Int) = {
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+
+    val src = this.content
+    val dst = new Array[Any](src.length + 1)
+
+    // copy 'src' and insert 1 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, idx)
+    dst(idx) = key
+    arraycopy(src, idx, dst, idx + 1, src.length - idx)
+    val dstHashes = insertElement(originalHashes, dataIx, originalHash)
+
+    new BitmapIndexedSetNode[A](dataMap | bitpos, nodeMap, dst, dstHashes, size + 1)
+  }
+
+  def copyAndSetValue(bitpos: Int, key: A, originalHash: Int, elementHash: Int) = {
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+
+    val src = this.content
+    val dst = new Array[Any](src.length)
+
+    // copy 'src' and set 1 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, src.length)
+    dst(idx) = key
+
+    new BitmapIndexedSetNode[A](dataMap | bitpos, nodeMap, dst, originalHashes, size)
+  }
+
+  def copyAndRemoveValue(bitpos: Int) = {
+    val dataIx = dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+
+    val src = this.content
+    val dst = new Array[Any](src.length - 1)
+
+    // copy 'src' and remove 1 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, idx)
+    arraycopy(src, idx + 1, dst, idx, src.length - idx - 1)
+    val dstHashes = removeElement(originalHashes, dataIx)
+    new BitmapIndexedSetNode[A](dataMap ^ bitpos, nodeMap, dst, dstHashes, size - 1)
+  }
+
+  def copyAndMigrateFromInlineToNode(bitpos: Int, node: SetNode[A]) = {
+    val dataIx = dataIndex(bitpos)
+    val idxOld = TupleLength * dataIx
+    val idxNew = this.content.length - TupleLength - nodeIndex(bitpos)
+
+    val src = this.content
+    val dst = new Array[Any](src.length - 1 + 1)
+
+    // copy 'src' and remove 1 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld <= idxNew)
+    arraycopy(src, 0, dst, 0, idxOld)
+    arraycopy(src, idxOld + 1, dst, idxOld, idxNew - idxOld)
+    dst(idxNew) = node
+    arraycopy(src, idxNew + 1, dst, idxNew + 1, src.length - idxNew - 1)
+    val dstHashes = removeElement(originalHashes, dataIx)
+    new BitmapIndexedSetNode[A](dataMap ^ bitpos, nodeMap | bitpos, dst, dstHashes, size - 1 + node.size)
+  }
+
+  def copyAndMigrateFromNodeToInline(bitpos: Int, elementHash: Int, oldNode: SetNode[A], node: SetNode[A]) = {
+    val idxOld = this.content.length - 1 - nodeIndex(bitpos)
+    val dataIxNew = dataIndex(bitpos)
+    val idxNew = TupleLength * dataIxNew
+
+    val src = this.content
+    val dst = new Array[Any](src.length - 1 + 1)
+
+    // copy 'src' and remove 1 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld >= idxNew)
+    arraycopy(src, 0, dst, 0, idxNew)
+    dst(idxNew) = node.getPayload(0)
+    arraycopy(src, idxNew, dst, idxNew + 1, idxOld - idxNew)
+    arraycopy(src, idxOld + 1, dst, idxOld + 1, src.length - idxOld - 1)
+    val hash = node.getHash(0)
+    val dstHashes = insertElement(originalHashes, dataIxNew, hash)
+    new BitmapIndexedSetNode[A](dataMap | bitpos, nodeMap ^ bitpos, dst, dstHashes, size - oldNode.size + 1)
+  }
+
+  def foreach[U](f: A => U): Unit = {
+    var i = 0
+    while (i < payloadArity) {
+      f(getPayload(i))
+      i += 1
+    }
+
+    var j = 0
+    while (j < nodeArity) {
+      getNode(j).foreach(f)
+      j += 1
+    }
+  }
+
+  def subsetOf(that: SetNode[A], shift: Int): Boolean = if (this eq that) true else that match {
+    case node: HashCollisionSetNode[A] => false
+    case node: BitmapIndexedSetNode[A] => {
+      val thisBitmap = this.dataMap | this.nodeMap
+      val nodeBitmap = node.dataMap | node.nodeMap
+
+      if ((thisBitmap | nodeBitmap) != nodeBitmap)
+        return false
+
+      var bitmap = thisBitmap & nodeBitmap
+      var bitsToSkip = numberOfTrailingZeros(bitmap)
+
+      var isValidSubset = true
+      while (isValidSubset && bitsToSkip < HashCodeLength) {
+        val bitpos = bitposFrom(bitsToSkip)
+
+        isValidSubset =
+          if ((this.dataMap & bitpos) != 0) {
+            if ((node.dataMap & bitpos) != 0) {
+              // Data x Data
+              val payload0 = this.getPayload(indexFrom(this.dataMap, bitpos))
+              val payload1 = node.getPayload(indexFrom(node.dataMap, bitpos))
+              payload0 == payload1
+            } else {
+              // Data x Node
+              val thisDataIndex = indexFrom(this.dataMap, bitpos)
+              val payload = this.getPayload(thisDataIndex)
+              val subNode = that.getNode(indexFrom(node.nodeMap, bitpos))
+              val elementUnimprovedHash = getHash(thisDataIndex)
+              val elementHash = improve(elementUnimprovedHash)
+              subNode.contains(payload, elementUnimprovedHash, elementHash, shift + BitPartitionSize)
+            }
+          } else {
+            // Node x Node
+            val subNode0 = this.getNode(indexFrom(this.nodeMap, bitpos))
+            val subNode1 = node.getNode(indexFrom(node.nodeMap, bitpos))
+            subNode0.subsetOf(subNode1, shift + BitPartitionSize)
+          }
+
+        val newBitmap = bitmap ^ bitpos
+        bitmap = newBitmap
+        bitsToSkip = numberOfTrailingZeros(newBitmap)
+      }
+      isValidSubset
+    }
+  }
+
+  override def equals(that: Any): Boolean =
+    that match {
+      case node: BitmapIndexedSetNode[A] =>
+        (this eq node) ||
+          (this.nodeMap == node.nodeMap) &&
+            (this.dataMap == node.dataMap) &&
+              (this.size == node.size) &&
+                java.util.Arrays.equals(this.originalHashes, node.originalHashes) &&
+                   deepContentEquality(this.content, node.content, content.length)
+      case _ => false
+    }
+
+  @`inline` private def deepContentEquality(a1: Array[Any], a2: Array[Any], length: Int): Boolean = {
+    if (a1 eq a2)
+      true
+    else {
+      var isEqual = true
+      var i = 0
+
+      while (isEqual && i < length) {
+        isEqual = a1(i) == a2(i)
+        i += 1
+      }
+
+      isEqual
+    }
+  }
+
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("Trie nodes do not support hashing.")
+
+  override def copy(): BitmapIndexedSetNode[A] = {
+    val contentClone = new Array[Any](content.length)
+    val dataIndices = bitCount(dataMap)
+    Array.copy(content, 0, contentClone, 0, dataIndices)
+    var i = dataIndices
+    while (i < content.length) {
+      contentClone(i) = content(i).asInstanceOf[SetNode[A]].copy()
+      i += 1
+    }
+    new BitmapIndexedSetNode[A](dataMap, nodeMap, contentClone, originalHashes.clone(), size)
+  }
+}
+
+private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Vector[Any]) extends SetNode[A] {
+
+  import Node._
+
+  require(content.length >= 2)
+
+  def contains(element: A, originalHash: Int, hash: Int, shift: Int): Boolean =
+    this.hash == hash && content.contains(element)
+
+  def updated(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A] =
+    if (this.contains(element, originalHash, hash, shift)) {
+      this
+    } else {
+      new HashCollisionSetNode[A](originalHash, hash, content.appended(element))
+    }
+
+  /**
+    * Remove an element from the hash collision node.
+    *
+    * When after deletion only one element remains, we return a bit-mapped indexed node with a
+    * singleton element and a hash-prefix for trie level 0. This node will be then a) either become
+    * the new root, or b) unwrapped and inlined deeper in the trie.
+    */
+  def removed(element: A, originalHash: Int, hash: Int, shift: Int): SetNode[A] =
+    if (!this.contains(element, originalHash, hash, shift)) {
+      this
+    } else {
+      val updatedContent = content.filterNot(element0 => element0 == element)
+      // assert(updatedContent.size == content.size - 1)
+
+      updatedContent.size match {
+        case 1 => new BitmapIndexedSetNode[A](bitposFrom(maskFrom(hash, 0)), 0, Array(updatedContent(0)), Array(originalHash), 1)
+        case _ => new HashCollisionSetNode[A](originalHash, hash, updatedContent)
+      }
+    }
+
+  def hasNodes: Boolean = false
+
+  def nodeArity: Int = 0
+
+  def getNode(index: Int): SetNode[A] =
+    throw new IndexOutOfBoundsException("No sub-nodes present in hash-collision leaf node.")
+
+  def hasPayload: Boolean = true
+
+  def payloadArity: Int = content.length
+
+  def getPayload(index: Int): A = content(index).asInstanceOf[A]
+
+  override def getHash(index: Int): Int = originalHash
+
+  def sizePredicate: Int = SizeMoreThanOne
+
+  def size: Int = content.length
+
+  def foreach[U](f: A => U): Unit = {
+    var i = 0
+    while (i < content.length) {
+      f(getPayload(i))
+      i += 1
+    }
+  }
+
+  def subsetOf(that: SetNode[A], shift: Int): Boolean = if (this eq that) true else that match {
+    case node: BitmapIndexedSetNode[A] => false
+    case node: HashCollisionSetNode[A] =>
+      this.payloadArity <= node.payloadArity && this.content.forall(node.content.contains)
+  }
+
+  override def equals(that: Any): Boolean =
+    that match {
+      case node: HashCollisionSetNode[A] =>
+        (this eq node) ||
+          (this.hash == node.hash) &&
+            (this.content.size == node.content.size) &&
+            (this.content.forall(node.content.contains))
+      case _ => false
+    }
+
+  override def hashCode(): Int =
+    throw new UnsupportedOperationException("Trie nodes do not support hashing.")
+
+  override def copy() = new HashCollisionSetNode[A](originalHash, hash, content)
+
+}
+
+private final class SetIterator[A](rootNode: SetNode[A])
+  extends ChampBaseIterator[SetNode[A]](rootNode) with Iterator[A] {
+
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    val payload = currentValueNode.getPayload(currentValueCursor)
+    currentValueCursor += 1
+
+    payload
+  }
+
+}
+
+private final class SetReverseIterator[A](rootNode: SetNode[A])
+  extends ChampBaseReverseIterator[SetNode[A]](rootNode) with Iterator[A] {
+
+  def next() = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    val payload = currentValueNode.getPayload(currentValueCursor)
+    currentValueCursor -= 1
+
+    payload
+  }
+
+}
+
+private final class SetHashIterator[A](rootNode: SetNode[A])
+  extends ChampBaseIterator[SetNode[A]](rootNode) with Iterator[AnyRef] {
+  private[this] var hash = 0
+  override def hashCode(): Int = hash
+
+  def next(): AnyRef = {
+    if (!hasNext)
+      throw new NoSuchElementException
+
+    hash = currentValueNode.getHash(currentValueCursor)
+    currentValueCursor += 1
+    this
+  }
+
+}
+
+
 /**
   * $factoryInfo
+  *
   * @define Coll `immutable.HashSet`
-  * @define coll immutable hash set
+  * @define coll immutable champ hash set
   */
 @SerialVersionUID(3L)
 object HashSet extends IterableFactory[HashSet] {
 
-  def from[A](it: collection.IterableOnce[A]): HashSet[A] =
-    it match {
+  private[HashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int) =
+    new HashSet[A](rootNode, cachedJavaHashCode)
+
+  private final val EmptySet = new HashSet(SetNode.empty, 0)
+
+  def empty[A]: HashSet[A] =
+    EmptySet.asInstanceOf[HashSet[A]]
+
+  def from[A](source: collection.IterableOnce[A]): HashSet[A] =
+    source match {
       case hs: HashSet[A] => hs
-      case _ => (newBuilder[A] ++= it).result()
+      case _ if source.knownSize == 0 => empty[A]
+      case _ => (newBuilder[A] ++= source).result()
     }
 
-  def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
-
-  def newBuilder[A]: Builder[A, HashSet[A]] =
-    new ImmutableBuilder[A, HashSet[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
-    }
-
-  private object EmptyHashSet extends HashSet[Any] {
-
-    def iterator: Iterator[Any] = Iterator.empty
-
-    override def foreach[U](f: Any => U): Unit = ()
-
-    override def head: Any = throw new NoSuchElementException("Empty Set")
-
-    override def headOption: None.type = None
-
-    override def tail: HashSet[Any] = throw new NoSuchElementException("Empty Set")
-
-    override def init: HashSet[Any] = throw new NoSuchElementException("Empty Set")
-
-    override def size: Int = 0
-
-    protected def get0(elem: Any, hash: Int, level: Int) = false
-
-    protected def subsetOf0(that: HashSet[Any], level: Int): Boolean = {
-      // returns true because the empty set is a subset of all sets
-      true
-    }
-
-    protected def updated0(elem: Any, hash: Int, level: Int) = new HashSet1(elem, hash)
-
-    protected def removed0(key: Any, hash: Int, level: Int) = this
-
-    private[immutable] def union0(that: LeafHashSet[Any], level: Int): HashSet[Any] = that
-
-    protected def union0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = that
-
-    protected def intersect0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
-
-    protected def diff0(that: HashSet[Any], level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
-
-    protected def filter0(p: Any => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[Any]], offset0: Int): HashSet[Any] = null
-
-  }
-
-  /**
-    * Common superclass of HashSet1 and HashSetCollision1, which are the two possible leaves of the Trie
-    */
-  private[HashSet] sealed abstract class LeafHashSet[A] extends HashSet[A] {
-    private[HashSet] def hash:Int
-  }
-
-  private[immutable] final class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
-
-    def iterator: Iterator[A] = Iterator.single(key)
-
-    override def foreach[U](f: A => U): Unit = f(key)
-
-    override def head: A = key
-
-    override def headOption: Some[A] = Some(key)
-
-    override def tail: HashSet[A] = HashSet.empty[A]
-
-    override def last: A = key
-
-    override def init: HashSet[A] = HashSet.empty[A]
-
-    override def size: Int = 1
-
-    protected def get0(key: A, hash: Int, level: Int) =
-      (hash == this.hash && key == this.key)
-
-    protected def updated0(key: A, hash: Int, level: Int) =
-      if (hash == this.hash && key == this.key) this
-      else {
-        if (hash != this.hash) {
-          makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
-        } else {
-          // 32-bit hash collision (rare, but not impossible)
-          new HashSetCollision1(hash, ListSet.empty + this.key + key)
-        }
-      }
-
-    protected def removed0(key: A, hash: Int, level: Int) =
-      if (hash == this.hash && key == this.key) null else this
-
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = {
-      // check if that contains this.key
-      // we use get0 with our key and hash at the correct level instead of calling contains,
-      // which would not work since that might not be a top-level HashSet
-      // and in any case would be inefficient because it would require recalculating the hash code
-      that.get0(key, hash, level)
-    }
-
-    private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A] = that match {
-      case that if that.hash != this.hash =>
-        // different hash code, so there is no need to investigate further.
-        // Just create a branch node containing the two.
-        makeHashTrieSet(this.hash, this, that.hash, that, level)
-      case that: HashSet1[A] =>
-        if (this.key == that.key) {
-          this
-        } else {
-          // 32-bit hash collision (rare, but not impossible)
-          new HashSetCollision1[A](hash, ListSet.empty + this.key + that.key)
-        }
-      case that: HashSetCollision1[A] =>
-        val ks1 = that.ks + key
-        // Could use eq check (faster) if ListSet was guaranteed to return itself
-        if (ks1.size == that.ks.size) {
-          that
-        } else {
-          new HashSetCollision1[A](hash, ks1)
-        }
-    }
-
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
-      // switch to the Leaf version of union
-      // we can exchange the arguments because union is symmetrical
-      that.union0(this, level)
-    }
-
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
-      if (that.get0(key, hash, level)) this else null
-
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) =
-      if (that.get0(key, hash, level)) null else this
-
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
-      if (negate ^ p(key)) this else null
-  }
-
-  private[immutable] final class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A]) extends LeafHashSet[A] {
-
-    override def size = ks.size
-
-    def iterator: Iterator[A] = ks.iterator
-
-    override def foreach[U](f: A => U): Unit = ks.foreach(f)
-
-    protected def get0(key: A, hash: Int, level: Int) =
-      if (hash == this.hash) ks.contains(key) else false
-
-    protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
-      if (hash == this.hash) new HashSetCollision1(hash, ks + key)
-      else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
-
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
-      if (hash == this.hash) {
-        val ks1 = ks - key
-        ks1.size match {
-          case 0 =>
-            // the empty set
-            null
-          case 1 =>
-            // create a new HashSet1 with the hash we already know
-            new HashSet1(ks1.head, hash)
-          case size if size == ks.size =>
-            // Should only have HSC1 if size > 1
-            this
-          case _ =>
-            // create a new HashSetCollision with the hash we already know and the new keys
-            new HashSetCollision1(hash, ks1)
-        }
-      } else this
-
-    private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-      // this cannot work - reading things in might produce different
-      // hash codes and remove the collision. however this is never called
-      // because no references to this class are ever handed out to client code
-      // and HashTrieSet serialization takes care of the situation
-      sys.error("cannot serialize an immutable.HashSet where all items have the same 32-bit hash code")
-      //out.writeObject(kvs)
-    }
-
-    private def readObject(in: java.io.ObjectInputStream): Unit = {
-      sys.error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
-      //kvs = in.readObject().asInstanceOf[ListSet[A]]
-      //hash = computeHash(kvs.)
-    }
-
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
-      val ks1 = if(negate) ks.filterNot(p) else ks.filter(p)
-      ks1.size match {
-        case 0 =>
-          null
-        case 1 =>
-          new HashSet1(ks1.head, hash)
-        case x if x == ks.size =>
-          this
-        case _ =>
-          new HashSetCollision1(hash, ks1)
-      }
-    }
-
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = {
-      // we have to check each element
-      // we use get0 with our hash at the correct level instead of calling contains,
-      // which would not work since that might not be a top-level HashSet
-      // and in any case would be inefficient because it would require recalculating the hash code
-      ks.forall(key => that.get0(key, hash, level))
-    }
-
-    private[immutable] def union0(that: LeafHashSet[A], level: Int) = that match {
-      case that if that.hash != this.hash =>
-        // different hash code, so there is no need to investigate further.
-        // Just create a branch node containing the two.
-        makeHashTrieSet(this.hash, this, that.hash, that, level)
-      case that: HashSet1[A] =>
-        val ks1 = ks + that.key
-        // Could use eq check (faster) if ListSet was guaranteed to return itself
-        if (ks1.size == ks.size) {
-          this
-        } else {
-          // create a new HashSetCollision with the existing hash
-          // we don't have to check for size=1 because union is never going to remove elements
-          new HashSetCollision1[A](hash, ks1)
-        }
-      case that: HashSetCollision1[A] =>
-        val ks1 = this.ks ++ that.ks
-        ks1.size match {
-          case size if size == this.ks.size =>
-            // could this check be made faster by doing an eq check?
-            // I am not sure we can rely on ListSet returning itself when all elements are already in the set,
-            // so it seems unwise to rely on it.
-            this
-          case size if size == that.ks.size =>
-            // we have to check this as well, since we don't want to create a new instance if this is a subset of that
-            that
-          case _ =>
-            // create a new HashSetCollision with the existing hash
-            // we don't have to check for size=1 because union is never going to remove elements
-            new HashSetCollision1[A](hash, ks1)
-        }
-    }
-
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = that match {
-      case that: LeafHashSet[A] =>
-        // switch to the simpler Tree/Leaf implementation
-        this.union0(that, level)
-      case that: HashTrieSet[A] =>
-        // switch to the simpler Tree/Leaf implementation
-        // we can swap this and that because union is symmetrical
-        that.union0(this, level)
-      case _ => this
-    }
-
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
-      // filter the keys, taking advantage of the fact that we know their hash code
-      val ks1 = ks.filter(that.get0(_, hash, level))
-      ks1.size match {
-        case 0 =>
-          // the empty set
-          null
-        case size if size == this.size =>
-          // unchanged
-          // We do this check first since even if the result is of size 1 since
-          // it is preferable to return the existing set for better structural sharing
-          this
-        case size if size == that.size =>
-          // the other set
-          // We do this check first since even if the result is of size 1 since
-          // it is preferable to return the existing set for better structural sharing
-          that
-        case 1 =>
-          // create a new HashSet1 with the hash we already know
-          new HashSet1(ks1.head, hash)
-        case _ =>
-          // create a new HashSetCollision with the hash we already know and the new keys
-          new HashSetCollision1(hash, ks1)
-      }
-    }
-
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int) = {
-      val ks1 = ks.filterNot(that.get0(_, hash, level))
-      ks1.size match {
-        case 0 =>
-          // the empty set
-          null
-        case size if size == this.size =>
-          // unchanged
-          // We do this check first since even if the result is of size 1 since
-          // it is preferable to return the existing set for better structural sharing
-          this
-        case 1 =>
-          // create a new HashSet1 with the hash we already know
-          new HashSet1(ks1.head, hash)
-        case _ =>
-          // create a new HashSetCollision with the hash we already know and the new keys
-          new HashSetCollision1(hash, ks1)
-      }
-    }
-
-  }
-
-  /**
-    * A branch node of the HashTrieSet with at least one and up to 32 children.
-    *
-    * @param bitmap encodes which element corresponds to which child
-    * @param elems the up to 32 children of this node.
-    *              the number of children must be identical to the number of 1 bits in bitmap
-    * @param size0 the total number of elements. This is stored just for performance reasons.
-    * @tparam A      the type of the elements contained in this hash set.
-    *
-    * How levels work:
-    *
-    * When looking up or adding elements, the part of the hashcode that is used to address the children array depends
-    * on how deep we are in the tree. This is accomplished by having a level parameter in all internal methods
-    * that starts at 0 and increases by 5 (32 = 2^5) every time we go deeper into the tree.
-    *
-    * hashcode (binary): 00000000000000000000000000000000
-    * level=0 (depth=0)                             ^^^^^
-    * level=5 (depth=1)                        ^^^^^
-    * level=10 (depth=2)                  ^^^^^
-    * ...
-    *
-    * Be careful: a non-toplevel HashTrieSet is not a self-contained set, so e.g. calling contains on it will not work!
-    * It relies on its depth in the Trie for which part of a hash to use to address the children, but this information
-    * (the level) is not stored due to storage efficiency reasons but has to be passed explicitly!
-    *
-    * How bitmap and elems correspond:
-    *
-    * A naive implementation of a HashTrieSet would always have an array of size 32 for children and leave the unused
-    * children empty (null). But that would be very wasteful regarding memory. Instead, only non-empty children are
-    * stored in elems, and the bitmap is used to encode which elem corresponds to which child bucket. The lowest 1 bit
-    * corresponds to the first element, the second-lowest to the second, etc.
-    *
-    * bitmap (binary): 00010000000000000000100000000000
-    * elems: [a,b]
-    * children:        ---b----------------a-----------
-    */
-  private[immutable] final class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
-    extends HashSet[A] {
-    assert(Integer.bitCount(bitmap) == elems.length)
-    // assertion has to remain disabled until SI-6197 is solved
-    // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
-
-    override def size = size0
-
-    def iterator: Iterator[A] = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
-      final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
-    }
-
-    override def foreach[U](f: A => U): Unit = {
-      var i = 0
-      while (i < elems.length) {
-        elems(i).foreach(f)
-        i += 1
-      }
-    }
-
-    protected def get0(key: A, hash: Int, level: Int) = {
-      val index = (hash >>> level) & 0x1f
-      val mask = (1 << index)
-      if (bitmap == - 1) {
-        elems(index & 0x1f).get0(key, hash, level + 5)
-      } else if ((bitmap & mask) != 0) {
-        val offset = Integer.bitCount(bitmap & (mask-1))
-        elems(offset).get0(key, hash, level + 5)
-      } else
-        false
-    }
-
-    protected def updated0(key: A, hash: Int, level: Int) = {
-      val index = (hash >>> level) & 0x1f
-      val mask = (1 << index)
-      val offset = Integer.bitCount(bitmap & (mask-1))
-      if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
-        val subNew = sub.updated0(key, hash, level + 5)
-        if (sub eq subNew) this
-        else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
-          elemsNew(offset) = subNew
-          new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
-        }
-      } else {
-        val elemsNew = new Array[HashSet[A]](elems.length + 1)
-        Array.copy(elems, 0, elemsNew, 0, offset)
-        elemsNew(offset) = new HashSet1(key, hash)
-        Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
-        val bitmapNew = bitmap | mask
-        new HashTrieSet(bitmapNew, elemsNew, size + 1)
-      }
-    }
-
-    protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
-      val index = (hash >>> level) & 0x1f
-      val mask = (1 << index)
-      val offset = Integer.bitCount(bitmap & (mask-1))
-      if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
-        val subNew = sub.removed0(key, hash, level + 5)
-        if (sub eq subNew) this
-        else if (subNew eq null) {
-          val bitmapNew = bitmap ^ mask
-          if (bitmapNew != 0) {
-            val elemsNew = new Array[HashSet[A]](elems.length - 1)
-            Array.copy(elems, 0, elemsNew, 0, offset)
-            Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
-            val sizeNew = size - sub.size
-            // if we have only one child, which is not a HashTrieSet but a self-contained set like
-            // HashSet1 or HashSetCollision1, return the child instead
-            if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieSet[_]])
-              elemsNew(0)
-            else
-              new HashTrieSet(bitmapNew, elemsNew, sizeNew)
-          } else
-            null
-        } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieSet[_]]) {
-          subNew
-        } else {
-          val elemsNew = java.util.Arrays.copyOf(elems, elems.length)
-          elemsNew(offset) = subNew
-          val sizeNew = size + (subNew.size - sub.size)
-          new HashTrieSet(bitmap, elemsNew, sizeNew)
-        }
-      } else {
-        this
-      }
-    }
-
-    private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A] = {
-      val index = (that.hash >>> level) & 0x1f
-      val mask = (1 << index)
-      val offset = Integer.bitCount(bitmap & (mask - 1))
-      if ((bitmap & mask) != 0) {
-        val sub = elems(offset)
-        val sub1 = sub.union0(that, level + 5)
-        if (sub eq sub1) this
-        else {
-          val elems1 = new Array[HashSet[A]](elems.length)
-          Array.copy(elems, 0, elems1, 0, elems.length)
-          elems1(offset) = sub1
-          new HashTrieSet(bitmap, elems1, size + (sub1.size - sub.size))
-        }
-      } else {
-        val elems1 = new Array[HashSet[A]](elems.length + 1)
-        Array.copy(elems, 0, elems1, 0, offset)
-        elems1(offset) = that
-        Array.copy(elems, offset, elems1, offset + 1, elems.length - offset)
-        val bitmap1 = bitmap | mask
-        new HashTrieSet(bitmap1, elems1, size + that.size)
-      }
-    }
-
-    protected def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
-      case that if that eq this =>
-        // shortcut for when that is this
-        // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
-        // e.g. you have a large set A and do some small operations (adding and removing elements) to it to create B
-        // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
-        // at these nodes.
-        this
-      case that: LeafHashSet[A] =>
-        // when that is a leaf, we can switch to the simpler Tree/Leaf implementation
-        this.union0(that, level)
-      case that: HashTrieSet[A] =>
-        val a = this.elems
-        var abm = this.bitmap
-        var ai = 0
-
-        val b = that.elems
-        var bbm = that.bitmap
-        var bi = 0
-
-        // fetch a new temporary array that is guaranteed to be big enough (32 elements)
-        var offset = offset0
-        var rs = 0
-
-        // loop as long as there are bits left in either abm or bbm
-        while ((abm | bbm) != 0) {
-          // lowest remaining bit in abm
-          val alsb = abm ^ (abm & (abm - 1))
-          // lowest remaining bit in bbm
-          val blsb = bbm ^ (bbm & (bbm - 1))
-          if (alsb == blsb) {
-            val sub1 = a(ai).union0(b(bi), level + 5, buffer, offset)
-            rs += sub1.size
-            buffer(offset) = sub1
-            offset += 1
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb
-            ai += 1
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb
-            bi += 1
-          } else if (BitOperations.Int.unsignedCompare(alsb - 1, blsb - 1)) {
-            // alsb is smaller than blsb, or alsb is set and blsb is 0
-            // in any case, alsb is guaranteed to be set here!
-            val sub1 = a(ai)
-            rs += sub1.size
-            buffer(offset) = sub1
-            offset += 1
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb
-            ai += 1
-          } else {
-            // blsb is smaller than alsb, or blsb is set and alsb is 0
-            // in any case, blsb is guaranteed to be set here!
-            val sub1 = b(bi)
-            rs += sub1.size
-            buffer(offset) = sub1
-            offset += 1
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb
-            bi += 1
-          }
-        }
-        if (rs == this.size) {
-          // if the result would be identical to this, we might as well return this
-          this
-        } else if (rs == that.size) {
-          // if the result would be identical to that, we might as well return that
-          that
-        } else {
-          // we don't have to check whether the result is a leaf, since union will only make the set larger
-          // and this is not a leaf to begin with.
-          val length = offset - offset0
-          val elems = new Array[HashSet[A]](length)
-          System.arraycopy(buffer, offset0, elems, 0, length)
-          new HashTrieSet(this.bitmap | that.bitmap, elems, rs)
-        }
-      case _ => this
-    }
-
-    protected def intersect0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
-      case that if that eq this =>
-        // shortcut for when that is this
-        // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
-        // e.g. you have a large set A and do some small operations (adding and removing elements) to it to create B
-        // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
-        // at these nodes!
-        this
-      case that: LeafHashSet[A] =>
-        // when that is a leaf, we can switch to the simpler Tree/Leaf implementation
-        // it is OK to swap the arguments because intersect is symmetric
-        // (we can't do this in case of diff, which is not symmetric)
-        that.intersect0(this, level, buffer, offset0)
-      case that: HashTrieSet[A] =>
-        val a = this.elems
-        var abm = this.bitmap
-        var ai = 0
-
-        val b = that.elems
-        var bbm = that.bitmap
-        var bi = 0
-
-        // if the bitmasks do not overlap, the result is definitely empty so we can abort here
-        if ((abm & bbm) == 0)
-          return null
-
-        // fetch a new temporary array that is guaranteed to be big enough (32 elements)
-        var offset = offset0
-        var rs = 0
-        var rbm = 0
-
-        // loop as long as there are bits left that are set in both abm and bbm
-        while ((abm & bbm) != 0) {
-          // highest remaining bit in abm
-          val alsb = abm ^ (abm & (abm - 1))
-          // highest remaining bit in bbm
-          val blsb = bbm ^ (bbm & (bbm - 1))
-          if (alsb == blsb) {
-            val sub1 = a(ai).intersect0(b(bi), level + 5, buffer, offset)
-            if (sub1 ne null) {
-              rs += sub1.size
-              rbm |= alsb
-              buffer(offset) = sub1
-              offset += 1
-            }
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb
-            ai += 1
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb
-            bi += 1
-          } else if (BitOperations.Int.unsignedCompare(alsb - 1, blsb - 1)) {
-            // alsb is smaller than blsb, or alsb is set and blsb is 0
-            // in any case, alsb is guaranteed to be set here!
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb
-            ai += 1
-          } else {
-            // blsb is smaller than alsb, or blsb is set and alsb is 0
-            // in any case, blsb is guaranteed to be set here!
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb
-            bi += 1
-          }
-        }
-
-        if (rbm == 0) {
-          // if the result bitmap is empty, the result is the empty set
-          null
-        } else if (rs == size0) {
-          // if the result has the same number of elements as this, it must be identical to this,
-          // so we might as well return this
-          this
-        } else if (rs == that.size0) {
-          // if the result has the same number of elements as that, it must be identical to that,
-          // so we might as well return that
-          that
-        } else {
-          val length = offset - offset0
-          if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
-            buffer(offset0)
-          else {
-            val elems = new Array[HashSet[A]](length)
-            System.arraycopy(buffer, offset0, elems, 0, length)
-            new HashTrieSet[A](rbm, elems, rs)
-          }
-        }
-      case _ => null
-    }
-
-    protected def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
-      case that if that eq this =>
-        // shortcut for when that is this
-        // this happens often for nodes deeper in the tree, especially when that and this share a common "heritage"
-        // e.g. you have a large set A and do some small operations (adding and removing elements) to it to create B
-        // then A and B will have the vast majority of nodes in common, and this eq check will allow not even looking
-        // at these nodes!
-        null
-      case that: HashSet1[A] =>
-        removed0(that.key, that.hash, level)
-      case that: HashTrieSet[A] =>
-        val a = this.elems
-        var abm = this.bitmap
-        var ai = 0
-
-        val b = that.elems
-        var bbm = that.bitmap
-        var bi = 0
-
-        // fetch a new temporary array that is guaranteed to be big enough (32 elements)
-        var offset = offset0
-        var rs = 0
-        var rbm = 0
-
-        // loop until there are no more bits in abm
-        while(abm!=0) {
-          // highest remaining bit in abm
-          val alsb = abm ^ (abm & (abm - 1))
-          // highest remaining bit in bbm
-          val blsb = bbm ^ (bbm & (bbm - 1))
-          if (alsb == blsb) {
-            val sub1 = a(ai).diff0(b(bi), level + 5, buffer, offset)
-            if (sub1 ne null) {
-              rs += sub1.size
-              rbm |= alsb
-              buffer(offset) = sub1
-              offset += 1
-            }
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb; ai += 1
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb; bi += 1
-          } else if (BitOperations.Int.unsignedCompare(alsb - 1, blsb - 1)) {
-            // alsb is smaller than blsb, or alsb is set and blsb is 0
-            // in any case, alsb is guaranteed to be set here!
-            val sub1 = a(ai)
-            rs += sub1.size
-            rbm |= alsb
-            buffer(offset) = sub1; offset += 1
-            // clear lowest remaining one bit in abm and increase the a index
-            abm &= ~alsb; ai += 1
-          } else {
-            // blsb is smaller than alsb, or blsb is set and alsb is 0
-            // in any case, blsb is guaranteed to be set here!
-            // clear lowest remaining one bit in bbm and increase the b index
-            bbm &= ~blsb; bi += 1
-          }
-        }
-        if (rbm == 0) {
-          null
-        } else if (rs == this.size0) {
-          // if the result has the same number of elements as this, it must be identical to this,
-          // so we might as well return this
-          this
-        } else {
-          val length = offset - offset0
-          if (length == 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]])
-            buffer(offset0)
-          else {
-            val elems = new Array[HashSet[A]](length)
-            System.arraycopy(buffer, offset0, elems, 0, length)
-            new HashTrieSet[A](rbm, elems, rs)
-          }
-        }
-      case that: HashSetCollision1[A] =>
-        // we remove the elements using removed0 so we can use the fact that we know the hash of all elements
-        // to be removed
-        @tailrec def removeAll(s:HashSet[A], r:ListSet[A]) : HashSet[A] =
-          if(r.isEmpty || (s eq null)) s
-          else removeAll(s.removed0(r.head, that.hash, level), r.tail)
-        removeAll(this, that.ks)
-      case _ => this
-    }
-
-    protected def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
-      case that: HashTrieSet[A] if this.size0 <= that.size0 =>
-        // create local mutable copies of members
-        var abm = this.bitmap
-        val a = this.elems
-        var ai = 0
-        val b = that.elems
-        var bbm = that.bitmap
-        var bi = 0
-        if ((abm & bbm) == abm) {
-          // I tried rewriting this using tail recursion, but the generated java byte code was less than optimal
-          while(abm!=0) {
-            // highest remaining bit in abm
-            val alsb = abm ^ (abm & (abm - 1))
-            // highest remaining bit in bbm
-            val blsb = bbm ^ (bbm & (bbm - 1))
-            // if both trees have a bit set at the same position, we need to check the subtrees
-            if (alsb == blsb) {
-              // we are doing a comparison of a child of this with a child of that,
-              // so we have to increase the level by 5 to keep track of how deep we are in the tree
-              if (!a(ai).subsetOf0(b(bi), level + 5))
-                return false
-              // clear lowest remaining one bit in abm and increase the a index
-              abm &= ~alsb; ai += 1
-            }
-            // clear lowermost remaining one bit in bbm and increase the b index
-            // we must do this in any case
-            bbm &= ~blsb; bi += 1
-          }
-          true
-        } else {
-          // the bitmap of this contains more one bits than the bitmap of that,
-          // so this can not possibly be a subset of that
-          false
-        }
-      case _ =>
-        // if the other set is a HashTrieSet but has less elements than this, it can not be a subset
-        // if the other set is a HashSet1, we can not be a subset of it because we are a HashTrieSet with at least two children (see assertion)
-        // if the other set is a HashSetCollision1, we can not be a subset of it because we are a HashTrieSet with at least two different hash codes
-        // if the other set is the empty set, we are not a subset of it because we are not empty
-        false
-    }
-
-    protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
-      // current offset
-      var offset = offset0
-      // result size
-      var rs = 0
-      // bitmap for kept elems
-      var kept = 0
-      // loop over all elements
-      var i = 0
-      while (i < elems.length) {
-        val result = elems(i).filter0(p, negate, level + 5, buffer, offset)
-        if (result ne null) {
-          buffer(offset) = result
-          offset += 1
-          // add the result size
-          rs += result.size
-          // mark the bit i as kept
-          kept |= (1 << i)
-        }
-        i += 1
-      }
-      if (offset == offset0) {
-        // empty
-        null
-      } else if (rs == size0) {
-        // unchanged
-        this
-      } else if (offset == offset0 + 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]]) {
-        // leaf
-        buffer(offset0)
-      } else {
-        // we have to return a HashTrieSet
-        val length = offset - offset0
-        val elems1 = new Array[HashSet[A]](length)
-        System.arraycopy(buffer, offset0, elems1, 0, length)
-        val bitmap1 = if (length == elems.length) {
-          // we can reuse the original bitmap
-          bitmap
-        } else {
-          // calculate new bitmap by keeping just bits in the kept bitmask
-          Hashing.keepBits(bitmap, kept)
-        }
-        new HashTrieSet(bitmap1, elems1, rs)
-      }
-    }
-  }
-
-  // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
-  private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
-    val index0 = (hash0 >>> level) & 0x1f
-    val index1 = (hash1 >>> level) & 0x1f
-    if(index0 != index1) {
-      val bitmap = (1 << index0) | (1 << index1)
-      val elems = new Array[HashSet[A]](2)
-      if(index0 < index1) {
-        elems(0) = elem0
-        elems(1) = elem1
-      } else {
-        elems(0) = elem1
-        elems(1) = elem0
-      }
-      new HashTrieSet[A](bitmap, elems, elem0.size + elem1.size)
-    } else {
-      val elems = new Array[HashSet[A]](1)
-      val bitmap = (1 << index0)
-      val child = makeHashTrieSet(hash0, elem0, hash1, elem1, level + 5)
-      elems(0) = child
-      new HashTrieSet[A](bitmap, elems, child.size)
-    }
-  }
-
-  /**
-    * Calculates the maximum buffer size given the maximum possible total size of the trie-based collection
-    * @param size the maximum size of the collection to be generated
-    * @return the maximum buffer size
-    */
-  @`inline` private def bufferSize(size: Int): Int = (size + 6) min (32 * 7)
-
-  /**
-    * In many internal operations the empty set is represented as null for performance reasons. This method converts
-    * null to the empty set for use in public methods
-    */
-  @`inline` private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
+  def newBuilder[A]: Builder[A, HashSet[A]] = new HashSetBuilder
 }
+
+private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]] {
+  import Node._
+  import SetNode._
+
+  private def newEmptyRootNode = new BitmapIndexedSetNode[A](0, 0, Array(), Array(), 0)
+
+  /** The last given out HashSet as a return value of `result()`, if any, otherwise null.
+    * Indicates that on next add, the elements should be copied to an identical structure, before continuing
+    * mutations. */
+  private var aliased: HashSet[A] = _
+
+  private def isAliased: Boolean = aliased != null
+
+  /** The root node of the partially build hashmap */
+  private var rootNode: SetNode[A] = newEmptyRootNode
+
+  /** The cached hash of the partially-built hashmap */
+  private var hash: Int = 0
+
+  /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
+  private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
+  }
+
+  /** Inserts key-value into the bitmapIndexMapNode. Requires that this is a new key-value pair */
+  private def insertValue[A1 >: A](bm: BitmapIndexedSetNode[A], bitpos: Int, key: A, originalHash: Int, keyHash: Int): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+
+    val src = bm.content
+    val dst = new Array[Any](src.length + TupleLength)
+
+    // copy 'src' and insert 2 element(s) at position 'idx'
+    arraycopy(src, 0, dst, 0, idx)
+    dst(idx) = key
+    arraycopy(src, idx, dst, idx + TupleLength, src.length - idx)
+
+    val dstHashes = insertElement(bm.originalHashes, dataIx, originalHash)
+
+    bm.dataMap = bm.dataMap | bitpos
+    bm.content = dst
+    bm.originalHashes = dstHashes
+    bm.size += 1
+  }
+
+  /** Removes element at index `ix` from array `as`, shifting the trailing elements right */
+  private def removeElement(as: Array[Int], ix: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
+  /** Mutates `bm` to replace inline data at bit position `bitpos` with node `node` */
+  private def migrateFromInlineToNode(bm: BitmapIndexedSetNode[A], bitpos: Int, node: SetNode[A]): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idxOld = TupleLength * dataIx
+    val idxNew = bm.content.length - TupleLength - bm.nodeIndex(bitpos)
+
+    val src = bm.content
+    val dst = new Array[Any](src.length - TupleLength + 1)
+
+    // copy 'src' and remove 2 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld <= idxNew)
+    arraycopy(src, 0, dst, 0, idxOld)
+    arraycopy(src, idxOld + TupleLength, dst, idxOld, idxNew - idxOld)
+    dst(idxNew) = node
+    arraycopy(src, idxNew + TupleLength, dst, idxNew + 1, src.length - idxNew - TupleLength)
+
+    val dstHashes = removeElement(bm.originalHashes, dataIx)
+
+    bm.dataMap ^= bitpos
+    bm.nodeMap |= bitpos
+    bm.content = dst
+    bm.originalHashes = dstHashes
+    bm.size = bm.size - 1 + node.size
+  }
+
+  /** Mutates `bm` to replace inline data at bit position `bitpos` with updated key/value */
+  private def setValue[A1 >: A](bm: BitmapIndexedSetNode[A], bitpos: Int, elem: A): Unit = {
+    val dataIx = bm.dataIndex(bitpos)
+    val idx = TupleLength * dataIx
+    bm.content(idx) = elem
+  }
+
+  def update(setNode: SetNode[A], element: A, originalHash: Int, elementHash: Int, shift: Int): Unit =
+    setNode match {
+      case bm: BitmapIndexedSetNode[A] =>
+        val mask = maskFrom(elementHash, shift)
+        val bitpos = bitposFrom(mask)
+
+        if ((bm.dataMap & bitpos) != 0) {
+          val index = indexFrom(bm.dataMap, mask, bitpos)
+          val element0 = bm.getPayload(index)
+          val element0UnimprovedHash = bm.getHash(index)
+
+          if (element0UnimprovedHash == originalHash && element0 == element) {
+            setValue(bm, bitpos, element0)
+          } else {
+            val element0Hash = improve(element0UnimprovedHash)
+            val subNodeNew = bm.mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
+            hash += elementHash
+            migrateFromInlineToNode(bm, bitpos, subNodeNew)
+          }
+        } else if ((bm.nodeMap & bitpos) != 0) {
+          val index = indexFrom(bm.nodeMap, mask, bitpos)
+          val subNode = bm.getNode(index)
+          val beforeSize = subNode.size
+          update(subNode, element, originalHash, elementHash, shift + BitPartitionSize)
+          bm.size += subNode.size - beforeSize
+        } else {
+          insertValue(bm, bitpos, element, originalHash, elementHash)
+          hash += elementHash
+        }
+      case hc: HashCollisionSetNode[A] =>
+        val index = hc.content.indexOf(element)
+        if (index < 0) {
+          hash += elementHash
+          hc.content = hc.content.appended(element)
+        } else {
+          hc.content = hc.content.updated(index, element)
+        }
+    }
+
+  /** If currently referencing aliased structure, copy elements to new mutable structure */
+  private def ensureUnaliased():Unit = {
+    if (isAliased) copyElems()
+    aliased = null
+  }
+
+  /** Copy elements to new mutable structure */
+  private def copyElems(): Unit = {
+    rootNode = rootNode.copy()
+  }
+
+  override def result(): HashSet[A] =
+    if (rootNode.size == 0) {
+      HashSet.empty
+    } else if (aliased != null) {
+      aliased
+    } else {
+      aliased = new HashSet(rootNode, hash)
+      releaseFence()
+      aliased
+    }
+
+  override def addOne(elem: A): this.type = {
+    ensureUnaliased()
+    val h = elem.##
+    val im = improve(h)
+    update(rootNode, elem, h, im, 0)
+    this
+  }
+
+  override def addAll(xs: IterableOnce[A]) = {
+    ensureUnaliased()
+    xs match {
+      case hm: HashSet[A] =>
+        new ChampBaseIterator(hm.rootNode) {
+          while(hasNext) {
+            val originalHash = currentValueNode.getHash(currentValueCursor)
+            update(
+              setNode = rootNode,
+              element = currentValueNode.getPayload(currentValueCursor),
+              originalHash = originalHash,
+              elementHash = improve(originalHash),
+              shift = 0
+            )
+            currentValueCursor += 1
+          }
+        }
+      case other =>
+        val it = other.iterator
+        while(it.hasNext) addOne(it.next())
+    }
+
+    this
+  }
+
+  override def clear(): Unit = {
+    aliased = null
+    if (rootNode.size > 0) {
+      // if rootNode is empty, we will not have given it away anyways, we instead give out the reused Set.empty
+      rootNode = newEmptyRootNode
+    }
+    hash = 0
+  }
+
+  private[collection] def size: Int = rootNode.size
+}
+

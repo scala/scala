@@ -47,10 +47,6 @@ object Test extends App {
   "foo".asInstanceOf["bar"]
   null.asInstanceOf["foo"]
 
-  'foo.asInstanceOf['foo]
-  'foo.asInstanceOf['bar]
-  null.asInstanceOf['foo]
-
   // isInstanceOf
   assert(global0.isInstanceOf[global0.type])
   assert(!global0.isInstanceOf[global1.type])
@@ -91,8 +87,4 @@ object Test extends App {
   assert("foo".isInstanceOf["foo"])
   assert(!"foo".isInstanceOf["bar"])
   assert(!null.isInstanceOf["foo"])
-
-  assert('foo.isInstanceOf['foo])
-  assert(!'foo.isInstanceOf['bar])
-  assert(!null.isInstanceOf['foo])
 }

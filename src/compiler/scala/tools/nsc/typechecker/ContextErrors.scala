@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -98,7 +105,10 @@ trait ContextErrors {
     def issueTypeError(err: AbsTypeError)(implicit context: Context): Unit = { context.issue(err) }
 
     def typeErrorMsg(context: Context, found: Type, req: Type) =
-      if (context.openImplicits.nonEmpty && !settings.XlogImplicits.value) "type mismatch"
+      if (context.openImplicits.nonEmpty && !settings.XlogImplicits.value && settings.isScala213)
+         // OPT: avoid error string creation for errors that won't see the light of day, but predicate
+        //       this on -Xsource:2.13 for bug compatibility with https://github.com/scala/scala/pull/7147#issuecomment-418233611
+        "type mismatch"
       else "type mismatch" + foundReqMsg(found, req)
   }
 
@@ -713,7 +723,7 @@ trait ContextErrors {
 
       // SelectFromTypeTree
       def TypeSelectionFromVolatileTypeError(tree: Tree, qual: Tree) = {
-        val hiBound = qual.tpe.bounds.hi
+        val hiBound = qual.tpe.upperBound
         val addendum = if (hiBound =:= qual.tpe) "" else s" (with upper bound ${hiBound})"
         issueNormalTypeError(tree, s"illegal type selection from volatile type ${qual.tpe}${addendum}")
         setError(tree)
@@ -1125,9 +1135,8 @@ trait ContextErrors {
       private[scala] def NotWithinBoundsErrorMessage(prefix: String, targs: List[Type], tparams: List[Symbol], explaintypes: Boolean) = {
         if (explaintypes) {
           val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
-          (targs, bounds).zipped foreach ((targ, bound) => explainTypes(bound.lo, targ))
-          (targs, bounds).zipped foreach ((targ, bound) => explainTypes(targ, bound.hi))
-          ()
+          targs.lazyZip(bounds).foreach((targ, bound) => explainTypes(bound.lo, targ))
+          targs.lazyZip(bounds).foreach((targ, bound) => explainTypes(targ, bound.hi))
         }
 
         prefix + "type arguments " + targs.mkString("[", ",", "]") +
@@ -1306,12 +1315,12 @@ trait ContextErrors {
       }
 
 
-      def AbstractMemberWithModiferError(sym: Symbol, flag: Int) =
-        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag.toLong) + " modifier")
+      def AbstractMemberWithModiferError(sym: Symbol, flag: Long) =
+        issueSymbolTypeError(sym, "abstract member may not have " + Flags.flagsToString(flag) + " modifier")
 
-      def IllegalModifierCombination(sym: Symbol, flag1: Int, flag2: Int) =
+      def IllegalModifierCombination(sym: Symbol, flag1: Long, flag2: Long) =
         issueSymbolTypeError(sym, "illegal combination of modifiers: %s and %s for: %s".format(
-            Flags.flagsToString(flag1.toLong), Flags.flagsToString(flag2.toLong), sym))
+            Flags.flagsToString(flag1), Flags.flagsToString(flag2), sym))
 
       def IllegalDependentMethTpeError(sym: Symbol)(context: Context) = {
         val errorAddendum =

@@ -2,7 +2,7 @@ package scala.collection
 
 import org.junit.Test
 
-import scala.collection.mutable.{ArrayBuffer, Builder, Growable}
+import scala.collection.mutable.Builder
 import scala.math.Ordering
 
 class BuildFromTest {
@@ -105,7 +105,7 @@ class BuildFromTest {
     builder.result()
   }
 
-  def mapSplit[A, B, C, ToL, ToR](coll: Iterable[A])(f: A => Either[B, C])
+  def partitionWith[A, B, C, ToL, ToR](coll: Iterable[A])(f: A => Either[B, C])
               (implicit bfLeft:  BuildFrom[coll.type, B, ToL], bfRight: BuildFrom[coll.type, C, ToR]): (ToL, ToR) = {
     val left = bfLeft.newBuilder(coll)
     val right = bfRight.newBuilder(coll)
@@ -135,14 +135,14 @@ class BuildFromTest {
   }
 
   @Test
-  def mapSplitTest: Unit = {
+  def partitionWithTest: Unit = {
     val xs1 = immutable.List(1, 2, 3)
-    val (xs2, xs3) = mapSplit(xs1)(x => if (x % 2 == 0) Left(x) else Right(x.toString))
+    val (xs2, xs3) = partitionWith(xs1)(x => if (x % 2 == 0) Left(x) else Right(x.toString))
     val xs4: immutable.List[Int] = xs2
     val xs5: immutable.List[String] = xs3
 
     val xs6 = immutable.TreeMap((1, "1"), (2, "2"))
-    val (xs7, xs8) = mapSplit(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
+    val (xs7, xs8) = partitionWith(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
     val xs9: immutable.TreeMap[String, Int] = xs7
     val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }
@@ -156,6 +156,7 @@ class BuildFromTest {
   implicitly[BuildFrom[mutable.LongMap[_], (Long, String), mutable.LongMap[String]]]
   implicitly[BuildFrom[immutable.LongMap[_], (Long, String), immutable.LongMap[String]]]
   implicitly[BuildFrom[mutable.AnyRefMap[_ <: AnyRef, _], (String, String), mutable.AnyRefMap[String, String]]]
+  implicitly[BuildFrom[mutable.AnyRefMap[String, String], (String, String), _]]
 
   // Check that collection companions can implicitly be converted to a `BuildFrom` instance
   Iterable: BuildFrom[_, Int, Iterable[Int]]

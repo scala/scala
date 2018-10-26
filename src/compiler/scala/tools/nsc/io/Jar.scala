@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -77,6 +84,7 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
     Iterator continually in.getNextJarEntry() takeWhile (_ != null) foreach f
   }
   override def iterator: Iterator[JarEntry] = this.toList.iterator
+  override def isEmpty: Boolean = iterator.isEmpty
   override def toString = "" + file
 }
 
@@ -157,7 +165,7 @@ object Jar {
     def update(key: Attributes.Name, value: String) = attrs.put(key, value)
   }
 
-  // See http://docs.oracle.com/javase/7/docs/api/java/nio/file/Path.html
+  // See https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
   // for some ideas.
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  David Bernard, Manohar Jonnalagedda
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -115,7 +122,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         .map(_.newInstance(reporter))
         .getOrElse{
           reporter.warning(null, "Doclets should be created with the Reporter constructor, otherwise logging reporters will not be shared by the creating parent")
-          docletClass.newInstance()
+          docletClass.getConstructor().newInstance()
         }
         .asInstanceOf[Generator]
 

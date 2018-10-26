@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
@@ -82,6 +94,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     * @note   Reuse: $preservesIterator
     */
   def hasNext: Boolean
+
+  @deprecated("hasDefiniteSize on Iterator is the same as isEmpty", "2.13.0")
+  @`inline` override final def hasDefiniteSize = isEmpty
 
   /** Return the next element and advance the iterator.
     *
@@ -876,6 +891,7 @@ object Iterator extends IterableFactory[Iterator] {
   private[this] val _empty: Iterator[Nothing] = new AbstractIterator[Nothing] {
     def hasNext = false
     def next() = throw new NoSuchElementException("next on empty iterator")
+    override def knownSize: Int = 0
   }
 
   /** Creates a target $coll from an existing source collection
@@ -1049,7 +1065,7 @@ object Iterator extends IterableFactory[Iterator] {
         tail = tail.tail
         merge()
         if (currentHasNextChecked) true
-        else if (current.hasNext) {
+        else if ((current ne null) && current.hasNext) {
           currentHasNextChecked = true
           true
         } else advance()
@@ -1174,11 +1190,6 @@ object Iterator extends IterableFactory[Iterator] {
       } else Iterator.empty.next()
     }
   }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */

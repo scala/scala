@@ -1,12 +1,20 @@
-/* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.partest
 package nest
 
-import scala.tools.nsc.io.{ Path, File, Directory }
-import scala.tools.nsc.Properties.{ propOrNone }
+import scala.tools.nsc.io.{Directory, File}
+import scala.tools.nsc.Properties.propOrNone
 
 /** Get current value for path settings.
   * Default values are read from system properties `partest.srcdir` and `partest.root`.

@@ -1,8 +1,14 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-
 
 package scala
 package reflect
@@ -191,7 +197,7 @@ abstract class AbstractFile extends AbstractIterable[AbstractFile] {
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]
-
+  override def isEmpty: Boolean = iterator.isEmpty
   /** Returns the abstract file in this abstract directory with the specified
    *  name. If there is no such file, returns `null`. The argument
    *  `directory` tells whether to look for a directory or

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -26,6 +30,11 @@ import scala.util.matching.Regex
  *  All values in an enumeration share a common, unique type defined as the
  *  `Value` type member of the enumeration (`Value` selected on the stable
  *  identifier path of the enumeration instance).
+ *
+ *  Values SHOULD NOT be added to an enumeration after its construction;
+ *  doing so makes the enumeration thread-unsafe. If values are added to an
+ *  enumeration from multiple threads (in a non-synchronized fashion) after
+ *  construction, the behavior of the enumeration is undefined.
  *
  * @example {{{
  * // Define a new enumeration with a type alias and work with the full set of enumerated values
@@ -279,6 +288,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
       new ValueSet(nnIds.rangeImpl(from.map(_.id - bottomId), until.map(_.id - bottomId)))
 
     override def empty = ValueSet.empty
+    override def knownSize: Int = nnIds.size
+    override def isEmpty: Boolean = nnIds.isEmpty
     def contains(v: Value) = nnIds contains (v.id - bottomId)
     def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
     def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
@@ -289,18 +300,18 @@ abstract class Enumeration (initial: Int) extends Serializable {
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
 
-    override protected def fromSpecificIterable(coll: Iterable[Value]) = ValueSet.fromSpecific(coll)
+    override protected def fromSpecific(coll: IterableOnce[Value]) = ValueSet.fromSpecific(coll)
     override protected def newSpecificBuilder = ValueSet.newBuilder
 
-    def map(f: Value => Value): ValueSet = fromSpecificIterable(new View.Map(toIterable, f))
-    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecificIterable(new View.FlatMap(toIterable, f))
+    def map(f: Value => Value): ValueSet = fromSpecific(new View.Map(toIterable, f))
+    def flatMap(f: Value => IterableOnce[Value]): ValueSet = fromSpecific(new View.FlatMap(toIterable, f))
 
     // necessary for disambiguation:
     override def map[B](f: Value => B)(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].map[B](f)
     override def flatMap[B](f: Value => IterableOnce[B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].flatMap[B](f)
-    override def zip[B](that: Iterable[B])(implicit @implicitNotFound(ValueSet.zipOrdMsg) ev: Ordering[(Value, B)]): SortedIterableCC[(Value, B)] =
+    override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(ValueSet.zipOrdMsg) ev: Ordering[(Value, B)]): SortedIterableCC[(Value, B)] =
       super[SortedSet].zip[B](that)
     override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].collect[B](pf)

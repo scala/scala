@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -5,7 +17,6 @@ import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
-import java.lang.{StringBuilder => JStringBuilder}
 import scala.collection.mutable.StringBuilder
 
 /**
@@ -36,7 +47,9 @@ trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator: Iterator[A]
 
-  /** @return The number of elements of this $coll if it can be computed in O(1) time, otherwise -1 */
+  /** @return The number of elements in this $coll, if it can be cheaply computed,
+    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
+    */
   def knownSize: Int
 }
 
@@ -214,6 +227,17 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
 object IterableOnce {
   @`inline` implicit def iterableOnceExtensionMethods[A](it: IterableOnce[A]): IterableOnceExtensionMethods[A] =
     new IterableOnceExtensionMethods[A](it)
+
+  /** Computes the number of elements to copy to an array from a source IterableOnce
+    *
+    * @param srcLen the length of the source collection
+    * @param destLen the length of the destination array
+    * @param start the index in the destination array at which to start copying elements to
+    * @param len the requested number of elements to copy (we may only be able to copy less than this)
+    * @return the number of elements that will be copied to the destination array
+    */
+  @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int =
+    math.max(math.min(math.min(len, srcLen), destLen - start), 0)
 }
 
 /** This implementation trait can be mixed into an `IterableOnce` to get the basic methods that are shared between
@@ -419,13 +443,37 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /////////////////////////////////////////////////////////////// Concrete methods based on iterator
 
-  /** The number of elements in this $coll, if it can be cheaply computed,
-    *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
-    */
   def knownSize: Int = -1
 
-  @deprecated("Use .knownSize >=0 instead of .hasDefiniteSize", "2.13.0")
-  @`inline` final def hasDefiniteSize = knownSize >= 0
+  /** Tests whether this $coll is known to have a finite size.
+    *  All strict collections are known to have finite size. For a non-strict
+    *  collection such as `Stream`, the predicate returns `'''true'''` if all
+    *  elements have been computed. It returns `'''false'''` if the stream is
+    *  not yet evaluated to the end. Non-empty Iterators usually return
+    *  `'''false'''` even if they were created from a collection with a known
+    *  finite size.
+    *
+    *  Note: many collection methods will not work on collections of infinite sizes.
+    *  The typical failure mode is an infinite loop. These methods always attempt a
+    *  traversal without checking first that `hasDefiniteSize` returns `'''true'''`.
+    *  However, checking `hasDefiniteSize` can provide an assurance that size is
+    *  well-defined and non-termination is not a concern.
+    *
+    *  @deprecated This method is deprecated in 2.13 because it does not provide any
+    *    actionable information. As noted above, even the collection library itself
+    *    does not use it. When there is no guarantee that a collection is finite, it
+    *    is generally best to attempt a computation anyway and document that it will
+    *    not terminate for inifinite collections rather than backing out because this
+    *    would prevent performing the computation on collections that are in fact
+    *    finite even though `hasDefiniteSize` returns `false`.
+    *
+    *  @see method `knownSize` for a more useful alternative
+    *
+    *  @return  `'''true'''` if this collection is known to have finite size,
+    *           `'''false'''` otherwise.
+    */
+  @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
+  def hasDefiniteSize: Boolean = true
 
   /** Tests whether this $coll can be repeatedly traversed.  Always
    *  true for Iterables and false for Iterators unless overridden.
@@ -704,7 +752,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use `dest ++= coll` instead", "2.13.0")
   @inline final def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit = dest ++= this
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
    *
    *  Fills the given array `xs` starting at index `start` with values of this $coll.
    *
@@ -713,14 +761,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *
    *  @param  xs     the array to fill.
    *  @tparam B      the type of the elements of the array.
+   *  @return        the number of elements written to the array
    *
-   *  @usecase def copyToArray(xs: Array[A]): Unit
+   *  @usecase def copyToArray(xs: Array[A]): Int
    *
    *  $willNotTerminateInf
    */
-  def copyToArray[B >: A](xs: Array[B]): xs.type = copyToArray(xs, 0)
+  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0)
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
     *
     *  Fills the given array `xs` starting at index `start` with values of this $coll.
     *
@@ -730,13 +779,14 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  xs     the array to fill.
     *  @param  start  the starting index of xs.
     *  @tparam B      the type of the elements of the array.
+    *  @return        the number of elements written to the array
     *
-    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+    *  @usecase def copyToArray(xs: Array[A], start: Int): Int
     *
     *  $willNotTerminateInf
     */
 
-  def copyToArray[B >: A](xs: Array[B], start: Int): xs.type = {
+  def copyToArray[B >: A](xs: Array[B], start: Int): Int = {
     val xsLen = xs.length
     val it = iterator
     var i = start
@@ -744,10 +794,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       xs(i) = it.next()
       i += 1
     }
-    xs
+    i - start
   }
 
-  /** Copy elements to an array.
+  /** Copy elements to an array, returning the number of elements written.
     *
     *  Fills the given array `xs` starting at index `start` with at most `len` elements of this $coll.
     *
@@ -758,14 +808,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  start  the starting index of xs.
     *  @param  len    the maximal number of elements to copy.
     *  @tparam B      the type of the elements of the array.
+    *  @return        the number of elements written to the array
     *
     *  @note    Reuse: $consumesIterator
     *
-    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Int
     *
     *    $willNotTerminateInf
     */
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): xs.type = {
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
     var i = start
     val end = start + math.min(len, xs.length - start)
@@ -773,7 +824,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       xs(i) = it.next()
       i += 1
     }
-    xs
+    i - start
   }
 
   /** Sums up the elements of this collection.
@@ -1061,7 +1112,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   final def mkString(start: String, sep: String, end: String): String =
     if (isEmpty) start + end
-    else addString(new StringBuilder(), start, sep, end).result
+    else addString(new StringBuilder(), start, sep, end).result()
 
   /** Displays all elements of this $coll in a string using a separator string.
     *
@@ -1116,10 +1167,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     if (start.length != 0) jsb.append(start)
     val it = iterator
     if (it.hasNext) {
-      jsb.append(it.next)
+      jsb.append(it.next())
       while (it.hasNext) {
         jsb.append(sep)
-        jsb.append(it.next)
+        jsb.append(it.next())
       }
     }
     if (end.length != 0) jsb.append(end)
@@ -1202,12 +1253,15 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   @deprecated("Use .to(LazyList) instead of .toStream", "2.13.0")
   @`inline` final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
-  @deprecated("Use .to(Buffer) instead of .toBuffer", "2.13.0")
-  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = to(mutable.Buffer)
+  @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
 
   /** Convert collection to array. */
   def toArray[B >: A: ClassTag]: Array[B] =
-    if (knownSize >= 0) copyToArray(new Array[B](knownSize), 0)
+    if (knownSize >= 0) {
+      val destination = new Array[B](knownSize)
+      copyToArray(destination, 0)
+      destination
+    }
     else mutable.ArrayBuffer.from(this).toArray[B]
 
   // For internal use

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.macros
 package compiler
 
@@ -156,7 +168,7 @@ trait Validators {
           else mmap(macroDdef.vparamss)(param)
         val macroDefRet =
           if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
-          else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef) orElse AnyTpe
+          else AnyTpe
         val implReturnType = sigma(increaseMetalevel(ctxPrefix, macroDefRet))
 
         object SigmaTypeMap extends TypeMap {
@@ -171,7 +183,7 @@ trait Validators {
           def apply(tp: Type): Type = tp match {
             case TypeRef(pre, sym, args) =>
               val pre1  = mapPrefix(pre)
-              val args1 = mapOverArgs(args, sym.typeParams)
+              val args1 = args mapConserve this
               if ((pre eq pre1) && (args eq args1)) tp
               else typeRef(pre1, sym, args1)
             case _ =>

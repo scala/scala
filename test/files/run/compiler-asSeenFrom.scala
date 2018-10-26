@@ -18,7 +18,7 @@ abstract class CompilerTest extends DirectTest {
 
   override def extraSettings = "-feature -usejavacp -d " + testOutput.path
 
-  def show() = (sources, units).zipped foreach check
+  def show() = sources.lazyZip(units) foreach check
 
   // Override at least one of these...
   def code = ""

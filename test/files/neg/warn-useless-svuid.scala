@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xlint:serial -Xfatal-warnings
 //
 @SerialVersionUID(1L)
 class X

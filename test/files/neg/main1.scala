@@ -45,3 +45,26 @@ package foo5 {
     def main(args: Array[String]): Unit = ()
   }
 }
+
+// extended messaging
+
+package p6 {
+  object Main {
+    def main(args: Array[Int]) = ()
+  }
+}
+
+package p7 {
+  trait Main
+  object Main {
+    def main(args: Array[Int]) = ()
+  }
+}
+
+package p8 {
+  trait Main
+  object Main {
+    def main(args: Array[Int]) = ()
+    def main(args: Array[Double]) = ()
+  }
+}

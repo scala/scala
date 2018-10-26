@@ -28,7 +28,7 @@ import scala.language.implicitConversions"""
         case _     => Nil
       }
       if (coercions.isEmpty) Nil
-      else coercionComment.lines.toList ++ coercions
+      else coercionComment.linesIterator.toList ++ coercions
     }
 
     def isCardinal: Boolean = isIntegerType(this)
@@ -147,7 +147,7 @@ import scala.language.implicitConversions"""
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
     def mkUnaryOps  = unaryOps map (x => "%s\n  def unary_%s : %s".format(x.doc, x.op, this opType I))
     def mkStringOps = List(
-      """@deprecated("Adding a number and a String is deprecated. Convert the number to a String with `toString` first to call +", "2.13.0") def +(x: String): String"""
+      """@deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0") def +(x: String): String"""
     )
     def mkShiftOps  = (
       for (op <- shiftOps ; arg <- List(I, L)) yield {
@@ -176,7 +176,7 @@ import scala.language.implicitConversions"""
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ (implicitCoercions map interpolate)
+      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.linesIterator.toList ++ (implicitCoercions map interpolate)
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
@@ -222,7 +222,7 @@ import scala.language.implicitConversions"""
     def representation = repr.map(", a " + _).getOrElse("")
 
     def indent(s: String)  = if (s == "") "" else "  " + s
-    def indentN(s: String) = s.lines map indent mkString "\n"
+    def indentN(s: String) = s.linesIterator map indent mkString "\n"
 
     def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> """
@@ -273,13 +273,17 @@ import scala.language.implicitConversions"""
 }
 
 trait GenerateAnyValTemplates {
-  def headerTemplate = """/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+  def headerTemplate = """/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 // DO NOT EDIT, CHANGES WILL BE LOST
 // This auto-generated code can be modified in "project/GenerateAnyVals.scala".
@@ -446,9 +450,9 @@ def ^(x: Boolean): Boolean
 
 // Provide a more specific return type for Scaladoc
 override def getClass(): Class[Boolean] = ???
-    """.trim.lines.toList
+    """.trim.linesIterator.toList
 
-    def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).lines.toList
+    def objectLines = interpolate(allCompanions + "\n" + nonUnitCompanions).linesIterator.toList
   }
   object U extends AnyValRep("Unit", None, "void") {
     override def classDoc = """
@@ -462,7 +466,7 @@ override def getClass(): Class[Boolean] = ???
       "// Provide a more specific return type for Scaladoc",
       "override def getClass(): Class[Unit] = ???"
     )
-    def objectLines = interpolate(allCompanions).lines.toList
+    def objectLines = interpolate(allCompanions).linesIterator.toList
 
     override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",

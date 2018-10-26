@@ -1,4 +1,4 @@
-ExecutionContext.global is a scala.concurrent.impl.ExecutionContextImpl.
+ExecutionContext.global is a ForkJoinPool
 should have non-null UncaughtExceptionHandler == true
-ExecutionContext.global.executor.getUncaughtExceptionHandler is a scala.concurrent.impl.ExecutionContextImpl.
+ExecutionContext.global.getUncaughtExceptionHandler is a scala.concurrent.impl.ExecutionContextImpl.
 should just print out on uncaught: true

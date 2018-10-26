@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.concurrent.duration
 
@@ -45,16 +49,18 @@ object Duration {
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
    * whitespace is allowed before, between and after the parts. Infinities are
-   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
+   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"`, `"Duration.Inf"` and `"-Inf"`, `"MinusInf"` or `"Duration.MinusInf"`.
+   * Undefined is designated by `"Duration.Undefined"`.
    *
    * @throws NumberFormatException if format is not parsable
    */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
     s1 match {
-      case "Inf" | "PlusInf" | "+Inf" => Inf
-      case "MinusInf" | "-Inf"        => MinusInf
-      case _                          =>
+      case "Inf" | "PlusInf" | "+Inf" | "Duration.Inf" => Inf
+      case "MinusInf" | "-Inf" | "Duration.MinusInf"   => MinusInf
+      case "Duration.Undefined"                        => Undefined
+      case _                                           =>
         val unitName = s1.reverse.takeWhile(_.isLetter).reverse
         timeUnit get unitName match {
           case Some(unit) =>
@@ -85,7 +91,7 @@ object Duration {
 
   // TimeUnit => standard label
   protected[duration] val timeUnitName: Map[TimeUnit, String] =
-    timeUnitLabels.toMap.mapValues(s => words(s).last).toMap
+    timeUnitLabels.toMap.view.mapValues(s => words(s).last).toMap
 
   // Label => TimeUnit
   protected[duration] val timeUnit: Map[String, TimeUnit] =
@@ -102,7 +108,7 @@ object Duration {
    * Extract length and time unit out of a duration, if it is finite.
    */
   def unapply(d: Duration): Option[(Long, TimeUnit)] =
-    if (d.isFinite()) Some((d.length, d.unit)) else None
+    if (d.isFinite) Some((d.length, d.unit)) else None
 
   /**
    * Construct a possibly infinite or undefined Duration from the given number of nanoseconds.
@@ -208,7 +214,7 @@ object Duration {
       case x           => Double.PositiveInfinity * (if ((this > Zero) ^ (divisor >= Zero)) -1 else 1)
     }
 
-    final def isFinite() = false
+    final def isFinite = false
 
     private[this] def fail(what: String) = throw new IllegalArgumentException(s"$what not allowed on infinite Durations")
     final def length: Long    = fail("length")
@@ -470,7 +476,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    * This method returns whether this duration is finite, which is not the same as
    * `!isInfinite` for Double because this method also returns `false` for [[Duration.Undefined]].
    */
-  def isFinite(): Boolean
+  def isFinite: Boolean
   /**
    * Return the smaller of this and that duration as determined by the natural ordering.
    */
@@ -639,7 +645,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, scala/bug#6331
   private[this] def minusZero = -0d
   def /(divisor: Duration): Double =
-    if (divisor.isFinite()) toNanos.toDouble / divisor.toNanos
+    if (divisor.isFinite) toNanos.toDouble / divisor.toNanos
     else if (divisor eq Undefined) Double.NaN
     else if ((length < 0) ^ (divisor > Zero)) 0d
     else minusZero
@@ -704,7 +710,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
 
   def unary_- = Duration(-length, unit)
 
-  final def isFinite() = true
+  final def isFinite = true
 
   final override def toCoarsest: FiniteDuration = {
     def loop(length: Long, unit: TimeUnit): FiniteDuration = {

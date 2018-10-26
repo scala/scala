@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package runtime
@@ -23,13 +27,13 @@ import Proxy.Typed
 trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed[T] with OrderedProxy[T] {
   protected implicit def num: Numeric[T]
 
-  def underlying()  = self.asInstanceOf[AnyRef]
-  def doubleValue() = num.toDouble(self)
-  def floatValue()  = num.toFloat(self)
-  def longValue()   = num.toLong(self)
-  def intValue()    = num.toInt(self)
-  def byteValue()   = intValue().toByte
-  def shortValue()  = intValue().toShort
+  def underlying  = self.asInstanceOf[AnyRef]
+  def doubleValue = num.toDouble(self)
+  def floatValue  = num.toFloat(self)
+  def longValue   = num.toLong(self)
+  def intValue    = num.toInt(self)
+  def byteValue   = intValue.toByte
+  def shortValue  = intValue.toShort
 
   /** Returns `'''this'''` if `'''this''' < that` or `that` otherwise. */
   def min(that: T): T = num.min(self, that)
@@ -41,7 +45,7 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   def signum          = num.signum(self)
 }
 trait ScalaWholeNumberProxy[T] extends Any with ScalaNumberProxy[T] {
-  def isWhole() = true
+  def isWhole = true
 }
 trait IntegralProxy[T] extends Any with ScalaWholeNumberProxy[T] with RangedProxy[T] {
   protected implicit def num: Integral[T]
@@ -55,7 +59,7 @@ trait IntegralProxy[T] extends Any with ScalaWholeNumberProxy[T] with RangedProx
 trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] {
   protected implicit def num: Fractional[T]
 
-  def isWhole() = false
+  def isWhole = false
 }
 
 trait OrderedProxy[T] extends Any with Ordered[T] with Typed[T] {

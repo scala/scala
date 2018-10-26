@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.partest
 
 class ConsoleLog(colorEnabled: Boolean) {
@@ -48,13 +60,14 @@ class ConsoleLog(colorEnabled: Boolean) {
   def echoMixed(msg: String)   = echo(bold(yellow(msg)))
   def echoWarning(msg: String) = echo(bold(red(msg)))
 
-  def printDot(): Unit = {
+  def printDot(): Unit = printProgress(".")
+  def printEx(): Unit  = printProgress(_failure + "X" + _default)
+  private def printProgress(icon: String): Unit =
     if (dotCount >= DotWidth) {
-      outline("\n.")
+      outline("\n" + icon)
       dotCount = 1
     } else {
-      outline(".")
+      outline(icon)
       dotCount += 1
     }
-  }
 }

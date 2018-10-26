@@ -1,11 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package math
@@ -394,7 +397,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *  with large exponents.
    */
   override def hashCode(): Int = {
-    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode
+    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode()
     computedHashCode
   }
 
@@ -466,7 +469,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     catch { case _: ArithmeticException => false }
   }
 
-  def isWhole() = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
+  def isWhole = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
 
   def underlying = bigDecimal
 
@@ -498,10 +501,10 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   /** Division and Remainder - returns tuple containing the result of
    *  divideToIntegralValue and the remainder.  The computation is exact: no rounding is applied.
    */
-  def /% (that: BigDecimal): (BigDecimal, BigDecimal) =
-    this.bigDecimal.divideAndRemainder(that.bigDecimal, mc) match {
-      case Array(q, r)  => (new BigDecimal(q, mc), new BigDecimal(r, mc))
-    }
+  def /% (that: BigDecimal): (BigDecimal, BigDecimal) = {
+    val qr = this.bigDecimal.divideAndRemainder(that.bigDecimal, mc)
+    (new BigDecimal(qr(0), mc), new BigDecimal(qr(1), mc))
+  }
 
   /** Divide to Integral value.
    */
@@ -547,11 +550,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
-  def signum: Int = this.bigDecimal.signum()
+  def signum: Int = this.bigDecimal.signum
 
   /** Returns the precision of this `BigDecimal`.
    */
-  def precision: Int = this.bigDecimal.precision()
+  def precision: Int = this.bigDecimal.precision
 
   /** Returns a BigDecimal rounded according to the supplied MathContext settings, but
    *  preserving its own MathContext for future operations.
@@ -569,7 +572,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Returns the scale of this `BigDecimal`.
    */
-  def scale: Int = this.bigDecimal.scale()
+  def scale: Int = this.bigDecimal.scale
 
   /** Returns the size of an ulp, a unit in the last place, of this BigDecimal.
    */
@@ -697,20 +700,20 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Converts this `BigDecimal` to a scala.BigInt.
    */
-  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+  def toBigInt: BigInt = new BigInt(this.bigDecimal.toBigInteger)
 
   /** Converts this `BigDecimal` to a scala.BigInt if it
    *  can be done losslessly, returning Some(BigInt) or None.
    */
-  def toBigIntExact(): Option[BigInt] =
-    if (isWhole()) {
-      try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
+  def toBigIntExact: Option[BigInt] =
+    if (isWhole) {
+      try Some(new BigInt(this.bigDecimal.toBigIntegerExact))
       catch { case _: ArithmeticException => None }
     }
     else None
 
   /** Returns the decimal String representation of this BigDecimal.
    */
-  override def toString(): String = this.bigDecimal.toString()
+  override def toString: String = this.bigDecimal.toString
 
 }

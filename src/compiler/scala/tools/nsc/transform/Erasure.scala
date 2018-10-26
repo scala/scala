@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -272,7 +279,7 @@ abstract class Erasure extends InfoTransform
               case _ =>
                 boxedSig(tp)
             }
-          def classSig: Unit = {
+          def classSig(): Unit = {
             markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
             if (needsJavaSig(preRebound, Nil)) {
@@ -472,7 +479,7 @@ abstract class Erasure extends InfoTransform
     def computeAndEnter(): Unit = {
       while (opc.hasNext) {
         if (enteringExplicitOuter(!opc.low.isDeferred))
-          checkPair(opc. currentPair)
+          checkPair(opc.currentPair)
 
         opc.next()
       }
@@ -825,8 +832,9 @@ abstract class Erasure extends InfoTransform
         case Ident(_) | Select(_, _) =>
           if (tree1.symbol.isOverloaded) {
             val first = tree1.symbol.alternatives.head
+            val firstTpe = first.tpe
             val sym1 = tree1.symbol.filter {
-              alt => alt == first || !(first.tpe looselyMatches alt.tpe)
+              alt => alt == first || !(firstTpe looselyMatches alt.tpe)
             }
             if (tree.symbol ne sym1) {
               tree1 setSymbol sym1 setType sym1.tpe
@@ -1282,11 +1290,7 @@ abstract class Erasure extends InfoTransform
             val erased = erasure(typeValue.typeSymbol) applyInArray typeValue
 
             treeCopy.Literal(cleanLiteral, Constant(erased))
-          } else if (ct.isSymbol)
-            atPos(tree.pos) {
-              gen.mkMethodCall(definitions.Symbol_apply, List(Literal(Constant(ct.scalaSymbolValue.name))))
-            }
-          else cleanLiteral
+          } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)

@@ -26,8 +26,8 @@ class SerializationTest {
   def hashMap(): Unit = {
     assertEqualsAfterDeserialization(HashMap.empty[Int, String], classOf[HashMap[_, _]])
     assertEqualsAfterDeserialization(HashMap(1 -> "one", 2 -> "two", 3 -> "three"), classOf[HashMap[_, _]])
-    assertEquals(HashMap(1 -> 1, 2 -> 2, 3 -> 3), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").mapValues(_.toInt)).toMap)
-    assertEquals(HashMap(2 -> "2", 3 -> "3"), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").filterKeys(_ > 1)).toMap)
+    assertEquals(HashMap(1 -> 1, 2 -> 2, 3 -> 3), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").view.mapValues(_.toInt)).toMap)
+    assertEquals(HashMap(2 -> "2", 3 -> "3"), serializeDeserialize(HashMap(1 -> "1", 2 -> "2", 3 -> "3").view.filterKeys(_ > 1)).toMap)
   }
 
   @Test

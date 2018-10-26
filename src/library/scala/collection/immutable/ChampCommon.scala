@@ -1,8 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection.immutable
 
 
 import java.lang.Integer.bitCount
 import java.lang.Math.ceil
+import java.lang.System.arraycopy
 
 private[immutable] final object Node {
 
@@ -20,6 +33,8 @@ private[immutable] final object Node {
 
   final val SizeMoreThanOne = 2
 
+  final val BranchingFactor = 1 << BitPartitionSize
+
   final def maskFrom(hash: Int, shift: Int): Int = (hash >>> shift) & BitPartitionMask
 
   final def bitposFrom(mask: Int): Int = 1 << mask
@@ -30,7 +45,7 @@ private[immutable] final object Node {
 
 }
 
-private[immutable] trait Node[T <: Node[T]] {
+private[immutable] abstract class Node[T <: Node[T]] {
 
   def hasNodes: Boolean
 
@@ -44,8 +59,46 @@ private[immutable] trait Node[T <: Node[T]] {
 
   def getPayload(index: Int): Any
 
+  def getHash(index: Int): Int
+
   def sizePredicate: Int
 
+  protected final def removeElement(as: Array[Int], ix: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
+  protected final def removeAnyElement(as: Array[Any], ix: Int): Array[Any] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length - 1) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Any](as.length - 1)
+    arraycopy(as, 0, result, 0, ix)
+    arraycopy(as, ix + 1, result, ix, as.length - ix - 1)
+    result
+  }
+
+  protected final def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Int](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
+  }
+  protected final def insertAnyElement(as: Array[Any], ix: Int, elem: Int): Array[Any] = {
+    if (ix < 0) throw new ArrayIndexOutOfBoundsException
+    if (ix > as.length) throw new ArrayIndexOutOfBoundsException
+    val result = new Array[Any](as.length + 1)
+    arraycopy(as, 0, result, 0, ix)
+    result(ix) = elem
+    arraycopy(as, ix, result, ix + 1, as.length - ix)
+    result
+  }
 }
 
 /**
@@ -66,8 +119,14 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   protected var currentValueNode: T = _
 
   private[this] var currentStackLevel: Int = -1
-  private[this] val nodeCursorsAndLengths: Array[Int] = new Array[Int](MaxDepth * 2)
-  private[this] val nodes: Array[T] = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
+  private[this] var nodeCursorsAndLengths: Array[Int] = _
+  private[this] var nodes: Array[T] = _
+  private def initNodes(): Unit = {
+    if (nodeCursorsAndLengths eq null) {
+      nodeCursorsAndLengths = new Array[Int](MaxDepth * 2)
+      nodes = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
+    }
+  }
 
   def this(rootNode: T) = {
     this()
@@ -82,6 +141,7 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
   }
 
   private final def pushNode(node: T): Unit = {
+    initNodes()
     currentStackLevel = currentStackLevel + 1
 
     val cursorIndex = currentStackLevel * 2

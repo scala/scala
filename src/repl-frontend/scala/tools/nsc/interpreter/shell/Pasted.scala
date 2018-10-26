@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.interpreter.shell
@@ -21,7 +28,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   def interpret(line: String): Result
   def echo(message: String): Unit
 
-  val PromptString    = prompt.lines.toList.last
+  val PromptString    = prompt.linesIterator.toList.last
   val AltPromptString = "scala> "
   val ContinuePrompt  = continuePrompt
   val ContinueString  = continueText     // "     | "

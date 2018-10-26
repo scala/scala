@@ -25,7 +25,19 @@ object Test extends App {
   }
 
   val code =
-    s"""|// Generated Code, validated by run/t6240-universe-code-gen.scala
+    s"""|/*
+        | * Scala (https://www.scala-lang.org)
+        | *
+        | * Copyright EPFL and Lightbend, Inc.
+        | *
+        | * Licensed under Apache License 2.0
+        | * (http://www.apache.org/licenses/LICENSE-2.0).
+        | *
+        | * See the NOTICE file distributed with this work for
+        | * additional information regarding copyright ownership.
+        | */
+        |
+        |// Generated Code, validated by run/t6240-universe-code-gen.scala
         |package scala.reflect
         |package runtime
         |
@@ -65,7 +77,7 @@ object Test extends App {
   val actualFile = new java.io.File(testFile.getParent + "/../../../src/reflect/scala/reflect/runtime/JavaUniverseForce.scala").getCanonicalFile
   val actual = scala.io.Source.fromFile(actualFile)
   val actualLines = actual.getLines.toList
-  val generatedLines = code.lines.toList
+  val generatedLines = code.linesIterator.toList
   if (actualLines != generatedLines) {
     val msg = s"""|${actualFile} must be updated.
                   |===========================================================

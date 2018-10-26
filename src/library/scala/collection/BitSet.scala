@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -20,10 +32,11 @@ import scala.collection.mutable.Builder
   * @define Coll `BitSet`
   */
 trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
-  override protected def fromSpecificIterable(coll: Iterable[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
+  override protected def fromSpecific(coll: IterableOnce[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
   override protected def newSpecificBuilder: Builder[Int, BitSetC] = bitSetFactory.newBuilder
   override def empty: BitSetC = bitSetFactory.empty
   override protected[this] def stringPrefix = "BitSet"
+  override def unsorted: Set[Int] = this
 }
 
 @SerialVersionUID(3L)
@@ -73,8 +86,10 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def bitSetFactory: SpecificIterableFactory[Int, BitSetC]
 
+  def unsorted: Set[Int]
+
   /**
-    * Type alias to `C`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * Type alias to `C`. It is used to provide a default implementation of the `fromSpecific`
     * and `newSpecificBuilder` operations.
     *
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
@@ -182,7 +197,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     coll.fromBitMaskNoCopy(a)
   }
 
-  override def concat(other: collection.Iterable[Int]): C = other match {
+  override def concat(other: collection.IterableOnce[Int]): C = other match {
     case otherBitset: BitSet =>
       val len = coll.nwords max otherBitset.nwords
       val words = new Array[Long](len)
@@ -235,11 +250,11 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     * @return a new bitset resulting from applying the given function ''f'' to
     *         each element of this bitset and collecting the results
     */
-  def map(f: Int => Int): C = fromSpecificIterable(new View.Map(toIterable, f))
+  def map(f: Int => Int): C = fromSpecific(new View.Map(toIterable, f))
 
-  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecificIterable(new View.FlatMap(toIterable, f))
+  def flatMap(f: Int => IterableOnce[Int]): C = fromSpecific(new View.FlatMap(toIterable, f))
 
-  def collect(pf: PartialFunction[Int, Int]): C = fromSpecificIterable(super[SortedSetOps].collect(pf).toIterable)
+  def collect(pf: PartialFunction[Int, Int]): C = fromSpecific(super[SortedSetOps].collect(pf).toIterable)
 }
 
 object BitSetOps {

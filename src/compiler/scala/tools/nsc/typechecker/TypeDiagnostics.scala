@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -123,10 +130,10 @@ trait TypeDiagnostics {
    */
   final def exampleTuplePattern(names: List[Name]): String = {
     val arity = names.length
-    val varPatternNames: Option[List[String]] = sequence(names map {
+    val varPatternNames: Option[List[String]] = traverseOpt(names) {
       case name if nme.isVariableName(name) => Some(name.decode)
       case _                                => None
-    })
+    }
     def parenthesize(a: String) = s"($a)"
     def genericParams = (Seq("param1") ++ (if (arity > 2) Seq("...") else Nil) ++ Seq(s"param$arity"))
     parenthesize(varPatternNames.getOrElse(genericParams).mkString(", "))
@@ -217,7 +224,7 @@ trait TypeDiagnostics {
         val params    = req.typeConstructor.typeParams
 
         if (foundArgs.nonEmpty && foundArgs.length == reqArgs.length) {
-          val relationships = (foundArgs, reqArgs, params).zipped map {
+          val relationships = foundArgs.lazyZip(reqArgs).lazyZip(params).map {
             case (arg, reqArg, param) =>
               def mkMsg(isSubtype: Boolean) = {
                 val op      = if (isSubtype) "<:" else ">:"
@@ -536,6 +543,8 @@ trait TypeDiagnostics {
             }
           case _: RefTree if sym ne null             => targets += sym
           case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
+          case Function(ps, _) if settings.warnUnusedParams =>
+            params ++= ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
           case _                                     =>
         }
 
@@ -698,10 +707,14 @@ trait TypeDiagnostics {
           val opc = new overridingPairs.Cursor(classOf(m))
           opc.iterator.exists(pair => pair.low == m)
         }
+        import PartialFunction._
         def isConvention(p: Symbol): Boolean = {
-          (p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main") ||
-            (p.tpe =:= typeOf[scala.Predef.DummyImplicit])
-        }
+          val ds = currentRun.runDefinitions
+          import ds._ ; (
+            p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
+          ||
+            p.isImplicit && cond(p.tpe.typeSymbol) { case Predef_=:= | Predef_<:< | Predef_Dummy => true }
+        )}
         def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
         def warnable(s: Symbol) = (
           warningIsOnFor(s)
@@ -709,7 +722,7 @@ trait TypeDiagnostics {
             && !isConvention(s)
           )
         for (s <- unusedPrivates.unusedParams if warnable(s))
-          typer.context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
+          typer.context.warning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used")
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -7,6 +19,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}
+import scala.runtime.Statics.releaseFence
 
 /** A class for immutable linked lists representing ordered collections
   *  of elements of type `A`.
@@ -124,13 +137,13 @@ sealed abstract class List[+A]
   override def prepended[B >: A](elem: B): List[B] = elem :: this
 
   // When calling prependAll with another list `prefix`, avoid copying `this`
-  override def prependedAll[B >: A](prefix: collection.Iterable[B]): List[B] = prefix match {
+  override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): List[B] = prefix match {
     case xs: List[B] => xs ::: this
     case _ => super.prependedAll(prefix)
   }
 
   // When calling appendAll with another list `suffix`, avoid copying `suffix`
-  override def appendedAll[B >: A](suffix: collection.Iterable[B]): List[B] = suffix match {
+  override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): List[B] = suffix match {
     case xs: List[B] => this ::: xs
     case _ => super.appendedAll(suffix)
   }
@@ -147,6 +160,7 @@ sealed abstract class List[+A]
       t = nx
       rest = rest.tail
     }
+    releaseFence()
     h
   }
 
@@ -216,6 +230,7 @@ sealed abstract class List[+A]
         t = nx
         rest = rest.tail
       }
+      releaseFence()
       h
     }
   }
@@ -242,10 +257,10 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       } while (rest ne Nil)
+      releaseFence()
       h
     }
   }
-
   final override def flatMap[B](f: A => IterableOnce[B]): List[B] = {
     if (this eq Nil) Nil else {
       var rest = this
@@ -267,7 +282,7 @@ sealed abstract class List[+A]
         }
         rest = rest.tail
       }
-      if (!found) Nil else h
+      if (!found) Nil else {releaseFence(); h}
     }
   }
 
@@ -382,6 +397,21 @@ sealed abstract class List[+A]
     None
   }
 
+  override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
+    case that: LinearSeq[B] =>
+      var i = this
+      var j = that
+      while (!(i.isEmpty || j.isEmpty)) {
+        if (!p(i.head, j.head))
+          return false
+        i = i.tail
+        j = j.tail
+      }
+      i.isEmpty && j.isEmpty
+    case _ =>
+      super.corresponds(that)(p)
+  }
+
   override protected[this] def className = "List"
 
   /** Builds a new list by applying a function to all elements of this list.
@@ -435,7 +465,9 @@ sealed abstract class List[+A]
         }
       }
     }
-    loop(null, null, this, this)
+    val result = loop(null, null, this, this)
+    releaseFence()
+    result
   }
 
   override def filter(p: A => Boolean): List[A] = filterImpl(p, isFlipped = false)
@@ -517,7 +549,9 @@ sealed abstract class List[+A]
       newHead
     }
 
-    noneIn(this)
+    val result = noneIn(this)
+    releaseFence()
+    result
   }
 
   final override def toList: List[A] = this
@@ -544,8 +578,11 @@ sealed abstract class List[+A]
 
 }
 
+// Internal code that mutates `next` _must_ call `Statics.releaseFence()` if either immediately, or
+// before a newly-allocated, thread-local :: instance is aliased (e.g. in ListBuffer.toList)
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
+  releaseFence()
   override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
@@ -559,6 +596,7 @@ case object Nil extends List[Nothing] {
   override def last: Nothing = throw new NoSuchElementException("last of empty list")
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
   override def knownSize: Int = 0
+  override def iterator: Iterator[Nothing] = Iterator.empty
 }
 
 /**
@@ -571,6 +609,7 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll
+    case _ if coll.knownSize == 0 => empty[B]
     case _ => ListBuffer.from(coll).toList
   }
 
@@ -579,9 +618,4 @@ object List extends StrictOptimizedSeqFactory[List] {
   def empty[A]: List[A] = Nil
 
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
-
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
 }

@@ -1,3 +1,4 @@
+//
 // scalac: -deprecation -Xfatal-warnings
 //
 trait Base {

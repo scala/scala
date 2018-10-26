@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.partest
@@ -37,7 +44,7 @@ abstract class ReplTest extends DirectTest {
     log("eval(): settings = " + s)
     val transcript = ILoop.runForTranscript(code, s, inSession = inSession)
     log(s"transcript[[$transcript]]")
-    transcript.lines.map(normalize)
+    transcript.linesIterator.map(normalize)
   }
   def show() = eval() foreach println
 }
@@ -51,7 +58,7 @@ abstract class SessionTest extends ReplTest  {
   def session: String = testPath.changeExtension("check").toFile.slurp
 
   /** Expected output, as an iterator, optionally marginally stripped. */
-  def expected = if (stripMargins) session.stripMargin.lines else session.lines
+  def expected = if (stripMargins) session.stripMargin.linesIterator else session.linesIterator
 
   /** Override with true if session is a """string""" with margin indent. */
   def stripMargins: Boolean = false

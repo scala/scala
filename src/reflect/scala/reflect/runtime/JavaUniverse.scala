@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package runtime
@@ -21,7 +33,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   lazy val settings = new Settings
 
   override final val statistics = new Statistics(JavaUniverse.this, settings) with ReflectStats
-  private val isLogging = System.getProperty("scala.debug.reflect") != null
+  private[this] val isLogging = System.getProperty("scala.debug.reflect") != null
   def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   // TODO: why put output under isLogging? Calls to inform are already conditional on debug/verbose/...

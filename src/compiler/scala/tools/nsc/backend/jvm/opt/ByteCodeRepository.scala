@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -162,10 +169,10 @@ abstract class ByteCodeRepository extends PerRunInit {
     def findInSuperClasses(owner: ClassNode, publicInstanceOnly: Boolean = false): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
       findMethod(owner) match {
         case Some(m) if !publicInstanceOnly || (isPublicMethod(m) && !isStaticMethod(m)) => Right(Some((m, owner.name)))
-        case None =>
+        case _ =>
           if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
           else if (owner.superName == null) Right(None)
-          else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
+          else classNode(owner.superName).flatMap(findInSuperClasses(_, publicInstanceOnly = isInterface(owner)))
       }
     }
 

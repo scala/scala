@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package math
@@ -42,20 +46,16 @@ trait LowPriorityEquiv {
 }
 
 object Equiv extends LowPriorityEquiv {
-  def reference[T <: AnyRef]: Equiv[T] = new Equiv[T] {
-    def equiv(x: T, y: T) = x eq y
+  def reference[T <: AnyRef]: Equiv[T] = { _ eq _ }
+  def universal[T]: Equiv[T] = { _ == _ }
+  def fromComparator[T](cmp: Comparator[T]): Equiv[T] = {
+    (x, y) => cmp.compare(x, y) == 0
   }
-  def universal[T]: Equiv[T] = new Equiv[T] {
-    def equiv(x: T, y: T) = x == y
-  }
-  def fromComparator[T](cmp: Comparator[T]): Equiv[T] = new Equiv[T] {
-    def equiv(x: T, y: T) = cmp.compare(x, y) == 0
-  }
-  def fromFunction[T](cmp: (T, T) => Boolean): Equiv[T] = new Equiv[T] {
-    def equiv(x: T, y: T) = cmp(x, y)
+  def fromFunction[T](cmp: (T, T) => Boolean): Equiv[T] = {
+    (x, y) => cmp(x, y)
   }
   def by[T, S: Equiv](f: T => S): Equiv[T] =
-    fromFunction((x, y) => implicitly[Equiv[S]].equiv(f(x), f(y)))
+    ((x, y) => implicitly[Equiv[S]].equiv(f(x), f(y)))
 
   @inline def apply[T: Equiv]: Equiv[T] = implicitly[Equiv[T]]
 }

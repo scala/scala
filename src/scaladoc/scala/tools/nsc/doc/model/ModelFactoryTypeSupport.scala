@@ -1,4 +1,14 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.tools.nsc
 package doc
@@ -230,7 +240,7 @@ trait ModelFactoryTypeSupport {
                 nameBuffer append "val "
                 nameBuffer append tpnme.dropSingletonName(sym.name)
                 nameBuffer append ": "
-                appendType0(dropSingletonType(sym.info.bounds.hi))
+                appendType0(dropSingletonType(sym.info.upperBound))
               } else {
                 if (sym.flagString != "") nameBuffer append (sym.flagString + " ")
                 if (sym.keyString != "") nameBuffer append (sym.keyString + " ")

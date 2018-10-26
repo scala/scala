@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools
 package partest
 import nest.PathSettings
@@ -35,8 +47,17 @@ class TestKinds(pathSettings: PathSettings) {
     (candidates exists matches)
   }
 
-  def testsFor(kind: String): List[Path] = (pathSettings.srcDir / kind toDirectory).list.toList filter denotesTestPath
+  def testsFor(kind: String): (List[Path], List[Path]) = {
+    val (ti, others) = (pathSettings.srcDir / kind).toDirectory.list.partition(denotesTestPath)
+    val ts = ti.toList
+    val names = ts.toSet
+    def warnable(p: Path) = ((p.hasExtension("flags") || p.hasExtension("check"))
+      && List("scala", "res").forall(x => !names(p.changeExtension(x)))
+      && !names(p.parent / p.stripExtension)
+    )
+    (ts, others.filter(warnable).toList)
+  }
   def grepFor(expr: String): List[Path]  = standardTests filter (t => pathMatchesExpr(t, expr))
-  def standardTests: List[Path]          = standardKinds flatMap testsFor
+  def standardTests: List[Path]          = standardKinds flatMap (k => testsFor(k)._1)
   def failedTests: List[Path]            = standardTests filter (p => logOf(p).isFile)
 }

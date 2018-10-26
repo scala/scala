@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -41,8 +48,7 @@ abstract class Phase(val prev: Phase) {
   def checkable: Boolean = true
 
   // NOTE: sbt injects its own phases which extend this class, and not GlobalPhase, so we must implement this logic here
-  private val _erasedTypes = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "erasure" || prev.erasedTypes)
-  def erasedTypes: Boolean = _erasedTypes // overridden in back-end
+  final val erasedTypes: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "erasure"    || prev.erasedTypes)
   final val flatClasses: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "flatten"    || prev.flatClasses)
   final val specialized: Boolean   = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "specialize" || prev.specialized)
   final val refChecked: Boolean    = ((prev ne null) && (prev ne NoPhase)) && (prev.name == "refchecks"  || prev.refChecked)

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -16,7 +28,7 @@ trait TypeComparers {
 
   private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
-  private val _pendingSubTypes = new mutable.HashSet[SubTypePair]
+  private[this] val _pendingSubTypes = new mutable.HashSet[SubTypePair]
   def pendingSubTypes = _pendingSubTypes
 
   final case class SubTypePair(tp1: Type, tp2: Type) {
@@ -31,7 +43,7 @@ trait TypeComparers {
     override def toString = tp1.toString+" <:<? "+tp2
   }
 
-  private var _subsametypeRecursions: Int = 0
+  private[this] var _subsametypeRecursions: Int = 0
   def subsametypeRecursions = _subsametypeRecursions
   def subsametypeRecursions_=(value: Int) = _subsametypeRecursions = value
 
@@ -199,7 +211,7 @@ trait TypeComparers {
      *  up any type constraints naive enough to get into their hot rods.
      */
     def mutateNonTypeConstructs(lhs: Type, rhs: Type) = lhs match {
-      case BoundedWildcardType(bounds)         => bounds containsType rhs
+      case pt: ProtoType                       => pt.registerTypeEquality(rhs)
       case tv @ TypeVar(_, _)                  => tv.registerTypeEquality(rhs, typeVarLHS = lhs eq tp1)
       case TypeRef(tv @ TypeVar(_, _), sym, _) => tv.registerTypeSelection(sym, rhs)
       case _                                   => false
@@ -462,11 +474,10 @@ trait TypeComparers {
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
-      case BoundedWildcardType(bounds) =>
-        isSubType(tp1, bounds.hi, depth)
+      case tp2: ProtoType => tp2.isMatchedBy(tp1, depth)
       case tv2 @ TypeVar(_, constr2) =>
         tp1 match {
-          case AnnotatedType(_, _) | BoundedWildcardType(_) =>
+          case AnnotatedType(_, _) | _: ProtoType =>
             secondTry
           case _ =>
             tv2.registerBound(tp1, isLowerBound = true)
@@ -476,16 +487,16 @@ trait TypeComparers {
     }
 
     /* Second try, on the left:
-     *   - unwrap AnnotatedTypes, BoundedWildcardTypes,
+     *   - ProtoType (usually a BoundedWildcardType)
+     *   - unwrap AnnotatedTypes
      *   - bind typevars,
      *   - handle existential types by skolemization.
      */
     def secondTry = tp1 match {
+      case pt: ProtoType => pt.canMatch(tp2, depth)
       case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
-      case BoundedWildcardType(bounds) =>
-        isSubType(tp1.bounds.lo, tp2, depth)
       case tv @ TypeVar(_,_) =>
         tv.registerBound(tp2, isLowerBound = false)
       case ExistentialType(_, _) =>
@@ -511,7 +522,7 @@ trait TypeComparers {
       sym2 match {
         case SingletonClass                   => tp1.isStable || fourthTry
         case _: ClassSymbol                   => classOnRight
-        case _: TypeSymbol if sym2.isDeferred => abstractTypeOnRight(tp2.bounds.lo) || fourthTry
+        case _: TypeSymbol if sym2.isDeferred => abstractTypeOnRight(tp2.lowerBound) || fourthTry
         case _: TypeSymbol                    => retry(normalizePlus(tp1), normalizePlus(tp2))
         case _                                => fourthTry
       }
@@ -582,7 +593,7 @@ trait TypeComparers {
             case _: ClassSymbol if isRawType(tp1)         => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isModuleClass     => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _: ClassSymbol if sym1.isRefinementClass => retry(sym1.info, tp2)
-            case _: TypeSymbol if sym1.isDeferred         => abstractTypeOnLeft(tp1.bounds.hi)
+            case _: TypeSymbol if sym1.isDeferred         => abstractTypeOnLeft(tp1.upperBound)
             case _: TypeSymbol                            => retry(normalizePlus(tp1), normalizePlus(tp2))
             case _                                        => false
           }

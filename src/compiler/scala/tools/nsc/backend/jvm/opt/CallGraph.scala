@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -13,9 +20,11 @@ import scala.collection.immutable.IntMap
 import scala.collection.{concurrent, mutable}
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree._
-import scala.tools.asm.{Handle, Opcodes, Type}
+import scala.tools.asm.{Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
+import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter.{LMFValue, ParamValue}
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
@@ -25,7 +34,6 @@ abstract class CallGraph {
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._
-  import backendUtils._
   import frontendAccess.{compilerSettings, recordPerRunCache}
 
   /**
@@ -76,6 +84,15 @@ abstract class CallGraph {
   //currently single threaded access only
   val noInlineAnnotatedCallsites: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
 
+  // Contains `INVOKESPECIAL` instructions that were cloned by the inliner and need to be resolved
+  // statically by the call graph. See Inliner.maybeInlinedLater.
+  val staticallyResolvedInvokespecial: mutable.Set[MethodInsnNode] = recordPerRunCache(mutable.Set.empty)
+
+  def isStaticCallsite(call: MethodInsnNode): Boolean = {
+    val opc = call.getOpcode
+    opc == Opcodes.INVOKESTATIC || opc == Opcodes.INVOKESPECIAL && staticallyResolvedInvokespecial(call)
+  }
+
   def removeCallsite(invocation: MethodInsnNode, methodNode: MethodNode): Option[Callsite] = {
     val methodCallsites = callsites(methodNode)
     val newCallsites = methodCallsites - invocation
@@ -90,7 +107,6 @@ abstract class CallGraph {
   }
 
   def containsCallsite(callsite: Callsite): Boolean = callsites(callsite.callsiteMethod) contains callsite.callsiteInstruction
-  def findCallSite(method: MethodNode, call: MethodInsnNode): Option[Callsite] = callsites.getOrElse(method, Map.empty).get(call)
 
   def removeClosureInstantiation(indy: InvokeDynamicInsnNode, methodNode: MethodNode): Option[ClosureInstantiation] = {
     val methodClosureInits = closureInstantiations(methodNode)
@@ -100,62 +116,64 @@ abstract class CallGraph {
     methodClosureInits.get(indy)
   }
 
-  def addClosureInstantiation(closureInit: ClosureInstantiation) = {
-    val methodClosureInits = closureInstantiations(closureInit.ownerMethod)
-    closureInstantiations(closureInit.ownerMethod) = methodClosureInits + (closureInit.lambdaMetaFactoryCall.indy -> closureInit)
-  }
-
   def addClass(classNode: ClassNode): Unit = {
     val classType = classBTypeFromClassNode(classNode)
     classNode.methods.asScala.foreach(addMethod(_, classType))
   }
 
-  def addIfMissing(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    if (!callsites.contains(methodNode)) addMethod(methodNode, definingClass)
+  def refresh(methodNode: MethodNode, definingClass: ClassBType): Unit = {
+    callsites.remove(methodNode)
+    closureInstantiations.remove(methodNode)
+    // callsitePositions, inlineAnnotatedCallsites, noInlineAnnotatedCallsites, staticallyResolvedInvokespecial
+    // are left unchanged. They contain individual instructions, the state for those remains valid in case
+    // the inliner performs a rollback.
+    addMethod(methodNode, definingClass)
   }
 
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
-    if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode)) {
-      // TODO: run dataflow analyses to make the call graph more precise
-      //  - producers to get forwarded parameters (ForwardedParam)
-      //  - typeAnalysis for more precise argument types, more precise callee
+    if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode) && AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
+      lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName)
 
-      // For now we run a NullnessAnalyzer. It is used to determine if the receiver of an instance
-      // call is known to be not-null, in which case we don't have to emit a null check when inlining.
-      // It is also used to get the stack height at the call site.
+      var methodCallsites = Map.empty[MethodInsnNode, Callsite]
+      var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
 
-      val analyzer = {
-        if (compilerSettings.optNullnessTracking && AsmAnalyzer.sizeOKForNullness(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName, new NullnessAnalyzer(backendUtils.isNonNullMethodInvocation, methodNode)))
-        } else if (AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
-          Some(new AsmAnalyzer(methodNode, definingClass.internalName))
-        } else None
-      }
+      methodNode.instructions.iterator.asScala foreach {
+        case call: MethodInsnNode if typeAnalyzer.frameAt(call) != null => // skips over unreachable code
+          // JVMS 6.5 invokespecial: " If all of the following are true, let C be the direct superclass of the current class"
+          def isSuperCall: Boolean =
+            call.getOpcode == Opcodes.INVOKESPECIAL &&
+              call.name != GenBCode.INSTANCE_CONSTRUCTOR_NAME && {
+                val owner = call.owner
+                definingClass.internalName != owner && {
+                  var nextSuper = definingClass.info.get.superClass
+                  while (nextSuper.nonEmpty) {
+                    if (nextSuper.get.internalName == owner) return true
+                    nextSuper = nextSuper.get.info.get.superClass
+                  }
+                  false
+                }
+              }
+          val paramTps = FLazy(Type.getArgumentTypes(call.desc))
+          // This is the type where method lookup starts (implemented in byteCodeRepository.methodNode)
+          val preciseOwner =
+            if (isStaticCallsite(call)) call.owner
+            else if (isSuperCall) definingClass.info.get.superClass.get.internalName
+            else if (call.getOpcode == Opcodes.INVOKESPECIAL) call.owner
+            else {
+              // invokevirtual, invokeinterface: start search at the type of the receiver
+              val f = typeAnalyzer.frameAt(call)
+              // Not Type.getArgumentsAndReturnSizes: in asm.Frame, size-2 values use a single stack slot
+              val numParams = paramTps.get.length
+              f.peekStack(numParams).getType.getInternalName
+            }
 
-      // if the method is too large to run an analyzer, it is not added to the call graph
-      if (analyzer.nonEmpty) {
-        val Some(a) = analyzer
-        def receiverNotNullByAnalysis(call: MethodInsnNode, numArgs: Int) = a.analyzer match {
-          case nullnessAnalyzer: NullnessAnalyzer =>
-            val frame = nullnessAnalyzer.frameAt(call, methodNode)
-            frame.getStack(frame.getStackSize - 1 - numArgs) eq NotNullValue
-          case _ => false
-        }
-
-        var methodCallsites = Map.empty[MethodInsnNode, Callsite]
-        var methodClosureInstantiations = Map.empty[InvokeDynamicInsnNode, ClosureInstantiation]
-
-        // lazy so it is only computed if actually used by computeArgInfos
-        lazy val prodCons = new ProdConsAnalyzer(methodNode, definingClass.internalName)
-
-        methodNode.instructions.iterator.asScala foreach {
-          case call: MethodInsnNode if a.frameAt(call) != null => // skips over unreachable code
-            val callee: Either[OptimizerWarning, Callee] = for {
-              (method, declarationClass)                   <- byteCodeRepository.methodNode(call.owner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
+          val callee: Either[OptimizerWarning, Callee] = {
+            for {
+              (method, declarationClass) <- byteCodeRepository.methodNode(preciseOwner, call.name, call.desc): Either[OptimizerWarning, (MethodNode, InternalName)]
               (declarationClassNode, calleeSourceFilePath) <- byteCodeRepository.classNodeAndSourceFilePath(declarationClass): Either[OptimizerWarning, (ClassNode, Option[String])]
             } yield {
               val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
-              val info = analyzeCallsite(method, declarationClassBType, call, calleeSourceFilePath)
+              val info = analyzeCallsite(method, declarationClassBType, call, paramTps, calleeSourceFilePath, definingClass)
               import info._
               Callee(
                 callee = method,
@@ -167,100 +185,85 @@ abstract class CallGraph {
                 samParamTypes = info.samParamTypes,
                 calleeInfoWarning = warning)
             }
+          }
 
-            val argInfos = computeArgInfos(callee, call, prodCons)
+          val argInfos = computeArgInfos(callee, call, paramTps, typeAnalyzer)
 
-            val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC || {
-              val numArgs = Type.getArgumentTypes(call.desc).length
-              receiverNotNullByAnalysis(call, numArgs)
-            }
+          // A nullness analysis could be used to prevent emitting unnecessary receiver null checks
+          // when inlining non-static callistes. However, LocalOpt's nullness cleanup will also do
+          // it after the fact, so we can avoid running the nullness analysis when building the call
+          // graph (or when inlining).
+          val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC
 
-            methodCallsites += call -> Callsite(
-              callsiteInstruction = call,
-              callsiteMethod = methodNode,
-              callsiteClass = definingClass,
-              callee = callee,
-              argInfos = argInfos,
-              callsiteStackHeight = a.frameAt(call).getStackSize,
-              receiverKnownNotNull = receiverNotNull,
-              callsitePosition = callsitePositions.getOrElse(call, NoPosition),
-              annotatedInline = inlineAnnotatedCallsites(call),
-              annotatedNoInline = noInlineAnnotatedCallsites(call)
-            )
+          methodCallsites += call -> Callsite(
+            callsiteInstruction = call,
+            callsiteMethod = methodNode,
+            callsiteClass = definingClass,
+            callee = callee,
+            argInfos = argInfos,
+            callsiteStackHeight = typeAnalyzer.frameAt(call).getStackSize,
+            receiverKnownNotNull = receiverNotNull,
+            callsitePosition = callsitePositions.getOrElse(call, NoPosition),
+            annotatedInline = inlineAnnotatedCallsites(call),
+            annotatedNoInline = noInlineAnnotatedCallsites(call)
+          )
 
-          case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType) if a.frameAt(indy) != null =>
-            val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
-            val capturedArgInfos = computeCapturedArgInfos(lmf, prodCons)
-            methodClosureInstantiations += indy -> ClosureInstantiation(
-              lmf,
-              methodNode,
-              definingClass,
-              capturedArgInfos)
+        case LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType, indyParamTypes) if typeAnalyzer.frameAt(indy) != null =>
+          val lmf = LambdaMetaFactoryCall(indy, samMethodType, implMethod, instantiatedMethodType)
+          val capturedArgInfos = computeCapturedArgInfos(lmf, indyParamTypes, typeAnalyzer)
+          methodClosureInstantiations += indy -> ClosureInstantiation(
+            lmf,
+            methodNode,
+            definingClass,
+            capturedArgInfos)
 
-          case _ =>
-        }
-
-        callsites(methodNode) = methodCallsites
-        closureInstantiations(methodNode) = methodClosureInstantiations
+        case _ =>
       }
+
+      callsites(methodNode) = methodCallsites
+      closureInstantiations(methodNode) = methodClosureInstantiations
     }
   }
 
-  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
+  def computeArgInfos(callee: Either[OptimizerWarning, Callee], callsiteInsn: MethodInsnNode, paramTps: FLazy[Array[Type]], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
     if (callee.isLeft) IntMap.empty
     else {
-      lazy val numArgs = Type.getArgumentTypes(callsiteInsn.desc).length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1)
-      argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, prodCons)
+      val numArgs = FLazy(paramTps.get.length + (if (callsiteInsn.getOpcode == Opcodes.INVOKESTATIC) 0 else 1))
+      argInfosForSams(callee.get.samParamTypes, callsiteInsn, numArgs, typeAnalyzer)
     }
   }
 
-  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
-    val capturedSams = capturedSamTypes(lmf)
-    val numCaptures = Type.getArgumentTypes(lmf.indy.desc).length
-    argInfosForSams(capturedSams, lmf.indy, numCaptures, prodCons)
+  def computeCapturedArgInfos(lmf: LambdaMetaFactoryCall, indyParamTypes: Array[Type], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
+    val capturedTypes = indyParamTypes.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
+    val capturedSams = samTypes(capturedTypes)
+    argInfosForSams(capturedSams, lmf.indy, FLazy(indyParamTypes.length), typeAnalyzer)
   }
 
-  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: => Int, prodCons: => ProdConsAnalyzer): IntMap[ArgInfo] = {
-    // TODO: use type analysis instead of ProdCons - should be more efficient
-    // some random thoughts:
-    //  - assign special types to parameters and indy-lambda-functions to track them
-    //  - upcast should not change type flow analysis: don't lose information.
-    //  - can we do something about factory calls? Foo(x) for case class foo gives a Foo.
-    //    inline the factory? analysis across method boundary?
-
-    // assign to a lazy val to prevent repeated evaluation of the by-name arg
-    lazy val prodConsI = prodCons
-    lazy val firstConsumedSlot = {
-      val consumerFrame = prodConsI.frameAt(consumerInsn)
-      consumerFrame.stackTop - numConsumed + 1
-    }
-    sams flatMap {
+  private def argInfosForSams(sams: IntMap[ClassBType], consumerInsn: AbstractInsnNode, numConsumed: FLazy[Int], typeAnalyzer: NonLubbingTypeFlowAnalyzer): IntMap[ArgInfo] = {
+    lazy val consumerFrame = typeAnalyzer.frameAt(consumerInsn)
+    lazy val firstConsumedSlot = consumerFrame.stackTop - numConsumed.get + 1
+    val samInfos: IntMap[ArgInfo] = sams flatMap {
       case (index, _) =>
-        val prods = prodConsI.initialProducersForValueAt(consumerInsn, firstConsumedSlot + index)
-        if (prods.size != 1) None
-        else {
-          val argInfo = prods.head match {
-            case LambdaMetaFactoryCall(_, _, _, _) => Some(FunctionLiteral)
-            case ParameterProducer(local)          => Some(ForwardedParam(local))
-            case _                                 => None
-          }
-          argInfo.map((index, _))
+        val argInfo = consumerFrame.getValue(firstConsumedSlot + index) match {
+          case _: LMFValue => Some(FunctionLiteral)
+          case p: ParamValue => Some(ForwardedParam(p.local))
+          case _ => None
         }
+        argInfo.map((index, _))
     }
+    val isArrayLoadOrUpdateOnKnonwArray = BackendUtils.isRuntimeArrayLoadOrUpdate(consumerInsn) &&
+      consumerFrame.getValue(firstConsumedSlot + 1).getType.getSort == Type.ARRAY
+    if (isArrayLoadOrUpdateOnKnonwArray) samInfos.updated(1, StaticallyKnownArray)
+    else samInfos
   }
 
-  def samParamTypes(methodNode: MethodNode, receiverType: ClassBType): IntMap[ClassBType] = {
+  def samParamTypes(methodNode: MethodNode, paramTps: Array[Type], receiverType: ClassBType): IntMap[ClassBType] = {
     val paramTypes = {
-      val params = Type.getMethodType(methodNode.desc).getArgumentTypes.map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
+      val params = paramTps.map(t => bTypeForDescriptorFromClassfile(t.getDescriptor))
       val isStatic = BytecodeUtils.isStaticMethod(methodNode)
       if (isStatic) params else receiverType +: params
     }
     samTypes(paramTypes)
-  }
-
-  def capturedSamTypes(lmf: LambdaMetaFactoryCall): IntMap[ClassBType] = {
-    val capturedTypes = Type.getArgumentTypes(lmf.indy.desc).map(t => bTypeForDescriptorOrInternalNameFromClassfile(t.getDescriptor))
-    samTypes(capturedTypes)
   }
 
   private def samTypes(types: Array[BType]): IntMap[ClassBType] = {
@@ -276,6 +279,22 @@ abstract class CallGraph {
     res
   }
 
+  final class FLazy[@specialized(Int) T](_init: => T) {
+    private[this] var init = () => _init
+    private[this] var v: T = _
+    def get: T = {
+      if (init != null) {
+        v = init()
+        init = null
+      }
+      v
+    }
+  }
+
+  object FLazy {
+    def apply[T](init: => T): FLazy[T] = new FLazy(init)
+  }
+
   /**
    * Just a named tuple used as return type of `analyzeCallsite`.
    */
@@ -287,7 +306,7 @@ abstract class CallGraph {
   /**
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
    */
-  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, calleeSourceFilePath: Option[String]): CallsiteInfo = {
+  private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, paramTps: FLazy[Array[Type]], calleeSourceFilePath: Option[String], callsiteClass: ClassBType): CallsiteInfo = {
     val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
 
     try {
@@ -296,12 +315,16 @@ abstract class CallGraph {
       // callee, we only check there for the methodInlineInfo, we should find it there.
       calleeDeclarationClassBType.info.orThrow.inlineInfo.methodInfos.get(methodSignature) match {
         case Some(methodInlineInfo) =>
-
           val receiverType = classBTypeFromParsedClassfile(call.owner)
-          // (1) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
+          // (1) Special case for trait super accessors. trait T { def f = 1 } generates a static
+          // method t$ which calls `invokespecial T.f`. Even if `f` is not final, this call will
+          // always resolve to `T.f`. This is a (very) special case. Otherwise, `invokespecial`
+          // is only used for private methods, constructors and super calls.
+          //
+          // (2) A non-final method can be safe to inline if the receiver type is a final subclass. Example:
           //   class A { @inline def f = 1 }; object B extends A; B.f  // can be inlined
           //
-          // TODO: (1) doesn't cover the following example:
+          // TODO: (2) doesn't cover the following example:
           //   trait TravLike { def map = ... }
           //   sealed trait List extends TravLike { ... } // assume map is not overridden
           //   final case class :: / final case object Nil
@@ -315,9 +338,10 @@ abstract class CallGraph {
           // TODO: type analysis can render more calls statically resolved. Example:
           //   new A.f  // can be inlined, the receiver type is known to be exactly A.
           val isStaticallyResolved: Boolean = {
-            isNonVirtualCall(call) || // scala/scala-dev#86: super calls (invokespecial) can be inlined -- TODO: check if that's still needed, and if it's correct: scala-dev#143
-            methodInlineInfo.effectivelyFinal ||
-              receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (1)
+            isStaticCallsite(call) ||
+              (call.getOpcode == Opcodes.INVOKESPECIAL && receiverType == callsiteClass) || // (1)
+              methodInlineInfo.effectivelyFinal ||
+              receiverType.info.orThrow.inlineInfo.isEffectivelyFinal // (2)
           }
 
           val warning = calleeDeclarationClassBType.info.orThrow.inlineInfo.warning.map(
@@ -328,7 +352,7 @@ abstract class CallGraph {
             sourceFilePath       = calleeSourceFilePath,
             annotatedInline      = methodInlineInfo.annotatedInline,
             annotatedNoInline    = methodInlineInfo.annotatedNoInline,
-            samParamTypes        = samParamTypes(calleeMethodNode, receiverType),
+            samParamTypes        = samParamTypes(calleeMethodNode, paramTps.get, receiverType),
             warning              = warning)
 
         case None =>
@@ -360,12 +384,6 @@ abstract class CallGraph {
                             callee: Either[OptimizerWarning, Callee], argInfos: IntMap[ArgInfo],
                             callsiteStackHeight: Int, receiverKnownNotNull: Boolean, callsitePosition: Position,
                             annotatedInline: Boolean, annotatedNoInline: Boolean) {
-    /**
-     * Contains callsites that were created during inlining by cloning this callsite. Used to find
-     * corresponding callsites when inlining post-inline requests.
-     */
-    val inlinedClones = mutable.Set.empty[ClonedCallsite]
-
     // an annotation at the callsite takes precedence over an annotation at the definition site
     def isInlineAnnotated = annotatedInline || (callee.get.annotatedInline && !annotatedNoInline)
     def isNoInlineAnnotated = annotatedNoInline || (callee.get.annotatedNoInline && !annotatedInline)
@@ -377,14 +395,13 @@ abstract class CallGraph {
         s" in ${callsiteClass.internalName}.${callsiteMethod.name}${callsiteMethod.desc}"
   }
 
-  final case class ClonedCallsite(callsite: Callsite, clonedWhenInlining: Callsite)
-
   /**
    * Information about invocation arguments, obtained through data flow analysis of the callsite method.
    */
   sealed trait ArgInfo
   case object FunctionLiteral extends ArgInfo
   final case class ForwardedParam(index: Int) extends ArgInfo
+  case object StaticallyKnownArray extends ArgInfo
   //  final case class ArgTypeInfo(argType: BType, isPrecise: Boolean, knownNotNull: Boolean) extends ArgInfo
   // can be extended, e.g., with constant types
 
@@ -426,70 +443,6 @@ abstract class CallGraph {
    *                              graph when re-writing a closure invocation to the body method.
    */
   final case class ClosureInstantiation(lambdaMetaFactoryCall: LambdaMetaFactoryCall, ownerMethod: MethodNode, ownerClass: ClassBType, capturedArgInfos: IntMap[ArgInfo]) {
-    /**
-     * Contains closure instantiations that were created during inlining by cloning this instantiation.
-     */
-    val inlinedClones = mutable.Set.empty[ClosureInstantiation]
     override def toString = s"ClosureInstantiation($lambdaMetaFactoryCall, ${ownerMethod.name + ownerMethod.desc}, $ownerClass)"
-  }
-  final case class LambdaMetaFactoryCall(indy: InvokeDynamicInsnNode, samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type)
-
-  object LambdaMetaFactoryCall {
-    def unapply(insn: AbstractInsnNode): Option[(InvokeDynamicInsnNode, Type, Handle, Type)] = insn match {
-      case indy: InvokeDynamicInsnNode if indy.bsm == coreBTypes.lambdaMetaFactoryMetafactoryHandle || indy.bsm == coreBTypes.lambdaMetaFactoryAltMetafactoryHandle =>
-        indy.bsmArgs match {
-          case Array(samMethodType: Type, implMethod: Handle, instantiatedMethodType: Type, _@_*) =>
-            // LambdaMetaFactory performs a number of automatic adaptations when invoking the lambda
-            // implementation method (casting, boxing, unboxing, and primitive widening, see Javadoc).
-            //
-            // The closure optimizer supports only one of those adaptations: it will cast arguments
-            // to the correct type when re-writing a closure call to the body method. Example:
-            //
-            //   val fun: String => String = l => l
-            //   val l = List("")
-            //   fun(l.head)
-            //
-            // The samMethodType of Function1 is `(Object)Object`, while the instantiatedMethodType
-            // is `(String)String`. The return type of `List.head` is `Object`.
-            //
-            // The implMethod has the signature `C$anonfun(String)String`.
-            //
-            // At the closure callsite, we have an `INVOKEINTERFACE Function1.apply (Object)Object`,
-            // so the object returned by `List.head` can be directly passed into the call (no cast).
-            //
-            // The closure object will cast the object to String before passing it to the implMethod.
-            //
-            // When re-writing the closure callsite to the implMethod, we have to insert a cast.
-            //
-            // The check below ensures that
-            //   (1) the implMethod type has the expected signature (captured types plus argument types
-            //       from instantiatedMethodType)
-            //   (2) the receiver of the implMethod matches the first captured type
-            //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
-            //       are reference types, so that we can insert casts to perform the same adaptation
-            //       that the closure object would.
-
-            val isStatic                   = implMethod.getTag == Opcodes.H_INVOKESTATIC
-            val indyParamTypes             = Type.getArgumentTypes(indy.desc)
-            val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
-            val expectedImplMethodType     = {
-              val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
-              Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
-            }
-
-            val isIndyLambda = (
-                 Type.getType(implMethod.getDesc) == expectedImplMethodType              // (1)
-              && (isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName)  // (2)
-              && samMethodType.getArgumentTypes.corresponds(instantiatedMethodArgTypes)((samArgType, instArgType) =>
-                   samArgType == instArgType || isReference(samArgType) && isReference(instArgType)) // (3)
-            )
-
-            if (isIndyLambda) Some((indy, samMethodType, implMethod, instantiatedMethodType))
-            else None
-
-          case _ => None
-        }
-      case _ => None
-    }
   }
 }

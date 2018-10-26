@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -31,6 +38,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]
     private val newStaticInits        = mutable.Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
+    private var transformListApplyLimit = 8
+    private def reducingTransformListApply[A](depth: Int)(body: => A): A = {
+      val saved = transformListApplyLimit
+      transformListApplyLimit -= depth
+      try body
+      finally transformListApplyLimit = saved
+    }
     private def clearStatics(): Unit = {
       newStaticMembers.clear()
       newStaticInits.clear()
@@ -370,7 +384,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     }
 
     override def transform(tree: Tree): Tree = tree match {
-      case _: ClassDef if genBCode.codeGen.CodeGenImpl.isJavaEntryPoint(tree.symbol, currentUnit) =>
+      case _: ClassDef if genBCode.codeGen.CodeGenImpl.isJavaEntryPoint(tree.symbol, currentUnit, settings.mainClass.valueSetByUser.map(_.toString)) =>
         // collecting symbols for entry points here (as opposed to GenBCode where they are used)
         // has the advantage of saving an additional pass over all ClassDefs.
         entryPoints += tree.symbol
@@ -465,12 +479,24 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
-      case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
+      case Apply(appMeth, Apply(wrapRefArrayMeth, (arg @ StripCast(ArrayValue(_, _))) :: Nil) :: _ :: Nil)
       if wrapRefArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod && appMeth.symbol == ArrayModule_genericApply =>
         arg.transform(this)
-      case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
+      case Apply(appMeth, elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
+
+      // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
+      case Apply(appMeth @ Select(qual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
+      if wrapArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod
+        && currentRun.runDefinitions.isListApply(appMeth) && rest.elems.length < transformListApplyLimit =>
+        val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
+          (acc, elem) => New(ConsClass, elem, acc)
+        )
+        // Limiting extra stack frames consumed by generated code
+        reducingTransformListApply(rest.elems.length) {
+          super.transform(localTyper.typedPos(tree.pos)(consed))
+        }
 
       case _ =>
         super.transform(tree)

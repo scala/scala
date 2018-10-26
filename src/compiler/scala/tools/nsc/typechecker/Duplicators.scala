@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -84,7 +91,7 @@ abstract class Duplicators extends Analyzer {
           )
           if (sym1.exists) {
             debuglog(s"fixing $sym -> $sym1")
-            typeRef(NoPrefix, sym1, mapOverArgs(args, sym1.typeParams))
+            typeRef(NoPrefix, sym1, args mapConserve this)
           }
           else super.mapOver(tpe)
 
@@ -92,7 +99,7 @@ abstract class Duplicators extends Analyzer {
           val newsym = updateSym(sym)
           if (newsym ne sym) {
             debuglog("fixing " + sym + " -> " + newsym)
-            typeRef(mapOver(pre), newsym, mapOverArgs(args, newsym.typeParams))
+            typeRef(mapOver(pre), newsym, args mapConserve this)
           } else
             super.mapOver(tpe)
 

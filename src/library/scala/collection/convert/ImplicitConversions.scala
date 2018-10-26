@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2016, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
@@ -50,17 +54,17 @@ trait ToScalaImplicits {
   /** Implicitly converts a Java `Map` to a Scala mutable `Map`.
    *  @see [[AsScalaConverters.mapAsScalaMap]]
    */
-  implicit def `map AsScala`[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap(m)
+  implicit def `map AsScala`[K, V](m: ju.Map[K, V]): mutable.Map[K, V] = mapAsScalaMap(m)
 
   /** Implicitly converts a Java `ConcurrentMap` to a Scala mutable `ConcurrentMap`.
    *  @see [[AsScalaConverters.mapAsScalaConcurrentMap]]
    */
-  implicit def `map AsScalaConcurrentMap`[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = mapAsScalaConcurrentMap(m)
+  implicit def `map AsScalaConcurrentMap`[K, V](m: juc.ConcurrentMap[K, V]): concurrent.Map[K, V] = mapAsScalaConcurrentMap(m)
 
   /** Implicitly converts a Java `Dictionary` to a Scala mutable `Map`.
    *  @see [[AsScalaConverters.dictionaryAsScalaMap]]
    */
-  implicit def `dictionary AsScalaMap`[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = dictionaryAsScalaMap(p)
+  implicit def `dictionary AsScalaMap`[K, V](p: ju.Dictionary[K, V]): mutable.Map[K, V] = dictionaryAsScalaMap(p)
 
   /** Implicitly converts a Java `Properties` to a Scala `mutable Map[String, String]`.
    *  @see [[AsScalaConverters.propertiesAsScalaMap]]
@@ -118,22 +122,22 @@ trait ToJavaImplicits {
   /** Implicitly converts a Scala mutable `Map` to a Java `Map`.
    *  @see [[AsJavaConverters.mutableMapAsJavaMap]]
    */
-  implicit def `mutableMap AsJavaMap`[A, B](m: mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap(m)
+  implicit def `mutableMap AsJavaMap`[K, V](m: mutable.Map[K, V]): ju.Map[K, V] = mutableMapAsJavaMap(m)
 
   /** Implicitly converts a Scala mutable `Map` to a Java `Dictionary`.
    *  @see [[AsJavaConverters.asJavaDictionary]]
    */
-  implicit def `dictionary asJava`[A, B](m: mutable.Map[A, B]): ju.Dictionary[A, B] = asJavaDictionary(m)
+  implicit def `dictionary asJava`[K, V](m: mutable.Map[K, V]): ju.Dictionary[K, V] = asJavaDictionary(m)
 
   /** Implicitly converts a Scala `Map` to a Java `Map`.
    *  @see [[AsJavaConverters.mapAsJavaMap]]
    */
-  implicit def `map AsJavaMap`[A, B](m: Map[A, B]): ju.Map[A, B] = mapAsJavaMap(m)
+  implicit def `map AsJavaMap`[K, V](m: Map[K, V]): ju.Map[K, V] = mapAsJavaMap(m)
 
   /** Implicitly converts a Scala mutable `concurrent.Map` to a Java `ConcurrentMap`.
    *  @see [[AsJavaConverters.mapAsJavaConcurrentMap]]
    */
-  implicit def `map AsJavaConcurrentMap`[A, B](m: concurrent.Map[A, B]): juc.ConcurrentMap[A, B] = mapAsJavaConcurrentMap(m)
+  implicit def `map AsJavaConcurrentMap`[K, V](m: concurrent.Map[K, V]): juc.ConcurrentMap[K, V] = mapAsJavaConcurrentMap(m)
 }
 
 /**

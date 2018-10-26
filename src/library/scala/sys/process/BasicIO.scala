@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package sys
@@ -34,19 +38,39 @@ object BasicIO {
   /** Used to separate lines in the `processFully` function that takes `Appendable`. */
   final val Newline    = System.lineSeparator
 
+  private[process] final class LazilyListed[T](
+    val  process:   T => Unit,
+    val     done: Int => Unit,
+    val lazyList: LazyList[T]
+  )
+
+  private[process] object LazilyListed {
+    def apply[T](nonzeroException: Boolean, capacity: Integer): LazilyListed[T] = {
+      val queue = new LinkedBlockingQueue[Either[Int, T]](capacity)
+      val ll = LazyList.unfold(queue) { q =>
+        q.take match {
+          case Left(0)    => None
+          case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else None
+          case Right(s)   => Some((s, q))
+        }
+      }
+      new LazilyListed((s: T) => queue put Right(s), code => queue put Left(code), ll)
+    }
+  }
+
   private[process] final class Streamed[T](
     val process:   T => Unit,
     val    done: Int => Unit,
-    val  stream:  () => LazyList[T]
+    val  stream:  () => Stream[T]
   )
 
   private[process] object Streamed {
     def apply[T](nonzeroException: Boolean, capacity: Integer): Streamed[T] = {
       val q = new LinkedBlockingQueue[Either[Int, T]](capacity)
-      def next(): LazyList[T] = q.take match {
-        case Left(0)    => LazyList.empty
-        case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else LazyList.empty
-        case Right(s)   => LazyList.cons(s, next())
+      def next(): Stream[T] = q.take match {
+        case Left(0)    => Stream.empty
+        case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
+        case Right(s)   => Stream.cons(s, next())
       }
       new Streamed((s: T) => q put Right(s), code => q put Left(code), () => next())
     }

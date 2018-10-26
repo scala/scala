@@ -1,6 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -49,9 +56,9 @@ trait ExistentialsAndSkolems {
    */
   private def existentialBoundsExcludingHidden(hidden: List[Symbol]): Map[Symbol, Type] = {
     def safeBound(t: Type): Type =
-      if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.bounds.hi) else t
+      if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.upperBound) else t
 
-    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi).resultType match {
+    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.upperBound).resultType match {
       case tp @ RefinedType(parents, decls) =>
         val parents1 = parents mapConserve safeBound
         if (parents eq parents1) tp
@@ -114,5 +121,5 @@ trait ExistentialsAndSkolems {
    */
   final def packSymbols(hidden: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol): Type =
     if (hidden.isEmpty) tp
-    else existentialTransform(hidden, tp, rawOwner)(existentialAbstraction)
+    else existentialTransform(hidden, tp, rawOwner)(existentialAbstraction(_, _))
 }

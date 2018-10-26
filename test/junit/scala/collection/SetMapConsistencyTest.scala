@@ -244,9 +244,9 @@ class SetMapConsistencyTest {
       if (!check) {
         val temp = map2 match {
           case b: BoxImmutableMap[_, _] => b.m match {
-            case hx: ci.HashMap.HashTrieMap[_,_] =>
-              val h = hx.asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              Some((h.bitmap.toHexString, h.elems.mkString, h.size))
+            case hx: ci.HashMap[_,_] =>
+              val h = hx.asInstanceOf[ci.HashMap[A, Int]]
+              Some((h.mkString, h.size))
             case _ => None
           }
           case _ => None
@@ -294,10 +294,9 @@ class SetMapConsistencyTest {
       if (g1 != g2) {
         val temp = map2 match {
           case b: BoxImmutableMap[_, _] => b.m match {
-            case hx: ci.HashMap.HashTrieMap[_,_] =>
-              val h = hx.asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              val y = (ci.HashMap.empty[A, Int] ++ h).asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              Some(((h.bitmap.toHexString, h.elems.mkString, h.size),(y.bitmap.toHexString, y.elems.mkString, y.size)))
+            case hx: ci.HashMap[_,_] =>
+              val y = ci.HashMap.empty[A, Int] ++ hx
+              Some(((hx.mkString, hx.size),(y.mkString, y.size)))
             case _ => None
           }
           case _ => None
@@ -539,7 +538,7 @@ class SetMapConsistencyTest {
     import scala.tools.testing.AssertUtil._
     type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
-    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
+    val m = map.view.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
     assert{ (m contains 0) && (m get 0).nonEmpty }
     // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
     // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions

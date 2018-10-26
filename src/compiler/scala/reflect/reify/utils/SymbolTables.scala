@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.reify
 package utils
 
@@ -29,7 +41,7 @@ trait SymbolTables {
     def symAliases(sym: Symbol): List[TermName] =
       symName(sym) match {
         case name if name.isEmpty => Nil
-        case _ => (aliases.distinct groupBy (_._1) mapValues (_ map (_._2)))(sym)
+        case _ => (aliases.distinct.groupMap(_._1)(_._2))(sym)
       }
 
     def symBinding(sym: Symbol): Tree =

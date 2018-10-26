@@ -79,6 +79,8 @@ class ArrayOpsTest {
     assertEquals(l0.startsWith(l0, 1), a0.startsWith(a0, 1))
     assertEquals(l0.startsWith(l1, 0), a0.startsWith(a1, 0))
     assertEquals(l0.startsWith(l1, 1), a0.startsWith(a1, 1))
+    assertEquals(l0.startsWith(l1, -1), a0.startsWith(a1, -1))
+    assertEquals(l0.startsWith(l1, Int.MinValue), a0.startsWith(a1, Int.MinValue))
   }
 
   @Test
@@ -99,5 +101,11 @@ class ArrayOpsTest {
     assertArrayEquals(Array[Int](2), Array[Int](1, 2).slice(1, 2))
     assertArrayEquals(Array[Int](), Array[Int](1).slice(1052471512, -1496048404))
     assertArrayEquals(Array[Int](), Array[Int](1).slice(2, 3))
+  }
+
+  @Test
+  def copyToArrayOutOfBoundsTest: Unit = {
+    val target = Array[Int]()
+    assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
   }
 }

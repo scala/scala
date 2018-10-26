@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -8,6 +20,7 @@ package object util {
 
   // An allocation-avoiding reusable instance of the so-common List(Nil).
   val ListOfNil: List[List[Nothing]] = Nil :: Nil
+  val SomeOfNil: Option[List[Nothing]] = Some(Nil)
 
   def andFalse(body: Unit): Boolean = false
 

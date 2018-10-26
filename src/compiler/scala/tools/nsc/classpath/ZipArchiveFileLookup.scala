@@ -1,6 +1,15 @@
 /*
- * Copyright (c) 2014 Contributor. All rights reserved.
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.classpath
 
 import java.io.File
@@ -67,8 +76,7 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
   }
 
   private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
-    val dirName = FileUtils.dirPath(pkg) + "/"
-    archive.allDirs.get(dirName)
+    archive.allDirsByDottedName.get(pkg)
   }
 
   protected def createFileEntry(file: FileZipArchive#Entry): FileEntryType

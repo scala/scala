@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package mutable
@@ -10,7 +22,7 @@ package mutable
 @SerialVersionUID(3L)
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
-  def empty[A, B] = new LinkedHashMap[A, B]
+  def empty[K, V] = new LinkedHashMap[K, V]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]) =
     it match {
@@ -46,6 +58,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
  */
 class LinkedHashMap[K, V]
   extends AbstractMap[K, V]
+    with SeqMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
     with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]] {
@@ -83,7 +96,8 @@ class LinkedHashMap[K, V]
 
   override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
-
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = table.tableSize == 0
   def get(key: K): Option[V] = {
     val e = table.findEntry(key)
     if (e == null) None

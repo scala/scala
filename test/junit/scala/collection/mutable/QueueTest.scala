@@ -4,7 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.collection.IterableFactory
+import scala.collection.mutable
 
 @RunWith(classOf[JUnit4])
 class QueueTest {
@@ -29,4 +29,20 @@ class QueueTest {
     assertEquals(q.enqueue(5), List(1, 2, 3, 4, 5))
     assertEquals(s, List(2, 3, 4))
   }
+
+  @Test
+  def copyToArrayOutOfBounds: Unit = {
+    val target = Array[Int]()
+    assertEquals(0, mutable.Queue(1, 2).copyToArray(target, 1, 0))
+  }
+
+  @Test
+  def insertsWhenResizeIsNeeded: Unit = {
+    val q = Queue.from(Array.range(0, 15))
+    q.insert(1, -1)
+    assertEquals(Queue(0, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), q)
+  }
+
+  @Test
+  def sliding: Unit = ArrayDequeTest.genericSlidingTest(Queue, "Queue")
 }

@@ -11,7 +11,7 @@ else
 fi
 
 SBT_CMD=${SBT_CMD-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 0.13.17"
+SBT_CMD="$SBT_CMD -sbt-version 1.2.3"
 
 # repo to publish builds
 integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
@@ -82,7 +82,7 @@ function checkAvailability () {
 # Only used on Jenkins
 # Generate a repositories file with all allowed repositories in our build environment.
 # Takes a variable number of additional repositories as argument.
-# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
+# See https://www.scala-sbt.org/1.x/docs/Proxy-Repositories.html
 function generateRepositoriesConfig() {
   echo > "$sbtRepositoryConfig" '[repositories]'
   if [[ $# -gt 0 ]]; then

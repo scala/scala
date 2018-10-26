@@ -1,0 +1,4 @@
+t10700.scala:3: error: can't existentially abstract over parameterized type _1[_]
+  def foo(b: Boolean) = if (b) new Foo[List] else new Foo[Option]
+                        ^
+one error found

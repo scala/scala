@@ -1,6 +1,18 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection.mutable
 
-import scala.collection.{IterableFactory, IterableOnce}
+import scala.collection.IterableFactory
 import scala.language.higherKinds
 
 /** Base trait for mutable sets */
@@ -19,9 +31,11 @@ trait Set[A]
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends collection.SetOps[A, CC, C]
     with Cloneable[C]
+    with Builder[A, C]
     with Growable[A]
     with Shrinkable[A] {
 
+  def result(): C = coll
 
   def add(elem: A): Boolean =
     !contains(elem) && {

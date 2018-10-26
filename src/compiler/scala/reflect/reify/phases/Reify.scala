@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.reify
 package phases
 
@@ -51,7 +63,6 @@ trait Reify extends GenSymbols
     case mods: global.Modifiers   => reifyModifiers(mods)
     case xs: List[_]              => reifyList(xs)
     case s: String                => Literal(Constant(s))
-    case s: scala.Symbol          => Literal(Constant(s))
     case v if isAnyVal(v)         => Literal(Constant(v))
     case null                     => Literal(Constant(null))
     case _                        =>

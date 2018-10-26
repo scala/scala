@@ -5,10 +5,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import java.{lang => jl}
+
+import scala.collection.SortedSet
 import scala.math.Ordering.Float.TotalOrdering
 import scala.math.Ordering.Double.TotalOrdering
-
-import java.{lang => jl}
 
 @RunWith(classOf[JUnit4])
 class OrderingTest {
@@ -205,5 +206,30 @@ class OrderingTest {
   @Test
   def testSymbolOrdering(): Unit = {
     assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
+  }
+
+  @Test
+  def orderingEquality(): Unit = {
+    def check[T](ord: => Ordering[T]): Unit = {
+      assertEquals(ord, ord)
+      assertEquals(ord.hashCode(), ord.hashCode())
+      assertEquals(ord.reverse, ord.reverse)
+      assertEquals(ord.reverse.hashCode(), ord.reverse.hashCode())
+    }
+
+    check(Ordering[Int])
+    check(Ordering[(Int, Long)])
+    check(Ordering[(Int, Long, Float)])
+    check(Ordering[(Int, Long, Float, Double)])
+    check(Ordering[(Int, Long, Float, Double, Byte)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
+    check(Ordering[Option[Int]])
+
+    import Ordering.Implicits._
+    check(Ordering[Seq[Int]])
+    check(Ordering[SortedSet[Int]])
   }
 }

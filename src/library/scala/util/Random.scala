@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -38,7 +42,14 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *  array.
    */
   def nextBytes(bytes: Array[Byte]): Unit = { self.nextBytes(bytes) }
-
+  
+  /** Generates `n` random bytes and returns them in a new array. */
+  def nextBytes(n: Int): Array[Byte] = {
+    val bytes = new Array[Byte](0 max n)
+    self.nextBytes(bytes)
+    bytes
+  }
+  
   /** Returns the next pseudorandom, uniformly distributed double value
    *  between 0.0 and 1.0 from this random number generator's sequence.
    */

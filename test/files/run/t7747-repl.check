@@ -268,21 +268,18 @@ package $line10 {
     val INSTANCE = new $read.<init>
   }
 }
-package $line10
 
-
+package $line10 {
 object $eval {
   lazy val $result = $line10.$read.INSTANCE.$iw.$iw.res3
   lazy val $print: _root_.java.lang.String =  {
     $line10.$read.INSTANCE.$iw.$iw
-    ( ""
- + "res3: List[Product with Serializable] = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
 
-    )
+""  + "res3: List[Product with java.io.Serializable] = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
+
   }
-}
-
-res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+}}
+res3: List[Product with java.io.Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)
 defined class Sum

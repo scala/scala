@@ -11,7 +11,12 @@
       <entry name="!?*.clj"/>
     </wildcardResourcePatterns>
   </component>
-  <component default="" name="CopyrightManager"/>
+  <component name="CopyrightManager" default="Scala">
+    <copyright>
+      <option name="notice" value="Scala (https://www.scala-lang.org)&#10;&#10;Copyright EPFL and Lightbend, Inc.&#10;&#10;Licensed under Apache License 2.0&#10;(http://www.apache.org/licenses/LICENSE-2.0).&#10;&#10;See the NOTICE file distributed with this work for&#10;additional information regarding copyright ownership." />
+      <option name="myName" value="Scala" />
+    </copyright>
+  </component>
   <component name="Encoding">
     <file charset="UTF-8" url="PROJECT"/>
   </component>
@@ -166,6 +171,7 @@
     <modules>
       <module filepath="$PROJECT_DIR$/benchmarks.iml" fileurl="file://$PROJECT_DIR$/benchmarks.iml"/>
       <module filepath="$PROJECT_DIR$/compiler.iml" fileurl="file://$PROJECT_DIR$/compiler.iml"/>
+      <module filepath="$PROJECT_DIR$/compilerOptionsExporter.iml" fileurl="file://$PROJECT_DIR$/compilerOptionsExporter.iml"/>
       <module filepath="$PROJECT_DIR$/interactive.iml" fileurl="file://$PROJECT_DIR$/interactive.iml"/>
       <module filepath="$PROJECT_DIR$/junit.iml" fileurl="file://$PROJECT_DIR$/junit.iml"/>
       <module filepath="$PROJECT_DIR$/library.iml" fileurl="file://$PROJECT_DIR$/library.iml"/>
@@ -199,7 +205,7 @@
   <component name="libraryTable">
     <library name="bench-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.3.3.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-core/jars/jmh-core-1.20.jar!/"/>
@@ -216,15 +222,28 @@
     </library>
     <library name="compiler-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
+      </CLASSES>
+      <JAVADOC/>
+      <SOURCES/>
+    </library>
+    <library name="compilerOptionsExporter-deps">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-core/bundles/jackson-core-2.9.5.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-annotations/bundles/jackson-annotations-2.9.5.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-databind/bundles/jackson-databind-2.9.5.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/bundles/jackson-dataformat-yaml-2.9.5.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.yaml/snakeyaml/bundles/snakeyaml-1.18.jar!/"/>
       </CLASSES>
       <JAVADOC/>
       <SOURCES/>
     </library>
     <library name="interactive-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
       </CLASSES>
       <JAVADOC/>
@@ -232,7 +251,7 @@
     </library>
     <library name="junit-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/"/>
@@ -252,7 +271,7 @@
     </library>
     <library name="partest-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/"/>
@@ -262,14 +281,14 @@
     </library>
     <library name="partest-javaagent-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
       </CLASSES>
       <JAVADOC/>
       <SOURCES/>
     </library>
     <library name="repl-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
       </CLASSES>
       <JAVADOC/>
@@ -277,7 +296,7 @@
     </library>
     <library name="repl-frontend-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
       </CLASSES>
       <JAVADOC/>
@@ -320,6 +339,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.6.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.slf4j/slf4j-nop/jars/slf4j-nop-1.7.23.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.slf4j/slf4j-api/jars/slf4j-api-1.7.23.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/pl.project13.scala/sbt-jmh/jars/sbt-jmh-0.3.3.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/pl.project13.scala/sbt-jmh-extras/jars/sbt-jmh-extras-0.3.3.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-core/jars/jmh-core-1.20.jar!/"/>
@@ -397,7 +417,7 @@
     </library>
     <library name="scaladoc-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
       </CLASSES>
       <JAVADOC/>
@@ -405,7 +425,7 @@
     </library>
     <library name="scalap-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
       </CLASSES>
       <JAVADOC/>
@@ -427,7 +447,7 @@
     </library>
     <library name="test-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.2.0-scala-2.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/"/>
         <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar!/"/>

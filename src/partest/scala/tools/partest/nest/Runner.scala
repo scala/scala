@@ -1,7 +1,15 @@
-/* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.partest
 package nest
 
@@ -9,86 +17,68 @@ import java.io.{Console => _, _}
 import java.lang.reflect.InvocationTargetException
 import java.nio.charset.Charset
 import java.nio.file.{Files, StandardOpenOption}
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.FatalError
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.sys.process.{Process, ProcessLogger}
-import scala.tools.nsc.Properties.{isWin, javaHome, javaVmInfo, javaVmName, javaVmVersion, propOrEmpty, versionMsg}
+import scala.tools.nsc.Properties.{isWin, propOrEmpty}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.stackTraceString
-import scala.util.{Failure, Success, Try}
 import ClassPath.join
-import TestState.{Crash, Fail, Pass, Skip, Uninitialized, Updated}
+import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.control.ControlThrowable
 
-trait TestInfo {
+/** pos/t1234.scala or pos/t1234 if dir */
+case class TestInfo(testFile: File) {
   /** pos/t1234 */
-  def testIdent: String
+  val testIdent: String = testFile.testIdent
 
   /** pos */
-  def kind: String
+  val kind: String = parentFile.getName
 
   // inputs
 
-  /** pos/t1234.scala or pos/t1234 if dir */
-  def testFile: File
-
   /** pos/t1234.check */
-  def checkFile: File
+  val checkFile: File = testFile.changeExtension("check")
 
   /** pos/t1234.flags */
-  def flagsFile: File
+  val flagsFile: File = testFile.changeExtension("flags")
 
   // outputs
 
-  /** pos/t1234-pos.obj */
-  def outFile: File
-
   /** pos/t1234-pos.log */
-  def logFile: File
+  val logFile: File = new File(parentFile, s"$fileBase-$kind.log")
+
+  /** pos/t1234-pos.obj */
+  val outFile: File = logFile.changeExtension("obj")
+
+  // enclosing dir
+  def parentFile: File = testFile.getParentFile
+
+  // test file name without extension
+  def fileBase: String = basename(testFile.getName)
 }
 
-/** Run a single test. Rubber meets road. */
-class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestInfo {
+/** Run a single test. */
+class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   private val stopwatch = new Stopwatch()
 
+  import testInfo._
   import suiteRunner.{fileManager => fm, _}
   val fileManager = fm
 
   import fileManager._
 
-  // Override to true to have the outcome of this test displayed
-  // whether it passes or not; in general only failures are reported,
-  // except for a . per passing test to show progress.
-  def isEnumeratedTest = false
-
-  private var _lastState: TestState = null
   private val _transcript = new TestTranscript
 
-  def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
-  def setLastState(s: TestState)  = _lastState = s
-  def pushTranscript(msg: String) = _transcript add msg
-
-  val parentFile = testFile.getParentFile
-  val kind       = parentFile.getName
-  val fileBase   = basename(testFile.getName)
-  val logFile    = new File(parentFile, s"$fileBase-$kind.log")
-  val outFile    = logFile changeExtension "obj"
-  val checkFile  = testFile changeExtension "check"
-  val flagsFile  = testFile changeExtension "flags"
-  val testIdent  = testFile.testIdent // e.g. pos/t1234
+  def pushTranscript(msg: String) = _transcript.add(msg)
 
   lazy val outDir = { outFile.mkdirs() ; outFile }
-
-  type RanOneTest = (Boolean, LogContext)
 
   def showCrashInfo(t: Throwable): Unit = {
     System.err.println(s"Crashed running test $testIdent: " + t)
@@ -104,8 +94,9 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
       genCrash(t)
   }
 
-  def genPass()                   = Pass(testFile)
+  def genPass(): TestState        = Pass(testFile)
   def genFail(reason: String)     = Fail(testFile, reason, transcript.toArray)
+  def genResult(b: Boolean)       = if (b) genPass() else genFail("predicate failed")
   def genSkip(reason: String)     = Skip(testFile, reason)
   def genTimeout()                = Fail(testFile, "timed out", transcript.toArray)
   def genCrash(caught: Throwable) = Crash(testFile, caught, transcript.toArray)
@@ -133,23 +124,12 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     }
   }
 
-  def testPrompt = kind match {
-    case "res"  => "nsc> "
-    case _      => "% "
-  }
-
-  /** Evaluate an action body and update the test state.
-   *  @param failFn optionally map a result to a test state.
-   */
-  def nextTestAction[T](body: => T)(failFn: PartialFunction[T, TestState]): T = {
-    val result = body
-    setLastState( if (failFn isDefinedAt result) failFn(result) else genPass() )
-    result
-  }
-  def nextTestActionExpectTrue(reason: String, body: => Boolean): Boolean = (
-    nextTestAction(body) { case false => genFail(reason) }
-  )
-  def nextTestActionFailing(reason: String): Boolean = nextTestActionExpectTrue(reason, false)
+  /** Evaluate an action body and judge whether it passed. */
+  def nextTestAction[T](body: => T)(eval: PartialFunction[T, TestState]): TestState = eval.applyOrElse(body, (_: T) => genPass)
+  /** If the action does not result in true, fail the action. */
+  def nextTestActionExpectTrue(reason: String, body: => Boolean): TestState = nextTestAction(body) { case false => genFail(reason) }
+  /** Fail the action. */
+  def nextTestActionFailing(reason: String): TestState = nextTestActionExpectTrue(reason, false)
 
   private def assembleTestCommand(outDir: File, logFile: File): List[String] = {
     // check whether there is a ".javaopts" file
@@ -241,7 +221,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     (pl buffer run) == 0
   }
 
-  private def execTest(outDir: File, logFile: File): Boolean = {
+  private def execTest(outDir: File, logFile: File): TestState = {
     val cmd = assembleTestCommand(outDir, logFile)
 
     pushTranscript((cmd mkString s" \\$EOL  ") + " > " + logFile.getName)
@@ -252,7 +232,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     }
   }
 
-  def execTestInProcess(classesDir: File, log: File): Boolean = {
+  def execTestInProcess(classesDir: File, log: File): TestState = {
     stopwatch.pause()
     suiteRunner.synchronized {
       stopwatch.start()
@@ -287,25 +267,14 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
 
       TrapExit(() => run()) match {
         case Left((status, throwable)) if status != 0 =>
-          setLastState(genFail("non-zero exit code"))
-          false
+          genFail("non-zero exit code")
         case _ =>
-          setLastState(genPass())
-          true
+          genPass
       }
     }
   }
 
-  override def toString = s"""Test($testIdent, lastState = $lastState)"""
-
-  // result is unused
-  def newTestWriters() = {
-    val swr = new StringWriter
-    val wr  = new PrintWriter(swr, true)
-    // diff    = ""
-
-    ((swr, wr))
-  }
+  override def toString = s"Test($testIdent)"
 
   def fail(what: Any) = {
     suiteRunner.verbose("scalac: compilation of "+what+" failed\n")
@@ -436,50 +405,34 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     }
   }
 
-  def diffIsOk: Boolean = {
+  def diffIsOk: TestState = {
     // always normalize the log first
     normalizeLog()
-    val diff = currentDiff
-    // if diff is not empty, is update needed?
-    val updating: Option[Boolean] = (
-      if (diff == "") None
-      else Some(config.optUpdateCheck)
-    )
     pushTranscript(s"diff $checkFile $logFile")
-    nextTestAction(updating) {
-      case Some(true)  =>
+    currentDiff match {
+      case "" => genPass
+      case diff if config.optUpdateCheck =>
         suiteRunner.verbose("Updating checkfile " + checkFile)
         checkFile writeAll file2String(logFile)
         genUpdated()
-      case Some(false) =>
+      case diff =>
         // Get a word-highlighted diff from git if we can find it
         val bestDiff =
-          if (updating.isEmpty) ""
-          else if (checkFile.canRead)
-            gitRunner match {
-              case None => diff
-              case _    => withTempFile(outFile, fileBase, filteredCheck) { f =>
-                gitDiff(f, logFile) getOrElse diff
-              }
-            }
-          else diff
+          if (!checkFile.canRead) diff
+          else
+            gitRunner.flatMap(_ => withTempFile(outFile, fileBase, filteredCheck)(f =>
+                gitDiff(f, logFile))).getOrElse(diff)
         _transcript append bestDiff
         genFail("output differs")
-        // TestState.fail("output differs", "output differs",
-        // genFail("output differs")
-        // TestState.Fail("output differs", bestDiff)
-      case None        => genPass()  // redundant default case
-    } getOrElse true
+    }
   }
 
   /** 1. Creates log file and output directory.
    *  2. Runs script function, providing log file and output directory as arguments.
    *     2b. or, just run the script without context and return a new context
    */
-  def runInContext(body: => Boolean): (Boolean, LogContext) = {
-    val (swr, wr) = newTestWriters()
-    val succeeded = body
-    (succeeded, LogContext(logFile, swr, wr))
+  def runInContext(body: => TestState): TestState = {
+    body
   }
 
   /** Grouped files in group order, and lex order within each group. */
@@ -566,9 +519,8 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
   }
 
-  def compilationRounds(file: File): List[CompileRound] = (
-    (groupedFiles(sources(file)) map mixedCompileGroup).flatten
-  )
+  def compilationRounds(file: File): List[CompileRound] =
+    groupedFiles(sources(file)).map(mixedCompileGroup).flatten
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
     val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
     val round1                  = if (scalaFiles.isEmpty) None else Some(ScalaAndJava(allFiles))
@@ -577,24 +529,26 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     List(round1, round2).flatten
   }
 
-  def runNegTest() = runInContext {
-    val rounds = compilationRounds(testFile)
+  def runPosTest(): TestState =
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    else runTestCommon()
 
-    // failing means Does Not Compile
-    val failing = rounds find (x => nextTestActionExpectTrue("compilation failed", x.isOk) == false)
-
-    // which means passing if it checks and didn't crash the compiler
+  def runNegTest(): TestState = runInContext {
+    // pass if it checks and didn't crash the compiler
     // or, OK, we'll let you crash the compiler with a FatalError if you supply a check file
     def checked(r: CompileRound) = r.result match {
-      case Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => false
-      case _ => diffIsOk
+      case crash @ Crash(_, t, _) if !checkFile.canRead || !t.isInstanceOf[FatalError] => crash
+      case dnc @ _ => diffIsOk
     }
 
-    failing map (checked) getOrElse nextTestActionFailing("expected compilation failure")
+    compilationRounds(testFile).find(!_.result.isOk).map(checked).getOrElse(genFail("expected compilation failure"))
   }
 
-  def runTestCommon(andAlso: => Boolean): (Boolean, LogContext) = runInContext {
-    compilationRounds(testFile).forall(x => nextTestActionExpectTrue("compilation failed", x.isOk)) && andAlso
+  // run compilation until failure, evaluate `andAlso` on success
+  def runTestCommon(andAlso: => TestState = genPass): TestState = runInContext {
+    // DirectCompiler already says compilation failed
+    val res = compilationRounds(testFile).find(!_.result.isOk).map(_.result).getOrElse(genPass)
+    res andAlso andAlso
   }
 
   def extraClasspath = kind match {
@@ -606,10 +560,9 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     case _              => Array.empty[String]
   }
 
-  def runResidentTest() = {
+  def runResidentTest(): TestState = {
     // simulate resident compiler loop
     val prompt = "\nnsc> "
-    val (swr, wr) = newTestWriters()
 
     suiteRunner.verbose(s"$this running test $fileBase")
     val dir = parentFile
@@ -640,7 +593,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     val command = new CompilerCommand(argList, settings)
     object compiler extends Global(command.settings, reporter)
 
-    def resCompile(line: String): Boolean = {
+    def resCompile(line: String): TestState = {
       // suiteRunner.verbose("compiling "+line)
       val cmdArgs = (line split ' ').toList map (fs => new File(dir, fs).getAbsolutePath)
       // suiteRunner.verbose("cmdArgs: "+cmdArgs)
@@ -657,20 +610,19 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
         }
       )
     }
-    def loop(): Boolean = {
+    def loop(): TestState = {
       logWriter.print(prompt)
       resReader.readLine() match {
-        case null | ""  => logWriter.close() ; true
-        case line       => resCompile(line) && loop()
+        case null | ""  => logWriter.close() ; genPass
+        case line       => resCompile(line) andAlso loop()
       }
     }
     // res/t687.res depends on ignoring its compilation failure
     // and just looking at the diff, so I made them all do that
     // because this is long enough.
-    if (!Output.withRedirected(logWriter)(try loop() finally resReader.close()))
-      setLastState(genPass())
+    /*val res =*/ Output.withRedirected(logWriter)(try loop() finally resReader.close())
 
-    (diffIsOk, LogContext(logFile, swr, wr))
+    /*res andAlso*/ diffIsOk
   }
 
   def run(): (TestState, Long) = {
@@ -678,25 +630,25 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     logFile.delete()
     stopwatch.start()
 
-    if (kind == "neg" || (kind endsWith "-neg")) runNegTest()
-    else kind match {
-      case "pos"          => runTestCommon(true)
+    val state =  kind match {
+      case "pos"          => runPosTest()
+      case "neg"          => runNegTest()
       case "res"          => runResidentTest()
       case "scalap"       => runScalapTest()
       case "script"       => runScriptTest()
+      case k if k.endsWith("-neg") => runNegTest()
       case _              => runRunTest()
     }
-
-    (lastState, stopwatch.stop)
+    (state, stopwatch.stop)
   }
 
-  private def runRunTest(): Unit = {
+  private def runRunTest(): TestState = {
     val argsFile = testFile changeExtension "javaopts"
     val javaopts = readOptionsFile(argsFile)
     val execInProcess = PartestDefaults.execInProcess && javaopts.isEmpty && !Set("specialized", "instrumented").contains(testFile.getParentFile.getName)
     def exec() = if (execInProcess) execTestInProcess(outDir, logFile) else execTest(outDir, logFile)
-    def noexec() = suiteRunner.config.optNoExec && { setLastState(genSkip("no-exec: tests compiled but not run")) ; true }
-    runTestCommon(noexec() || exec() && diffIsOk)
+    def noexec() = genSkip("no-exec: tests compiled but not run")
+    runTestCommon(if (suiteRunner.config.optNoExec) noexec() else exec().andAlso(diffIsOk))
   }
 
   private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
@@ -725,7 +677,7 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     scalap.Main.decompileScala(bytes, isPackageObject)
   }
 
-  def runScalapTest() = runTestCommon {
+  def runScalapTest(): TestState = runTestCommon {
     val isPackageObject = testFile.getName startsWith "package"
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")
     val loader          = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), this.getClass.getClassLoader)
@@ -733,22 +685,21 @@ class Runner(val testFile: File, val suiteRunner: AbstractRunner) extends TestIn
     diffIsOk
   }
 
-  def runScriptTest() = {
+  def runScriptTest(): TestState = {
     import scala.sys.process._
-    val (swr, wr) = newTestWriters()
 
     val args = file2String(testFile changeExtension "args")
     val cmdFile = if (isWin) testFile changeExtension "bat" else testFile
-    val succeeded = (((cmdFile + " " + args) #> logFile !) == 0) && diffIsOk
+    val succeeded = (((cmdFile + " " + args) #> logFile !) == 0)
 
-    (succeeded, LogContext(logFile, swr, wr))
+    val result = if (succeeded) genPass else genFail(s"script $cmdFile failed to run")
+
+    result andAlso diffIsOk
   }
 
-  def cleanup(): Unit = {
-    if (lastState.isOk)
-      logFile.delete()
-    if (!suiteRunner.debug)
-      Directory(outDir).deleteRecursively()
+  def cleanup(state: TestState): Unit = {
+    if (state.isOk) logFile.delete()
+    if (!suiteRunner.debug) Directory(outDir).deleteRecursively()
   }
 
   // Colorize prompts according to pass/fail

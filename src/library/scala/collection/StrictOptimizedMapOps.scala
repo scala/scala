@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 import scala.language.higherKinds
@@ -20,7 +32,7 @@ trait StrictOptimizedMapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C
   override def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)]): CC[K2, V2] =
     strictOptimizedFlatMap(mapFactory.newBuilder, f)
 
-  override def concat[V2 >: V](suffix: Iterable[(K, V2)]): CC[K, V2] =
+  override def concat[V2 >: V](suffix: IterableOnce[(K, V2)]): CC[K, V2] =
     strictOptimizedConcat(suffix, mapFactory.newBuilder)
 
   override def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)]): CC[K2, V2] =

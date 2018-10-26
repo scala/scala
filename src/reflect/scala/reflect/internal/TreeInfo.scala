@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -835,7 +842,7 @@ abstract class TreeInfo {
   }
 
   /** Does list of trees start with a definition of
-   *  a class of module with given name (ignoring imports)
+   *  a class or module with given name (ignoring imports)
    */
   def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
     case Import(_, _) :: xs             => firstDefinesClassOrObject(xs, name)
@@ -857,25 +864,6 @@ abstract class TreeInfo {
       case Apply(fun, _) => unapply(fun)
       case _             => None
     }
-  }
-
-  /** Is this file the body of a compilation unit which should not
-   *  have Predef imported?
-   */
-  def noPredefImportForUnit(body: Tree) = {
-    // Top-level definition whose leading imports include Predef.
-    def isLeadingPredefImport(defn: Tree): Boolean = defn match {
-      case PackageDef(_, defs1) => defs1 exists isLeadingPredefImport
-      case Import(expr, _)      => isReferenceToPredef(expr)
-      case _                    => false
-    }
-    // Compilation unit is class or object 'name' in package 'scala'
-    def isUnitInScala(tree: Tree, name: Name) = tree match {
-      case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
-      case _                                   => false
-    }
-
-    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {

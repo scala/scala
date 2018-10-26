@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -314,7 +321,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       // Rewrite This(enclModuleClass) to Ident(enclModuleClass) to avoid unnecessary capture of the module
       // class, which might hamper serializability.
       //
-      // Analagous to this special case in ExplicitOuter: https://github.com/scala/scala/blob/d2d33ddf8c/src/compiler/scala/tools/nsc/transform/ExplicitOuter.scala#L410-L412
+      // Analogous to this special case in ExplicitOuter: https://github.com/scala/scala/blob/d2d33ddf8c/src/compiler/scala/tools/nsc/transform/ExplicitOuter.scala#L410-L412
       // that understands that such references shouldn't give rise to outer params.
       val enclosingStaticModules = owner.enclClassChain.filter(x => !x.hasPackageFlag && x.isModuleClass && x.isStatic)
       enclosingStaticModules.foldLeft(tree)((tree, moduleClass) => tree.substituteThis(moduleClass, gen.mkAttributedIdent(moduleClass.sourceModule)) )
@@ -352,7 +359,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     })
     val selfParam = ValDef(selfParamSym)
     val rhs = orig.rhs.substituteThis(newSym.owner, gen.mkAttributedIdent(selfParamSym)) // scala/scala-dev#186 intentionally leaving Ident($this) is unpositioned
-      .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym -> newSym)
+      .substituteSymbols(origParams, newSym.info.params.drop(1)).changeOwner(origSym, newSym)
     treeCopy.DefDef(orig, orig.mods, orig.name, orig.tparams, (selfParam :: orig.vparamss.head) :: Nil, orig.tpt, rhs).setSymbol(newSym)
   }
 

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -46,7 +53,7 @@ trait ScalaClassLoader extends JClassLoader {
 
   /** Create an instance of a class with this classloader */
   def create(path: String): AnyRef =
-    tryToInitializeClass[AnyRef](path).map(_.newInstance()).orNull
+    tryToInitializeClass[AnyRef](path).map(_.getConstructor().newInstance()).orNull
 
   /** Create an instance with ctor args, or invoke errorFn before throwing. */
   def create[T <: AnyRef : ClassTag](path: String, errorFn: String => Unit)(args: AnyRef*): T = {
@@ -132,7 +139,7 @@ object ScalaClassLoader {
          with ScalaClassLoader
          with HasClassPath {
 
-    private var classloaderURLs: Seq[URL] = urls
+    private[this] var classloaderURLs: Seq[URL] = urls
     def classPathURLs: Seq[URL] = classloaderURLs
 
     /** Override to widen to public */

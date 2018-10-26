@@ -138,7 +138,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.iteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted
+    map.iteratorFrom(k).toSeq == entries.view.filterKeys(_ >= k).toSeq.sorted
   }
 
   property("keysIteratorFrom") = forAll { (entries: Map[K, V], k: K) =>
@@ -152,7 +152,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.valuesIteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted.map(_._2)
+    map.valuesIteratorFrom(k).toSeq == entries.view.filterKeys(_ >= k).toSeq.sorted.map(_._2)
   }
 
   property("headOption") = forAll { (map: mutable.TreeMap[K, V]) =>

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package sys
@@ -268,5 +272,11 @@ private[process] trait ProcessImpl {
     override def isAlive()   = thread.isAlive()
     override def exitValue() = if (success.get) 0 else 1   // thread.join()
     override def destroy()   = thread.interrupt()
+  }
+
+  private[process] object FailedProcess extends Process {
+    override def isAlive() = false
+    override def exitValue() = 1
+    override def destroy(): Unit = ()
   }
 }

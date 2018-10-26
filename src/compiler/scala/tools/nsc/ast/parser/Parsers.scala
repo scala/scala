@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 //todo: allow infix type patterns
@@ -751,13 +758,16 @@ self =>
         placeholderParams = placeholderParams filter (_.name != name)
       }
       def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
+      def propagateNoWarnAttachment(from: Tree, to: ValDef): to.type =
+        if (from.hasAttachment[NoWarnAttachment.type]) to.updateAttachment(NoWarnAttachment)
+        else to
       tree match {
-        case Ident(name) =>
+        case id @ Ident(name) =>
           removeAsPlaceholder(name)
-          makeParam(name.toTermName, TypeTree() setPos o2p(tree.pos.end))
-        case Typed(Ident(name), tpe) if tpe.isType => // get the ident!
+          propagateNoWarnAttachment(id, makeParam(name.toTermName, TypeTree() setPos o2p(tree.pos.end)))
+        case Typed(id @ Ident(name), tpe) if tpe.isType => // get the ident!
           removeAsPlaceholder(name)
-          makeParam(name.toTermName, tpe)
+          propagateNoWarnAttachment(id, makeParam(name.toTermName, tpe))
         case build.SyntacticTuple(as) =>
           val arity = as.length
           val example = analyzer.exampleTuplePattern(as map { case Ident(name) => name; case _ => nme.EMPTY })
@@ -1300,6 +1310,8 @@ self =>
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
       if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
+      else if (in.token == SYMBOLLIT)
+        Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else finish(in.token match {
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt
@@ -1307,7 +1319,6 @@ self =>
         case FLOATLIT               => in.floatVal(isNegated)
         case DOUBLELIT              => in.doubleVal(isNegated)
         case STRINGLIT | STRINGPART => in.strVal.intern()
-        case SYMBOLLIT              => Symbol(in.strVal.intern())
         case TRUE                   => true
         case FALSE                  => false
         case NULL                   => null
@@ -1342,7 +1353,7 @@ self =>
       val id = atPos(start)(Ident(pname))
       val param = atPos(id.pos.focus)(gen.mkSyntheticParam(pname.toTermName))
       placeholderParams = param :: placeholderParams
-      id
+      id.updateAttachment(NoWarnAttachment)
     }
 
     private def interpolatedString(inPattern: Boolean): Tree = {
@@ -2373,7 +2384,7 @@ self =>
       }
     }
 
-    def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef = {
+    def param(owner: Name, implicitmod: Long, caseParam: Boolean): ValDef = {
       val start = in.offset
       val annots = annotations(skipNewLines = false)
       var mods = Modifiers(Flags.PARAM)
@@ -2393,7 +2404,7 @@ self =>
       }
       val nameOffset = in.offset
       val name = ident()
-      var bynamemod = 0
+      var bynamemod = 0L
       val tpt = {
           accept(COLON)
           if (in.token == ARROW) {
@@ -2413,7 +2424,7 @@ self =>
           expr()
         } else EmptyTree
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
-        ValDef((mods | implicitmod.toLong | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
+        ValDef((mods | implicitmod | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
       }
     }
 
@@ -3000,9 +3011,14 @@ self =>
     def template(): (List[Tree], ValDef, List[Tree]) = {
       newLineOptWhenFollowedBy(LBRACE)
       if (in.token == LBRACE) {
+        val braceOffset = in.offset
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
+          val advice =
+            if (settings.isScala214) "use trait parameters instead."
+            else "they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits."
+          deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
@@ -3244,10 +3260,10 @@ self =>
     }
     */
 
-    def localDef(implicitMod: Int): List[Tree] = {
+    def localDef(implicitMod: Long): List[Tree] = {
       val annots = annotations(skipNewLines = true)
       val pos = in.offset
-      val mods = (localModifiers() | implicitMod.toLong) withAnnotations annots
+      val mods = (localModifiers() | implicitMod) withAnnotations annots
       val defs =
         if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
         else List(tmplDef(pos, mods))

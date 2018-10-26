@@ -5,7 +5,9 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+
 import scala.tools.testing.AssertUtil
+import scala.tools.testing.AssertUtil.assertThrows
 
 /* Test for scala/bug#9043 */
 @RunWith(classOf[JUnit4])
@@ -307,4 +309,48 @@ class ArrayBufferTest {
 
     assertEquals(builder.result(), "4,3,2,1")
   }
+
+  @Test
+  def emptyIteratorDropOneMustBeEmpty: Unit = {
+    assertThrows[NoSuchElementException](new ArrayBuffer[Int].iterator.drop(1).next())
+  }
+
+  @Test
+  def t11114_ArrayBufferPatch: Unit = {
+    {
+      def newBuf = ArrayBuffer(1, 2, 3, 4, 5)
+      assertEquals(ArrayBuffer(1, 2, 3, 10, 11), newBuf.patchInPlace(3, List(10, 11), 4))
+      assertEquals(ArrayBuffer(1, 2, 3, 10, 11), newBuf.patchInPlace(3, List(10, 11), 10))
+      assertEquals(ArrayBuffer(10, 11), newBuf.patchInPlace(0, List(10, 11), 10))
+      assertEquals(ArrayBuffer(1, 2, 3, 10, 11, 12), newBuf.patchInPlace(3, List(10, 11, 12), 4))
+    }
+
+    for {
+      size <- 0 to 10
+      patchSize <- 0 to 12
+      patchRange = 100 until (100 + patchSize)
+      patch <- Seq(() => patchRange.toVector, () => patchRange.iterator)
+      from <- -1 to 11
+      replaced <- -1 to 13
+    } {
+      def createBuf = (0 until size).to(ArrayBuffer)
+
+      val fromPatch = createBuf.patch(from, patch(), replaced)
+      val fromPatchInPlace = createBuf.patchInPlace(from, patch(), replaced)
+
+      assert(fromPatch == fromPatchInPlace,
+        s"""Failed on:
+           |  size: $size
+           |  targetBuffer: $createBuf
+           |  from: $from
+           |  patch sequence: ${patch()} (${patch().toVector})
+           |  replaced: $replaced
+           |  patch returned: $fromPatch
+           |  patchInPlace returned: $fromPatchInPlace
+         """.stripMargin
+      )
+    }
+  }
+
+
 }

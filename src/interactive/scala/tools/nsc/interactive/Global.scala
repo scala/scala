@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 
@@ -1188,29 +1196,30 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       val enteredLowercaseSet = enteredS.toLowerCase().toSet
       val allowSnake = !enteredS.contains('_')
 
-      (candidate: Name) => {
-        def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
-        // Loosely based on IntelliJ's autocompletion: the user can just write everything in
-        // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
-        def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
-          candidate match {
-            case Nil => entered.isEmpty && matchCount > 0
-            case head :: tail =>
-              val enteredAlternatives = Set(entered, entered.capitalize)
-              val n = (head, entered).zipped.count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
-              head.take(n).inits.exists(init =>
-                enteredAlternatives.exists(entered =>
-                  lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+      {
+        candidate: Name =>
+          def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
+          // Loosely based on IntelliJ's autocompletion: the user can just write everything in
+          // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
+          def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
+            candidate match {
+              case Nil => entered.isEmpty && matchCount > 0
+              case head :: tail =>
+                val enteredAlternatives = Set(entered, entered.capitalize)
+                val n = head.toIterable.lazyZip(entered).count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
+                head.take(n).inits.exists(init =>
+                  enteredAlternatives.exists(entered =>
+                    lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+                  )
                 )
-              )
+            }
           }
-        }
-        val containsAllEnteredChars = {
-          // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
-          val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
-          enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
-        }
-        containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
+          val containsAllEnteredChars = {
+            // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
+            val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
+            enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
+          }
+          containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
       }
     }
   }

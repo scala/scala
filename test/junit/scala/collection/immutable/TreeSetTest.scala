@@ -17,4 +17,10 @@ class TreeSetTest {
     assertEquals(set, set drop Int.MinValue)
     assertEquals(set, set dropRight Int.MinValue)
   }
+
+  @Test
+  def factoryReuse(): Unit = {
+    val m = TreeSet("a")
+    assertSame(m, TreeSet.from(m))
+  }
 }

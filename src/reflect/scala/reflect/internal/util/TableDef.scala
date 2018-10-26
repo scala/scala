@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect.internal.util
 
@@ -17,7 +29,7 @@ class TableDef[T](_cols: Column[T]*) {
   def ~(next: Column[T])            = retThis(cols :+= next)
 
   // Below this point should all be considered private/internal.
-  private var cols: List[Column[T]] = _cols.toList
+  private[this] var cols: List[Column[T]] = _cols.toList
 
   def defaultSep(index: Int)   = if (index > (cols.size - 2)) "" else " "
   def sepAfter(i: Int): String = defaultSep(i)
@@ -43,7 +55,7 @@ class TableDef[T](_cols: Column[T]*) {
 
     val headers = List(
       headFormat.format(colNames: _*),
-      (colWidths, sepWidths).zipped map ((w1, w2) => "-" * w1 + " " * w2) mkString
+      colWidths.lazyZip(sepWidths).map((w1, w2) => "-" * w1 + " " * w2).mkString
     )
 
     def mkFormatString(sepf: Int => String): String =

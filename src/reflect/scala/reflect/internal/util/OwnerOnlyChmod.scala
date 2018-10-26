@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2017 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.reflect.internal.util
 
 import java.nio.ByteBuffer
@@ -17,8 +25,8 @@ object OwnerOnlyChmod {
   private def canPosix(path: Path) =
     Files.getFileStore(path).supportsFileAttributeView(classOf[PosixFileAttributeView])
 
-  private val posixDir  = EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE)
-  private val posixFile = EnumSet.of(OWNER_READ, OWNER_WRITE)
+  private[this] val posixDir  = EnumSet.of(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE)
+  private[this] val posixFile = EnumSet.of(OWNER_READ, OWNER_WRITE)
 
   /** Remove group/other permissions for `file`, it if exists, and if the runtime environment supports modifying permissions. */
   def chmod(path: Path): Unit = {

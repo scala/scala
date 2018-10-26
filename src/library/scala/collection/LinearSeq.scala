@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -21,18 +33,33 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   // To be overridden in implementations:
   def isEmpty: Boolean
   def head: A
-  def tail: LinearSeq[A]
+  def tail: C
 
-  def iterator: Iterator[A] = new LinearSeqIterator[A](toSeq)
+  def iterator: Iterator[A] =
+    if (knownSize == 0) Iterator.empty
+    else new LinearSeqIterator[A](toSeq)
 
   def length: Int = {
-    var these = toIterable
+    var these = coll
     var len = 0
-    while (!these.isEmpty) {
+    while (these.nonEmpty) {
       len += 1
       these = these.tail
     }
     len
+  }
+
+  override def last: A = {
+    if (isEmpty) throw new NoSuchElementException("LinearSeq.last")
+    else {
+      var these = coll
+      var scout = tail
+      while (scout.nonEmpty) {
+        these = scout
+        scout = scout.tail
+      }
+      these.head
+    }
   }
 
   override def lengthCompare(len: Int): Int = {
@@ -49,21 +76,6 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   }
 
   override def isDefinedAt(x: Int): Boolean = x >= 0 && lengthCompare(x) > 0
-
-  // Optimized version of `drop` that avoids copying
-  override def drop(n: Int): C = {
-    @tailrec def loop(n: Int, s: C): C =
-      if (n <= 0 || s.isEmpty) s
-      else loop(n - 1, s.tail)
-    loop(n, coll)
-  }
-
-  override def dropWhile(p: A => Boolean): C = {
-    @tailrec def loop(s: C): C =
-      if (s.nonEmpty && p(s.head)) loop(s.tail)
-      else s
-    loop(coll)
-  }
 
   // `apply` is defined in terms of `drop`, which is in turn defined in
   //  terms of `tail`.
@@ -183,6 +195,21 @@ trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]
     private[this] var current: Iterable[A] = toIterable
     def hasNext = !current.isEmpty
     def next() = { val r = current.head; current = current.tail; r }
+  }
+
+  // Optimized version of `drop` that avoids copying
+  override def drop(n: Int): C = {
+    @tailrec def loop(n: Int, s: C): C =
+      if (n <= 0 || s.isEmpty) s
+      else loop(n - 1, s.tail)
+    loop(n, coll)
+  }
+
+  override def dropWhile(p: A => Boolean): C = {
+    @tailrec def loop(s: C): C =
+      if (s.nonEmpty && p(s.head)) loop(s.tail)
+      else s
+    loop(coll)
   }
 }
 

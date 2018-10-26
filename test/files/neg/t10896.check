@@ -1,0 +1,4 @@
+t10896.scala:3: error: malformed type: t10896.type#S
+ type F[A] = S[S]
+      ^
+one error found

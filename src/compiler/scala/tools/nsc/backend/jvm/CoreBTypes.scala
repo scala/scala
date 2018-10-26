@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package backend.jvm
 
@@ -355,11 +367,6 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       case List(pt) => pt.typeSymbol == ObjectClass
       case _        => false
     })
-  }
-
-  def SSymbol_apply: Symbol = _SSymbol_apply.get
-  private[this] lazy val _SSymbol_apply: LazyVar[Symbol] = runLazy {
-    getMember(SymbolModule, nme.apply)
   }
 
   def lambdaMetaFactoryMetafactoryHandle: Handle = _lambdaMetaFactoryMetafactoryHandle.get

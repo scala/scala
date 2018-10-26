@@ -27,10 +27,10 @@ class StringLike(xs: String) {
 object Test {
   val of = new OverloadedFun[Int](1)
 
-  of.foo(_.toString)
+//  of.foo(_.toString) // not allowed -- different argument types for the hof arg
 
   of.poly(x => x / 2 )
-  of.polySam(x => x / 2 )
+//  of.polySam(x => x / 2) // not allowed -- need at least one regular function type in the mix
   of.polyJavaSam(x => x)
 
   val sl = new StringLike("a")

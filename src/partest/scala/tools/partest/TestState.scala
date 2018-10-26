@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.partest
 
 sealed abstract class TestState {
@@ -17,6 +29,8 @@ sealed abstract class TestState {
   def reasonString   = if (reason == "") "" else s"  [$reason]"
 
   def shortStatus    = if (isOk) "ok" else "!!"
+
+  final def andAlso(next: => TestState): TestState = if (isOk) next else this
 
   override def toString = status
 }
@@ -54,6 +68,7 @@ object TestState {
   case class Crash(testFile: java.io.File, caught: Throwable, transcript: Array[String]) extends TestState {
     def what = "crash"
     def reason = s"caught $caught_s - ${caught.getMessage}"
+    override def shortStatus = "?!"
 
     private def caught_s = (caught.getClass.getName split '.').last
     override def transcriptString = nljoin(super.transcriptString, caught_s)

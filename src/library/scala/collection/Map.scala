@@ -1,10 +1,22 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.collection.mutable.StringBuilder
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
@@ -13,7 +25,7 @@ trait Map[K, +V]
     with MapOps[K, V, Map, Map[K, V]]
     with Equals {
 
-  override protected def fromSpecificIterable(coll: Iterable[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
+  override protected def fromSpecific(coll: IterableOnce[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
   override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
 
   /**
@@ -36,7 +48,7 @@ trait Map[K, +V]
       (that canEqual this) &&
       (this.size == that.size) && {
         try {
-          this forall { case (k, v) => that.get(k).contains(v) }
+          this forall { case (k, v) => that.getOrElse(k, Map.DefaultSentinel) == v }
         } catch {
           case _: ClassCastException => false
         }
@@ -80,7 +92,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def view: MapView[K, V] = new MapView.Id(this)
 
   /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecificIterable`
+    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
     * and `newSpecificBuilder` operations.
     *
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
@@ -144,7 +156,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class KeySet extends AbstractSet[K] with GenKeySet {
-    def diff(that: Set[K]): Set[K] = fromSpecificIterable(view.filterNot(that))
+    def diff(that: Set[K]): Set[K] = fromSpecific(view.filterNot(that))
   }
 
   /** A generic trait that is reused by keyset implementations */
@@ -152,6 +164,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     def iterator: Iterator[K] = MapOps.this.keysIterator
     def contains(key: K): Boolean = MapOps.this.contains(key)
     override def size: Int = MapOps.this.size
+    override def knownSize: Int = MapOps.this.knownSize
+    override def isEmpty: Boolean = MapOps.this.isEmpty
   }
 
   /** Collects all keys of this map in an iterable collection.
@@ -191,6 +205,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
     *          the predicate `p`. The resulting map wraps the original map without copying any elements.
     */
+  @deprecated("Use .view.filterKeys(f). A future version will include a strict version of this method (for now, .view.filterKeys(p).toMap).", "2.13.0")
   def filterKeys(p: K => Boolean): MapView[K, V] = new MapView.FilterKeys(this, p)
 
   /** Transforms this map by applying a function to every retrieved value.
@@ -198,6 +213,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return a map view which maps every key of this map
     *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
     */
+  @deprecated("Use .view.mapValues(f). A future version will include a strict version of this method (for now, .view.mapValues(f).toMap).", "2.13.0")
   def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
   /** Defines the default value computation for the map,
@@ -274,7 +290,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *  @return       a new $coll which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def concat[V2 >: V](suffix: collection.Iterable[(K, V2)]): CC[K, V2] = mapFactory.from(new View.Concat(toIterable, suffix))
+  def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): CC[K, V2] = mapFactory.from(suffix match {
+    case it: Iterable[(K, V2)] => new View.Concat(toIterable, it)
+    case _ => iterator.concat(suffix.iterator)
+  })
 
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
@@ -293,7 +312,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   @deprecated("Consider requiring an immutable Map.", "2.13.0")
   @`inline` def -- (keys: IterableOnce[K]): C = {
     lazy val keysSet = keys.toSet
-    fromSpecificIterable(this.filterKeys(k => !keysSet.contains(k)))
+    fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 }
 
@@ -328,7 +347,7 @@ object MapOps {
   */
 @SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](immutable.Map) {
-  implicit def toLazyZipOps[K, V, CC[X, Y] <: Iterable[(X, Y)]](that: CC[K, V]): LazyZipOps[(K, V), CC[K, V]] = new LazyZipOps(that)
+  private val DefaultSentinel: AnyRef = new AnyRef
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */

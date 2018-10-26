@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -517,7 +524,7 @@ abstract class RefChecks extends Transform {
                   kindErrors.toList.mkString("\n", ", ", ""))
             }
           }
-          else if (low.isAbstractType && lowType.isVolatile && !highInfo.bounds.hi.isVolatile)
+          else if (low.isAbstractType && lowType.isVolatile && !highInfo.upperBound.isVolatile)
             overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
         }
         def checkOverrideTerm(): Unit = {
@@ -968,7 +975,12 @@ abstract class RefChecks extends Transform {
       case Object_eq | Object_ne | Object_== | Object_!= | Any_== | Any_!= => true
       case _                                                               => false
     }
-    /** Check the sensibility of using the given `equals` to compare `qual` and `other`. */
+
+    /**
+      * Check the sensibility of using the given `equals` to compare `qual` and `other`.
+      *
+      * NOTE: I'm really not convinced by the logic here. I also think this would work better after erasure.
+      */
     private def checkSensibleEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree) = {
       def isReferenceOp = sym == Object_eq || sym == Object_ne
       def isNew(tree: Tree) = tree match {
@@ -977,7 +989,7 @@ abstract class RefChecks extends Transform {
       }
       def underlyingClass(tp: Type): Symbol = {
         val sym = tp.widen.typeSymbol
-        if (sym.isAbstractType) underlyingClass(sym.info.bounds.hi)
+        if (sym.isAbstractType) underlyingClass(sym.info.upperBound)
         else sym
       }
       val actual   = underlyingClass(other.tpe)
@@ -988,8 +1000,12 @@ abstract class RefChecks extends Transform {
       // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
       def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
 
+      // TODO: this should probably be used in more type comparisons in checkSensibleEquals
+      def erasedClass(tp: Type) = erasure.javaErasure(tp).typeSymbol
+
       /* Symbols which limit the warnings we can issue since they may be value types */
-      val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
+      val couldBeAnything = Set[Symbol](ObjectClass, ComparableClass, JavaSerializableClass)
+      def isMaybeValue(sym: Symbol): Boolean = couldBeAnything(erasedClass(sym.tpe))
 
       // Whether def equals(other: Any) has known behavior: it is the default
       // inherited from java.lang.Object, or it is a synthetically generated
@@ -1028,6 +1044,14 @@ abstract class RefChecks extends Transform {
         && isUsingDefaultScalaOp
         && isEitherValueClass
         && !isCaseEquals
+      )
+
+      def isEffectivelyFinalDeep(sym: Symbol): Boolean = (
+        sym.isEffectivelyFinal
+        // If a parent of an intersection is final, the resulting type must effectively be final.
+        // (Any subclass of the refinement would have to be a subclass of that final parent.)
+        // OPT: this condition is not included in the standard isEffectivelyFinal check, as it's expensive
+        || sym.isRefinementClass && sym.info.parents.exists { _.typeSymbol.isEffectivelyFinal }
       )
 
       // Have we already determined that the comparison is non-sensible? I mean, non-sensical?
@@ -1079,14 +1103,9 @@ abstract class RefChecks extends Transform {
       else if (isWarnable && !isCaseEquals) {
         if (isNew(qual)) // new X == y
           nonSensiblyNew()
-        else if (isNew(other) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
+        else if (isNew(other) && (isEffectivelyFinalDeep(receiver) || isReferenceOp))   // object X ; X == new Y
           nonSensiblyNew()
-        else if (!(receiver.isRefinementClass || actual.isRefinementClass) &&
-                 // Rule out receiver of refinement class because checking receiver.isEffectivelyFinal does not work for them.
-                 // (the owner of the refinement depends on where the refinement was inferred, which has no bearing on the finality of the intersected classes)
-                 // TODO: should we try to decide finality for refinements?
-                 // TODO: Also, is subclassing really the right relationship to detect non-sensible equals between "effectively final" types??
-                 receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+        else if (isEffectivelyFinalDeep(actual) && isEffectivelyFinalDeep(receiver) && !haveSubclassRelationship) {  // object X, Y; X == Y
           if (isEitherNullable)
             nonSensible("non-null ", false)
           else
@@ -1101,12 +1120,20 @@ abstract class RefChecks extends Transform {
         unrelatedTypes()
       // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
       else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
-        // better to have lubbed and lost
+        // Warn if types are unrelated, without interesting lub. (Don't bother if we don't know anything about the values we're comparing.)
         def warnIfLubless(): Unit = {
-          val common = global.lub(List(actual.tpe, receiver.tpe))
-          if (ObjectTpe <:< common && !(ObjectTpe <:< actual.tpe) && !(ObjectTpe <:< receiver.tpe))
-            unrelatedTypes()
+          if (isMaybeValue(actual) || isMaybeValue(receiver) || haveSubclassRelationship) {} // ignore trivial or related types
+          else {
+            // better to have lubbed and lost
+            // We erase the lub because the erased type is closer to what happens at run time.
+            // Also, the lub of `S` and `String` is, weirdly, the refined type `Serializable{}` (for `class S extends Serializable`),
+            // which means we can't just take its type symbol and look it up in our isMaybeValue Set. Erasure restores sanity.
+            val commonRuntimeClass = erasedClass(global.lub(List(actual.tpe, receiver.tpe)))
+            if (commonRuntimeClass == ObjectClass)
+              unrelatedTypes()
+          }
         }
+
         // warn if actual has a case parent that is not same as receiver's;
         // if actual is not a case, then warn if no common supertype, as below
         if (isCaseEquals) {
@@ -1119,14 +1146,11 @@ abstract class RefChecks extends Transform {
               //else
               // if a class, it must be super to thisCase (and receiver) since not <: thisCase
               if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
-              else if (!haveSubclassRelationship) warnIfLubless()
+              else warnIfLubless()
             case _ =>
           }
         }
-        // warn only if they have no common supertype below Object
-        else if (!haveSubclassRelationship) {
-          warnIfLubless()
-        }
+        else warnIfLubless()
       }
     }
     /** Sensibility check examines flavors of equals. */
@@ -1208,8 +1232,8 @@ abstract class RefChecks extends Transform {
           reporter.error(tree0.pos, ex.getMessage())
           if (settings.explaintypes) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
-            (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
-            (argtps, bounds).zipped map ((targ, bound) => explainTypes(targ, bound.hi))
+            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(bound.lo, targ))
+            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(targ, bound.hi))
             ()
           }
       }
@@ -1331,7 +1355,7 @@ abstract class RefChecks extends Transform {
       // types of the value parameters
       mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
+      member.typeParams.map(_.info.upperBound.widen) foreach checkAccessibilityOfType
     }
 
     /** Check that a deprecated val or def does not override a
@@ -1391,17 +1415,46 @@ abstract class RefChecks extends Transform {
       }
     }
 
-    private def checkAnnotations(tpes: List[Type], tree: Tree) = tpes foreach { tp =>
-      checkTypeRef(tp, tree, skipBounds = false)
-      checkTypeRefBounds(tp, tree)
-    }
-    private def doTypeTraversal(tree: Tree)(f: Type => Unit) = if (!inPattern) tree.tpe foreach f
-
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
-      def applyChecks(annots: List[AnnotationInfo]) = {
-        checkAnnotations(annots map (_.atp), tree)
-        transformTrees(annots flatMap (_.args))
+      def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = {
+        annots.foreach { ann =>
+          checkTypeRef(ann.tpe, tree, skipBounds = false)
+          checkTypeRefBounds(ann.tpe, tree)
+          if (ann.original != null && ann.original.hasExistingSymbol)
+            checkUndesiredProperties(ann.original.symbol, tree.pos)
+        }
+        annots
+          .map(_.transformArgs(transformTrees))
+          .groupBy(_.symbol)
+          .flatMap((groupRepeatableAnnotations _).tupled)
+          .toList
       }
+
+      // assumes non-empty `anns`
+      def groupRepeatableAnnotations(sym: Symbol, anns: List[AnnotationInfo]): List[AnnotationInfo] =
+        if (!sym.isJavaDefined) anns
+        else anns match {
+          case single :: Nil => anns
+          case multiple      =>
+            sym.getAnnotation(AnnotationRepeatableAttr) match {
+              case Some(repeatable) =>
+                repeatable.assocs.collectFirst {
+                  case (nme.value, LiteralAnnotArg(Constant(c: Type))) => c
+                } match {
+                  case Some(container) =>
+                    val assocs = List(
+                      nme.value -> ArrayAnnotArg(multiple.map(NestedAnnotArg(_)).toArray)
+                    )
+                    AnnotationInfo(container, args = Nil, assocs = assocs) :: Nil
+                  case None =>
+                    devWarning(s"@Repeatable $sym had no containing class")
+                    multiple
+                }
+              case None =>
+                reporter.error(tree.pos, s"$sym may not appear multiple times on ${tree.symbol}")
+                multiple
+            }
+        }
 
       def checkIsElidable(sym: Symbol): Unit = if (sym ne null) sym.elisionLevel.foreach { level =>
         if (!sym.isMethod || sym.isAccessor || sym.isLazy || sym.isDeferred) {
@@ -1414,23 +1467,23 @@ abstract class RefChecks extends Transform {
       tree match {
         case m: MemberDef =>
           val sym = m.symbol
-          applyChecks(sym.annotations)
-
-          def messageWarning(name: String)(warn: String) =
-            reporter.warning(tree.pos, f"Invalid $name message for ${sym}%s${sym.locationString}%s:%n$warn")
+          sym.setAnnotations(applyChecks(sym.annotations))
 
           // validate implicitNotFoundMessage and implicitAmbiguousMessage
-          analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
-          analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
+          if (settings.lintImplicitNotFound) {
+            def messageWarning(name: String)(warn: String) =
+              reporter.warning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn")
+            analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
+            analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
+          }
 
-          if (sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
+          if (settings.warnSerialization && sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
             def warn(what: String) =
               reporter.warning(tree.pos, s"@SerialVersionUID has no effect on $what")
 
             if (sym.isTrait) warn("traits")
             else if (!sym.isSerializable) warn("non-serializable classes")
           }
-
         case tpt@TypeTree() =>
           if (tpt.original != null) {
             tpt.original foreach {
@@ -1439,12 +1492,12 @@ abstract class RefChecks extends Transform {
               case _ =>
             }
           }
-
-          doTypeTraversal(tree) {
-            case tp @ AnnotatedType(annots, _)  =>
-              applyChecks(annots)
-            case tp =>
-          }
+          if (!inPattern)
+            tree.setType(tree.tpe map {
+              case AnnotatedType(anns, ul) =>
+                AnnotatedType(applyChecks(anns), ul)
+              case tp => tp
+            })
         case _ =>
       }
     }
@@ -1525,7 +1578,7 @@ abstract class RefChecks extends Transform {
         // analyses in the pattern matcher
         if (!inPattern) {
           checkImplicitViewOptionApply(tree.pos, fn, args)
-          checkSensible(tree.pos, fn, args)
+          checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
         }
         currentApplication = tree
         tree
@@ -1549,16 +1602,15 @@ abstract class RefChecks extends Transform {
                 try {
                   val treated = lits.mapConserve { lit =>
                     val stringVal = lit.asInstanceOf[Literal].value.stringValue
-                    treeCopy.Literal(lit, Constant(StringContext.processEscapes(stringVal)))
+                    val k = Constant(StringContext.processEscapes(stringVal))
+                    treeCopy.Literal(lit, k).setType(ConstantType(k))
                   }
                   Some((treated, args))
                 } catch {
-                  case _: StringContext.InvalidEscapeException =>
-                    None
+                  case _: StringContext.InvalidEscapeException => None
                 }
               }
             case _ => None
-
           }
         } else None
       }
@@ -1705,7 +1757,7 @@ abstract class RefChecks extends Transform {
             var skipBounds = false
             // check all bounds, except those that are existential type parameters
             // or those within typed annotated with @uncheckedBounds
-            doTypeTraversal(tree) {
+            if (!inPattern) tree.tpe foreach {
               case tp @ ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
               case ann: AnnotatedType if ann.hasAnnotation(UncheckedBoundsClass) =>
@@ -1776,26 +1828,6 @@ abstract class RefChecks extends Transform {
               transform(pat)
             }
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
-          case LabelDef(_, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            savingInPattern {
-              inPattern = true
-              deriveLabelDef(result)(transform)
-            }
-          case Apply(fun, args) if fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol) =>
-            savingInPattern {
-              // scala/bug#7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
-              //         that we are in the user-supplied code in the case body.
-              //
-              //         Relies on the translation of:
-              //            (null: Any) match { case x: List[_] => x; x.reverse; case _ => }'
-              //         to:
-              //            <synthetic> val x2: List[_] = (x1.asInstanceOf[List[_]]: List[_]);
-              //                  matchEnd4({ x2; x2.reverse}) // case body is an argument to a label apply.
-              inPattern = false
-              super.transform(result)
-            }
-          case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            deriveValDef(result)(transform) // scala/bug#7716 Don't refcheck the tpt of the synthetic val that holds the selector.
           case _ =>
             result.transform(this)
         }

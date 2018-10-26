@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 import java.lang.{Object, String}
@@ -28,11 +40,12 @@ trait Seq[+A]
     */
   def canEqual(that: Any): Boolean = true
 
-  override def equals(o: scala.Any): Boolean =
+  override def equals(o: scala.Any): Boolean = this.eq(o.asInstanceOf[AnyRef]) || (
     o match {
-      case it: Seq[A] => (it canEqual this) && sameElements(it)
+      case it: Seq[A] => (it eq this) || (it canEqual this) && sameElements(it)
       case _ => false
     }
+  )
 
   override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
 
@@ -82,11 +95,6 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** The length (number of elements) of the $coll. `size` is an alias for `length` in `Seq` collections. */
   def length: Int
 
-  /**
-    * @return This collection as a `Seq[A]`. This is equivalent to `to(Seq)` but might be faster.
-    */
-  def toSeq: immutable.Seq[A]
-
   /** A copy of the $coll with an element prepended.
     *
     * Also, the original $coll is not modified, so you will want to capture the result.
@@ -109,7 +117,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *    @return a new $coll consisting of `value` followed
     *            by all elements of this $coll.
     */
-  def prepended[B >: A](elem: B): CC[B] = fromIterable(new View.Prepended(elem, this))
+  def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new View.Prepended(elem, this))
 
   /** Alias for `prepended`.
     *
@@ -139,7 +147,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @return a new $coll consisting of
     *         all elements of this $coll followed by `value`.
     */
-  def appended[B >: A](elem: B): CC[B] = fromIterable(new View.Appended(this, elem))
+  def appended[B >: A](elem: B): CC[B] = iterableFactory.from(new View.Appended(this, elem))
 
   /** Alias for `appended`
     *
@@ -160,10 +168,13 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new $coll which contains all elements of `prefix` followed
     *                  by all the elements of this $coll.
     */
-  def prependedAll[B >: A](prefix: Iterable[B]): CC[B] = fromIterable(new View.Concat(prefix, this))
+  def prependedAll[B >: A](prefix: IterableOnce[B]): CC[B] = iterableFactory.from(prefix match {
+    case prefix: Iterable[B] => new View.Concat(prefix, this)
+    case _ => prefix.iterator ++ iterator
+  })
 
   /** Alias for `prependedAll` */
-  @`inline` final def ++: [B >: A](prefix: Iterable[B]): CC[B] = prependedAll(prefix)
+  @`inline` override final def ++: [B >: A](prefix: IterableOnce[B]): CC[B] = prependedAll(prefix)
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
     *  right hand operand. The element type of the $coll is the most specific superclass encompassing
@@ -174,16 +185,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return       a new collection of type `CC[B]` which contains all elements
     *                of this $coll followed by all elements of `suffix`.
     */
-  def appendedAll[B >: A](suffix: Iterable[B]): CC[B] = super.concat(suffix)
+  def appendedAll[B >: A](suffix: IterableOnce[B]): CC[B] = super.concat(suffix)
 
   /** Alias for `appendedAll` */
-  @`inline` final def :++ [B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  @`inline` final def :++ [B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
   // overrides of this method
   // TODO https://github.com/scala/bug/issues/10853 Uncomment final
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  @`inline` /*final*/ override def concat[B >: A](suffix: Iterable[B]): CC[B] = appendedAll(suffix)
+  @`inline` /*final*/ override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -211,7 +222,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new $coll consisting of all the elements of this $coll without duplicates.
     */
-  def distinctBy[B](f: A => B): C = fromSpecificIterable(new View.DistinctBy(this, f))
+  def distinctBy[B](f: A => B): C = fromSpecific(new View.DistinctBy(this, f))
 
   /** Returns new $coll with elements in reversed order.
    *
@@ -219,7 +230,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *
    *  @return A new $coll with all elements of this $coll in reversed order.
    */
-  def reverse: C = fromSpecificIterable(reversed)
+  def reverse: C = fromSpecific(reversed)
 
   /** An iterator yielding elements in reversed order.
    *
@@ -285,7 +296,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
-  def padTo[B >: A](len: Int, elem: B): CC[B] = fromIterable(new View.PadTo(this, len, elem))
+  def padTo[B >: A](len: Int, elem: B): CC[B] = iterableFactory.from(new View.PadTo(this, len, elem))
 
   /** Computes length of longest segment whose elements all satisfy some predicate.
     *
@@ -324,7 +335,18 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def indexWhere(p: A => Boolean, from: Int = 0): Int = iterator.indexWhere(p, from)
+  def indexWhere(p: A => Boolean, from: Int): Int = iterator.indexWhere(p, from)
+
+  /** Finds index of the first element satisfying some predicate.
+    *
+    *  $mayNotTerminateInf
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return  the index `>= 0` of the first element of this $coll that satisfies the predicate `p`,
+    *           or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override indexWhere(p, from) instead - indexWhere(p) calls indexWhere(p, 0)", "2.13.0")
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
 
   /** Finds index of first occurrence of some value in this $coll after or at some start index.
     *
@@ -334,7 +356,17 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `>= from` of the first element of this $coll that is equal (as determined by `==`)
     *           to `elem`, or `-1`, if none exists.
     */
-  def indexOf[B >: A](elem: B, from: Int = 0): Int = indexWhere(elem == _, from)
+  def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem == _, from)
+
+  /** Finds index of first occurrence of some value in this $coll.
+    *
+    *  @param   elem   the element value to search for.
+    *  @tparam  B      the type of the element `elem`.
+    *  @return  the index `>= 0` of the first element of this $coll that is equal (as determined by `==`)
+    *           to `elem`, or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override indexOf(elem, from) instead - indexOf(elem) calls indexOf(elem, 0)", "2.13.0")
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Finds index of last occurrence of some value in this $coll before or at a given end index.
     *
@@ -352,12 +384,21 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def lastIndexWhere(p: A => Boolean, end: Int = length - 1): Int = {
+  def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
     val it = reverseIterator
     while (it.hasNext && { val elem = it.next(); (i > end || !p(elem)) }) i -= 1
     i
   }
+
+  /** Finds index of last element satisfying some predicate.
+    *
+    *  @param   p     the predicate used to test elements.
+    *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
+    *           or `-1`, if none exists.
+    */
+  @deprecatedOverriding("Override lastIndexWhere(p, end) instead - lastIndexWhere(p) calls lastIndexWhere(p, Int.MaxValue)", "2.13.0")
+  def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, Int.MaxValue)
 
   /** Finds first index after or at a start index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -367,7 +408,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
   // TODO Should be implemented in a way that preserves laziness
-  def indexOfSlice[B >: A](that: Seq[B], from: Int = 0): Int =
+  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
     if (that.isEmpty && from == 0) 0
     else {
       val l = knownSize
@@ -393,13 +434,22 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       }
     }
 
+  /** Finds first index where this $coll contains a given sequence as a slice.
+    *  $mayNotTerminateInf
+    *  @param  that    the sequence to test
+    *  @return  the first index `>= 0` such that the elements of this $coll starting at this index
+    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    */
+  @deprecatedOverriding("Override indexOfSlice(that, from) instead - indexOfSlice(that) calls indexOfSlice(that, 0)", "2.13.0")
+  def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
+
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
    *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int = length - 1): Int = {
+  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = {
     val l = length
     val tl = that.length
     val clippedL = math.min(l-tl, end)
@@ -409,6 +459,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     else if (l < tl) -1
     else SeqOps.kmpSearch(toSeq, 0, clippedL+tl, that, 0, tl, forward = false)
   }
+
+  /** Finds last index where this $coll contains a given sequence as a slice.
+    *  @param  that    the sequence to test
+    *  @return  the last index such that the elements of this $coll starting at this index
+    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
+    */
+  @deprecatedOverriding("Override lastIndexOfSlice(that, end) instead - lastIndexOfSlice(that) calls lastIndexOfSlice(that, Int.MaxValue)", "2.13.0")
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, Int.MaxValue)
 
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -428,7 +486,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def contains[A1 >: A](elem: A1): Boolean = exists (_ == elem)
 
   @deprecated("Use .reverseIterator.map(f).to(...) instead of .reverseMap(f)", "2.13.0")
-  def reverseMap[B](f: A => B): CC[B] = fromIterable(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
+  def reverseMap[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
 
   /** Iterates over distinct permutations.
     *
@@ -699,8 +757,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Are the elements of this collection the same (and in the same order)
     * as those of `that`?
     */
-  def sameElements[B >: A](that: IterableOnce[B]): Boolean =
-    iterator.sameElements(that)
+  def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
+    val thisKnownSize = knownSize
+    val knownSizeDifference = thisKnownSize != -1 && {
+      val thatKnownSize = that.knownSize
+      thatKnownSize != -1 && thisKnownSize != thatKnownSize
+    }
+    !knownSizeDifference && iterator.sameElements(that)
+  }
 
   /** Tests whether every element of this $coll relates to the
     * corresponding element of another sequence by satisfying a test predicate.
@@ -734,7 +798,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
-    //TODO diff and intersect could have efficient lazy implementations if fromSpecificIterable accepted an IterableOnce, i.e. it guaranteed doing only a single traversal
+    //TODO make diff and intersect use efficient lazy implementations now that fromSpecific accepts an IterableOnce
     val b = newSpecificBuilder
     for (x <- this) {
       val ox = occ(x)  // Avoid multiple map lookups
@@ -783,7 +847,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                   by all the elements of `other`.
     */
   def patch[B >: A](from: Int, other: IterableOnce[B], replaced: Int): CC[B] =
-    fromIterable(new View.Patched(this, from, other, replaced))
+    iterableFactory.from(new View.Patched(this, from, other, replaced))
 
   /** A copy of this $coll with one single replaced element.
     *  @param  index  the position of the replacement
@@ -792,7 +856,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
-  def updated[B >: A](index: Int, elem: B): CC[B] = fromIterable(new View.Updated(this, index, elem))
+  def updated[B >: A](index: Int, elem: B): CC[B] = iterableFactory.from(new View.Updated(this, index, elem))
 
   private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }

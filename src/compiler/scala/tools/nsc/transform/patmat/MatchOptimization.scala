@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -89,8 +95,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
       val reused = new mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
-      var okToCall = false
-      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
+      val reusedOrOrig = (tm: TreeMaker) => reused.getOrElse(tm, tm)
 
       // maybe collapse: replace shared prefix of tree makers by a ReusingCondTreeMaker
       // once this has been computed, we'll know which tree makers are reused,
@@ -128,7 +133,6 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
         collapsedTreeMakers getOrElse tests.map(_.treeMaker) // sharedPrefix need not be empty (but it only contains True-tests, which are dropped above)
       }
-      okToCall = true // TODO: remove (debugging)
 
       // replace original treemakers that are reused (as determined when computing collapsed),
       // by ReusedCondTreeMakers
@@ -419,7 +423,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         // generate if-then-else for 1 case switch (avoids verify error... can't imagine a one-case switch being faster than if-then-else anyway)
         if (cases.isEmpty || cases.tail.isEmpty) Nil
         else {
-          val caseDefs = cases map { case (scrutSym, makers) =>
+          val caseDefs = traverseOpt(cases) { case (scrutSym, makers) =>
             makers match {
               // default case
               case GuardAndBodyTreeMakers(guard, body) =>
@@ -429,15 +433,15 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                 Some(CaseDef(pattern, guard, body))
               // alternatives
               case AlternativesTreeMaker(_, altss, pos) :: GuardAndBodyTreeMakers(guard, body) if alternativesSupported =>
-                val switchableAlts = altss map {
+                // succeed iff they were all switchable
+                val switchableAlts = traverseOpt(altss) {
                   case SwitchableTreeMaker(pattern) :: Nil =>
                     Some(pattern)
                   case _ =>
                     None
                 }
 
-                // succeed if they were all switchable
-                sequence(switchableAlts) map { switchableAlts =>
+                switchableAlts map { switchableAlts =>
                   def extractConst(t: Tree) = t match {
                     case Literal(const) => const
                     case _              => t
@@ -456,7 +460,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             }
           }
 
-          val caseDefsWithGuards = sequence(caseDefs) match {
+          val caseDefsWithGuards = caseDefs match {
             case None      => return Nil
             case Some(cds) => cds
           }

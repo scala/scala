@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2016 LAMP/EPFL and Lightbend, Inc
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * @author Martin Odersky
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -13,7 +19,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 
-abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthesis {
+abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   import global._
   import definitions._
   import CODE._
@@ -25,7 +31,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
   /** Some trait methods need to be implemented in subclasses, so they cannot be private.
     *
     * We used to publicize during explicitouter (for some reason), so the condition is a bit more involved now it's done here
-    * (need to exclude lambdaLIFTED methods, as they do no exist during explicitouter and thus did not need to be excluded...)
+    * (need to exclude lambdaLIFTED methods, as they do not exist during explicitouter and thus did not need to be excluded...)
     *
     * They may be protected, now that traits are compiled 1:1 to interfaces.
     * The same disclaimers about mapping Scala's notion of visibility to Java's apply:
@@ -356,8 +362,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
     }
   }
 
-  override def transformInfo(sym: Symbol, tp: Type): Type = tp
-
 // --------- term transformation -----------------------------------------------
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
@@ -469,7 +473,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
         // invert the map to see which fields can be nulled for each non-transient lazy val
         for ((field, users) <- singleUseFields; lazyFld <- users) map(lazyFld) += field
 
-        map.mapValues(_.toList sortBy (_.id)).toMap
+        map.view.mapValues(_.toList.sortBy(_.id)).toMap
       }
     }
 

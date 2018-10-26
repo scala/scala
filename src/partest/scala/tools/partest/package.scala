@@ -1,5 +1,13 @@
-/* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools
@@ -47,15 +55,17 @@ package object partest {
   private val GroupPattern = """.*_(\d+)""".r
 
   implicit class `special string ops`(private val s: String) extends AnyVal {
-    def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.lines else Iterator.empty
+    def linesIfNonEmpty: Iterator[String] = if (!s.isEmpty) s.linesIterator else Iterator.empty
   }
 
   implicit class FileOps(val f: File) {
+    import scala.collection.JavaConverters._
+
     private def sf = SFile(f)
 
-    def testIdent = {
-      f.toString split """[/\\]+""" takeRight 2 mkString "/" // e.g. pos/t1234
-    }
+    // e.g. pos/t1234
+    def withEnclosing: String = f.toPath.iterator.asScala.toList.takeRight(2).mkString("/")
+    def testIdent = withEnclosing
 
     def mapInPlace(mapFn: String => String)(filterFn: String => Boolean = _ => true): Unit =
       writeAll(fileLines filter filterFn map (x => mapFn(x) + EOL): _*)
@@ -83,7 +93,7 @@ package object partest {
     def fileLines: List[String] = fileContents.linesIfNonEmpty.toList
   }
 
-  implicit class PathOps(p: Path) extends FileOps(p.jfile) { }
+  implicit class PathOps(p: Path) extends FileOps(p.jfile)
 
   implicit class Copier(val f: SFile) extends AnyVal {
     def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(scala.io.Codec.UTF8)
@@ -97,7 +107,7 @@ package object partest {
      */
     def instantiate[A >: Null](name: String): A = (
       catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
-      (loader loadClass name).newInstance.asInstanceOf[A] orNull
+      (loader loadClass name).getConstructor().newInstance().asInstanceOf[A] orNull
     )
   }
 
@@ -111,15 +121,10 @@ package object partest {
   implicit def temporaryPath2File(x: Path): File = x.jfile
   implicit def stringPathToJavaFile(path: String): File = new File(path)
 
-  implicit lazy val postfixOps = scala.language.postfixOps
   implicit lazy val implicitConversions = scala.language.implicitConversions
 
   def fileSeparator = java.io.File.separator
   def pathSeparator = java.io.File.pathSeparator
-
-  def pathToTestIdent(path: Path) = path.jfile.testIdent
-
-  def canonicalizeSlashes(line: String) = line.replaceAll("""[/\\]+""", "/")
 
   def words(s: String): List[String] = (s.trim split "\\s+").toList
 

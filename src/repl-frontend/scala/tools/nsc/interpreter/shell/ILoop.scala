@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
 
 package scala.tools.nsc.interpreter.shell
@@ -588,7 +600,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
               tmp.safeSlurp() match {
                 case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
                 case Some(edited) =>
-                  echo(edited.lines map ("+" + _) mkString "\n")
+                  echo(edited.linesIterator map ("+" + _) mkString "\n")
                   val res = intp interpret edited
                   if (res == Incomplete) diagnose(edited)
                   else {
@@ -659,15 +671,17 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def loadCommand(arg: String): Result = {
-    def run(file: String, verbose: Boolean) = withFile(file) { f =>
+    import scala.tools.cmd.CommandLineParser
+    def run(file: String, args: List[String], verbose: Boolean) = withFile(file) { f =>
+      intp.interpret(s"val args: Array[String] = ${ args.map("\"" + _ + "\"").mkString("Array(", ",", ")") }")
       interpretAllFrom(f, verbose)
       Result recording s":load $arg"
     } getOrElse Result.default
 
-    words(arg) match {
-      case "-v" :: file :: Nil => run(file, verbose = true)
-      case file :: Nil         => run(file, verbose = false)
-      case _                   => echo("usage: :load -v file") ; Result.default
+    CommandLineParser.tokenize(arg) match {
+      case "-v" :: file :: rest => run(file, rest, verbose = true)
+      case file :: rest         => run(file, rest, verbose = false)
+      case _                    => echo("usage: :load -v file") ; Result.default
     }
   }
 
@@ -822,7 +836,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
         val text = (
           margin filter (_.nonEmpty) map {
-            case "-" => input.lines map (_.trim) mkString "\n"
+            case "-" => input.linesIterator map (_.trim) mkString "\n"
             case m   => input stripMargin m.head   // ignore excess chars in "<<||"
           } getOrElse input
         ).trim
@@ -844,7 +858,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   private val continueText   = {
     val text   = enversion(continueString)
-    val margin = promptText.lines.toList.last.length - text.length
+    val margin = promptText.linesIterator.toList.last.length - text.length
     if (margin > 0) " " * margin + text else text
   }
 
@@ -1012,6 +1026,25 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): Repl = repl.intp
 
+  def testConfig(settings: Settings) =
+    new ShellConfig {
+      private val delegate = ShellConfig(settings)
+
+      val filesToPaste: List[String] = delegate.filesToPaste
+      val filesToLoad: List[String] = delegate.filesToLoad
+      val batchText: String = delegate.batchText
+      val batchMode: Boolean = delegate.batchMode
+      val doCompletion: Boolean = delegate.doCompletion
+      val haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
+
+      // No truncated output, because the result changes on Windows because of line endings
+      override val maxPrintString = {
+        val p = sys.Prop[Int]("wtf")
+        p.set("0")
+        p
+      }
+    }
+
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
   // like if you'd just typed it into the repl.
@@ -1043,7 +1076,7 @@ object ILoop {
           }
         }
 
-        val config = ShellConfig(settings)
+        val config = testConfig(settings)
         val repl = new ILoop(config, input, output) {
           // remove welcome message as it has versioning info (for reproducible test results),
           override def welcome = ""

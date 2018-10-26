@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -83,11 +95,11 @@ private[internal] trait TypeConstraints {
       *  guarding addLoBound/addHiBound somehow broke raw types so it
       *  only guards against being created with them.]
       */
-    private var lobounds = lo0 filterNot typeIsNothing
-    private var hibounds = hi0 filterNot typeIsAny
-    private var numlo = numlo0
-    private var numhi = numhi0
-    private var avoidWidening = avoidWidening0
+    private[this] var lobounds = lo0 filterNot typeIsNothing
+    private[this] var hibounds = hi0 filterNot typeIsAny
+    private[this] var numlo = numlo0
+    private[this] var numhi = numhi0
+    private[this] var avoidWidening = avoidWidening0
 
     def loBounds: List[Type] = if (numlo == NoType) lobounds else numlo :: lobounds
     def hiBounds: List[Type] = if (numhi == NoType) hibounds else numhi :: hibounds
@@ -202,7 +214,7 @@ private[internal] trait TypeConstraints {
     }
 
     @inline def toBound(hi: Boolean, tparam: Symbol) =
-      if (hi) tparam.info.bounds.hi else tparam.info.bounds.lo
+      if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance): Unit = {
       if (tvar.constr.inst == NoType) {
@@ -235,7 +247,7 @@ private[internal] trait TypeConstraints {
             // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
             configForeach { (tvarOther, tparamOther, _) =>
-              if ((tparamOther ne tparam) && tparamOther.info.bounds.lo =:= tparamTycon)
+              if ((tparamOther ne tparam) && tparamOther.info.lowerBound =:= tparamTycon)
                 tvar.addHiBound(tvarOther)
             }
           } else {
@@ -246,7 +258,7 @@ private[internal] trait TypeConstraints {
             // `tparam` is the upper bound of `tvarOther`. Flip that, and add `tvarOther` as an lower bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
             configForeach { (tvarOther, tparamOther, _) =>
-              if ((tparamOther ne tparam) && tparamOther.info.bounds.hi =:= tparamTycon)
+              if ((tparamOther ne tparam) && tparamOther.info.upperBound =:= tparamTycon)
                 tvar.addLoBound(tvarOther)
             }
           }

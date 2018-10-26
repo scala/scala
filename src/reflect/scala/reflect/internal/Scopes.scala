@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -8,7 +15,7 @@ package reflect
 package internal
 
 import scala.annotation.tailrec
-import scala.collection.AbstractIterable
+import scala.collection.{AbstractIterable, AbstractIterator}
 import scala.collection.mutable.Clearable
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
@@ -73,8 +80,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** a cache for all elements, to be used by symbol iterator.
      */
-    private var elemsCache: List[Symbol] = null
-    private var cachedSize = -1
+    private[this] var elemsCache: List[Symbol] = null
+    private[this] var cachedSize = -1
     private def flushElemsCache(): Unit = {
       elemsCache = null
       cachedSize = -1
@@ -274,14 +281,14 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** Returns an iterator yielding every symbol with given name in this scope.
      */
-    def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
-      var e = lookupEntry(name)
+    def lookupAll(name: Name): Iterator[Symbol] = new AbstractIterator[Symbol] {
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
     }
 
-    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
-      var e = lookupEntry(name)
+    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new AbstractIterator[ScopeEntry] {
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
     }
@@ -312,12 +319,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       var e: ScopeEntry = null
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.tail
         }
       } else {
         e = elems
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.next
         }
       }
@@ -408,14 +415,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filterNot(p: Symbol => Boolean): Scope = (
-      if (toList exists p) newScopeWith(toList filterNot p: _*)
-      else this
-    )
-    override def filter(p: Symbol => Boolean): Scope = (
-      if (toList forall p) this
-      else newScopeWith(toList filter p: _*)
-    )
+    override def filterNot(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filterNot(p)
+      if (result eq filtered) this
+      else newScopeWith(filtered: _*)
+    }
+    override def filter(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filter(p)
+      if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
+    }
+
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 

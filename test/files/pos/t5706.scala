@@ -3,8 +3,8 @@ import scala.reflect.macros.whitebox.{Context => WhiteboxContext}
 import language.experimental.macros
 
 class Logger {
-  def error1(message: String) = macro Impls.error1
-  def error2(message: String) = macro Impls.error2
+  def error1(message: String): Unit = macro Impls.error1
+  def error2(message: String): Unit = macro Impls.error2
 }
 
 object Impls {

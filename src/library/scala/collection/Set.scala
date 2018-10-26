@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -156,7 +168,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @`inline` final def &~ (that: Set[A]): C = this diff that
 
   @deprecated("Consider requiring an immutable Set", "2.13.0")
-  def -- (that: IterableOnce[A]): C = fromSpecificIterable(coll.toSet.removeAll(that))
+  def -- (that: IterableOnce[A]): C = fromSpecific(coll.toSet.removeAll(that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A): C = diff(Set(elem))
@@ -177,13 +189,16 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.Iterable[A]): C = fromSpecificIterable(new View.Concat(toIterable, that))
+  def concat(that: collection.IterableOnce[A]): C = fromSpecific(that match {
+    case that: collection.Iterable[A] => new View.Concat(toIterable, that)
+    case _ => iterator.concat(that.iterator)
+  })
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.union", "2.13.0")
-  def + (elem: A): C = fromSpecificIterable(new View.Appended(toIterable, elem))
+  def + (elem: A): C = fromSpecific(new View.Appended(toIterable, elem))
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  def + (elem1: A, elem2: A, elems: A*): C = fromSpecificIterable(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+  def + (elem1: A, elem2: A, elems: A*): C = fromSpecific(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   /** Alias for `concat` */
   @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)

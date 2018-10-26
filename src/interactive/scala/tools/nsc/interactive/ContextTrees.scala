@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 
@@ -108,10 +116,14 @@ trait ContextTrees { self: Global =>
    */
   def addContext(contexts: Contexts, context: Context): Unit = {
     val cpos = context.tree.pos
-    if (cpos.isTransparent)
-      for (t <- context.tree.children flatMap solidDescendants)
-        addContext(contexts, context, t.pos)
-    else
+    if (cpos.isTransparent) {
+      val traverser = new ChildSolidDescendantsCollector() {
+        override def traverseSolidChild(t: Tree): Unit = {
+          addContext(contexts, context, t.pos)
+        }
+      }
+      traverser.apply(context.tree)
+    } else
       addContext(contexts, context, cpos)
   }
 

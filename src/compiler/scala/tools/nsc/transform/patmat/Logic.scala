@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -151,7 +157,7 @@ trait Logic extends Debugging  {
         val newSym = new Sym(variable, const)
         (uniques findEntryOrUpdate newSym)
       }
-      def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      def nextSymId = {_symId += 1; _symId}; private[this] var _symId = 0
       implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
@@ -506,7 +512,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     def prepareNewAnalysis(): Unit = { Var.resetUniques(); Const.resetUniques() }
 
     object Var extends VarExtractor {
-      private var _nextId = 0
+      private[this] var _nextId = 0
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
@@ -722,10 +728,10 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     object Const {
       def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear() ; trees.clear()}
 
-      private var _nextTypeId = 0
+      private[this] var _nextTypeId = 0
       def nextTypeId = {_nextTypeId += 1; _nextTypeId}
 
-      private var _nextValueId = 0
+      private[this] var _nextValueId = 0
       def nextValueId = {_nextValueId += 1; _nextValueId}
 
       private val uniques = new mutable.HashMap[Type, Const]

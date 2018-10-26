@@ -51,18 +51,23 @@ class InnerClassAttributeTest extends BytecodeTesting {
 
   @Test
   def methodHandlesLookupInDeserializeLambda(): Unit = {
-    // After inlining the closure, the only remaining reference in the classfile to `MethodHandles$Lookup`
-    // is in the `$deserializeLambda$` method. In 2.12.3, this leads to a missing InnerClass entry.
-    // The `$deserializeLambda$` is redundant and could be removed (scala-dev#62).
     val code =
       """class C {
         |  @inline final def h(f: Int => Int) = f(1)
         |  def f = h(x => x)
         |}
       """.stripMargin
+
     val c = optCompiler.compileClass(code)
-    // closure is inlined
-    assertSameSummary(getMethod(c, "f"), List(ICONST_1, "$anonfun$f$1", IRETURN))
-    assertEquals(c.innerClasses.asScala.toList.map(_.name), List("java/lang/invoke/MethodHandles$Lookup"))
+    // Closure is inlined, no $deserializeLambda$ is generated as there are no IndyLambdas left
+    // In 2.12, the $deserializeLambda$ was generated anyway, and would cause an InnerClass entry
+    // This is fixed in 2.13 (scala-dev#62)
+    assertSameSummary(getMethod(c, "f"), List(ICONST_1, IRETURN))
+    assert(!c.methods.asScala.exists(_.name == "$deserializeLambda$"), c.methods.asScala.map(_.name).toList)
+    assertEquals(c.innerClasses.asScala.toList.map(_.name), Nil)
+
+    val cn = compileClass(code)
+    getMethod(cn, "$deserializeLambda$") // exists
+    assertEquals(cn.innerClasses.asScala.toList.map(_.name), List("java/lang/invoke/MethodHandles$Lookup"))
   }
 }

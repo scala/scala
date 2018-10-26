@@ -9,7 +9,6 @@ object Test extends App {
   implicitly[ValueOf[true]]
   implicitly[ValueOf['f']]
   implicitly[ValueOf["foo"]]
-  implicitly[ValueOf['foo]]
   implicitly[ValueOf[Unit]]
   implicitly[ValueOf[Foo.type]]
   implicitly[ValueOf[foo.type]]
@@ -21,7 +20,6 @@ object Test extends App {
   assert((valueOf[true]: true) == true)
   assert((valueOf['f']: 'f') == 'f')
   assert((valueOf["foo"]: "foo") == "foo")
-  assert((valueOf['foo]: 'foo) == 'foo)
   assert((valueOf[Unit]: Unit) == ((): Any))
   assert((valueOf[Foo.type]: Foo.type) eq Foo)
   assert((valueOf[foo.type]: foo.type) eq foo)

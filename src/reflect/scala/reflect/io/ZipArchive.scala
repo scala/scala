@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -62,6 +69,21 @@ object ZipArchive {
       if (front) path.substring(0, idx + 1)
       else path.substring(idx + 1)
   }
+  def pathToDotted(path: String): String = {
+    if (path == "/") ""
+    else {
+      val slashEnd = path.endsWith("/")
+      val len = path.length - (if (slashEnd) 1 else 0)
+      val result = new Array[Char](len)
+      var i = 0
+      while (i < len) {
+        val char = path.charAt(i)
+        result(i) = if (char == '/') '.' else char
+        i += 1
+      }
+      new String(result)
+    }
+  }
 }
 import ZipArchive._
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
@@ -101,7 +123,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     }
   }
 
-  private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry =
+  private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
     //OPT inlined from getOrElseUpdate; saves ~50K closures on test run.
     // was:
     // dirs.getOrElseUpdate(path, {
@@ -110,15 +132,17 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     //   parent.entries(baseName(path)) = dir
     //   dir
     // })
-    dirs get path match {
+    val dotted = pathToDotted(path)
+    dirs get dotted match {
       case Some(v) => v
       case None =>
         val parent = ensureDir(dirs, dirName(path), null)
-        val dir    = new DirEntry(path)
+        val dir = new DirEntry(path)
         parent.entries(baseName(path)) = dir
-        dirs(path) = dir
+        dirs(dotted) = dir
         dir
     }
+  }
 
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
     if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
@@ -171,9 +195,9 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def sizeOption: Option[Int] = Some(zipEntry.getSize.toInt)
   }
 
-  lazy val (root, allDirs) = {
+  lazy val (root, allDirsByDottedName) = {
     val root = new DirEntry("/")
-    val dirs = mutable.HashMap[String, DirEntry]("/" -> root)
+    val dirs = mutable.HashMap[String, DirEntry]("" -> root)
     val zipFile = openZipFile()
     val enum    = zipFile.entries()
 
@@ -206,6 +230,15 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     (root, dirs)
   }
 
+  @deprecated("Use allDirsByDottedName after converting keys from relative paths to dotted names", "2.13")
+  lazy val allDirs: mutable.HashMap[String, DirEntry] = {
+    def dottedToPath(dotted: String): String = {
+      val sb = new java.lang.StringBuilder(dotted.length)
+      dotted.replace('.', '/') + "/"
+    }
+    allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
+  }
+
   def iterator: Iterator[Entry] = root.iterator
 
   def name         = file.getName
@@ -225,7 +258,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")
-    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
 
     @tailrec def loop(): Unit = {
@@ -293,7 +326,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def iterator = {
     val root     = new DirEntry("/")
-    val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
+    val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val manifest = new Manifest(input)
     val iter     = manifest.getEntries().keySet().iterator.asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
 

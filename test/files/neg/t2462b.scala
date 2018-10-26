@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xlint:implicit-not-found -Xfatal-warnings
 //
 package test
 

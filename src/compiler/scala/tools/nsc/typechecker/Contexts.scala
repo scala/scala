@@ -1,14 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2017 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.shortClassOfInstance
+import scala.reflect.internal.util.{ shortClassOfInstance, SomeOfNil }
 import scala.reflect.internal.Reporter
 
 /**
@@ -17,7 +24,7 @@ import scala.reflect.internal.Reporter
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{ AnyRefClass, JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
+  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
 
@@ -79,31 +86,63 @@ trait Contexts { self: Analyzer =>
 
   var lastAccessCheckDetails: String = ""
 
-  /** List of symbols to import from in a root context.  Typically that
-   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.  Exceptions:
+  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+
+  val excludedRootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+
+  // register an import for the narrow purpose of excluding root imports of predef modules
+  def registerImport(ctx: Context, imp: Import): Unit = {
+    val sym = imp.expr.symbol
+    if (!sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
+      var current = excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
+      current = sym :: current
+      excludedRootImportsCached += ctx.unit -> current
+    }
+  }
+
+  /** List of symbols to import from in a root context.  By default, that
+   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.
    *
-   *  - if option `-Yno-imports` is given, nothing is imported
-   *  - if the unit is java defined, only `java.lang` is imported
-   *  - if option `-Yno-predef` is given, if the unit body has an import of Predef
+   *  - if option `-Yimports` is supplied, then that specifies the preamble imports
+   *  - if the unit body has an import of Predef
    *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
+   *    Similarly for any module among the preamble imports.
+   *  - if the unit is java defined, only `java.lang` is imported
+   *
+   *  The root imports for a unit are cached.
    */
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
     assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
-    if (settings.noimports) Nil
-    else if (unit.isJava) RootImports.javaList
-    else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) {
-      // scala/bug#8258 Needed for the presentation compiler using -sourcepath, otherwise cycles can occur. See the commit
-      //         message for this ticket for an example.
-      debuglog("Omitted import of Predef._ for " + unit)
-      RootImports.javaAndScalaList
+    if (unit.isJava) RootImports.javaList
+    else rootImportsCached.get(unit).getOrElse {
+      val calculated = defaultRootImports
+      rootImportsCached += unit -> calculated
+      calculated
     }
+  }
+
+  private def defaultRootImports: List[Symbol] = {
+    import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
+
+    if (settings.imports.isSetByUser)
+      settings.imports.value.map {
+        case "java.lang"    => JavaLangPackage
+        case "scala"        => ScalaPackage
+        case "scala.Predef" => PredefModule
+        case s              =>
+          getModuleIfDefined(s) orElse
+          getPackageObjectIfDefined(s) orElse
+          getPackageIfDefined(s) orElse {
+            error(s"bad preamble import $s")
+            NoSymbol
+          }
+      }
     else RootImports.completeList
   }
 
-
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym)))
+    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym), unit = unit))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -224,7 +263,7 @@ trait Contexts { self: Analyzer =>
       */
     var enclMethod: Context = _
 
-    private var _undetparams: List[Symbol] = List()
+    private[this] var _undetparams: List[Symbol] = List()
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
 
@@ -265,7 +304,7 @@ trait Contexts { self: Analyzer =>
             val fresh = freshNameCreatorFor(this)
             val vname = newTermName(fresh.newName("rec$"))
             val vsym = owner.newValue(vname, newFlags = FINAL | SYNTHETIC) setInfo tpe
-            implicitDictionary +:= (tpe -> (vsym, EmptyTree))
+            implicitDictionary +:= (tpe, (vsym, EmptyTree))
             vsym
         }
       gen.mkAttributedRef(sym) setType tpe
@@ -323,7 +362,6 @@ trait Contexts { self: Analyzer =>
             (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs.changeOwner(owner -> vsym)))
           }.unzip
 
-          val ctor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
           val mname = newTermName(typer.fresh.newName("LazyDefns$"))
           val mdef =
             ModuleDef(Modifiers(SYNTHETIC), mname,
@@ -380,6 +418,7 @@ trait Contexts { self: Analyzer =>
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+    def inAnnotation                          = this(TypingAnnotation)
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
@@ -513,6 +552,7 @@ trait Contexts { self: Analyzer =>
     @inline final def withinSuperInit[T](op: => T): T                      = withMode(enabled = SuperInit)(op)
     @inline final def withinSecondTry[T](op: => T): T                      = withMode(enabled = SecondTry)(op)
     @inline final def withinPatAlternative[T](op: => T): T                 = withMode(enabled = PatternAlternative)(op)
+    @inline final def withinAnnotation[T](op: => T): T                     = withMode(enabled = TypingAnnotation)(op)
 
     @inline final def withSuppressDeadArgWarning[T](suppress: Boolean)(op: => T): T =
       if (suppress) withMode(enabled = SuppressDeadArgWarning)(op) else withMode(disabled = SuppressDeadArgWarning)(op)
@@ -750,7 +790,7 @@ trait Contexts { self: Analyzer =>
 
     def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
-    private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").lines.mkString("\\n").take(70)
+    private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").linesIterator.mkString("\\n").take(70)
     private def treeIdString        = if (settings.uniqid.value) "#" + System.identityHashCode(tree).toString.takeRight(3) else ""
     private def treeString          = tree match {
       case x: Import => "" + x
@@ -974,7 +1014,7 @@ trait Contexts { self: Analyzer =>
       for (sym <- syms.toList if isQualifyingImplicit(sym.name, sym, pre, imported)) yield
         new ImplicitInfo(sym.name, pre, sym)
 
-    private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
+    private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = if (isExcludedRootImport(imp)) List() else {
       val qual = imp.qual
 
       val pre = qual.tpe
@@ -1036,7 +1076,7 @@ trait Contexts { self: Analyzer =>
 
     /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
     private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
-      val imports = this.imports
+      val firstImport = this.firstImport
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
@@ -1049,13 +1089,14 @@ trait Contexts { self: Analyzer =>
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
-        assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
-        Some(collectImplicitImports(imports.head))
+        if (isDeveloper)
+          assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
+        Some(collectImplicitImports(firstImport.get))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
         val pre = owner.packageObject.typeOfThis
         Some(collectImplicits(pre.implicitMembers, pre))
-      } else Some(Nil)
+      } else SomeOfNil
     }
 
     //
@@ -1084,12 +1125,6 @@ trait Contexts { self: Analyzer =>
       def mt1 = t1 memberType imp1Symbol
       def mt2 = t2 memberType imp2Symbol
 
-      def characterize = List(
-        s"types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}",
-        s"member type 1: $mt1",
-        s"member type 2: $mt2"
-      ).mkString("\n  ")
-
       if (!ambiguous || !imp2Symbol.exists) Some(imp1)
       else if (!imp1Symbol.exists) Some(imp2)
       else (
@@ -1109,7 +1144,10 @@ trait Contexts { self: Analyzer =>
           Some(imp1)
         }
         else {
-          log(s"Import is genuinely ambiguous:\n  " + characterize)
+          log(s"""Import is genuinely ambiguous:
+                 |  types:  $t1 =:= $t2  ${t1 =:= t2}  members: ${mt1 =:= mt2}
+                 |  member type 1: $mt1
+                 |  member type 2: $mt2""".stripMargin)
           None
         }
       )
@@ -1137,7 +1175,11 @@ trait Contexts { self: Analyzer =>
      *  if any such symbol is accessible from this context.
      */
     private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
-      imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
+      if (isExcludedRootImport(imp)) NoSymbol
+      else imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
+
+    private def isExcludedRootImport(imp: ImportInfo): Boolean =
+      imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
 
     private def requiresQualifier(s: Symbol): Boolean = (
          s.owner.isClass
@@ -1176,11 +1218,10 @@ trait Contexts { self: Analyzer =>
           case _                                => LookupSucceeded(qual, sym)
         }
       )
-      def finishDefSym(sym: Symbol, pre0: Type): NameLookup =
-        if (requiresQualifier(sym))
-          finish(gen.mkAttributedQualifier(pre0), sym)
-        else
-          finish(EmptyTree, sym)
+      def finishDefSym(sym: Symbol, pre0: Type): NameLookup = {
+        val qual = if (requiresQualifier(sym)) gen.mkAttributedQualifier(pre0) else EmptyTree
+        finish(qual, sym)
+      }
 
       def lookupInPrefix(name: Name)    = {
         val sym = pre.member(name).filter(qualifies)
@@ -1757,6 +1798,11 @@ object ContextMode {
   /** Were default arguments used? */
   final val DiagUsedDefaults: ContextMode         = 1 << 18
 
+  /** Are we currently typing the core or args of an annotation?
+    * When set, Java annotations may be instantiated directly.
+    */
+  final val TypingAnnotation: ContextMode         = 1 << 19
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1782,7 +1828,8 @@ object ContextMode {
     SecondTry              -> "SecondTry",
     TypeConstructorAllowed -> "TypeConstructorAllowed",
     DiagUsedDefaults       -> "DiagUsedDefaults",
-    SuppressDeadArgWarning -> "SuppressDeadArgWarning"
+    SuppressDeadArgWarning -> "SuppressDeadArgWarning",
+    TypingAnnotation       -> "TypingAnnotation",
   )
 }
 
@@ -1804,5 +1851,5 @@ final class ContextMode private (val bits: Int) extends AnyVal {
 
   override def toString =
     if (bits == 0) "NOmode"
-    else (contextModeNameMap filterKeys inAll).values.toList.sorted mkString " "
+    else contextModeNameMap.view.filterKeys(inAll).values.toList.sorted.mkString(" ")
 }

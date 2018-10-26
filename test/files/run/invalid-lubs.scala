@@ -1,5 +1,5 @@
 import scala.tools.partest.ReplTest
-// f-bounded types involved in LUBs can sometimes produce an ill-bounded LUB.
+// These LUBs are no longer invalid.
 // ReplTest because some errors shadow others
 object Test extends ReplTest {
   def code =

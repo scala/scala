@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -264,7 +271,11 @@ abstract class ExplicitOuter extends InfoTransform
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       if (from == to) base
-      else outerPath(outerSelect(base), from.outerClass, to)
+      else {
+        val outerSel = outerSelect(base)
+        if (outerSel.isEmpty) EmptyTree
+        else outerPath(outerSel, from.outerClass, to)
+      }
     }
 
 

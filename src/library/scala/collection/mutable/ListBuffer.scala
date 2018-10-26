@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 package mutable
 
@@ -5,6 +17,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
+import scala.runtime.Statics.releaseFence
 
 /** A `Buffer` implementation backed by a list. It provides constant time
   *  prepend and append. Most other operations are linear.
@@ -61,6 +74,10 @@ class ListBuffer[A]
   // Avoids copying where possible.
   override def toList: List[A] = {
     aliased = nonEmpty
+    // We've accumulated a number of mutations to `List.tail` by this stage.
+    // Make sure they are visible to threads that the client of this ListBuffer might be about
+    // to share this List with.
+    releaseFence()
     first
   }
 
@@ -265,7 +282,7 @@ class ListBuffer[A]
     this
   }
 
-  def patchInPlace(from: Int, patch: collection.Seq[A], replaced: Int): this.type = {
+  def patchInPlace(from: Int, patch: collection.IterableOnce[A], replaced: Int): this.type = {
     val i = math.min(math.max(from, 0), length)
     val n = math.min(math.max(replaced, 0), length)
     ensureUnaliased()

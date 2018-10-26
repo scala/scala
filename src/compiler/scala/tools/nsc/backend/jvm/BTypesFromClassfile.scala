@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.backend.jvm
 
 import scala.annotation.switch
@@ -26,7 +38,13 @@ abstract class BTypesFromClassfile {
    *
    * This method supports both descriptors and internal names.
    */
-  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
+  def bTypeForDescriptorOrInternalNameFromClassfile(descOrIntN: String): BType = (descOrIntN(0): @switch) match {
+    case '['                           => ArrayBType(bTypeForDescriptorFromClassfile(descOrIntN.substring(1)))
+    case 'L' if descOrIntN.last == ';' => bTypeForDescriptorFromClassfile(descOrIntN)
+    case _                             => classBTypeFromParsedClassfile(descOrIntN)
+  }
+
+  def bTypeForDescriptorFromClassfile(desc: String): BType = (desc(0): @switch) match {
     case 'V'                     => UNIT
     case 'Z'                     => BOOL
     case 'C'                     => CHAR
@@ -36,9 +54,9 @@ abstract class BTypesFromClassfile {
     case 'F'                     => FLOAT
     case 'J'                     => LONG
     case 'D'                     => DOUBLE
-    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
+    case '['                     => ArrayBType(bTypeForDescriptorFromClassfile(desc.substring(1)))
     case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
-    case _                       => classBTypeFromParsedClassfile(desc)
+    case _                       => throw new IllegalArgumentException(s"Not a descriptor: $desc")
   }
 
   /**
@@ -46,15 +64,11 @@ abstract class BTypesFromClassfile {
    * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    cachedClassBTypeOrNull(internalName) match {
-      case null =>
-        ClassBType(internalName, false){ res:ClassBType =>
-          byteCodeRepository.classNode(internalName) match {
-            case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
-            case Right(c) => computeClassInfoFromClassNode(c, res)
-          }
-        }
-      case tp => tp
+    ClassBType(internalName, fromSymbol = false) { res: ClassBType =>
+      byteCodeRepository.classNode(internalName) match {
+        case Left(msg) => Left(NoClassBTypeInfoMissingBytecode(msg))
+        case Right(c) => computeClassInfoFromClassNode(c, res)
+      }
     }
   }
 
@@ -62,11 +76,8 @@ abstract class BTypesFromClassfile {
    * Construct the [[ClassBType]] for a parsed classfile.
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
-    cachedClassBTypeOrNull(classNode.name) match {
-      case null => ClassBType(classNode.name, false) { res: ClassBType =>
-        computeClassInfoFromClassNode(classNode, res)
-      }
-      case tp => tp
+    ClassBType(classNode.name, fromSymbol = false) { res: ClassBType =>
+      computeClassInfoFromClassNode(classNode, res)
     }
   }
 

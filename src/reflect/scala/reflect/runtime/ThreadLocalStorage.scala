@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect
 package runtime
 
@@ -12,7 +24,7 @@ private[reflect] trait ThreadLocalStorage {
   private class MyThreadLocalStorage[T](initialValue: => T) extends ThreadLocalStorage[T] {
     // TODO: how do we use org.cliffc.high_scale_lib.NonBlockingHashMap here?
     //       (we would need a version that uses weak keys)
-    private val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
+    private[this] val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
     def get: T = {
       if (values containsKey currentThread) values.get(currentThread)
       else {

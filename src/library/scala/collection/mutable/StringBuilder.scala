@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection.mutable
 
 import java.lang.String
@@ -57,7 +69,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   // Methods required to make this an IndexedSeq:
   def apply(i: Int): Char = underlying.charAt(i)
 
-  override protected def fromSpecificIterable(coll: scala.collection.Iterable[Char]): StringBuilder =
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[Char]): StringBuilder =
     new StringBuilder() appendAll coll
 
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
@@ -79,7 +91,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   def result() = underlying.toString
 
-  override def toString = result
+  override def toString = result()
 
   override def toArray[B >: Char](implicit ct: scala.reflect.ClassTag[B]) =
     ct.runtimeClass match {
@@ -158,7 +170,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     */
   def appendAll(xs: IterableOnce[Char]): StringBuilder = {
     xs match {
-      case x: WrappedString => underlying append x.self
+      case x: WrappedString => underlying append x.unwrap
       case x: ArraySeq.ofChar => underlying append x.array
       case x: StringBuilder => underlying append x.underlying
       case _ =>

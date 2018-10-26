@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -168,7 +175,7 @@ trait PatternTypers {
         case _         => wrapClassTagUnapply(treeTyped, extractor, tpe)
       }
     }
-    private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
+    private class VariantToSkolemMap extends VariancedTypeMap {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
       // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see scala/bug#5189
@@ -224,9 +231,25 @@ trait PatternTypers {
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
       val variantToSkolem     = new VariantToSkolemMap
-      val caseClassType       = tree.tpe.prefix memberType caseClass
-      val caseConstructorType = caseClassType memberType caseClass.primaryConstructor
-      val tree1               = TypeTree(caseConstructorType) setOriginal tree
+
+      //  `caseClassType` is the prefix from which we're seeing the constructor info, so it must be kind *.
+      // Need the `initialize` call to make sure we see any type params.
+      val caseClassType       = caseClass.initialize.tpe_*.asSeenFrom(tree.tpe.prefix, caseClass.owner)
+      assert(!caseClassType.isHigherKinded, s"Unexpected type constructor $caseClassType")
+
+      // If the case class is polymorphic, need to capture those type params in the type that we relativize using asSeenFrom,
+      // as they may also be sensitive to the prefix (see test/files/pos/t11103.scala).
+      // Note that undetParams may thus be different from caseClass.typeParams.
+      // (For a monomorphic case class, GenPolyType will not create/destruct a PolyType.)
+      val (undetparams, caseConstructorType) =
+        GenPolyType.unapply {
+          val ctorUnderClassTypeParams = GenPolyType(caseClass.typeParams, caseClass.primaryConstructor.info)
+          ctorUnderClassTypeParams.asSeenFrom(caseClassType, caseClass)
+        }.get
+
+      // println(s"convertToCaseConstructor(${tree.tpe}, $caseClass, $ptIn) // $caseClassType // ${caseConstructorType.typeParams.map(_.info)}")
+
+      val tree1 = TypeTree(caseConstructorType) setOriginal tree
 
       // have to open up the existential and put the skolems in scope
       // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
@@ -237,7 +260,7 @@ trait PatternTypers {
       // as instantiateTypeVar's bounds would end up there
       val ctorContext = context.makeNewScope(tree, context.owner)
       freeVars foreach ctorContext.scope.enter
-      newTyper(ctorContext).infer.inferConstructorInstance(tree1, caseClass.typeParams, ptSafe)
+      newTyper(ctorContext).infer.inferConstructorInstance(tree1, undetparams, ptSafe)
 
       // simplify types without losing safety,
       // so that we get rid of unnecessary type slack, and so that error messages don't unnecessarily refer to skolems

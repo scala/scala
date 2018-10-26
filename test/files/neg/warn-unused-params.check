@@ -13,6 +13,21 @@ case class CaseyAtTheBat(k: Int)(s: String)        // warn
 warn-unused-params.scala:64: warning: parameter value readResolve in method f is never used
   def f(readResolve: Int) = 42           // warn
         ^
+warn-unused-params.scala:79: warning: parameter value dummy in method g is never used
+  def g(dummy: DummyImplicit) = 42
+        ^
+warn-unused-params.scala:84: warning: parameter value ev in method f2 is never used
+  def f2[A, B](ev: A =:= B) = 42
+               ^
+warn-unused-params.scala:85: warning: parameter value ev in method g2 is never used
+  def g2[A, B](ev: A <:< B) = 42
+               ^
+warn-unused-params.scala:89: warning: parameter value i in anonymous function is never used
+  def f = (i: Int) => 42      // warn
+            ^
+warn-unused-params.scala:95: warning: parameter value i in anonymous function is never used
+  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
+               ^
 error: No warnings can be incurred under -Xfatal-warnings.
-5 warnings found
+10 warnings found
 one error found

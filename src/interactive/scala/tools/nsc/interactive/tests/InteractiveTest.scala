@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 package tests
@@ -81,7 +89,7 @@ abstract class InteractiveTest
         loadSources()
         runDefaultTests()
       }
-    }.lines.map(normalize).foreach(println)
+    }.linesIterator.map(normalize).foreach(println)
   }
 
   protected def normalize(s: String) = s

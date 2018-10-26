@@ -53,7 +53,7 @@ sortedImplicitNotFound.scala:77: error: No implicit Ordering[Object] found to bu
   es.flatMap(_ => List(o))
             ^
 sortedImplicitNotFound.scala:80: error: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
-starting with method $conforms in object Predef
+starting with method orderingToOrdered in object Ordered
   es.zip(List(o)) // ah well...: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
         ^
 sortedImplicitNotFound.scala:83: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.

@@ -1,6 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -214,7 +221,7 @@ abstract class SymbolTable extends macros.Universe
   type RunId = Int
   final val NoRunId = 0
 
-  private val phStack: collection.mutable.Stack[Phase] = new collection.mutable.Stack()
+  private[this] val phStack: collection.mutable.Stack[Phase] = new collection.mutable.Stack()
   private[this] var ph: Phase = NoPhase
   private[this] var per = NoPeriod
 
@@ -229,8 +236,6 @@ abstract class SymbolTable extends macros.Universe
   }
 
   final def phase_=(p: Phase): Unit = {
-    //System.out.println("setting phase to " + p)
-    assert((p ne null) && p != NoPhase, p)
     ph = p
     per = period(currentRunId, p.id)
   }
@@ -314,8 +319,8 @@ abstract class SymbolTable extends macros.Universe
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
-      if (phase.id > pid) infoTransformers.nextFrom(pid).pid >= phase.id
-      else infoTransformers.nextFrom(phase.id).pid >= pid
+      if (phase.id > pid) nextFrom(pid).pid >= phase.id
+      else nextFrom(phase.id).pid >= pid
     }
 
   final def isValidForBaseClasses(period: Period): Boolean = {
@@ -325,8 +330,8 @@ abstract class SymbolTable extends macros.Universe
     )
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
-      if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
-      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
+      if (phase.id > pid) noChangeInBaseClasses(nextFrom(pid), phase.id)
+      else noChangeInBaseClasses(nextFrom(phase.id), pid)
     }
   }
 
@@ -397,8 +402,8 @@ abstract class SymbolTable extends macros.Universe
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
     import java.lang.ref.WeakReference
-    private var caches = List[WeakReference[Clearable]]()
-    private var javaCaches = List[JavaClearable[_]]()
+    private[this] var caches = List[WeakReference[Clearable]]()
+    private[this] var javaCaches = List[JavaClearable[_]]()
 
     def recordCache[T <: Clearable](cache: T): T = {
       cache match {
@@ -471,6 +476,7 @@ abstract class SymbolTable extends macros.Universe
     val changesBaseClasses = true
     def transform(sym: Symbol, tpe: Type): Type = tpe
   }
+  var nextFrom: Array[InfoTransformer] = null
 
   /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]

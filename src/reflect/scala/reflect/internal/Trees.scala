@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -9,6 +16,7 @@ package internal
 
 import Flags._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
 import util.{Statistics, StatisticsStatics}
 
@@ -150,13 +158,17 @@ trait Trees extends api.Trees {
       })
 
     override def children: List[Tree] = {
-      def subtrees(x: Any): List[Tree] = x match {
-        case EmptyTree   => Nil
-        case t: Tree     => List(t)
-        case xs: List[_] => xs flatMap subtrees
-        case _           => Nil
+      var builder: ListBuffer[Tree] = null
+      def subtrees(x: Any): Unit = x match {
+        case EmptyTree =>
+        case t: Tree =>
+          if (builder eq null) builder = new ListBuffer[Tree]
+          builder += t
+        case xs: List[_] => xs foreach subtrees
+        case _ =>
       }
-      productIterator.toList flatMap subtrees
+      productIterator foreach subtrees
+      if (builder eq null) Nil else builder.result()
     }
 
     def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
@@ -210,6 +222,9 @@ trait Trees extends api.Trees {
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
+
+    def changeOwner(from: Symbol, to: Symbol): Tree =
+      new ChangeOwnerTraverser(from, to) apply this
 
     def shallowDuplicate: Tree = new ShallowDuplicator(this) transform this
     def shortClass: String = (getClass.getName split "[.$]").last
@@ -1302,17 +1317,6 @@ trait Trees extends api.Trees {
     }
   }
 
-  // Belongs in TreeInfo but then I can't reach it from Printers.
-  def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
-    case Ident(Id)                                          => true
-    case Select(Ident(nme.scala_), Id)                      => true
-    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), Id) => true
-    case _                                                  => false
-  }
-  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
-   */
-  def isReferenceToPredef(t: Tree) = isReferenceToScalaMember(t, nme.Predef)
-
   // --- modifiers implementation ---------------------------------------
 
   /** @param privateWithin the qualifier for a private (a type name)
@@ -1620,7 +1624,7 @@ trait Trees extends api.Trees {
 
   // Create a readable string describing a substitution.
   private def substituterString(fromStr: String, toStr: String, from: List[Any], to: List[Any]): String = {
-    "subst[%s, %s](%s)".format(fromStr, toStr, (from, to).zipped map (_ + " -> " + _) mkString ", ")
+    "subst[%s, %s](%s)".format(fromStr, toStr, from.lazyZip(to).map(_ + " -> " + _).mkString(", "))
   }
 
   // NOTE: calls shallowDuplicate on trees in `to` to avoid problems when symbols in `from`
@@ -1687,7 +1691,7 @@ trait Trees extends api.Trees {
    */
   class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends InternalTransformer {
     val symSubst = new SubstSymMap(from, to)
-    private var mutatedSymbols: List[Symbol] = Nil
+    private[this] var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
       def subst(from: List[Symbol], to: List[Symbol]): Unit = {
         if (!from.isEmpty)

@@ -5,11 +5,11 @@ object Test {
   val testCode =
     """
 def callerOfCaller = Thread.currentThread.getStackTrace.drop(2).head.getMethodName
-def g = callerOfCaller
-def h = g
+@noinline def g = callerOfCaller
+@noinline def h = g
 assert(h == "g", h)
 @inline def g = callerOfCaller
-def h = g
+@noinline def h = g
 assert(h == "h", h)
   """
 
@@ -20,7 +20,7 @@ assert(h == "h", h)
       f(settings)
       settings.usejavacp.value = true
       val repl = new interpreter.IMain(settings, new ReplReporterImpl(settings))
-      testCode.lines.foreach(repl.interpret(_))
+      testCode.linesIterator.foreach(repl.interpret(_))
     }
     test(_ => ())
     test(_.Yreplclassbased.value = true)

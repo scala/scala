@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection.mutable
 
@@ -11,6 +23,8 @@ trait SortedMap[K, V]
   extends collection.SortedMap[K, V]
     with Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
+
+  override def unsorted: Map[K, V] = this
 
   override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
@@ -39,7 +53,14 @@ trait SortedMap[K, V]
 
 trait SortedMapOps[K, V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
   extends collection.SortedMapOps[K, V, CC, C]
-    with MapOps[K, V, Map, C]
+    with MapOps[K, V, Map, C] {
+
+  def unsorted: Map[K, V]
+
+  @deprecated("Use m.clone().addOne((k,v)) instead of m.updated(k, v)", "2.13.0")
+  override def updated[V1 >: V](key: K, value: V1): CC[K, V1] =
+    clone().asInstanceOf[CC[K, V1]].addOne((key, value))
+}
 
 @SerialVersionUID(3L)
 object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
@@ -68,7 +89,10 @@ object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected def fromSpecificIterable(coll: scala.collection.Iterable[(K, V)]): WithDefault[K, V] =
+    override def concat[V2 >: V](suffix: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
+      underlying.concat(suffix).withDefault(defaultValue)
+
+    override protected def fromSpecific(coll: scala.collection.IterableOnce[(K, V)]): WithDefault[K, V] =
       new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] =

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.collection
 
 /**
@@ -11,7 +23,7 @@ trait StrictOptimizedSetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   extends SetOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
-  override def concat(that: Iterable[A]): C =
+  override def concat(that: IterableOnce[A]): C =
     strictOptimizedConcat(that, newSpecificBuilder)
 
 }

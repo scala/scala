@@ -130,26 +130,17 @@ names-defaults-neg-pu.scala:104: error: unknown parameter name: m
 names-defaults-neg-pu.scala:137: warning: a pure expression does nothing in statement position
   delay(var2 = 40)
                ^
-names-defaults-neg-pu.scala:140: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
+names-defaults-neg-pu.scala:140: error: missing parameter type for expanded function ((<x$1: error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg-pu.scala:140: error: not found: value a
-  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
-                                     ^
 names-defaults-neg-pu.scala:140: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
 names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$3: error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                ^
-names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
-  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                                      ^
-names-defaults-neg-pu.scala:142: error: not found: value b
-  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                                  ^
 5 warnings found
-36 errors found
+33 errors found

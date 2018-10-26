@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect
 package quasiquotes
 
@@ -94,7 +106,7 @@ trait Parsers { self: Quasiquotes =>
       import treeBuilder.{global => _, unit => _}
 
       // q"def foo($x)"
-      override def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef =
+      override def param(owner: Name, implicitmod: Long, caseParam: Boolean): ValDef =
         if (isHole && lookingAhead { in.token == COMMA || in.token == RPAREN }) {
           ParamPlaceholder(implicitmod, ident())
         } else super.param(owner, implicitmod, caseParam)

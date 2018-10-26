@@ -20,6 +20,11 @@ C(2,3)
       case 1 => C.this.y
       case _ => throw new IndexOutOfBoundsException(x$1.toString())
     };
+    override <synthetic> def productElementName(x$1: Int): String = x$1 match {
+      case 0 => "x"
+      case 1 => "y"
+      case _ => throw new IndexOutOfBoundsException(x$1.toString())
+    };
     override <synthetic> def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](C.this);
     <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
     override <synthetic> def hashCode(): Int = {
@@ -37,7 +42,7 @@ C(2,3)
       C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
     }))
   };
-  <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with Serializable {
+  <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with java.io.Serializable {
     def <init>(): C.type = {
       C.super.<init>();
       ()

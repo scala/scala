@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 
@@ -95,7 +107,7 @@ object StringOps {
       var i = 0
       while (i < len) {
         val x = s.charAt(i)
-        if(p(x)) sb.append(x)
+        if(p(x)) sb.append(f(x))
         i += 1
       }
       sb.toString
@@ -235,7 +247,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return       a new collection which contains all chars
     *                of this String followed by all elements of `suffix`.
     */
-  def concat[B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] = {
+  def concat[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = suffix.knownSize
     b.sizeHint(s.length + (if(k >= 0) k else 16))
@@ -344,7 +356,7 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def +: (c: Char): String = prepended(c)
 
   /** A copy of the String with all elements from a collection prepended */
-  def prependedAll[B >: Char](prefix: Iterable[B]): immutable.IndexedSeq[B] = {
+  def prependedAll[B >: Char](prefix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = prefix.knownSize
     b.sizeHint(s.length + (if(k >= 0) k else 16))
@@ -354,7 +366,7 @@ final class StringOps(private val s: String) extends AnyVal {
   }
 
   /** Alias for `prependedAll` */
-  @`inline` def ++: [B >: Char] (prefix: Iterable[B]): immutable.IndexedSeq[B] = prependedAll(prefix)
+  @`inline` def ++: [B >: Char] (prefix: IterableOnce[B]): immutable.IndexedSeq[B] = prependedAll(prefix)
 
   /** A copy of the String with another String prepended */
   def prependedAll(prefix: String): String = prefix + s
@@ -382,11 +394,11 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def :+ (c: Char): String = appended(c)
 
   /** A copy of the String with all elements from a collection appended */
-  @`inline` def appendedAll[B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] =
+  @`inline` def appendedAll[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
   /** Alias for `appendedAll` */
-  @`inline` def :++ [B >: Char](suffix: Iterable[B]): immutable.IndexedSeq[B] =
+  @`inline` def :++ [B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
   /** A copy of the String with another String appended */
@@ -563,13 +575,17 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Return the current string concatenated `n` times.
     */
   def *(n: Int): String = {
-    val sb = new JStringBuilder(s.length * n)
-    var i = 0
-    while (i < n) {
-      sb.append(s)
-      i += 1
+    if (n <= 0) {
+      ""
+    } else {
+      val sb = new JStringBuilder(s.length * n)
+      var i = 0
+      while (i < n) {
+        sb.append(s)
+        i += 1
+      }
+      sb.toString
     }
-    sb.toString
   }
 
   @inline private[this] def isLineBreak(c: Char) = c == LF || c == FF
@@ -624,6 +640,14 @@ final class StringOps(private val s: String) extends AnyVal {
     *  end characters; i.e., apply `.stripLineEnd` to all lines
     *  returned by `linesWithSeparators`.
     */
+  def linesIterator: Iterator[String] =
+    linesWithSeparators map (_.stripLineEnd)
+
+  /** Return all lines in this string in an iterator, excluding trailing line
+    *  end characters; i.e., apply `.stripLineEnd` to all lines
+    *  returned by `linesWithSeparators`.
+    */
+  @deprecated("Use .linesIterator, because JDK 11 adds a `lines` method on String", "2.13.0")
   def lines: Iterator[String] =
     linesWithSeparators map (_.stripLineEnd)
 
@@ -702,7 +726,7 @@ final class StringOps(private val s: String) extends AnyVal {
     * If the separator character is a surrogate character, only split on
     * matching surrogate characters if they are not part of a surrogate pair
     *
-    * The behaviour follows, and is implemented in terms of <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#split%28java.lang.String%29">String.split(re: String)</a>
+    * The behaviour follows, and is implemented in terms of <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#split-java.lang.String-">String.split(re: String)</a>
     *
     *
     * @example {{{
@@ -1051,7 +1075,7 @@ final class StringOps(private val s: String) extends AnyVal {
   def indices: Range = Range(0, s.length)
 
   /** Iterator can be used only once */
-  def iterator(): Iterator[Char] = new StringIterator(s)
+  def iterator: Iterator[Char] = new StringIterator(s)
 
   /** Tests whether the string is not empty. */
   @`inline` def nonEmpty: Boolean = !s.isEmpty
@@ -1065,7 +1089,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @return  an iterator yielding the chars of this string in reversed order
     */
-  def reverseIterator(): Iterator[Char] = new ReverseIterator(s)
+  def reverseIterator: Iterator[Char] = new ReverseIterator(s)
 
   /** Creates a non-strict filter of this string.
     *
@@ -1137,16 +1161,14 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def filterNot(pred: Char => Boolean): String = filter(c => !pred(c))
 
   /** Copy chars of this string to an array.
-    * Fills the given array `xs` starting at index `start` with at most `len` chars.
-    * Copying will stop once either the entire string has been copied,
-    * or the end of the array is reached or `len` chars have been copied.
+    * Fills the given array `xs` starting at index 0.
+    * Copying will stop once either the entire string has been copied
+    * or the end of the array is reached
     *
     *  @param  xs     the array to fill.
-    *  @param  start  the starting index.
-    *  @param  len    the maximal number of elements to copy.
     */
-  def copyToArray(xs: Array[Char], start: Int, len: Int): Unit =
-    s.getChars(0, min(min(s.length, len), xs.length-start), xs, start)
+  @`inline` def copyToArray(xs: Array[Char]): Int =
+    copyToArray(xs, 0, Int.MaxValue)
 
   /** Copy chars of this string to an array.
     * Fills the given array `xs` starting at index `start`.
@@ -1155,10 +1177,26 @@ final class StringOps(private val s: String) extends AnyVal {
     *
     *  @param  xs     the array to fill.
     *  @param  start  the starting index.
+    */
+  @`inline` def copyToArray(xs: Array[Char], start: Int): Int =
+    copyToArray(xs, start, Int.MaxValue)
+
+  /** Copy chars of this string to an array.
+    * Fills the given array `xs` starting at index `start` with at most `len` chars.
+    * Copying will stop once either the entire string has been copied,
+    * or the end of the array is reached or `len` chars have been copied.
+    *
+    *  @param  xs     the array to fill.
+    *  @param  start  the starting index.
     *  @param  len    the maximal number of elements to copy.
     */
-  @`inline` def copyToArray(xs: Array[Char], start: Int): Unit =
-    copyToArray(xs, start, Int.MaxValue)
+  def copyToArray(xs: Array[Char], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(s.length, xs.length, start, len)
+    if (copied > 0) {
+      s.getChars(0, copied, xs, start)
+    }
+    copied
+  }
 
   /** Finds index of the first char satisfying some predicate after or at some start index.
     *
@@ -1271,6 +1309,25 @@ final class StringOps(private val s: String) extends AnyVal {
     (res1.toString, res2.toString)
   }
 
+  /** Analogous to `zip` except that the elements in each collection are not consumed until a strict operation is
+    * invoked on the returned `LazyZip2` decorator.
+    *
+    * Calls to `lazyZip` can be chained to support higher arities (up to 4) without incurring the expense of
+    * constructing and deconstructing intermediary tuples.
+    *
+    * {{{
+    *    val xs = List(1, 2, 3)
+    *    val res = (xs lazyZip xs lazyZip xs lazyZip xs).map((a, b, c, d) => a + b + c + d)
+    *    // res == List(4, 8, 12)
+    * }}}
+    *
+    * @param that the iterable providing the second element of each eventual pair
+    * @tparam B   the type of the second element in each eventual pair
+    * @return a decorator `LazyZip2` that allows strict operations to be performed on the lazily evaluated pairs
+    *         or chained calls to `lazyZip`. Implicit conversion to `Iterable[(A, B)]` is also supported.
+    */
+  def lazyZip[B](that: Iterable[B]): LazyZip2[Char, B, String] = new LazyZip2(s, new WrappedString(s), that)
+
 
   /* ************************************************************************************************************
      The remaining methods are provided for completeness but they delegate to WrappedString implementations which
@@ -1288,8 +1345,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  @deprecated("Use `new WrappedString(s).diff(...).self` instead of `s.diff(...)`", "2.13.0")
-  def diff(that: Seq[_ >: Char]): String = new WrappedString(s).diff(that).self
+  @deprecated("Use `s.toSeq.diff(...).unwrap` instead of `s.diff(...)`", "2.13.0")
+  def diff(that: Seq[_ >: Char]): String = new WrappedString(s).diff(that).unwrap
 
   /** Computes the multiset intersection between this string and another sequence.
     *
@@ -1300,12 +1357,12 @@ final class StringOps(private val s: String) extends AnyVal {
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  @deprecated("Use `new WrappedString(s).intersect(...).self` instead of `s.intersect(...)`", "2.13.0")
-  def intersect(that: Seq[_ >: Char]): String = new WrappedString(s).intersect(that).self
+  @deprecated("Use `s.toSeq.intersect(...).unwrap` instead of `s.intersect(...)`", "2.13.0")
+  def intersect(that: Seq[_ >: Char]): String = new WrappedString(s).intersect(that).unwrap
 
   /** Selects all distinct chars of this string ignoring the duplicates. */
-  @deprecated("Use `new WrappedString(s).distinct.self` instead of `s.distinct`", "2.13.0")
-  def distinct: String = new WrappedString(s).distinct.self
+  @deprecated("Use `s.toSeq.distinct.unwrap` instead of `s.distinct`", "2.13.0")
+  def distinct: String = new WrappedString(s).distinct.unwrap
 
   /** Selects all distinct chars of this string ignoring the duplicates as determined by `==` after applying
     * the transforming function `f`.
@@ -1314,8 +1371,8 @@ final class StringOps(private val s: String) extends AnyVal {
     * @tparam B the type of the elements after being transformed by `f`
     * @return a new string consisting of all the chars of this string without duplicates.
     */
-  @deprecated("Use `new WrappedString(s).distinctBy(...).self` instead of `s.distinctBy(...)`", "2.13.0")
-  def distinctBy[B](f: Char => B): String = new WrappedString(s).distinctBy(f).self
+  @deprecated("Use `s.toSeq.distinctBy(...).unwrap` instead of `s.distinctBy(...)`", "2.13.0")
+  def distinctBy[B](f: Char => B): String = new WrappedString(s).distinctBy(f).unwrap
 
   /** Sorts the characters of this string according to an Ordering.
     *
@@ -1328,8 +1385,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return     a string consisting of the chars of this string
     *              sorted according to the ordering `ord`.
     */
-  @deprecated("Use `new WrappedString(s).sorted.self` instead of `s.sorted`", "2.13.0")
-  def sorted[B >: Char](implicit ord: Ordering[B]): String = new WrappedString(s).sorted(ord).self
+  @deprecated("Use `s.toSeq.sorted.unwrap` instead of `s.sorted`", "2.13.0")
+  def sorted[B >: Char](implicit ord: Ordering[B]): String = new WrappedString(s).sorted(ord).unwrap
 
   /** Sorts this string according to a comparison function.
     *
@@ -1342,8 +1399,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return     a string consisting of the elements of this string
     *              sorted according to the comparison function `lt`.
     */
-  @deprecated("Use `new WrappedString(s).sortWith(...).self` instead of `s.sortWith(...)`", "2.13.0")
-  def sortWith(lt: (Char, Char) => Boolean): String = new WrappedString(s).sortWith(lt).self
+  @deprecated("Use `s.toSeq.sortWith(...).unwrap` instead of `s.sortWith(...)`", "2.13.0")
+  def sortWith(lt: (Char, Char) => Boolean): String = new WrappedString(s).sortWith(lt).unwrap
 
   /** Sorts this string according to the Ordering which results from transforming
     * an implicitly given Ordering with a transformation function.
@@ -1361,8 +1418,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *           sorted according to the ordering where `x < y` if
     *           `ord.lt(f(x), f(y))`.
     */
-  @deprecated("Use `new WrappedString(s).sortBy(...).self` instead of `s.sortBy(...)`", "2.13.0")
-  def sortBy[B](f: Char => B)(implicit ord: Ordering[B]): String = new WrappedString(s).sortBy(f)(ord).self
+  @deprecated("Use `s.toSeq.sortBy(...).unwrap` instead of `s.sortBy(...)`", "2.13.0")
+  def sortBy[B](f: Char => B)(implicit ord: Ordering[B]): String = new WrappedString(s).sortBy(f)(ord).unwrap
 
   /** Partitions this string into a map of strings according to some discriminator function.
     *
@@ -1376,8 +1433,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *               for which `f(x)` equals `k`.
     *
     */
-  @deprecated("Use `new WrappedString(s).groupBy(...).mapValues(_.self)` instead of `s.groupBy(...)`", "2.13.0")
-  def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).mapValues(_.self).toMap
+  @deprecated("Use `s.toSeq.groupBy(...).view.mapValues(_.unwrap)` instead of `s.groupBy(...)`", "2.13.0")
+  def groupBy[K](f: Char => K): immutable.Map[K, String] = new WrappedString(s).groupBy(f).view.mapValues(_.unwrap).toMap
 
   /** Groups chars in fixed size blocks by passing a "sliding window"
     *  over them (as opposed to partitioning them, as is done in grouped.)
@@ -1389,8 +1446,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *          last element (which may be the only element) will be truncated
     *          if there are fewer than `size` chars remaining to be grouped.
     */
-  @deprecated("Use `new WrappedString(s).sliding(...).map(_.self)` instead of `s.sliding(...)`", "2.13.0")
-  def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.self)
+  @deprecated("Use `s.toSeq.sliding(...).map(_.unwrap)` instead of `s.sliding(...)`", "2.13.0")
+  def sliding(size: Int, step: Int = 1): Iterator[String] = new WrappedString(s).sliding(size, step).map(_.unwrap)
 
   /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
     *  the original string, with the chars taken in order.  Thus, `"xy"` and `"yy"`
@@ -1405,16 +1462,16 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return   An Iterator which traverses the possible n-element combinations of this string.
     *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
     */
-  @deprecated("Use `new WrappedString(s).combinations(...).map(_.self)` instead of `s.combinations(...)`", "2.13.0")
-  def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.self)
+  @deprecated("Use `s.toSeq.combinations(...).map(_.unwrap)` instead of `s.combinations(...)`", "2.13.0")
+  def combinations(n: Int): Iterator[String] = new WrappedString(s).combinations(n).map(_.unwrap)
 
   /** Iterates over distinct permutations.
     *
     *  @return   An Iterator which traverses the distinct permutations of this string.
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
     */
-  @deprecated("Use `new WrappedString(s).permutations(...).map(_.self)` instead of `s.permutations(...)`", "2.13.0")
-  def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.self)
+  @deprecated("Use `s.toSeq.permutations(...).map(_.unwrap)` instead of `s.permutations(...)`", "2.13.0")
+  def permutations: Iterator[String] = new WrappedString(s).permutations.map(_.unwrap)
 }
 
 case class StringView(s: String) extends AbstractIndexedSeqView[Char] {

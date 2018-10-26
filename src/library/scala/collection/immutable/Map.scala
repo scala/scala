@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package collection
 package immutable
@@ -5,7 +17,8 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.immutable.Map.Map4
+import scala.collection.mutable.Builder
 import scala.language.higherKinds
 
 
@@ -61,7 +74,8 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def remove(key: K): C
 
   /** Alias for `remove` */
-  /* @`inline` final */ def - (key: K): C = remove(key)
+  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
+  /*@`inline` final*/ def - (key: K): C = remove(key)
 
   @deprecated("Use -- with an explicit collection", "2.13.0")
   def - (key1: K, key2: K, keys: K*): C = remove(key1).remove(key2).removeAll(keys)
@@ -107,7 +121,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def transform[W](f: (K, V) => W): CC[K, W] = map { case (k, v) => (k, f(k, v)) }
 
-  override def concat [V1 >: V](that: collection.Iterable[(K, V1)]): CC[K, V1] = {
+  override def concat [V1 >: V](that: collection.IterableOnce[(K, V1)]): CC[K, V1] = {
     var result: CC[K, V1] = coll
     val it = that.iterator
     while (it.hasNext) result = result + it.next()
@@ -132,11 +146,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
 @SerialVersionUID(3L)
 object Map extends MapFactory[Map] {
 
-  // getenv not getProperty for Scala.js friendliness.
-  // TODO remove before 2.13.0-RC1? see scala/collection-strawman#572
-  private final val useBaseline: Boolean =
-    System.getenv("SCALA_COLLECTION_IMMUTABLE_USE_BASELINE") == "true"
-
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
     extends AbstractMap[K, V]
       with MapOps[K, V, Map, WithDefault[K, V]] {
@@ -149,7 +158,12 @@ object Map extends MapFactory[Map] {
 
     def iterator: Iterator[(K, V)] = underlying.iterator
 
+    override def isEmpty: Boolean = underlying.isEmpty
+
     override def mapFactory: MapFactory[Map] = underlying.mapFactory
+
+    override def concat [V2 >: V](xs: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
+      new WithDefault(underlying.concat(xs), defaultValue)
 
     def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
 
@@ -158,7 +172,7 @@ object Map extends MapFactory[Map] {
 
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
-    override protected def fromSpecificIterable(coll: collection.Iterable[(K, V)] @uncheckedVariance): WithDefault[K, V] =
+    override protected def fromSpecific(coll: collection.IterableOnce[(K, V)] @uncheckedVariance): WithDefault[K, V] =
       new WithDefault[K, V](mapFactory.from(coll), defaultValue)
 
     override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
@@ -169,18 +183,17 @@ object Map extends MapFactory[Map] {
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): Map[K, V] =
     it match {
+      case it: Iterable[_] if it.isEmpty => empty[K, V]
       case m: Map[K, V] => m
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] =
-    new ImmutableBuilder[(K, V), Map[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl
 
   private object EmptyMap extends AbstractMap[Any, Nothing] {
     override def size: Int = 0
     override def knownSize: Int = 0
+    override def isEmpty: Boolean = true
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
@@ -193,6 +206,7 @@ object Map extends MapFactory[Map] {
   final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 1
     override def knownSize: Int = 1
+    override def isEmpty: Boolean = false
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
     override def contains(key: K) = key == key1
     def get(key: K): Option[V] =
@@ -200,6 +214,8 @@ object Map extends MapFactory[Map] {
     override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
       if (key == key1) value1 else default
     def iterator = Iterator.single((key1, value1))
+    override def keysIterator: Iterator[K] = Iterator.single(key1)
+    override def valuesIterator: Iterator[V] = Iterator.single(value1)
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
@@ -213,6 +229,7 @@ object Map extends MapFactory[Map] {
   final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 2
     override def knownSize: Int = 2
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -226,7 +243,30 @@ object Map extends MapFactory[Map] {
       if (key == key1) value1
       else if (key == key2) value2
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map2Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map2Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map2Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map2Iterator[A] extends AbstractIterator[A] {
+      private[this] var i = 0
+      override def hasNext: Boolean = i < 2
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
@@ -243,6 +283,7 @@ object Map extends MapFactory[Map] {
   class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
     override def size: Int = 3
     override def knownSize: Int = 3
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -259,7 +300,31 @@ object Map extends MapFactory[Map] {
       else if (key == key2) value2
       else if (key == key3) value3
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map3Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map3Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map3Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map3Iterator[A] extends AbstractIterator[A] {
+      private[this] var i = 0
+      override def hasNext: Boolean = i < 3
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case 2 => nextResult(key3, value3)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
@@ -275,9 +340,12 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V)
+    extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+
     override def size: Int = 4
     override def knownSize: Int = 4
+    override def isEmpty: Boolean = false
     override def apply(key: K) =
       if (key == key1) value1
       else if (key == key2) value2
@@ -297,13 +365,38 @@ object Map extends MapFactory[Map] {
       else if (key == key3) value3
       else if (key == key4) value4
       else default
-    def iterator = ((key1, value1) :: (key2, value2) :: (key3, value3) :: (key4, value4) :: Nil).iterator
+    def iterator: Iterator[(K, V)] = new Map4Iterator[(K, V)] {
+      override protected def nextResult(k: K, v: V): (K, V) = (k, v)
+    }
+    override def keysIterator: Iterator[K] = new Map4Iterator[K] {
+      override protected def nextResult(k: K, v: V): K = k
+    }
+    override def valuesIterator: Iterator[V] = new Map4Iterator[V] {
+      override protected def nextResult(k: K, v: V): V = v
+    }
+
+    private abstract class Map4Iterator[A] extends AbstractIterator[A] {
+      private[this] var i = 0
+      override def hasNext: Boolean = i < 4
+      override def next(): A = {
+        val result = i match {
+          case 0 => nextResult(key1, value1)
+          case 1 => nextResult(key2, value2)
+          case 2 => nextResult(key3, value3)
+          case 3 => nextResult(key4, value4)
+          case _ => Iterator.empty.next()
+        }
+        i += 1
+        result
+      }
+      protected def nextResult(k: K, v: V @uncheckedVariance): A
+    }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
-      else (if (useBaseline) HashMap.empty[K, V1] else ChampHashMap.empty[K, V1]).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
+      else HashMap.empty[K, V1].updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def remove(key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)
@@ -313,14 +406,59 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
-  }
 
-  // scalac generates a `readReplace` method to discard the deserialized state (see https://github.com/scala/bug/issues/10412).
-  // This prevents it from serializing it in the first place:
-  private[this] def writeObject(out: ObjectOutputStream): Unit = ()
-  private[this] def readObject(in: ObjectInputStream): Unit = ()
+    private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): builder.type =
+      builder.addOne(key1, value1).addOne(key2, value2).addOne(key3, value3).addOne(key4, value4)
+  }
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
+
+private[immutable] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[K, V]] {
+  private[this] var elems: Map[K, V] = Map.empty
+  private[this] var switchedToHashMapBuilder: Boolean = false
+  private[this] var hashMapBuilder: HashMapBuilder[K, V] = _
+
+  override def clear(): Unit = {
+    elems = Map.empty
+    if (hashMapBuilder != null) {
+      hashMapBuilder.clear()
+    }
+    switchedToHashMapBuilder = false
+  }
+
+  override def result(): Map[K, V] =
+    if (switchedToHashMapBuilder) hashMapBuilder.result() else elems
+
+  def addOne(elem: (K, V)) = {
+    if (switchedToHashMapBuilder) {
+      hashMapBuilder.addOne(elem)
+    } else if (elems.size < 4) {
+      elems = elems + elem
+    } else {
+      // assert(elems.size == 4)
+      if (elems.contains(elem._1)) {
+        elems = elems + elem
+      } else {
+        switchedToHashMapBuilder = true
+        if (hashMapBuilder == null) {
+          hashMapBuilder = new HashMapBuilder
+        }
+        elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder)
+        hashMapBuilder.addOne(elem)
+      }
+    }
+
+    this
+  }
+
+  override def addAll(xs: IterableOnce[(K, V)]): this.type =
+    if (switchedToHashMapBuilder) {
+      hashMapBuilder.addAll(xs)
+      this
+    } else {
+      super.addAll(xs)
+    }
+}

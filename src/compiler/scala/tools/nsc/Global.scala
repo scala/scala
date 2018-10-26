@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -383,7 +390,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     def run(): Unit = {
       echoPhaseSummary(this)
-      currentRun.units foreach applyPhase
+      val units = currentRun.units
+      while (units.hasNext)
+        applyPhase(units.next())
     }
 
     def apply(unit: CompilationUnit): Unit
@@ -396,12 +405,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
-    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
+    private def beforeUnit(unit: CompilationUnit): Unit = {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
       if (settings.debug && (settings.verbose || currentRun.size < 5))
         inform("[running phase " + name + " on " + unit + "]")
+    }
+
+    @deprecated
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
+      beforeUnit(unit)
       if (!cancelled(unit)) {
         currentRun.informUnitStarting(this, unit)
         try withCurrentUnitNoLog(unit)(task)
@@ -409,6 +423,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
     }
 
+    @inline
     final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit): Unit = {
       val unit0 = currentUnit
       try {
@@ -420,7 +435,19 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
     }
 
-    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
+    final def applyPhase(unit: CompilationUnit) = {
+      beforeUnit(unit)
+      if (!cancelled(unit)) {
+        currentRun.informUnitStarting(this, unit)
+        val unit0 = currentUnit
+        currentRun.currentUnit = unit
+        try apply(unit)
+        finally {
+          currentRun.currentUnit = unit0
+          currentRun.advanceUnit()
+        }
+      }
+    }
   }
 
   // phaseName = "parser"
@@ -446,16 +473,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     if (settings.YmacroAnnotations) new { val global: Global.this.type = Global.this } with Analyzer with MacroAnnotationNamers
     else new { val global: Global.this.type = Global.this } with Analyzer
 
-  // phaseName = "patmat"
-  object patmat extends {
-    val global: Global.this.type = Global.this
-    // patmat does not need to run before the superaccessors phase, because
-    // patmat never emits `this.x` where `x` is a ParamAccessor.
-    // (However, patmat does need to run before outer accessors generation).
-    val runsAfter = List("superaccessors")
-    val runsRightAfter = None
-  } with PatternMatching
-
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
@@ -467,7 +484,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   // phaseName = "extmethods"
   object extensionMethods extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("patmat")
+    val runsAfter = List("superaccessors")
     val runsRightAfter = None
   } with ExtensionMethods
 
@@ -485,10 +502,20 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val runsRightAfter = None
   } with RefChecks
 
+  // phaseName = "patmat"
+  object patmat extends {
+    val global: Global.this.type = Global.this
+    // patmat does not need to run before the superaccessors phase, because
+    // patmat never emits `this.x` where `x` is a ParamAccessor.
+    // (However, patmat does need to run before outer accessors generation).
+    val runsAfter = List("refchecks")
+    val runsRightAfter = None
+  } with PatternMatching
+
   // phaseName = "uncurry"
   override object uncurry extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("refchecks")
+    val runsAfter = List("patmat")
     val runsRightAfter = None
   } with UnCurry
 
@@ -1187,8 +1214,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       }
       // Create phases and link them together. We supply the previous, and the ctor sets prev.next.
       val last  = components.foldLeft(NoPhase: Phase)((prev, c) => c newPhase prev)
-      // rewind (Iterator.iterate(last)(_.prev) dropWhile (_.prev ne NoPhase)).next
-      val first = { var p = last ; while (p.prev ne NoPhase) p = p.prev ; p }
+      val phaseList = Iterator.iterate(last)(_.prev).takeWhile(_ != NoPhase).toList.reverse
+      val maxId = phaseList.map(_.id).max
+      nextFrom = Array.tabulate(maxId)(i => infoTransformers.nextFrom(i))
+      val first = phaseList.head
       val ss    = settings
 
       // As a final courtesy, see if the settings make any sense at all.
@@ -1434,7 +1463,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       units foreach addUnit
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
-      checkGoldenUnits(units)
       globalPhase = fromPhase
 
       val timePhases = statistics.areStatisticsLocallyEnabled
@@ -1472,6 +1500,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         // browse trees with swing tree viewer
         if (settings.browse containsPhase globalPhase)
           treeBrowser browse (phase.name, units)
+
+        if ((settings.Yvalidatepos containsPhase globalPhase) && !reporter.hasErrors)
+          currentRun.units.foreach(unit => validatePositions(unit.body))
 
         // move the pointer
         globalPhase = globalPhase.next
@@ -1517,16 +1548,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
-    }
-
-    // special dispensations for golden units
-    def checkGoldenUnits(units: List[CompilationUnit]): Unit = {
-      units match {
-        case u :: Nil if u.source.file.path.endsWith("xsbt/Compat.scala") =>
-          val ss = settings
-          ss.language.enable(ss.languageFeatures.postfixOps)
-        case _ =>
-      }
     }
 
     /** Compile list of abstract files. */

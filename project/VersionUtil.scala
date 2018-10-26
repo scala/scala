@@ -1,6 +1,6 @@
 package scala.build
 
-import sbt.{stringToProcess => _, _}
+import sbt._
 import Keys._
 import java.util.{Date, Locale, Properties, TimeZone}
 import java.io.{File, FileInputStream}
@@ -33,7 +33,7 @@ object VersionUtil {
       |    / __/ __// _ | / /  / _ |
       |  __\ \/ /__/ __ |/ /__/ __ |
       | /____/\___/_/ |_/____/_/ | |
-      |                          |/  %s""".stripMargin.lines.drop(1).map(s => s"${ "%n" }${ s }").mkString,
+      |                          |/  %s""".stripMargin.linesIterator.drop(1).map(s => s"${ "%n" }${ s }").mkString,
     resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
   )
@@ -109,7 +109,6 @@ object VersionUtil {
     * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
     * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
-    val log = sLog.value
     val (date, sha) = (gitProperties.value.date, gitProperties.value.sha)
 
     val (base, suffix) = {

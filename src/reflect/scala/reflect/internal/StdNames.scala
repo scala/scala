@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -31,7 +38,7 @@ trait StdNames {
    *  CommonNames constructor out of the starting gate.  This is its builder.
    */
   private class KeywordSetBuilder {
-    private var kws: Set[TermName] = Set()
+    private[this] var kws: Set[TermName] = Set()
     def apply(s: String): TermName = {
       val result = newTermNameCached(s)
       kws = kws + result
@@ -168,7 +175,7 @@ trait StdNames {
   /** This should be the first trait in the linearization. */
   // abstract class Keywords extends CommonNames {
   abstract class Keywords extends {
-    private val kw = new KeywordSetBuilder
+    private[this] val kw = new KeywordSetBuilder
 
     final val ABSTRACTkw: TermName  = kw("abstract")
     final val CASEkw: TermName      = kw("case")
@@ -597,6 +604,10 @@ trait StdNames {
     }
 
     val ??? = encode("???")
+    val =:= = encode("=:=")
+    val <:< = encode("<:<")
+
+    val DummyImplicit: NameType    = "DummyImplicit"
 
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
@@ -609,6 +620,8 @@ trait StdNames {
     val wrapBooleanArray: NameType = "wrapBooleanArray"
     val wrapUnitArray: NameType    = "wrapUnitArray"
     val genericWrapArray: NameType = "genericWrapArray"
+
+    val copyArrayToImmutableIndexedSeq: NameType = "copyArrayToImmutableIndexedSeq"
 
     // Compiler utilized names
 
@@ -767,10 +780,12 @@ trait StdNames {
     val prefix : NameType              = "prefix"
     val productArity: NameType         = "productArity"
     val productElement: NameType       = "productElement"
+    val productElementName: NameType   = "productElementName"
     val productIterator: NameType      = "productIterator"
     val productPrefix: NameType        = "productPrefix"
     val raw_ : NameType                = "raw"
     val readResolve: NameType          = "readResolve"
+    val releaseFence: NameType         = "releaseFence"
     val reify : NameType               = "reify"
     val reificationSupport : NameType  = "reificationSupport"
     val rootMirror : NameType          = "rootMirror"
@@ -800,6 +815,7 @@ trait StdNames {
     val toArray: NameType              = "toArray"
     val toList: NameType               = "toList"
     val toObjectArray : NameType       = "toObjectArray"
+    val toSeq: NameType                = "toSeq"
     val toStats: NameType              = "toStats"
     val TopScope: NameType             = "TopScope"
     val toString_ : NameType           = "toString"
@@ -823,6 +839,7 @@ trait StdNames {
     val values : NameType              = "values"
     val wait_ : NameType               = "wait"
     val withFilter: NameType           = "withFilter"
+    val writeReplace: NameType         = "writeReplace"
     val xml: NameType                  = "xml"
     val zero: NameType                 = "zero"
 
@@ -1111,7 +1128,7 @@ trait StdNames {
   }
 
   class JavaKeywords {
-    private val kw = new KeywordSetBuilder
+    private[this] val kw = new KeywordSetBuilder
 
     final val ABSTRACTkw: TermName     = kw("abstract")
     final val ASSERTkw: TermName       = kw("assert")

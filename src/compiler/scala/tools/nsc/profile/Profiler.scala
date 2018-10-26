@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.profile
 
 import java.io.{FileWriter, PrintWriter}
@@ -124,7 +136,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
   }
   private def readHeapUsage() = RealProfiler.memoryMx.getHeapMemoryUsage.getUsed
 
-  private def doGC: Unit = {
+  private def doGC(): Unit = {
     System.gc()
     System.runFinalization()
   }
