@@ -1220,9 +1220,9 @@ intellij := {
     // Patching the original version back in with more brutish parsing.
     val R = """(?ims)(.*)(<copyright>.*</copyright>)(.*)""".r
     val oldContents = IO.read(ipr)
+    XML.save(ipr.getAbsolutePath, newModules)
     oldContents match {
       case R(_, withEscapes, _) =>
-        XML.save(ipr.getAbsolutePath, newModules)
         val newContents = IO.read(ipr)
         val R(pre, toReplace, post) = newContents
         IO.write(ipr, pre + withEscapes + post)
