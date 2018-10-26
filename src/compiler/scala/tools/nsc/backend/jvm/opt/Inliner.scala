@@ -267,7 +267,7 @@ abstract class Inliner {
 
   def runInlinerAndClosureOptimizer(): Unit = {
     val runClosureOptimizer = compilerSettings.optClosureInvocations
-    var firstRound = true
+    var round = 0
     var changedByClosureOptimizer = mutable.LinkedHashSet.empty[MethodNode]
 
     val inlinerState = mutable.Map.empty[MethodNode, MethodInlinerState]
@@ -275,12 +275,12 @@ abstract class Inliner {
     // Don't try again to inline failed callsites
     val failedToInline = mutable.Set.empty[MethodInsnNode]
 
-    while (firstRound || changedByClosureOptimizer.nonEmpty) {
-      val specificMethodsForInlining = if (firstRound) None else Some(changedByClosureOptimizer)
+    while (round < 10 && (round == 0 || changedByClosureOptimizer.nonEmpty)) {
+      val specificMethodsForInlining = if (round == 0) None else Some(changedByClosureOptimizer)
       val changedByInliner = runInliner(specificMethodsForInlining, inlinerState, failedToInline)
 
       if (runClosureOptimizer) {
-        val specificMethodsForClosureRewriting = if (firstRound) None else Some(changedByInliner)
+        val specificMethodsForClosureRewriting = if (round == 0) None else Some(changedByInliner)
         // TODO: remove cast by moving `MethodInlinerState` and other classes from inliner to a separate PostProcessor component
         changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting, inlinerState.asInstanceOf[mutable.Map[MethodNode, postProcessor.closureOptimizer.postProcessor.inliner.MethodInlinerState]])
       }
@@ -288,7 +288,7 @@ abstract class Inliner {
       for (m <- inlinerState.keySet if !changedByClosureOptimizer(m))
         inlinerState.remove(m).get.inlineLog.print()
 
-      firstRound = false
+      round += 1
     }
   }
 
