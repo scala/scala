@@ -9,6 +9,7 @@ import org.openjdk.jmh.infra.Blackhole
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.analysis.ProdConsAnalyzer
 
 @BenchmarkMode(Array(Mode.AverageTime))
 @Fork(2)

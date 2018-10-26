@@ -185,7 +185,7 @@ object ArrayOps {
   */
 final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
 
-  private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
+  @`inline` private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
   /** The size of this array.
     *
@@ -408,7 +408,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
   }
 
   /** Returns a new array with the elements in reversed order. */
-  def reverse: Array[A] = {
+  @inline def reverse: Array[A] = {
     val len = xs.length
     val res = new Array[A](len)
     var i = 0
@@ -677,6 +677,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       v
     }
     ((xs: Any) match {
+      case null => throw new NullPointerException // null-check first helps static analysis of instanceOf
       case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
@@ -687,7 +688,6 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case null => throw new NullPointerException
     }).asInstanceOf[B]
   }
 
@@ -782,6 +782,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       v
     }
     ((xs: Any) match {
+      case null => throw new NullPointerException
       case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
@@ -792,7 +793,6 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case null => throw new NullPointerException
     }).asInstanceOf[B]
 
   }
@@ -823,6 +823,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       } else z
     }
     ((xs: Any) match {
+      case null => throw new NullPointerException
       case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
@@ -833,7 +834,6 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case null => throw new NullPointerException
     }).asInstanceOf[A1]
   }
 
@@ -845,9 +845,10 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *                `f` to each element of this array and collecting the results.
     */
   def map[B : ClassTag](f: A => B): Array[B] = {
-    val res = new Array[B](xs.length)
+    val l = xs.length
+    val res = new Array[B](l)
     var i = 0
-    while (i < xs.length) {
+    while (i < l) {
       res(i) = f(xs(i))
       i = i + 1
     }

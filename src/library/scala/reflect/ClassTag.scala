@@ -93,15 +93,17 @@ object ClassTag {
   private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
   private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
-  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
-  val Short   : ClassTag[scala.Short]      = Manifest.Short
-  val Char    : ClassTag[scala.Char]       = Manifest.Char
-  val Int     : ClassTag[scala.Int]        = Manifest.Int
-  val Long    : ClassTag[scala.Long]       = Manifest.Long
-  val Float   : ClassTag[scala.Float]      = Manifest.Float
-  val Double  : ClassTag[scala.Double]     = Manifest.Double
-  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
-  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
+  import ManifestFactory._
+
+  val Byte    : ByteManifest               = Manifest.Byte
+  val Short   : ShortManifest              = Manifest.Short
+  val Char    : CharManifest               = Manifest.Char
+  val Int     : IntManifest                = Manifest.Int
+  val Long    : LongManifest               = Manifest.Long
+  val Float   : FloatManifest              = Manifest.Float
+  val Double  : DoubleManifest             = Manifest.Double
+  val Boolean : BooleanManifest            = Manifest.Boolean
+  val Unit    : UnitManifest               = Manifest.Unit
   val Any     : ClassTag[scala.Any]        = Manifest.Any
   val Object  : ClassTag[java.lang.Object] = Manifest.Object
   val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal

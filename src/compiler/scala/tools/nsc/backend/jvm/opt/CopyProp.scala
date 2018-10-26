@@ -20,15 +20,16 @@ import scala.collection.mutable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.BasicInterpreter
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.{LambdaMetaFactoryCall, _}
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class CopyProp {
   val postProcessor: PostProcessor
 
-  import postProcessor.{backendUtils, callGraph}
+  import postProcessor.{backendUtils, callGraph, bTypes}
+  import postProcessor.bTypes.frontendAccess.compilerSettings
   import backendUtils._
 
 
@@ -36,13 +37,13 @@ abstract class CopyProp {
    * For every `xLOAD n`, find all local variable slots that are aliases of `n` using an
    * AliasingAnalyzer and change the instruction to `xLOAD m` where `m` is the smallest alias.
    * This leaves behind potentially stale `xSTORE n` instructions, which are then eliminated
-   * by [[eliminateStaleStores]].
+   * by [[eliminateStaleStoresAndRewriteSomeIntrinsics]].
    */
   def copyPropagation(method: MethodNode, owner: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
-      lazy val aliasAnalysis = new AsmAnalyzer(method, owner, new AliasingAnalyzer(new BasicInterpreter))
+      lazy val aliasAnalysis = new BasicAliasingAnalyzer(method, owner)
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
       //
@@ -93,29 +94,45 @@ abstract class CopyProp {
    * Eliminate `xSTORE` instructions that have no consumer. If the instruction can be completely
    * eliminated, it is replaced by a POP. The [[eliminatePushPop]] cleans up unnecessary POPs.
    *
+   * Also rewrites some intrinsics (done here because a ProdCons analysis is available):
+   *   - `ClassTag(classOf[X]).newArray` is rewritten to `new Array[X]`
+   *
+   * Finally there's an interesting special case that complements the inliner heuristics. After
+   * the rewrite above, if the `new Array[X]` is used in a `ScalaRuntime.array_apply/update` call,
+   * inline that method. These methods have a big pattern match for all primitive array types, and
+   * we only inline them if we statically know the array type. In this case, all the non-matching
+   * branches are later eliminated by `eliminateRedundantCastsAndRewriteSomeIntrinsics`.
+   *
    * Note that an `ASOTRE` can not always be eliminated: it removes a reference to the object that
    * is currently stored in that local, which potentially frees it for GC (scala/bug#5313). Therefore
-   * we replace such stores by `POP; ACONST_NULL; ASTORE x`.
+   * we replace such stores by `POP; ACONST_NULL; ASTORE x` - except if the store precedes an
+   * `xRETURN`, in which case it can be removed.
+   *
+   * Returns (staleStoreRemoved, intrinsicRewritten, callInlined).
    */
-  def eliminateStaleStores(method: MethodNode, owner: InternalName): Boolean = {
-    AsmAnalyzer.sizeOKForSourceValue(method) && {
+  def eliminateStaleStoresAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
+    if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
-      // insns to delete: IINC that have no consumer
-      val toDelete = mutable.ArrayBuffer.empty[IincInsnNode]
-
-      // xSTORE insns to be replaced by POP or POP2
-      val storesToDrop = mutable.ArrayBuffer.empty[VarInsnNode]
+      def popFor(vi: VarInsnNode): AbstractInsnNode = getPop(if (isSize2LoadOrStore(vi.getOpcode)) 2 else 1)
 
       // ASTORE insn that have no consumer.
       //   - if the local is not live, the store is replaced by POP
       //   - otherwise, pop the argument value and store NULL instead. Unless the boolean field is
       //     `true`: then the store argument is already known to be ACONST_NULL.
-      val toNullOut = mutable.ArrayBuffer.empty[(VarInsnNode, Boolean)]
+      val toNullOut = mutable.Map.empty[VarInsnNode, Boolean]
 
-      // `true` for variables that are known to be live
-      val liveVars = new Array[Boolean](method.maxLocals)
+      val toReplace = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
+
+      val returns = mutable.Set.empty[AbstractInsnNode]
+
+      val toInline = mutable.Set.empty[MethodInsnNode]
+
+      // `true` for variables that are known to be live and hold non-primitives
+      val liveRefVars = new Array[Boolean](method.maxLocals)
+
+      val firstLocalIndex = parametersSize(method)
 
       val it = method.instructions.iterator
       while (it.hasNext) it.next() match {
@@ -128,36 +145,94 @@ abstract class CopyProp {
               case _ => false
             })
           }
-          if (canElim) storesToDrop += vi
+          if (canElim) toReplace(vi) = List(popFor(vi))
           else {
             val prods = prodCons.producersForValueAt(vi, prodCons.frameAt(vi).stackTop)
             val isStoreNull = prods.size == 1 && prods.head.getOpcode == ACONST_NULL
-            toNullOut += ((vi, isStoreNull))
+            toNullOut(vi) = isStoreNull
           }
 
         case ii: IincInsnNode if hasNoCons(ii, ii.`var`) =>
-          toDelete += ii
+          toReplace(ii) = Nil
 
         case vi: VarInsnNode =>
-          liveVars(vi.`var`) = true
+          val opc = vi.getOpcode
+          val markAsLive = opc == ALOAD || opc == ASTORE && (
+            // a store makes the variable live if it's a parameter, or if a non-null value if stored
+            vi.`var` < firstLocalIndex || prodCons.initialProducersForInputsOf(vi).exists(_.getOpcode != ACONST_NULL)
+          )
+          if (markAsLive)
+            liveRefVars(vi.`var`) = true
 
-        case ii: IincInsnNode =>
-          liveVars(ii.`var`) = true
+        case mi: MethodInsnNode =>
+          // rewrite `ClassTag(classOf[X]).newArray` to `new Array[X]`
+          val newArrayCls = BackendUtils.classTagNewArrayArg(mi, prodCons)
+          if (newArrayCls != null) {
+            val receiverProds = prodCons.producersForValueAt(mi, prodCons.frameAt(mi).stackTop - 1)
+            if (receiverProds.size == 1) {
+              toReplace(receiverProds.head) = List(receiverProds.head, getPop(1))
+              toReplace(mi) = List(new TypeInsnNode(ANEWARRAY, newArrayCls))
+              toInline ++= prodCons.ultimateConsumersOfOutputsFrom(mi).collect({case i if isRuntimeArrayLoadOrUpdate(i) => i.asInstanceOf[MethodInsnNode]})
+            }
+          }
 
-        case _ =>
+        case insn =>
+          if (isReturn(insn)) returns += insn
       }
 
-      def replaceByPop(vi: VarInsnNode): Unit = {
-        val size = if (isSize2LoadOrStore(vi.getOpcode)) 2 else 1
-        method.instructions.set(vi, getPop(size))
+      def isTrailing(insn: AbstractInsnNode) = insn != null && {
+        import scala.tools.asm.tree.AbstractInsnNode._
+        insn.getType match {
+          case METHOD_INSN | INVOKE_DYNAMIC_INSN | JUMP_INSN | TABLESWITCH_INSN | LOOKUPSWITCH_INSN => false
+          case _ => true
+        }
       }
 
-      toDelete foreach method.instructions.remove
+      // stale stores that precede a return can be removed, there's no need to null them out. the
+      // references are released for gc when the method returns. this also cleans up unnecessary
+      // `ACONST_NULL; ASTORE x` created by the inliner (for locals of the inlined method).
+      for (ret <- returns) {
+        var i = ret
+        while (isTrailing(i)) {
+          if (i.getType == AbstractInsnNode.VAR_INSN) {
+            val vi = i.asInstanceOf[VarInsnNode]
+            if (toNullOut.remove(vi).nonEmpty)
+              toReplace(vi) = List(popFor(vi))
+          }
+          i = i.getPrevious
+        }
+      }
 
-      storesToDrop foreach replaceByPop
+      var staleStoreRemoved = toNullOut.nonEmpty
+      var intrinsicRewritten = false
+      val callInlined = toInline.nonEmpty
+
+      for ((i, nis) <- toReplace) {
+        i.getType match {
+          case AbstractInsnNode.VAR_INSN | AbstractInsnNode.IINC_INSN => staleStoreRemoved = true
+          case AbstractInsnNode.METHOD_INSN => intrinsicRewritten = true
+          case _ =>
+        }
+        // the original instruction `i` may appear (once) in `nis`.
+        var insertBefore = i
+        var insertAfter: AbstractInsnNode = null
+        for (ni <- nis) {
+          if (ni eq i) {
+            insertBefore = null
+            insertAfter = i
+          } else if (insertBefore != null)
+            method.instructions.insertBefore(insertBefore, ni)
+          else {
+            method.instructions.insert(insertAfter, ni)
+            insertAfter = ni
+          }
+        }
+        if (insertBefore != null)
+          method.instructions.remove(i)
+      }
 
       for ((vi, isStoreNull) <- toNullOut) {
-        if (!liveVars(vi.`var`)) replaceByPop(vi) // can drop `ASTORE x` where x has only dead stores
+        if (!liveRefVars(vi.`var`)) method.instructions.set(vi, popFor(vi)) // can drop `ASTORE x` where x has only dead stores
         else {
           if (!isStoreNull) {
             val prev = vi.getPrevious
@@ -167,7 +242,18 @@ abstract class CopyProp {
         }
       }
 
-      toDelete.nonEmpty || storesToDrop.nonEmpty || toNullOut.nonEmpty
+      if (toInline.nonEmpty) {
+        import postProcessor._
+        val methodCallsites = callGraph.callsites(method)
+        var css = toInline.flatMap(methodCallsites.get).toList.sorted(inliner.callsiteOrdering)
+        while (css.nonEmpty) {
+          val cs = css.head
+          css = css.tail
+          inliner.inlineCallsite(cs, None, updateCallGraph = css.isEmpty)
+        }
+      }
+
+      (staleStoreRemoved, intrinsicRewritten, callInlined)
     }
   }
 
@@ -182,9 +268,11 @@ abstract class CopyProp {
    *   NEW scala/Tuple1; DUP; ALOAD 0; INVOKESPECIAL scala/Tuple1.<init>; POP
    * The POP has a single producer (the DUP), it's easy to eliminate these two. A special case
    * is needed to eliminate the INVOKESPECIAL and NEW.
+   *
+   * Returns (pushPopChanged, castAdded, nullCheckAdded)
    */
-  def eliminatePushPop(method: MethodNode, owner: InternalName): Boolean = {
-    AsmAnalyzer.sizeOKForSourceValue(method) && {
+  def eliminatePushPop(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
+    if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
       // A queue of instructions producing a value that has to be eliminated. If possible, the
       // instruction (and its inputs) will be removed, otherwise a POP is inserted after
       val queue = mutable.Queue.empty[ProducedValue]
@@ -195,9 +283,12 @@ abstract class CopyProp {
       // running the ProdConsAnalyzer only once.)
       val toRemove = mutable.Set.empty[AbstractInsnNode]
       // instructions to insert before some instruction
-      val toInsertBefore = mutable.Map.empty[AbstractInsnNode, List[InsnNode]]
+      val toInsertBefore = mutable.Map.empty[AbstractInsnNode, List[AbstractInsnNode]]
       // an instruction to insert after some instruction
       val toInsertAfter = mutable.Map.empty[AbstractInsnNode, AbstractInsnNode]
+
+      var castAdded = false
+      var nullCheckAdded = false
 
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
@@ -309,6 +400,7 @@ abstract class CopyProp {
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
         toRemove += indy
         callGraph.removeClosureInstantiation(indy, method)
+        removeIndyLambdaImplMethod(owner, method, indy)
         handleInputs(indy, Type.getArgumentTypes(indy.desc).length)
       }
 
@@ -352,8 +444,7 @@ abstract class CopyProp {
             handleInputs(prod, 1)
 
           case GETFIELD | GETSTATIC =>
-            // TODO eliminate side-effect free module loads (https://github.com/scala/scala-dev/issues/16)
-            if (isBoxedUnit(prod)) toRemove += prod
+            if (isBoxedUnit(prod) || isModuleLoad(prod, modulesAllowSkipInitialization)) toRemove += prod
             else popAfterProd() // keep potential class initialization (static field) or NPE (instance field)
 
           case INVOKEVIRTUAL | INVOKESPECIAL | INVOKESTATIC | INVOKEINTERFACE =>
@@ -363,12 +454,31 @@ abstract class CopyProp {
               callGraph.removeCallsite(methodInsn, method)
               val receiver = if (methodInsn.getOpcode == INVOKESTATIC) 0 else 1
               handleInputs(prod, Type.getArgumentTypes(methodInsn.desc).length + receiver)
+            } else if (isScalaUnbox(methodInsn)) {
+              val tp = primitiveAsmTypeToBType(Type.getReturnType(methodInsn.desc))
+              val boxTp = bTypes.coreBTypes.boxedClassOfPrimitive(tp)
+              toInsertBefore(methodInsn) = List(new TypeInsnNode(CHECKCAST, boxTp.internalName), new InsnNode(POP))
+              toRemove += prod
+              callGraph.removeCallsite(methodInsn, method)
+              castAdded = true
+            } else if (isJavaUnbox(methodInsn)) {
+              val nullCheck = mutable.ListBuffer.empty[AbstractInsnNode]
+              val nonNullLabel = newLabelNode
+              nullCheck += new JumpInsnNode(IFNONNULL, nonNullLabel)
+              nullCheck += new InsnNode(ACONST_NULL)
+              nullCheck += new InsnNode(ATHROW)
+              nullCheck += nonNullLabel
+              toInsertBefore(methodInsn) = nullCheck.toList
+              toRemove += prod
+              callGraph.removeCallsite(methodInsn, method)
+              method.maxStack = math.max(method.maxStack, prodCons.frameAt(methodInsn).getStackSize + 1)
+              nullCheckAdded = true
             } else
               popAfterProd()
 
           case INVOKEDYNAMIC =>
             prod match {
-              case callGraph.LambdaMetaFactoryCall(indy, _, _, _) => handleClosureInst(indy)
+              case LambdaMetaFactoryCall(indy, _, _, _, _) => handleClosureInst(indy)
               case _ => popAfterProd()
             }
 
@@ -376,13 +486,14 @@ abstract class CopyProp {
             if (isNewForSideEffectFreeConstructor(prod)) toRemove += prod
             else popAfterProd()
 
-          case LDC => prod.asInstanceOf[LdcInsnNode].cst match {
+          case LDC =>
+            prod.asInstanceOf[LdcInsnNode].cst match {
             case _: java.lang.Integer | _: java.lang.Float | _: java.lang.Long | _: java.lang.Double | _: String =>
               toRemove += prod
 
             case _ =>
-              // don't remove class literals, method types, method handles: keep a potential NoClassDefFoundError
-              popAfterProd()
+              if (compilerSettings.optAllowSkipClassLoading) toRemove += prod
+              else popAfterProd()
           }
 
           case MULTIANEWARRAY =>
@@ -443,8 +554,7 @@ abstract class CopyProp {
       toInsertAfter foreach {
         case (target, insn) =>
           nextExecutableInstructionOrLabel(target) match {
-            // `insn` is of type `InsnNode`, so we only need to check the Opcode when comparing to another instruction
-            case Some(next) if next.getOpcode == insn.getOpcode && toRemove(next) =>
+            case Some(next) if insn.getType == AbstractInsnNode.INSN && next.getOpcode == insn.getOpcode && toRemove(next) =>
               // Inserting and removing a POP at the same place should not enable `changed`. This happens
               // when a POP directly follows a producer that cannot be eliminated, e.g. INVOKESTATIC A.m ()I; POP
               // The POP is initially added to `toRemove`, and the `INVOKESTATIC` producer is added to the queue.
@@ -465,7 +575,7 @@ abstract class CopyProp {
         changed = true
         method.instructions.remove(insn)
       }
-      changed
+      (changed, castAdded, nullCheckAdded)
     }
   }
 
@@ -491,13 +601,15 @@ abstract class CopyProp {
    * Analyzer on the method, making it more efficient.
    *
    * This method also removes `ACONST_NULL; ASTORE n` if the local n is not live. This pattern is
-   * introduced by [[eliminateStaleStores]].
+   * introduced by [[eliminateStaleStoresAndRewriteSomeIntrinsics]].
    *
    * The implementation is a little tricky to support the following case:
    *   ISTORE 1; ISTORE 2; ILOAD 2; ACONST_NULL; ASTORE 3; ILOAD 1
    * The outer store-load pair can be removed if two the inner pairs can be.
    */
   def eliminateStoreLoad(method: MethodNode): Boolean = {
+    // TODO: use copyProp once we have cached analyses? or is the analysis invalidated anyway because instructions are deleted / changed?
+    // if we cache them anyway, we can use an analysis if it exists in the cache, and skip otherwise.
     val removePairs = mutable.Set.empty[RemovePair]
     val liveVars = new Array[Boolean](method.maxLocals)
     val liveLabels = mutable.Set.empty[LabelNode]
@@ -633,7 +745,8 @@ abstract class CopyProp {
       method.instructions.remove(removePair.other)
     }
 
-    removePairs.nonEmpty
+    val changed = removePairs.nonEmpty
+    changed
   }
 }
 

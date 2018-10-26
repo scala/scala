@@ -221,4 +221,17 @@ class BTypesTest extends BytecodeTesting {
   def maxTypeTest(): Unit = {
 
   }
+
+  @Test
+  def arraySubtypeTest(): Unit = global.exitingDelambdafy {
+    val primitives = List(BOOL, CHAR, BYTE, SHORT, INT, FLOAT, LONG, DOUBLE)
+    for (p1 <- primitives; p2 <- primitives) {
+      val a1 = ArrayBType(p1)
+      val a2 = ArrayBType(p2)
+      val expect = p1 == p2
+      assertEquals(s"$a1 $a2", expect, a1.conformsTo(a2).get)
+      assertEquals(s"$a1 $a2", expect, a2.conformsTo(a1).get)
+    }
+    assertTrue(ArrayBType(s).conformsTo(ArrayBType(o)).get)
+  }
 }
