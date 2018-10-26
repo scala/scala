@@ -218,6 +218,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
                 setAnnotations origMeth.annotations
             )
+            defineOriginalOwner(extensionMeth, origMeth.owner)
+            // @strictfp on class means strictfp on all methods, but `setAnnotations` won't copy it
+            if (origMeth.isStrictFP && !extensionMeth.hasAnnotation(ScalaStrictFPAttr))
+              extensionMeth.addAnnotation(ScalaStrictFPAttr)
             origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
             companion.info.decls.enter(extensionMeth)
           }

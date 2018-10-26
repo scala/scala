@@ -905,7 +905,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         )
       }
 
-    def isStrictFP             = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
+    def isStrictFP: Boolean    = !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
     def isSerializable         = info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
     def hasBridgeAnnotation    = hasAnnotation(BridgeClass)
     def isDeprecated           = hasAnnotation(DeprecatedAttr)
@@ -3590,6 +3590,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def flagMask = AllFlags
     override def exists = false
     override def isHigherOrderTypeParameter = false
+    override def isStrictFP = false
     override def companionClass = NoSymbol
     override def companionModule = NoSymbol
     override def companionSymbol = NoSymbol

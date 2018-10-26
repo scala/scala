@@ -674,7 +674,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   /**
    * Return the Java modifiers for the given symbol.
    * Java modifiers for classes:
-   *  - public, abstract, final, strictfp (not used)
+   *  - public, abstract, final
    * for interfaces:
    *  - the same as for classes, without 'final'
    * for fields:
