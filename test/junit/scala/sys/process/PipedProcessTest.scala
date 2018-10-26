@@ -3,13 +3,15 @@ package scala.sys.process
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import java.io.{InputStream, OutputStream, PipedInputStream, PipedOutputStream, ByteArrayInputStream,
-  ByteArrayOutputStream, IOException, Closeable}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, Closeable, IOException, InputStream, OutputStream, PipedInputStream, PipedOutputStream}
 import java.lang.reflect.InvocationTargetException
+
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 import org.junit.Assert.assertEquals
+
+import scala.sys.process.processInternal.{InputStream, LinkedBlockingQueue, OutputStream}
 
 // Each test normally ends in a moment, but for failure cases, waits four seconds.
 // scala/bug#7350, scala/bug#8768
@@ -49,7 +51,7 @@ class PipedProcessTest {
   class PipeSinkMock extends Process.PipeSink("PipeSinkMock") {
     var releaseCount = 0
     override val pipe = null
-    override val sink = null
+    override val sink = new LinkedBlockingQueue[Option[OutputStream]]
     override def run(): Unit = {}
     override def connectOut(out: OutputStream): Unit = {}
     override def connectIn(pipeOut: PipedOutputStream): Unit = {}
@@ -59,7 +61,7 @@ class PipedProcessTest {
   class PipeSourceMock extends Process.PipeSource("PipeSourceMock") {
     var releaseCount = 0
     override val pipe = null
-    override val source = null
+    override val source = new LinkedBlockingQueue[Option[InputStream]]
     override def run(): Unit = {}
     override def connectIn(in: InputStream): Unit = {}
     override def connectOut(sink: Process.PipeSink): Unit = {}
@@ -259,7 +261,9 @@ class PipeSourceSinkTest {
     source connectIn in
     sink connectOut out
     val f = Future {
+      source.stopLoop()
       source.join()
+      sink.stopLoop()
       sink.join()
     }
     Await.result(f, TestDuration.Standard)

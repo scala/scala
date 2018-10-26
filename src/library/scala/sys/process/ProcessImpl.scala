@@ -147,9 +147,11 @@ private[process] trait ProcessImpl {
           throw err
         }
       runInterruptible {
-        source.join()
         val exit1 = first.exitValue()
+        source.stopLoop()
+        source.join()
         val exit2 = second.exitValue()
+        sink.stopLoop()
         // Since file redirection (e.g. #>) is implemented as a piped process,
         // we ignore its exit value so cmd #> file doesn't always return 0.
         if (b.hasExitValue) exit2 else exit1
@@ -181,7 +183,10 @@ private[process] trait ProcessImpl {
     override def run(): Unit = {
       try {
         source.take match {
-          case Some(in) => runloop(in, pipe)
+          case Some(in) => {
+            runloop(in, pipe)
+            run()
+          }
           case None =>
         }
       }
@@ -195,6 +200,9 @@ private[process] trait ProcessImpl {
       source add None
       join()
     }
+    def stopLoop(): Unit = {
+      source add None
+    }
   }
   private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
     protected[this] val pipe = new PipedInputStream
@@ -202,7 +210,10 @@ private[process] trait ProcessImpl {
     override def run(): Unit = {
       try {
         sink.take match {
-          case Some(out) => runloop(pipe, out)
+          case Some(out) => {
+            runloop(pipe, out)
+            run()
+          }
           case None =>
         }
       }
@@ -215,6 +226,9 @@ private[process] trait ProcessImpl {
       interrupt()
       sink add None
       join()
+    }
+    def stopLoop(): Unit = {
+      sink add None
     }
   }
 

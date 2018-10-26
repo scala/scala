@@ -1,6 +1,8 @@
 package scala.sys.process
 
-import java.io.{ByteArrayInputStream, File}
+import java.io.{ByteArrayInputStream, File, PrintWriter}
+
+import scala.io.Source
 // should test from outside the package to ensure implicits work
 //import scala.sys.process._
 import scala.util.Properties._
@@ -32,5 +34,28 @@ class ProcessTest {
   @Test def processApply(): Unit = {
     val res = Process("cat", tempFiles.map(_.getAbsolutePath)).!
     assertEquals(0, res)
+  }
+
+  @Test def t10823(): Unit = {
+    def createFile(prefix: String): File = {
+      val file = File.createTempFile(prefix, "tmp")
+      file.deleteOnExit()
+      val writer = new PrintWriter(file)
+      writer.write(prefix)
+      writer.close()
+      file
+    }
+    val file1 = createFile("hello")
+    val file2 = createFile("world")
+    val out = File.createTempFile("out", "tmp")
+    out.deleteOnExit()
+
+    val cat = Process.cat(List(file1, file2))
+    val writer = cat #> out
+    val res = (writer).!
+
+    assertEquals(0, res)
+    assertEquals("helloworld", Source.fromFile(out).mkString)
+
   }
 }
