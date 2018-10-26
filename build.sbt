@@ -1219,7 +1219,19 @@ intellij := {
         else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
     })
 
+    // I can't figure out how to keep the entity escapes for \n in the attribute values after this use of XML transform.
+    // Patching the original version back in with more brutish parsing.
+    val R = """(?ims)(.*)(<copyright>.*</copyright>)(.*)""".r
+    val oldContents = IO.read(ipr)
     XML.save(ipr.getAbsolutePath, newModules)
+    oldContents match {
+      case R(_, withEscapes, _) =>
+        val newContents = IO.read(ipr)
+        val R(pre, toReplace, post) = newContents
+        IO.write(ipr, pre + withEscapes + post)
+      case _ =>
+        // .ipr file hasn't been updated from `intellijFromSample` yet
+    }
   } else {
     s.log.info("Aborting.")
   }
