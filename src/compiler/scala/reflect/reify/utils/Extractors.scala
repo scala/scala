@@ -84,7 +84,7 @@ trait Extractors {
     }
     val tpec = ClassDef(
       Modifiers(FINAL),
-      newTypeName(global.currentUnit.fresh.newName(flavor.toString)),
+      newTypeName(currentFreshNameCreator.newName(flavor.toString)),
       List(),
       Template(List(Ident(reifierBase)),
       noSelfType,

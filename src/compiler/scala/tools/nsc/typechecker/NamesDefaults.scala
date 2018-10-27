@@ -34,7 +34,9 @@ trait NamesDefaults { self: Analyzer =>
   // we need the ClassDef. To create and enter the symbols into the companion
   // object, we need the templateNamer of that module class. These two are stored
   // as an attachment in the companion module symbol
-  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer)
+  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer) {
+    val defaults = mutable.ListBuffer[Symbol]()
+  }
 
   // Attached to the synthetic companion `apply` method symbol generated for case classes, holds
   // the set contains all default getters for that method. If the synthetic `apply` is unlinked in
@@ -184,7 +186,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName(nme.QUAL_PREFIX), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
+        val sym = blockTyper.context.owner.newValue(freshTermName(nme.QUAL_PREFIX)(typer.fresh), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: scala/bug#5720, scala/bug#5727
@@ -312,7 +314,7 @@ trait NamesDefaults { self: Analyzer =>
               arg.tpe
             }
           ).widen // have to widen or types inferred from literal defaults will be singletons
-          val s = context.owner.newValue(unit.freshTermName(nme.NAMEDARG_PREFIX), arg.pos, newFlags = ARTIFACT) setInfo {
+          val s = context.owner.newValue(freshTermName(nme.NAMEDARG_PREFIX)(typer.fresh), arg.pos, newFlags = ARTIFACT) setInfo {
             val tp = if (byName) functionType(Nil, argTpe) else argTpe
             uncheckedBounds(tp)
           }
@@ -486,9 +488,8 @@ trait NamesDefaults { self: Analyzer =>
         if (param.owner.owner.isClass) {
           param.owner.owner.info.member(defGetterName)
         } else {
-          // the owner of the method is another method. find the default
-          // getter in the context.
-          context.lookup(defGetterName, param.owner.owner)
+          // the owner of the method is another method. find the default getter in the context.
+          context.lookupSibling(param.owner, defGetterName)
         }
       }
     } else NoSymbol

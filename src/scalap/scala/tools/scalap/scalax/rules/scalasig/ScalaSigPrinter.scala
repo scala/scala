@@ -65,7 +65,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case a: AliasSymbol =>
           indent
           printAlias(level, a)
-        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+")=>
+        case t: TypeSymbol if !t.name.matches("_\\$\\d+")=>
           indent
           printTypeSymbol(level, t)
         case s =>

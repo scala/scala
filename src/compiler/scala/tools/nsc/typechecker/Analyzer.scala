@@ -103,6 +103,7 @@ trait Analyzer extends AnyRef
           applyPhase(units.next())
           undoLog.clear()
         }
+        finishComputeParamAlias()
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)

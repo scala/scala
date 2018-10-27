@@ -198,7 +198,7 @@ trait PatternTypers {
             else TypeBounds.lower(tpSym.tpeHK)
           )
           // origin must be the type param so we can deskolemize
-          val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?" + tpSym.name), tpSym, bounds)
+          val skolem = context.owner.newGADTSkolem(freshTypeName("?" + tpSym.name), tpSym, bounds)
           skolemBuffer += skolem
           logResult(s"Created gadt skolem $skolem: ${skolem.tpe_*} to stand in for $tpSym")(skolem.tpe_*)
         case tp1 => tp1

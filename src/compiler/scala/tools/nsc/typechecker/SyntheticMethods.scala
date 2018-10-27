@@ -184,7 +184,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         rt != NothingTpe && rt != NullTpe && rt != UnitTpe
       }
 
-      val otherName = context.unit.freshTermName(clazz.name + "$")
+      val otherName = freshTermName(clazz.name + "$")(freshNameCreatorFor(context))
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
       val pairwise  = accessors collect {
         case acc if usefulEquality(acc) =>
@@ -397,7 +397,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         val i = original.owner.caseFieldAccessors.indexOf(original)
         def freshAccessorName = {
           devWarning(s"Unable to find $original among case accessors of ${original.owner}: ${original.owner.caseFieldAccessors}")
-          context.unit.freshTermName(original.name + "$")
+          freshTermName(original.name + "$")(freshNameCreatorFor(context))
         }
         def nameSuffixedByParamIndex = original.name.append(nme.CASE_ACCESSOR + "$" + i).toTermName
         val newName = if (i < 0) freshAccessorName else nameSuffixedByParamIndex

@@ -105,10 +105,10 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("x4$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("x5$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
-        ("L$1(Lscala/runtime/LazyRef;)LT$L$2$;",                      MethodInlineInfo(true, false,false)),
+        ("L$2(Lscala/runtime/LazyRef;)LT$L$1$;",                      MethodInlineInfo(true, false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
         ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false)),
-        ("L$lzycompute$1(Lscala/runtime/LazyRef;)LT$L$2$;",           MethodInlineInfo(true,false,false))
+        ("L$lzycompute$1(Lscala/runtime/LazyRef;)LT$L$1$;",           MethodInlineInfo(true,false,false))
       ),
       None // warning
     )
