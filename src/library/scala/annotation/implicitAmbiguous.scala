@@ -29,4 +29,5 @@ package scala.annotation
   * @author Brian McKenna
   * @since 2.12.0
   */
+@meta.getter
 final class implicitAmbiguous(msg: String) extends scala.annotation.StaticAnnotation
