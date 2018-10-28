@@ -358,37 +358,77 @@ trait Contexts { self: Analyzer =>
         val pruned = prune(List(result.tree), implicitDictionary.map(_._2), Nil)
         if(pruned.isEmpty) result
         else {
-          val (vsyms, vdefs) = pruned.map { case (vsym, rhs) =>
-            (vsym, ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs.changeOwner(owner -> vsym)))
-          }.unzip
+          val pos = result.tree.pos
+          val (dictClassSym, dictClass0) = {
+            val cname = newTypeName(typer.fresh.newName("LazyDefns$"))
+            val parents = addSerializable(definitions.AnyRefTpe)
+            val csym = owner.newClass(cname, pos, FINAL | SYNTHETIC)
+            csym.setInfo(ClassInfoType(parents, newScope, csym))
 
-          val mname = newTermName(typer.fresh.newName("LazyDefns$"))
-          val mdef =
-            ModuleDef(Modifiers(SYNTHETIC), mname,
-              gen.mkTemplate(gen.mkParents(NoMods, Nil), noSelfType, NoMods, ListOfNil, vdefs)
-            )
-
-          typer.namer.enterSym(mdef)
-
-          val mdef0 = typer.typed(mdef)
-          val msym0 = mdef0.symbol
-          val moduleClassInfo = mdef0.symbol.moduleClass.info
-          val vsyms0 = vsyms.map { vsym =>
-            moduleClassInfo.decl(vsym.name)
-          }
-
-          val vsymMap = (vsyms zip vsyms0).toMap
-
-          val substitutor = new TreeSymSubstituter(vsyms, vsyms0) {
-            override def transform(tree: Tree): Tree = tree match {
-              case i: Ident if vsymMap.contains(i.symbol) =>
-                super.transform(treeCopy.Select(i, gen.mkAttributedRef(msym0), i.name))
-              case _ => super.transform(tree)
+            val vdefs = pruned.map { case (vsym, rhs) =>
+              changeNonLocalOwners(rhs, vsym)
+              // We want the normal mechanism for generating accessors during
+              // typechecking to be applied, so we don't create symbols for
+              // these ValDefs ourselves.
+              atPos(pos)(ValDef(Modifiers(FINAL | SYNTHETIC), vsym.name.toTermName, TypeTree(rhs.tpe), rhs))
             }
-          }
-          val tree1 = substitutor(Block(mdef0, result.tree)) setType tree.tpe
 
-          new SearchResult(atPos(pos.focus)(tree1), result.subst, result.undetparams)
+            val cdef = {
+              val cdef0 = ClassDef(csym, NoMods, ListOfNil, vdefs, pos)
+              typer.namer.enterSym(cdef0)
+              typer.typed(cdef0)
+            }
+
+            (csym, cdef)
+          }
+
+          val dictTpe = dictClassSym.tpe_*
+
+          val preSyms = pruned.map(_._1)
+          val postSyms = preSyms.map(vsym => dictTpe.decl(vsym.name))
+
+          val symMap = (preSyms zip postSyms).toMap
+
+          val dictClass = {
+            class DictionarySubstituter extends TreeSymSubstituter(preSyms, postSyms) {
+              override def transform(tree: Tree): Tree = {
+                if(tree.hasExistingSymbol) {
+                  val sym = tree.symbol
+                  symMap.get(sym.owner).map(sym.owner = _)
+                }
+                super.transform(tree)
+              }
+            }
+            (new DictionarySubstituter)(dictClass0)
+          }
+
+          val dictSym = {
+            val vname = newTermName(typer.fresh.newName("lazyDefns$"))
+            owner.newValue(vname, pos, FINAL | SYNTHETIC).setInfo(dictTpe)
+          }
+
+          val dict = {
+            val rhs = atPos(pos)(Apply(Select(New(Ident(dictClassSym)), nme.CONSTRUCTOR), List()))
+            val vdef0 = ValDef(dictSym, rhs)
+            typer.namer.enterSym(vdef0)
+            typer.typed(vdef0)
+          }
+
+          val resultTree = {
+            class ReferenceSubstituter extends TreeSymSubstituter(preSyms, postSyms) {
+              override def transform(tree: Tree): Tree = tree match {
+                case i: Ident if symMap.contains(i.symbol) =>
+                  super.transform(atPos(i.pos)(treeCopy.Select(i, gen.mkAttributedRef(dictSym), i.name)))
+
+                case _ =>
+                  super.transform(tree)
+              }
+            }
+            (new ReferenceSubstituter)(result.tree)
+          }
+
+          val resultBlock = atPos(pos.focus)(Block(dictClass, dict, resultTree).setType(resultTree.tpe))
+          new SearchResult(resultBlock, result.subst, result.undetparams)
         }
       }
 
