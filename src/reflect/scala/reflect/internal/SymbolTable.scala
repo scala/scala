@@ -71,11 +71,16 @@ abstract class SymbolTable extends macros.Universe
 
   def log(msg: => AnyRef): Unit
 
-  protected def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
+  protected def elapsedMessage(msg: String, startNs: Long) =
+    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)) + "ms"
 
-  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
+  def informProgress(msg: String)            = if (settings.verbose) inform("[" + msg + "]")
+  def informTime(msg: String, startNs: Long) = informProgress(elapsedMessage(msg, startNs))
+  @inline final def informingProgress[T](msg: => String)(fn: => T) : T = {
+    val verbose:Boolean = settings.verbose
+    val start = if(verbose) System.nanoTime() else 0L
+    try fn finally if (verbose) informTime(msg, start)
+  }
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false

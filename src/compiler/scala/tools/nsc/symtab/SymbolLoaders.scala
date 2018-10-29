@@ -221,11 +221,11 @@ abstract class SymbolLoaders {
 
     override def complete(root: Symbol): Unit = {
       try {
-        val start = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime())
-        val currentphase = phase
-        doComplete(root)
-        phase = currentphase
-        informTime("loaded " + description, start)
+        informingProgress("loaded " + description) {
+          val currentphase = phase
+          try doComplete(root)
+          finally phase = currentphase
+        }
         ok = true
         setSource(root)
         setSource(root.companionSymbol) // module -> class, class -> module
