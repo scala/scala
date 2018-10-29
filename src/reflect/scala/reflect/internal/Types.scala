@@ -3729,14 +3729,18 @@ trait Types
         TypeVar(origin, constr.cloneInternal, typeArgs, params)
       )
     }
-    override def mapOver(map: TypeMap): Type = {
-      if (constr.instValid) map(constr.inst)
-      else map match {
+
+    override def mapOver(map: TypeMap): Type =
+      if (constr.instValid) {
+        // ideally TypeVar.inst should handle this,
+        // but it would have to be disentangled from TypeVar.constr.inst
+        map(appliedType(constr.inst, typeArgs))
+      } else map match {
         case map: VariancedTypeMap =>
-          this.applyArgs(map.mapOverArgs(this.typeArgs, this.params)) //@M !args.isEmpty implies !typeParams.isEmpty
-        case _ => this.applyArgs(this.typeArgs mapConserve map)
+          //@M !args.isEmpty implies !typeParams.isEmpty
+          applyArgs(map.mapOverArgs(typeArgs, params))
+        case _ => applyArgs(typeArgs mapConserve map)
       }
-    }
   }
 
   /** A type carrying some annotations. Created by the typechecker
