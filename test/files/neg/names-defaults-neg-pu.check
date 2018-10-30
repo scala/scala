@@ -139,8 +139,8 @@ names-defaults-neg-pu.scala:140: error: not found: value get
 names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$3: error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
+names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                               ^
+                                                      ^
 5 warnings found
 33 errors found
