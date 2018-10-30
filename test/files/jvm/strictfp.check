@@ -23,8 +23,8 @@ H$I$.bar$10: true
 I.foo: false
 I$.foo: true
 I$.foo$extension: false
-I$.bar$11: false
-I$.bar$12: true
+I$.bar$11: true
+I$.bar$12: false
 J.foo: true
 J$M$1.foo: true
 J$M$1.bar$13: true
