@@ -1474,32 +1474,33 @@ trait Types
     if (period != currentPeriod) {
       tpe.baseTypeSeqPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
+        // If the BTS contains TypeVars, replace those with typerefs to the original type params before taking BTS,
+        // after BTS, map them back.
+        // TODO: rework BTS to deal with TypeVars in the same way on the fly
         if (tpe.parents exists typeContainsTypeVar) {
-          // rename type vars to fresh type params, take base type sequence of
-          // resulting type, and rename back all the entries in that sequence
-          var tvs = Set[TypeVar]()
-          for (p <- tpe.parents)
-            for (t <- p) t match {
-              case tv: TypeVar => tvs += tv
-              case _ =>
-            }
-          val varToParamMap: Map[Type, Symbol] =
-            mapFrom[TypeVar, Type, Symbol](tvs.toList)(_.origin.typeSymbol.cloneSymbol)
-          val paramToVarMap = varToParamMap map (_.swap)
+          val tvarFor = mutable.Map.empty[Type, TypeVar]
+          // After this TypeMap, it's safe to recurse (`tpe.parents exists typeContainsTypeVar` above is `false`)
           val varToParam = new TypeMap {
-            def apply(tp: Type) = varToParamMap get tp match {
-              case Some(sym) => sym.tpe_*
-              case _ => mapOver(tp)
-            }
-          }
-          val paramToVar = new TypeMap {
             def apply(tp: Type) = tp match {
-              case TypeRef(_, tsym, _) if paramToVarMap.isDefinedAt(tsym) => paramToVarMap(tsym)
+              case tv: TypeVar => // Applying a type constructor variable to arguments results in a new instance of AppliedTypeVar each time
+                val toOrigin = appliedType(tv.origin.typeSymbol.typeConstructor, tv.typeArgs.mapConserve(this))
+                tvarFor(toOrigin) = tv
+                toOrigin
               case _ => mapOver(tp)
             }
           }
-          val bts = copyRefinedType(tpe.asInstanceOf[RefinedType], tpe.parents map varToParam, varToParam mapOver tpe.decls).baseTypeSeq
-          tpe.baseTypeSeqCache = bts lateMap paramToVar
+          // computes tvarFor
+          val tpWithoutTypeVars = copyRefinedType(tpe.asInstanceOf[RefinedType], tpe.parents map varToParam, varToParam mapOver tpe.decls)
+
+          val paramToVar = new TypeMap {
+            val paramToVarMap = tvarFor.toMap // capture the map so we can undo the rewrite when the BTS is queried later
+            def apply(tp: Type): Type = tp match {
+              case tr: TypeRef => paramToVarMap.getOrElse(tr, mapOver(tp))
+              case _           => mapOver(tp)
+            }
+          }
+
+          tpe.baseTypeSeqCache = tpWithoutTypeVars.baseTypeSeq lateMap paramToVar
         } else {
           if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(compoundBaseTypeSeqCount)
           val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseTypeSeqNanos) else null
