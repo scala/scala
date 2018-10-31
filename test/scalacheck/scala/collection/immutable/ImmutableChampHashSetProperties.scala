@@ -245,10 +245,10 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     val b = HashSet.newBuilder[K].addAll(seq)
     b.result == b.addAll(seq).result()
   }
-  property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[K],ys: Seq[K]) =>
+  property("(xs ++ ys).toSet == xs.toSet ++ ys.toSet") = forAll { (xs: Seq[K],ys: Seq[K]) =>
     (xs ++ ys).toSet == xs.toSet ++ ys.toSet
   }
-  property("HashMapBuilder produces the same Map as MapBuilder") = forAll { (xs: Seq[K]) =>
+  property("HashSetBuilder produces the same Set as SetBuilder") = forAll { (xs: Seq[K]) =>
     HashSet.newBuilder[K].addAll(xs).result() == HashSet.newBuilder[K].addAll(xs).result()
   }
   property("HashSetBuilder does not mutate after releasing") = forAll { (xs: Seq[K], ys: Seq[K], single: K, addSingleFirst: Boolean) =>
@@ -281,6 +281,14 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     val mb = Set.newBuilder[K].addAll(xs)
     val hmb = Set.newBuilder[K].addAll(xs)
     (mb.result() eq mb.result()) && (hmb.result() eq hmb.result())
+  }
+
+  property("xs.toList.toSet == xs") = forAll { xs: Set[K] =>
+    xs.toList.toSet == xs
+  }
+
+  property("(xs - elem) == xs.toList.filterNot(_ == elem).toSet") = forAll { (xs: Set[K], elem: K) =>
+    (xs - elem) == xs.toList.filterNot(_ == elem).toSet
   }
 
 }
