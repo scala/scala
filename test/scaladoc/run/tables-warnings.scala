@@ -42,16 +42,20 @@ object Test extends ScaladocModelTest {
     withComment("PrematureEndOfText") { comment =>
       val header = r("Header")
       val colOpts = ColumnOptionLeft :: Nil
-      val row = r("cell")
-      val rows = row :: Nil
-      assertTableEquals(Table(header, colOpts, rows), comment.body)
+      val table = Table(header, colOpts, Nil)
+      val summary = Paragraph(Chain(List(Summary(Text("|cell")))))
+      val body = Body(table :: summary :: Nil)
+      assertBodiesEquals(body, comment.body)
     }
 
     withComment("MissingTrailingCellMark") { comment =>
-      val header = r("Unterminated")
       val colOpts = ColumnOptionLeft :: Nil
-      val rows = r("r1c1") :: r("r2c1") :: r("r3c1") :: Nil
-      assertTableEquals(Table(header, colOpts, rows), comment.body)
+      val table1 = Table(r("Unterminated"), colOpts, r("r1c1") :: Nil)
+      //      val rows = r("r1c1") :: r("r2c1") :: r("r3c1") :: Nil
+      val summary = Paragraph(Chain(List(Summary(Text("|r2c1")))))
+      val table2 = Table(r("r3c1"), colOpts, Nil)
+      val body = Body(table1 :: summary :: table2 :: Nil)
+      assertBodiesEquals(body, comment.body)
     }
 
     withComment("InvalidColumnOptions") { comment =>
@@ -87,6 +91,16 @@ object Test extends ScaladocModelTest {
 
   private def assertTableEquals(expectedTable: Table, actualBlock: Block): Unit = {
     assert(expectedTable == actualBlock, s"Expected: $expectedTable, Actual: $actualBlock")
+  }
+
+  private def assertBodiesEquals(expectedBody: Body, actualBody: Body): Unit = {
+    val blocks = expectedBody.blocks zip actualBody.blocks
+    val blockComparisons = blocks.zipWithIndex.collect {
+      case ((expectedBlock, actualBlock), idx) if expectedBlock != actualBlock =>
+        s"Block mismatch at index $idx\nExpected block: $expectedBlock\nActual block  : $actualBlock"
+    }.headOption.getOrElse("")
+
+    assert(expectedBody == actualBody, s"$blockComparisons\n\nExpected: $expectedBody, Actual: $actualBody")
   }
 
   private def multilineFormat(table: Table): String = {
