@@ -1834,38 +1834,43 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedClassDef(cdef: ClassDef): Tree = {
       val clazz = cdef.symbol
-      val typedMods = typedModifiers(cdef.mods)
-      assert(clazz != NoSymbol, cdef)
-      reenterTypeParams(cdef.tparams)
-      val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
-      val impl2 = finishMethodSynthesis(impl1, clazz, context)
-      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
-        checkEphemeral(clazz, impl2.body)
+      currentRun.profiler.beforeTypedImplDef(clazz)
+      try {
+        val typedMods = typedModifiers(cdef.mods)
+        assert(clazz != NoSymbol, cdef)
+        reenterTypeParams(cdef.tparams)
+        val tparams1 = cdef.tparams mapConserve (typedTypeDef)
+        val impl1 = newTyper(context.make(cdef.impl, clazz, newScope)).typedTemplate(cdef.impl, typedParentTypes(cdef.impl))
+        val impl2 = finishMethodSynthesis(impl1, clazz, context)
+        if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
+          checkEphemeral(clazz, impl2.body)
 
-      if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
-        if (!clazz.owner.isPackageClass)
-          context.error(clazz.pos, "inner classes cannot be classfile annotations")
-        // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
-        // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
-        // of constant argument values "for free". Related to scala/bug#7041.
-        else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
-          """|subclassing Classfile does not
-             |make your annotation visible at runtime.  If that is what
-             |you want, you must write the annotation class in Java.""".stripMargin)
-      }
-
-      warnTypeParameterShadow(tparams1, clazz)
-
-      if (!isPastTyper) {
-        for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
-          val m = companionSymbolOf(clazz, context)
-          if (m != NoSymbol)
-            m.moduleClass.addAnnotation(AnnotationInfo(ann.atp, ann.args, List()))
+        if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
+          if (!clazz.owner.isPackageClass)
+            context.error(clazz.pos, "inner classes cannot be classfile annotations")
+          // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
+          // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
+          // of constant argument values "for free". Related to scala/bug#7041.
+          else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
+            """|subclassing Classfile does not
+               |make your annotation visible at runtime.  If that is what
+               |you want, you must write the annotation class in Java.""".stripMargin)
         }
+
+        warnTypeParameterShadow(tparams1, clazz)
+
+        if (!isPastTyper) {
+          for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
+            val m = companionSymbolOf(clazz, context)
+            if (m != NoSymbol)
+              m.moduleClass.addAnnotation(AnnotationInfo(ann.atp, ann.args, List()))
+          }
+        }
+        treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
+          .setType(NoType)
+      } finally {
+        currentRun.profiler.afterTypedImplDef(clazz)
       }
-      treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
-        .setType(NoType)
     }
 
     def typedModuleDef(mdef: ModuleDef): Tree = {
@@ -1875,31 +1880,37 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (linkedClass != NoSymbol)
         linkedClass.info.decl(nme.CONSTRUCTOR).alternatives foreach (_.initialize)
 
-      val clazz     = mdef.symbol.moduleClass
-      val typedMods = typedModifiers(mdef.mods)
-      assert(clazz != NoSymbol, mdef)
-      val noSerializable = (
-           (linkedClass eq NoSymbol)
-        || linkedClass.isErroneous
-        || !linkedClass.isSerializable
-        || clazz.isSerializable
-      )
-      val impl1 = newTyper(context.make(mdef.impl, clazz, newScope)).typedTemplate(mdef.impl, {
-        typedParentTypes(mdef.impl) ++ (
-          if (noSerializable) Nil
-          else {
-            clazz.makeSerializable()
-            TypeTree(SerializableTpe).setPos(clazz.pos.focus) :: Nil
-          }
-        )
-      })
+      val clazz = mdef.symbol.moduleClass
+      currentRun.profiler.beforeTypedImplDef(clazz)
+      try {
 
-      val impl2  = finishMethodSynthesis(impl1, clazz, context)
+        val typedMods = typedModifiers(mdef.mods)
+        assert(clazz != NoSymbol, mdef)
+        val noSerializable = (
+          (linkedClass eq NoSymbol)
+            || linkedClass.isErroneous
+            || !linkedClass.isSerializable
+            || clazz.isSerializable
+          )
+        val impl1 = newTyper(context.make(mdef.impl, clazz, newScope)).typedTemplate(mdef.impl, {
+          typedParentTypes(mdef.impl) ++ (
+            if (noSerializable) Nil
+            else {
+              clazz.makeSerializable()
+              TypeTree(SerializableTpe).setPos(clazz.pos.focus) :: Nil
+            }
+            )
+        })
 
-      if (settings.isScala211  && mdef.symbol == PredefModule)
-        ensurePredefParentsAreInSameSourceFile(impl2)
+        val impl2 = finishMethodSynthesis(impl1, clazz, context)
 
-      treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+        if (settings.isScala211 && mdef.symbol == PredefModule)
+          ensurePredefParentsAreInSameSourceFile(impl2)
+
+        treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+      } finally {
+        currentRun.profiler.afterTypedImplDef(clazz)
+      }
     }
 
     private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
@@ -2047,13 +2058,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     def typedValDef(vdef: ValDef): ValDef = {
       val sym = vdef.symbol
-      val valDefTyper = {
-        val maybeConstrCtx =
-          if ((sym.isParameter || sym.isEarlyInitialized) && sym.owner.isConstructor) context.makeConstructorContext
-          else context
-        newTyper(maybeConstrCtx.makeNewScope(vdef, sym))
+      currentRun.profiler.beforeTypedImplDef(sym)
+      try {
+        val valDefTyper = {
+          val maybeConstrCtx =
+            if ((sym.isParameter || sym.isEarlyInitialized) && sym.owner.isConstructor) context.makeConstructorContext
+            else context
+          newTyper(maybeConstrCtx.makeNewScope(vdef, sym))
+        }
+        valDefTyper.typedValDefImpl(vdef)
+      } finally {
+        currentRun.profiler.afterTypedImplDef(sym)
       }
-      valDefTyper.typedValDefImpl(vdef)
     }
 
     // use typedValDef instead. this version is called after creating a new context for the ValDef
@@ -2268,89 +2284,92 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def typedDefDef(ddef: DefDef): DefDef = {
-      // an accessor's type completer may mutate a type inside `ddef` (`== context.unit.synthetics(ddef.symbol)`)
-      // concretely: it sets the setter's parameter type or the getter's return type (when derived from a valdef with empty tpt)
       val meth = ddef.symbol.initialize
+      currentRun.profiler.beforeTypedImplDef(meth)
+      try {
 
-      reenterTypeParams(ddef.tparams)
-      reenterValueParams(ddef.vparamss)
+        reenterTypeParams(ddef.tparams)
+        reenterValueParams(ddef.vparamss)
 
-      // for `val` and `var` parameter, look at `target` meta-annotation
-      if (!isPastTyper && meth.isPrimaryConstructor) {
-        for (vparams <- ddef.vparamss; vd <- vparams) {
-          if (vd.mods.isParamAccessor) {
-            vd.symbol setAnnotations (vd.symbol.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = true))
+        // for `val` and `var` parameter, look at `target` meta-annotation
+        if (!isPastTyper && meth.isPrimaryConstructor) {
+          for (vparams <- ddef.vparamss; vd <- vparams) {
+            if (vd.mods.isParamAccessor) {
+              vd.symbol setAnnotations (vd.symbol.annotations filter AnnotationInfo.mkFilter(ParamTargetClass, defaultRetention = true))
+            }
           }
         }
-      }
 
-      val tparams1 = ddef.tparams mapConserve typedTypeDef
-      val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
+        val tparams1 = ddef.tparams mapConserve typedTypeDef
+        val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
-      warnTypeParameterShadow(tparams1, meth)
+        warnTypeParameterShadow(tparams1, meth)
 
-      meth.annotations.map(_.completeInfo())
+        meth.annotations.map(_.completeInfo())
 
-      for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
-        if (isRepeatedParamType(vparam1.symbol.tpe))
-          StarParamNotLastError(vparam1)
+        for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
+          if (isRepeatedParamType(vparam1.symbol.tpe))
+            StarParamNotLastError(vparam1)
 
-      val tpt1 = checkNoEscaping.privates(this, meth, typedType(ddef.tpt))
-      checkNonCyclic(ddef, tpt1)
-      ddef.tpt.setType(tpt1.tpe)
-      val typedMods = typedModifiers(ddef.mods)
-      var rhs1 =
-        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
-          if (!meth.isPrimaryConstructor &&
+        val tpt1 = checkNoEscaping.privates(this, meth, typedType(ddef.tpt))
+        checkNonCyclic(ddef, tpt1)
+        ddef.tpt.setType(tpt1.tpe)
+        val typedMods = typedModifiers(ddef.mods)
+        var rhs1 =
+          if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
+            if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
-               meth.owner.isModuleClass ||
-               meth.owner.isAnonOrRefinementClass))
-            InvalidConstructorDefError(ddef)
-          typed(ddef.rhs)
-        } else if (meth.isMacro) {
-          // typechecking macro bodies is sort of unconventional
-          // that's why we employ our custom typing scheme orchestrated outside of the typer
-          transformedOr(ddef.rhs, typedMacroBody(this, ddef))
-        } else {
-          transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
+                meth.owner.isModuleClass ||
+                meth.owner.isAnonOrRefinementClass))
+              InvalidConstructorDefError(ddef)
+            typed(ddef.rhs)
+          } else if (meth.isMacro) {
+            // typechecking macro bodies is sort of unconventional
+            // that's why we employ our custom typing scheme orchestrated outside of the typer
+            transformedOr(ddef.rhs, typedMacroBody(this, ddef))
+          } else {
+            transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
+          }
+
+        if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
+          // There are no supercalls for AnyVal or constructors from Java sources, which
+        // would blow up in analyzeSuperConsructor; there's nothing to be computed for them
+          // anyway.
+          if (meth.isPrimaryConstructor)
+          analyzeSuperConsructor(meth, vparamss1, rhs1)
+          else
+            checkSelfConstructorArgs(ddef, meth.owner)
         }
 
-      if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
-        // There are no supercalls for AnyVal or constructors from Java sources, which
-        // would blow up in analyzeSuperConsructor; there's nothing to be computed for them
-        // anyway.
-        if (meth.isPrimaryConstructor)
-          analyzeSuperConsructor(meth, vparamss1, rhs1)
-        else
-          checkSelfConstructorArgs(ddef, meth.owner)
-      }
+        if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
+          rhs1 = checkDead(context, rhs1)
 
-      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
-        rhs1 = checkDead(context, rhs1)
-
-      if (!isPastTyper && meth.owner.isClass &&
+        if (!isPastTyper && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
-        StarWithDefaultError(meth)
+          StarWithDefaultError(meth)
 
-      if (!isPastTyper) {
-        val allParams = meth.paramss.flatten
-        for (p <- allParams) {
-          for (n <- p.deprecatedParamName) {
-            if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
-              DeprecatedParamNameError(p, n)
+        if (!isPastTyper) {
+          val allParams = meth.paramss.flatten
+          for (p <- allParams) {
+            for (n <- p.deprecatedParamName) {
+              if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
+                DeprecatedParamNameError(p, n)
+            }
+          }
+          if (meth.isStructuralRefinementMember)
+            checkMethodStructuralCompatible(ddef)
+
+          if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
+            case List(param) :: _ if !param.isImplicit =>
+              checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
+            case _ =>
           }
         }
-        if (meth.isStructuralRefinementMember)
-          checkMethodStructuralCompatible(ddef)
 
-        if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
-          case List(param) :: _ if !param.isImplicit =>
-            checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
-          case _ =>
-        }
+        treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
+      } finally {
+        currentRun.profiler.afterTypedImplDef(meth)
       }
-
-      treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
 
     def typedTypeDef(tdef: TypeDef): TypeDef =
