@@ -72,15 +72,11 @@ abstract class PostProcessor extends PerRunInit {
       setInnerClasses(classNode)
       serializeClass(classNode)
     } catch {
-      case e: java.lang.RuntimeException if e.getMessage != null && (e.getMessage contains "too large!") =>
-        backendReporting.error(NoPosition,
-          s"Could not write class ${internalName} because it exceeds JVM code size limits. ${e.getMessage}")
-        null
       case ex: InterruptedException => throw ex
       case ex: Throwable =>
         // TODO fail fast rather than continuing to write the rest of the class files?
         if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
-        backendReporting.error(NoPosition, s"Error while emitting ${internalName}\n${ex.getMessage}")
+        backendReporting.error(NoPosition, s"Error while emitting $internalName\n${ex.getMessage}")
         null
     }
 

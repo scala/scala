@@ -22,7 +22,7 @@ import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
-abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
+abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opcodes.ASM7) {
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tpe: Type): BasicValue =
     new ParamValue(local, tpe)
 
