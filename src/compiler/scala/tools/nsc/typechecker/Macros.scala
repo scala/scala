@@ -423,8 +423,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
     import typer.TyperErrorGen._
     val isNullaryArgsEmptyParams = argss.isEmpty && paramss == ListOfNil
-    if (paramss.length < argss.length) MacroTooManyArgumentListsError(expandee)
-    if (paramss.length > argss.length && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
+    if (paramss.sizeCompare(argss) < 0) MacroTooManyArgumentListsError(expandee)
+    if (paramss.sizeCompare(argss) > 0 && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
 
     val macroImplArgs: List[Any] =
       if (fastTrack contains macroDef) {
@@ -443,10 +443,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           val trees = map3(argss, paramss, signature)((args, defParams, implParams) => {
             val isVarargs = isVarArgsList(defParams)
             if (isVarargs) {
-              if (defParams.length > args.length + 1) MacroTooFewArgumentsError(expandee)
+              if (defParams.lengthIs > (args.length + 1)) MacroTooFewArgumentsError(expandee)
             } else {
-              if (defParams.length < args.length) MacroTooManyArgumentsError(expandee)
-              if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
+              if (defParams.sizeCompare(args) < 0) MacroTooManyArgumentsError(expandee)
+              if (defParams.sizeCompare(args) > 0) MacroTooFewArgumentsError(expandee)
             }
 
             val wrappedArgs = mapWithIndex(args)((arg, j) => {

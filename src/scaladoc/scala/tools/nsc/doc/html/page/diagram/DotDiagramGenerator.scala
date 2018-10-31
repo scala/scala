@@ -108,22 +108,22 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         //   them by on node with a corresponding tooltip
 
         val outgoingImplicits =
-          if (_outgoingImplicits.length > settings.docDiagramsMaxImplicitClasses.value) {
+          if (_outgoingImplicits.lengthIs > settings.docDiagramsMaxImplicitClasses.value) {
             List(ImplicitNode(counted(_outgoingImplicits), None)(Some(tooltip(_outgoingImplicits))))
           } else _outgoingImplicits
 
         val incomingImplicits =
-          if (_incomingImplicits.length > settings.docDiagramsMaxImplicitClasses.value) {
+          if (_incomingImplicits.lengthIs > settings.docDiagramsMaxImplicitClasses.value) {
             List(ImplicitNode(counted(_incomingImplicits), None)(Some(tooltip(_incomingImplicits))))
           } else _incomingImplicits
 
         val subClasses =
-          if (_subClasses.length > settings.docDiagramsMaxNormalClasses.value) {
+          if (_subClasses.lengthIs > settings.docDiagramsMaxNormalClasses.value) {
             List(NormalNode(counted(_subClasses), None)(Some(tooltip(_subClasses))))
           } else _subClasses
 
         val superClasses =
-          if (_superClasses.length > settings.docDiagramsMaxNormalClasses.value) {
+          if (_superClasses.lengthIs > settings.docDiagramsMaxNormalClasses.value) {
             List(NormalNode(counted(_superClasses), None)(Some(tooltip(_superClasses))))
           } else _superClasses
 

@@ -485,7 +485,7 @@ trait Reifiers { self: Quasiquotes =>
         val mods = m.annotations.collect { case ModsPlaceholder(hole: UnapplyHole) => hole }
         mods match {
           case hole :: Nil =>
-            if (m.annotations.length != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
+            if (m.annotations.lengthIs != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
             ensureNoExplicitFlags(m, hole.pos)
             hole.treeNoUnlift
           case _ :: hole :: _ =>

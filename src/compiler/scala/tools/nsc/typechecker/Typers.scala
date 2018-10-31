@@ -2069,7 +2069,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val (superConstr, preArgs) = decompose(fn)
           val params = fn.tpe.params
           // appending a dummy tree to represent Nil for an empty varargs (is this really necessary?)
-          val applyArgs = if (args.length < params.length) args :+ EmptyTree else args take params.length
+          val applyArgs = if (args.sizeCompare(params) < 0) args :+ EmptyTree else args take params.length
 
           assert(sameLength(applyArgs, params) || call.isErrorTyped,
             s"arity mismatch but call is not error typed: $clazz (params=$params, args=$applyArgs)")
@@ -3312,7 +3312,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       exists2(formals, args) {
         case (formal, Function(vparams, _)) =>
           (vparams exists (_.tpt.isEmpty)) &&
-          vparams.length <= MaxFunctionArity &&
+          vparams.lengthIs <= MaxFunctionArity &&
           (formal baseType FunctionClass(vparams.length) match {
             case TypeRef(_, _, formalargs) =>
               ( exists2(formalargs, vparams)((formal, vparam) =>
@@ -3828,7 +3828,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass)) {
           // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
           // stored in the `assocs` field of the resulting AnnotationInfo
-          if (argss.length > 1) {
+          if (argss.lengthIs > 1) {
             reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
           } else {
             // TODO: annType may have undetermined type params -- can we infer them?

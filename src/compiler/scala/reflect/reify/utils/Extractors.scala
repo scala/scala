@@ -70,7 +70,7 @@ trait Extractors {
         }
         var prev = symtab
         var next = loop(symtab)
-        while (next.syms.length < prev.syms.length) {
+        while (next.syms.sizeCompare(prev.syms) < 0) {
           prev = next
           next = loop(prev)
         }

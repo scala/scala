@@ -153,7 +153,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  the given args. Expects the lists to have the same length.
      */
     def fromSpecialization(sym: Symbol, args: List[Type]): TypeEnv = {
-      ifDebug(assert(sym.info.typeParams.length == args.length, sym + " args: " + args))
+      ifDebug(assert(sym.info.typeParams.sizeCompare(args) == 0, sym + " args: " + args))
 
       emptyEnv ++ collectMap2(sym.info.typeParams, args)((k, v) => k.isSpecialized)
     }
@@ -910,7 +910,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           reporter.warning(sym.pos,
             "%s %s unused or used in non-specializable positions.".format(
               unusedStvars.mkString("", ", ", ""),
-              if (unusedStvars.length == 1) "is" else "are")
+              if (unusedStvars.lengthIs == 1) "is" else "are")
           )
           unusedStvars foreach (_ removeAnnotation SpecializedClass)
           specializingOn = specializingOn filterNot (unusedStvars contains _)
@@ -1167,7 +1167,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       debuglog(s"Unify polytypes $tp1 and $tp2")
       if (strict && tparams1.length != tparams2.length)
         unifyError(tp1, tp2)
-      else if (tparams && tparams1.length == tparams2.length)
+      else if (tparams && tparams1.sizeCompare(tparams2) == 0)
         unify(res1 :: tparams1.map(_.info), res2 :: tparams2.map(_.info), env, strict)
       else
         unify(res1, res2, env, strict)
@@ -1586,7 +1586,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val residualTargs = symbol.info.typeParams zip baseTargs collect {
           case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
         }
-        ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,
+        ifDebug(assert(residualTargs.sizeCompare(specMember.info.typeParams) == 0,
           "residual: %s, tparams: %s, env: %s".format(residualTargs, specMember.info.typeParams, env))
         )
 
@@ -1636,7 +1636,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), transformTrees(targs))
             case specMember =>
               debuglog("found " + specMember.fullName)
-              ifDebug(assert(symbol.info.typeParams.length == targs.length, symbol.info.typeParams + " / " + targs))
+              ifDebug(assert(symbol.info.typeParams.sizeCompare(targs) == 0, symbol.info.typeParams + " / " + targs))
 
               val env = typeEnv(specMember)
               computeResidualTypeVars(tree, specMember, gen.mkAttributedSelect(qual1, specMember), targs, env)
@@ -1813,7 +1813,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val owner = sym.owner
         val norm = normalizeMember(owner, sym, emptyEnv)
 
-        if (norm.length > 1) {
+        if (norm.lengthIs > 1) {
           // record the body for duplication
           body(sym) = rhs
           parameters(sym) = vparams.map(_.symbol)

@@ -670,7 +670,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       val lastnameOffset = collectIdents()
       accept(SEMI)
       val names = buf.toList
-      if (names.length < 2) {
+      if (names.lengthIs < 2) {
         syntaxError(pos, "illegal import", skipIt = false)
         List()
       } else {

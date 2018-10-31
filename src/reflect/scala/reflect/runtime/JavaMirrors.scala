@@ -283,7 +283,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       lazy val boxer = runtimeClass(symbol.toType).getDeclaredConstructors().head
       lazy val unboxer = {
         val fields @ (field :: _) = symbol.toType.decls.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
-        assert(fields.length == 1, s"$symbol: $fields")
+        assert(fields.lengthIs == 1, s"$symbol: $fields")
         runtimeClass(symbol.asClass).getDeclaredMethod(field.name.toString)
       }
     }
@@ -472,7 +472,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         val varargMatch = args.length >= params.length - 1 && isVarArgsList(params)
         if (!perfectMatch && !varargMatch) {
           val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
-          val s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
+          val s_arguments = if (params.lengthIs == 1 && !isVarArgsList(params)) "argument" else "arguments"
           abort(s"${showDecl(symbol)} takes $n_arguments $s_arguments")
         }
 

@@ -625,7 +625,7 @@ trait EntityPage extends HtmlPage {
 
         val example =
           orEmpty(comment.example) {
-            Div(`class`="block", elems= Txt(s"Example${if (comment.example.length > 1) "s" else ""}:") ::
+            Div(`class`="block", elems= Txt(s"Example${if (comment.example.lengthIs > 1) "s" else ""}:") ::
                Ol(elems = {
                  val exampleXml: List[Elems] = for (ex <- comment.example) yield
                    Li(`class`= "cmt", elems= bodyToHtml(ex)) :: NoElems

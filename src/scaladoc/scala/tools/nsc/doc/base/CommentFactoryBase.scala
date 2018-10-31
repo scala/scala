@@ -366,7 +366,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           val pairs: Seq[(String, Body)] =
             for (key <- keys) yield {
               val bs = (bodyTags remove key).get
-              if (bs.length > 1)
+              if (bs.lengthIs > 1)
                 reporter.warning(pos, s"Only one '@${key.name}' tag for symbol ${key.symbol} is allowed")
               (key.symbol, bs.head)
             }
