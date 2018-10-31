@@ -83,6 +83,9 @@ object Factory {
   * @define Coll `Iterable`
   */
 trait IterableFactory[+CC[_]] extends Serializable {
+  /** The type constructor of the collection that can be built by this factory */
+  @deprecated("Use directly CC[_] instead", "2.13")
+  type Coll = CC[_]
 
   /** Creates a target $coll from an existing source collection
     *
@@ -383,6 +386,9 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   * @define Coll `Iterable`
   */
 trait MapFactory[+CC[_, _]] extends Serializable {
+  /** The type constructor of the collection that can be built by this factory */
+  @deprecated("Use directly CC[_, _] instead", "2.13")
+  type Coll = CC[_, _]
 
   def empty[K, V]: CC[K, V]
 
@@ -440,6 +446,9 @@ object MapFactory {
   * @define Coll `Iterable`
   */
 trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
+  /** The type constructor of the collection that can be built by this factory */
+  @deprecated("Use directly CC[_] instead", "2.13")
+  type Coll = CC[_]
 
   def from[E : Ev](it: IterableOnce[E]): CC[E]
 
@@ -720,6 +729,9 @@ trait StrictOptimizedClassTagSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extend
   * @define Coll `Iterable`
   */
 trait SortedMapFactory[+CC[_, _]] extends Serializable {
+  /** The type constructor of the collection that can be built by this factory */
+  @deprecated("Use directly CC[_, _] instead", "2.13")
+  type Coll = CC[_, _]
 
   def empty[K : Ordering, V]: CC[K, V]
 
