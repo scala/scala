@@ -20,6 +20,7 @@ import util._
 import java.util.concurrent.TimeUnit
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.settings.MutableSettings
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 import scala.reflect.io.AbstractFile
 
@@ -47,7 +48,6 @@ abstract class SymbolTable extends macros.Universe
                               with Positions
                               with TypeDebugging
                               with Importers
-                              with Required
                               with CapturedVariables
                               with StdAttachments
                               with StdCreators
@@ -81,13 +81,25 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
-  def isDeveloper: Boolean = settings.debug
+  final def isDeveloper: Boolean = settings.debug.value || settings.developer.value
+  def picklerPhase: Phase
+
+  def erasurePhase: Phase
+
+  def settings: MutableSettings
+
+  @deprecated("Interactive is implemented with a custom Global; this flag is ignored", "2.11.0") def forInteractive = false
+  @deprecated("Scaladoc is implemented with a custom Global; this flag is ignored", "2.11.0")    def forScaladoc = false
 
   @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
+
+  /** dev-warns if dev-warning is enabled and `cond` is true; no-op otherwise */
+  @inline final def devWarningIf(cond: => Boolean)(msg: => String): Unit =
+    if (isDeveloper && cond) devWarning(msg)
   def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
   def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "

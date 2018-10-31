@@ -12,3 +12,5 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.Sync
 
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats")
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats$")
+
+ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.JavaUniverse")
