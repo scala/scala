@@ -23,14 +23,42 @@ class ArrayOpsBenchmark {
   var strings: List[String] = _
   var integersA: Array[Int] = _
   var stringsA: Array[String] = _
-
+  var intIntA: Array[Array[Int]] = _
 
   @Setup(Level.Trial) def initNumbers: Unit = {
     integers = (1 to size).toList
     strings = integers.map(_.toString)
     integersA = integers.toArray
     stringsA = strings.toArray
+    intIntA = integersA.map { x => integersA }
   }
+
+  @Benchmark def foreachInt(bh: Blackhole): Unit = {
+    var i = 0
+    integersA.foreach { x => i += x }
+    bh.consume(i)
+  }
+
+  @Benchmark def foreachString(bh: Blackhole): Unit = {
+    var i = 0
+    stringsA.foreach { x => i += x.length }
+    bh.consume(i)
+  }
+
+  @Benchmark def flattenInt(bh: Blackhole): Unit =
+    bh.consume(intIntA.flatten)
+
+  @Benchmark def mapIntInt(bh: Blackhole): Unit =
+    bh.consume(integersA.map(x => 0))
+
+  @Benchmark def mapIntString(bh: Blackhole): Unit =
+    bh.consume(integersA.map(x => ""))
+
+  @Benchmark def mapStringString(bh: Blackhole): Unit =
+    bh.consume(stringsA.map(x => ""))
+
+  @Benchmark def mapStringInt(bh: Blackhole): Unit =
+    bh.consume(stringsA.map(x => 0))
 
   @Benchmark def appendInteger(bh: Blackhole): Unit = {
     var arr = Array.empty[Int]
