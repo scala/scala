@@ -896,7 +896,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       debuglog(s"Potentially conflicting names for forwarders: $conflictingNames")
 
       for (m <- moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD)) {
-        if (m.isType || m.isDeferred || (m.owner eq definitions.ObjectClass) || m.isConstructor)
+        // Fix for scala/bug#11207, see https://github.com/scala/scala/pull/7035/files#r226274350. This makes sure that 2.12.8 generates
+        // the same forwarder methods as in 2.12.6 (but includes bridge flags). In 2.13 we don't generate any forwarders for bridges.
+        val bridgeImplementingAbstract = m.isBridge && m.nextOverriddenSymbol.isDeferred
+        if (m.isType || m.isDeferred || bridgeImplementingAbstract || (m.owner eq definitions.ObjectClass) || m.isConstructor)
           debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass': ${m.isType} || ${m.isDeferred} || ${m.owner eq definitions.ObjectClass} || ${m.isConstructor}")
         else if (conflictingNames(m.name))
           log(s"No forwarder for $m due to conflict with ${linkedClass.info.member(m.name)}")
