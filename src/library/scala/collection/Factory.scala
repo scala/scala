@@ -447,7 +447,7 @@ object MapFactory {
   */
 trait EvidenceIterableFactory[+CC[_], Ev[_]] extends Serializable {
   /** The type constructor of the collection that can be built by this factory */
-  @deprecated("Use directly CC[_] instead", "2.13")
+  @deprecated("Use CC[_] directly instead", "2.13")
   type Coll = CC[_]
 
   def from[E : Ev](it: IterableOnce[E]): CC[E]
