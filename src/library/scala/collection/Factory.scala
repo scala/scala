@@ -387,7 +387,7 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   */
 trait MapFactory[+CC[_, _]] extends Serializable {
   /** The type constructor of the collection that can be built by this factory */
-  @deprecated("Use directly CC[_, _] instead", "2.13")
+  @deprecated("Use CC[_, _] directly instead", "2.13")
   type Coll = CC[_, _]
 
   def empty[K, V]: CC[K, V]
