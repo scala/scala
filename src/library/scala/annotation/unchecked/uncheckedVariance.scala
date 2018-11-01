@@ -12,8 +12,7 @@
 
 package scala.annotation.unchecked
 
-/** An annotation for type arguments for which one wants to suppress variance checking
- *  types are volatile.
+/** An annotation for type arguments for which one wants to suppress variance checking.
  *
  *  @since 2.7
  */
