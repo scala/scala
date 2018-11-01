@@ -730,7 +730,7 @@ trait StrictOptimizedClassTagSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extend
   */
 trait SortedMapFactory[+CC[_, _]] extends Serializable {
   /** The type constructor of the collection that can be built by this factory */
-  @deprecated("Use directly CC[_, _] instead", "2.13")
+  @deprecated("Use CC[_, _] directly instead", "2.13")
   type Coll = CC[_, _]
 
   def empty[K : Ordering, V]: CC[K, V]
