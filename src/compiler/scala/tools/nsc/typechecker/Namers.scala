@@ -565,7 +565,7 @@ trait Namers extends MethodSynthesis {
           if (isValid(from)) {
             // for Java code importing Scala objects
             if (!nme.isModuleName(from) || isValid(from.dropModule)) {
-              typer.TyperErrorGen.NotAMemberError(tree, expr, from)
+              typer.TyperErrorGen.NotAMemberError(tree, expr, from, context.outer)
             }
           }
           // Setting the position at the import means that if there is

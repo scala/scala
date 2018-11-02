@@ -1,4 +1,5 @@
 t5801.scala:1: error: object sth is not a member of package scala
+did you mean math or sys?
 import scala.sth
        ^
 t5801.scala:4: error: not found: value sth

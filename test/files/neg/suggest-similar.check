@@ -1,10 +1,28 @@
-suggest-similar.scala:8: error: not found: value flippitx
-  flippitx = 123
-  ^
-suggest-similar.scala:9: error: not found: value identiyt
+suggest-similar.scala:10: error: value flippitx is not a member of object example.Weehawken
+did you mean flippity?
+  Weehawken.flippitx = 123
+            ^
+suggest-similar.scala:11: error: not found: value identiyt
   Nil map identiyt
           ^
-suggest-similar.scala:10: error: not found: type Bingus
-  new Bingus
-      ^
-three errors found
+suggest-similar.scala:12: error: type Eeehawken is not a member of package example
+did you mean Weehawken?
+  new example.Eeehawken
+              ^
+suggest-similar.scala:16: error: value readline is not a member of object scala.io.StdIn
+did you mean readLine?
+  import scala.io.StdIn.{readline, readInt}
+         ^
+suggest-similar.scala:20: error: object stdin is not a member of package io
+did you mean StdIn?
+  import scala.io.stdin.{readLine => line}
+                  ^
+suggest-similar.scala:37: error: value foo is not a member of object example.Hohokus
+did you mean foo1, foo2, foo3, or foo4?
+  Hohokus.foo
+          ^
+suggest-similar.scala:41: error: value bar is not a member of example.Hohokus
+did you mean bar2?
+  new Hohokus().bar // don't suggest bar1
+                ^
+7 errors found

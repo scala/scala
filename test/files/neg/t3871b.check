@@ -8,12 +8,15 @@ t3871b.scala:77: error: method prot in class A cannot be accessed in E.this.A
       a.prot    // not allowed, prefix type `A` does not conform to `B`
         ^
 t3871b.scala:79: error: value protT is not a member of E.this.B
+did you mean prot or protE?
       b.protT   // not allowed
         ^
 t3871b.scala:80: error: value protT is not a member of E.this.C
+did you mean prot or protE?
       c.protT   // not allowed
         ^
 t3871b.scala:81: error: value protT is not a member of E.this.A
+did you mean protE?
       a.protT   // not allowed
         ^
 t3871b.scala:91: error: method prot in class A cannot be accessed in E.this.A
@@ -23,12 +26,15 @@ t3871b.scala:91: error: method prot in class A cannot be accessed in E.this.A
       a.prot    // not allowed
         ^
 t3871b.scala:93: error: value protT is not a member of E.this.B
+did you mean prot or protE?
       b.protT   // not allowed
         ^
 t3871b.scala:94: error: value protT is not a member of E.this.C
+did you mean prot or protE?
       c.protT   // not allowed
         ^
 t3871b.scala:95: error: value protT is not a member of E.this.A
+did you mean protE?
       a.protT   // not allowed
         ^
 t3871b.scala:102: error: method prot in class A cannot be accessed in E.this.B
@@ -50,12 +56,15 @@ t3871b.scala:104: error: method prot in class A cannot be accessed in E.this.A
       a.prot    // not allowed
         ^
 t3871b.scala:109: error: value protT is not a member of E.this.B
+did you mean protE?
       b.protT   // not allowed
         ^
 t3871b.scala:110: error: value protT is not a member of E.this.C
+did you mean protE?
       c.protT   // not allowed
         ^
 t3871b.scala:111: error: value protT is not a member of E.this.A
+did you mean protE?
       a.protT   // not allowed
         ^
 t3871b.scala:120: error: method prot in class A cannot be accessed in Other.this.e.B
