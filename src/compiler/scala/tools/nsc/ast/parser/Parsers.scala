@@ -2483,9 +2483,11 @@ self =>
      *  }}}
      */
     def typeBounds(): TypeBoundsTree = {
-      val lo      = bound(SUPERTYPE)
-      val hi      = bound(SUBTYPE)
-      val t       = TypeBoundsTree(lo, hi)
+      val t = checkNoEscapingPlaceholders {
+        val lo = bound(SUPERTYPE)
+        val hi = bound(SUBTYPE)
+        TypeBoundsTree(lo, hi)
+      }
       val defined = List(t.hi, t.lo) filter (_.pos.isDefined)
 
       if (defined.nonEmpty)

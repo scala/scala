@@ -507,7 +507,7 @@ is assumed. If an upper bound clause `<:$\,U$` is missing,
 existentially quantified type variable, where the existential quantification is
 implicit.
 
-A wildcard type must appear as type argument of a parameterized type.
+A wildcard type must appear as a type argument of a parameterized type.
 Let $T = p.c[\mathit{targs},T,\mathit{targs}']$ be a parameterized type where
 $\mathit{targs}, \mathit{targs}'$ may be empty and
 $T$ is a wildcard type `_$\;$>:$\,L\,$<:$\,U$`. Then $T$ is equivalent to the
