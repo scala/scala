@@ -842,7 +842,7 @@ trait Namers extends MethodSynthesis {
 
     def monoTypeCompleter(tree: MemberDef) = new MonoTypeCompleter(tree)
     class MonoTypeCompleter(tree: MemberDef) extends TypeCompleterBase(tree) {
-      override def completeImpl(sym: Symbol): Unit = if (!tree.isErroneous) {
+      override def completeImpl(sym: Symbol): Unit = {
         // this early test is there to avoid infinite baseTypes when
         // adding setters and getters --> bug798
         // It is a def in an attempt to provide some insulation against

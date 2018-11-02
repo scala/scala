@@ -458,6 +458,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case Some(c) if packageOK || !c.isPackageClass => c
         case _ =>
           QualifyingClassError(tree, qual)
+          // Delay `setError` in namer, scala/bug#10748
           if (immediate) setError(tree) else unit.toCheck += (() => setError(tree))
           NoSymbol
       }
