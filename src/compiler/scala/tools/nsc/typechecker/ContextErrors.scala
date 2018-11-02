@@ -445,11 +445,6 @@ trait ContextErrors {
         setError(fun)
       }
 
-      def WrongNumberOfParametersError(tree: Tree, argpts: List[Type]) = {
-        issueNormalTypeError(tree, "wrong number of parameters; expected = " + argpts.length)
-        setError(tree)
-      }
-
       def MissingParameterTypeError(fun: Tree, vparam: ValDef, pt: Type, withTupleAddendum: Boolean) = {
         def issue(what: String) = {
           val addendum: String = fun match {
