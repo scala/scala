@@ -72,7 +72,7 @@ package object partest {
 
     def appendAll(strings: String*): Unit = sf.appendAll(strings: _*)
     def writeAll(strings: String*): Unit = sf.writeAll(strings: _*)
-    def absolutePathSegments: List[String] = f.getAbsolutePath split """[/\\]+""" toList
+    def absolutePathSegments: List[String] = f.getAbsolutePath.split("""[/\\]+""").toList
 
     def isJava        = f.isFile && (sf hasExtension "java")
     def isScala       = f.isFile && (sf hasExtension "scala")
@@ -107,8 +107,8 @@ package object partest {
      */
     def instantiate[A >: Null](name: String): A = (
       catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
-      (loader loadClass name).getConstructor().newInstance().asInstanceOf[A] orNull
-    )
+      loader.loadClass(name).getConstructor().newInstance().asInstanceOf[A]
+    ).orNull
   }
 
   implicit class ExecutorOps(val executor: ExecutorService) {
@@ -158,7 +158,7 @@ package object partest {
   def findProgram(name: String): Option[File] = {
     val pathDirs = sys.env("PATH") match {
       case null => List("/usr/local/bin", "/usr/bin", "/bin")
-      case path => path split "[:;]" filterNot (_ == "") toList
+      case path => path.split("[:;]").filterNot(_ == "").toList
     }
     pathDirs.iterator map (d => new File(d, name)) find (_.canExecute)
   }

@@ -40,7 +40,7 @@ class TestKinds(pathSettings: PathSettings) {
     def candidates = {
       (path changeExtension "check") +: {
         if (path.isFile) List(path)
-        else path.toDirectory.deepList() filter (_.isJavaOrScala) toList
+        else path.toDirectory.deepList().filter(_.isJavaOrScala).toList
       }
     }
 

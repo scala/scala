@@ -25,7 +25,7 @@ class PathSettings(testSourcePath: String) {
   private[this] val defaultTestRootName  = propOrNone("partest.root")
 
   private[this] def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
-  private[this] def isPartestDir(d: Directory) = (d.name == "test") && (d / testSourcePath isDirectory)
+  private[this] def isPartestDir(d: Directory) = (d.name == "test") && ((d / testSourcePath).isDirectory)
   private[this] def findJar(name: String, ds: Directory*): Either[String, File] =
     ds.iterator flatMap (_.files) filter (_ hasExtension "jar") find ( _.name startsWith name ) map (Right(_)) getOrElse
       Left(s"'${name}.jar' not found in '${ds map (_.path) mkString ", "}'.")
@@ -39,7 +39,7 @@ class PathSettings(testSourcePath: String) {
   val testParent = testRoot.parent
 
   // Directory <root>/test/files or .../scaladoc
-  val srcDir = Directory(testRoot / testSourcePath toCanonical)
+  val srcDir = Directory((testRoot / testSourcePath).toCanonical)
 
   def srcSpecLib     = findJar("instrumented", Directory(srcDir / "speclib"))
   def srcCodeLib     = findJar("code",  Directory(srcDir / "codelib"), Directory(testRoot / "files" / "codelib") /* work with --srcpath pending */)

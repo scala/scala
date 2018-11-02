@@ -21,6 +21,6 @@ object Functor{
 object GeneralLiftingDemo extends App {
   import Functor._
   val l = List(1,2,3)
-  val res = l fmap( 1+) // TODO: should not need explicit call to lifttoOO
+  val res = l fmap (1 + _) // TODO: should not need explicit call to lifttoOO
   println("OO : " + res )
 }

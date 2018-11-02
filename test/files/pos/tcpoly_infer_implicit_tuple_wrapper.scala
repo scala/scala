@@ -11,7 +11,7 @@ object Test {
 
   val t = (List(1, 2, 3), List(6, 5, 4))
 
-  tupleOfIterableWrapper(t) unzip
+  tupleOfIterableWrapper(t).unzip
 
-  t unzip
+  t.unzip
 }

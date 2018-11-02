@@ -17,9 +17,9 @@ package object p {
   type EnvAlias[W <: HasA] = ViewEnv[W#A]
   type SubAlias[W <: HasA] = ViewEnv[W#A]#SubView
 
-  def f0[R](xs: R)(implicit tc: Indexable[R]): ViewEnv[tc.A]#SubView     = new ViewEnv[tc.A]() get
-  def f1[R](xs: R)(implicit tc: Indexable[R]): EnvAlias[tc.type]#SubView = new ViewEnv[tc.A]() get
-  def f2[R](xs: R)(implicit tc: Indexable[R]): SubAlias[tc.type]         = new ViewEnv[tc.A]() get
+  def f0[R](xs: R)(implicit tc: Indexable[R]): ViewEnv[tc.A]#SubView     = new ViewEnv[tc.A]().get
+  def f1[R](xs: R)(implicit tc: Indexable[R]): EnvAlias[tc.type]#SubView = new ViewEnv[tc.A]().get
+  def f2[R](xs: R)(implicit tc: Indexable[R]): SubAlias[tc.type]         = new ViewEnv[tc.A]().get
 
   def g0 = f0(Array(1)) has 2                   // ok
   def g1 = f1(Array(1)) has 2                   // ok

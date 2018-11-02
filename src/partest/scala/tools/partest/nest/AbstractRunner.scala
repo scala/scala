@@ -236,7 +236,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
         ) filterNot (_ == "") mkString ", "
       }
 
-      val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical) sortBy (_.toString) toArray
+      val allTests: Array[Path] = distinctBy(miscTests ++ kindsTests)(_.toCanonical).sortBy(_.toString).toArray
       val grouped = (allTests groupBy kindOf).toArray sortBy (x => standardKinds indexOf x._1)
 
       onlyIndividualTests = individualTests.nonEmpty && rerunTests.isEmpty && kindsTests.isEmpty && greppedTests.isEmpty
