@@ -6,9 +6,9 @@ case class CaseClass[A <: scala.Seq[scala.Int]](i: A, s: scala.Predef.String) ex
   override def productPrefix: java.lang.String = { /* compiled code */ }
   def productArity: scala.Int = { /* compiled code */ }
   def productElement(x$1: scala.Int): scala.Any = { /* compiled code */ }
-  override def productElementName(x$1: scala.Int): java.lang.String = { /* compiled code */ }
   override def productIterator: scala.collection.Iterator[scala.Any] = { /* compiled code */ }
   def canEqual(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  override def productElementName(x$1: scala.Int): java.lang.String = { /* compiled code */ }
   override def hashCode(): scala.Int = { /* compiled code */ }
   override def toString(): java.lang.String = { /* compiled code */ }
   override def equals(x$1: scala.Any): scala.Boolean = { /* compiled code */ }

@@ -1649,6 +1649,8 @@ trait Definitions extends api.StandardDefinitions {
       lazy val arrayClassMethod       = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
       lazy val wrapVarargsRefArrayMethod = getMemberMethod(getWrapVarargsArrayModule, nme.wrapRefArray)
 
+      lazy val RuntimeStatics_ioobe = getMemberMethod(RuntimeStaticsModule, nme.ioobe)
+
       lazy val GroupOfSpecializable = getMemberClass(SpecializableModule, tpnme.Group)
 
       lazy val WeakTypeTagClass = TypeTagsClass.map(sym => getMemberClass(sym, tpnme.WeakTypeTag))

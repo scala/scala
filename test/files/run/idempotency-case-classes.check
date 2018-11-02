@@ -18,15 +18,15 @@ C(2,3)
     <synthetic> def productElement(x$1: Int): Any = x$1 match {
       case 0 => C.this.x
       case 1 => C.this.y
-      case _ => throw new IndexOutOfBoundsException(x$1.toString())
-    };
-    override <synthetic> def productElementName(x$1: Int): String = x$1 match {
-      case 0 => "x"
-      case 1 => "y"
-      case _ => throw new IndexOutOfBoundsException(x$1.toString())
+      case _ => scala.runtime.Statics.ioobe[Any](x$1)
     };
     override <synthetic> def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](C.this);
     <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
+    override <synthetic> def productElementName(x$1: Int): String = x$1 match {
+      case 0 => "x"
+      case 1 => "y"
+      case _ => scala.runtime.Statics.ioobe[String](x$1)
+    };
     override <synthetic> def hashCode(): Int = {
       <synthetic> var acc: Int = -889275714;
       acc = scala.runtime.Statics.mix(acc, x);
