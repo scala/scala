@@ -15,7 +15,8 @@ package sys
 package process
 
 import processInternal._
-import java.io.{ PipedInputStream, PipedOutputStream }
+import java.io.{PipedInputStream, PipedOutputStream}
+import scala.annotation.tailrec
 
 private[process] trait ProcessImpl {
   self: Process.type =>
@@ -126,7 +127,9 @@ private[process] trait ProcessImpl {
   }
 
   private[process] class PipedProcesses(a: ProcessBuilder, b: ProcessBuilder, defaultIO: ProcessIO, toError: Boolean) extends CompoundProcess {
-    protected[this] override def runAndExitValue() = runAndExitValue(new PipeSource(a.toString), new PipeSink(b.toString))
+    protected def newSource: PipeSource = new PipeSource(a.toString)
+    protected def newSink:   PipeSink   = new PipeSink(b.toString)
+    protected[this] override def runAndExitValue() = runAndExitValue(newSource, newSink)
     protected[this] def runAndExitValue(source: PipeSource, sink: PipeSink): Option[Int] = {
       source connectOut sink
       source.start()
@@ -135,10 +138,10 @@ private[process] trait ProcessImpl {
       /** Release PipeSource, PipeSink and Process in the correct order.
       * If once connect Process with Source or Sink, then the order of releasing them
       * must be Source -> Sink -> Process, otherwise IOException will be thrown. */
-      def releaseResources(so: PipeSource, sk: PipeSink, p: Process *) = {
+      def releaseResources(so: PipeSource, sk: PipeSink, ps: Process*) = {
         so.release()
         sk.release()
-        p foreach( _.destroy() )
+        ps.foreach(_.destroy())
       }
 
       val firstIO =
@@ -159,9 +162,11 @@ private[process] trait ProcessImpl {
           throw err
         }
       runInterruptible {
-        source.join()
         val exit1 = first.exitValue()
+        source.done()
+        source.join()
         val exit2 = second.exitValue()
+        sink.done()
         // Since file redirection (e.g. #>) is implemented as a piped process,
         // we ignore its exit value so cmd #> file doesn't always return 0.
         if (b.hasExitValue) exit2 else exit1
@@ -181,23 +186,20 @@ private[process] trait ProcessImpl {
         if (isSink) dst else src
       }
     }
-    private def ioHandler(e: IOException): Unit = {
-      println("I/O error " + e.getMessage + " for process: " + labelFn())
-      e.printStackTrace()
-    }
+    private def ioHandler(e: IOException): Unit = e.printStackTrace()
   }
 
   private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
     setName(s"PipeSource($label)-$getName")
     protected[this] val pipe = new PipedOutputStream
     protected[this] val source = new LinkedBlockingQueue[Option[InputStream]]
-    override def run(): Unit = {
-      try {
+    override final def run(): Unit = {
+      @tailrec def go(): Unit =
         source.take match {
-          case Some(in) => runloop(in, pipe)
+          case Some(in) => runloop(in, pipe) ; go()
           case None =>
         }
-      }
+      try go()
       catch onInterrupt(())
       finally BasicIO close pipe
     }
@@ -208,18 +210,19 @@ private[process] trait ProcessImpl {
       source add None
       join()
     }
+    def done() = source add None
   }
   private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
     setName(s"PipeSink($label)-$getName")
     protected[this] val pipe = new PipedInputStream
     protected[this] val sink = new LinkedBlockingQueue[Option[OutputStream]]
     override def run(): Unit = {
-      try {
+      @tailrec def go(): Unit =
         sink.take match {
-          case Some(out) => runloop(pipe, out)
+          case Some(out) => runloop(pipe, out) ; go()
           case None =>
         }
-      }
+      try go()
       catch onInterrupt(())
       finally BasicIO close pipe
     }
@@ -230,6 +233,7 @@ private[process] trait ProcessImpl {
       sink add None
       join()
     }
+    def done() = sink add None
   }
 
   /** A thin wrapper around a java.lang.Process.  `ioThreads` are the Threads created to do I/O.
