@@ -36,20 +36,6 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * val lines: Try[List[String]] = Using(resource1) { r1 =>
   *   r1.lines.toList
   * }
-  * }}}
-  *
-  * @example
-  * {{{
-  * val lines: Try[Seq[String]] = for {
-  *   r1 <- Using(resource1)
-  *   r2 <- Using(resource2)
-  *   r3 <- Using(resource3)
-  *   r4 <- Using(resource4)
-  * } yield {
-  *   // use your resources here
-  *   r1.lines ++ r2.lines ++ r3.lines ++ r4.lines
-  * }
-  * }}}
   */
 final class Using[R] private(resource: => R) {
   private[this] val used = new AtomicBoolean(false)
@@ -65,41 +51,10 @@ final class Using[R] private(resource: => R) {
     *         an exception if one was thrown by the operation or by releasing the resource
     */
   @throws[IllegalStateException]("if the resource has already been used")
-  @inline def apply[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = map(f)
-
-  /** Performs an operation using a resource, and then releases the resource,
-    * even if the operation throws an exception.
-    *
-    * @param f the operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def map[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = Try { useWith(f) }
-
-  /** Performs an operation which returns a [[scala.util.Try `Try`]] using a resource,
-    * and then releases the resource, even if the operation throws an exception.
-    *
-    * @param f the `Try`-returning operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return the result of the inner operation, or a [[scala.util.Try `Try`]]
-    *         containing an exception if one was thrown by the operation or by
-    *         releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def flatMap[A](f: R => Try[A])(implicit r: Using.Resource[R]): Try[A] =
-    map {
-      r => f(r).get // otherwise inner Failure will be lost on exceptional release
-    }
-
-  @inline private[this] def useWith[A](f: R => A)(implicit r: Using.Resource[R]): A =
+  @inline def apply[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = Try {
     if (used.getAndSet(true)) throw new IllegalStateException("resource has already been used")
     else Using.resource(resource)(f)
+  }
 }
 
 /** @define recommendUsing                   It is highly recommended to use the `Using` construct,

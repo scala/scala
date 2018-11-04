@@ -230,12 +230,12 @@ class UsingTest {
 
   @Test
   def safeUsingMultipleResourcesPropagatesCorrectlySimple(): Unit = {
-    val scala.util.Failure(usingException) = for {
-      _ <- Using(new ExceptionResource)
-      _ <- Using(new ErrorResource)
-    } yield {
-      throw new UsingException("nested `Using`")
-    }
+    val scala.util.Failure(usingException) =
+      Using(new ExceptionResource) { _ =>
+        Using(new ErrorResource) { _ =>
+          throw new UsingException("nested `Using`")
+        }.get
+      }
 
     // uncomment to debug actual suppression nesting
     //usingException.printStackTrace()
@@ -257,12 +257,12 @@ class UsingTest {
   @Test
   def safeUsingMultipleResourcesPropagatesCorrectlyComplex(): Unit = {
     val fatal = catchThrowable {
-      for {
-        _ <- Using(new ExceptionResource)
-        _ <- Using(new FatalResource)
-        _ <- Using(new ErrorResource)
-      } yield {
-        throw new UsingException("nested `Using`")
+      Using(new ExceptionResource) { _ =>
+        Using(new FatalResource) { _ =>
+          Using(new ErrorResource) { _ =>
+            throw new UsingException("nested `Using`")
+          }.get
+        }.get
       }
     }
 
@@ -352,11 +352,10 @@ class UsingTest {
   @Test
   def safeUsing2Resources(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-    } yield {
-      r1.identity(1) + r2.identity(1)
+    val res = Using(group.newResource()) { r1 =>
+      Using(group.newResource()) { r2 =>
+        r1.identity(1) + r2.identity(1)
+      }.get
     }
     assertEquals(res, scala.util.Success(2))
   }
@@ -364,14 +363,14 @@ class UsingTest {
   @Test
   def safeUsing3Resources(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-      r3 <- Using(group.newResource())
-    } yield {
-      r1.identity(1) +
-        r2.identity(1) +
-        r3.identity(1)
+    val res = Using(group.newResource()) { r1 =>
+      Using(group.newResource()) { r2 =>
+        Using(group.newResource()) { r3 =>
+          r1.identity(1) +
+          r2.identity(1) +
+          r3.identity(1)
+        }.get
+      }.get
     }
     assertEquals(res, scala.util.Success(3))
   }
@@ -477,7 +476,5 @@ object UsingTest {
         openCount -= 1
       }
     }
-
   }
-
 }
