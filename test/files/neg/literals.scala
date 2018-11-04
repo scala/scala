@@ -1,4 +1,4 @@
-// scalac: -Xlint:literal-syntax -Xfatal-warnings -deprecation
+// scalac: -Xlint:literal-syntax -Ywarn-octal-literal -Xfatal-warnings -deprecation
 trait RejectedLiterals {
 
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero

@@ -1,23 +1,26 @@
 literals.scala:4: error: missing integer number
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
                              ^
-literals.scala:6: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+literals.scala:6: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def leadingZeros: Int  = { 01 }        // line 6: no leading zero
                              ^
-literals.scala:8: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+literals.scala:8: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def tooManyZeros: Int  = { 00 }        // line 8: no leading zero
                              ^
-literals.scala:10: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+literals.scala:10: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def zeroOfNine: Int    = { 09 }        // line 10: no leading zero
                              ^
-literals.scala:14: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+literals.scala:14: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
                              ^
 literals.scala:22: error: missing integer number
   def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
                            ^
-literals.scala:26: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+literals.scala:26: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def tooManyZeros: Int  = 00            // line 26: no leading zero
+                           ^
+literals.scala:28: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNine: Int    = 09            // line 28: no leading zero
                            ^
 literals.scala:39: error: floating point number too small
   def tooTiny: Float     = { 0.7e-45f }      // floating point number too small
@@ -49,11 +52,8 @@ literals.scala:16: error: ';' expected but double literal found.
 literals.scala:24: error: ';' expected but 'def' found.
   def leadingZeros: Int  = 01            // line 24: no leading zero
   ^
-literals.scala:28: error: ';' expected but 'def' found.
-  def zeroOfNine: Int    = 09            // line 28: no leading zero
-  ^
 literals.scala:32: error: identifier expected but 'def' found.
   def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
   ^
-two warnings found
-17 errors found
+8 warnings found
+11 errors found
