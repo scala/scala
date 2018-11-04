@@ -233,15 +233,15 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
   override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = {
     val marker = Statics.pfMarker
     try {
-      val v = pf.applyOrElse(exception, ((x: Throwable) => marker).asInstanceOf[Function[Throwable, U]])
-      if (marker ne v.asInstanceOf[AnyRef]) Success(v) else this
+      val v = pf.applyOrElse(exception, (x: Throwable) => marker)
+      if (marker ne v.asInstanceOf[AnyRef]) Success(v.asInstanceOf[U]) else this
     } catch { case NonFatal(e) => Failure(e) }
   }
   override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = {
     val marker = Statics.pfMarker
     try {
-      val v = pf.applyOrElse(exception, ((x: Throwable) => marker).asInstanceOf[Function[Throwable, Try[U]]])
-      if (marker ne v.asInstanceOf[AnyRef]) v else this
+      val v = pf.applyOrElse(exception, (x: Throwable) => marker)
+      if (marker ne v.asInstanceOf[AnyRef]) v.asInstanceOf[Try[U]] else this
     } catch { case NonFatal(e) => Failure(e) }
   }
   override def failed: Try[Throwable] = Success(exception)
