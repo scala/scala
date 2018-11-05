@@ -47,7 +47,7 @@ trait Product8[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8] extends Any with Product 
     case 5 => _6
     case 6 => _7
     case 7 => _8
-    case _ => throw new IndexOutOfBoundsException(n.toString())
+    case _ => throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max 7)")
  }
 
   /** A projection of element 1 of this Product.

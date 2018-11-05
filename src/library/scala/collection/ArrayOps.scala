@@ -1452,7 +1452,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
     */
   def updated[B >: A : ClassTag](index: Int, elem: B): Array[B] = {
-    if(index < 0 || index >= xs.length) throw new IndexOutOfBoundsException
+    if(index < 0 || index >= xs.length) throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${xs.length-1})")
     val dest = toArray[B]
     dest(index) = elem
     dest

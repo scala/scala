@@ -127,7 +127,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     if (index >= 0 && idx < endIndex)
       idx
     else
-      throw new IndexOutOfBoundsException(index.toString)
+      throw new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${endIndex-1})")
   }
   // requires structure is at pos oldIndex = xor ^ index
   private final def getElem(index: Int, xor: Int): A = {

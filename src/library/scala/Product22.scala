@@ -61,7 +61,7 @@ trait Product22[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
     case 19 => _20
     case 20 => _21
     case 21 => _22
-    case _ => throw new IndexOutOfBoundsException(n.toString())
+    case _ => throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max 21)")
  }
 
   /** A projection of element 1 of this Product.
