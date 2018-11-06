@@ -1,0 +1,4 @@
+unit-companion.scala:2: error: `Unit` companion object is not allowed in source; instead, use `()` for the unit value
+  val u = Unit
+          ^
+one error found
