@@ -1279,7 +1279,10 @@ abstract class RefChecks extends Transform {
           reporter.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
-      if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
+      if (sym.isCompileTimeOnly
+        // exempt specialized annotation from compileTimeOnly, to allow the use of Unit companion
+        && (sym != SpecializedClass)
+        && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
         def defaultMsg =
           sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
               |it should have been processed and eliminated during expansion of an enclosing macro."""
