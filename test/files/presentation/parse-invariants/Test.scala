@@ -5,12 +5,16 @@ import scala.tools.nsc.interactive.Response
 object Test extends InteractiveTest {
 
   override def execute(): Unit = {
-    val sf = sourceFiles.find(_.file.name == "A.scala").head
-    noNewSymbols(sf)
-    uniqueParseTree(sf)
-    unattributedParseTree(sf)
-    neverModifyParseTree(sf)
-    shouldAlwaysReturnParseTree(sf)
+    def test(fileName: String): Unit = {
+      val sf = sourceFiles.find(_.file.name == fileName).head
+      noNewSymbols(sf)
+      uniqueParseTree(sf)
+      unattributedParseTree(sf)
+      neverModifyParseTree(sf)
+      shouldAlwaysReturnParseTree(sf)
+    }
+    test("A.scala")
+    test("A.java")
   }
 
   /**
@@ -19,6 +23,7 @@ object Test extends InteractiveTest {
   private def noNewSymbols(sf: SourceFile) {
     def nextId() = compiler.NoSymbol.newTermSymbol(compiler.TermName("dummy"), compiler.NoPosition, compiler.NoFlags).id
     val id = nextId()
+    println("parseTree")
     val tree = compiler.parseTree(sf)
     val id2 = nextId()
     if (id2 == id + 1) {
