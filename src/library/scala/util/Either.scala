@@ -285,6 +285,19 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     case _        => or
   }
 
+  /** Returns this `Right` or the given argument if this is a `Left`.
+   *
+   *  {{{
+   *  Right(1) orElse Left(2) // Right(1)
+   *  Left(1) orElse Left(2)  // Left(2)
+   *  Left(1) orElse Left(2) orElse Right(3) // Right(3)
+   *  }}}
+   */
+  def orElse[A1 >: A, B1 >: B](or: => Either[A1, B1]): Either[A1, B1] = this match {
+    case Right(_) => this
+    case _        => or
+  }
+
   /** Returns `true` if this is a `Right` and its value is equal to `elem` (as determined by `==`),
    *  returns `false` otherwise.
    *
