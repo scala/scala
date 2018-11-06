@@ -4,7 +4,7 @@ CaseClass.productElementName
 Test$.delayedEndpoint$Test$1
 Test$delayedInit$body.apply
 
-java.lang.IndexOutOfBoundsException: 99
+java.lang.IndexOutOfBoundsException: 99 is out of bounds (min 0, max -1
 scala.Product.productElementName
 scala.Product.productElementName$
 CaseObject$.productElementName
