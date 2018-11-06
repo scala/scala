@@ -1,0 +1,6 @@
+adapt_to_poly.scala:3: error: type mismatch;
+ found   : Int => Iterable[Int]
+ required: Int => scala.collection.IterableOnce[String]
+  Option(1).flatMap[String](f) // don't drop explicitly provided args during adapt
+                            ^
+one error found

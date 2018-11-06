@@ -3605,7 +3605,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (isApplyDynamicNamed(fun) && isDynamicRewrite(fun)) typedNamedApply(tree, fun, args, mode, pt)
             else tryNamesDefaults
           } else {
-            val tparams = context.extractUndetparams()
+            var tparams = context.extractUndetparams()
+//            println(s"extracted $tparams")
             if (tparams.isEmpty) { // all type params are defined
               def handleMonomorphicCall: Tree = {
                 // no expected type when jumping to a match label -- anything goes (this is ok since we're typing the translation of well-typed code)
@@ -3674,7 +3675,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
               inferExprInstance(fun, tparams)
               doTypedApply(tree, fun, args, mode, pt)
-            } else {
+            } else try {
               def handlePolymorphicCall = {
                 assert(!mode.inPatternMode, mode) // this case cannot arise for patterns
                 val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
@@ -3689,24 +3690,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (remainingParams.tail.nonEmpty) remainingParams = remainingParams.tail
                   val arg1 = typedArg(arg, forArgMode(fun, mode), newmode, lenientPt)
                   val argtparams = context.extractUndetparams()
-                  if (!argtparams.isEmpty) {
-                    val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
-                    inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
-                    arg1
-                  } else arg1
+                  // TODO when could this ever happen?? we already extracted them and put them in tparams
+                  if (!argtparams.isEmpty) inferArgumentInstance(arg1, argtparams, formal.instantiateTypeParams(tparams, strictTargs), lenientPt)
+                  arg1
                 }
                 val args1 = map2(args, formals)(typedArgToPoly)
                 if (args1 exists { _.isErrorTyped }) duplErrTree
                 else {
-                  debuglog("infer method inst " + fun + ", tparams = " + tparams + ", args = " + args1.map(_.tpe) + ", pt = " + pt + ", lobounds = " + tparams.map(_.tpe.lowerBound) + ", parambounds = " + tparams.map(_.info)) //debug
+                  // println(s"infer method inst $fun, tparams = $tparams, args = ${args1.map(_.tpe)}, pt = $pt, lobounds = ${tparams.map(_.tpe.lowerBound)}, parambounds = ${tparams.map(_.info)}") //debug
                   // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
                   // returns those undetparams which have not been instantiated.
-                  val undetparams = inferMethodInstance(fun, tparams, args1, pt)
-                  try doTypedApply(tree, fun, args1, mode, pt)
-                  finally context.undetparams = undetparams
+                  tparams = inferMethodInstance(fun, tparams, args1, pt)
+                  doTypedApply(tree, fun, args1, mode, pt)
                 }
               }
               handlePolymorphicCall
+            } finally {
+//              println(s"restoring undetparams to $tparams")
+              context.undetparams = tparams
             }
           }
 
@@ -4675,74 +4676,92 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
+      def secondTryTypedApply(fun: Tree, args: List[Tree])(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
+        def errTree = {
+          typeErrors foreach context.issue
+          warnings foreach { case (p, m) => context.warning(p, m) }
+          setError(treeCopy.Apply(tree, fun, args))
+        }
+
+        // If the problem is with raw types, convert to existentials and try again.
+        // See #4712 for a case where this situation arises,
+        if ((fun.symbol ne null) && fun.symbol.isJavaDefined) {
+          val newtpe = rawToExistential(fun.tpe)
+          if (fun.tpe ne newtpe) {
+            // println("late cooking: "+fun+":"+fun.tpe) // DEBUG
+            return tryTypedApply(fun setType newtpe, args)
+          }
+        }
+        // TODO: case to recurse into Function?
+        def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
+          case Block(_, r)                        => treesInResult(r)
+          case Match(_, cases)                    => cases
+          case CaseDef(_, _, r)                   => treesInResult(r)
+          case Annotated(_, r)                    => treesInResult(r)
+          case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
+          case Try(b, catches, _)                 => treesInResult(b) ++ catches
+          case MethodValue(r)                     => treesInResult(r)
+          case Select(qual, name)                 => treesInResult(qual)
+          case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
+          case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
+          case _                                  => Nil
+        })
+        /* Only retry if the error hails from a result expression of `tree`
+         * (for instance, it makes no sense to retry on an error from a block statement)
+         * compare with `samePointAs` since many synthetic trees are made with
+         * offset positions even under -Yrangepos.
+         */
+        def errorInResult(tree: Tree) =
+          treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
+
+        val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
+        typingStack.printTyping({
+          val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
+          if (retry) "second try: " + funStr
+          else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
+        })
+        if (retry) {
+          tryTypedArgs(args, forArgMode(fun, mode)) match {
+              // TODO: lift `!pt.isError` to `if (retry)`?
+            case Some(args1) if !pt.isError && !args1.exists(arg => arg.exists(_.isErroneous)) =>
+              val (qual, name, tpars) =
+                fun match {
+                  case Select(qual, name)               => (qual, name, Nil)
+                  case TypeApply(Select(qual, name), tpars) => (qual, name, tpars.filterNot(tpar => context.undetparams.contains(tpar.tpe.typeSymbol)))
+                }
+
+              // println(s"adapting under ${context.undetparams} for application involving $tpars ")
+
+              val adaptedQual = adaptToArguments(qual, name, args1, pt)
+
+              // NOTE:
+              //   - If `fun` is a `TypeApply`, we drop it, since it belonged to the failing Select that we're trying to salvage.
+              //     We need to reconsider whether the adapted qualifier's member is even polymorphic, and if so,
+              //     which type params we should supply. This will happen in the second try type checking.
+              //   - Don't tree-copy the Select node (don't carry over type info) -- not sure why...
+              if (adaptedQual ne qual) {
+                val adaptedSel =
+                  if (tpars.isEmpty) Select(adaptedQual, name)
+                  else TypeApply(Select(adaptedQual, name), tpars)
+                val applyAdaptedQual = Apply(adaptedSel.setPos(fun.pos), args1).setPos(tree.pos)
+                context withinSecondTry typed1(applyAdaptedQual, mode, pt)
+              } else errTree
+            case _ => errTree
+          }
+        } else errTree
+      }
+
       /* Try to apply function to arguments; if it does not work, try to convert Java raw to existentials, or try to
        * insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
-          if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, start)
-
-          // If the problem is with raw types, convert to existentials and try again.
-          // See #4712 for a case where this situation arises,
-          if ((fun.symbol ne null) && fun.symbol.isJavaDefined) {
-            val newtpe = rawToExistential(fun.tpe)
-            if (fun.tpe ne newtpe) {
-              // println("late cooking: "+fun+":"+fun.tpe) // DEBUG
-              return tryTypedApply(fun setType newtpe, args)
-            }
-          }
-          // TODO: case to recurse into Function?
-          def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
-            case Block(_, r)                        => treesInResult(r)
-            case Match(_, cases)                    => cases
-            case CaseDef(_, _, r)                   => treesInResult(r)
-            case Annotated(_, r)                    => treesInResult(r)
-            case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
-            case Try(b, catches, _)                 => treesInResult(b) ++ catches
-            case MethodValue(r)                     => treesInResult(r)
-            case Select(qual, name)                 => treesInResult(qual)
-            case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case _                                  => Nil
-          })
-          /* Only retry if the error hails from a result expression of `tree`
-           * (for instance, it makes no sense to retry on an error from a block statement)
-           * compare with `samePointAs` since many synthetic trees are made with
-           * offset positions even under -Yrangepos.
-           */
-          def errorInResult(tree: Tree) =
-            treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
-
-          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
-          typingStack.printTyping({
-            val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
-            if (retry) "second try: " + funStr
-            else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
-          })
-          if (retry) {
-            val Select(qual, name) = fun
-            tryTypedArgs(args, forArgMode(fun, mode)) match {
-              case Some(args1) if !args1.exists(arg => arg.exists(_.isErroneous)) =>
-                val qual1 =
-                  if (!pt.isError) adaptToArguments(qual, name, args1, pt)
-                  else qual
-                if (qual1 ne qual) {
-                  val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
-                  return context withinSecondTry typed1(tree1, mode, pt)
-                }
-              case _ => ()
-            }
-          }
-          typeErrors foreach context.issue
-          warnings foreach { case (p, m) => context.warning(p, m) }
-          setError(treeCopy.Apply(tree, fun, args))
-        }
-
         silent(_.doTypedApply(tree, fun, args, mode, pt)) match {
           case SilentResultValue(value) => value
-          case e: SilentTypeError => onError(e.errors, e.warnings)
+          case e: SilentTypeError =>
+            if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, start)
+            secondTryTypedApply(fun, args)(e.errors, e.warnings)
         }
       }
 
@@ -4820,7 +4839,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               || isImplicitMethodType(fun2.tpe)
             )
             val isFirstTry = fun2 match {
-              case Select(_, _) => !noSecondTry && mode.inExprMode
+              case Select(_, _) | TypeApply(Select(_, _), _ ) => !noSecondTry && mode.inExprMode
               case _            => false
             }
             if (isFirstTry)

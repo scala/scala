@@ -655,8 +655,11 @@ trait Implicits {
      (ptarg weak_<:< tparg) && {
        ptres match {
          case HasMethodMatching(name, argtpes, restpe) =>
-           (tpres.member(name) filter (m =>
-             isApplicableSafe(undet, m.tpe, argtpes, restpe))) != NoSymbol
+           tpres.member(name).filter { m =>
+             val memberTp = tpres memberType m
+//             println(s"$m : ${m.info} in $tpres: $memberTp")
+             isApplicableSafe(undet, memberTp, argtpes, restpe) // undet ++ m.owner.typeParams
+           } != NoSymbol
          case _ =>
            tpres <:< ptres
        }

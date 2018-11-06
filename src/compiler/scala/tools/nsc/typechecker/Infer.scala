@@ -1033,7 +1033,10 @@ trait Infer extends Checkable {
                 enhanceBounds(okparams, okargs, xs1)
                 xs1
             }
-          } else Nil
+          } else {
+            // when we can't meet our bounds, we won't instantiate and all undetparams should remain undetermined
+            undetparams
+          }
         }
         catch ifNoInstance { msg =>
           NoMethodInstanceError(fn, args, msg); List()
