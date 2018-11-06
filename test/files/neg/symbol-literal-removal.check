@@ -1,0 +1,4 @@
+symbol-literal-removal.scala:4: error: symbol literal is unsupported; use sym"TestSymbol" instead
+  val foo = 'TestSymbol
+            ^
+one error found

@@ -1,3 +1,4 @@
+warning: there were 7 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 java.lang.IndexOutOfBoundsException: 9 is out of bounds (min 0, max 4)
 replStringOf OK
 length OK

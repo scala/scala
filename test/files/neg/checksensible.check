@@ -1,3 +1,6 @@
+checksensible.scala:54: warning: symbol literal is deprecated; use sym"sym" instead
+  (1 != 'sym)
+        ^
 checksensible.scala:15: warning: comparing a fresh object using `eq` will always yield false
   (new AnyRef) eq (new AnyRef)
                ^
@@ -98,5 +101,5 @@ checksensible.scala:97: warning: comparing values of types Unit and Int using `!
     while ((c = in.read) != -1)
                          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-33 warnings found
+34 warnings found
 one error found

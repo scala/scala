@@ -1,3 +1,4 @@
+warning: there were 7 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 x=(), m=Unit
 x=true, m=Boolean
 x=a, m=Char

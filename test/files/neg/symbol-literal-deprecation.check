@@ -1,0 +1,6 @@
+symbol-literal-deprecation.scala:4: warning: symbol literal is deprecated; use sym"TestSymbol" instead
+  val foo = 'TestSymbol
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
