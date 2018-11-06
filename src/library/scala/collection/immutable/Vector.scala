@@ -630,7 +630,9 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override protected[this] def className = "Vector"
 }
 
-final class VectorIterator[+A](_startIndex: Int, endIndex: Int)
+//TODO: When making this class private, make it final as well.
+@deprecated("This class is not intended for public consumption and will be made private in the future.","2.13.0")
+class VectorIterator[+A](_startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
     with VectorPointer[A @uncheckedVariance] {
 
@@ -638,7 +640,7 @@ final class VectorIterator[+A](_startIndex: Int, endIndex: Int)
   private[this] final var lo: Int = _startIndex & 31
   private[this] final var endLo = Math.min(endIndex - blockIndex, 32)
 
-  def hasNext = _hasNext
+  override def hasNext: Boolean = _hasNext
 
   private[this] final var _hasNext = blockIndex + lo < endIndex
 
@@ -678,7 +680,7 @@ final class VectorIterator[+A](_startIndex: Int, endIndex: Int)
     this
   }
 
-  def next(): A = {
+  override def next(): A = {
     if (!_hasNext) throw new NoSuchElementException("reached iterator end")
     val res = display0(lo).asInstanceOf[A]
     lo += 1
