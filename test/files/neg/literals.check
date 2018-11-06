@@ -34,10 +34,10 @@ literals.scala:43: error: floating point number too large
 literals.scala:45: error: double precision floating point number too large
   def twoHuge: Double    = { 1.7976931348623159e308 } // double precision floating point number too large
                              ^
-literals.scala:50: warning: Lowercase for long is ill-advised.
+literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
   def bad = 1l
              ^
-literals.scala:52: warning: Lowercase for long is ill-advised.
+literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
   def worse = 123l
                  ^
 literals.scala:12: error: identifier expected but '}' found.

@@ -1074,8 +1074,10 @@ trait Scanners extends ScannersCommon {
         getFraction()
       }
       // 1l is an acknowledged bad practice
-      def lintel(): Unit =
-        if (ch == 'l' && settings.warnLiteralSyntax) deprecationWarning(offset + cbuf.length, "Lowercase for long is ill-advised.", since="2.13.0")
+      def lintel(): Unit = {
+        val msg = "Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead"
+        if (ch == 'l') deprecationWarning(offset + cbuf.length, msg, since="2.13.0")
+      }
       // after int: 5e7f, 42L, 42.toDouble but not 42b. Repair 0d.
       def restOfNumber(): Unit = {
         ch match {

@@ -14,10 +14,10 @@ trait Xs[+A] {
 }
 
 trait Ys[+A] {
-  { 1 to 5 contains 5l }
-  { 1l to 5l contains 5 }
-  { 1l to 5l contains 5d }
-  { 1l to 5l contains 5l }
+  { 1 to 5 contains 5L }
+  { 1L to 5L contains 5 }
+  { 1L to 5L contains 5d }
+  { 1L to 5L contains 5L }
 }
 
 trait Zs {

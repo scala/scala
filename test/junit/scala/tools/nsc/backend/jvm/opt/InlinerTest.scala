@@ -1124,7 +1124,7 @@ class InlinerTest extends BytecodeTesting {
         |    // opt: re-write the invocation to the body method
         |  }
         |
-        |  @inline final def m1a(f: Long => Int) = f(1l)
+        |  @inline final def m1a(f: Long => Int) = f(1L)
         |  def t1a = m1a(l => l.toInt) // after inlining m1a, we have the same situation as in t1
         |
         |  def t2 = {
@@ -1158,7 +1158,7 @@ class InlinerTest extends BytecodeTesting {
         |
         |
         |  @inline final def m4a[T, U, V](f: (T, U) => V, x: T, y: U) = f(x, y) // invocation to generic apply(ObjectObject)Object
-        |  def t4a = m4a((x: Int, y: Double) => 1l + x + y.toLong, 1, 2d) // IndyLambda uses specilized JFunction2$mcJID$sp. after inlining m4a, similar to t4.
+        |  def t4a = m4a((x: Int, y: Double) => 1L + x + y.toLong, 1, 2d) // IndyLambda uses specilized JFunction2$mcJID$sp. after inlining m4a, similar to t4.
         |
         |  def t5 = {
         |    // no specialization for the comibnation of primitives
@@ -1191,7 +1191,7 @@ class InlinerTest extends BytecodeTesting {
         |  @inline final def m8[T, U, V](f: (T, U) => V, x: T, y: U) = f(x, y)
         |  // IndyLambda: JFunction2$mcJID$sp, SAM is apply$mcJID$sp, body method $anonfun(ID)J
         |  // boxes the int and double arguments and calls m8, unboxToLong the result
-        |  def t8 = m8((x: Int, y: Double) => 1l + x + y.toLong, 1, 2d)
+        |  def t8 = m8((x: Int, y: Double) => 1L + x + y.toLong, 1, 2d)
         |  // opt: after inlining m8, rewrite to the body method $anonfun(ID)J, which requires inserting unbox operations for the params, box for the result
         |  // the box-unbox pairs can then be optimized away
         |

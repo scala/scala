@@ -29,13 +29,13 @@ class CompactLocalVariablesTest extends ClearAfterClass {
         |      val i = 1
         |      val d = 1d
         |      val f = 1f
-        |      val l = 1l
+        |      val l = 1L
         |  }
         |
         |  val i = 1      // variable index 1 (it's an instance method, so at index 0 we have `this`)
         |  val d = 1d     // 2,3
         |  val f = 1f     // 4
-        |  val l = 1l     // 5,6
+        |  val l = 1L     // 5,6
         |
         |  try { }
         |  catch {
@@ -44,13 +44,13 @@ class CompactLocalVariablesTest extends ClearAfterClass {
         |      val i = 1
         |      val d = 1d
         |      val f = 1f
-        |      val l = 1l
+        |      val l = 1L
         |  }
         |
         |  val ii = 1     // 7
         |  val dd = 1d    // 8,9
         |  val ff = 1f    // 10
-        |  val ll = 1l    // 11,12
+        |  val ll = 1L    // 11,12
         |
         |  i + ii + d + dd + f + ff + l + ll
         |}

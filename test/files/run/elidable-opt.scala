@@ -35,7 +35,7 @@ object Test {
   @elidable(FINEST) def f8() = 1:Short
   @elidable(FINEST) def f9() = 1:Char
   @elidable(FINEST) def fa() = 1
-  @elidable(FINEST) def fb() = 1l
+  @elidable(FINEST) def fb() = 1L
   @elidable(FINEST) def fc() = 1.0f
   @elidable(FINEST) def fd() = 1.0
   @elidable(FINEST) def fe() = "s"
