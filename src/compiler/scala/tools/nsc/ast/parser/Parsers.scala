@@ -3150,7 +3150,7 @@ self =>
      *  TopStatSeq ::= TopStat {semi TopStat}
      *  TopStat ::= Annotations Modifiers TmplDef
      *            | Packaging
-     *            | package object objectDef
+     *            | package object ObjectDef
      *            | Import
      *            |
      *  }}}
