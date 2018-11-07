@@ -7,10 +7,10 @@ object Test
 
   def allSame[T](xs: List[T]) = assert(xs.distinct.size == 1, "failed: " + xs)
 
-  def mkNumbers(x: Int): List[Number] =
-    List(x.toByte, x.toShort, x, x.toLong, x.toFloat, x.toDouble)
+  def mkNumbers(x: Int): List[Any] =
+    List[Any](x.toByte, x.toShort, x, x.toLong, x.toFloat, x.toDouble)
 
-  def testLDF(x: Long) = allSame(List[Number](x, x.toDouble, x.toFloat) map anyHash)
+  def testLDF(x: Long) = allSame(List[Any](x, x.toDouble, x.toFloat) map anyHash)
 
   def main(args: Array[String]): Unit = {
     List(Byte.MinValue, -1, 0, 1, Byte.MaxValue) foreach { n =>

@@ -478,8 +478,9 @@ object Int extends AnyValCompanion {
   override def toString = "object scala.Int"
   /** Language mandated coercions from Int to "wider" types. */
   import scala.language.implicitConversions
-  implicit def int2long(x: Int): Long = x.toLong
+  @deprecated("Implicit conversion from Int to Float is dangerous because it loses precision. Write `.toFloat` instead.", "2.13.1")
   implicit def int2float(x: Int): Float = x.toFloat
+  implicit def int2long(x: Int): Long = x.toLong
   implicit def int2double(x: Int): Double = x.toDouble
 }
 

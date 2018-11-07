@@ -293,7 +293,7 @@ object Test {
   def fcheck(xs: Array[Float  ]): Unit = {
     check(xs.length == 3, xs.length, 3);
     check(xs(0) == f0, xs(0), f0);
-    check(xs(1) == f1, xs(1), f1: Float); // !!! : Float
+    check(xs(1) == f1, xs(1), f1.toFloat); // !!! : Float
     check(xs(2) == f2, xs(2), f2);
   }
 
@@ -363,7 +363,7 @@ object Test {
   val carray: Array[Char   ] = Array(c0, c1, c2);
   val iarray: Array[Int    ] = Array(i0, i1, i2);
   val larray: Array[Long   ] = Array(l0, l1, l2);
-  val farray: Array[Float  ] = Array(f0, f1, f2);
+  val farray: Array[Float  ] = Array(f0, f1.toFloat, f2);
   val darray: Array[Double ] = Array(d0, d1, d2);
   val rarray: Array[AnyRef ] = Array(r0, r1, r2, r4, r4, r5);
   val oarray: Array[Object ] = Array(o0, o1, o2, o4, o4, o5);
