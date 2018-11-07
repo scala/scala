@@ -13,11 +13,13 @@
 package scala.collection
 
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable.Builder
 
 trait MapView[K, +V]
-  extends MapOps[K, V, ({ type l[X, Y] = View[(X, Y)] })#l, View[(K, V)]]
-    with View[(K, V)] {
+extends View[(K, V)]
+  with MapOps[K, V, MapView, MapView[K, V]]
+    with ViewOps[(K, V), View, MapView[K, V]] {
 
   override def view: MapView[K, V] = this
 
@@ -35,9 +37,9 @@ trait MapView[K, +V]
     */
   override def mapValues[W](f: V => W): MapView[K, W] = new MapView.MapValues(this, f)
 
-  def mapFactory: MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] = new MapView.MapViewMapFactory[K, V]
+  override def empty = MapView.empty[K, V]
 
-  def empty: View[(K, V)] = View.Empty
+  override def mapFactory: MapFactory[MapView] = new MapView.MapViewMapFactory[K, V]
 }
 
 object MapView {
@@ -46,6 +48,16 @@ object MapView {
   type SomeIterableConstr[X, Y] = IterableOps[_, AnyConstr, _]
   /** A `MapOps` whose collection type and collection type constructor are (mostly) unknown */
   type SomeMapOps[K, +V] = MapOps[K, V, SomeIterableConstr, _]
+
+  def empty[K, V]: MapView[K, V] = EmptyMapView.asInstanceOf[MapView[K, V]]
+
+  @SerialVersionUID(3L)
+  private case object EmptyMapView extends MapView[Any, Nothing] {
+    override def get(key: Any): Option[Nothing] = None
+    override def iterator: Iterator[Nothing] = Iterator.empty
+    override def knownSize: Int = 0
+    override def isEmpty: Boolean = true
+  }
 
   @SerialVersionUID(3L)
   class Id[K, +V](underlying: SomeMapOps[K, V]) extends AbstractMapView[K, V] {
@@ -72,10 +84,10 @@ object MapView {
   }
 
   @SerialVersionUID(3L)
-  private class MapViewMapFactory[K, V] extends MapFactory[({ type l[X, Y] = View[(X, Y)] })#l] {
-    def newBuilder[X, Y]: Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]
-    def empty[X, Y]: View[(X, Y)] = View.empty
-    def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
+  private class MapViewMapFactory[K, V] extends MapFactory[MapView] {
+    def newBuilder[X, Y]: Builder[(X, Y), MapView[X, Y]] = HashMap.newBuilder[X, Y].mapResult(_.view)
+    def empty[X, Y]: MapView[X, Y] = MapView.empty[X, Y]
+    def from[X, Y](it: IterableOnce[(X, Y)]): MapView[X, Y] = ???
   }
 }
 

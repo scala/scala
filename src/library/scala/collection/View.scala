@@ -16,7 +16,15 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.LazyList
+import scala.language.higherKinds
 
+/*
+trait Seq[+A]
+  extends Iterable[A]
+    with PartialFunction[Int, A]
+    with SeqOps[A, Seq, Seq[A]]
+    with Equals {
+ */
 
 /** Views are collections whose transformation operations are non strict: the resulting elements
   * are evaluated only when the view is effectively traversed (e.g. using `foreach` or `foldLeft`),
@@ -24,7 +32,7 @@ import scala.collection.immutable.LazyList
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
+trait View[+A] extends Iterable[A] with ViewOps[A, View, View[A]] {
 
   override def view: View[A] = this
 
@@ -38,6 +46,10 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
   @`inline` def force: IndexedSeq[A] = toIndexedSeq
 
   override protected[this] def writeReplace(): AnyRef = this
+}
+
+trait ViewOps[+A, +CC[_], +C] extends IterableOps[A, CC, C] {
+
 }
 
 /** This object reifies operations on views as case classes
