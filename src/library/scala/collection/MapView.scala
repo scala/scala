@@ -60,15 +60,6 @@ object MapView {
   }
 
   @SerialVersionUID(3L)
-  private class OverIterableOnce[K, +V](underlying: IterableOnce[(K, V)]) extends AbstractMapView[K, V] {
-    private[this] lazy val tupleView = LazyList.from(underlying).view.reverse.distinctBy(_._1)
-    def get(key: K): Option[V] = tupleView.find(_._1 == key).map(_._2)
-    def iterator: Iterator[(K, V)] = tupleView.iterator
-    override def knownSize: Int = tupleView.knownSize
-    override def isEmpty: Boolean = tupleView.isEmpty
-  }
-
-  @SerialVersionUID(3L)
   private class OverSeqView[K, +V](underlying: SeqView[(K, V)]) extends AbstractMapView[K, V] {
     private[this] lazy val tupleView = underlying.reverse.distinctBy(_._1)
     def get(key: K): Option[V] = tupleView.find(_._1 == key).map(_._2)
