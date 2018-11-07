@@ -2265,8 +2265,8 @@ self =>
     }
 
     /** {{{
-     *  Annotations      ::= {`@' SimpleType {ArgumentExprs}}
-     *  ConsrAnnotations ::= {`@' SimpleType ArgumentExprs}
+     *  Annotations       ::= {`@' SimpleType {ArgumentExprs}}
+     *  ConstrAnnotations ::= {`@' SimpleType ArgumentExprs}
      *  }}}
      */
     def annotations(skipNewLines: Boolean): List[Tree] = readAnnots {
