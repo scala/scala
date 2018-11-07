@@ -60,6 +60,24 @@ object MapView {
   }
 
   @SerialVersionUID(3L)
+  private class OverIterableOnce[K, +V](underlying: IterableOnce[(K, V)]) extends AbstractMapView[K, V] {
+    private[this] lazy val tupleView = LazyList.from(underlying).view.reverse.distinctBy(_._1)
+    def get(key: K): Option[V] = tupleView.find(_._1 == key).map(_._2)
+    def iterator: Iterator[(K, V)] = tupleView.iterator
+    override def knownSize: Int = tupleView.knownSize
+    override def isEmpty: Boolean = tupleView.isEmpty
+  }
+
+  @SerialVersionUID(3L)
+  private class OverSeqView[K, +V](underlying: SeqView[(K, V)]) extends AbstractMapView[K, V] {
+    private[this] lazy val tupleView = underlying.reverse.distinctBy(_._1)
+    def get(key: K): Option[V] = tupleView.find(_._1 == key).map(_._2)
+    def iterator: Iterator[(K, V)] = tupleView.iterator
+    override def knownSize: Int = tupleView.knownSize
+    override def isEmpty: Boolean = tupleView.isEmpty
+  }
+
+  @SerialVersionUID(3L)
   class Id[K, +V](underlying: SomeMapOps[K, V]) extends AbstractMapView[K, V] {
     def get(key: K): Option[V] = underlying.get(key)
     def iterator: Iterator[(K, V)] = underlying.iterator
@@ -87,7 +105,13 @@ object MapView {
   private class MapViewMapFactory[K, V] extends MapFactory[MapView] {
     def newBuilder[X, Y]: Builder[(X, Y), MapView[X, Y]] = HashMap.newBuilder[X, Y].mapResult(_.view)
     def empty[X, Y]: MapView[X, Y] = MapView.empty[X, Y]
-    def from[X, Y](it: IterableOnce[(X, Y)]): MapView[X, Y] = ???
+    def from[X, Y](it: IterableOnce[(X, Y)]): MapView[X, Y] = it match {
+      case it: MapView[X, Y]    => it
+      case it: Map[X, Y]        => new Id(it)
+      case it: SeqView[(X, Y)]  => new OverSeqView(it)
+      case it: Seq[(X, Y)]      => new OverSeqView(it.view)
+      case _                    => new OverSeqView(LazyList.from(it).view)
+    }
   }
 }
 
