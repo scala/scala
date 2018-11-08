@@ -1,9 +1,12 @@
 package scala.tools.nsc
 
+import java.io.Closeable
+
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.reflect.internal.util.{AbstractFileClassLoader, NoSourceFile}
 import scala.reflect.io.{Path, VirtualDirectory}
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
@@ -16,8 +19,16 @@ class GlobalCustomizeClassloaderTest {
   // A use case could be for a build tool to take control of caching of these classloaders in a way
   // that properly closes them before one of the elements needs to be overwritten.
   @Test def test(): Unit = {
+    def closeUnexpected(): Nothing = {
+      // Scalac won't call close on this when Global.close is called, as it assumes that we are in charge
+      // of its lifecycle.
+      throw new UnsupportedOperationException("unexpected call to close()!")
+    }
+
     val g = new Global(new Settings) {
-      override protected[scala] def findMacroClassLoader(): ClassLoader = getClass.getClassLoader
+      override protected[scala] def findMacroClassLoader(): ClassLoader = new URLClassLoader(Nil, getClass.getClassLoader){
+        override def close(): Unit = closeUnexpected()
+      }
       override protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
         val d = new VirtualDirectory("", None)
         val xml = d.fileNamed("scalac-plugin.xml")
@@ -29,7 +40,9 @@ class GlobalCustomizeClassloaderTest {
             |</plugin>
             |""".stripMargin.getBytes())
         out.close()
-        new AbstractFileClassLoader(d, getClass.getClassLoader)
+        new AbstractFileClassLoader(d, getClass.getClassLoader) with Closeable {
+          override def close(): Unit = closeUnexpected()
+        }
       }
     }
     g.settings.usejavacp.value = true
