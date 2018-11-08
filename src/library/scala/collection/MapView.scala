@@ -13,13 +13,17 @@
 package scala.collection
 
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Builder
 
 trait MapView[K, +V]
 extends View[(K, V)]
-  with MapOps[K, V, MapView, MapView[K, V]]
-    with ViewOps[(K, V), View, MapView[K, V]] {
+  with ViewOps[(K, V), View, MapView[K, V]]
+  with MapOps[K, V, MapView, MapView[K, V]] {
+
+  override protected def fromSpecific(coll: IterableOnce[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
 
   override def view: MapView[K, V] = this
 
