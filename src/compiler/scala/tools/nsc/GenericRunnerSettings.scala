@@ -16,7 +16,14 @@ import java.net.URL
 import scala.tools.util.PathResolver
 
 class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
-  lazy val classpathURLs: Seq[URL] = new PathResolver(this).resultAsURLs
+  lazy val classpathURLs: Seq[URL] = {
+    val registry = new CloseableRegistry
+    try {
+      new PathResolver(this, registry).resultAsURLs
+    } finally {
+      registry.close()
+    }
+  }
 
   val howtorun =
     ChoiceSetting(

@@ -138,7 +138,6 @@ object ScalaClassLoader {
       extends JURLClassLoader(urls.toArray, parent)
          with ScalaClassLoader
          with HasClassPath {
-
     private[this] var classloaderURLs: Seq[URL] = urls
     def classPathURLs: Seq[URL] = classloaderURLs
 

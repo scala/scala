@@ -14,6 +14,8 @@ package scala.tools.nsc
 package typechecker
 
 import java.lang.Math.min
+import java.net.URL
+
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
@@ -22,6 +24,7 @@ import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
+import scala.reflect.io.AbstractFile
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
@@ -63,49 +66,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   lazy val fastTrack = new FastTrack[self.type](self)
 
   def globalSettings = global.settings
-
-  private final val macroClassLoadersCache =
-    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader]()
-
-  /** Obtains a `ClassLoader` instance used for macro expansion.
-   *
-   *  By default a new `ScalaClassLoader` is created using the classpath
-   *  from global and the classloader of self as parent.
-   *
-   *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
-   */
-  protected def findMacroClassLoader(): ClassLoader = {
-    val classpath = global.classPath.asURLs
-    def newLoader = () => {
-      macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-    }
-
-    val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
-    if (disableCache) newLoader()
-    else {
-      import scala.tools.nsc.io.Jar
-      import scala.reflect.io.{AbstractFile, Path}
-
-      val urlsAndFiles = classpath.map(u => u -> AbstractFile.getURL(u))
-      val hasNullURL = urlsAndFiles.filter(_._2 eq null)
-      if (hasNullURL.nonEmpty) {
-        // TODO if the only null is jrt:// we can still cache
-        // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
-        macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
-        newLoader()
-      } else {
-        val locations = urlsAndFiles.map(t => Path(t._2.file))
-        val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
-        if (nonJarZips.nonEmpty) {
-          macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
-          newLoader()
-        } else {
-          macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
-        }
-      }
-    }
-  }
 
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
@@ -934,6 +894,11 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           tree
       })
     }.transform(expandee)
+}
+
+object Macros {
+  final val macroClassLoadersCache =
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader.URLClassLoader]()
 }
 
 trait MacrosStats {

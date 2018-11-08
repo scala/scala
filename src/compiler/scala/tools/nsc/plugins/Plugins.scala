@@ -13,7 +13,14 @@
 package scala.tools.nsc
 package plugins
 
+import java.net.URL
+
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
+import scala.tools.nsc
+import scala.tools.nsc.io.Jar
+import scala.tools.nsc.plugins.Plugin.pluginClassLoadersCache
+import scala.tools.nsc.typechecker.Macros
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver.Defaults
 
@@ -37,7 +44,7 @@ trait Plugins { global: Global =>
       def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
       asPath(settings.pluginsDir.value) map injectDefault map Path.apply
     }
-    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value, settings.YcachePluginClassLoader.value == settings.CachePolicy.None.name)
+    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value, findPluginClassLoader(_))
     val (goods, errors) = maybes partition (_.isSuccess)
     // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
@@ -51,6 +58,37 @@ trait Plugins { global: Global =>
     // is to register annotation checkers during object construction, so
     // creating multiple plugin instances will leave behind stale checkers.
     classes map (Plugin.instantiate(_, this))
+  }
+
+  /**
+    * Locate or create the classloader to load a compiler plugin with `classpath`.
+    *
+    * Subclasses may override to customise the behaviour.
+    *
+    * @param classpath
+    * @return
+    */
+  protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
+    val disableCache = settings.YcachePluginClassLoader.value == settings.CachePolicy.None.name
+    def newLoader = () => {
+      val compilerLoader = classOf[Plugin].getClassLoader
+      val urls = classpath map (_.toURL)
+      ScalaClassLoader fromURLs (urls, compilerLoader)
+    }
+
+    // Create a class loader with the specified locations plus
+    // the loader that loaded the Scala compiler.
+    //
+    // If the class loader has already been created before and the
+    // file stamps are the same, the previous loader is returned to
+    // mitigate the cost of dynamic classloading as it has been
+    // measured in https://github.com/scala/scala-dev/issues/458.
+
+    if (disableCache || classpath.exists(!Jar.isJarOrZip(_))) {
+      val loader = newLoader()
+      closeableRegistry.registerClosable(loader)
+      loader
+    } else pluginClassLoadersCache.getOrCreate(classpath.map(_.jfile.toPath()), newLoader, closeableRegistry)
   }
 
   protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()
@@ -123,4 +161,49 @@ trait Plugins { global: Global =>
     (for (plug <- roughPluginsList ; help <- plug.optionsHelp) yield {
       "\nOptions for plugin '%s':\n%s\n".format(plug.name, help)
     }).mkString
+
+  /** Obtains a `ClassLoader` instance used for macro expansion.
+    *
+    *  By default a new `ScalaClassLoader` is created using the classpath
+    *  from global and the classloader of self as parent.
+    *
+    *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
+    */
+  protected[scala] def findMacroClassLoader(): ClassLoader = {
+    val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
+      for {
+        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
+        af <- Option(nsc.io.AbstractFile getDirectory file)
+      } yield af.file.toURI.toURL
+    } else global.classPath.asURLs
+    def newLoader: () => ScalaClassLoader.URLClassLoader = () => {
+      analyzer.macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+      ScalaClassLoader.fromURLs(classpath, getClass.getClassLoader)
+    }
+
+    val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
+    if (disableCache) newLoader()
+    else {
+      import scala.tools.nsc.io.Jar
+      import scala.reflect.io.{AbstractFile, Path}
+
+      val urlsAndFiles = classpath.map(u => u -> AbstractFile.getURL(u))
+      val hasNullURL = urlsAndFiles.filter(_._2 eq null)
+      if (hasNullURL.nonEmpty) {
+        // TODO if the only null is jrt:// we can still cache
+        // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
+        analyzer.macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
+        perRunCaches.recordClassloader(newLoader())
+      } else {
+        val locations = urlsAndFiles.map(t => Path(t._2.file))
+        val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
+        if (nonJarZips.nonEmpty) {
+          analyzer.macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
+          perRunCaches.recordClassloader(newLoader())
+        } else {
+          Macros.macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader, closeableRegistry)
+        }
+      }
+    }
+  }
 }

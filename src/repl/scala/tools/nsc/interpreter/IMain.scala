@@ -14,7 +14,7 @@
 
 package scala.tools.nsc.interpreter
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.{PrintWriter, StringWriter, Closeable}
 import java.net.URL
 
 import PartialFunction.cond
@@ -72,7 +72,7 @@ import scala.util.control.NonFatal
   *  @author Lex Spoon
   */
 class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoader], compilerSettings: Settings, val reporter: ReplReporter)
-  extends Repl with Imports with PresentationCompilation {
+  extends Repl with Imports with PresentationCompilation with Closeable {
 
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
@@ -94,7 +94,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (_initializeComplete) global.classPath.asURLs
-    else new PathResolver(settings).resultAsURLs  // the compiler's classpath
+    else new PathResolver(settings, global.closeableRegistry).resultAsURLs  // the compiler's classpath
     )
 
   // Run the code body with the given boolean settings flipped to true.
@@ -569,7 +569,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   /** This instance is no longer needed, so release any resources
     *  it is using.  The reporter's output gets flushed.
     */
-  override def close(): Unit = reporter.flush()
+  override def close(): Unit = {
+    reporter.flush()
+    if (initializeComplete) {
+      global.close()
+    }
+  }
 
   override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
 

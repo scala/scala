@@ -37,7 +37,6 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
   // mimic the behavior of the old nsc.util.DirectoryClassPath
   def asURLs: Seq[URL] = Seq(new URL(dir.name))
   def asClassPathStrings: Seq[String] = Seq(dir.path)
-
   override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
 
   def findClassFile(className: String): Option[AbstractFile] = {
