@@ -97,20 +97,6 @@ object Plugin {
 
   private[nsc] val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader.URLClassLoader]()
 
-  /** Try to load a plugin description from the specified location.
-   */
-  private def loadDescriptionFromJar(jarp: Path): Try[PluginDescription] = {
-    // XXX Return to this once we have more ARM support
-    def read(is: Option[InputStream]) = is match {
-      case None     => throw new PluginLoadException(jarp.path, s"Missing $PluginXML in $jarp")
-      case Some(is) => PluginDescription.fromXML(is)
-    }
-    Try(new Jar(jarp.jfile).withEntryStream(PluginXML)(read))
-  }
-
-  private def loadDescriptionFromFile(f: Path): Try[PluginDescription] =
-    Try(PluginDescription.fromXML(new java.io.FileInputStream(f.jfile)))
-
   type AnyClass = Class[_]
 
   /** Use a class loader to load the plugin class.

@@ -244,6 +244,11 @@ final class FileBasedCache[T] {
 }
 
 object FileBasedCache {
+  // The tension here is that too long a delay could lead to an error (on Windows) with an inability
+  // to overwrite the JAR. To short a delay and the entry could be evicted before a subsequent
+  // sub-project compilation is able to get a cache hit. A more comprehensive solution would be to
+  // involve build tools in the policy: they could close entries with refcount of zero when that
+  // entry's JAR is about to be overwritten.
   private val deferCloseMs = Integer.getInteger("scalac.filebasedcache.defer.close.ms", 1000)
   private val timer: Option[Timer] = {
     if (deferCloseMs > 0)
