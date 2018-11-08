@@ -377,7 +377,7 @@ sealed abstract class Range(
     new AbstractIterator[Range] {
       private[this] var i = 0
       override def hasNext = i <= Range.this.length
-      override def next = {
+      override def next() = {
         if (hasNext) {
           val res = Range.this.drop(i)
           i += 1
@@ -392,7 +392,7 @@ sealed abstract class Range(
     new AbstractIterator[Range] {
       private[this] var i = 0
       override def hasNext = i <= Range.this.length
-      override def next = {
+      override def next() = {
         if (hasNext) {
           val res = Range.this.dropRight(i)
           i += 1
@@ -445,7 +445,7 @@ sealed abstract class Range(
       new AbstractIterator[Range] {
         private[this] var i = 0
         override def hasNext = Range.this.length > i
-        override def next =
+        override def next() =
           if (hasNext) {
             val x = Range.this.slice(i, i + s)
             i += s
