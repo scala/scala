@@ -45,7 +45,7 @@ trait Command {
 
   def copyright = Section("COPYRIGHT",
 
-    "This is open-source software, available to you under a BSD-like license. " &
+    "This is open-source software, available to you under the Apache License 2.0. " &
     "See accompanying \"copyright\" or \"LICENSE\" file for copying conditions. " &
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A " &
     "PARTICULAR PURPOSE.")
