@@ -621,11 +621,26 @@ object Either {
      *  Right(12).left.filter(_ > 10) // None
      *  }}}
      */
+    @deprecated("Use `filterToOption`, which more accurately reflects the return type", "2.13.0")
     def filter[B1](p: A => Boolean): Option[Either[A, B1]] = e match {
       case x @ Left(a) if p(a) => Some(x.asInstanceOf[Either[A, B1]])
       case _                   => None
     }
 
+    /** Returns `None` if this is a `Right` or if the given predicate
+     *  `p` does not hold for the left value, otherwise, returns a `Left`.
+     *
+     *  {{{
+     *  Left(12).left.filterToOption(_ > 10)  // Some(Left(12))
+     *  Left(7).left.filterToOption(_ > 10)   // None
+     *  Right(12).left.filterToOption(_ > 10) // None
+     *  }}}
+     */
+    def filterToOption[B1](p: A => Boolean): Option[Either[A, B1]] = e match {
+      case x @ Left(a) if p(a) => Some(x.asInstanceOf[Either[A, B1]])
+      case _                   => None
+    }
+    
     /** Returns a `Seq` containing the `Left` value if it exists or an empty
      *  `Seq` if this is a `Right`.
      *
@@ -764,11 +779,27 @@ object Either {
      * Left(12).right.filter(_ > 10)  // None
      * }}}
      */
+    @deprecated("Use `filterToOption`, which more accurately reflects the return type", "2.13.0")
     def filter[A1](p: B => Boolean): Option[Either[A1, B]] = e match {
       case Right(b) if p(b) => Some(Right(b))
       case _                => None
     }
-
+    
+    /** Returns `None` if this is a `Left` or if the
+     *  given predicate `p` does not hold for the right value,
+     *  otherwise, returns a `Right`.
+     *
+     * {{{
+     * Right(12).right.filterToOption(_ > 10) // Some(Right(12))
+     * Right(7).right.filterToOption(_ > 10)  // None
+     * Left(12).right.filterToOption(_ > 10)  // None
+     * }}}
+     */
+    def filterToOption[A1](p: B => Boolean): Option[Either[A1, B]] = e match {
+      case r @ Right(b) if p(b) => Some(r.asInstanceOf[Either[A1, B]])
+      case _                    => None
+    }
+    
     /** Returns a `Seq` containing the `Right` value if
      *  it exists or an empty `Seq` if this is a `Left`.
      *
