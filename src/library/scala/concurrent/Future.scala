@@ -780,7 +780,7 @@ object Future {
    * @param op       the fold operation to be applied to the zero and futures
    * @return         the `Future` holding the result of the fold
    */
-  @deprecated("use Future.foldLeft instead", "2.12.0")
+  @deprecated("Use Future.foldLeft instead", "2.12.0")
   // not removed in 2.13, to facilitate 2.11/2.12/2.13 cross-building; remove in 2.14 (see scala/scala#6319)
   def fold[T, R](futures: IterableOnce[Future[T]])(zero: R)(@deprecatedName("foldFun") op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) successful(zero)
@@ -800,7 +800,7 @@ object Future {
    * @param op       the reduce operation which is applied to the results of the futures
    * @return         the `Future` holding the result of the reduce
    */
-  @deprecated("use Future.reduceLeft instead", "2.12.0")
+  @deprecated("Use Future.reduceLeft instead", "2.12.0")
   // not removed in 2.13, to facilitate 2.11/2.12/2.13 cross-building; remove in 2.14 (see scala/scala#6319)
   final def reduce[T, R >: T](futures: IterableOnce[Future[T]])(op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] =
     if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))

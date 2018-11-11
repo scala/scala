@@ -188,17 +188,17 @@ object Predef extends LowPriorityImplicits {
   type OptManifest[T]   = scala.reflect.OptManifest[T]
   @implicitNotFound(msg = "No Manifest available for ${T}.")
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+  // @deprecated("Use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   type Manifest[T]      = scala.reflect.Manifest[T]
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+  // @deprecated("Use `scala.reflect.ClassTag` (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
   val Manifest          = scala.reflect.Manifest
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
   val NoManifest        = scala.reflect.NoManifest
 
   // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
+  // @deprecated("Use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
   def manifest[T](implicit m: Manifest[T])           = m
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")

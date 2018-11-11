@@ -457,14 +457,14 @@ trait StdNames {
         name drop idx + 2
     }
 
-    @deprecated("use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
-    @deprecated("use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
-    @deprecated("use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
-    @deprecated("use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
-    @deprecated("use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
-    @deprecated("use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
-    @deprecated("use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
-    @deprecated("use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
+    @deprecated("Use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
+    @deprecated("Use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
+    @deprecated("Use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
+    @deprecated("Use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
+    @deprecated("Use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
+    @deprecated("Use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
+    @deprecated("Use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
+    @deprecated("Use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
 
     /**
      * Convert `Tuple2$mcII` to `Tuple2`, or `T1$sp` to `T1`.

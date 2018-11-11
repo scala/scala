@@ -396,7 +396,7 @@ trait Trees { self: Universe =>
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
 
     /** @see [[InternalApi.classDef]] */
-    @deprecated("use `internal.classDef` instead", "2.11.0")
+    @deprecated("Use `internal.classDef` instead", "2.11.0")
     def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ClassDef = internal.classDef(sym, impl)
   }
 
@@ -445,7 +445,7 @@ trait Trees { self: Universe =>
     def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
 
     /** @see [[InternalApi.moduleDef]] */
-    @deprecated("use `internal.moduleDef` instead", "2.11.0")
+    @deprecated("Use `internal.moduleDef` instead", "2.11.0")
     def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ModuleDef = internal.moduleDef(sym, impl)
   }
 
@@ -525,11 +525,11 @@ trait Trees { self: Universe =>
     def unapply(valDef: ValDef): Option[(Modifiers, TermName, Tree, Tree)]
 
     /** @see [[InternalApi.valDef]] */
-    @deprecated("use `internal.valDef` instead", "2.11.0")
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): ValDef = internal.valDef(sym, rhs)
 
     /** @see [[InternalApi.valDef]] */
-    @deprecated("use `internal.valDef` instead", "2.11.0")
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): ValDef = internal.valDef(sym)
   }
 
@@ -576,23 +576,23 @@ trait Trees { self: Universe =>
     def unapply(defDef: DefDef): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
 
     /** @see [[InternalApi.defDef]] */
-    @deprecated("use `internal.defDef` instead", "2.11.0")
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, vparamss, rhs)
 
     /** @see [[InternalApi.defDef]] */
-    @deprecated("use `internal.defDef` instead", "2.11.0")
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, vparamss, rhs)
 
     /** @see [[InternalApi.defDef]] */
-    @deprecated("use `internal.defDef` instead", "2.11.0")
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, mods: Modifiers, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, rhs)
 
     /** @see [[InternalApi.defDef]] */
-    @deprecated("use `internal.defDef` instead", "2.11.0")
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
 
     /** @see [[InternalApi.defDef]] */
-    @deprecated("use `internal.defDef` instead", "2.11.0")
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
   }
 
@@ -648,11 +648,11 @@ trait Trees { self: Universe =>
     def unapply(typeDef: TypeDef): Option[(Modifiers, TypeName, List[TypeDef], Tree)]
 
     /** @see [[InternalApi.typeDef]] */
-    @deprecated("use `internal.typeDef` instead", "2.11.0")
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): TypeDef = internal.typeDef(sym, rhs)
 
     /** @see [[InternalApi.typeDef]] */
-    @deprecated("use `internal.typeDef` instead", "2.11.0")
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): TypeDef = internal.typeDef(sym)
   }
 
@@ -716,7 +716,7 @@ trait Trees { self: Universe =>
     def unapply(labelDef: LabelDef): Option[(TermName, List[Ident], Tree)]
 
     /** @see [[InternalApi.labelDef]] */
-    @deprecated("use `internal.labelDef` instead", "2.11.0")
+    @deprecated("Use `internal.labelDef` instead", "2.11.0")
     def apply(sym: Symbol, params: List[Symbol], rhs: Tree)(implicit token: CompatToken): LabelDef = internal.labelDef(sym, params, rhs)
   }
 
@@ -2112,7 +2112,7 @@ trait Trees { self: Universe =>
    */
   val noSelfType: ValDef
 
-  @deprecated("use `noSelfType` instead", "2.11.0")
+  @deprecated("Use `noSelfType` instead", "2.11.0")
   val emptyValDef: ValDef
 
   /** An empty superclass constructor call corresponding to:
@@ -2130,19 +2130,19 @@ trait Trees { self: Universe =>
    *  Flattens directly nested blocks.
    *  @group Factories
    */
-  @deprecated("use q\"{..$stats}\" instead. Flatten directly nested blocks manually if needed", "2.10.1")
+  @deprecated("Use q\"{..$stats}\" instead. Flatten directly nested blocks manually if needed", "2.10.1")
   def Block(stats: Tree*): Block
 
   /** A factory method for `CaseDef` nodes.
    *  @group Factories
    */
-  @deprecated("use cq\"$pat => $body\" instead", "2.10.1")
+  @deprecated("Use cq\"$pat => $body\" instead", "2.10.1")
   def CaseDef(pat: Tree, body: Tree): CaseDef
 
   /** A factory method for `Bind` nodes.
    *  @group Factories
    */
-  @deprecated("use the canonical Bind constructor to create a bind and then initialize its symbol manually", "2.10.1")
+  @deprecated("Use the canonical Bind constructor to create a bind and then initialize its symbol manually", "2.10.1")
   def Bind(sym: Symbol, body: Tree): Bind
 
   /** A factory method for `Try` nodes.
@@ -2154,44 +2154,44 @@ trait Trees { self: Universe =>
   /** A factory method for `Throw` nodes.
    *  @group Factories
    */
-  @deprecated("use q\"throw new $tpe(..$args)\" instead", "2.10.1")
+  @deprecated("Use q\"throw new $tpe(..$args)\" instead", "2.10.1")
   def Throw(tpe: Type, args: Tree*): Throw
 
   /** Factory method for object creation `new tpt(args_1)...(args_n)`
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    *  @group Factories
    */
-  @deprecated("use q\"new $tpt(...$argss)\" instead", "2.10.1")
+  @deprecated("Use q\"new $tpt(...$argss)\" instead", "2.10.1")
   def New(tpt: Tree, argss: List[List[Tree]]): Tree
 
   /** 0-1 argument list new, based on a type.
    *  @group Factories
    */
-  @deprecated("use q\"new $tpe(..$args)\" instead", "2.10.1")
+  @deprecated("Use q\"new $tpe(..$args)\" instead", "2.10.1")
   def New(tpe: Type, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a symbol.
    *  @group Factories
    */
-  @deprecated("use q\"new ${sym.toType}(..$args)\" instead", "2.10.1")
+  @deprecated("Use q\"new ${sym.toType}(..$args)\" instead", "2.10.1")
   def New(sym: Symbol, args: Tree*): Tree
 
   /** A factory method for `Apply` nodes.
    *  @group Factories
    */
-  @deprecated("use q\"$sym(..$args)\" instead", "2.10.1")
+  @deprecated("Use q\"$sym(..$args)\" instead", "2.10.1")
   def Apply(sym: Symbol, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a type tree.
    *  @group Factories
    */
-  @deprecated("use q\"new $tpt(..$args)\" instead", "2.10.1")
+  @deprecated("Use q\"new $tpt(..$args)\" instead", "2.10.1")
   def ApplyConstructor(tpt: Tree, args: List[Tree]): Tree
 
   /** A factory method for `Super` nodes.
    *  @group Factories
    */
-  @deprecated("use q\"$sym.super[$mix].x\".qualifier instead", "2.10.1")
+  @deprecated("Use q\"$sym.super[$mix].x\".qualifier instead", "2.10.1")
   def Super(sym: Symbol, mix: TypeName): Tree
 
   /** A factory method for `This` nodes.
@@ -2203,7 +2203,7 @@ trait Trees { self: Universe =>
    *  The string `name` argument is assumed to represent a [[scala.reflect.api.Names#TermName `TermName`]].
    *  @group Factories
    */
-  @deprecated("use Select(tree, TermName(name)) instead", "2.10.1")
+  @deprecated("Use Select(tree, TermName(name)) instead", "2.10.1")
   def Select(qualifier: Tree, name: String): Select
 
   /** A factory method for `Select` nodes.
@@ -2214,7 +2214,7 @@ trait Trees { self: Universe =>
   /** A factory method for `Ident` nodes.
    *  @group Factories
    */
-  @deprecated("use Ident(TermName(name)) instead", "2.10.1")
+  @deprecated("Use Ident(TermName(name)) instead", "2.10.1")
   def Ident(name: String): Ident
 
   /** A factory method for `Ident` nodes.
@@ -2664,7 +2664,7 @@ trait Trees { self: Universe =>
    */
   val Modifiers: ModifiersExtractor
 
-  @deprecated("use ModifiersExtractor instead", "2.11.0")
+  @deprecated("Use ModifiersExtractor instead", "2.11.0")
   type ModifiersCreator = ModifiersExtractor
 
   /** An extractor class to create and pattern match with syntax `Modifiers(flags, privateWithin, annotations)`.

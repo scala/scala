@@ -823,12 +823,12 @@ trait Definitions extends api.StandardDefinitions {
       def productProj(z:Symbol, j: Int): TermSymbol = getMemberValue(z, nme.productAccessorName(j))
 
     /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
-    @deprecated("no longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
+    @deprecated("No longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
       case Some(x)  => tpe.baseType(x).typeArgs
       case _        => Nil
     }
 
-    @deprecated("no longer used", "2.11.0") def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
+    @deprecated("No longer used", "2.11.0") def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
       case RefinedType(p :: _, _) => p.dealiasWiden
       case tp                     => tp
     }

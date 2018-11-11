@@ -53,7 +53,7 @@ trait Trees extends api.Trees {
 
     private[this] var rawtpe: Type = _
     final def tpe = rawtpe
-    @deprecated("use setType", "2.11.0") def tpe_=(t: Type): Unit = setType(t)
+    @deprecated("Use setType", "2.11.0") def tpe_=(t: Type): Unit = setType(t)
 
     def clearType(): this.type = this setType null
     def setType(tp: Type): this.type = { rawtpe = tp; this }
@@ -63,7 +63,7 @@ trait Trees extends api.Trees {
     def symbol_=(sym: Symbol): Unit = { throw new UnsupportedOperationException("symbol_= inapplicable for " + this) }
     def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
     def hasSymbolField = false
-    @deprecated("use hasSymbolField", "2.11.0") def hasSymbol = hasSymbolField
+    @deprecated("Use hasSymbolField", "2.11.0") def hasSymbol = hasSymbolField
 
     def isDef = false
 
@@ -1437,7 +1437,7 @@ trait Trees extends api.Trees {
   object noSelfType extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
   object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
 
-  @deprecated("use `noSelfType` instead", "2.11.0") lazy val emptyValDef = noSelfType
+  @deprecated("Use `noSelfType` instead", "2.11.0") lazy val emptyValDef = noSelfType
 
   class InternalTransformer extends Transformer {
     override def transform(tree: Tree): Tree = tree.transform(this)

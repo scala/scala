@@ -35,6 +35,6 @@ package object macros {
    *  and `scala.reflect.macros.whitebox.Context`. The original `Context` is left in place for compatibility reasons,
    *  but it is now deprecated, nudging the users to choose between blackbox and whitebox macros.
    */
-  @deprecated("use blackbox.Context or whitebox.Context instead", "2.11.0")
+  @deprecated("Use blackbox.Context or whitebox.Context instead", "2.11.0")
   type Context = whitebox.Context
 }

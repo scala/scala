@@ -59,7 +59,7 @@ case class StringContext(parts: String*) {
 
   import StringContext._
 
-  @deprecated("use same-named method on StringContext companion object", "2.13.0")
+  @deprecated("Use same-named method on StringContext companion object", "2.13.0")
   def checkLengths(args: scala.collection.Seq[Any]): Unit =
     StringContext.checkLengths(args, parts)
 
@@ -180,7 +180,7 @@ object StringContext {
    *  @param  str  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */
-  @deprecated("use processEscapes", "2.13.0")
+  @deprecated("Use processEscapes", "2.13.0")
   def treatEscapes(str: String): String = processEscapes(str)
 
   /** Expands standard Scala escape sequences in a string.

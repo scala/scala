@@ -376,7 +376,7 @@ private[internal] trait TypeMaps {
     (pre eq NoType) || (pre eq NoPrefix) || !isPossiblePrefix(clazz)
     )
 
-  @deprecated("use new AsSeenFromMap instead", "2.12.0")
+  @deprecated("Use new AsSeenFromMap instead", "2.12.0")
   final def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap = new AsSeenFromMap(pre, clazz)
 
   /** A map to compute the asSeenFrom method.

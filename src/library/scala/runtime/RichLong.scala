@@ -38,7 +38,7 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   override def signum: Int           = math.signum(self).toInt
 
   /** There is no reason to round a `Long`, but this method is provided to avoid accidental conversion to `Int` through `Float`. */
-  @deprecated("this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?", "2.11.0")
+  @deprecated("This is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?", "2.11.0")
   def round: Long = self
 
   def toBinaryString: String = java.lang.Long.toBinaryString(self)

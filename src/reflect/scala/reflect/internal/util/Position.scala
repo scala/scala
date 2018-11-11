@@ -178,7 +178,7 @@ private[util] trait InternalPositionImpl {
   def column: Int         = if (hasSource) calculateColumn() else 0
   def lineContent: String = if (hasSource) source.lineToString(line - 1) else ""
   def lineCaret: String   = if (hasSource) " " * (column - 1) + "^" else ""
-  @deprecated("use `lineCaret`", since="2.11.0")
+  @deprecated("Use `lineCaret`", since="2.11.0")
   def lineCarat: String   = lineCaret
 
   def showError(msg: String): String = {
@@ -237,30 +237,30 @@ private[util] trait InternalPositionImpl {
 private[util] trait DeprecatedPosition {
   self: Position =>
 
-  @deprecated("use `point`", "2.9.0") // Used in sbt 0.12.4
+  @deprecated("Use `point`", "2.9.0") // Used in sbt 0.12.4
   def offset: Option[Int] = if (isDefined) Some(point) else None
 
-  @deprecated("use `focus`", "2.11.0")
+  @deprecated("Use `focus`", "2.11.0")
   def toSingleLine: Position = this
 
-  @deprecated("use `line`", "2.11.0")
+  @deprecated("Use `line`", "2.11.0")
   def safeLine: Int = line
 
-  @deprecated("use `showDebug`", "2.11.0")
+  @deprecated("Use `showDebug`", "2.11.0")
   def dbgString: String = showDebug
 
-  @deprecated("use `finalPosition`", "2.11.0")
+  @deprecated("Use `finalPosition`", "2.11.0")
   def inUltimateSource(source: SourceFile): Position = source positionInUltimateSource this
 
-  @deprecated("use `lineCaret`", since="2.11.0")
+  @deprecated("Use `lineCaret`", since="2.11.0")
   def lineWithCarat(maxWidth: Int): (String, String) = ("", "")
 
-  @deprecated("use `withSource(source)` and `withShift`", "2.11.0")
+  @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
   def withSource(source: SourceFile, shift: Int): Position = this withSource source withShift shift
 
-  @deprecated("use `start` instead", "2.11.0")
+  @deprecated("Use `start` instead", "2.11.0")
   def startOrPoint: Int = if (isRange) start else point
 
-  @deprecated("use `end` instead", "2.11.0")
+  @deprecated("Use `end` instead", "2.11.0")
   def endOrPoint: Int = if (isRange) end else point
 }

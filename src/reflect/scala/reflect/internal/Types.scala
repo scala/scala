@@ -4128,7 +4128,7 @@ trait Types
   }
   def genPolyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
-  @deprecated("use genPolyType(...) instead", "2.10.0") // Used in reflection API
+  @deprecated("Use genPolyType(...) instead", "2.10.0") // Used in reflection API
   def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
   /** A creator for a type functions, assuming the type parameters tps already have the right owner. */
@@ -4318,7 +4318,7 @@ trait Types
     case _                    => false
   })
 
-  @deprecated("use isRawType", "2.10.1") // presently used by sbt
+  @deprecated("Use isRawType", "2.10.1") // presently used by sbt
   def isRaw(sym: Symbol, args: List[Type]) = (
        !phase.erasedTypes
     && args.isEmpty

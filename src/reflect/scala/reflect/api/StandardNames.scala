@@ -37,7 +37,7 @@ trait StandardNames {
   self: Universe =>
 
   /** @see [[termNames]] */
-  @deprecated("use `termNames` instead", "2.11.0")
+  @deprecated("Use `termNames` instead", "2.11.0")
   val nme: TermNamesApi
 
   /** A value containing all [[TermNamesApi standard term names]].
@@ -46,7 +46,7 @@ trait StandardNames {
   val termNames: TermNamesApi
 
   /** @see [[typeNames]] */
-  @deprecated("use `typeNames` instead", "2.11.0")
+  @deprecated("Use `typeNames` instead", "2.11.0")
   val tpnme: TypeNamesApi
 
   /** A value containing all [[TypeNamesApi standard type names]].

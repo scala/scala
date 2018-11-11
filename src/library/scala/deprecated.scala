@@ -24,7 +24,7 @@ import scala.annotation.meta._
  *  developers distinguish deprecations coming from different libraries:
  *
  *  {{{
- *  @deprecated("this method will be removed", "FooLib 12.0")
+ *  @deprecated("This method will be removed", "FooLib 12.0")
  *  def oldMethod(x: Int) = ...
  *  }}}
  *

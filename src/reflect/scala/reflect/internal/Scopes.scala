@@ -427,7 +427,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
     }
 
-    @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
+    @deprecated("Use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
     override def addString(sb: StringBuilder, start: String, sep: String, end: String) =

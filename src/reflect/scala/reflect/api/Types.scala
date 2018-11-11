@@ -107,7 +107,7 @@ trait Types {
     def typeSymbol: Symbol
 
     /** @see [[decl]] */
-    @deprecated("use `decl` instead", "2.11.0")
+    @deprecated("Use `decl` instead", "2.11.0")
     def declaration(name: Name): Symbol
 
     /** The defined or declared members with name `name` in this type;
@@ -117,7 +117,7 @@ trait Types {
     def decl(name: Name): Symbol
 
     /** @see [[decls]] */
-    @deprecated("use `decls` instead", "2.11.0")
+    @deprecated("Use `decls` instead", "2.11.0")
     def declarations: MemberScope
 
     /** A `Scope` containing directly declared members of this type.
@@ -162,7 +162,7 @@ trait Types {
      *    TypeRef(pre, <List>, List()) is replaced by
      *    PolyType(X, TypeRef(pre, <List>, List(X)))
      */
-    @deprecated("use `dealias` or `etaExpand` instead", "2.11.0")
+    @deprecated("Use `dealias` or `etaExpand` instead", "2.11.0")
     def normalize: Type
 
     /** Converts higher-kinded TypeRefs to PolyTypes.
@@ -275,7 +275,7 @@ trait Types {
     def typeArgs: List[Type]
 
     /** @see [[paramLists]] */
-    @deprecated("use `paramLists` instead", "2.11.0")
+    @deprecated("Use `paramLists` instead", "2.11.0")
     def paramss: List[List[Symbol]]
 
     /** For a method or poly type, a list of its value parameter sections,
@@ -442,7 +442,7 @@ trait Types {
     def unapply(tpe: ThisType): Option[Symbol]
 
     /** @see [[InternalApi.thisType]] */
-    @deprecated("use `internal.thisType` instead", "2.11.0")
+    @deprecated("Use `internal.thisType` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): Type = internal.thisType(sym)
   }
 
@@ -481,7 +481,7 @@ trait Types {
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
 
     /** @see [[InternalApi.singleType]] */
-    @deprecated("use `ClassSymbol.thisPrefix` or `internal.singleType` instead", "2.11.0")
+    @deprecated("Use `ClassSymbol.thisPrefix` or `internal.singleType` instead", "2.11.0")
     def apply(pre: Type, sym: Symbol)(implicit token: CompatToken): Type = internal.singleType(pre, sym)
   }
 
@@ -521,7 +521,7 @@ trait Types {
     def unapply(tpe: SuperType): Option[(Type, Type)]
 
     /** @see [[InternalApi.superType]] */
-    @deprecated("use `ClassSymbol.superPrefix` or `internal.superType` instead", "2.11.0")
+    @deprecated("Use `ClassSymbol.superPrefix` or `internal.superType` instead", "2.11.0")
     def apply(thistpe: Type, supertpe: Type)(implicit token: CompatToken): Type = internal.superType(thistpe, supertpe)
   }
 
@@ -569,7 +569,7 @@ trait Types {
     def unapply(tpe: ConstantType): Option[Constant]
 
     /** @see [[InternalApi.constantType]] */
-    @deprecated("use `value.tpe` or `internal.constantType` instead", "2.11.0")
+    @deprecated("Use `value.tpe` or `internal.constantType` instead", "2.11.0")
     def apply(value: Constant)(implicit token: CompatToken): ConstantType = internal.constantType(value)
   }
 
@@ -612,7 +612,7 @@ trait Types {
     def unapply(tpe: TypeRef): Option[(Type, Symbol, List[Type])]
 
     /** @see [[InternalApi.typeRef]] */
-    @deprecated("use `internal.typeRef` instead", "2.11.0")
+    @deprecated("Use `internal.typeRef` instead", "2.11.0")
     def apply(pre: Type, sym: Symbol, args: List[Type])(implicit token: CompatToken): Type = internal.typeRef(pre, sym, args)
   }
 
@@ -672,11 +672,11 @@ trait Types {
     def unapply(tpe: RefinedType): Option[(List[Type], Scope)]
 
     /** @see [[InternalApi.refinedType]] */
-    @deprecated("use `internal.refinedType` instead", "2.11.0")
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls)
 
     /** @see [[InternalApi.refinedType]] */
-    @deprecated("use `internal.refinedType` instead", "2.11.0")
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope, clazz: Symbol)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls, clazz)
   }
 
@@ -721,7 +721,7 @@ trait Types {
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
 
     /** @see [[InternalApi.classInfoType]] */
-    @deprecated("use `internal.classInfoType` instead", "2.11.0")
+    @deprecated("Use `internal.classInfoType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope, typeSymbol: Symbol)(implicit token: CompatToken): ClassInfoType = internal.classInfoType(parents, decls, typeSymbol)
   }
 
@@ -770,7 +770,7 @@ trait Types {
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
 
     /** @see [[InternalApi.methodType]] */
-    @deprecated("use `internal.methodType` instead", "2.11.0")
+    @deprecated("Use `internal.methodType` instead", "2.11.0")
     def apply(params: List[Symbol], resultType: Type)(implicit token: CompatToken): MethodType = internal.methodType(params, resultType)
   }
 
@@ -806,7 +806,7 @@ trait Types {
     def unapply(tpe: NullaryMethodType): Option[(Type)]
 
     /** @see [[InternalApi.nullaryMethodType]] */
-    @deprecated("use `internal.nullaryMethodType` instead", "2.11.0")
+    @deprecated("Use `internal.nullaryMethodType` instead", "2.11.0")
     def apply(resultType: Type)(implicit token: CompatToken): NullaryMethodType = internal.nullaryMethodType(resultType)
   }
 
@@ -840,7 +840,7 @@ trait Types {
     def unapply(tpe: PolyType): Option[(List[Symbol], Type)]
 
     /** @see [[InternalApi.polyType]] */
-    @deprecated("use `internal.polyType` instead", "2.11.0")
+    @deprecated("Use `internal.polyType` instead", "2.11.0")
     def apply(typeParams: List[Symbol], resultType: Type)(implicit token: CompatToken): PolyType = internal.polyType(typeParams, resultType)
   }
 
@@ -878,7 +878,7 @@ trait Types {
     def unapply(tpe: ExistentialType): Option[(List[Symbol], Type)]
 
     /** @see [[InternalApi.existentialType]] */
-    @deprecated("use `internal.existentialType` instead", "2.11.0")
+    @deprecated("Use `internal.existentialType` instead", "2.11.0")
     def apply(quantified: List[Symbol], underlying: Type)(implicit token: CompatToken): ExistentialType = internal.existentialType(quantified, underlying)
   }
 
@@ -916,7 +916,7 @@ trait Types {
     def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type)]
 
     /** @see [[InternalApi.annotatedType]] */
-    @deprecated("use `internal.annotatedType` instead", "2.11.0")
+    @deprecated("Use `internal.annotatedType` instead", "2.11.0")
     def apply(annotations: List[Annotation], underlying: Type)(implicit token: CompatToken): AnnotatedType = internal.annotatedType(annotations, underlying)
   }
 
@@ -960,7 +960,7 @@ trait Types {
     def unapply(tpe: TypeBounds): Option[(Type, Type)]
 
     /** @see [[InternalApi.typeBounds]] */
-    @deprecated("use `internal.typeBounds` instead", "2.11.0")
+    @deprecated("Use `internal.typeBounds` instead", "2.11.0")
     def apply(lo: Type, hi: Type)(implicit token: CompatToken): TypeBounds = internal.typeBounds(lo, hi)
   }
 
@@ -1013,7 +1013,7 @@ trait Types {
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
 
     /** @see [[InternalApi.boundedWildcardType]] */
-    @deprecated("use `internal.boundedWildcardType` instead", "2.11.0")
+    @deprecated("Use `internal.boundedWildcardType` instead", "2.11.0")
     def apply(bounds: TypeBounds)(implicit token: CompatToken): BoundedWildcardType = internal.boundedWildcardType(bounds)
   }
 

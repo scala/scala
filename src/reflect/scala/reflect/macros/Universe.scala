@@ -344,7 +344,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   }
 
   /** @see [[internal.gen]] */
-  @deprecated("use `internal.gen` instead", "2.11.0")
+  @deprecated("Use `internal.gen` instead", "2.11.0")
   val treeBuild: TreeGen
 
   /** @inheritdoc */
@@ -357,94 +357,94 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** Scala 2.10 compatibility enrichments for Symbol. */
     implicit class MacroCompatibleSymbol(symbol: Symbol) {
       /** @see [[InternalMacroApi.attachments]] */
-      @deprecated("use `internal.attachments` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.attachments` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def attachments: Attachments { type Pos = Position } = internal.attachments(symbol)
 
       /** @see [[InternalMacroApi.updateAttachment]] */
-      @deprecated("use `internal.updateAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.updateAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def updateAttachment[T: ClassTag](attachment: T): Symbol = internal.updateAttachment[T](symbol, attachment)
 
       /** @see [[InternalMacroApi.removeAttachment]] */
-      @deprecated("use `internal.removeAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.removeAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def removeAttachment[T: ClassTag]: Symbol = internal.removeAttachment[T](symbol)
 
       /** @see [[InternalMacroApi.setInfo]] */
-      @deprecated("use `internal.setInfo` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setInfo` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setTypeSignature(tpe: Type): Symbol = internal.setInfo(symbol, tpe)
 
       /** @see [[InternalMacroApi.setAnnotations]] */
-      @deprecated("use `internal.setAnnotations` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setAnnotations` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setAnnotations(annots: Annotation*): Symbol = internal.setAnnotations(symbol, annots: _*)
 
       /** @see [[InternalMacroApi.setName]] */
-      @deprecated("use `internal.setName` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setName` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setName(name: Name): Symbol = internal.setName(symbol, name)
 
       /** @see [[InternalMacroApi.setPrivateWithin]] */
-      @deprecated("use `internal.setPrivateWithin` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setPrivateWithin` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setPrivateWithin(sym: Symbol): Symbol = internal.setPrivateWithin(symbol, sym)
     }
 
     /** Scala 2.10 compatibility enrichments for TypeTree. */
     implicit class MacroCompatibleTree(tree: Tree) {
       /** @see [[InternalMacroApi.attachments]] */
-      @deprecated("use `internal.attachments` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.attachments` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def attachments: Attachments { type Pos = Position } = internal.attachments(tree)
 
       /** @see [[InternalMacroApi.updateAttachment]] */
-      @deprecated("use `internal.updateAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.updateAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def updateAttachment[T: ClassTag](attachment: T): Tree = internal.updateAttachment[T](tree, attachment)
 
       /** @see [[InternalMacroApi.removeAttachment]] */
-      @deprecated("use `internal.removeAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.removeAttachment` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def removeAttachment[T: ClassTag]: Tree = internal.removeAttachment[T](tree)
 
       /** @see [[InternalMacroApi.setPos]] */
-      @deprecated("use `internal.setPos` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setPos` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def pos_=(pos: Position): Unit = internal.setPos(tree, pos)
 
       /** @see [[InternalMacroApi.setPos]] */
-      @deprecated("use `internal.setPos` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setPos` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setPos(newpos: Position): Tree = internal.setPos(tree, newpos)
 
       /** @see [[InternalMacroApi.setType]] */
-      @deprecated("use `internal.setType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def tpe_=(t: Type): Unit = internal.setType(tree, t)
 
       /** @see [[InternalMacroApi.setType]] */
-      @deprecated("use `internal.setType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setType(tp: Type): Tree = internal.setType(tree, tp)
 
       /** @see [[InternalMacroApi.defineType]] */
-      @deprecated("use `internal.defineType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.defineType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def defineType(tp: Type): Tree = internal.defineType(tree, tp)
 
       /** @see [[InternalMacroApi.setSymbol]] */
-      @deprecated("use `internal.setSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def symbol_=(sym: Symbol): Unit = internal.setSymbol(tree, sym)
 
       /** @see [[InternalMacroApi.setSymbol]] */
-      @deprecated("use `internal.setSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setSymbol(sym: Symbol): Tree = internal.setSymbol(tree, sym)
     }
 
     /** Scala 2.10 compatibility enrichments for TypeTree. */
     implicit class CompatibleTypeTree(tt: TypeTree) {
       /** @see [[InternalMacroApi.setOriginal]] */
-      @deprecated("use `internal.setOriginal` instead or import `internal.decorators._` for infix syntax", "2.11.0")
+      @deprecated("Use `internal.setOriginal` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def setOriginal(tree: Tree): TypeTree = internal.setOriginal(tt, tree)
     }
 
     /** @see [[InternalMacroApi.captureVariable]] */
-    @deprecated("use `internal.captureVariable` instead", "2.11.0")
+    @deprecated("Use `internal.captureVariable` instead", "2.11.0")
     def captureVariable(vble: Symbol): Unit = internal.captureVariable(vble)
 
     /** @see [[InternalMacroApi.captureVariable]] */
-    @deprecated("use `internal.referenceCapturedVariable` instead", "2.11.0")
+    @deprecated("Use `internal.referenceCapturedVariable` instead", "2.11.0")
     def referenceCapturedVariable(vble: Symbol): Tree = internal.referenceCapturedVariable(vble)
 
     /** @see [[InternalMacroApi.captureVariable]] */
-    @deprecated("use `internal.capturedVariableType` instead", "2.11.0")
+    @deprecated("Use `internal.capturedVariableType` instead", "2.11.0")
     def capturedVariableType(vble: Symbol): Type = internal.capturedVariableType(vble)
   }
 

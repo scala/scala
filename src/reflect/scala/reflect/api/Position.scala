@@ -142,78 +142,78 @@ trait Position extends Attachments {
    *  If isDefined is true, offset and source are both defined.
    *  @group Common
    */
-  @deprecated("removed from the public API", "2.11.0") def isDefined: Boolean
+  @deprecated("Removed from the public API", "2.11.0") def isDefined: Boolean
 
   /** The point (where the ^ is) of the position, or else `default` if undefined.
    *  @group Common
    */
-  @deprecated("removed from the public API", "2.11.0") def pointOrElse(default: Int): Int
+  @deprecated("Removed from the public API", "2.11.0") def pointOrElse(default: Int): Int
 
   /** The start of the position's range, or point if not a range position. */
-  @deprecated("removed from the public API", "2.11.0") def startOrPoint: Int
+  @deprecated("Removed from the public API", "2.11.0") def startOrPoint: Int
 
   /** The end of the position's range, or point if not a range position.
    */
-  @deprecated("removed from the public API", "2.11.0") def endOrPoint: Int
+  @deprecated("Removed from the public API", "2.11.0") def endOrPoint: Int
 
   /** If this is a range, the union with the other range, with the point of this position.
    *  Otherwise, this position
    */
-  @deprecated("removed from the public API", "2.11.0") def union(pos: Pos): Pos
+  @deprecated("Removed from the public API", "2.11.0") def union(pos: Pos): Pos
 
   /** If this is a range position, the offset position of its start.
    *  Otherwise the position itself
    */
-  @deprecated("removed from the public API", "2.11.0") def focusStart: Pos
+  @deprecated("Removed from the public API", "2.11.0") def focusStart: Pos
 
   /** If this is a range position, the offset position of its end.
    *  Otherwise the position itself
    */
-  @deprecated("removed from the public API", "2.11.0") def focusEnd: Pos
+  @deprecated("Removed from the public API", "2.11.0") def focusEnd: Pos
 
   /** Does this position include the given position `pos`?
    *  This holds if `this` is a range position and its range [start..end]
    *  is the same or covers the range of the given position, which may or may not be a range position.
    */
-  @deprecated("removed from the public API", "2.11.0") def includes(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def includes(pos: Pos): Boolean
 
   /** Does this position properly include the given position `pos` ("properly" meaning their
    *  ranges are not the same)?
    */
-  @deprecated("removed from the public API", "2.11.0") def properlyIncludes(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def properlyIncludes(pos: Pos): Boolean
 
   /** Does this position precede that position?
    *  This holds if both positions are defined and the end point of this position
    *  is not larger than the start point of the given position.
    */
-  @deprecated("removed from the public API", "2.11.0") def precedes(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def precedes(pos: Pos): Boolean
 
   /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
    *  do not share a common point).
    */
-  @deprecated("removed from the public API", "2.11.0") def properlyPrecedes(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def properlyPrecedes(pos: Pos): Boolean
 
   /** Does this position overlap with that position?
    *  This holds if both positions are ranges and there is an interval of
    *  non-zero length that is shared by both position ranges.
    */
-  @deprecated("removed from the public API", "2.11.0") def overlaps(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def overlaps(pos: Pos): Boolean
 
   /** Does this position cover the same range as that position?
    *  Holds only if both position are ranges
    */
-  @deprecated("removed from the public API", "2.11.0") def sameRange(pos: Pos): Boolean
+  @deprecated("Removed from the public API", "2.11.0") def sameRange(pos: Pos): Boolean
 
   /** Convert this to a position around `point` that spans a single source line
    */
-  @deprecated("removed from the public API", "2.11.0") def toSingleLine: Pos
+  @deprecated("Removed from the public API", "2.11.0") def toSingleLine: Pos
 
   /** The content of the line this Position refers to.
    *  @group Common
    */
-  @deprecated("removed from the public API", "2.11.0") def lineContent: String
+  @deprecated("Removed from the public API", "2.11.0") def lineContent: String
 
   /** Show a textual representation of the position.
    */
-  @deprecated("use `universe.show(position)` instead", "2.11.0") def show: String
+  @deprecated("Use `universe.show(position)` instead", "2.11.0") def show: String
 }
