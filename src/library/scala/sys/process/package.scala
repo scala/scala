@@ -232,6 +232,7 @@ package scala.sys {
       type JProcess               = java.lang.Process
       type JProcessBuilder        = java.lang.ProcessBuilder
       type OutputStream           = java.io.OutputStream
+      @deprecated("Use `java.util.concurrent.SynchronousQueue` instead.", since = "Scala 2.13.0")
       type SyncVar[T]             = scala.concurrent.SyncVar[T]
       type URL                    = java.net.URL
 

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit
  *  @tparam A type of the contained value
  *  @author  Martin Odersky
  */
+@deprecated("Use `java.util.concurrent.LinkedBlockingQueue with capacity 1` instead.", since = "Scala 2.13.0")
 class SyncVar[A] {
   private[this] var isDefined: Boolean = false
   private[this] var value: A = _

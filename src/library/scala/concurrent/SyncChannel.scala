@@ -19,6 +19,7 @@ package scala.concurrent
  *  @author  Philipp Haller
  *  @since 2.0
  */
+@deprecated("Use `java.util.concurrent.Exchanger` instead.", since = "Scala 2.13.0")
 class SyncChannel[A] {
 
   private[this] var pendingWrites = List[(A, SyncVar[Boolean])]()
@@ -30,7 +31,7 @@ class SyncChannel[A] {
 
     this.synchronized {
       // check whether there is a reader waiting
-      if (!pendingReads.isEmpty) {
+      if (pendingReads.nonEmpty) {
         val readReq  = pendingReads.head
         pendingReads = pendingReads.tail
 
@@ -55,7 +56,7 @@ class SyncChannel[A] {
 
     this.synchronized {
       // check whether there is a writer waiting
-      if (!pendingWrites.isEmpty) {
+      if (pendingWrites.nonEmpty) {
         // read data
         val (data, writeReq) = pendingWrites.head
         pendingWrites = pendingWrites.tail
