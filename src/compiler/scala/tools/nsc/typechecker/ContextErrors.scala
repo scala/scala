@@ -17,7 +17,7 @@ import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsStr
 import java.lang.System.{lineSeparator => EOL}
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
-import scala.util.control.NonFatal
+import scala.util.control.{ControlThrowable, NonFatal}
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
 import scala.reflect.internal.util.NoSourceFile
@@ -826,7 +826,7 @@ trait ContextErrors {
       }
 
 
-      case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
+      case object MacroExpansionException extends ControlThrowable
 
       protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg

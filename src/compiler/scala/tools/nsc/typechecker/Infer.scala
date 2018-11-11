@@ -124,7 +124,7 @@ trait Infer extends Checkable {
    */
   def freshVar(tparam: Symbol): TypeVar = TypeVar(tparam)
 
-  class NoInstance(msg: String) extends Throwable(msg) with ControlThrowable { }
+  class NoInstance(msg: String) extends ControlThrowable(msg)
   private class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {
     override def getMessage(): String = getmsg()
   }

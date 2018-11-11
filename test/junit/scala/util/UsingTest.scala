@@ -402,8 +402,8 @@ object UsingTest {
   final class UsingException(message: String) extends Exception(message)
   final class ClosingError(message: String) extends Error(message)
   final class UsingError(message: String) extends Error(message)
-  final class ClosingMarker(message: String) extends Throwable(message) with ControlThrowable
-  final class UsingMarker(message: String) extends Throwable(message) with ControlThrowable
+  final class ClosingMarker(message: String) extends ControlThrowable(message)
+  final class UsingMarker(message: String) extends ControlThrowable(message)
 
   abstract class BaseResource extends AutoCloseable {
     final def identity[A](a: A): A = a
@@ -423,17 +423,17 @@ object UsingTest {
   final class MarkerResource extends CustomResource(new ClosingMarker(_))
 
   def assertThrowableClass[T <: Throwable: ClassTag](t: Throwable): Unit = {
-    assertEquals(t.getClass, implicitly[ClassTag[T]].runtimeClass)
+    assertEquals(s"Caught [${t.getMessage}]", implicitly[ClassTag[T]].runtimeClass, t.getClass)
   }
 
   def assertSingleSuppressed[T <: Throwable: ClassTag](t: Throwable): Unit = {
     val suppressed = t.getSuppressed
-    assertEquals(suppressed.length, 1)
+    assertEquals(1, suppressed.length)
     assertThrowableClass[T](suppressed(0))
   }
 
   def assertNoSuppressed(t: Throwable): Unit = {
-    assertEquals(t.getSuppressed.length, 0)
+    assertEquals(0, t.getSuppressed.length)
   }
 
   def catchThrowable(thunk: => Any): Throwable = {
