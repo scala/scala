@@ -226,7 +226,7 @@ trait MethodSynthesis {
 
 
     def enterImplicitWrapper(classDef: ClassDef): Unit = {
-      val methDef = factoryMeth(classDef.mods & AccessFlags | METHOD | IMPLICIT | SYNTHETIC, classDef.name.toTermName, classDef)
+      val methDef = factoryMeth(classDef.mods & (AccessFlags | FINAL) | METHOD | IMPLICIT | SYNTHETIC, classDef.name.toTermName, classDef)
       val methSym = enterInScope(assignMemberSymbol(methDef))
       context.unit.synthetics(methSym) = methDef
       methSym setInfo implicitFactoryMethodCompleter(methDef, classDef.symbol)
