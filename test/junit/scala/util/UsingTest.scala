@@ -230,12 +230,14 @@ class UsingTest {
 
   @Test
   def safeUsingMultipleResourcesPropagatesCorrectlySimple(): Unit = {
-    val scala.util.Failure(usingException) = for {
-      _ <- Using(new ExceptionResource)
-      _ <- Using(new ErrorResource)
-    } yield {
-      throw new UsingException("nested `Using`")
-    }
+    val scala.util.Failure(usingException) = {
+      for {
+        _ <- Using(new ExceptionResource)
+        _ <- Using(new ErrorResource)
+      } yield {
+        throw new UsingException("nested `Using`")
+      }: Unit
+    }.use()
 
     // uncomment to debug actual suppression nesting
     //usingException.printStackTrace()
@@ -257,13 +259,15 @@ class UsingTest {
   @Test
   def safeUsingMultipleResourcesPropagatesCorrectlyComplex(): Unit = {
     val fatal = catchThrowable {
-      for {
-        _ <- Using(new ExceptionResource)
-        _ <- Using(new FatalResource)
-        _ <- Using(new ErrorResource)
-      } yield {
-        throw new UsingException("nested `Using`")
-      }
+      {
+        for {
+          _ <- Using(new ExceptionResource)
+          _ <- Using(new FatalResource)
+          _ <- Using(new ErrorResource)
+        } yield {
+          throw new UsingException("nested `Using`")
+        }: Unit
+      }.use()
     }
 
     // uncomment to debug actual suppression nesting
@@ -352,27 +356,31 @@ class UsingTest {
   @Test
   def safeUsing2Resources(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-    } yield {
-      r1.identity(1) + r2.identity(1)
-    }
+    val res = {
+      for {
+        r1 <- Using(group.newResource())
+        r2 <- Using(group.newResource())
+      } yield {
+        r1.identity(1) + r2.identity(1)
+      }
+    }.use()
     assertEquals(res, scala.util.Success(2))
   }
 
   @Test
   def safeUsing3Resources(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-      r3 <- Using(group.newResource())
-    } yield {
-      r1.identity(1) +
-        r2.identity(1) +
-        r3.identity(1)
-    }
+    val res = {
+      for {
+        r1 <- Using(group.newResource())
+        r2 <- Using(group.newResource())
+        r3 <- Using(group.newResource())
+      } yield {
+        r1.identity(1) +
+          r2.identity(1) +
+          r3.identity(1)
+      }
+    }.use()
     assertEquals(res, scala.util.Success(3))
   }
 

@@ -31,78 +31,33 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * [[scala.util.control.ControlThrowable ControlThrowable]], no exception will be added to
   * it as a suppressed exception.
   *
+  * The `ResourceUse` class encapsulates the creation of a resource, and an operation
+  * (from `map` or `flatMap`) to perform using the resource.
+  *
   * @example
   * {{{
   * val lines: Try[List[String]] = Using(resource1) { r1 =>
+  *   // use your resource here
   *   r1.lines.toList
   * }
   * }}}
   *
   * @example
   * {{{
-  * val lines: Try[Seq[String]] = for {
-  *   r1 <- Using(resource1)
-  *   r2 <- Using(resource2)
-  *   r3 <- Using(resource3)
-  *   r4 <- Using(resource4)
-  * } yield {
-  *   // use your resources here
-  *   r1.lines ++ r2.lines ++ r3.lines ++ r4.lines
-  * }
+  * val lines: Try[Seq[String]] = {
+  *   for {
+  *     r1 <- Using(resource1)
+  *     r2 <- Using(resource2)
+  *     r3 <- Using(resource3)
+  *     r4 <- Using(resource4)
+  *   } yield {
+  *     // use your resources here
+  *     r1.lines ++ r2.lines ++ r3.lines ++ r4.lines
+  *   }
+  * }.use()
   * }}}
-  */
-final class Using[R] private(resource: => R) {
-  private[this] val used = new AtomicBoolean(false)
-
-  /** Performs an operation using a resource, and then releases the resource,
-    * even if the operation throws an exception.
-    *
-    * @param f the operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  @inline def apply[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = map(f)
-
-  /** Performs an operation using a resource, and then releases the resource,
-    * even if the operation throws an exception.
-    *
-    * @param f the operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def map[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = Try { useWith(f) }
-
-  /** Performs an operation which returns a [[scala.util.Try `Try`]] using a resource,
-    * and then releases the resource, even if the operation throws an exception.
-    *
-    * @param f the `Try`-returning operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return the result of the inner operation, or a [[scala.util.Try `Try`]]
-    *         containing an exception if one was thrown by the operation or by
-    *         releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def flatMap[A](f: R => Try[A])(implicit r: Using.Resource[R]): Try[A] =
-    map {
-      r => f(r).get // otherwise inner Failure will be lost on exceptional release
-    }
-
-  @inline private[this] def useWith[A](f: R => A)(implicit r: Using.Resource[R]): A =
-    if (used.getAndSet(true)) throw new IllegalStateException("resource has already been used")
-    else Using.resource(resource)(f)
-}
-
-/** @define recommendUsing                   It is highly recommended to use the `Using` construct,
+  *
+  * @define recommendUsing                   It is highly recommended to use the `ResourceUse` construct,
   *                                          which safely wraps resource usage and management in a `Try`.
   * @define multiResourceSuppressionBehavior If more than one exception is thrown by the operation and releasing resources,
   *                                          the exception thrown ''first'' is thrown, with the other exceptions
@@ -115,12 +70,85 @@ final class Using[R] private(resource: => R) {
   *                                          it as a suppressed exception.
   */
 object Using {
-  /** Creates a `Using` from the given resource.
+  private final class SingleUse[R](resource: => R) {
+    private[this] val used = new AtomicBoolean(false)
+
+    def useWith[A](f: R => A)(implicit r: Using.Resource[R]): A =
+      if (used.getAndSet(true)) throw new IllegalStateException("resource has already been used")
+      else Using.resource(resource)(f)
+  }
+
+  private val cachedIdentity: Any => Any = identity
+
+  final class ResourceUse[R, A] private(resource: SingleUse[R], op: R => A) {
+    /** Performs an operation on the result of this `ResourceUse`'s existing operation
+      * using its resource, and then releases the resource,
+      * even if the operation throws an exception.
+      *
+      * @param f the operation to perform
+      * @param r an implicit [[Using.Resource]]
+      * @tparam B the return type of the operation
+      * @throws java.lang.IllegalStateException if the resource has already been used
+      * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
+      *         an exception if one was thrown by the operation or by releasing the resource
+      */
+    @throws[IllegalStateException]("if the resource has already been used")
+    def apply[B](f: A => B)(implicit r: Resource[R]): Try[B] = map(f).use()
+
+    /** Returns a `ResourceUse` which will perform the specified operation (after this `ResourceUse`'s
+      * operation) when [[use() used]].
+      *
+      * @param f the operation to perform
+      * @tparam B the return type of the operation
+      */
+    def map[B](f: A => B): ResourceUse[R, B] =
+      new ResourceUse(resource, if (op eq cachedIdentity) f.asInstanceOf[R => B] else r => f(op(r)))
+
+    /** Returns a `ResourceUse` which will perform the specified `ResourceUse`-returning operation
+      * and [[use() use]] the returned `ResourceUse` (after this `ResourceUse`'s operation) when [[use() used]].
+      *
+      * @param f the `ResourceUse`-returning operation to perform
+      * @tparam B the return type of the returned `ResourceUse`'s operation(s)
+      */
+    def flatMap[R1: Resource, B](f: A => ResourceUse[R1, B]): ResourceUse[R, B] =
+      new ResourceUse(resource, r => f(op(r)).use0())
+
+    /** Performs an operation on the result of this `ResourceUse`'s existing operation
+      * using its resource, and then releases the resource,
+      * even if the operation throws an exception.
+      *
+      * @param f the operation to perform
+      * @param r an implicit [[Using.Resource]]
+      * @throws java.lang.IllegalStateException if the resource has already been used
+      */
+    def foreach[U](f: A => U)(implicit r: Resource[R]): Unit = {
+      map(f).use()
+      ()
+    }
+
+    /** Performs this `ResourceUse`'s operation(s) using its resource, and then releases the resource,
+      * even if the operation throws an exception.
+      *
+      * @param r an implicit [[Using.Resource]]
+      * @throws java.lang.IllegalStateException if the resource has already been used
+      */
+    def use()(implicit r: Resource[R]): Try[A] = Try { use0() }
+
+    private def use0()(implicit r: Resource[R]): A = resource.useWith(op)
+  }
+
+  /** Creates a `ResourceUse` from the given resource.
     *
-    * @note If the resource does not have an implicit [[Resource]] in
-    *       scope, the returned `Using` will be useless.
+    * @note In order to allow certain usages of `ResourceUse`, the implicit
+    *       [[Resource `Resource`]] is a parameter on the [[ResourceUse.map `map`]],
+    *       [[ResourceUse.flatMap, `flatMap`]] and [[ResourceUse.apply `apply`]]
+    *       methods, rather than on the construction of the `ResourceUse`.
+    *       Consequently, it is possible to create a `ResourceUse` for which
+    *       there is no `Resource`; in that case, the `ResourceUse` returned
+    *       by this method will not be usable.
     */
-  def apply[R](resource: => R): Using[R] = new Using(resource)
+  def apply[R](resource: => R): ResourceUse[R, R] =
+    new ResourceUse[R, R](new SingleUse(resource), cachedIdentity.asInstanceOf[R => R])
 
   /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception. This method behaves similarly
