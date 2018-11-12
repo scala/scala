@@ -151,7 +151,7 @@ See `--help` for more info:
 root> partest --help
 ```
 
-Partests are compiled against the `quick` compiler (and `run` partests executed with the `quick` library),
+Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
 and therefore:
 
 * if you're working in the compiler, you must write a Partest; however
