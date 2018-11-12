@@ -79,7 +79,11 @@ root> junit/testQuick
 
 It might take a few minutes the first time you run `junit/testQuick`, but from the second time onwards
 sbt will only run the tests that is affected by the code change since the last run.
-See `test/junit/` for the examples of JUnit tests.
+See `test/junit/` for examples of JUnit tests.
+
+JUnit tests will be compiled with the `starr` compiler, and run against the `quick` library. Some JUnit tests (search for `BytecodeTest`) invoke the compiler programmatically and test its behavior or output, these tests use the `quick` compiler. 
+
+`starr` is the Scala release used to build the compiler and library, usually the last release. `quick` is the result of that compilation. See also ["Build Setup"](https://github.com/scala/scala#build-setup) in the README.
 
 #### ScalaCheck
 
@@ -147,8 +151,11 @@ See `--help` for more info:
 root> partest --help
 ```
 
-If you're fixing a bug in the compiler, you would typically start with Partest;
-If you're fixing a bug or implementing new features in the library, consider using JUnit and/or ScalaCheck.
+Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
+and therefore:
+
+* if you're working in the compiler, you must write a partest, or a `BytecodeTest` JUnit test which invokes the compiler programmatically; however
+* if you're working in the library, a JUnit and/or ScalaCheck is better.
 
 #### exploring with REPL
 
