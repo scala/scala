@@ -154,11 +154,7 @@ class PipeSourceSinkTest {
   }
 
   class PipeSink extends Process.PipeSink("TestPipeSink") {
-    def ensureRunloopStarted() = {
-      while (sink.size() > 0) {
-        Thread.sleep(1)
-      }
-    }
+    def ensureRunloopStarted() = while (sink.isSet) Thread.sleep(10L)
     def isReleased = {
       val field = classOf[Process.PipeSink].getDeclaredField("pipe")
       field.setAccessible(true)
@@ -168,11 +164,7 @@ class PipeSourceSinkTest {
   }
 
   class PipeSource extends Process.PipeSource("TestPipeSource") {
-    def ensureRunloopStarted() = {
-      while (source.size() > 0) {
-        Thread.sleep(1)
-      }
-    }
+    def ensureRunloopStarted() = while (source.isSet) Thread.sleep(10L)
     def isReleased = {
       val field = classOf[Process.PipeSource].getDeclaredField("pipe")
       field.setAccessible(true)
@@ -250,9 +242,9 @@ class PipeSourceSinkTest {
       sink.release()
     }
     Await.result(f, TestDuration.Standard)
-    assert(in.closed == true)
-    assert(source.isReleased == true)
-    assert(sink.isReleased == true)
+    assertTrue(in.closed)
+    assertTrue(source.isReleased)
+    assertTrue(sink.isReleased)
   }
 
   // PipeSource and PipeSink must release resources when interrupted during copy streams

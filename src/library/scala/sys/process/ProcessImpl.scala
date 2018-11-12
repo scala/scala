@@ -10,9 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package sys
-package process
+package scala.sys.process
 
 import processInternal._
 import java.io.{PipedInputStream, PipedOutputStream}
@@ -192,7 +190,7 @@ private[process] trait ProcessImpl {
   private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
     setName(s"PipeSource($label)-$getName")
     protected[this] val pipe = new PipedOutputStream
-    protected[this] val source = new LinkedBlockingQueue[Option[InputStream]]
+    protected[this] val source = new SyncVar[Option[InputStream]]
     override final def run(): Unit = {
       @tailrec def go(): Unit =
         source.take match {
@@ -203,19 +201,19 @@ private[process] trait ProcessImpl {
       catch onInterrupt(())
       finally BasicIO close pipe
     }
-    def connectIn(in: InputStream): Unit = source add Some(in)
+    def connectIn(in: InputStream): Unit = source.put(Some(in))
     def connectOut(sink: PipeSink): Unit = sink connectIn pipe
     def release(): Unit = {
       interrupt()
-      source add None
+      done()
       join()
     }
-    def done() = source add None
+    def done() = source.put(None)
   }
   private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
     setName(s"PipeSink($label)-$getName")
     protected[this] val pipe = new PipedInputStream
-    protected[this] val sink = new LinkedBlockingQueue[Option[OutputStream]]
+    protected[this] val sink = new SyncVar[Option[OutputStream]]
     override def run(): Unit = {
       @tailrec def go(): Unit =
         sink.take match {
@@ -226,14 +224,14 @@ private[process] trait ProcessImpl {
       catch onInterrupt(())
       finally BasicIO close pipe
     }
-    def connectOut(out: OutputStream): Unit = sink add Some(out)
+    def connectOut(out: OutputStream): Unit = sink.put(Some(out))
     def connectIn(pipeOut: PipedOutputStream): Unit = pipe connect pipeOut
     def release(): Unit = {
       interrupt()
-      sink add None
+      done()
       join()
     }
-    def done() = sink add None
+    def done() = sink.put(None)
   }
 
   /** A thin wrapper around a java.lang.Process.  `ioThreads` are the Threads created to do I/O.
