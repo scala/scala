@@ -47,7 +47,7 @@ trait AnyRef extends Any {
    *  @param    body    the code to execute
    *  @return           the result of `body`
    */
-  def synchronized[T](body: => T): T
+  def synchronized[T](body: => T): T = sys.error("synchronized")
 
   /** Tests whether the argument (`that`) is a reference to the receiver object (`this`).
    *
