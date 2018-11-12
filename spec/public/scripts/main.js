@@ -47,6 +47,8 @@ hljs.configure({
 MathJax.Hub.Queue(function () {
   hljs.initHighlighting();
   $("pre nobr").addClass("fixws");
+  // point when all necessary js is done, so PDF to be rendered
+  window.status = "loaded";
 })
 
 $("#chapters a").each(function (index) {

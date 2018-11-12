@@ -5,11 +5,28 @@ body {
   margin: 0.5em;
 }
 
-.anchor, #navigation, .to_top {
-  display: none;
+.anchor, #navigation, .to_top, .version-notice, .hidden-print {
+  display: none !important;
 }
 
 #content-container {
   width: 100%;
   float: none;
+}
+
+/* no scrollbars, jump to next row.. */
+/*.highlight pre code {
+  overflow: hidden;
+  white-space: pre-wrap;
+}*/
+
+main {
+  position: relative;
+  top: 32px;
+  margin: 0 0 0 0;
+  padding: 0px 32px;
+  max-width: none;
+  min-width: none;
+  min-height: none;
+  background-color: #FFF;
 }

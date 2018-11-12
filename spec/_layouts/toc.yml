@@ -11,6 +11,7 @@
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen-toc.css">
+  <link rel="stylesheet" type="text/css" media="print" href="public/stylesheets/print.css">
   <link rel="stylesheet" type="text/css" href="public/stylesheets/fonts.css">
 </head>
 
@@ -27,5 +28,7 @@
 {% include version-notice.yml %}
 {{ content }}
 </main>
+
+<script>window.status = "loaded";</script>
 </body>
 </html>

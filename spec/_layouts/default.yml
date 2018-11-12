@@ -30,7 +30,7 @@
 </head>
 
 <body>
-  <header>
+  <header class="hidden-print">
     <nav id="chapters">
       <a href="{{site.baseurl}}/" title="Table of Contents">Scala {{ site.thisScalaVersion }}</a>
       <a id="github" href="https://github.com/scala/scala/tree/2.13.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
@@ -42,7 +42,7 @@
       {% endfor %}
     </nav>
   </header>
-  <aside class="left"><nav id="toc"></nav></aside>
+  <aside class="left hidden-print"><nav id="toc"></nav></aside>
 
   <main id="content">
 {% include version-notice.yml %}

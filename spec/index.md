@@ -3,20 +3,7 @@ title: Scala Language Specification
 layout: toc
 ---
 
-# Table of Contents
-
-<ol>
-  {% assign sorted_pages = site.pages | sort:"name" %}
-  {% for post in sorted_pages %}
-    <!-- exclude this page from the toc, not sure how to check
-         whether there is no chapter variable in the page  -->
-    {% if post.chapter >= 0 %}
-      <li>
-        <a href="{{site.baseurl}}{{ post.url }}"> {{ post.title }}</a>
-      </li>
-    {% endif %}
-  {% endfor %}
-</ol>
+{% include table-of-contents.yml %}
 
 #### Authors and Contributors
 
