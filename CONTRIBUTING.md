@@ -154,7 +154,7 @@ root> partest --help
 Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
 and therefore:
 
-* if you're working in the compiler, you must write a Partest; however
+* if you're working in the compiler, you must write a partest, or a `BytecodeTest` JUnit test which invokes the compiler programmatically; however
 * if you're working in the library, a JUnit and/or ScalaCheck is better.
 
 #### exploring with REPL
