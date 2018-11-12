@@ -14,8 +14,9 @@ package scala
 package reflect
 package internal
 
+import java.lang.ref.WeakReference
+
 import scala.collection.mutable.WeakHashMap
-import scala.ref.WeakReference
 import scala.reflect.internal.Flags._
 
 // scala/bug#6241: move importers to a mirror
@@ -45,8 +46,8 @@ trait Importers { to: SymbolTable =>
     protected lazy val symMap = new Cache[from.Symbol, to.Symbol]()
     protected lazy val tpeMap = new Cache[from.Type, to.Type]()
     protected class Cache[K <: AnyRef, V <: AnyRef] extends WeakHashMap[K, WeakReference[V]] {
-      def weakGet(key: K): Option[V] = this get key flatMap WeakReference.unapply
-      def weakUpdate(key: K, value: V) = this.update(key, WeakReference(value))
+      def weakGet(key: K): Option[V] = this.get(key).flatMap(ref => Option(ref.get()))
+      def weakUpdate(key: K, value: V):Unit = this.update(key, new WeakReference(value))
     }
 
     // fixups and maps prevent stackoverflows in importer
@@ -66,8 +67,19 @@ trait Importers { to: SymbolTable =>
       val from: to.type = to
       // FIXME this and reverse should be constantly kept in sync
       // not just synced once upon the first usage of reverse
-      for ((theirsym, WeakReference(mysym)) <- StandardImporter.this.symMap) symMap += ((mysym, WeakReference(theirsym)))
-      for ((theirtpe, WeakReference(mytpe)) <- StandardImporter.this.tpeMap) tpeMap += ((mytpe, WeakReference(theirtpe)))
+      for ((theirsym, mysymRef) <- StandardImporter.this.symMap) {
+        val mysym = mysymRef.get()
+        if (mysym ne null) {
+          symMap += (mysym -> new WeakReference(theirsym))
+        }
+      }
+
+      for ((theirtpe, mytpeRef) <- StandardImporter.this.tpeMap) {
+        val mytpe = mytpeRef.get
+        if (mytpe ne null) {
+          tpeMap += (mytpe -> new WeakReference(theirtpe))
+        }
+      }
     }
 
     // ============== SYMBOLS ==============

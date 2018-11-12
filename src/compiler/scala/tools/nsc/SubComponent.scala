@@ -12,7 +12,7 @@
 
 package scala.tools.nsc
 
-import scala.ref.WeakReference
+import java.lang.ref.WeakReference
 
 /** An nsc sub-component.
  *
@@ -62,7 +62,7 @@ abstract class SubComponent {
   /** The phase factory */
   def newPhase(prev: Phase): Phase
 
-  private var ownPhaseCache: WeakReference[Phase] = new WeakReference(null)
+  private var ownPhaseCache: WeakReference[Phase] = new WeakReference[Phase](null)
   private var ownPhaseRunId = global.NoRunId
 
   @inline final def beforeOwnPhase[T](op: => T) = global.enteringPhase(ownPhase)(op)
@@ -70,7 +70,7 @@ abstract class SubComponent {
 
   /** The phase corresponding to this subcomponent in the current compiler run */
   def ownPhase: Phase = {
-    val cache = ownPhaseCache.underlying.get
+    val cache = ownPhaseCache.get
     if (cache != null && ownPhaseRunId == global.currentRunId)
       cache
     else {

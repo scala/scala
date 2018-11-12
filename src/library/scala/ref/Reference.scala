@@ -16,7 +16,8 @@ package scala.ref
  * @see `java.lang.ref.Reference`
  * @author Sean McDirmid
  */
-trait Reference[+T <: AnyRef] extends Function0[T] {
+@deprecated("Use `java.lang.ref.Reference` instead.", since = "2.13.0")
+trait Reference[+T <: AnyRef] extends (() => T) {
   /** return the underlying value */
   def apply(): T
   /** return `Some` underlying if it hasn't been collected, otherwise `None` */

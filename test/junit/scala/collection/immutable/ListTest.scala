@@ -1,11 +1,11 @@
 package scala.collection.immutable
 
+import java.lang.ref.WeakReference
+
 import org.junit.Assert.assertSame
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
-import scala.ref.WeakReference
 
 @RunWith(classOf[JUnit4])
 class ListTest {
@@ -20,7 +20,7 @@ class ListTest {
 
     do {
       val list = List.fill(10000)(num)
-      val ref = WeakReference(list)
+      val ref = new WeakReference(list)
 
       val i = list.iterator
 
@@ -29,7 +29,7 @@ class ListTest {
       emptyIterators = (i, ref) +: emptyIterators
 
       num+=1
-    } while (emptyIterators.forall(_._2.get.isDefined) && num<1000)
+    } while (emptyIterators.forall(_._2.get ne null) && num<1000)
 
     // check something is result to protect from JIT optimizations
     for ((i, _) <- emptyIterators) {
@@ -38,14 +38,14 @@ class ListTest {
 
     // await gc up to ~5 seconds
     var forceLoops = 50
-    while (emptyIterators.forall(_._2.get.isDefined) && forceLoops>0) {
+    while (emptyIterators.forall(_._2.get ne null) && forceLoops>0) {
       System.gc()
       Thread.sleep(100)
       forceLoops -= 1
     }
 
     // real assertion
-    Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
+    Assert.assertTrue(emptyIterators.exists(_._2.get eq null))
   }
 
   @Test

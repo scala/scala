@@ -15,6 +15,7 @@ package scala.ref
 /**
  *  @author Sean McDirmid
  */
+@deprecated("Use `java.lang.ref.SoftReference` instead.", since = "2.13.0")
 class SoftReference[+T <: AnyRef](value : T, queue : ReferenceQueue[T]) extends ReferenceWrapper[T] {
   def this(value : T) = this(value, null)
 
@@ -26,10 +27,11 @@ class SoftReference[+T <: AnyRef](value : T, queue : ReferenceQueue[T]) extends 
  *  A companion object that implements an extractor for `SoftReference` values
  *  @author Rebecca Claire Murphy
  */
+@deprecated("Use `java.lang.ref.SoftReference` instead.", since = "2.13.0")
 object SoftReference {
 
   /** Creates a `SoftReference` pointing to `value` */
-  def apply[T <: AnyRef](value: T) = new SoftReference(value)
+  def apply[T <: AnyRef](value: T): SoftReference[T] = new SoftReference(value)
 
   /** Optionally returns the referenced value, or `None` if that value no longer exists */
   def unapply[T <: AnyRef](sr: SoftReference[T]): Option[T] = Option(sr.underlying.get)

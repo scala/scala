@@ -16,6 +16,7 @@ package scala.ref
  *  @author Sean McDirmid
  *  @author Philipp Haller
  */
+@deprecated("Use `java.lang.ref.ReferenceQueue` instead.", since = "2.13.0")
 class ReferenceQueue[+T <: AnyRef] {
 
   private[ref] val underlying: java.lang.ref.ReferenceQueue[_ <: T] = new java.lang.ref.ReferenceQueue[T]

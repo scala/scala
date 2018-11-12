@@ -14,10 +14,10 @@ package scala
 package reflect
 package internal
 
+import java.lang.ref.WeakReference
 import java.util.Objects
 
 import scala.collection.{immutable, mutable}
-import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
 import scala.util.control.ControlThrowable
@@ -1615,9 +1615,11 @@ trait Types
 
       intersectionWitness get parents match {
         case Some(ref) =>
-          ref.get match {
-            case Some(w) => if (w eq this) op1 else op2(w)
-            case None => updateCache()
+          val w = ref.get
+          if (w ne null) {
+            if (w eq this) op1 else op2(w)
+          } else {
+            updateCache()
           }
         case None => updateCache()
       }

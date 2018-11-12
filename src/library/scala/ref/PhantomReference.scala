@@ -15,6 +15,7 @@ package scala.ref
 /**
  *  @author Sean McDirmid
  */
+@deprecated("Use `java.lang.ref.PhantomReference` instead.", since = "2.13.0")
 class PhantomReference[+T <: AnyRef](value: T, queue: ReferenceQueue[T]) extends ReferenceWrapper[T] {
   val underlying: java.lang.ref.PhantomReference[_ <: T] =
     new PhantomReferenceWithWrapper[T](value, queue, this)

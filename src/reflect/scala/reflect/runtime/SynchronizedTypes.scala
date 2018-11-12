@@ -15,8 +15,7 @@ package reflect
 package runtime
 
 import scala.collection.mutable
-import java.lang.ref.{WeakReference => jWeakRef}
-import scala.ref.{WeakReference => sWeakRef}
+import java.lang.ref.WeakReference
 import scala.reflect.internal.Depth
 
 /** This trait overrides methods in reflect.internal, bracketing
@@ -30,7 +29,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   // we can keep this lock fine-grained, because super.unique just updates the cache
   // and, in particular, doesn't call any reflection APIs which makes deadlocks impossible
   private lazy val uniqueLock = new Object
-  private[this] val uniques = mutable.WeakHashMap[Type, jWeakRef[Type]]()
+  private[this] val uniques = mutable.WeakHashMap[Type, WeakReference[Type]]()
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
     // we need to have weak uniques for runtime reflection
     // because unlike the normal compiler universe, reflective universe isn't organized in runs
@@ -44,7 +43,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
       val result = if (inCache.isDefined) inCache.get.get else null
       if (result ne null) result.asInstanceOf[T]
       else {
-        uniques(tp) = new jWeakRef(tp)
+        uniques(tp) = new WeakReference(tp)
         tp
       }
     } else {
@@ -59,7 +58,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   private lazy val _undoLog = mkThreadLocalStorage(new UndoLog)
   override def undoLog = _undoLog.get
 
-  private lazy val _intersectionWitness = mkThreadLocalStorage(perRunCaches.newWeakMap[List[Type], sWeakRef[Type]]())
+  private lazy val _intersectionWitness = mkThreadLocalStorage(perRunCaches.newWeakMap[List[Type], WeakReference[Type]]())
   override def intersectionWitness = _intersectionWitness.get
 
   private lazy val _subsametypeRecursions = mkThreadLocalStorage(0)

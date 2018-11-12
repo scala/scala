@@ -15,26 +15,21 @@ package reflect
 package runtime
 
 import scala.language.existentials
-
-import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
 import scala.collection.immutable.ArraySeq
-
 import java.lang.{Class => jClass, Package => jPackage}
-import java.lang.reflect.{
-  Method => jMethod, Constructor => jConstructor, Field => jField,
-  Member => jMember, Type => jType, TypeVariable => jTypeVariable,
-  Parameter => jParameter, GenericDeclaration, GenericArrayType,
-  ParameterizedType, WildcardType, AnnotatedElement }
+import java.lang.reflect.{AnnotatedElement, GenericArrayType, GenericDeclaration, ParameterizedType, WildcardType, Constructor => jConstructor, Field => jField, Member => jMember, Method => jMethod, Parameter => jParameter, Type => jType, TypeVariable => jTypeVariable}
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
-import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags }
+import java.lang.ref.WeakReference
+
+import scala.reflect.internal.{JavaAccFlags, MissingRequirementError}
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.ListBuffer
 import internal.Flags._
 import ReflectionUtils._
-import scala.runtime.{ScalaRunTime, BoxesRunTime}
+import scala.runtime.{BoxesRunTime, ScalaRunTime}
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
@@ -59,7 +54,9 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
   def runtimeMirror(cl: ClassLoader): Mirror = gilSynchronized {
     mirrors get cl match {
-      case Some(WeakReference(m)) => m
+      case Some(mRef) =>
+        val m = mRef.get()
+        if (m ne null) m else createMirror(rootMirror.RootClass, cl)
       case _ => createMirror(rootMirror.RootClass, cl)
     }
   }
