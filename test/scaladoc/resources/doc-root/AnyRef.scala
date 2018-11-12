@@ -80,8 +80,8 @@ trait AnyRef extends Any {
    *  @param    that  the object to compare against this object for equality.
    *  @return         `true` if the receiver object is equivalent to the argument; `false` otherwise.
    */
-  final def ==(that: AnyRef): Boolean =
-    if (this eq null) that eq null
+  final def ==(that: Any): Boolean =
+    if (this eq null) that.asInstanceOf[AnyRef] eq null
     else this equals that
 
   /** Create a copy of the receiver object.
@@ -104,33 +104,39 @@ trait AnyRef extends Any {
    */
   protected def finalize(): Unit
 
-  /** A representation that corresponds to the dynamic class of the receiver object.
-   *
-   *  The nature of the representation is platform dependent.
-   *
-   *  @note   not specified by SLS as a member of AnyRef
-   *  @return a representation that corresponds to the dynamic class of the receiver object.
-   */
-  def getClass(): Class[_]
-
   /** Wakes up a single thread that is waiting on the receiver object's monitor.
    *
    *  @note   not specified by SLS as a member of AnyRef
    */
-  def notify(): Unit
+  final def notify(): Unit
 
   /** Wakes up all threads that are waiting on the receiver object's monitor.
    *
    *  @note   not specified by SLS as a member of AnyRef
    */
-  def notifyAll(): Unit
+  final def notifyAll(): Unit
 
   /** Causes the current Thread to wait until another Thread invokes
    *  the notify() or notifyAll() methods.
    *
    *  @note   not specified by SLS as a member of AnyRef
    */
-  def wait (): Unit
-  def wait (timeout: Long, nanos: Int): Unit
-  def wait (timeout: Long): Unit
+  final def wait (): Unit
+
+  /** Causes the current Thread to wait until another Thread invokes
+   * the notify() or notifyAll() methods, or a specified amount of time has elapsed.
+   *
+   * @param timeout the maximum time to wait in milliseconds.
+   * @param nanos   additional time, in nanoseconds range 0-999999.
+   * @note not specified by SLS as a member of AnyRef
+   */
+  final def wait (timeout: Long, nanos: Int): Unit
+
+  /** Causes the current Thread to wait until another Thread invokes
+   * the notify() or notifyAll() methods, or a specified amount of time has elapsed.
+   *
+   * @param timeout the maximum time to wait in milliseconds.
+   * @note not specified by SLS as a member of AnyRef
+   */
+  final def wait (timeout: Long): Unit
 }
