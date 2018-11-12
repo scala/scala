@@ -13,8 +13,6 @@
 package scala
 package compat
 
-import java.lang.System
-
 object Platform {
 
   /** Thrown when a stack overflow occurs because a method or function recurses too deeply.
@@ -111,7 +109,7 @@ object Platform {
    * On the JVM, this is equivalent to calling the method:
    * `java.lang.System.lineSeparator`
    */
-  val EOL = scala.util.Properties.lineSeparator
+  val EOL: String = scala.util.Properties.lineSeparator
 
   /** The current time in milliseconds. The time is counted since 1 January 1970
     * UTC.
