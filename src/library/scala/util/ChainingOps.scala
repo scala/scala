@@ -34,7 +34,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
    *  @tparam U     the result type of the function `f`.
    *  @return       the original value `self`.
    */
-  @inline def tap[U](f: A => U): A = {
+  def tap[U](f: A => U): A = {
     f(self)
     self
   }
@@ -58,7 +58,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
    *  @tparam B     the result type of the function `f`.
    *  @return       the result of applying `f` to the value.
    */
-  @inline def pipe[B](f: A => B): B = f(self)
+  def pipe[B](f: A => B): B = f(self)
 
 
   /** Applies function `f` to the value.
@@ -82,5 +82,5 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
    *  @tparam B     the result type of the function `f`.
    *  @return       the result of applying `f` to the value.
    */
-  @inline def |>[B](f: A => B): B = pipe(f)
+  def |>[B](f: A => B): B = pipe(f)
 }
