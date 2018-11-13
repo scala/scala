@@ -2,11 +2,8 @@
 package scala.tools.nsc.util
 
 import scala.language.reflectiveCalls
-import scala.util._
-import PartialFunction.cond
-import Properties.isJavaAtLeast
+import scala.util.Properties.isJavaAtLeast
 
-import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -65,8 +62,8 @@ class StackTraceTest extends Expecting {
   // evaluating s should throw, p trims stack trace, t is the test of resulting trace string
   def probe(s: =>String)(p: StackTraceElement => Boolean)(t: String => Unit): Unit = {
     Try(s) recover { case e => e stackTracePrefixString p } match {
-      case Success(s) => t(s)
-      case Failure(e) => throw e
+      case Try.Success(s) => t(s)
+      case Try.Failure(e) => throw e
     }
   }
 

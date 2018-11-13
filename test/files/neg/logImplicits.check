@@ -7,10 +7,10 @@ logImplicits.scala:9: applied implicit conversion from String("abc") to ?{def ma
 logImplicits.scala:17: inferred view from String("abc") to Int via C.this.convert: (p: "abc")Int
   math.max(122, x: Int)
                 ^
-logImplicits.scala:21: applied implicit conversion from Int(1) to ?{def ->: ?} = final implicit def ArrowAssoc[A](self: A): ArrowAssoc[A]
+logImplicits.scala:21: applied implicit conversion from Int(1) to ?{def ->: ?} = implicit def ArrowAssoc[A](self: A): ArrowAssoc[A]
   def f = (1 -> 2) + "c"
            ^
-logImplicits.scala:21: applied implicit conversion from (Int, Int) to ?{def +: ?} = final implicit def any2stringadd[A](self: A): any2stringadd[A]
+logImplicits.scala:21: applied implicit conversion from (Int, Int) to ?{def +: ?} = implicit def any2stringadd[A](self: A): any2stringadd[A]
   def f = (1 -> 2) + "c"
              ^
 logImplicits.scala:24: error: class Un needs to be abstract, since method unimplemented is not defined

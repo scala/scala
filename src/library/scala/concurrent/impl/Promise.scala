@@ -16,7 +16,7 @@ import Future.InternalCallbackExecutor
 import scala.concurrent.duration.Duration
 import scala.annotation.{ tailrec, switch }
 import scala.util.control.{ NonFatal, ControlThrowable }
-import scala.util.{ Try, Success, Failure }
+import scala.Try.{Failure, Success}
 import scala.runtime.NonLocalReturnControl
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import java.util.concurrent.atomic.AtomicReference

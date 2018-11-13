@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 import java.util.concurrent.{ TimeUnit, Executor, Executors, ExecutorService, ForkJoinPool, CountDownLatch }
 import org.openjdk.jmh.infra.Blackhole
 import org.openjdk.jmh.annotations._
-import scala.util.{ Try, Success, Failure }
+import scala.Try.{Failure, Success}
 import scala.annotation.tailrec
 
 @State(Scope.Benchmark)
@@ -243,7 +243,7 @@ class ZipWithFutureBenchmark extends OpFutureBenchmark {
 
 class AndThenFutureBenchmark extends OpFutureBenchmark {
   private[this] final val effect: PartialFunction[Try[Result], Unit] = { case t: Try[Result] => () }
-  
+
   @tailrec private[this] final def next(i: Int, f: Future[Result])(implicit ec: ExecutionContext): Future[Result] =
       if (i > 0) { next(i - 1, f.andThen(effect)) } else { f }
 

@@ -18,7 +18,7 @@ import utils.Properties._
 import scala.tools.nsc.Properties.{propOrFalse, setProp, versionMsg}
 import scala.collection.mutable
 import scala.reflect.internal.util.Collections.distinctBy
-import scala.util.{Try, Success, Failure}
+import scala.Try.{Failure, Success}
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -86,7 +86,7 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
           bold(cyan(s"##### Log file '${info.logFile}' from failed test #####\n")),
           info.logFile.fileContents
         ) else Nil
-      val diffed = 
+      val diffed =
         if (diffOnFail) {
           val differ = bold(red("% ")) + "diff "
           state.transcript.find(_ startsWith differ) match {

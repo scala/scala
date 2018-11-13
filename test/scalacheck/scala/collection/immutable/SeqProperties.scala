@@ -7,7 +7,6 @@ import org.scalacheck.Gen
 import org.scalacheck.commands.Commands
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
 import org.scalacheck.Properties
 
 
@@ -73,7 +72,7 @@ class SeqBuilderStateProperties[A: Arbitrary, To <: Seq[A]](newBuilder: => mutab
   }
   case object Result extends Command {
     override type Result = State
-    override def postCondition(state: State, result: Try[Result]) = result.map(_.toVector) == Success(state.toVector)
+    override def postCondition(state: State, result: Try[Result]) = result.map(_.toVector) == Try.Success(state.toVector)
     override def run(sut: Sut) = sut.result().toVector
     override def nextState(state: State) = state
     override def preCondition(state: State) = true

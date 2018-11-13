@@ -143,4 +143,6 @@ package object scala {
   type Right[+A, +B] = scala.util.Right[A, B]
   val Right = scala.util.Right
 
+  type Try[+T] = scala.util.Try[T]
+  val Try = scala.util.Try
 }

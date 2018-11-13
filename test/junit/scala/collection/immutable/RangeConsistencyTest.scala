@@ -15,20 +15,20 @@ class RangeConsistencyTest {
     val num = implicitly[Integral[T]]
     import num._
     val one = num.one
-    
+
     if (!check(puff, fromInt(r.start))) return Nil
     val start = puff * fromInt(r.start)
     val sp1 = start + one
     val sn1 = start - one
-      
+
     if (!check(puff, fromInt(r.end))) return Nil
     val end = puff * fromInt(r.end)
     val ep1 = end + one
     val en1 = end - one
-    
+
     if (!check(stride, fromInt(r.step))) return Nil
     val step = stride * fromInt(r.step)
-    
+
     def NR(s: T, e: T, i: T) = {
       val delta = (bi(e) - bi(s)).abs - (if (r.isInclusive) 0 else 1)
       val n = if (r.length == 0) BigInt(0) else delta / bi(i).abs + 1
@@ -38,15 +38,15 @@ class RangeConsistencyTest {
       else {
         (n, Try(NumericRange(s,e,i).length))
       }
-    } 
-    
+    }
+
     List(NR(start, end, step)) :::
     (if (sn1 < start) List(NR(sn1, end, step)) else Nil) :::
     (if (start < sp1) List(NR(sp1, end, step)) else Nil) :::
     (if (en1 < end) List(NR(start, en1, step)) else Nil) :::
     (if (end < ep1) List(NR(start, ep1, step)) else Nil)
   }
-  
+
   // Motivated by scala/bug#4370: Wrong result for Long.MinValue to Long.MaxValue by Int.MaxValue
   @Test
   def rangeChurnTest(): Unit = {
@@ -61,10 +61,10 @@ class RangeConsistencyTest {
         case 3 => var x = rn.nextInt; while (x==0) x = rn.nextInt; x
       }
       val r = if (rn.nextBoolean) Range.inclusive(start, end, step) else Range(start, end, step)
-      
+
       try { r.length }
       catch { case iae: IllegalArgumentException => control.Breaks.break }
-      
+
       val lpuff = rn.nextInt(4) match {
         case 0 => 1L
         case 1 => rn.nextInt(11)+2L
@@ -78,19 +78,19 @@ class RangeConsistencyTest {
         case 3 => math.max(1L, math.abs(rn.nextLong))
       }
       val lr = r2nr[Long](
-        r, lpuff, lstride, 
+        r, lpuff, lstride,
         (a,b) => { val x = BigInt(a)*BigInt(b); x.isValidLong },
         x => BigInt(x)
       )
-      
+
       lr.foreach{ case (n,t) => assert(
         t match {
-          case Failure(_) => n > Int.MaxValue
-          case Success(m) => n == m
+          case scala.Try.Failure(_) => n > Int.MaxValue
+          case scala.Try.Success(m) => n == m
         },
         (r.start, r.end, r.step, r.isInclusive, lpuff, lstride, n, t)
       )}
-      
+
       val bipuff = rn.nextInt(3) match {
         case 0 => BigInt(1)
         case 1 => BigInt(rn.nextLong) + Long.MaxValue + 2
@@ -102,25 +102,25 @@ class RangeConsistencyTest {
         case 2 => BigInt("1" + "0"*(rn.nextInt(100)+1))
       }
       val bir = r2nr[BigInt](r, bipuff, bistride, (a,b) => true, identity)
-      
+
       bir.foreach{ case (n,t) => assert(
         t match {
-          case Failure(_) => n > Int.MaxValue
-          case Success(m) => n == m
+          case scala.Try.Failure(_) => n > Int.MaxValue
+          case scala.Try.Success(m) => n == m
         },
         (r.start, r.end, r.step, r.isInclusive, bipuff, bistride, n, t)
-      )}              
+      )}
     }}
   }
-  
+
   @Test
   def testSI4370(): Unit = { assert{
     Try((Long.MinValue to Long.MaxValue by Int.MaxValue).length) match {
-      case Failure(iae: IllegalArgumentException) => true
+      case scala.Try.Failure(iae: IllegalArgumentException) => true
       case _ => false
     }
   }}
-  
+
   @Test
   def testSI6736(): Unit = {
     // These operations on overfull ranges should all succeed.

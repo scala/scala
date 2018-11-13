@@ -3,7 +3,7 @@
 // It lives in the future-spec directory simply because it requires a specs-like
 // DSL which has already been minimally implemented for the future spec tests.
 
-import scala.util.{Try,Success,Failure}
+import scala.Try.{Failure, Success}
 
 class TryTests extends MinimalScalaTest {
   class MyException extends Exception
