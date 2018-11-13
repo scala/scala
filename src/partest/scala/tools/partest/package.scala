@@ -31,7 +31,7 @@ package object partest {
   val ClassPath    = scala.tools.nsc.util.ClassPath
 
   val space                       = "\u0020"
-  val EOL                         = scala.compat.Platform.EOL
+  val EOL                         = System.lineSeparator()
   def onull(s: String)            = if (s == null) "" else s
   def oempty(xs: String*)         = xs filterNot (x => x == null || x == "")
   def ojoin(xs: String*): String  = oempty(xs: _*) mkString space

@@ -65,7 +65,6 @@ class ScriptedTest {
   }
   @Test def `t8422 captured multi i/o`() = {
     import java.io.{ StringWriter, StringReader }
-    import scala.compat.Platform.EOL
     val engine = scripted
     val ctx    = new SimpleScriptContext
     val out    = new StringWriter
@@ -75,7 +74,7 @@ class ScriptedTest {
       |for all good
       |dogs to come for supper.""".stripMargin
     val in     = new StringReader(text)
-        
+
     val code =
     """var s: String = _
       |var i: Int = 0
@@ -91,6 +90,7 @@ class ScriptedTest {
     ctx.setReader(in)
     engine.eval(code, ctx)
     val lines = text.linesIterator.toList
+    import System.{lineSeparator => EOL}
     assertEquals(lines.head + EOL + lines.last + EOL, out.toString)
     assertEquals(lines(1) + EOL, err.toString)
   }

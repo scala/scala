@@ -319,7 +319,7 @@ object Test {
     try {
       val actual: Int = closure;
     } catch {
-      case exception: compat.Platform.StackOverflowError =>
+      case exception: StackOverflowError =>
         println(" was successful")
       case exception: Throwable => {
         print(" raised exception " + exception)
@@ -338,7 +338,7 @@ object Test {
         if (n >= Int.MaxValue / 2) sys.error("calibration failure");
         n = 2 * n;
       } catch {
-        case exception: compat.Platform.StackOverflowError => stop = true
+        case exception: StackOverflowError => stop = true
       }
     }
     4 * n

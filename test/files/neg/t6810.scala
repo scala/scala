@@ -15,7 +15,7 @@ trait t6810 {
   val B = s"""
 """                   // or the same for interpolated strings
 
-  import scala.compat.Platform.EOL
+  import System.{lineSeparator => EOL}
   val `\u000A` = EOL  // backquoted identifiers are arbitrary string literals
   val `
 ` = EOL               // not raw string literals aka triple-quoted, multiline strings
