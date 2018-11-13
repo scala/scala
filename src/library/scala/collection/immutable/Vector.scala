@@ -40,6 +40,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def newBuilder[A]: ReusableBuilder[A, Vector[A]] = new VectorBuilder[A]
 
+  @transient
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
 
   private val defaultApplyPreferredMaxLength: Int =
