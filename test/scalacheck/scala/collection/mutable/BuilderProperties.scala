@@ -12,7 +12,6 @@ import org.scalacheck.Gen
 import org.scalacheck.commands.Commands
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
 
 /** Generic stateful property testing for builders
   *
@@ -74,7 +73,7 @@ class SeqBuilderStateProperties[A: Arbitrary, To <: Seq[A]](newBuilder: => mutab
   }
   case object Result extends Command {
     override type Result = To
-    override def postCondition(state: State, result: Try[Result]) = result == Success(state.reverse)
+    override def postCondition(state: State, result: Try[Result]) = result == Try.Success(state.reverse)
     override def run(sut: Sut) = sut.result()
     override def nextState(state: State) = state
     override def preCondition(state: State) = true

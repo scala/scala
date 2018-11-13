@@ -10,7 +10,7 @@
 package org.scalacheck.commands
 
 import org.scalacheck._
-import scala.util.{Try, Success, Failure}
+import scala.Try.{Success, Failure}
 
 /** An API for stateful testing in ScalaCheck.
  *

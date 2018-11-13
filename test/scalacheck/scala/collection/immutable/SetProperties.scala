@@ -5,8 +5,6 @@ import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
 import org.scalacheck.commands.Commands
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
-
 
 object SetProperties extends Properties("immutable.Set builder implementations"){
 
@@ -70,7 +68,7 @@ class SetBuilderStateProperties[A, To <: Set[A]](newBuilder: => mutable.Builder[
   }
   case object Result extends Command {
     override type Result = State
-    override def postCondition(state: State, result: Try[Result]) = result == Success(state)
+    override def postCondition(state: State, result: Try[Result]) = result == Try.Success(state)
     override def run(sut: Sut) = sut.result()
     override def nextState(state: State) = state
     override def preCondition(state: State) = true

@@ -1,15 +1,16 @@
 package scala.concurrent.impl
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch}
+
 import org.junit.Assert._
-import org.junit.{ After, Before, Test }
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.Try.{Success, Failure}
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.impl.Promise.DefaultPromise
-import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
 /** Tests for the private class DefaultPromise */

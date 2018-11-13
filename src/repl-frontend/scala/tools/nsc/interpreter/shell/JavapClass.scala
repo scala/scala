@@ -26,7 +26,7 @@ import scala.language.reflectiveCalls
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.File
 import scala.util.Properties.{lineSeparator => EOL}
-import scala.util.{Failure, Success, Try}
+import scala.Try.{Success, Failure}
 import Javap._
 import scala.tools.nsc.interpreter.Repl
 

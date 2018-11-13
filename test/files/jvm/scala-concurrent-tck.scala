@@ -8,7 +8,7 @@ import scala.concurrent.{
   Await,
   blocking
 }
-import scala.util.{ Try, Success, Failure }
+import scala.Try.{Success, Failure}
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 import scala.reflect.{ classTag, ClassTag }
@@ -224,7 +224,7 @@ def testTransformFailure(): Unit = once {
   }
 
   def testTransformResultToFailure(): Unit = once {
-    done => 
+    done =>
       val e = new Exception("expected")
       Future("foo").transform {
         case Success(s) => Failure(e)
@@ -271,7 +271,7 @@ def testTransformFailure(): Unit = once {
   }
 
   def testTransformWithResultToFailure(): Unit = once {
-    done => 
+    done =>
       val e = new Exception("expected")
       Future("foo").transformWith {
         case Success(s) => Future(throw e)
@@ -848,7 +848,7 @@ class Exceptions extends TestBase {
 
 class GlobalExecutionContext extends TestBase {
   import ExecutionContext.Implicits._
-  
+
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId

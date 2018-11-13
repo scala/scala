@@ -2,7 +2,7 @@
 //
 // scala/bug#6188 Optimizer incorrectly removes method invocations containing throw expressions
 
-import scala.util.Success
+import scala.Try.Success
 
 object Test {
  def main(args: Array[String]): Unit = {

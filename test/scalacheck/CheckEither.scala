@@ -185,8 +185,8 @@ object CheckEitherTest extends Properties("Either") {
   }))
 
   val prop_try = forAll((e: Either[Throwable, Int]) => e.toTry == (e match {
-    case Left(a)  => util.Failure(a)
-    case Right(b) => util.Success(b)
+    case Left(a)  => Try.Failure(a)
+    case Right(b) => Try.Success(b)
   }))
 
   /** Hard to believe I'm "fixing" a test to reflect B before A ... */
@@ -226,7 +226,7 @@ object CheckEitherTest extends Properties("Either") {
       ("prop_Either_right", prop_Either_right),
       ("prop_Either_joinLeft", prop_Either_joinLeft),
       ("prop_Either_joinRight", prop_Either_joinRight),
-      ("prop_Either_reduce", prop_Either_reduce),      
+      ("prop_Either_reduce", prop_Either_reduce),
       ("prop_getOrElse", prop_getOrElse),
       ("prop_orElse", prop_orElse),
       ("prop_contains", prop_contains),

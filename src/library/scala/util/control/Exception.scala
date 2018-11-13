@@ -254,7 +254,7 @@ object Exception {
     /** Apply this catch logic to the supplied body, mapping the result
      * into `Try[T]` - `Failure` if an exception was caught, `Success(T)` otherwise.
      */
-    def withTry[U >: T](body: => U): scala.util.Try[U] = toTry(Success(body))
+    def withTry[U >: T](body: => U): scala.util.Try[U] = toTry(Try.Success(body))
 
     /** Create a `Catch` object with the same `isDefinedAt` logic as this one,
       * but with the supplied `apply` method replacing the current one. */
@@ -269,7 +269,7 @@ object Exception {
     /** Convenience methods. */
     def toOption: Catch[Option[T]] = withApply(_ => None)
     def toEither: Catch[Either[Throwable, T]] = withApply(Left(_))
-    def toTry: Catch[scala.util.Try[T]] = withApply(x => Failure(x))
+    def toTry: Catch[scala.util.Try[T]] = withApply(x => Try.Failure(x))
   }
 
   final val nothingCatcher: Catcher[Nothing]  = mkThrowableCatcher(_ => false, throw _)

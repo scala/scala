@@ -11,7 +11,7 @@ package org.scalacheck
 
 import language.higherKinds
 import concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.Try.{Success, Failure}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 import util.Buildable

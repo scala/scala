@@ -12,7 +12,7 @@ package org.scalacheck
 import language.higherKinds
 import scala.annotation.tailrec
 import scala.collection.immutable.BitSet
-import scala.util.{Failure, Success, Try}
+import scala.Try.{Success, Failure}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import java.math.BigInteger
 import rng.Seed

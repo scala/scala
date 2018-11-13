@@ -51,8 +51,8 @@ abstract class DefaultMacroCompiler extends Resolvers
    */
   def resolveMacroImpl: Tree = {
     def tryCompile(compiler: MacroImplRefCompiler): scala.util.Try[Tree] = {
-      try { compiler.validateMacroImplRef(); scala.util.Success(compiler.macroImplRef) }
-      catch { case ex: MacroImplResolutionException => scala.util.Failure(ex) }
+      try { compiler.validateMacroImplRef(); scala.Try.Success(compiler.macroImplRef) }
+      catch { case ex: MacroImplResolutionException => scala.Try.Failure(ex) }
     }
     val vanillaImplRef = MacroImplRefCompiler(macroDdef.rhs.duplicate, isImplBundle = false)
     val (maybeBundleRef, methName, targs) = macroDdef.rhs.duplicate match {
