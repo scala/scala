@@ -19,7 +19,7 @@ trait ChainingSyntax {
 
 /** Adds chaining methods `tap`, `pipe` (aliased as `|>`) to every type.
  *
- * Note: these methods may have a small amount of overhead compared their expanded forms.
+ * Note: these methods may have a small amount of overhead compared to their expanded forms.
  */
 final class ChainingOps[A](private val self: A) extends AnyVal {
   /** Applies `f` to the value for its side effects, and returns the original value.
