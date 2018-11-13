@@ -5,8 +5,6 @@ import org.scalacheck.{Arbitrary, Gen, Properties, Shrink}
 import org.scalacheck.commands.Commands
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
-
 
 object SetProperties extends Properties("immutable.Set builder implementations"){
 

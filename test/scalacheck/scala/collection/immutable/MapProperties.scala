@@ -9,7 +9,6 @@ import org.scalacheck.Gen
 import org.scalacheck.commands.Commands
 
 import scala.collection.mutable
-import scala.util.{Success, Try}
 
 object MapProperties extends Properties("immutable.Map builder implementations"){
 
@@ -89,7 +88,7 @@ class MapBuilderStateProperties[K, V, ControlMap <: Map[K, V], M <: Map[K, V]](
   }
   case object Result extends Command {
     override type Result = M
-    override def postCondition(state: ControlMap, result: Try[Result]) = result == Success(state)
+    override def postCondition(state: ControlMap, result: Try[Result]) = result == Try.Success(state)
     override def run(sut: mutable.Builder[(K, V), M]) = sut.result()
     override def nextState(state: ControlMap) = state
     override def preCondition(state: ControlMap) = true

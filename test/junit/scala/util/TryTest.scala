@@ -17,13 +17,13 @@ class TryTest {
   @Test
   def withFilterSuccess(): Unit = {
     val success1 = for (x <- util.Try(1) if x >= 1) yield x
-    assertEquals(success1, util.Success(1))
+    assertEquals(success1, Try.Success(1))
   }
 
   @Test
   def withFilterFlatMap(): Unit = {
     val successFlatMap = for (x <- util.Try(1) if x >= 1; y <- util.Try(2) if x < y) yield x
-    assertEquals(successFlatMap, util.Success(1))
+    assertEquals(successFlatMap, Try.Success(1))
   }
 
   @Test

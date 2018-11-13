@@ -213,73 +213,73 @@ object Try {
     try Success(r) catch {
       case NonFatal(e) => Failure(e)
     }
-}
 
-final case class Failure[+T](exception: Throwable) extends Try[T] {
-  override def isFailure: Boolean = true
-  override def isSuccess: Boolean = false
-  override def get: T = throw exception
-  override def getOrElse[U >: T](default: => U): U = default
-  override def orElse[U >: T](default: => Try[U]): Try[U] =
-    try default catch { case NonFatal(e) => Failure(e) }
-  override def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
-  override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
-  override def foreach[U](f: T => U): Unit = ()
-  override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] =
-    try f(exception) catch { case NonFatal(e) => Failure(e) }
-  override def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
-  override def collect[U](pf: PartialFunction[T, U]): Try[U] = this.asInstanceOf[Try[U]]
-  override def filter(p: T => Boolean): Try[T] = this
-  override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = {
-    val marker = Statics.pfMarker
-    try {
-      val v = pf.applyOrElse(exception, (x: Throwable) => marker)
-      if (marker ne v.asInstanceOf[AnyRef]) Success(v.asInstanceOf[U]) else this
-    } catch { case NonFatal(e) => Failure(e) }
+  final case class Failure[+T](exception: Throwable) extends Try[T] {
+    override def isFailure: Boolean = true
+    override def isSuccess: Boolean = false
+    override def get: T = throw exception
+    override def getOrElse[U >: T](default: => U): U = default
+    override def orElse[U >: T](default: => Try[U]): Try[U] =
+      try default catch { case NonFatal(e) => Failure(e) }
+    override def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+    override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+    override def foreach[U](f: T => U): Unit = ()
+    override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] =
+      try f(exception) catch { case NonFatal(e) => Failure(e) }
+    override def map[U](f: T => U): Try[U] = this.asInstanceOf[Try[U]]
+    override def collect[U](pf: PartialFunction[T, U]): Try[U] = this.asInstanceOf[Try[U]]
+    override def filter(p: T => Boolean): Try[T] = this
+    override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = {
+      val marker = Statics.pfMarker
+      try {
+        val v = pf.applyOrElse(exception, (x: Throwable) => marker)
+        if (marker ne v.asInstanceOf[AnyRef]) Success(v.asInstanceOf[U]) else this
+      } catch { case NonFatal(e) => Failure(e) }
+    }
+    override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = {
+      val marker = Statics.pfMarker
+      try {
+        val v = pf.applyOrElse(exception, (x: Throwable) => marker)
+        if (marker ne v.asInstanceOf[AnyRef]) v.asInstanceOf[Try[U]] else this
+      } catch { case NonFatal(e) => Failure(e) }
+    }
+    override def failed: Try[Throwable] = Success(exception)
+    override def toOption: Option[T] = None
+    override def toEither: Either[Throwable, T] = Left(exception)
+    override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
   }
-  override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = {
-    val marker = Statics.pfMarker
-    try {
-      val v = pf.applyOrElse(exception, (x: Throwable) => marker)
-      if (marker ne v.asInstanceOf[AnyRef]) v.asInstanceOf[Try[U]] else this
-    } catch { case NonFatal(e) => Failure(e) }
-  }
-  override def failed: Try[Throwable] = Success(exception)
-  override def toOption: Option[T] = None
-  override def toEither: Either[Throwable, T] = Left(exception)
-  override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
-}
 
 
-final case class Success[+T](value: T) extends Try[T] {
-  override def isFailure: Boolean = false
-  override def isSuccess: Boolean = true
-  override def get = value
-  override def getOrElse[U >: T](default: => U): U = get
-  override def orElse[U >: T](default: => Try[U]): Try[U] = this
-  override def flatMap[U](f: T => Try[U]): Try[U] =
-    try f(value) catch { case NonFatal(e) => Failure(e) }
-  override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
-  override def foreach[U](f: T => U): Unit = f(value)
-  override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this flatMap s
-  override def map[U](f: T => U): Try[U] = Try[U](f(value))
-  override def collect[U](pf: PartialFunction[T, U]): Try[U] = {
-    val marker = Statics.pfMarker
-    try {
-      val v = pf.applyOrElse(value, ((x: T) => marker).asInstanceOf[Function[T, U]])
-      if (marker ne v.asInstanceOf[AnyRef]) Success(v)
-      else Failure(new NoSuchElementException("Predicate does not hold for " + value))
-    } catch { case NonFatal(e) => Failure(e) }
+  final case class Success[+T](value: T) extends Try[T] {
+    override def isFailure: Boolean = false
+    override def isSuccess: Boolean = true
+    override def get: T = value
+    override def getOrElse[U >: T](default: => U): U = get
+    override def orElse[U >: T](default: => Try[U]): Try[U] = this
+    override def flatMap[U](f: T => Try[U]): Try[U] =
+      try f(value) catch { case NonFatal(e) => Failure(e) }
+    override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
+    override def foreach[U](f: T => U): Unit = f(value)
+    override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this flatMap s
+    override def map[U](f: T => U): Try[U] = Try[U](f(value))
+    override def collect[U](pf: PartialFunction[T, U]): Try[U] = {
+      val marker = Statics.pfMarker
+      try {
+        val v = pf.applyOrElse(value, ((x: T) => marker).asInstanceOf[Function[T, U]])
+        if (marker ne v.asInstanceOf[AnyRef]) Success(v)
+        else Failure(new NoSuchElementException("Predicate does not hold for " + value))
+      } catch { case NonFatal(e) => Failure(e) }
+    }
+    override def filter(p: T => Boolean): Try[T] =
+      try {
+        if (p(value)) this else Failure(new NoSuchElementException("Predicate does not hold for " + value))
+      } catch { case NonFatal(e) => Failure(e) }
+    override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = this
+    override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
+    override def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
+    override def toOption: Option[T] = Some(value)
+    override def toEither: Either[Throwable, T] = Right(value)
+    override def fold[U](fa: Throwable => U, fb: T => U): U =
+      try { fb(value) } catch { case NonFatal(e) => fa(e) }
   }
-  override def filter(p: T => Boolean): Try[T] =
-    try {
-      if (p(value)) this else Failure(new NoSuchElementException("Predicate does not hold for " + value))
-    } catch { case NonFatal(e) => Failure(e) }
-  override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = this
-  override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
-  override def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
-  override def toOption: Option[T] = Some(value)
-  override def toEither: Either[Throwable, T] = Right(value)
-  override def fold[U](fa: Throwable => U, fb: T => U): U =
-    try { fb(value) } catch { case NonFatal(e) => fa(e) }
 }

@@ -230,7 +230,7 @@ class UsingTest {
 
   @Test
   def safeUsingMultipleResourcesPropagatesCorrectlySimple(): Unit = {
-    val scala.util.Failure(usingException) = for {
+    val scala.Try.Failure(usingException) = for {
       _ <- Using(new ExceptionResource)
       _ <- Using(new ErrorResource)
     } yield {
@@ -300,7 +300,7 @@ class UsingTest {
     val res = Using(new NoOpResource) { r =>
       r.identity("test")
     }
-    assertEquals(res, scala.util.Success("test"))
+    assertEquals(res, scala.Try.Success("test"))
   }
 
   /* using multiple resources close in the correct order */
@@ -358,7 +358,7 @@ class UsingTest {
     } yield {
       r1.identity(1) + r2.identity(1)
     }
-    assertEquals(res, scala.util.Success(2))
+    assertEquals(res, scala.Try.Success(2))
   }
 
   @Test
@@ -373,7 +373,7 @@ class UsingTest {
         r2.identity(1) +
         r3.identity(1)
     }
-    assertEquals(res, scala.util.Success(3))
+    assertEquals(res, scala.Try.Success(3))
   }
 
   /* misc */

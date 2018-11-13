@@ -17,4 +17,14 @@ package object util {
    * Adds chaining methods `tap` and `pipe` to every type. See [[ChainingOps]].
    */
   object chaining extends ChainingSyntax
+
+  @deprecated("Use `Try.Failure` instead.", since = "2.13.0")
+  type Failure[+T] = scala.util.Try.Failure[T]
+  @deprecated("Use `Try.Failure` instead.", since = "2.13.0")
+  val Failure: Try.Failure.type = scala.util.Try.Failure
+
+  @deprecated("Use `Try.Success` instead.", since = "2.13.0")
+  type Success[+T] = scala.util.Try.Success[T]
+  @deprecated("Use `Try.Success` instead.", since = "2.13.0")
+  val Success: Try.Success.type = scala.util.Try.Success
 }

@@ -1,4 +1,4 @@
-import scala.util.{Try, Success, Failure}
+import scala.Try.{Failure, Success}
 
 // tests the basic combinators on Try
 trait TryStandard {

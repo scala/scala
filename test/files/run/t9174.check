@@ -12,6 +12,7 @@ scala> def f3(b: Boolean) = if (b) LazyList.empty else LazyList.cons(1, LazyList
 f3: (b: Boolean)scala.collection.immutable.LazyList[Int]
 
 scala> def f4(b: Boolean) = if (b) Success(1) else Failure(new Exception(""))
+warning: there were two deprecation warnings (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 f4: (b: Boolean)scala.util.Try[Int]
 
 scala> :quit

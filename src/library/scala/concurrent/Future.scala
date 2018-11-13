@@ -17,7 +17,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.control.{NonFatal, NoStackTrace}
-import scala.util.{Failure, Success, Try}
+import scala.Try.{Failure, Success}
 import scala.concurrent.duration._
 import scala.collection.BuildFrom
 import scala.collection.mutable.{Builder, ArrayBuffer}
