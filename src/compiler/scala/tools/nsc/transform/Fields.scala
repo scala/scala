@@ -674,7 +674,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
               // we have to make the field mutable starting with classfile format 53
               // (it was never allowed, but the verifier enforces this now).
               fieldSel.setFlag(MUTABLE)
-              fieldSel.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
+              val isInStaticModule = fieldSel.owner.isModuleClass && fieldSel.owner.sourceModule.isStaticModule
+              if (!isInStaticModule) // the <clinit> lock is enough.
+                fieldSel.owner.primaryConstructor.updateAttachment(ConstructorNeedsFence)
             }
 
             afterOwnPhase { // the assign only type checks after our phase (assignment to val)
