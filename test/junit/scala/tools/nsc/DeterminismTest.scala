@@ -1,12 +1,16 @@
 package scala.tools.nsc
 
+import java.io.{File, OutputStreamWriter}
+import java.nio.charset.Charset
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 import java.util
 
+import javax.tools.ToolProvider
 import org.junit.Test
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.{asScalaIteratorConverter, seqAsJavaListConverter}
+import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.reflect.io.PlainNioFile
@@ -187,6 +191,78 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testAnnotations1(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          |class Annot1(s: String) extends scala.annotation.StaticAnnotation
+          |class Annot2(s: Class[_]) extends scala.annotation.StaticAnnotation
+          |
+      """.stripMargin),
+      source("b.scala",
+        """
+          |@Annot1("foo")
+          |@Annot2(classOf[AnyRef])
+          |class Test
+        """.stripMargin)
+    )
+    test(List(code))
+  }
+
+  @Test def testAnnotationsJava(): Unit = {
+    def code = List[SourceFile](
+      source("Annot1.java",
+        """
+          |import java.lang.annotation.*;
+          |@Retention(RetentionPolicy.RUNTIME)
+          |@Target(ElementType.TYPE)
+          |@Inherited
+          |@interface Annot1 { String value() default ""; }
+          |
+          |@Retention(RetentionPolicy.RUNTIME)
+          |@Target(ElementType.TYPE)
+          |@Inherited
+          |@interface Annot2 { Class value(); }
+          |
+      """.stripMargin),
+      source("b.scala",
+        """
+          |@Annot1("foo") @Annot2(classOf[AnyRef]) class Test
+        """.stripMargin)
+    )
+    test(List(code))
+  }
+
+  @Test def testAnnotationsJavaRepeatable(): Unit = {
+    val javaAnnots = source("Annot1.java",
+      """
+        |import java.lang.annotation.*;
+        |@Repeatable(Annot1.Container.class)
+        |@Retention(RetentionPolicy.RUNTIME)
+        |@Target(ElementType.TYPE)
+        |@interface Annot1 { String value() default "";
+        |
+        |    @Retention(RetentionPolicy.RUNTIME)
+        |    @Target(ElementType.TYPE)
+        |    public static @interface Container {
+        |        Annot1[] value();
+        |    }
+        |}
+        |
+        |@Retention(RetentionPolicy.RUNTIME)
+        |@Target(ElementType.TYPE)
+        |@Inherited
+        |@interface Annot2 { Class value(); }
+      """.stripMargin)
+    def code =
+      List(source("dummy.scala", ""), source("b.scala",
+        """
+          |@Annot1("foo") @Annot2(classOf[String]) @Annot1("bar") class Test
+        """.stripMargin)
+    )
+    test(List(javaAnnots) :: code :: Nil)
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
   private def test(groups: List[List[SourceFile]]): Unit = {
     val referenceOutput = Files.createTempDirectory("reference")
@@ -202,7 +278,22 @@ class DeterminismTest {
       val r = new Run
       // println("scalac " + files.mkString(" "))
       r.compileSources(files)
-      assert(!storeReporter.hasErrors, storeReporter.infos.mkString("\n"))
+      Predef.assert(!storeReporter.hasErrors, storeReporter.infos.mkString("\n"))
+      files.filter(_.file.name.endsWith(".java")) match {
+        case Nil =>
+        case javaSources =>
+          def tempFileFor(s: SourceFile): Path = {
+            val f = output.resolve(s.file.name)
+            Files.write(f, new String(s.content).getBytes(Charset.defaultCharset()))
+          }
+          val options = List("-d", output.toString)
+          val javac = ToolProvider.getSystemJavaCompiler
+          val fileMan = javac.getStandardFileManager(null, null, null)
+          val javaFileObjects = fileMan.getJavaFileObjects(javaSources.map(s => tempFileFor(s).toAbsolutePath.toString): _*)
+          val task = javac.getTask(new OutputStreamWriter(System.out), fileMan, null, options.asJava, Nil.asJava, javaFileObjects)
+          val result = task.call()
+          Predef.assert(result)
+      }
     }
 
     for (group <- groups.init) {
