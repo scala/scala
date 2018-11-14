@@ -36,8 +36,8 @@ trait Function3[-T1, -T2, -T3, +R] extends AnyRef { self =>
    *  @return   a function `f` such that `f((x1, x2, x3)) == f(Tuple3(x1, x2, x3)) == apply(x1, x2, x3)`
    */
 
-  @annotation.unspecialized def tupled: Tuple3[T1, T2, T3] => R = {
-    case Tuple3(x1, x2, x3) => apply(x1, x2, x3)
+  @annotation.unspecialized def tupled: ((T1, T2, T3)) => R = {
+    case ((x1, x2, x3)) => apply(x1, x2, x3)
   }
-  override def toString() = "<function3>"
+  override def toString(): String = "<function3>"
 }

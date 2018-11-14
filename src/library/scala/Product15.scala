@@ -26,7 +26,7 @@ trait Product15[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
   /** The arity of this product.
    *  @return 15
    */
-  override def productArity = 15
+  override def productArity: Int = 15
 
   
   /** Returns the n-th projection of this product if 0 <= n < productArity,
@@ -34,11 +34,11 @@ trait Product15[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
    *
    *  @param n number of the projection to be returned
    *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
-   *  @throws  IndexOutOfBoundsException
+   *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= 15).
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match { 
+  override def productElement(n: Int): Any = n match { 
     case 0 => _1
     case 1 => _2
     case 2 => _3
