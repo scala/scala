@@ -21,7 +21,6 @@ import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.immutable.BitSet
 import scala.collection.mutable
-import scala.reflect.ClassTag
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
@@ -348,7 +347,7 @@ abstract class BackendUtils extends PerRunInit {
    *   - methods accessing a public field could be inlined. on the other hand, methods accessing a private
    *     static field should not be inlined.
    */
-  def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode, allowPrivateCalls: Boolean): Int = {
+  def looksLikeForwarderOrFactoryOrTrivial(method: MethodNode, owner: InternalName, allowPrivateCalls: Boolean): Int = {
     val paramTypes = Type.getArgumentTypes(method.desc)
     val numPrimitives = paramTypes.count(_.getSort < Type.ARRAY) + (if (Type.getReturnType(method.desc).getSort < Type.ARRAY) 1 else 0)
 
@@ -379,8 +378,14 @@ abstract class BackendUtils extends PerRunInit {
             callMi = mi
           }
         }
-      } else if (i.getOpcode != GETSTATIC && nonForwarderInstructionTypes(t))
-        numCallsOrNew = 2 // stop here: not forwarder or trivial
+      } else if (nonForwarderInstructionTypes(t)) {
+        if (i.getOpcode == GETSTATIC) {
+          if (!allowPrivateCalls && owner == i.asInstanceOf[FieldInsnNode].owner)
+            numCallsOrNew = 2 // stop here: not forwarder or trivial
+        } else {
+          numCallsOrNew = 2 // stop here: not forwarder or trivial
+        }
+      }
     }
     if (numCallsOrNew > 1 || numBoxConv > paramTypes.length + 1) -1
     else if (numCallsOrNew == 0) if (numBoxConv == 0) 1 else 3

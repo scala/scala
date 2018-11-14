@@ -1932,7 +1932,7 @@ class InlinerTest extends BytecodeTesting {
 
     assertInvokedMethods(getMethod(c, "t1a"), List("C.$anonfun$t1a$1"))
     // anonfun not inlined, not considered trivial (too many instructions compared to num params)
-    assertEquals(global.genBCode.postProcessor.backendUtils.looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, "$anonfun$t1a$1"), allowPrivateCalls = false), -1)
+    assertEquals(global.genBCode.postProcessor.backendUtils.looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, "$anonfun$t1a$1"), "C", allowPrivateCalls = false), -1)
     assertInvokedMethods(getMethod(c, "t1b"), List("C.$anonfun$t1b$1"))
 
     assertInvokedMethods(getMethod(c, "t2a"), List("java/lang/NullPointerException.<init>"))
