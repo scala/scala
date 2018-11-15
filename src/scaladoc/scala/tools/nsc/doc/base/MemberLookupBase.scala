@@ -45,7 +45,7 @@ trait MemberLookupBase {
       """
       |Quick crash course on using Scaladoc links
       |==========================================
-      |Disambiguating terms and types: Prefix terms with '$' and types with '!' in case both names are in use:
+      |Disambiguating terms and types: Suffix terms with '$' and types with '!' in case both names are in use:
       | - [[scala.collection.immutable.List!.apply class List's apply method]] and
       | - [[scala.collection.immutable.List$.apply object List's apply method]]
       |Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:
