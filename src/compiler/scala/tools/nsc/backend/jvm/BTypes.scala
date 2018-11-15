@@ -309,9 +309,12 @@ abstract class BTypes {
           }
 
         case LONG =>
-          if (other.isIntegralType)  LONG
-          else if (other.isRealType) DOUBLE
-          else                       uncomparable
+          other match {
+            case INT | BYTE | LONG | CHAR | SHORT => LONG
+            case DOUBLE                           => DOUBLE
+            case FLOAT                            => FLOAT
+            case _                                => uncomparable
+          }
 
         case FLOAT =>
           if (other == DOUBLE)          DOUBLE
