@@ -294,14 +294,19 @@ private[concurrent] final object Promise {
     }
 
     // IMPORTANT: Noop should not be passed in here
-    private[this] final def submitWithValue(callbacks: Callbacks[T], resolved: Try[T]): Unit = {
-      if (callbacks.isInstanceOf[ManyCallbacks[T]]) {
-        val m = callbacks.asInstanceOf[ManyCallbacks[T]]
-        if (m.first.isInstanceOf[Transformation[T, _]]) m.first.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
-        else submitWithValue(m.first, resolved) // FIXME this will grow the stack
-        submitWithValue(m.last, resolved)
-      } else /*if (callbacks ne Noop)*/ {
-        callbacks.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
+    @tailrec
+    private[this] final def submitWithValue(callbacks: Callbacks[T],
+                                            resolved: Try[T],
+                                            deferred: List[Callbacks[T]] = Nil): Unit = {
+      callbacks match {
+        case m: ManyCallbacks[T] =>
+          submitWithValue(m.first, resolved, m.last :: deferred)
+        case t: Transformation[T, _] =>
+          t.submitWithValue(resolved)
+          deferred match {
+            case head :: tail => submitWithValue(head, resolved, tail)
+            case Nil => //ignore
+          }
       }
     }
 
