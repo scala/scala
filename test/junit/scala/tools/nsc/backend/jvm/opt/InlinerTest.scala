@@ -1773,4 +1773,38 @@ class InlinerTest extends BytecodeTesting {
     val i = getMethod(t, "bar")
     assertSameCode(i.instructions, List(Label(0), LineNumber(7, Label(0)), VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false), Op(ARETURN), Label(5)))
   }
+
+  @Test
+  def t11255(): Unit = {
+    val codeA =
+      """class K(val f: Int => Int) extends Serializable
+        |class A {
+        |  @inline final def f = new K(x => x + 1)
+        |}
+      """.stripMargin
+    val codeB =
+      """class C {
+        |  def serializeDeserialize(obj: Object): Object = {
+        |    import java.io._
+        |    val buffer = new ByteArrayOutputStream
+        |    val out = new ObjectOutputStream(buffer)
+        |    out.writeObject(obj)
+        |    val in = new ObjectInputStream(new ByteArrayInputStream(buffer.toByteArray))
+        |    in.readObject
+        |  }
+        |
+        |  def t = {
+        |    serializeDeserialize((new A).f).asInstanceOf[K].f(10)
+        |  }
+        |}
+      """.stripMargin
+    val List(a, c, k) = compileClassesSeparately(List(codeA, codeB), extraArgs = "-opt:l:inline -opt-inline-from:**")
+    val m = getMethod(c, "$deserializeLambda$")
+    val args = m.instructions collect {
+      case InvokeDynamic(opcode, name, desc, bsm, bsmArgs) =>
+        val mh = bsmArgs.head.asInstanceOf[MethodHandle]
+        List(mh.owner, mh.name)
+    }
+    assertEquals(List("A", "$anonfun$f$1"), args.head)
+  }
 }

@@ -32,7 +32,7 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 abstract class ByteCodeRepository extends PerRunInit {
   val postProcessor: PostProcessor
 
-  import postProcessor.{bTypes, bTypesFromClassfile}
+  import postProcessor.{bTypes, bTypesFromClassfile, callGraph}
   import bTypes._
   import frontendAccess.{backendClassPath, recordPerRunCache}
 
@@ -252,6 +252,27 @@ abstract class ByteCodeRepository extends PerRunInit {
     }
   }
 
+  private def removeLineNumbersAndAddLMFImplMethods(classNode: ClassNode): Unit = {
+    for (m <- classNode.methods.asScala) {
+      val iter = m.instructions.iterator
+      while (iter.hasNext) {
+        val insn = iter.next()
+        insn.getType match {
+          case AbstractInsnNode.LINE =>
+            iter.remove()
+          case AbstractInsnNode.INVOKE_DYNAMIC_INSN => insn match {
+            case callGraph.LambdaMetaFactoryCall(_, _, implMethod, _) =>
+              postProcessor.backendUtils.addIndyLambdaImplMethod(classNode.name, implMethod)
+            case _ =>
+          }
+          case _ =>
+        }
+      }
+
+    }
+  }
+
+
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
     backendClassPath.findClassFile(fullName) map { classFile =>
@@ -271,7 +292,7 @@ abstract class ByteCodeRepository extends PerRunInit {
       // attribute that contains JSR-45 data that encodes debugging info.
       //   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
       //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
-      removeLineNumberNodes(classNode)
+      removeLineNumbersAndAddLMFImplMethods(classNode)
       classNode
     } match {
       case Some(node) => Right(node)
