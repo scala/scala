@@ -122,7 +122,19 @@ abstract class RefChecks extends Transform {
       try body finally inPattern = saved
     }
 
-    var checkedCombinations = Set[List[Type]]()
+    // Track symbols of the refinement's parents and the base at which we've checked them,
+    // as well as the entire refinement type seen at that base.
+    // No need to check the same symbols again in a base that's a subclass of a previously checked base
+    private val checkedCombinations = mutable.Map[List[Symbol], (Symbol, Type)]()
+    private def notYetCheckedOrAdd(rt: RefinedType, currentBase: Symbol) = {
+      val seen = checkedCombinations.get(rt.parents.map(_.typeSymbol)).exists {
+        case (prevBase, prevTp) => currentBase.isSubClass(prevBase) && rt =:= prevTp.asSeenFrom(currentBase.thisType, prevBase)
+      }
+
+      if (!seen) checkedCombinations.addOne((rt.parents.map(_.typeSymbol), (currentBase, rt)))
+
+      !seen
+    }
 
     // only one overloaded alternative is allowed to define default arguments
     private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
@@ -379,31 +391,12 @@ abstract class RefChecks extends Transform {
 
         //Console.println(infoString(member) + " overrides " + infoString(other) + " in " + clazz);//DEBUG
 
-        // return if we already checked this combination elsewhere
-        if (member.owner != clazz) {
-          def deferredCheck        = member.isDeferred || !other.isDeferred
-          def subOther(s: Symbol)  = s isSubClass other.owner
-          def subMember(s: Symbol) = s isSubClass member.owner
-
-          if (subOther(member.owner) && deferredCheck) {
-            //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
-            return
-          }
-          if (clazz.parentSymbols exists (p => subOther(p) && subMember(p) && deferredCheck)) {
-            //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
-            return
-          }
-          if (clazz.parentSymbols forall (p => subOther(p) == subMember(p))) {
-            //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
-            return
-          }
-        }
-
         /* Is the intersection between given two lists of overridden symbols empty? */
         def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
           !(syms1 exists (syms2 contains _))
 
-        if (typesOnly) checkOverrideTypes()
+        if (memberClass == ObjectClass && otherClass == AnyClass) {} // skip -- can we have a mode of symbolpairs where this pair doesn't even appear?
+        else if (typesOnly) checkOverrideTypes()
         else {
           // o: public | protected        | package-protected  (aka java's default access)
           // ^-may be overridden by member with access privileges-v
@@ -428,10 +421,12 @@ abstract class RefChecks extends Transform {
             overrideError("cannot be used here - classes can only override abstract types")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
-          } else if (!(other.isDeferred || member.isAnyOverride)
+          } else if (!(other.isDeferred || member.isAnyOverride) // Concrete `other` requires `override` for `member`
                      // Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
                      // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
-                     && !member.isSynthetic) {
+                     && !member.isSynthetic
+                     // In Java, the OVERRIDE flag is implied
+                     && !member.isJavaDefined) {
               if (isNeitherInClass && !(otherClass isSubClass memberClass))
                 emitOverrideError(
                   clazz + " inherits conflicting members:\n"
@@ -471,7 +466,9 @@ abstract class RefChecks extends Transform {
             overrideError("cannot be used here - only term macros can override term macros")
           } else {
             checkOverrideTypes()
-            checkOverrideDeprecated()
+            // Don't bother users with deprecations caused by classes they inherit.
+            // Only warn for the pair that has one leg in `clazz`.
+            if (clazz == memberClass) checkOverrideDeprecated()
             if (settings.warnNullaryOverride) {
               if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
                 reporter.warning(member.pos, "non-nullary method overrides nullary method")
@@ -529,9 +526,8 @@ abstract class RefChecks extends Transform {
             if (lowType.isVolatile)
               overrideError("has a volatile type; cannot override a member with non-volatile type")
             else lowType.normalize.resultType match {
-              case rt: RefinedType if !(rt =:= highType) && !(checkedCombinations contains rt.parents) =>
+              case rt: RefinedType if !(rt =:= highType) && notYetCheckedOrAdd(rt, pair.base) =>
                 // might mask some inconsistencies -- check overrides
-                checkedCombinations += rt.parents
                 val tsym = rt.typeSymbol
                 if (tsym.pos == NoPosition) tsym setPos member.pos
                 checkAllOverrides(tsym, typesOnly = true)

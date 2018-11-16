@@ -1,0 +1,5 @@
+t11136_was_t4731.scala:11: error: overriding method foo in trait Trait1 of type (arg: java.util.Comparator[String])Unit;
+  method foo in trait Trait2 of type (arg: java.util.Comparator[String])Int has incompatible type
+class Class1 extends Trait2[String] { }
+      ^
+one error found
