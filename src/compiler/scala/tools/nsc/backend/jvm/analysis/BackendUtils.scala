@@ -572,7 +572,8 @@ object BackendUtils {
             // The check below ensures that
             //   (1) the implMethod type has the expected signature (captured types plus argument types
             //       from instantiatedMethodType)
-            //   (2) the receiver of the implMethod matches the first captured type
+            //   (2) the receiver of the implMethod matches the first captured type, if any, otherwise
+            //       the first parameter type of instantiatedMethodType
             //   (3) all parameters that are not the same in samMethodType and instantiatedMethodType
             //       are reference types, so that we can insert casts to perform the same adaptation
             //       that the closure object would.
@@ -580,14 +581,26 @@ object BackendUtils {
             val isStatic                   = implMethod.getTag == Opcodes.H_INVOKESTATIC
             val indyParamTypes             = Type.getArgumentTypes(indy.desc)
             val instantiatedMethodArgTypes = instantiatedMethodType.getArgumentTypes
-            val expectedImplMethodType     = {
-              val paramTypes = (if (isStatic) indyParamTypes else indyParamTypes.tail) ++ instantiatedMethodArgTypes
-              Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*)
-            }
+
+            val (receiverType, expectedImplMethodType) =
+              if (isStatic) {
+                val paramTypes = indyParamTypes ++ instantiatedMethodArgTypes
+                (None, Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*))
+              } else if (implMethod.getTag == H_NEWINVOKESPECIAL) {
+                (Some(instantiatedMethodType.getReturnType), Type.getMethodType(Type.VOID_TYPE, instantiatedMethodArgTypes: _*))
+              } else {
+                if (indyParamTypes.nonEmpty) {
+                  val paramTypes = indyParamTypes.tail ++ instantiatedMethodArgTypes
+                  (Some(indyParamTypes(0)), Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*))
+                } else {
+                  val paramTypes = instantiatedMethodArgTypes.tail
+                  (Some(instantiatedMethodArgTypes(0)), Type.getMethodType(instantiatedMethodType.getReturnType, paramTypes: _*))
+                }
+              }
 
             val isIndyLambda = (
-              Type.getType(implMethod.getDesc) == expectedImplMethodType              // (1)
-                && (isStatic || implMethod.getOwner == indyParamTypes(0).getInternalName)  // (2)
+              Type.getType(implMethod.getDesc) == expectedImplMethodType                 // (1)
+                && receiverType.forall(rt => implMethod.getOwner == rt.getInternalName)  // (2)
                 && samMethodType.getArgumentTypes.corresponds(instantiatedMethodArgTypes)((samArgType, instArgType) =>
                 samArgType == instArgType || isReference(samArgType) && isReference(instArgType)) // (3)
               )

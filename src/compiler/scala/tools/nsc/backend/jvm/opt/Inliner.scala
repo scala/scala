@@ -182,6 +182,8 @@ abstract class Inliner {
       bufferForOuter(outer) += InlineLogRollback(reason)
     }
 
+    def nonEmpty = roots != null
+
     def print(): Unit = if (roots != null) {
       def printChildren(indent: Int, callsite: Callsite): Unit = downstream.get(callsite) match {
         case Some(logs) => logs.foreach(l => printLog(indent, l))
@@ -285,8 +287,16 @@ abstract class Inliner {
         changedByClosureOptimizer = closureOptimizer.rewriteClosureApplyInvocations(specificMethodsForClosureRewriting, inlinerState.asInstanceOf[mutable.Map[MethodNode, postProcessor.closureOptimizer.postProcessor.inliner.MethodInlinerState]])
       }
 
-      for (m <- inlinerState.keySet if !changedByClosureOptimizer(m))
-        inlinerState.remove(m).get.inlineLog.print()
+      var logs = List.empty[(MethodNode, InlineLog)]
+      for (m <- inlinerState.keySet if !changedByClosureOptimizer(m)) {
+        val log = inlinerState.remove(m).get.inlineLog
+        if (log.nonEmpty) logs ::= (m, log)
+      }
+      if (logs.nonEmpty) {
+        // Deterministic inline log
+        val sortedLogs = logs.sorted(Ordering.by[(MethodNode, InlineLog), (String, String)](p => (p._1.name, p._1.desc)))
+        sortedLogs.foreach(_._2.print())
+      }
 
       round += 1
     }
