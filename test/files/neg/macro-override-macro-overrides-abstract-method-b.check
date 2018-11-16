@@ -1,11 +1,11 @@
 Test_2.scala:3: error: <$anon: C with A> inherits conflicting members:
-  macro method t in trait C of type ()Unit  and
-  method t in trait A of type ()Unit
-(Note: this can be resolved by declaring an override in <$anon: C with A>.)
+macro override def t(): Unit (defined in trait C) and
+def t(): Unit (defined in trait A)
+(note: this can be resolved by declaring an `override` in <$anon: C with A>.)
   val c2 = new C with A {}
                ^
-Test_2.scala:5: error: overriding macro method t in trait C of type ()Unit;
- method t cannot be used here - only term macros can override term macros
+Test_2.scala:5: error: overriding macro override def t(): Unit (defined in trait C);
+ override def t(): Unit cannot be used here - only term macros can override term macros
   val c4 = new C with A { override def t(): Unit = () }
                                        ^
 two errors found

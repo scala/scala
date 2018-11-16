@@ -1,5 +1,5 @@
-Impls_Macros_1.scala:12: error: overriding method foo in trait Foo of type (x: Int)Int;
- macro method foo cannot be used here - term macros cannot override abstract methods
+Impls_Macros_1.scala:12: error: overriding def foo(x: Int): Int (defined in trait Foo);
+ macro def foo(x: Int): Int cannot be used here - term macros cannot override abstract methods
   def foo(x: Int): Int = macro Impls.impl
       ^
 one error found

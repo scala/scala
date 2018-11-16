@@ -1,0 +1,5 @@
+t11136_was_t4731.scala:11: error: overriding def foo(arg: java.util.Comparator[String]): Unit (defined in trait Trait1);
+ def foo(arg: java.util.Comparator[String]): Int (defined in trait Trait2) has incompatible type
+class Class1 extends Trait2[String] { }
+      ^
+one error found
