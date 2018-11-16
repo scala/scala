@@ -247,7 +247,6 @@ abstract class RefChecks extends Transform {
      *    1.2. O must not be final.
      *    1.3. O is deferred, or M has `override` modifier.
      *    1.4. If O is stable, then so is M.
-     *     // @M: LIFTED 1.5. Neither M nor O are a parameterized type alias
      *    1.6. If O is a type alias, then M is an alias of O.
      *    1.7. If O is an abstract type then
      *       1.7.1 either M is an abstract type, and M's bounds are sharper than O's bounds.
@@ -320,18 +319,21 @@ abstract class RefChecks extends Transform {
        * of class `clazz` are met.
        */
       def checkOverride(pair: SymbolPair): Unit = {
-        import pair._
-        val member   = low
-        val other    = high
+        import pair.{highType, lowType, highInfo, rootType}
 
-//        debuglog(s"Checking validity of ${member.fullLocationString} overriding ${other.fullLocationString}")
+        val member = pair.low
+        val other = pair.high
+        val memberClass = member.owner
+        val otherClass = other.owner
+
+        //        debuglog(s"Checking validity of ${member.fullLocationString} overriding ${other.fullLocationString}")
 
         def noErrorType = !pair.isErroneous
         def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
-        def isNeitherInClass = member.owner != pair.base && other.owner != pair.base
+        def isNeitherInClass = memberClass != clazz && otherClass != clazz
 
         def objectOverrideErrorMsg = (
-          "overriding " + high.fullLocationString + " with " + low.fullLocationString + ":\n" +
+          "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +
           "an overriding object must conform to the overridden object's class bound" +
           analyzer.foundReqMsg(pair.lowClassBound, pair.highClassBound)
         )
@@ -339,7 +341,7 @@ abstract class RefChecks extends Transform {
         val indent = "  "
         def overrideErrorMsg(msg: String): String = {
           val isConcreteOverAbstract =
-            (other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred
+            (otherClass isSubClass memberClass) && other.isDeferred && !member.isDeferred
           val addendum =
             if (isConcreteOverAbstract)
               s";\n${indent}(note that ${infoStringWithLocation(other)} is abstract,\n" +
@@ -351,7 +353,7 @@ abstract class RefChecks extends Transform {
           s"overriding ${infoStringWithLocation(other)};\n$indent$msg$addendum"
         }
         def emitOverrideError(fullmsg: String): Unit = {
-          if (member.owner == clazz) reporter.error(member.pos, fullmsg)
+          if (memberClass == clazz) reporter.error(member.pos, fullmsg)
           else mixinOverrideErrors += MixinOverrideError(member, fullmsg)
         }
 
@@ -411,12 +413,12 @@ abstract class RefChecks extends Transform {
             overrideError("has weaker access privileges; it should not be private")
 
           // todo: align accessibility implication checking with isAccessible in Contexts
-          val ob = other.accessBoundary(member.owner)
-          val mb = member.accessBoundary(member.owner)
+          val ob = other.accessBoundary(memberClass)
+          val mb = member.accessBoundary(memberClass)
           def isOverrideAccessOK = member.isPublic || {      // member is public, definitely same or relaxed access
             (!other.isProtected || member.isProtected) &&    // if o is protected, so is m
             ((!isRootOrNone(ob) && ob.hasTransOwner(mb)) ||  // m relaxes o's access boundary
-              other.isJavaDefined)                           // overriding a protected java member, see #3946
+             other.isJavaDefined)                           // overriding a protected java member, see #3946
           }
           if (!isOverrideAccessOK) {
             overrideAccessError()
@@ -426,10 +428,11 @@ abstract class RefChecks extends Transform {
             overrideError("cannot be used here - classes can only override abstract types")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
-          } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) { // (*)
-            // (*) Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
-            // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
-              if (isNeitherInClass && !(other.owner isSubClass member.owner))
+          } else if (!(other.isDeferred || member.isAnyOverride)
+                     // Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
+                     // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
+                     && !member.isSynthetic) {
+              if (isNeitherInClass && !(otherClass isSubClass memberClass))
                 emitOverrideError(
                   clazz + " inherits conflicting members:\n"
                     + indent + infoStringWithLocation(other) + " and\n"
@@ -449,8 +452,8 @@ abstract class RefChecks extends Transform {
             overrideError("cannot override a mutable variable")
           }
           else if (member.isAnyOverride &&
-                     !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
-                     !member.isDeferred && !other.isDeferred &&
+                     !(memberClass.thisType.baseClasses exists (_ isSubClass otherClass)) &&
+                   !member.isDeferred && !other.isDeferred &&
                      intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
             overrideError("cannot override a concrete member without a third member that's overridden by both "+
                           "(this rule is designed to prevent ``accidental overrides'')")
@@ -477,22 +480,15 @@ abstract class RefChecks extends Transform {
           }
         }
 
-        //if (!member.typeParams.isEmpty) (1.5)  @MAT
-        //  overrideError("may not be parameterized");
-        //if (!other.typeParams.isEmpty)  (1.5)   @MAT
-        //  overrideError("may not override parameterized type");
-        // @M: substSym
         def checkOverrideAlias(): Unit = {
           // Important: first check the pair has the same kind, since the substitution
           // carries high's type parameter's bounds over to low, so that
           // type equality doesn't consider potentially different bounds on low/high's type params.
           // In b781e25afe this went from using memberInfo to memberType (now lowType/highType), tested by neg/override.scala.
           // TODO: was that the right fix? it seems type alias's RHS should be checked by looking at the symbol's info
-          if (pair.sameKind && lowType.substSym(low.typeParams, high.typeParams) =:= highType) ()
+          if (pair.sameKind && lowType.substSym(member.typeParams, other.typeParams) =:= highType) ()
           else overrideTypeError() // (1.6)
         }
-        //if (!member.typeParams.isEmpty) // (1.7)  @MAT
-        //  overrideError("may not be parameterized");
         def checkOverrideAbstract(): Unit = {
           if (!(highInfo.bounds containsType lowType)) { // (1.7.1)
             overrideTypeError(); // todo: do an explaintypes with bounds here
@@ -500,36 +496,36 @@ abstract class RefChecks extends Transform {
           }
           // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))
           // making an abstract type member concrete is like passing a type argument
-          typer.infer.checkKindBounds(high :: Nil, lowType :: Nil, rootType, low.owner) match { // (1.7.2)
+          typer.infer.checkKindBounds(other :: Nil, lowType :: Nil, rootType, memberClass) match { // (1.7.2)
             case Nil        =>
             case kindErrors =>
               reporter.error(member.pos,
-                "The kind of "+member.keyString+" "+member.varianceString + member.nameString+
+                "The kind of " + member.keyString+" " + member.varianceString + member.nameString+
                 " does not conform to the expected kind of " + other.defString + other.locationString + "." +
                 kindErrors.toList.mkString("\n", ", ", ""))
           }
           // check a type alias's RHS corresponds to its declaration
           // this overlaps somewhat with validateVariance
-          if (low.isAliasType) {
-            typer.infer.checkKindBounds(low :: Nil, lowType.normalize :: Nil, rootType, low.owner) match {
+          if (member.isAliasType) {
+            typer.infer.checkKindBounds(member :: Nil, lowType.normalize :: Nil, rootType, memberClass) match {
               case Nil        =>
               case kindErrors =>
                 reporter.error(member.pos,
-                  "The kind of the right-hand side "+lowType.normalize+" of "+low.keyString+" "+
-                  low.varianceString + low.nameString+ " does not conform to its expected kind."+
+                  "The kind of the right-hand side "+lowType.normalize+" of " + member.keyString+" "+
+                  member.varianceString + member.nameString+ " does not conform to its expected kind."+
                   kindErrors.toList.mkString("\n", ", ", ""))
             }
           }
-          else if (low.isAbstractType && lowType.isVolatile && !highInfo.upperBound.isVolatile)
+          else if (member.isAbstractType && lowType.isVolatile && !highInfo.upperBound.isVolatile)
             overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
         }
         def checkOverrideTerm(): Unit = {
           other.cookJavaRawInfo() // #2454
-          if (!overridesTypeInPrefix(lowType, highType, rootType, low.isModuleOrModuleClass && high.isModuleOrModuleClass)) { // 8
+          if (!overridesTypeInPrefix(lowType, highType, rootType, member.isModuleOrModuleClass && other.isModuleOrModuleClass)) { // 8
             overrideTypeError()
             explainTypes(lowType, highType)
           }
-          if (low.isStable && !highType.isVolatile) {
+          if (member.isStable && !highType.isVolatile) {
             if (lowType.isVolatile)
               overrideError("has a volatile type; cannot override a member with non-volatile type")
             else lowType.normalize.resultType match {
@@ -544,9 +540,9 @@ abstract class RefChecks extends Transform {
           }
         }
         def checkOverrideTypes(): Unit = {
-          if (high.isAliasType)         checkOverrideAlias()
-          else if (high.isAbstractType) checkOverrideAbstract()
-          else if (high.isTerm)         checkOverrideTerm()
+          if (other.isAliasType)         checkOverrideAlias()
+          else if (other.isAbstractType) checkOverrideAbstract()
+          else if (other.isTerm)         checkOverrideTerm()
         }
 
         def checkOverrideDeprecated(): Unit = {
