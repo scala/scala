@@ -37,7 +37,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
 
   def iterator: Iterator[A] =
     if (knownSize == 0) Iterator.empty
-    else new LinearSeqIterator[A](toSeq)
+    else new LinearSeqIterator[A](this)
 
   def length: Int = {
     var these = coll
@@ -216,9 +216,9 @@ trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A]
 /** A specialized Iterator for LinearSeqs that is lazy enough for Stream and LazyList. This is accomplished by not
   * evaluating the tail after returning the current head.
   */
-private[collection] final class LinearSeqIterator[A](coll: Seq[A]) extends AbstractIterator[A] {
+private[collection] final class LinearSeqIterator[A](coll: LinearSeqOps[A, LinearSeq, LinearSeq[A]]) extends AbstractIterator[A] {
   // A call-by-need cell
-  private[this] final class LazyCell(st: => Seq[A]) { lazy val v = st }
+  private[this] final class LazyCell(st: => LinearSeqOps[A, LinearSeq, LinearSeq[A]]) { lazy val v = st }
 
   private[this] var these: LazyCell = new LazyCell(coll)
 
