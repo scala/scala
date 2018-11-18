@@ -80,7 +80,7 @@ object Using {
 
   private val cachedIdentity: Any => Any = identity
 
-  final class ResourceUse[R, A] private(resource: SingleUse[R], op: R => A) {
+  final class ResourceUse[R, A] private[Using](resource: SingleUse[R], op: R => A) {
     /** Performs an operation on the result of this `ResourceUse`'s existing operation
       * using its resource, and then releases the resource,
       * even if the operation throws an exception.
@@ -148,7 +148,7 @@ object Using {
     *       by this method will not be usable.
     */
   def apply[R](resource: => R): ResourceUse[R, R] =
-    new ResourceUse[R, R](new SingleUse(resource), cachedIdentity.asInstanceOf[R => R])
+    new ResourceUse(new SingleUse(resource), cachedIdentity.asInstanceOf[R => R])
 
   /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception. This method behaves similarly
