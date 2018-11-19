@@ -285,30 +285,29 @@ private[concurrent] final object Promise {
       }
 
     // IMPORTANT: Noop should never be passed in here, neither as left OR as right
-    @tailrec private[this] final def concatCallbacks(left: Callbacks[T], right: Callbacks[T]): Callbacks[T] = {
+    @tailrec private[this] final def concatCallbacks(left: Callbacks[T], right: Callbacks[T]): Callbacks[T] =
       if (left.isInstanceOf[Transformation[T,_]]) new ManyCallbacks[T](left, right)
       else /*if (left.isInstanceOf[ManyCallbacks[T]) */ { // This should only happen when linking
         val m = left.asInstanceOf[ManyCallbacks[T]]
         concatCallbacks(m.last, new ManyCallbacks(m.first, right))
       }
-    }
 
-    // IMPORTANT: Noop should not be passed in here
+    // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
     @tailrec
     private[this] final def submitWithValue(callbacks: Callbacks[T],
                                             resolved: Try[T],
-                                            deferred: List[Callbacks[T]] = Nil): Unit = {
-      callbacks match {
-        case m: ManyCallbacks[T] =>
-          submitWithValue(m.first, resolved, m.last :: deferred)
-        case t: Transformation[T, _] =>
-          t.submitWithValue(resolved)
-          deferred match {
-            case head :: tail => submitWithValue(head, resolved, tail)
-            case Nil => //ignore
-          }
+                                            deferred: Callbacks[T] = null): Unit =
+      if(callbacks.isInstanceOf[ManyCallbacks[T]]) {
+        val m: ManyCallbacks[T] = callbacks.asInstanceOf[ManyCallbacks[T]]
+        // TODO: Here it would be neat if we could reuse the `callbacks` instance and repoint its m.first to become its m.last, and it's m.last to be `deferred`
+        // TODO: We could avoid the concat for the case where m.last is Transformation, in which case we could submit m.first and then m.last
+        submitWithValue(m.first, resolved, if (deferred ne null) concatCallbacks(m.last, deferred) else m.last)
+      } else {
+        val t: Transformation[T, _] = callbacks.asInstanceOf[Transformation[T, _]]
+        t.submitWithValue(resolved)
+        if (deferred ne null)
+          submitWithValue(deferred, resolved, null)
       }
-    }
 
     /** Link this promise to the root of another promise.
      */
