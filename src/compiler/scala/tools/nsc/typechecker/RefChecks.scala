@@ -1436,11 +1436,13 @@ abstract class RefChecks extends Transform {
           checkTypeRefBounds(ann.tpe, tree)
         }
 
-        annots
-          .map(_.transformArgs(transformTrees))
-          .groupBy(_.symbol)
-          .flatMap((groupRepeatableAnnotations _).tupled)
-          .toList
+        val annotsBySymbol = new mutable.LinkedHashMap[Symbol, ListBuffer[AnnotationInfo]]()
+        val transformedAnnots = annots.map(_.transformArgs(transformTrees))
+        for (transformedAnnot <- transformedAnnots) {
+          val buffer = annotsBySymbol.getOrElseUpdate(transformedAnnot.symbol, new ListBuffer)
+          buffer += transformedAnnot
+        }
+        annotsBySymbol.iterator.flatMap(x => groupRepeatableAnnotations(x._1, x._2.toList)).toList
       }
 
       // assumes non-empty `anns`
