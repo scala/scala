@@ -286,7 +286,7 @@ private[concurrent] final object Promise {
 
     // IMPORTANT: Noop should never be passed in here, neither as left OR as right
     @tailrec private[this] final def concatCallbacks(left: Callbacks[T], right: Callbacks[T]): Callbacks[T] =
-      if (left.isInstanceOf[Transformation[T,_]]) new ManyCallbacks[T](left, right)
+      if (left.isInstanceOf[Transformation[T,_]]) new ManyCallbacks[T](left.asInstanceOf[Transformation[T,_]], right)
       else /*if (left.isInstanceOf[ManyCallbacks[T]) */ { // This should only happen when linking
         val m = left.asInstanceOf[ManyCallbacks[T]]
         concatCallbacks(m.last, new ManyCallbacks(m.first, right))
@@ -295,20 +295,13 @@ private[concurrent] final object Promise {
     // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
     @tailrec
     private[this] final def submitWithValue(callbacks: Callbacks[T],
-                                            resolved: Try[T],
-                                            deferred: Callbacks[T] = null): Unit =
+                                            resolved: Try[T]): Unit =
       if(callbacks.isInstanceOf[ManyCallbacks[T]]) {
         val m: ManyCallbacks[T] = callbacks.asInstanceOf[ManyCallbacks[T]]
-        // TODO: Here it would be neat if we could reuse the `callbacks` instance and repoint its m.first to become its m.last, and it's m.last to be `deferred`
-        if (m.first.isInstanceOf[Transformation[T,_]]) {
-          m.first.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
-          submitWithValue(m.last, resolved, deferred)
-        } else
-          submitWithValue(m.first, resolved, if (deferred ne null) new ManyCallbacks(m.last, deferred) else m.last)
+        m.first.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
+        submitWithValue(m.last, resolved)
       } else {
         callbacks.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
-        if (deferred ne null)
-          submitWithValue(deferred, resolved, null)
       }
 
     /** Link this promise to the root of another promise.
@@ -353,7 +346,7 @@ private[concurrent] final object Promise {
   sealed trait Callbacks[-T] {
   }
 
-  final class ManyCallbacks[-T](final val first: Callbacks[T], final val last: Callbacks[T]) extends Callbacks[T] {
+  final class ManyCallbacks[-T](final val first: Transformation[T,_], final val last: Callbacks[T]) extends Callbacks[T] {
     // NOTE: This does grow the stack for *linked* callbacks which are transported across the links,
     // these should normally be rather flat.
     override final def toString: String = "ManyCallbacks"
