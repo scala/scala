@@ -289,17 +289,16 @@ private[concurrent] final object Promise {
       if (left.isInstanceOf[Transformation[T,_]]) new ManyCallbacks[T](left.asInstanceOf[Transformation[T,_]], right)
       else /*if (left.isInstanceOf[ManyCallbacks[T]) */ { // This should only happen when linking
         val m = left.asInstanceOf[ManyCallbacks[T]]
-        concatCallbacks(m.last, new ManyCallbacks(m.first, right))
+        concatCallbacks(m.rest, new ManyCallbacks(m.first, right))
       }
 
     // IMPORTANT: Noop should not be passed in here, `callbacks` cannot be null
     @tailrec
-    private[this] final def submitWithValue(callbacks: Callbacks[T],
-                                            resolved: Try[T]): Unit =
+    private[this] final def submitWithValue(callbacks: Callbacks[T], resolved: Try[T]): Unit =
       if(callbacks.isInstanceOf[ManyCallbacks[T]]) {
         val m: ManyCallbacks[T] = callbacks.asInstanceOf[ManyCallbacks[T]]
-        m.first.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
-        submitWithValue(m.last, resolved)
+        m.first.submitWithValue(resolved)
+        submitWithValue(m.rest, resolved)
       } else {
         callbacks.asInstanceOf[Transformation[T, _]].submitWithValue(resolved)
       }
@@ -346,7 +345,7 @@ private[concurrent] final object Promise {
   sealed trait Callbacks[-T] {
   }
 
-  final class ManyCallbacks[-T](final val first: Transformation[T,_], final val last: Callbacks[T]) extends Callbacks[T] {
+  final class ManyCallbacks[-T](final val first: Transformation[T,_], final val rest: Callbacks[T]) extends Callbacks[T] {
     // NOTE: This does grow the stack for *linked* callbacks which are transported across the links,
     // these should normally be rather flat.
     override final def toString: String = "ManyCallbacks"
