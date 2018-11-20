@@ -205,7 +205,7 @@ object VectorMap extends MapFactory[VectorMap] {
     final case object Kinless extends Tombstone {
       override def toString = "⤞"
     }
-    final case class NextOfKin private (distance: Int) extends Tombstone {
+    final case class NextOfKin private[Tombstone] (distance: Int) extends Tombstone {
       override def toString = "⥅" + distance
     }
     def apply(distance: Int): Tombstone =
