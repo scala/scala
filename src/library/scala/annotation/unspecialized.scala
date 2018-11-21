@@ -18,4 +18,4 @@ package scala.annotation
  *
  *  @since 2.10
  */
-class unspecialized extends scala.annotation.StaticAnnotation
+final class unspecialized extends scala.annotation.StaticAnnotation

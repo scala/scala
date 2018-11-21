@@ -27,4 +27,4 @@ package internal
  *  To lessen the weirdness we define this annotation as `private[scala]`.
  *  It will not prevent pickling, but it will prevent application developers (and scaladocs) from seeing the annotation.
  */
-private[scala] class macroImpl(val referenceToMacroImpl: Any) extends scala.annotation.StaticAnnotation
+private[scala] final class macroImpl(val referenceToMacroImpl: Any) extends scala.annotation.StaticAnnotation

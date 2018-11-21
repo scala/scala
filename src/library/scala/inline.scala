@@ -49,4 +49,4 @@ package scala
  *
  * @author Lex Spoon
  */
-class inline extends scala.annotation.StaticAnnotation
+final class inline extends scala.annotation.StaticAnnotation

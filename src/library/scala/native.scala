@@ -25,4 +25,4 @@ package scala
   *
   * @since 2.6
   */
-class native extends scala.annotation.StaticAnnotation {}
+final class native extends scala.annotation.StaticAnnotation {}
