@@ -588,8 +588,7 @@ trait Implicits {
           new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
         else {
           val recursiveImplicit: Option[OpenImplicit] =
-            if(tree == EmptyTree) None
-            else context.openImplicits find {
+            context.openImplicits find {
               case oi @ OpenImplicit(info, tp, tree1) =>
                 (oi.isByName || isByNamePt) && oi.pt <:< pt
             }

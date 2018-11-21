@@ -1606,6 +1606,31 @@ trait Trees extends api.Trees {
     }
   }
 
+  class LocalOwnersTraverser extends InternalTraverser {
+    val result: mutable.Set[Symbol] = mutable.Set.empty[Symbol]
+
+    override def traverse(tree: Tree): Unit = {
+      tree match {
+        case _: DefTree | _: Function if(tree.hasExistingSymbol) =>
+          result += tree.symbol
+        case _ =>
+      }
+      tree.traverse(this)
+    }
+  }
+
+  def changeNonLocalOwners(tree: Tree, newowner: Symbol): Unit = {
+    val localOwnersTraverser = new LocalOwnersTraverser
+    localOwnersTraverser(tree)
+    val localOwners = localOwnersTraverser.result
+    localOwners.foreach { sym =>
+      if (!localOwners.contains(sym.owner)) {
+        sym.owner = newowner
+        if (sym.isModule) sym.moduleClass.owner = newowner
+      }
+    }
+  }
+
   private class ShallowDuplicator(orig: Tree) extends InternalTransformer {
     override val treeCopy = newStrictTreeCopier
     override def transform(tree: Tree) =
