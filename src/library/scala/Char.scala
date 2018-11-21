@@ -46,7 +46,8 @@ final abstract class Char private extends AnyVal {
   /** Returns the negation of this value. */
   def unary_- : Int
 
-  @deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0") def +(x: String): String
+  @deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0")
+  def +(x: String): String
 
   /**
   * Returns this value bit-shifted left by the specified number of bits,

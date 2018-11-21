@@ -37,7 +37,8 @@ final abstract class Double private extends AnyVal {
   /** Returns the negation of this value. */
   def unary_- : Double
 
-  @deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0") def +(x: String): String
+  @deprecated("Adding a number and a String is deprecated. Use the string interpolation `s\"$num$str\"`", "2.13.0")
+  def +(x: String): String
 
   /** Returns `true` if this value is equal to x, `false` otherwise. */
   def ==(x: Byte): Boolean
