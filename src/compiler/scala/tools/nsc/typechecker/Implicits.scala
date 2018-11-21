@@ -587,11 +587,15 @@ trait Implicits {
         if(ref != EmptyTree)
           new SearchResult(ref, EmptyTreeTypeSubstituter, Nil)
         else {
-          val recursiveImplicit: Option[OpenImplicit] =
-            context.openImplicits find {
-              case oi @ OpenImplicit(info, tp, tree1) =>
-                (oi.isByName || isByNamePt) && oi.pt <:< pt
+          @tailrec
+          def loop(ois: List[OpenImplicit], isByName: Boolean): Option[OpenImplicit] =
+            ois match {
+              case hd :: tl if (isByName || hd.isByName) && hd.pt <:< pt => Some(hd)
+              case hd :: tl => loop(tl, isByName || hd.isByName)
+              case _ => None
             }
+
+          val recursiveImplicit: Option[OpenImplicit] = loop(context.openImplicits, isByNamePt)
 
           recursiveImplicit match {
             case Some(rec) =>
