@@ -36,7 +36,9 @@ The kind of code we can accept depends on the life cycle for the release you're 
 
 #### Bug Fix
 
-At the end of the commit message, include "Fixes scala/bug#NNNN", where https://github.com/scala/bug/issues/NNNN tracks the bug you're fixing. We also recommend naming your branch after the ticket number.
+At the end of the PR description, which is autofilled with the commit message if there is only one commit, add the phrase, "Fixes scala/bug#NNNN", where `https://github.com/scala/bug/issues/NNNN` tracks the bug you're fixing. Github will turn your bug number into a link.
+
+We also recommend naming your branch after the ticket number.
 
 Please make sure the ticket's milestone corresponds to the upcoming milestone for the branch your PR targets. The CI automation will automatically assign the milestone after you open the PR.
 
@@ -113,8 +115,14 @@ To run a single negative test from sbt shell:
 root> partest --verbose test/files/neg/delayed-init-ref.scala
 ```
 
-To specify specific flags such as `-deprecation -Xlint -Xfatal-warnings`, you can put them in
-`test/files/neg/<test>.flags`. This could be used to test specific behavior under `-deprecation` flag etc.
+To specify compiler flags such as `-deprecation -Xlint -Xfatal-warnings`, you can add a comment
+at the top of your source file of the form: `// scalac: -deprecation -Xlint -Xfatal-warnings`.
+
+To test that no warnings are emitted, use `-Xfatal-warnings`. That will fail a `pos` test if there
+are warnings. Note that `pos` tests do not have `.check` files.
+
+To test that warnings are correctly emitted, use `-Xfatal-warnings` with a `neg` test and `.check` file.
+The usual way to create a `.check` file is `partest --update-check`.
 
 To run all tests in `neg` categories from sbt shell:
 
@@ -154,8 +162,8 @@ root> partest --help
 Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
 and therefore:
 
-* if you're working in the compiler, you must write a partest, or a `BytecodeTest` JUnit test which invokes the compiler programmatically; however
-* if you're working in the library, a JUnit and/or ScalaCheck is better.
+* if you're working on the compiler, you must write a partest, or a `BytecodeTest` JUnit test which invokes the compiler programmatically; however
+* if you're working on the library, a JUnit and/or ScalaCheck is better.
 
 #### exploring with REPL
 
@@ -213,7 +221,9 @@ by the commit on the code base, so use the active voice and the
 present tense.  That also makes the commit subjects easy to reuse in
 release notes.
 
-For a bugfix, the end of the commit message should say "Fixes scala/bug#NNNN".
+For a bugfix, the end of the PR description (that is, the first comment on the PR) should say, "Fixes scala/bug#NNNN", as mentioned above.
+
+NOTE: it's best not to add the issue reference to your commit message, as github will pollute the conversation on the ticket with notifications every time you commit.
 
 If a commit purely refactors and is not intended to change behaviour,
 say so.
