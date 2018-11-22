@@ -91,14 +91,8 @@ trait ProcessCreation {
     *
     * @example {{{ apply("java", params.get("cwd"), "CLASSPATH" -> "library.jar") }}}
     */
-  def apply(command: String, cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
-    apply(command.split("""\s+"""), cwd, extraEnv : _*)
-    // not smart to use this on windows, because CommandParser uses \ to escape ".
-    /*CommandParser.parse(command) match {
-      case Left(errorMsg) => error(errorMsg)
-      case Right((cmd, args)) => apply(cmd :: args, cwd, extraEnv : _*)
-    }*/
-  }
+  def apply(command: String, cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder =
+    apply(Parser.tokenize(command), cwd, extraEnv: _*)
 
   /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir optionally set to
     * `File` and extra environment variables.
