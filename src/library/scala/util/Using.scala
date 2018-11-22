@@ -14,7 +14,7 @@ package scala.util
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.util.control.NonFatal
+import scala.util.control.{ControlThrowable, NonFatal}
 
 /** A utility for performing automatic resource management. It can be used to perform an
   * operation using resources, after which it will release the resources, in reverse order
@@ -102,17 +102,31 @@ final class Using[R] private(resource: => R) {
     else Using.resource(resource)(f)
 }
 
-/** @define recommendUsing                   It is highly recommended to use the `Using` construct,
-  *                                          which safely wraps resource usage and management in a `Try`.
-  * @define multiResourceSuppressionBehavior If more than one exception is thrown by the operation and releasing resources,
-  *                                          the exception thrown ''first'' is thrown, with the other exceptions
-  *                                          [[java.lang.Throwable.addSuppressed(Throwable) added as suppressed exceptions]]
-  *                                          to the one thrown first. This is the case ''unless'' a later exception is
-  *                                          [[scala.util.control.NonFatal fatal]], and the one preceding it is not. In that case,
-  *                                          the first exception is added as a suppressed exception to the fatal one, and the fatal
-  *                                          one is thrown. If an exception is a
-  *                                          [[scala.util.control.ControlThrowable ControlThrowable]], no exception will be added to
-  *                                          it as a suppressed exception.
+/** @define recommendUsing      It is highly recommended to use the `Using` construct,
+  *                             which safely wraps resource usage and management in a `Try`.
+  * @define suppressionBehavior If two exceptions are thrown (e.g. by an operation and closing a resource),
+  *                             one of them rethrown, and the other is
+  *                             [[java.lang.Throwable.addSuppressed(Throwable) added to it as a suppressed exception]].
+  *                             If the two exceptions are of different 'severities' (see below), the one of a higher
+  *                             severity is rethrown, and the one of a lower severity is added to it as a suppressed
+  *                             exception. If the two exceptions are of the same severity, the one thrown first is
+  *                             rethrown, and the one thrown second is added to it as a suppressed exception.
+  *                             If an exception is a [[scala.util.control.ControlThrowable `ControlThrowable`]], or
+  *                             if it does not support suppression (see
+  *                             [[java.lang.Throwable `Throwable`'s constructor with an `enableSuppression` parameter]]),
+  *                             an exception that would have been suppressed is instead discarded.
+  *
+  *                             Exceptions are ranked from highest to lowest severity as follows:
+  *                             - `java.lang.VirtualMachineError`
+  *                             - `java.lang.LinkageError`
+  *                             - `java.lang.InterruptedException` and `java.lang.ThreadDeath`
+  *                             - [[scala.util.control.NonFatal fatal exceptions]], excluding `scala.util.control.ControlThrowable`
+  *                             - `scala.util.control.ControlThrowable`
+  *                             - all other exceptions
+  *
+  *                             When more than two exceptions are thrown, the first two are combined and
+  *                             rethrown as described above, and each successive exception thrown is combined
+  *                             as it is thrown.
   */
 object Using {
   /** Creates a `Using` from the given resource.
@@ -122,21 +136,28 @@ object Using {
     */
   def apply[R](resource: => R): Using[R] = new Using(resource)
 
+  private def preferentiallySuppress(primary: Throwable, secondary: Throwable): Throwable = {
+    def score(t: Throwable): Int = t match {
+      case _: VirtualMachineError                   => 4
+      case _: LinkageError                          => 3
+      case _: InterruptedException | _: ThreadDeath => 2
+      case _: ControlThrowable                      => 0
+      case e if !NonFatal(e)                        => 1 // in case this method gets out of sync with NonFatal
+      case _                                        => -1
+    }
+    @inline def suppress(t: Throwable, suppressed: Throwable): Throwable = { t.addSuppressed(suppressed); t }
+
+    if (score(secondary) > score(primary)) suppress(secondary, primary)
+    else suppress(primary, secondary)
+  }
+
   /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception. This method behaves similarly
     * to Java's try-with-resources.
     *
     * $recommendUsing
     *
-    * If both the operation and releasing the resource throw exceptions, the one thrown
-    * when releasing the resource is
-    * [[java.lang.Throwable.addSuppressed(Throwable) added as a suppressed exception]]
-    * to the one thrown by the operation, ''unless'' the exception thrown when releasing
-    * the resource is [[scala.util.control.NonFatal fatal]], and the one thrown by the
-    * operation is not. In that case, the exception thrown by the operation is added
-    * as a suppressed exception to the one thrown when releasing the resource. If an
-    * exception is a [[scala.util.control.ControlThrowable ControlThrowable]], no
-    * exception will be added to it as a suppressed exception.
+    * $suppressionBehavior
     *
     * @param resource the resource
     * @param body     the operation to perform with the resource
@@ -147,9 +168,6 @@ object Using {
     */
   def resource[R: Resource, A](resource: R)(body: R => A): A = {
     if (resource == null) throw new NullPointerException("null resource")
-
-    @inline def safeAddSuppressed(t: Throwable, suppressed: Throwable): Unit =
-      t.addSuppressed(suppressed)  // a no-op for ControlThrowable
 
     var primary: Throwable = null
     try {
@@ -165,15 +183,7 @@ object Using {
         try {
           implicitly[Resource[R]].release(resource)
         } catch {
-          case other: Throwable =>
-            if (NonFatal(primary) && !NonFatal(other)) {
-              // `other` is fatal, `primary` is not
-              toThrow = other
-              safeAddSuppressed(other, primary)
-            } else {
-              // `toThrow` is already `primary`
-              safeAddSuppressed(primary, other)
-            }
+          case other: Throwable => toThrow = preferentiallySuppress(primary, other)
         } finally {
           throw toThrow
         }
@@ -187,7 +197,7 @@ object Using {
     *
     * $recommendUsing
     *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
@@ -215,7 +225,7 @@ object Using {
     *
     * $recommendUsing
     *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
@@ -248,7 +258,7 @@ object Using {
     *
     * $recommendUsing
     *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
