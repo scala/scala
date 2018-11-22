@@ -31,11 +31,11 @@ import scala.annotation.implicitNotFound
 sealed abstract class BitSet
   extends AbstractSet[Int]
     with SortedSet[Int]
-    with collection.BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
-    with collection.BitSetOps[BitSet]
     with StrictOptimizedIterableOps[Int, Set, BitSet]
-    with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet] {
+    with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet]
+    with collection.BitSet
+    with collection.BitSetOps[BitSet] {
 
   override def unsorted: Set[Int] = this
 
