@@ -76,11 +76,11 @@ object StringOps {
       }
     }
 
-    /** Builds a new collection by applying a function to all chars of this filtered String.
+    /** Builds a new collection by applying a function to all chars of this filtered string.
       *
       *  @param f      the function to apply to each char.
       *  @return       a new collection resulting from applying the given function
-      *                `f` to each char of this String and collecting the results.
+      *                `f` to each char of this string and collecting the results.
       */
     def map[B](f: Char => B): immutable.IndexedSeq[B] = {
       val len = s.length
@@ -95,11 +95,11 @@ object StringOps {
       b.result()
     }
 
-    /** Builds a new String by applying a function to all chars of this filtered String.
+    /** Builds a new string by applying a function to all chars of this filtered string.
       *
       *  @param f      the function to apply to each char.
-      *  @return       a new String resulting from applying the given function
-      *                `f` to each char of this String and collecting the results.
+      *  @return       a new string resulting from applying the given function
+      *                `f` to each char of this string and collecting the results.
       */
     def map(f: Char => Char): String = {
       val len = s.length
@@ -113,12 +113,12 @@ object StringOps {
       sb.toString
     }
 
-    /** Builds a new collection by applying a function to all chars of this filtered String
+    /** Builds a new collection by applying a function to all chars of this filtered string
       * and using the elements of the resulting collections.
       *
       *  @param f      the function to apply to each char.
       *  @return       a new collection resulting from applying the given collection-valued function
-      *                `f` to each char of this String and concatenating the results.
+      *                `f` to each char of this string and concatenating the results.
       */
     def flatMap[B](f: Char => IterableOnce[B]): immutable.IndexedSeq[B] = {
       val len = s.length
@@ -132,12 +132,12 @@ object StringOps {
       b.result()
     }
 
-    /** Builds a new String by applying a function to all chars of this filtered String
+    /** Builds a new string by applying a function to all chars of this filtered string
       * and using the elements of the resulting Strings.
       *
       *  @param f      the function to apply to each char.
-      *  @return       a new String resulting from applying the given string-valued function
-      *                `f` to each char of this String and concatenating the results.
+      *  @return       a new string resulting from applying the given string-valued function
+      *                `f` to each char of this string and concatenating the results.
       */
     def flatMap(f: Char => String): String = {
       val len = s.length
@@ -170,11 +170,11 @@ final class StringOps(private val s: String) extends AnyVal {
 
   def lengthCompare(len: Int): Int = Integer.compare(s.length, len)
 
-  /** Builds a new collection by applying a function to all chars of this String.
+  /** Builds a new collection by applying a function to all chars of this string.
     *
     *  @param f      the function to apply to each char.
     *  @return       a new collection resulting from applying the given function
-    *                `f` to each char of this String and collecting the results.
+    *                `f` to each char of this string and collecting the results.
     */
   def map[B](f: Char => B): immutable.IndexedSeq[B] = {
     val len = s.length
@@ -187,11 +187,11 @@ final class StringOps(private val s: String) extends AnyVal {
     new ArraySeq.ofRef(dst).asInstanceOf[immutable.IndexedSeq[B]]
   }
 
-  /** Builds a new String by applying a function to all chars of this String.
+  /** Builds a new string by applying a function to all chars of this string.
     *
     *  @param f      the function to apply to each char.
-    *  @return       a new String resulting from applying the given function
-    *                `f` to each char of this String and collecting the results.
+    *  @return       a new string resulting from applying the given function
+    *                `f` to each char of this string and collecting the results.
     */
   def map(f: Char => Char): String = {
     val len = s.length
@@ -204,12 +204,12 @@ final class StringOps(private val s: String) extends AnyVal {
     new String(dst)
   }
 
-  /** Builds a new collection by applying a function to all chars of this String
+  /** Builds a new collection by applying a function to all chars of this string
     * and using the elements of the resulting collections.
     *
     *  @param f      the function to apply to each char.
     *  @return       a new collection resulting from applying the given collection-valued function
-    *                `f` to each char of this String and concatenating the results.
+    *                `f` to each char of this string and concatenating the results.
     */
   def flatMap[B](f: Char => IterableOnce[B]): immutable.IndexedSeq[B] = {
     val len = s.length
@@ -222,12 +222,12 @@ final class StringOps(private val s: String) extends AnyVal {
     b.result()
   }
 
-  /** Builds a new String by applying a function to all chars of this String
-    * and using the elements of the resulting Strings.
+  /** Builds a new string by applying a function to all chars of this string
+    * and using the elements of the resulting strings.
     *
     *  @param f      the function to apply to each char.
-    *  @return       a new String resulting from applying the given string-valued function
-    *                `f` to each char of this String and concatenating the results.
+    *  @return       a new string resulting from applying the given string-valued function
+    *                `f` to each char of this string and concatenating the results.
     */
   def flatMap(f: Char => String): String = {
     val len = s.length
@@ -240,12 +240,12 @@ final class StringOps(private val s: String) extends AnyVal {
     sb.toString
   }
 
-  /** Returns a new collection containing the chars from this String followed by the elements from the
+  /** Returns a new collection containing the chars from this string followed by the elements from the
     * right hand operand.
     *
     *  @param suffix the collection to append.
     *  @return       a new collection which contains all chars
-    *                of this String followed by all elements of `suffix`.
+    *                of this string followed by all elements of `suffix`.
     */
   def concat[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
@@ -256,12 +256,12 @@ final class StringOps(private val s: String) extends AnyVal {
     b.result()
   }
 
-  /** Returns a new String containing the chars from this String followed by the chars from the
+  /** Returns a new string containing the chars from this string followed by the chars from the
     * right hand operand.
     *
     *  @param suffix the collection to append.
-    *  @return       a new String which contains all chars
-    *                of this String followed by all chars of `suffix`.
+    *  @return       a new string which contains all chars
+    *                of this string followed by all chars of `suffix`.
     */
   def concat(suffix: IterableOnce[Char]): String = {
     val k = suffix.knownSize
@@ -271,12 +271,12 @@ final class StringOps(private val s: String) extends AnyVal {
     sb.toString
   }
 
-  /** Returns a new String containing the chars from this String followed by the chars from the
+  /** Returns a new string containing the chars from this string followed by the chars from the
     * right hand operand.
     *
-    *  @param suffix the String to append.
-    *  @return       a new String which contains all chars
-    *                of this String followed by all chars of `suffix`.
+    *  @param suffix the string to append.
+    *  @return       a new string which contains all chars
+    *                of this string followed by all chars of `suffix`.
     */
   @`inline` def concat(suffix: String): String = s + suffix
 
@@ -294,7 +294,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @param  len   the target length
     *  @param  elem  the padding value
     *  @return a collection consisting of
-    *          this String followed by the minimal number of occurrences of `elem` so
+    *          this string followed by the minimal number of occurrences of `elem` so
     *          that the resulting collection has a length of at least `len`.
     */
   def padTo[B >: Char](len: Int, elem: B): immutable.IndexedSeq[B]  = {
@@ -312,13 +312,13 @@ final class StringOps(private val s: String) extends AnyVal {
     }
   }
 
-  /** Returns a String with a char appended until a given target length is reached.
+  /** Returns a string with a char appended until a given target length is reached.
     *
     *  @param   len   the target length
     *  @param   elem  the padding value
-    *  @return a String consisting of
-    *          this String followed by the minimal number of occurrences of `elem` so
-    *          that the resulting String has a length of at least `len`.
+    *  @return a string consisting of
+    *          this string followed by the minimal number of occurrences of `elem` so
+    *          that the resulting string has a length of at least `len`.
     */
   def padTo(len: Int, elem: Char): String = {
     val sLen = s.length
@@ -336,7 +336,7 @@ final class StringOps(private val s: String) extends AnyVal {
     }
   }
 
-  /** A copy of the String with an element prepended */
+  /** A copy of the string with an element prepended */
   def prepended[B >: Char](elem: B): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     b.sizeHint(s.length + 1)
@@ -348,14 +348,14 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Alias for `prepended` */
   @`inline` def +: [B >: Char] (elem: B): immutable.IndexedSeq[B] = prepended(elem)
 
-  /** A copy of the String with an char prepended */
+  /** A copy of the string with an char prepended */
   def prepended(c: Char): String =
     new JStringBuilder(s.length + 1).append(c).append(s).toString
 
   /** Alias for `prepended` */
   @`inline` def +: (c: Char): String = prepended(c)
 
-  /** A copy of the String with all elements from a collection prepended */
+  /** A copy of the string with all elements from a collection prepended */
   def prependedAll[B >: Char](prefix: IterableOnce[B]): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     val k = prefix.knownSize
@@ -368,13 +368,13 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Alias for `prependedAll` */
   @`inline` def ++: [B >: Char] (prefix: IterableOnce[B]): immutable.IndexedSeq[B] = prependedAll(prefix)
 
-  /** A copy of the String with another String prepended */
+  /** A copy of the string with another string prepended */
   def prependedAll(prefix: String): String = prefix + s
 
   /** Alias for `prependedAll` */
   @`inline` def ++: (prefix: String): String = prependedAll(prefix)
 
-  /** A copy of the String with an element appended */
+  /** A copy of the string with an element appended */
   def appended[B >: Char](elem: B): immutable.IndexedSeq[B] = {
     val b = immutable.IndexedSeq.newBuilder[B]
     b.sizeHint(s.length + 1)
@@ -386,14 +386,14 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Alias for `appended` */
   @`inline` def :+ [B >: Char](elem: B): immutable.IndexedSeq[B] = appended(elem)
 
-  /** A copy of the String with an element appended */
+  /** A copy of the string with an element appended */
   def appended(c: Char): String =
     new JStringBuilder(s.length + 1).append(s).append(c).toString
 
   /** Alias for `appended` */
   @`inline` def :+ (c: Char): String = appended(c)
 
-  /** A copy of the String with all elements from a collection appended */
+  /** A copy of the string with all elements from a collection appended */
   @`inline` def appendedAll[B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
@@ -401,22 +401,22 @@ final class StringOps(private val s: String) extends AnyVal {
   @`inline` def :++ [B >: Char](suffix: IterableOnce[B]): immutable.IndexedSeq[B] =
     concat(suffix)
 
-  /** A copy of the String with another String appended */
+  /** A copy of the string with another string appended */
   @`inline` def appendedAll(suffix: String): String = s + suffix
 
   /** Alias for `appendedAll` */
   @`inline` def :++ (suffix: String): String = s + suffix
 
-  /** Produces a new collection where a slice of characters in this String is replaced by another collection.
+  /** Produces a new collection where a slice of characters in this string is replaced by another collection.
     *
     * Patching at negative indices is the same as patching starting at 0.
-    * Patching at indices at or larger than the length of the original String appends the patch to the end.
+    * Patching at indices at or larger than the length of the original string appends the patch to the end.
     * If more values are replaced than actually exist, the excess is ignored.
     *
     *  @param  from     the index of the first replaced char
     *  @param  other    the replacement collection
-    *  @param  replaced the number of chars to drop in the original String
-    *  @return          a new collection consisting of all chars of this String
+    *  @param  replaced the number of chars to drop in the original string
+    *  @return          a new collection consisting of all chars of this string
     *                   except that `replaced` chars starting from `from` are replaced
     *                   by `other`.
     */
@@ -435,32 +435,32 @@ final class StringOps(private val s: String) extends AnyVal {
     b.result()
   }
 
-  /** Produces a new collection where a slice of characters in this String is replaced by another collection.
+  /** Produces a new collection where a slice of characters in this string is replaced by another collection.
     *
     * Patching at negative indices is the same as patching starting at 0.
-    * Patching at indices at or larger than the length of the original String appends the patch to the end.
+    * Patching at indices at or larger than the length of the original string appends the patch to the end.
     * If more values are replaced than actually exist, the excess is ignored.
     *
     *  @param  from     the index of the first replaced char
     *  @param  other    the replacement string
-    *  @param  replaced the number of chars to drop in the original String
-    *  @return          a new string consisting of all chars of this String
+    *  @param  replaced the number of chars to drop in the original string
+    *  @return          a new string consisting of all chars of this string
     *                   except that `replaced` chars starting from `from` are replaced
     *                   by `other`.
     */
   def patch(from: Int, other: IterableOnce[Char], replaced: Int): String =
     patch(from, other.iterator.mkString, replaced)
 
-  /** Produces a new String where a slice of characters in this String is replaced by another String.
+  /** Produces a new string where a slice of characters in this string is replaced by another string.
     *
     * Patching at negative indices is the same as patching starting at 0.
-    * Patching at indices at or larger than the length of the original String appends the patch to the end.
+    * Patching at indices at or larger than the length of the original string appends the patch to the end.
     * If more values are replaced than actually exist, the excess is ignored.
     *
     *  @param  from     the index of the first replaced char
-    *  @param  other    the replacement String
-    *  @param  replaced the number of chars to drop in the original String
-    *  @return          a new String consisting of all chars of this String
+    *  @param  other    the replacement string
+    *  @param  replaced the number of chars to drop in the original string
+    *  @return          a new string consisting of all chars of this string
     *                   except that `replaced` chars starting from `from` are replaced
     *                   by `other`.
     */
@@ -487,10 +487,10 @@ final class StringOps(private val s: String) extends AnyVal {
     sb.toString
   }
 
-  /** Tests whether this String contains the given character.
+  /** Tests whether this string contains the given character.
     *
     *  @param elem  the character to test.
-    *  @return     `true` if this String has an element that is equal (as
+    *  @return     `true` if this string has an element that is equal (as
     *              determined by `==`) to `elem`, `false` otherwise.
     */
   def contains(elem: Char): Boolean = s.indexOf(elem) >= 0
@@ -519,7 +519,7 @@ final class StringOps(private val s: String) extends AnyVal {
     if (sep.isEmpty || s.length < 2) s
     else mkString("", sep, "")
 
-  /** Returns this String */
+  /** Returns this string */
   @inline final def mkString: String = s
 
   /** Appends this string to a string builder. */
@@ -557,11 +557,11 @@ final class StringOps(private val s: String) extends AnyVal {
     *    from <= indexOf(x) < until
     *  }}}
     *
-    *  @param from   the lowest index to include from this $coll.
-    *  @param until  the lowest index to EXCLUDE from this $coll.
+    *  @param from   the lowest index to include from this string.
+    *  @param until  the lowest index to EXCLUDE from this string.
     *  @return  a string containing the elements greater than or equal to
     *           index `from` extending up to (but not including) index `until`
-    *           of this $coll.
+    *           of this string.
     */
   def slice(from: Int, until: Int): String = {
     val start = from max 0
@@ -1099,7 +1099,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *        and `withFilter` operations.
     *
     *  @param p   the predicate used to test elements.
-    *  @return    an object of class `StringOps.WithFilter`, which supports
+    *  @return    an object of class `stringOps.WithFilter`, which supports
     *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
     *             All these operations apply to those chars of this string
     *             which satisfy the predicate `p`.
@@ -1118,7 +1118,7 @@ final class StringOps(private val s: String) extends AnyVal {
   /** The rest of the string without its `n` first chars. */
   def drop(n: Int): String = slice(min(n, s.length), s.length)
 
-  /** An string containing the last `n` chars of this string. */
+  /** A string containing the last `n` chars of this string. */
   def takeRight(n: Int): String = drop(s.length - max(n, 0))
 
   /** The rest of the string without its `n` last chars. */

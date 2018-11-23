@@ -49,42 +49,29 @@ import scala.runtime.Statics
   * }
   * }}}
   *
-  * @define consumesIterator
-  * After calling this method, one should discard the iterator it was called
-  * on. Using it is undefined and subject to change.
-  *
-  *  @define willNotTerminateInf
-  *  Note: will not terminate for infinite iterators.
-  *  @define mayNotTerminateInf
+  * @define mayNotTerminateInf
   *  Note: may not terminate for infinite iterators.
-  *  @define preservesIterator
+  * @define preservesIterator
   *  The iterator remains valid for further use whatever result is returned.
-  *  @define consumesIterator
+  * @define consumesIterator
   *  After calling this method, one should discard the iterator it was called
   *  on. Using it is undefined and subject to change.
-  *  @define consumesAndProducesIterator
+  * @define consumesAndProducesIterator
   *  After calling this method, one should discard the iterator it was called
   *  on, and use only the iterator that was returned. Using the old iterator
   *  is undefined, subject to change, and may result in changes to the new
   *  iterator as well.
-  *  @define consumesTwoAndProducesOneIterator
+  * @define consumesTwoAndProducesOneIterator
   *  After calling this method, one should discard the iterator it was called
   *  on, as well as the one passed as a parameter, and use only the iterator
   *  that was returned. Using the old iterators is undefined, subject to change,
   *  and may result in changes to the new iterator as well.
-  *  @define consumesOneAndProducesTwoIterators
+  * @define consumesOneAndProducesTwoIterators
   *  After calling this method, one should discard the iterator it was called
   *  on, and use only the iterators that were returned. Using the old iterator
   *  is undefined, subject to change, and may result in changes to the new
   *  iterators as well.
-  *  @define consumesTwoIterators
-  *  After calling this method, one should discard the iterator it was called
-  *  on, as well as the one passed as parameter. Using the old iterators is
-  *  undefined and subject to change.
-  *  @define undefinedorder
-  *  The order in which operations are performed on elements is unspecified
-  *  and may be nondeterministic.
-  *  @define coll iterator
+  * @define coll iterator
   */
 trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Iterator[A]] { self =>
 
