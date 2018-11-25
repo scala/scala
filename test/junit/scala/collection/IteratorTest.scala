@@ -357,4 +357,32 @@ class IteratorTest {
     assertTrue(hi.hasNext) // no longer delegated
     assertTrue(hi.hasNext)
   }
+  @Test def `flatMap is memory efficient in previous element`(): Unit = {
+    import java.lang.ref._
+    // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
+    // Avoid reaching seq1 through test class.
+    val seq1 = new WeakReference(Array("first", "second"))
+    val seq2 = List("third")
+    val it0: Iterator[Int] = Iterator(1, 2)
+    lazy val it: Iterator[String] = it0.flatMap {
+      case 1 => seq1.get
+      case _ => check() ; seq2
+    }
+    def check() = assertNotReachable(seq1.get, it)(())
+    def checkHasElement() = assertNotReachable(seq1.get.apply(1), it)(())
+    assert(it.hasNext)
+    assertEquals("first", it.next())
+
+    // verify that we're in the middle of seq1
+    assertThrows[AssertionError](checkHasElement())
+    assertThrows[AssertionError](check())
+    assert(it.hasNext)
+    assertEquals("second", it.next())
+
+    assert(it.hasNext)
+    assertNotReachable(seq1.get, it) {
+      assertEquals("third", it.next())
+    }
+    assert(!it.hasNext)
+  }
 }
