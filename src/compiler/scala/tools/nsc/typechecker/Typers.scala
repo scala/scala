@@ -1201,7 +1201,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def instantiate(tree: Tree, mode: Mode, pt: Type): Tree = {
-      inferExprInstance(tree, context.extractUndetparams(), pt)
+      inferExprInstance(tree, context.extractUndetparams(), pt, useWeaklyCompatible = true)
       adapt(tree, mode, pt)
     }
     /** If the expected type is Unit: try instantiating type arguments
