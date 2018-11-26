@@ -146,8 +146,14 @@ trait Namers extends MethodSynthesis {
     }
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
-      if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
-      else sym setPrivateWithin typer.qualifyingClass(tree, mods.privateWithin, packageOK = true, immediate = false)
+      if (sym.isPrivateLocal) sym
+      else {
+        val qualClass = if (mods.hasAccessBoundary)
+          typer.qualifyingClass(tree, mods.privateWithin, packageOK = true, immediate = false)
+        else
+          NoSymbol
+        sym setPrivateWithin qualClass
+      }
 
     def setPrivateWithin(tree: MemberDef, sym: Symbol): Symbol =
       setPrivateWithin(tree, sym, tree.mods)
