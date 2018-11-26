@@ -177,8 +177,10 @@ trait EntityPage extends HtmlPage {
   val (concValueMembers, shadowedImplicitMembers) =
     nonDeprValueMembers partition (!_.isShadowedOrAmbiguousImplicit)
 
-  val typeMembers =
+  val allTypeMembers =
     tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted (implicitly[Ordering[MemberEntity]])
+
+  val (deprTypeMembers, typeMembers) = allTypeMembers partition (_.deprecation.isDefined)
 
   val packageMembers = tpl.templates.filter(x => x.isPackage) sorted (implicitly[Ordering[MemberEntity]])
 
@@ -293,6 +295,7 @@ trait EntityPage extends HtmlPage {
              memsDiv("package members", "Package Members", packageMembers, "packages")
           ++ memsDiv("members", "Instance Constructors", constructors, "constructors")
           ++ memsDiv("types members", "Type Members", typeMembers, "types")
+          ++ memsDiv("types members", "Deprecated Type Members", deprTypeMembers)
           ++ memsDiv("values members", "Abstract Value Members", absValueMembers)
           ++ memsDiv("values members", if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members", concValueMembers)
           ++ memsDiv("values members", "Shadowed Implicit Value Members", shadowedImplicitMembers)
