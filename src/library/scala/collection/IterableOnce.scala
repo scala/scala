@@ -780,8 +780,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @tparam B      the type of the elements of the array.
    *  @return        the number of elements written to the array
    *
-   *  @usecase def copyToArray(xs: Array[A]): Int
-   *
    *  $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0)
@@ -797,8 +795,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param  start  the starting index of xs.
     *  @tparam B      the type of the elements of the array.
     *  @return        the number of elements written to the array
-    *
-    *  @usecase def copyToArray(xs: Array[A], start: Int): Int
     *
     *  $willNotTerminateInf
     */
@@ -828,9 +824,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @note    Reuse: $consumesIterator
     *
-    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Int
-    *
-    *    $willNotTerminateInf
+    *  $willNotTerminateInf
     */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
@@ -849,15 +843,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *                 which includes the `+` operator to be used in forming the sum.
     *   @tparam  B    the result type of the `+` operator.
     *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
-    *
-    *   @usecase def sum: A
-    *     @inheritdoc
-    *
-    *     @return       the sum of all elements in this $coll of numbers of type `Int`.
-    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-    *     can be used as element type of the $coll and as result type of `sum`.
-    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
-    *
     */
   def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
 
@@ -867,14 +852,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *                 which includes the `*` operator to be used in forming the product.
     *   @tparam  B   the result type of the `*` operator.
     *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
-    *
-    *   @usecase def product: A
-    *     @inheritdoc
-    *
-    *     @return       the product of all elements in this $coll of numbers of type `Int`.
-    *     Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
-    *     can be used as element type of the $coll and as result type of `product`.
-    *     Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
     */
   def product[B >: A](implicit num: Numeric[B]): B = foldLeft(num.one)(num.times)
 
@@ -882,13 +859,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
+    *  @throws   UnsupportedOperationException if this $coll is empty.
     *  @return   the smallest element of this $coll with respect to the ordering `ord`.
     *
-    *  @usecase def min: A
-    *    @inheritdoc
-    *
-    *    @return   the smallest element of this $coll
-    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def min[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
@@ -902,11 +875,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam   B    The type over which the ordering is defined.
     *  @return   an option value containing the smallest element of this $coll
     *            with respect to the ordering `ord`.
-    *
-    *  @usecase def minOption: Option[A]
-    *    @inheritdoc
-    *
-    *    @return   an option value containing the smallest element of this $coll.
     */
   def minOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
     if (isEmpty)
@@ -919,13 +887,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
+    *  @throws   UnsupportedOperationException if this $coll is empty.
     *  @return   the largest element of this $coll with respect to the ordering `ord`.
-    *
-    *  @usecase def max: A
-    *    @inheritdoc
-    *
-    *    @return   the largest element of this $coll.
-    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def max[B >: A](implicit ord: Ordering[B]): A = {
     if (isEmpty)
@@ -939,11 +902,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam   B    The type over which the ordering is defined.
     *  @return   an option value containing the largest element of this $coll with
     *            respect to the ordering `ord`.
-    *
-    *  @usecase def maxOption: Option[A]
-    *    @inheritdoc
-    *
-    *    @return   an option value containing the largest element of this $coll.
     */
   def maxOption[B >: A](implicit ord: Ordering[B]): Option[A] = {
     if (isEmpty)
@@ -957,14 +915,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
     *  @param    f     The measuring function.
+    *  @throws   UnsupportedOperationException if this $coll is empty.
     *  @return   the first element of this $coll with the largest value measured by function f
     *            with respect to the ordering `cmp`.
-    *
-    *  @usecase def maxBy[B](f: A => B): A
-    *    @inheritdoc
-    *
-    *    @return   the first element of this $coll with the largest value measured by function f.
-    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
@@ -992,12 +945,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param    f     The measuring function.
     *  @return   an option value containing the first element of this $coll with the
     *            largest value measured by function f with respect to the ordering `cmp`.
-    *
-    *  @usecase def maxByOption[B](f: A => B): Option[A]
-    *    @inheritdoc
-    *
-    *    @return   an option value containing the first element of this $coll with
-    *              the largest value measured by function f.
     */
   def maxByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
     if (isEmpty)
@@ -1011,14 +958,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
     *  @param    f     The measuring function.
+    *  @throws   UnsupportedOperationException if this $coll is empty.
     *  @return   the first element of this $coll with the smallest value measured by function f
     *            with respect to the ordering `cmp`.
-    *
-    *  @usecase def minBy[B](f: A => B): A
-    *    @inheritdoc
-    *
-    *    @return   the first element of this $coll with the smallest value measured by function f.
-    *    @throws   UnsupportedOperationException if this $coll is empty.
     */
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
@@ -1047,12 +989,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return   an option value containing the first element of this $coll
     *            with the smallest value measured by function f
     *            with respect to the ordering `cmp`.
-    *
-    *  @usecase def minByOption[B](f: A => B): Option[A]
-    *    @inheritdoc
-    *
-    *    @return  an option value containing the first element of this $coll with
-    *             the smallest value measured by function f.
     */
   def minByOption[B](f: A => B)(implicit cmp: Ordering[B]): Option[A] = {
     if (isEmpty)

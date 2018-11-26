@@ -1,0 +1,4 @@
+newSource:4: warning: The @usecase tag is deprecated, instead use the @example tag to document the usage of your API
+       * @usecase def foo: Int
+                  ^
+Done.
