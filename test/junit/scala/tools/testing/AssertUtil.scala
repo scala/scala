@@ -8,10 +8,11 @@ import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.GenIterable
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.SyncVar
 import scala.tools.nsc.settings.ScalaVersion
 import scala.util.Properties.javaSpecVersion
 import java.lang.ref._
-import java.lang.reflect._
+import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
 
 /** This module contains additional higher-level assert statements
@@ -97,4 +98,50 @@ object AssertUtil {
   def assert8(b: => Boolean, msg: => Any) =
     if (ScalaVersion(javaSpecVersion) == version8) assert(b, msg)
     else if (!b) println(s"assert not $msg")
+
+  /** Assert no new threads, with some margin for arbitrary threads to exit. */
+  def assertZeroNetThreads(body: => Unit): Unit = {
+    val result = new SyncVar[Option[Throwable]]
+    val group = new ThreadGroup("junit")
+    def check() = {
+      val beforeCount = group.activeCount
+      val beforeThreads = new Array[Thread](beforeCount)
+      assertEquals("Spurious early thread creation.", beforeCount, group.enumerate(beforeThreads))
+
+      body
+
+      val afterCount = {
+        var n = 1
+        while (group.activeCount > beforeCount && n < 5) {
+          //println("Wait for quiescence")
+          Thread.sleep(250L * n)
+          n += 1
+        }
+        group.activeCount
+      }
+      val afterThreads = new Array[Thread](afterCount)
+      assertEquals("Spurious late thread creation.", afterCount, group.enumerate(afterThreads))
+      val staleThreads = afterThreads.toList.diff(beforeThreads)
+      //staleThreads.headOption.foreach(_.getStackTrace.foreach(println))
+      assertEquals(staleThreads.mkString("There are stale threads: ",",",""), beforeCount, afterCount)
+      assertTrue(staleThreads.mkString("There are stale threads: ",",",""), staleThreads.isEmpty)
+    }
+    def test() = {
+      try {
+        check()
+        result.put(None)
+      } catch {
+        case t: Throwable => result.put(Some(t))
+      }
+    }
+    val thread = new Thread(group, () => test())
+    try {
+      thread.start()
+      val timeout = 10 * 1000L
+      val err = result.take(timeout)
+      err.foreach(e => throw e)
+    } finally {
+      group.destroy()
+    }
+  }
 }

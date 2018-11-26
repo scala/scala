@@ -19,6 +19,7 @@ import Process._
 import java.io.{ FileInputStream, FileOutputStream }
 import BasicIO.{ LazilyListed, Streamed, Uncloseable }
 import Uncloseable.protect
+import scala.util.control.NonFatal
 
 private[process] trait ProcessBuilderImpl {
   self: ProcessBuilder.type =>
@@ -64,7 +65,7 @@ private[process] trait ProcessBuilderImpl {
           ok = true
         } finally success.put(ok)
       }
-      val t = Spawn(go(), io.daemonizeThreads)
+      val t = Spawn("ThreadProcess", io.daemonizeThreads)(go())
       new ThreadProcess(t, success)
     }
   }
@@ -72,25 +73,16 @@ private[process] trait ProcessBuilderImpl {
   /** Represents a simple command without any redirection or combination. */
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
-      val process = try {
-        p.start() // start the external process
-      } catch {
-        case _: IndexOutOfBoundsException
-             | _: IOException
-             | _: NullPointerException
-             | _: SecurityException
-             | _: UnsupportedOperationException
-        => return FailedProcess
-      }
-
       import io._
 
+      val process = p.start() // start the external process
+
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
-      val inThread  = Spawn(writeInput(process.getOutputStream), daemon = true)
-      val outThread = Spawn(processOutput(process.getInputStream), daemonizeThreads)
+      val inThread  = Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
+      val outThread = Spawn("Simple-output", daemonizeThreads)(processOutput(process.getInputStream))
       val errorThread =
         if (p.redirectErrorStream) Nil
-        else List(Spawn(processError(process.getErrorStream), daemonizeThreads))
+        else List(Spawn("Simple-error", daemonizeThreads)(processError(process.getErrorStream)))
 
       new SimpleProcess(process, inThread, outThread :: errorThread)
     }
@@ -172,7 +164,14 @@ private[process] trait ProcessBuilderImpl {
       val lazilyListed = LazilyListed[String](nonZeroException, capacity)
       val process      = run(BasicIO(withInput, lazilyListed.process, log))
 
-      Spawn(lazilyListed done process.exitValue())
+      Spawn("LazyLines") {
+        lazilyListed.done {
+          try process.exitValue()
+          catch {
+            case NonFatal(_) => -2
+          }
+        }
+      }
       lazilyListed.lazyList
     }
 
@@ -185,7 +184,7 @@ private[process] trait ProcessBuilderImpl {
       val streamed = Streamed[String](nonZeroException, capacity)
       val process  = run(BasicIO(withInput, streamed.process, log))
 
-      Spawn(streamed done process.exitValue())
+      Spawn("LineStream")(streamed done process.exitValue())
       streamed.stream()
     }
 

@@ -176,7 +176,7 @@ trait ProcessCreation {
     */
   def cat(files: scala.collection.Seq[Source]): ProcessBuilder = {
     require(files.nonEmpty)
-    files map (_.cat) reduceLeft (_ #&& _)
+    files.map(_.cat).reduceLeft(_ #&& _)
   }
 }
 
