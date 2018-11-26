@@ -425,7 +425,7 @@ lazy val compiler = configureAsSubproject(project)
     // (with strings) to deal with mutual recursion
     products in Compile in packageBin :=
       (products in Compile in packageBin).value ++
-        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(asmDep)).get.data) ++
+        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)).contains((asmDep.organization, asmDep.name, asmDep.revision))).get.data) ++
         (products in Compile in packageBin in LocalProject("interactive")).value ++
         (products in Compile in packageBin in LocalProject("scaladoc")).value ++
         (products in Compile in packageBin in LocalProject("repl")).value ++
