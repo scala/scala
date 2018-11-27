@@ -1099,14 +1099,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def parse(line: String): Either[Result, (List[Tree], Position)] = {
     var isIncomplete = false
     currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {
-      withoutWarnings {
-        reporter.reset()
-        val unit = newCompilationUnit(line, label)
-        val trees = newUnitParser(unit).parseStats()
-        if (reporter.hasErrors) Left(Error)
-        else if (isIncomplete) Left(Incomplete)
-        else Right((trees, unit.firstXmlPos))
-      }
+      reporter.reset()
+      val unit = newCompilationUnit(line, label)
+      val trees = newUnitParser(unit).parseStats()
+      if (reporter.hasErrors) Left(Error)
+      else if (isIncomplete) Left(Incomplete)
+      else Right((trees, unit.firstXmlPos))
     }
   }
 
