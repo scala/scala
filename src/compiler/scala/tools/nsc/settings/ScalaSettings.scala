@@ -40,7 +40,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.exists(_.isHelping)
@@ -106,7 +106,6 @@ trait ScalaSettings extends AbsScalaSettings
   def isScala214: Boolean = source.value >= version214
   private[this] val version300 = ScalaVersion("3.0.0")
   def isScala300: Boolean = source.value >= version300
-
 
   /**
    * -X "Advanced" settings
@@ -196,15 +195,11 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val Yhelp           = BooleanSetting    ("-Y", "Print a synopsis of private options.")
   val breakCycles     = BooleanSetting    ("-Ybreak-cycles", "Attempt to break cycles encountered during typing")
-  val browse          = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check           = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Yshow           = PhasesSetting     ("-Yshow", "(Requires -Xshow-class or -Xshow-object) Show after")
   val Ycompacttrees   = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees.")
   val noCompletion    = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL.")
-  val debug           = BooleanSetting    ("-Ydebug", "Increase the quantity of debugging output.")
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts.", List("package", "object", "error"), "error")
-  val log             = PhasesSetting     ("-Ylog", "Log operations during")
-  val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
                        .withPostSetHook(bs => if (bs) imports.value = Nil)
@@ -232,12 +227,26 @@ trait ScalaSettings extends AbsScalaSettings
     """
   ))
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
-  val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")
+
+  val YprintTrees = ChoiceSetting(
+      name = "-Yprint-trees",
+      helpArg = "style",
+      descr = "How to print trees when -Xprint is enabled.",
+      choices = List("text", "compact", "format", "text+format"),
+      default = "text"
+    ).withPostSetHook(pt => pt.value match {
+      case "text"        =>
+      case "compact"     => XshowtreesCompact.value = true
+      case "format"      => Xshowtrees.value = true
+      case "text+format" => XshowtreesStringified.value = true
+    })
+
+  val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.").internalOnly()
   val XshowtreesCompact
-                      = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Xprint:) Print detailed ASTs in compact form.")
+                      = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Xprint:) Print detailed ASTs in compact form.").internalOnly()
   val XshowtreesStringified
-                      = BooleanSetting    ("-Yshow-trees-stringified", "(Requires -Xprint:) Print stringifications along with detailed ASTs.")
-  val Yshowsyms       = BooleanSetting    ("-Yshow-syms", "Print the AST symbol hierarchy after each phase.")
+                      = BooleanSetting    ("-Yshow-trees-stringified", "(Requires -Xprint:) Print stringifications along with detailed ASTs.").internalOnly()
+
   val Yshowsymkinds   = BooleanSetting    ("-Yshow-symkinds", "Print abbreviated symbol kinds next to symbol names.")
   val Yshowsymowners  = BooleanSetting    ("-Yshow-symowners", "Print owner identifiers next to symbol names.")
   val skip            = PhasesSetting     ("-Yskip", "Skip")
@@ -250,7 +259,6 @@ trait ScalaSettings extends AbsScalaSettings
   val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", s"Show start and end positions of members (implies ${Yrangepos.name})", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
   val Ymacroexpand    = ChoiceSetting     ("-Ymacro-expand", "policy", "Control expansion of macros, useful for scaladoc and presentation compiler.", List(MacroExpand.Normal, MacroExpand.None, MacroExpand.Discard), MacroExpand.Normal)
-  val Ymacronoexpand  = BooleanSetting    ("-Ymacro-no-expand", "Don't expand macros. Might be useful for scaladoc and presentation compiler, but will crash anything which uses macros and gets past typer.") withDeprecationMessage(s"Use ${Ymacroexpand.name}:${MacroExpand.None}") withPostSetHook(_ => Ymacroexpand.value = MacroExpand.None)
   val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
   val YmacroAnnotations = BooleanSetting  ("-Ymacro-annotations", "Enable support for macro annotations, formerly in macro paradise.")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects")
@@ -448,35 +456,41 @@ trait ScalaSettings extends AbsScalaSettings
   val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or all", "_").
     withPostSetHook( _ => YprofileEnabled.value = true )
 
-
-
-  /** Area-specific debug output.
-   */
-  val Ydocdebug               = BooleanSetting("-Ydoc-debug", "Trace all scaladoc activity.")
-  val Yidedebug               = BooleanSetting("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
-  val Yissuedebug             = BooleanSetting("-Yissue-debug", "Print stack traces when a context issues an error.")
-  val YmacrodebugLite         = BooleanSetting("-Ymacro-debug-lite", "Trace essential macro-related activities.")
-  val YmacrodebugVerbose      = BooleanSetting("-Ymacro-debug-verbose", "Trace all macro-related activities: compilation, generation of synthetics, classloading, expansion, exceptions.")
-  val Yposdebug               = BooleanSetting("-Ypos-debug", "Trace position validation.")
-  val Yreifydebug             = BooleanSetting("-Yreify-debug", "Trace reification.")
-  val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
-  val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
   val YpatmatExhaustdepth     = IntSetting("-Ypatmat-exhaust-depth", "off", 20, Some((10, Int.MaxValue)),
     str => Some(if(str.equalsIgnoreCase("off")) Int.MaxValue else str.toInt))
-  val Yquasiquotedebug        = BooleanSetting("-Yquasiquote-debug", "Trace quasiquote-related activities.")
+
+  /**
+   * -V "Verbose" settings
+   */
+  val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
+  val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
+  val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug"
+  val Ydocdebug          = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"
+  val Yidedebug          = BooleanSetting("-Vide", "Generate, validate and output trees using the interactive compiler.") withAbbreviation "-Yide-debug"
+  val Yissuedebug        = BooleanSetting("-Vissue", "Print stack traces when a context issues an error.") withAbbreviation "-Yissue-debug"
+  val log                = PhasesSetting("-Vlog", "Log operations during") withAbbreviation "-Ylog"
+  val Ylogcp             = BooleanSetting("-Vclasspath", "Output information about what classpath is being applied.") withAbbreviation "-Ylog-classpath"
+  val YmacrodebugLite    = BooleanSetting("-Vmacro-lite", "Trace macro activities with less output.") withAbbreviation "-Ymacro-debug-lite"
+  val YmacrodebugVerbose = BooleanSetting("-Vmacro", "Trace macro activities: compilation, generation of synthetics, classloading, expansion, exceptions.") withAbbreviation "-Ymacro-debug-verbose"
+  val Ypatmatdebug       = BooleanSetting("-Vpatmat", "Trace pattern matching translation.") withAbbreviation "-Ypatmat-debug"
+  val Yposdebug          = BooleanSetting("-Vpos", "Trace position validation.") withAbbreviation "-Ypos-debug"
+  val Yquasiquotedebug   = BooleanSetting("-Vquasiquote", "Trace quasiquotations.") withAbbreviation "-Yquasiquote-debug"
+  val Yreifydebug        = BooleanSetting("-Vreify", "Trace reification.") withAbbreviation "-Yreify-debug"
+  val Yshowsyms       = BooleanSetting("-Vsymbols", "Print the AST symbol hierarchy after each phase.") withAbbreviation "-Yshow-syms"
+  val Ytyperdebug        = BooleanSetting("-Vtyper", "Trace type assignments.") withAbbreviation "-Ytyper-debug"
 
   /** Groups of Settings.
    */
-  val future        = BooleanSetting("-Xfuture", "Deprecated. The future is now.").withDeprecationMessage("Use -Xsource instead.")
-  val optimise      = BooleanSetting("-optimise", "Compiler flag for the optimizer in Scala 2.11")
-    .withAbbreviation("-optimize")
-    .withDeprecationMessage("In 2.12, -optimise enables -opt:l:inline -opt-inline-from:**. Check -opt:help for using the Scala 2.12 optimizer.")
+  val future        = BooleanSetting("-Xfuture", "Replaced by -Xsource.").withDeprecationMessage("Not used since 2.13.")
+  val optimise      = BooleanSetting("-optimize", "Enables optimizations.")
+    .withAbbreviation("-optimise")
+    .withDeprecationMessage("Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.")
     .withPostSetHook(_ => {
       opt.enable(optChoices.lInline)
       optInlineFrom.value = List("**")
     })
-  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions in Scala 2.12 and earlier.")
-    .withDeprecationMessage(s"In 2.13 all options previously enabled by -Xexperimental are enabled by default or removed.")
+  val Xexperimental = BooleanSetting("-Xexperimental", "Former graveyard for language-forking extensions.")
+    .withDeprecationMessage("Not used since 2.13.")
 
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")

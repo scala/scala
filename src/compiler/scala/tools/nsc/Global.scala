@@ -1228,18 +1228,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       // doesn't select a unique phase, that might be surprising too.
       def checkPhaseSettings(including: Boolean, specs: Seq[String]*) = {
         def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
-        def isSpecial(s: String) = (s == "all" || isRange(s))
-        val setting = new ss.PhasesSetting("fake","fake")
+        def isSpecial(s: String) = (s == "_" || isRange(s))
+        val tester = new ss.PhasesSetting("fake","fake")
         for (p <- specs.flatten.to(Set)) {
-          setting.value = List(p)
-          val count = (
-            if (including) first.iterator count (setting containsPhase _)
-            else phaseDescriptors count (setting contains _.phaseName)
-          )
+          tester.value = List(p)
+          val count =
+            if (including) first.iterator.count(tester.containsPhase(_))
+            else phaseDescriptors.count(pd => tester.contains(pd.phaseName))
           if (count == 0) warning(s"'$p' specifies no phase")
           if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
           if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
-          setting.clear()
+          tester.clear()
         }
       }
       // phases that are excluded; for historical reasons, these settings only select by phase name

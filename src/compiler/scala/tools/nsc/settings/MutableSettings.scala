@@ -888,9 +888,8 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   /** A setting represented by a list of strings which should be prefixes of
-   *  phase names. This is not checked here, however.  Alternatively the string
-   *  `"all"` can be used to represent all phases.
-   *  (the empty list, unless set)
+   *  phase names. This is not checked here, however.  Alternatively, underscore
+   *  can be used to indicate all phases.
    */
   class PhasesSetting private[nsc](
     name: String,
@@ -918,7 +917,7 @@ class MutableSettings(val errorFn: String => Unit)
       _names = numsAndStrs._2
       _v     = t
     }
-    override def value = if (v contains "all") List("all") else super.value // i.e., v
+    override def value = if (v contains "_") List("_") else super.value // i.e., v
     private def numericValues = _numbs
     private def stringValues  = _names
     private def phaseIdTest(i: Int): Boolean = numericValues exists (_ match {
@@ -942,14 +941,14 @@ class MutableSettings(val errorFn: String => Unit)
     def clear(): Unit = (v = Nil)
 
     // we slightly abuse the usual meaning of "contains" here by returning
-    // true if our phase list contains "all", regardless of the incoming argument
+    // true if our phase list contains "_", regardless of the incoming argument
     def contains(phName: String)     = doAllPhases || containsName(phName)
     def containsName(phName: String) = stringValues exists (phName startsWith _)
     def containsId(phaseId: Int)     = phaseIdTest(phaseId)
     def containsPhase(ph: Phase)     = contains(ph.name) || containsId(ph.id)
 
-    def doAllPhases = stringValues contains "all"
-    def unparse: List[String] = value map (name + ":" + _)
+    def doAllPhases = stringValues.contains("_")
+    def unparse: List[String] = value.map(v => s"$name:$v")
 
     withHelpSyntax(
       if (default == "") name + ":<phases>"

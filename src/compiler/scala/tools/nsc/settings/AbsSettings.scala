@@ -121,13 +121,17 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
      */
     def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil)
 
-    /** These categorizations are so the help output shows -X and -P among
-     *  the standard options and -Y among the advanced options.
+    /** Standard options are shown on the `-help` output,
+     *  advanced on `-X`, private on `-Y`, warning on `-W`, verbose on `-V`.
+     *
+     *  The single char options themselves, including `-P`, are explained on `-help`.
+     *  Additionally, `-Werror` is on `-help` and `-Xlint` on `-W`.
      */
-    def isAdvanced   = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
-    def isPrivate    = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
-    def isStandard   = !isAdvanced && !isPrivate
-    def isForDebug   = name endsWith "-debug" // by convention, i.e. -Ytyper-debug
+    def isAdvanced   = name.startsWith("-X") && name != "-X"
+    def isPrivate    = name.startsWith("-Y") && name != "-Y"
+    def isVerbose    = name.startsWith("-V") && name != "-V"
+    def isWarning    = name match { case "-W" | "-Werror" => false ; case "-Xlint" => true ; case _  => name.startsWith("-W") }
+    def isStandard   = !isAdvanced && !isPrivate && !isWarning && !isVerbose
     def isDeprecated = deprecationMessage.isDefined
 
     def compare(that: Setting): Int = name compare that.name
