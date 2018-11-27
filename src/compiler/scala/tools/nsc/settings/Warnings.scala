@@ -19,12 +19,14 @@ package settings
 trait Warnings {
   self: MutableSettings =>
 
+  val Whelp         = BooleanSetting("-W", "Print a synopsis of warning options.")
+
   // Warning semantics.
-  val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
+  val fatalWarnings = BooleanSetting("-Werror", "Fail the compilation if there are any warnings.") withAbbreviation "-Xfatal-warnings"
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
-    name    = "-Ywarn-macros",
+    name    = "-Wmacros",
     helpArg = "mode",
     descr   = "Enable lint warnings on macro expansions.",
     choices = List("none", "before", "after", "both"),
@@ -35,11 +37,11 @@ trait Warnings {
       "Only inspect expanded trees when generating unused symbol warnings.",
       "Inspect both user-written code and expanded trees when generating unused symbol warnings."
     )
-  )
-  val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
-  val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
-  val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
-  val warnOctalLiteral     = BooleanSetting("-Ywarn-octal-literal", "Warn on obsolete octal syntax.")
+  ) withAbbreviation "-Ywarn-macros"
+  val warnDeadCode         = BooleanSetting("-Wdead-code", "Warn when dead code is identified.") withAbbreviation "-Ywarn-dead-code"
+  val warnValueDiscard     = BooleanSetting("-Wvalue-discard", "Warn when non-Unit expression results are unused.") withAbbreviation "-Ywarn-value-discard"
+  val warnNumericWiden     = BooleanSetting("-Wnumeric-widen", "Warn when numerics are widened.") withAbbreviation "-Ywarn-numeric-widen"
+  val warnOctalLiteral     = BooleanSetting("-Woctal-literal", "Warn on obsolete octal syntax.") withAbbreviation "-Ywarn-octal-literal"
 
   object UnusedWarnings extends MultiChoiceEnumeration {
     val Imports   = Choice("imports",   "Warn if an import selector is not referenced.")
@@ -48,18 +50,18 @@ trait Warnings {
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
     val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
-    val Params    = Choice("params",    "Enable -Ywarn-unused:explicits,implicits.", expandsTo = List(Explicits, Implicits))
+    val Params    = Choice("params",    "Enable -Wunused:explicits,implicits.", expandsTo = List(Explicits, Implicits))
     val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
   }
 
   // The -Ywarn-unused warning group.
   val warnUnused = MultiChoiceSetting(
-    name    = "-Ywarn-unused",
+    name    = "-Wunused",
     helpArg = "warning",
     descr   = "Enable or disable specific `unused` warnings",
     domain  = UnusedWarnings,
     default = Some(List("_"))
-  )
+  ) withAbbreviation "-Ywarn-unused"
 
   def warnUnusedImport    = warnUnused contains UnusedWarnings.Imports
   def warnUnusedPatVars   = warnUnused contains UnusedWarnings.PatVars
@@ -69,9 +71,9 @@ trait Warnings {
   def warnUnusedExplicits = warnUnused contains UnusedWarnings.Explicits
   def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
 
-  val warnExtraImplicit   = BooleanSetting("-Ywarn-extra-implicit", "Warn when more than one implicit parameter section is defined.")
+  val warnExtraImplicit   = BooleanSetting("-Wextra-implicit", "Warn when more than one implicit parameter section is defined.") withAbbreviation "-Ywarn-extra-implicit"
 
-  val warnSelfImplicit    = BooleanSetting("-Ywarn-self-implicit", "Warn when an implicit resolves to an enclosing self-definition.")
+  val warnSelfImplicit    = BooleanSetting("-Wself-implicit", "Warn when an implicit resolves to an enclosing self-definition.") withAbbreviation "-Ywarn-self-implicit"
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
@@ -143,7 +145,7 @@ trait Warnings {
   val lint = MultiChoiceSetting(
     name    = "-Xlint",
     helpArg = "warning",
-    descr   = "Enable or disable specific warnings",
+    descr   = "Enable recommended warnings",
     domain  = LintWarnings,
     default = Some(List("_"))
   ).withPostSetHook { s =>

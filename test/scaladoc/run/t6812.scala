@@ -19,6 +19,6 @@ object Test extends ScaladocModelTest {
   """
 
   def scaladocSettings = ""
-  override def extraSettings = super.extraSettings + " -Ymacro-no-expand -deprecation"
+  override def extraSettings = super.extraSettings + " -Ymacro-expand:none -deprecation"
   def testModel(root: Package) = ()
 }

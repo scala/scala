@@ -10,6 +10,6 @@ t7623.scala:13: warning: A repeated case parameter or extracted sequence is not 
 t7623.scala:15: warning: Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected.
   def h = C("") match { case C(s, t, u @ _*) => }    // warn
                              ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

@@ -1,4 +1,0 @@
-warning: -target is deprecated: -target:jvm-1.7 is deprecated, forcing use of jvm-1.8
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

@@ -33,62 +33,73 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   /** A descriptive alias for version and help messages. */
   def cmdDesc = "compiler"
 
-  private def explainAdvanced = "\n" + """
-    |-- Notes on option parsing --
-    |Boolean settings are always false unless set.
-    |Where multiple values are accepted, they should be comma-separated.
-    |  example: -Xplugin:option1,option2
-    |<phases> means one or a comma-separated list of:
-    |  (partial) phase names, phase ids, phase id ranges, or the string "all".
-    |  example: -Xprint:all prints all phases.
-    |  example: -Xprint:expl,24-26 prints phases explicitouter, closelim, dce, jvm.
-    |  example: -Xprint:-4 prints only the phases up to typer.
+  private def explainAdvanced = """
+    |-- Note --
+    |Boolean settings are false unless set: -Xdev -Xcheck-init:true -Xprompt:false
+    |Multi-valued settings are comma-separated: -Xlint:infer-any,unused,-missing-interpolator
+    |Phases are a list of names, ids, or ranges of ids: -Xprint:parser,typer,5-10 -Ylog:-4
+    |Use _ to enable all: -language:_ -Xprint:_
     |
-  """.stripMargin.trim + "\n"
+  """.stripMargin.trim
 
   def shortUsage = "Usage: %s <options> <source files>" format cmdName
 
   /** Creates a help message for a subset of options based on cond */
-  def createUsageMsg(cond: Setting => Boolean): String = {
-    val baseList            = (settings.visibleSettings filter cond).toList sortBy (_.name)
-    val width               = (baseList map (_.helpSyntax.length)).max
-    def format(s: String)   = ("%-" + width + "s") format s
+  def optionsMessage(cond: Setting => Boolean): String = {
+    val iswarning = cond(settings.warnUnused)  // sordid check for if we're building -W warning help, to include lint and unused
+    val baseList  = settings.visibleSettings.filter(cond).toList.sortBy(_.name)
+    val (deprecateds, theRest) = baseList.partition(_.isDeprecated)
+
+    def columnOneWidth(s: Setting): Int =
+      if (iswarning && (s == settings.lint || s == settings.warnUnused))
+        s.asInstanceOf[settings.MultiChoiceSetting[_]].choices.map(c => s"${s.name}:$c".length).max
+      else
+        s.helpSyntax.length
+    val width               = baseList.map(columnOneWidth).max
+    val columnOneFormat     = s"%-${width}s"
+    def format(s: String)   = columnOneFormat.format(s)
+    def layout(c1: String, c2: String) = s"${format(c1)}  ${c2}"
     def helpStr(s: Setting) = {
-      val str    = format(s.helpSyntax) + "  " + s.helpDescription
+      val str    = layout(s.helpSyntax, s.helpDescription)
       val suffix = s.deprecationMessage match {
         case Some(msg) => "\n" + format("") + "      deprecated: " + msg
         case _         => ""
       }
       str + suffix
     }
-    val debugs      = baseList filter (_.isForDebug)
-    val deprecateds = baseList filter (_.isDeprecated)
-    val theRest     = baseList filterNot (debugs.toSet ++ deprecateds)
 
-    def sstring(msg: String, xs: List[Setting]) =
-      if (xs.isEmpty) None else Some(msg :: xs.map(helpStr) mkString "\n  ")
+    def appendDescriptions(sb: StringBuilder, msg: String, xs: List[Setting]): Unit =
+      if (!xs.isEmpty) {
+        val ss = xs.flatMap { s =>
+          if (iswarning && (s == settings.lint || s == settings.warnUnused)) {
+            val mcs = s.asInstanceOf[settings.MultiChoiceSetting[_]]
+            mcs.choices.map(c => s"${s.name}:$c").zipAll(mcs.descriptions, "", "").map {
+              case (c, d) => layout(c, d)
+            }
+          } else
+            List(helpStr(s))
+        }
+        sb.append(msg)
+        for (each <- ss) sb.append("  ").append(each).append("\n")
+      }
 
-    List(
-      sstring("", theRest),
-      sstring("\nAdditional debug settings:", debugs),
-      sstring("\nDeprecated settings:", deprecateds)
-    ).flatten mkString "\n"
+    val sb = new StringBuilder()
+    appendDescriptions(sb, "", theRest)
+    appendDescriptions(sb, "\nDeprecated settings:\n", deprecateds)
+    sb.toString
   }
 
-  def createUsageMsg(label: String, shouldExplain: Boolean, cond: Setting => Boolean): String = {
-    val prefix = List(
-      Some(shortUsage),
-      Some(explainAdvanced) filter (_ => shouldExplain),
-      Some(label + " options include:")
-    ).flatten mkString "\n"
-
-    prefix + createUsageMsg(cond)
+  def createUsageMsg(label: String, explain: Boolean = true)(cond: Setting => Boolean): String = {
+    val explained = if (explain) s"\n$explainAdvanced" else ""
+    s"$shortUsage\n\n$label options:\n${optionsMessage(cond)}${explained}\n"
   }
 
   /** Messages explaining usage and options */
-  def usageMsg    = createUsageMsg("where possible standard", shouldExplain = false, _.isStandard)
-  def xusageMsg   = createUsageMsg("Possible advanced", shouldExplain = true, _.isAdvanced)
-  def yusageMsg   = createUsageMsg("Possible private", shouldExplain = true, _.isPrivate)
+  def usageMsg  = createUsageMsg("Standard", explain = false)(_.isStandard)
+  def vusageMsg = createUsageMsg("Verbose")(_.isVerbose)
+  def wusageMsg = createUsageMsg("Warnings")(_.isWarning)
+  def xusageMsg = createUsageMsg("Available advanced")(_.isAdvanced)
+  def yusageMsg = createUsageMsg("Available private")(_.isPrivate)
 
   /** For info settings, compiler should just print a message and quit. */
   def shouldStopWithInfo = settings.isInfo
@@ -100,6 +111,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
     if (version)            versionFor(cmdDesc)
     else if (help)          usageMsg + global.pluginOptionsHelp
+    else if (Vhelp)         vusageMsg
+    else if (Whelp)         wusageMsg
     else if (Xhelp)         xusageMsg
     else if (Yhelp)         yusageMsg
     else if (showPlugins)   global.pluginDescriptions

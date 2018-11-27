@@ -4,6 +4,6 @@ t7171.scala:4: warning: The outer reference in this type test cannot be checked 
 t7171.scala:11: warning: The outer reference in this type test cannot be checked at run time.
     case _: A => true; case _ => false
           ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

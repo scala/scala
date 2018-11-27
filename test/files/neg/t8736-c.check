@@ -6,6 +6,6 @@ See the Scaladoc for value scala.language.higherKinds for a discussion
 why the feature should be explicitly enabled.
   def hk[M[_]] = ???
          ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found
