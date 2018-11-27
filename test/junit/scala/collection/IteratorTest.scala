@@ -528,4 +528,15 @@ class IteratorTest {
     it.toList
     assertTrue(executed)
   }
+
+  @Test
+  def t11106: Unit = {
+    var value = -1
+    Iterator
+      .continually(0)
+      .map(_ => {value += 1; value})
+      .take(3)
+      .foreach(_ => ())
+    assertEquals(2, value)
+  }
 }
