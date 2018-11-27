@@ -12,16 +12,20 @@ import scala.util.control.ControlThrowable
 class UsingTest {
   import UsingTest._
 
-  /* raw `Using.resource` that doesn't use `Try` */
+  /* `Using.resource` exception preference */
 
-  private def genericResourceThrowing[CloseT <: Throwable: ClassTag](resource: => CustomResource[CloseT],
-                                                                     onLinkage: SuppressionBehavior,
-                                                                     onInterruption: SuppressionBehavior,
-                                                                     onControl: SuppressionBehavior,
-                                                                     onException: SuppressionBehavior): Unit = {
-    def check[UseT <: Throwable: ClassTag](t: String => UseT,
-                                           behavior: SuppressionBehavior,
-                                           allowsSuppression: Boolean): Unit = {
+  private def genericResourceThrowing[CloseT <: Throwable: ClassTag](
+    resource: => CustomResource[CloseT],
+    onLinkage: SuppressionBehavior,
+    onInterruption: SuppressionBehavior,
+    onControl: SuppressionBehavior,
+    onException: SuppressionBehavior
+  ): Unit = {
+    def check[UseT <: Throwable: ClassTag](
+      t: String => UseT,
+      behavior: SuppressionBehavior,
+      allowsSuppression: Boolean
+    ): Unit = {
       val ex = use(resource, t)
       if (behavior == IsSuppressed) {
         assertThrowableClass[UseT](ex)
@@ -102,17 +106,21 @@ class UsingTest {
       onException = IsSuppressed)
   }
 
-  /* `Using` that returns `Try` */
+  /* `Using.apply` exception preference */
 
-  private def genericUsingThrowing[CloseT <: Throwable: ClassTag](resource: => CustomResource[CloseT],
-                                                                  onLinkage: SuppressionBehavior,
-                                                                  onInterruption: SuppressionBehavior,
-                                                                  onControl: SuppressionBehavior,
-                                                                  onException: SuppressionBehavior): Unit = {
-    def check[UseT <: Throwable: ClassTag](t: String => UseT,
-                                           behavior: SuppressionBehavior,
-                                           allowsSuppression: Boolean,
-                                           yieldsTry: Boolean): Unit = {
+  private def genericUsingThrowing[CloseT <: Throwable: ClassTag](
+    resource: => CustomResource[CloseT],
+    onLinkage: SuppressionBehavior,
+    onInterruption: SuppressionBehavior,
+    onControl: SuppressionBehavior,
+    onException: SuppressionBehavior
+  ): Unit = {
+    def check[UseT <: Throwable: ClassTag](
+      t: String => UseT,
+      behavior: SuppressionBehavior,
+      allowsSuppression: Boolean,
+      yieldsTry: Boolean
+    ): Unit = {
       val ex = if (yieldsTry) UseWrapped(resource, t) else UseWrapped.catching(resource, t)
       if (behavior == IsSuppressed) {
         assertThrowableClass[UseT](ex)
@@ -193,6 +201,101 @@ class UsingTest {
       onException = IsSuppressed)
   }
 
+  /* `Using.Manager.apply` exception preference */
+
+  private def genericManagerThrowing[CloseT <: Throwable: ClassTag](
+    resource: => CustomResource[CloseT],
+    onLinkage: SuppressionBehavior,
+    onInterruption: SuppressionBehavior,
+    onControl: SuppressionBehavior,
+    onException: SuppressionBehavior
+  ): Unit = {
+    def check[UseT <: Throwable: ClassTag](
+      t: String => UseT,
+      behavior: SuppressionBehavior,
+      allowsSuppression: Boolean,
+      yieldsTry: Boolean
+    ): Unit = {
+      val ex = if (yieldsTry) UseManager(resource, t) else UseManager.catching(resource, t)
+      if (behavior == IsSuppressed) {
+        assertThrowableClass[UseT](ex)
+        if (allowsSuppression) assertSingleSuppressed[CloseT](ex)
+        else assertNoSuppressed(ex)
+      } else {
+        assertThrowableClass[CloseT](ex)
+        if (behavior == AcceptsSuppressed) assertSingleSuppressed[UseT](ex)
+        else assertNoSuppressed(ex)
+      }
+    }
+
+    check(new UsingVMError(_), behavior = IsSuppressed, allowsSuppression = true, yieldsTry = false)
+    check(new UsingLinkageError(_), onLinkage, allowsSuppression = true, yieldsTry = false)
+    check(_ => new UsingInterruption, onInterruption, allowsSuppression = true, yieldsTry = false)
+    check(new UsingControl(_), onControl, allowsSuppression = false, yieldsTry = false)
+    check(new UsingError(_), onException, allowsSuppression = true, yieldsTry = onException == IsSuppressed)
+    check(new UsingException(_), onException, allowsSuppression = true, yieldsTry = onException == IsSuppressed)
+  }
+
+  @Test
+  def managerThrowingVMError(): Unit = {
+    genericManagerThrowing(
+      new VMErrorResource,
+      onLinkage = AcceptsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed)
+  }
+
+  @Test
+  def managerThrowingLinkageError(): Unit = {
+    genericManagerThrowing(
+      new LinkageResource,
+      onLinkage = IsSuppressed,
+      onInterruption = AcceptsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed)
+  }
+
+  @Test
+  def managerThrowingInterruption(): Unit = {
+    genericManagerThrowing(
+      new InterruptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = AcceptsSuppressed,
+      onException = AcceptsSuppressed)
+  }
+
+  @Test
+  def managerThrowingControl(): Unit = {
+    genericManagerThrowing(
+      new ControlResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IgnoresSuppressed)
+  }
+
+  @Test
+  def managerThrowingError(): Unit = {
+    genericManagerThrowing(
+      new ErrorResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed)
+  }
+
+  @Test
+  def managerThrowingException(): Unit = {
+    genericManagerThrowing(
+      new ExceptionResource,
+      onLinkage = IsSuppressed,
+      onInterruption = IsSuppressed,
+      onControl = IsSuppressed,
+      onException = IsSuppressed)
+  }
+
   /* nested resource usage returns the correct exception */
 
   private def checkMultiplePropagatesCorrectlySimple(usingException: Throwable): Unit = {
@@ -265,6 +368,8 @@ class UsingTest {
     assertNoSuppressed(closingException2)
   }
 
+  /* `Using.resource` nesting */
+
   @Test
   def resourceMultiplePropagatesCorrectlySimple(): Unit = {
     val usingException = catchThrowable {
@@ -327,14 +432,16 @@ class UsingTest {
     checkMultiplePropagatesCorrectlyExtremelyComplex(vmError)
   }
 
+  /* `Using.apply` nesting */
+
   @Test
-  def usingMultipleResourcesPropagatesCorrectlySimple(): Unit = {
-    val scala.util.Failure(usingException) = for {
-      _ <- Using(new ExceptionResource)
-      _ <- Using(new ErrorResource)
-    } yield {
-      throw new UsingException("nested `Using`")
-    }
+  def usingMultiplePropagatesCorrectlySimple(): Unit = {
+    val scala.util.Failure(usingException) =
+      Using(new ExceptionResource) { _ =>
+        Using(new ErrorResource) { _ =>
+          throw new UsingException("nested `Using`")
+        }.get
+      }
 
     // uncomment to debug actual suppression nesting
     //usingException.printStackTrace()
@@ -343,15 +450,15 @@ class UsingTest {
   }
 
   @Test
-  def usingMultipleResourcesPropagatesCorrectlyComplex(): Unit = {
+  def usingMultiplePropagatesCorrectlyComplex(): Unit = {
     val vmError = catchThrowable {
-      for {
-        _ <- Using(new ExceptionResource)
-        _ <- Using(new VMErrorResource)
-        _ <- Using(new ErrorResource)
-      } yield {
-        throw new UsingException("nested `Using`")
-      }
+      Using(new ExceptionResource) { _ =>
+        Using(new VMErrorResource) { _ =>
+          Using(new ErrorResource) { _ =>
+            throw new UsingException("nested `Using`")
+          }.get
+        }.get
+      }.get
     }
 
     // uncomment to debug actual suppression nesting
@@ -363,17 +470,77 @@ class UsingTest {
   @Test
   def usingMultiplePropagatesCorrectlyExtremelyComplex(): Unit = {
     val vmError = catchThrowable {
-      for {
-        _ <- Using(new ExceptionResource)
-        _ <- Using(new VMErrorResource)
-        _ <- Using(new ControlResource)
-        _ <- Using(new ErrorResource)
-        _ <- Using(new LinkageResource)
-        _ <- Using(new ExceptionResource)
-        _ <- Using(new InterruptionResource)
-        _ <- Using(new ErrorResource)
-      } yield {
-        throw new UsingException("nested `Using`")
+      Using(new ExceptionResource) { _ =>
+        Using(new VMErrorResource) { _ =>
+          Using(new ControlResource) { _ =>
+            Using(new ErrorResource) { _ =>
+              Using(new LinkageResource) { _ =>
+                Using(new ExceptionResource) { _ =>
+                  Using(new InterruptionResource) { _ =>
+                    Using(new ErrorResource) { _ =>
+                      throw new UsingException("nested `Using`")
+                    }.get
+                  }.get
+                }.get
+              }.get
+            }.get
+          }.get
+        }.get
+      }.get
+    }
+
+    // uncomment to debug actual suppression nesting
+    //vmError.printStackTrace()
+
+    checkMultiplePropagatesCorrectlyExtremelyComplex(vmError)
+  }
+
+  /* `Using.Manager.apply` nesting */
+
+  @Test
+  def managerMultipleResourcesPropagatesCorrectlySimple(): Unit = {
+    val scala.util.Failure(usingException) = Using.Manager { m =>
+      val _r1 = m(new ExceptionResource)
+      val _r2 = m(new ErrorResource)
+      throw new UsingException("`Using.Manager`")
+    }
+
+    // uncomment to debug actual suppression nesting
+    //usingException.printStackTrace()
+
+    checkMultiplePropagatesCorrectlySimple(usingException)
+  }
+
+  @Test
+  def managerMultipleResourcesPropagatesCorrectlyComplex(): Unit = {
+    val vmError = catchThrowable {
+      Using.Manager { m =>
+        val _r1 = m(new ExceptionResource)
+        val _r2 = m(new VMErrorResource)
+        val _r3 = m(new ErrorResource)
+        throw new UsingException("`Using.Manager`")
+      }
+    }
+
+    // uncomment to debug actual suppression nesting
+    //vmError.printStackTrace()
+
+    checkMultiplePropagatesCorrectlyComplex(vmError)
+  }
+
+  @Test
+  def managerMultiplePropagatesCorrectlyExtremelyComplex(): Unit = {
+    val vmError = catchThrowable {
+      Using.Manager { m =>
+        val _r1 = m(new ExceptionResource)
+        val _r2 = m(new VMErrorResource)
+        val _r3 = m(new ControlResource)
+        val _r4 = m(new ErrorResource)
+        val _r5 = m(new LinkageResource)
+        val _r6 = m(new ExceptionResource)
+        val _r7 = m(new InterruptionResource)
+        val _r8 = m(new ErrorResource)
+        throw new UsingException("`Using.Manager`")
       }
     }
 
@@ -387,18 +554,62 @@ class UsingTest {
 
   @Test
   def resourceWithNoThrow(): Unit = {
-    val res = Using.resource(new NoOpResource) { r =>
-      r.identity("test")
-    }
+    val res = Using.resource(new NoOpResource) { _.identity("test") }
     assertEquals(res, "test")
   }
 
   @Test
   def usingWithNoThrow(): Unit = {
-    val res = Using(new NoOpResource) { r =>
-      r.identity("test")
-    }
+    val res = Using(new NoOpResource) { _.identity("test") }
     assertEquals(res, scala.util.Success("test"))
+  }
+
+  @Test
+  def managerWithNoThrow(): Unit = {
+    val res = Using.Manager { m => m(new NoOpResource).identity("test") }
+    assertEquals(res, scala.util.Success("test"))
+  }
+
+  /* works when only throwing one exception */
+
+  @Test
+  def resourceOpThrow(): Unit = {
+    val ex = use(new NoOpResource, new UsingException(_))
+    assertThrowableClass[UsingException](ex)
+  }
+
+  @Test
+  def usingOpThrow(): Unit = {
+    val ex = UseWrapped(new NoOpResource, new UsingException(_))
+    assertThrowableClass[UsingException](ex)
+  }
+
+  @Test
+  def managerOpThrow(): Unit = {
+    val ex = UseManager(new NoOpResource, new UsingException(_))
+    assertThrowableClass[UsingException](ex)
+  }
+
+  @Test
+  def resourceClosingThrow(): Unit = {
+    val ex = catchThrowable {
+      Using.resource(new ExceptionResource)(_.identity("test"))
+    }
+    assertThrowableClass[ClosingException](ex)
+  }
+
+  @Test
+  def usingClosingThrow(): Unit = {
+    val ex = Using(new ExceptionResource)(_.identity("test")).failed.get
+    assertThrowableClass[ClosingException](ex)
+  }
+
+  @Test
+  def managerClosingThrow(): Unit = {
+    val ex = Using.Manager { m =>
+      m(new ExceptionResource).identity("test")
+    }.failed.get
+    assertThrowableClass[ClosingException](ex)
   }
 
   /* using multiple resources close in the correct order */
@@ -413,6 +624,7 @@ class UsingTest {
       r1.identity(1) + r2.identity(1)
     }
     assertEquals(res, 2)
+    group.assertAllClosed()
   }
 
   @Test
@@ -424,10 +636,11 @@ class UsingTest {
       group.newResource(),
     ) { (r1, r2, r3) =>
       r1.identity(1) +
-        r2.identity(1) +
-        r3.identity(1)
+      r2.identity(1) +
+      r3.identity(1)
     }
     assertEquals(res, 3)
+    group.assertAllClosed()
   }
 
   @Test
@@ -440,55 +653,58 @@ class UsingTest {
       group.newResource(),
     ) { (r1, r2, r3, r4) =>
       r1.identity(1) +
-        r2.identity(1) +
-        r3.identity(1) +
-        r4.identity(1)
+      r2.identity(1) +
+      r3.identity(1) +
+      r4.identity(1)
     }
     assertEquals(res, 4)
+    group.assertAllClosed()
   }
 
   @Test
-  def using2(): Unit = {
+  def manager2(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-    } yield {
+    val res = Using.Manager { m =>
+      val r1 = m(group.newResource())
+      val r2 = m(group.newResource())
       r1.identity(1) + r2.identity(1)
     }
     assertEquals(res, scala.util.Success(2))
+    group.assertAllClosed()
   }
 
   @Test
-  def using3(): Unit = {
+  def manager3(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-      r3 <- Using(group.newResource())
-    } yield {
+    val res = Using.Manager { m =>
+      val r1 = m(group.newResource())
+      val r2 = m(group.newResource())
+      val r3 = m(group.newResource())
+
       r1.identity(1) +
       r2.identity(1) +
       r3.identity(1)
     }
     assertEquals(res, scala.util.Success(3))
+    group.assertAllClosed()
   }
 
   @Test
-  def using4(): Unit = {
+  def manager4(): Unit = {
     val group = new ResourceGroup
-    val res = for {
-      r1 <- Using(group.newResource())
-      r2 <- Using(group.newResource())
-      r3 <- Using(group.newResource())
-      r4 <- Using(group.newResource())
-    } yield {
+    val res = Using.Manager { m =>
+      val r1 = m(group.newResource())
+      val r2 = m(group.newResource())
+      val r3 = m(group.newResource())
+      val r4 = m(group.newResource())
+
       r1.identity(1) +
       r2.identity(1) +
       r3.identity(1) +
       r4.identity(1)
     }
     assertEquals(res, scala.util.Success(4))
+    group.assertAllClosed()
   }
 
   /* misc */
@@ -506,8 +722,26 @@ class UsingTest {
   }
 
   @Test
+  def managerDisallowsNull(): Unit = {
+    val npe = Using.Manager { m =>
+      m(null: AutoCloseable)
+      "test"
+    }.failed.get
+    assertThrowableClass[NullPointerException](npe)
+  }
+
+  @Test
   def usingCatchesOpeningException(): Unit = {
     val ex = Using({ throw new RuntimeException }: AutoCloseable)(_ => "test").failed.get
+    assertThrowableClass[RuntimeException](ex)
+  }
+
+  @Test
+  def managerCatchesOpeningException(): Unit = {
+    val ex = Using.Manager { m =>
+      m({ throw new RuntimeException }: AutoCloseable)
+      "test"
+    }.failed.get
     assertThrowableClass[RuntimeException](ex)
   }
 }
@@ -584,6 +818,21 @@ object UsingTest {
       catchThrowable(Using(resource)(opThrowing(t)))
   }
 
+  object UseManager {
+    def apply(resource: => BaseResource, t: String => Throwable): Throwable =
+      Using.Manager { m =>
+        val r = m(resource)
+        opThrowing(t)(r)
+      }.failed.get
+    def catching(resource: => BaseResource, t: String => Throwable): Throwable =
+      catchThrowable {
+        Using.Manager { m =>
+          val r = m(resource)
+          opThrowing(t)(r)
+        }
+      }
+  }
+
   def use(resource: BaseResource, t: String => Throwable): Throwable =
     catchThrowable(Using.resource(resource)(opThrowing(t)))
 
@@ -602,13 +851,13 @@ object UsingTest {
       new CountingResource(openCount)
     }
 
+    def assertAllClosed(): Unit = assertEquals(openCount, 0)
+
     private final class CountingResource(countWhenCreated: Int) extends BaseResource {
       override def close(): Unit = {
         assertEquals(countWhenCreated, openCount)
         openCount -= 1
       }
     }
-
   }
-
 }
