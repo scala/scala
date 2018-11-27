@@ -1,0 +1,4 @@
+t10641.scala:6: error: ';' expected but '=>' found.
+import collection._ => `not a rename, just dross`
+                    ^
+one error found

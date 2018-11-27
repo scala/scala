@@ -478,10 +478,21 @@ trait Trees extends api.Trees {
       }
   }
 
-  case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi
+  case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi {
+    assert(name == nme.WILDCARD && rename == null || rename != null)
+    def isWildcard = name == nme.WILDCARD && rename == null
+    def isMask = name != nme.WILDCARD && rename == nme.WILDCARD
+    def isSpecific = !isWildcard
+    def isRename = rename != null && rename != nme.WILDCARD && name != rename
+    private def isLiteralWildcard = name == nme.WILDCARD && rename == nme.WILDCARD
+    def introduces(target: Name) =
+      if (target == nme.WILDCARD) isLiteralWildcard
+      else target != null && target == rename
+  }
   object ImportSelector extends ImportSelectorExtractor {
     val wild     = ImportSelector(nme.WILDCARD, -1, null, -1)
     val wildList = List(wild) // OPT This list is shared for performance.
+    def wildAt(pos: Int) = ImportSelector(nme.WILDCARD, pos, null, -1)
   }
 
   case class Import(expr: Tree, selectors: List[ImportSelector])

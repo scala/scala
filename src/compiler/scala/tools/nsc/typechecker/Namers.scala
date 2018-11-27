@@ -561,7 +561,7 @@ trait Namers extends MethodSynthesis {
         def isValid(original: Name) =
           original.bothNames forall (x => (base nonLocalMember x) == NoSymbol)
 
-        if (from != nme.WILDCARD && base != ErrorType) {
+        if (!s.isWildcard && base != ErrorType) {
           if (isValid(from)) {
             // for Java code importing Scala objects
             if (!nme.isModuleName(from) || isValid(from.dropModule)) {
@@ -580,21 +580,22 @@ trait Namers extends MethodSynthesis {
             checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
       }
-
-      def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value): Unit = {
-        def loop(xs: List[Name]): Unit = xs match {
-          case Nil      => ()
-          case hd :: tl =>
-            if (hd == nme.WILDCARD || !(tl contains hd)) loop(tl)
-            else DuplicatesError(tree, hd, check)
-        }
-        loop(names filterNot (x => x == null || x == nme.WILDCARD))
-      }
       selectors foreach checkSelector
 
+      def noDuplicates(): Unit = {
+        def loop(xs: List[ImportSelector]): Unit = xs match {
+          case Nil      => ()
+          case hd :: tl =>
+            if (!hd.isWildcard && tl.exists(x => !x.isWildcard && x.name == hd.name))
+              DuplicatesError(tree, hd.name, RenamedTwice)
+            else if (hd.isRename && tl.exists(x => x.isRename && x.rename == hd.rename))
+              DuplicatesError(tree, hd.rename, AppearsTwice)
+            else loop(tl)
+        }
+        loop(selectors)
+      }
       // checks on the whole set
-      noDuplicates(selectors map (_.name), RenamedTwice)
-      noDuplicates(selectors map (_.rename), AppearsTwice)
+      noDuplicates()
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {

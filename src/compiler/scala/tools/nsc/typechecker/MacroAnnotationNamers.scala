@@ -484,12 +484,12 @@ trait MacroAnnotationNamers { self: Analyzer =>
         var selectors = imp.tree.selectors
         def current = selectors.head
         while (selectors != Nil && result == NoSymbol) {
-          if (current.rename == name.toTermName)
+          if (current.introduces(name.toTermName))
             result = nonLocalMember(pre, if (name.isTypeName) current.name.toTypeName else current.name)
           else if (selectors.head.name == name.toTermName)
-                 renamed = true
-          else if (selectors.head.name == nme.WILDCARD && !renamed)
-                 result = nonLocalMember(pre, name)
+            renamed = true
+          else if (current.isWildcard && !renamed)
+            result = nonLocalMember(pre, name)
           if (result == NoSymbol)
             selectors = selectors.tail
         }

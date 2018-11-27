@@ -256,20 +256,18 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     protected def printImport(tree: Import, resSelect: => String) = {
       val Import(expr, selectors) = tree
-      // Is this selector renaming a name (i.e, {name1 => name2})
-      def isNotRename(s: ImportSelector): Boolean =
-        s.name == nme.WILDCARD || s.name == s.rename
 
       def selectorToString(s: ImportSelector): String = {
-        val from = quotedName(s.name)
-        if (isNotRename(s)) from
-        else from + "=>" + quotedName(s.rename)
+        def selectorName(n: Name): String = if (s.isWildcard) nme.WILDCARD.decoded else quotedName(n)
+        val from = selectorName(s.name)
+        if (s.isRename || s.isMask) from + "=>" + selectorName(s.rename)
+        else from
       }
       print("import ", resSelect, ".")
       selectors match {
         case List(s) =>
           // If there is just one selector and it is not renaming a name, no braces are needed
-          if (isNotRename(s)) print(selectorToString(s))
+          if (!s.isRename) print(selectorToString(s))
           else print("{", selectorToString(s), "}")
         // If there is more than one selector braces are always needed
         case many =>

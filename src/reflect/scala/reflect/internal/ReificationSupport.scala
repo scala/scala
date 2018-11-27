@@ -969,11 +969,8 @@ trait ReificationSupport { self: SymbolTable =>
     object SyntacticImport extends SyntacticImportExtractor {
       // construct/deconstruct {_} import selector
       private object WildcardSelector {
-        def apply(offset: Int): ImportSelector = ImportSelector(nme.WILDCARD, offset, null, -1)
-        def unapply(sel: ImportSelector): Option[Int] = sel match {
-          case ImportSelector(nme.WILDCARD, offset, null, -1) => Some(offset)
-          case _                                              => None
-        }
+        def apply(offset: Int): ImportSelector = ImportSelector.wildAt(offset)
+        def unapply(sel: ImportSelector): Option[Int] = if (sel.isWildcard) Some(sel.namePos) else None
       }
 
       // construct/deconstruct {foo} import selector
@@ -991,24 +988,20 @@ trait ReificationSupport { self: SymbolTable =>
       private object RenameSelector {
         def apply(name1: TermName, offset1: Int, name2: TermName, offset2: Int): ImportSelector =
           ImportSelector(name1, offset1, name2, offset2)
-        def unapply(sel: ImportSelector): Option[(TermName, Int, TermName, Int)] = sel match {
-          case ImportSelector(_, _, null | nme.WILDCARD, _) =>
-            None
-          case ImportSelector(name1, offset1, name2, offset2) if name1 != name2 =>
+        def unapply(sel: ImportSelector): Option[(TermName, Int, TermName, Int)] =
+          if (sel.isRename) {
+            val ImportSelector(name1, offset1, name2, offset2) = sel
             Some((name1.toTermName, offset1, name2.toTermName, offset2))
-          case _ =>
-            None
-        }
+          } else None
       }
 
       // construct/deconstruct {foo => _} import selector
       private object UnimportSelector {
         def apply(name: TermName, offset: Int): ImportSelector =
           ImportSelector(name, offset, nme.WILDCARD, -1)
-        def unapply(sel: ImportSelector): Option[(TermName, Int)] = sel match {
-          case ImportSelector(name, offset, nme.WILDCARD, _) => Some((name.toTermName, offset))
-          case _                                             => None
-        }
+        def unapply(sel: ImportSelector): Option[(TermName, Int)] =
+          if (sel.isMask) Some((sel.name.toTermName, sel.namePos))
+          else None
       }
 
       // represent {_} import selector as pq"_"

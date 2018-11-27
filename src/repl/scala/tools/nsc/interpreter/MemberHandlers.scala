@@ -211,10 +211,10 @@ trait MemberHandlers {
       importableMembers(exitingTyper(targetType)).filterNot(isFlattenedSymbol).toList
 
     // non-wildcard imports
-    private def individualSelectors = selectors filter analyzer.isIndividualImport
+    private def individualSelectors = selectors.filter(_.isSpecific)
 
     /** Whether this import includes a wildcard import */
-    val importsWildcard = selectors exists analyzer.isWildcardImport
+    val importsWildcard = selectors.exists(_.isWildcard)
 
     def implicitSymbols = importedSymbols filter (_.isImplicit)
     def importedSymbols = individualSymbols ++ wildcardSymbols
