@@ -40,6 +40,6 @@ unchecked2.scala:21: warning: non-variable type argument (String, Double) in typ
 unchecked2.scala:22: warning: non-variable type argument String => Double in type Option[String => Double] is unchecked since it is eliminated by erasure
   /*   warn */ (Some(123): Any).isInstanceOf[Option[String => Double]]
                                             ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 14 warnings found
 one error found

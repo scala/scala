@@ -10,6 +10,6 @@ check-dead.scala:30: warning: dead code following this construct
 check-dead.scala:34: warning: dead code following this construct
     throw new Exception // should warn
     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

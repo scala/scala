@@ -13,6 +13,6 @@ class C1 extends {
 t2796.scala:10: warning: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
   val abstractVal = "T1.abstractVal" // warn
       ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 5 warnings found
 one error found

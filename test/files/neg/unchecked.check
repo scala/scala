@@ -16,6 +16,6 @@ unchecked.scala:52: warning: non-variable type argument String in type pattern T
 unchecked.scala:57: warning: non-variable type argument Array[T] in type pattern Test.Exp[Array[T]] is unchecked since it is eliminated by erasure
     case ArrayApply(x: Exp[Array[T]], _, _) => x // unchecked
                        ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 6 warnings found
 one error found

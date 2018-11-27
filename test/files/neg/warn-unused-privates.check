@@ -118,6 +118,6 @@ warn-unused-privates.scala:141: warning: parameter value i in method x_= is neve
 warn-unused-privates.scala:143: warning: parameter value i in method y_= is never used
   private def y_=(i: Int): Unit = ()
                   ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 40 warnings found
 one error found

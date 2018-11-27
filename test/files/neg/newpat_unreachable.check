@@ -30,6 +30,6 @@ newpat_unreachable.scala:26: warning: unreachable code due to variable pattern '
 newpat_unreachable.scala:25: warning: unreachable code
           case c => 2
                     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 9 warnings found
 one error found

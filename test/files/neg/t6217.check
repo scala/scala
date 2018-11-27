@@ -1,6 +1,6 @@
 t6217.scala:11: warning: _root_ in root position of qualifier refers to the root package, not package _root_ in package p, which is in scope
     import _root_.scala.Option
            ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found

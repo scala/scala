@@ -10,6 +10,6 @@ classmanifests_new_deprecations.scala:6: warning: type ClassManifest in package 
 classmanifests_new_deprecations.scala:8: warning: type ClassManifest in package reflect is deprecated (since 2.10.0): use scala.reflect.ClassTag instead
   type RCM[T] = scala.reflect.ClassManifest[T]
                               ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

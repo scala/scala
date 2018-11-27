@@ -10,6 +10,6 @@ t4691_exhaust_extractor.scala:31: warning: match may not be exhaustive.
 It would fail on the following input: Bar3()
   def f3(x: Foo) = x match {
                    ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

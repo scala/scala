@@ -11,6 +11,6 @@ virtpatmat_reach_sealed_unsealed.scala:21: warning: unreachable code
 virtpatmat_reach_sealed_unsealed.scala:22: warning: unreachable code
   (true: Boolean) match { case true => case false =>  case _: Any => } // exhaustive, last case is unreachable
                                                                   ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found
