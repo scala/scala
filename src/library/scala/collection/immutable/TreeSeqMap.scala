@@ -13,7 +13,7 @@
 package scala
 package collection
 package immutable
- 
+
 /** This class implements an immutable map that preserves order using
   * a hash map for the key to value mapping to provide efficient lookup,
   * and a tree for the ordering of the keys to provide efficient
@@ -298,6 +298,31 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
       case om: TreeSeqMap[K, V] => om
       case _ => (newBuilder[K, V] ++= it).result()
     }
+
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): TreeSeqMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.SeqMap.empty[K, mutable.Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      var result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result = result.updated(k, v.result())
+      }
+      result
+    }
+  }
 
   @inline private def increment(ord: Int) = if (ord == Int.MaxValue) Int.MinValue else ord + 1
 

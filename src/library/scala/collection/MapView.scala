@@ -76,6 +76,24 @@ object MapView {
     def newBuilder[X, Y]: Builder[(X, Y), View[(X, Y)]] = View.newBuilder[(X, Y)]
     def empty[X, Y]: View[(X, Y)] = View.empty
     def from[X, Y](it: IterableOnce[(X, Y)]): View[(X, Y)] = View.from(it)
+    def groupFrom[A, K1, C1](it: IterableOnce[A],
+                             f: A => K1,
+                             builder: => mutable.Builder[A, C1]): View[(K1, C1)] = {
+      val iterator = it.iterator
+      if (iterator.isEmpty) {
+        empty
+      } else {
+        val m = mutable.Map.empty[K1, Builder[A, C1]]
+        val it = iterator
+        while (it.hasNext) {
+          val elem = it.next()
+          val key = f(elem)
+          val bldr = m.getOrElseUpdate(key, builder)
+          bldr += elem
+        }
+        m.view.mapValues(_.result())
+      }
+    }
   }
 }
 

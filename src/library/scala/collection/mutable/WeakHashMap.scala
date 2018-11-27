@@ -47,6 +47,32 @@ class WeakHashMap[K, V] extends JMapWrapper[K, V](new java.util.WeakHashMap)
 object WeakHashMap extends MapFactory[WeakHashMap] {
   def empty[K, V]: WeakHashMap[K,V] = new WeakHashMap[K, V]
   def from[K, V](it: collection.IterableOnce[(K, V)]): WeakHashMap[K,V] = Growable.from(empty[K, V], it)
+
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): WeakHashMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.Map.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      val result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result.update(k, v.result())
+      }
+      result
+    }
+  }
+
   def newBuilder[K, V]: Builder[(K, V), WeakHashMap[K,V]] = new GrowableBuilder(WeakHashMap.empty[K, V])
 }
 

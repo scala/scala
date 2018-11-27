@@ -425,7 +425,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this array to an [[scala.util.Either]]
     *
-    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of arrays: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]]. */
   def partitionMap[A1: ClassTag, A2: ClassTag](f: A => Either[A1, A2]): (Array[A1], Array[A2]) = {
     val res1 = ArrayBuilder.make[A1]
@@ -736,7 +736,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(1, 2, 3, 4).scanLeft(0)(_ + _) == Array(0, 1, 3, 6, 10)
-    *  }}}    
+    *  }}}
     *
     */
   def scanLeft[ B : ClassTag ](z: B)(op: (B, A) => B): Array[B] = {
@@ -749,7 +749,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       i += 1
     }
     res(i) = v
-    res 
+    res
   }
 
   /** Computes a prefix scan of the elements of the array.
@@ -775,7 +775,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(4, 3, 2, 1).scanRight(0)(_ + _) == Array(10, 6, 3, 1, 0)
-    *  }}}    
+    *  }}}
     *
     */
   def scanRight[ B : ClassTag ](z: B)(op: (A, B) => B): Array[B] = {
@@ -788,7 +788,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       res(i) = v
       i -= 1
     }
-    res 
+    res
   }
 
   /** Applies a binary operator to all elements of this array and a start value,
@@ -1349,17 +1349,11 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *               for which `f(x)` equals `k`.
     */
   def groupBy[K](f: A => K): immutable.Map[K, Array[A]] = {
-    val m = mutable.Map.empty[K, ArrayBuilder[A]]
-    val len = xs.length
-    var i = 0
-    while(i < len) {
-      val elem = xs(i)
-      val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, ArrayBuilder.make[A])
-      bldr += elem
-      i += 1
-    }
-    m.view.mapValues(_.result()).toMap
+    groupInto(immutable.Map)(f)
+  }
+
+  def groupInto[K, MC[_, _]](mapFactory: MapFactory[MC])(f: A => K): MC[K, Array[A]] = {
+    mapFactory.groupFrom(view, f, ArrayBuilder.make[A])
   }
 
   /**

@@ -13,10 +13,10 @@
 package scala
 package collection
 
-import scala.collection.immutable.NumericRange
-import scala.language.{higherKinds, implicitConversions}
-import scala.collection.mutable.Builder
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable.NumericRange
+import scala.collection.mutable.Builder
+import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
 
 /**
@@ -388,6 +388,10 @@ trait MapFactory[+CC[_, _]] extends Serializable {
 
   def from[K, V](it: IterableOnce[(K, V)]): CC[K, V]
 
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => Builder[A, C1]): CC[K, C1]
+
   def apply[K, V](elems: (K, V)*): CC[K, V] = from(elems)
 
   def newBuilder[K, V]: Builder[(K, V), CC[K, V]]
@@ -424,6 +428,12 @@ object MapFactory {
   class Delegate[C[_, _]](delegate: MapFactory[C]) extends MapFactory[C] {
     def from[K, V](it: IterableOnce[(K, V)]): C[K, V] = delegate.from(it)
     def empty[K, V]: C[K, V] = delegate.empty
+    def groupFrom[A, K, C1](it: IterableOnce[A],
+                            f: A => K,
+                            builder: => mutable.Builder[A, C1]): C[K, C1] = {
+      delegate.groupFrom(it, f, builder)
+    }
+
     def newBuilder[K, V]: Builder[(K, V), C[K, V]] = delegate.newBuilder
   }
 }

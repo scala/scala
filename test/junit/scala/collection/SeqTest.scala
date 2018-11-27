@@ -1,9 +1,11 @@
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+
+import scala.collection.immutable.SeqMap
 
 @RunWith(classOf[JUnit4])
 class SeqTest {
@@ -89,5 +91,20 @@ class SeqTest {
     assert(s.lengthIs >= 2)
     assert(s.lengthIs > 2)
     assert(s.lengthIs != 2)
+  }
+
+  @Test
+  def groupIntoSeqMap(): Unit = {
+    val keys = Seq.range(0, 100).groupInto(SeqMap)(a => a % 10).keys.toArray
+    assertEquals(keys(0), 0)
+    assertEquals(keys(1), 1)
+    assertEquals(keys(2), 2)
+    assertEquals(keys(3), 3)
+    assertEquals(keys(4), 4)
+    assertEquals(keys(5), 5)
+    assertEquals(keys(6), 6)
+    assertEquals(keys(7), 7)
+    assertEquals(keys(8), 8)
+    assertEquals(keys(9), 9)
   }
 }

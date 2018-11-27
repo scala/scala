@@ -30,6 +30,31 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
       case _ => Growable.from(empty[K, V], it)
     }
 
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): mutable.LinkedHashMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.SeqMap.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      var result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result.update(k, v.result())
+      }
+      result
+    }
+  }
+
   def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   /** Class for the linked hash map entry, used internally.
@@ -94,22 +119,22 @@ class LinkedHashMap[K, V]
 
     }
 
-  override def last: (K, V) = 
-    if (size > 0) (lastEntry.key, lastEntry.value) 
+  override def last: (K, V) =
+    if (size > 0) (lastEntry.key, lastEntry.value)
     else throw new java.util.NoSuchElementException("Cannot call .last on empty LinkedHashMap")
-      
-  override def lastOption: Option[(K, V)] = 
+
+  override def lastOption: Option[(K, V)] =
     if (size > 0) Some((lastEntry.key, lastEntry.value))
     else None
 
-  override def head: (K, V) = 
-    if (size > 0) (firstEntry.key, firstEntry.value) 
+  override def head: (K, V) =
+    if (size > 0) (firstEntry.key, firstEntry.value)
     else throw new java.util.NoSuchElementException("Cannot call .head on empty LinkedHashMap")
-      
-  override def headOption: Option[(K, V)] = 
+
+  override def headOption: Option[(K, V)] =
     if (size > 0) Some((firstEntry.key, firstEntry.value))
     else None
-      
+
   override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
   override def knownSize: Int = size

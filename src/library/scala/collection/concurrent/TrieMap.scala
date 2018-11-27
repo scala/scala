@@ -14,12 +14,11 @@ package scala
 package collection
 package concurrent
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.atomic._
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{List, Nil}
-import scala.collection.mutable.GrowableBuilder
+import scala.collection.mutable.{Builder, GrowableBuilder}
 import scala.util.hashing.Hashing
 
 private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: Equiv[K]) extends INodeBase[K, V](g) {
@@ -1022,7 +1021,32 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
 
-  def from[K, V](it: IterableOnce[(K, V)]) = new TrieMap[K, V]() ++= it
+  def from[K, V](it: IterableOnce[(K, V)]): TrieMap[K, V] = new TrieMap[K, V]() ++= it
+
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): TrieMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.Map.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      val result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result.update(k, v.result())
+      }
+      result
+    }
+  }
 
   def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 

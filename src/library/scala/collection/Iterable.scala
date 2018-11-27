@@ -147,7 +147,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   *  The order in which operations are performed on elements is unspecified
   *  and may be nondeterministic.
   */
-trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
+trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {self =>
 
   /**
     * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
@@ -537,21 +537,11 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
-    val m = mutable.Map.empty[K, Builder[A, C]]
-    val it = iterator
-    while (it.hasNext) {
-      val elem = it.next()
-      val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newSpecificBuilder)
-      bldr += elem
-    }
-    var result = immutable.HashMap.empty[K, C]
-    val mapIt = m.iterator
-    while (mapIt.hasNext) {
-      val (k, v) = mapIt.next()
-      result = result.updated(k, v.result())
-    }
-    result
+    groupInto(immutable.Map)(f)
+  }
+
+  def groupInto[K, MC[_, _]](mapFactory: MapFactory[MC])(f: A => K): MC[K, C @uncheckedVariance] = {
+    mapFactory.groupFrom(this, f, self.newSpecificBuilder)
   }
 
   /**
@@ -685,7 +675,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @tparam A2  the element type of the second resulting collection
     *  @param f    the 'split function' mapping the elements of this $coll to an [[scala.util.Either]]
     *
-    *  @return     a pair of ${coll}s: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *  @return     a pair of ${coll}s: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]],
     *              and the second one made of those wrapped in [[scala.util.Right]].
     */
   def partitionMap[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {

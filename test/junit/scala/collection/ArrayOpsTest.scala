@@ -5,6 +5,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.immutable.SeqMap
+
 @RunWith(classOf[JUnit4])
 class ArrayOpsTest {
 
@@ -107,5 +109,21 @@ class ArrayOpsTest {
   def copyToArrayOutOfBoundsTest: Unit = {
     val target = Array[Int]()
     assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
+  }
+
+  @Test
+  def groupIntoSeqMap(): Unit = {
+    val array = Array.tabulate(100)(identity)
+    val keys = array.groupInto(SeqMap)(a => a % 10).keys.toArray
+    assertEquals(keys(0), 0)
+    assertEquals(keys(1), 1)
+    assertEquals(keys(2), 2)
+    assertEquals(keys(3), 3)
+    assertEquals(keys(4), 4)
+    assertEquals(keys(5), 5)
+    assertEquals(keys(6), 6)
+    assertEquals(keys(7), 7)
+    assertEquals(keys(8), 8)
+    assertEquals(keys(9), 9)
   }
 }

@@ -15,6 +15,8 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.collection.mutable.Builder
+import scala.collection.mutable.LinkedHashMap.empty
 
 import scala.collection.mutable.ReusableBuilder
 import scala.runtime.Statics.releaseFence
@@ -222,6 +224,31 @@ object ListMap extends MapFactory[ListMap] {
       case lm: ListMap[K, V] => lm
       case _ => (newBuilder[K, V] ++= it).result()
     }
+
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): ListMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.SeqMap.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      var result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result = result.updated(k, v.result())
+      }
+      result
+    }
+  }
 
   /** Returns a new ListMap builder
     *

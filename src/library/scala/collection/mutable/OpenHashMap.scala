@@ -28,6 +28,31 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
   def empty[K, V] = new OpenHashMap[K, V]
   def from[K, V](it: IterableOnce[(K, V)]): OpenHashMap[K,V] = empty ++= it
 
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): mutable.OpenHashMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.Map.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      val result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result.update(k, v.result())
+      }
+      result
+    }
+  }
+
   def newBuilder[K, V]: Builder[(K, V), OpenHashMap[K,V]] =
     new GrowableBuilder[(K, V), OpenHashMap[K, V]](empty)
 

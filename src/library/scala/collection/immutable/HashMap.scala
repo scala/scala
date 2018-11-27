@@ -18,6 +18,8 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
+import scala.collection.mutable.Builder
+import scala.collection.{Factory, Iterator, MapFactory, StrictOptimizedIterableOps, immutable, mutable}
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, mutable}
 import scala.util.hashing.MurmurHash3
@@ -569,7 +571,7 @@ private final class BitmapIndexedMapNode[K, +V](
       }
     }
   }
-  
+
   def sizePredicate: Int =
     if (nodeArity == 0) payloadArity match {
       case 0 => SizeEmpty
@@ -1529,6 +1531,31 @@ object HashMap extends MapFactory[HashMap] {
       case hs: HashMap[K, V] => hs
       case _ => (newBuilder[K, V] ++= source).result()
     }
+
+  def groupFrom[A, K, C1](it: IterableOnce[A],
+                          f: A => K,
+                          builder: => mutable.Builder[A, C1]): HashMap[K, C1] = {
+    val iterator = it.iterator
+    if (iterator.isEmpty) {
+      empty
+    } else {
+      val m = mutable.Map.empty[K, Builder[A, C1]]
+      val it = iterator
+      while (it.hasNext) {
+        val elem = it.next()
+        val key = f(elem)
+        val bldr = m.getOrElseUpdate(key, builder)
+        bldr += elem
+      }
+      var result = empty[K, C1]
+      val mapIt = m.iterator
+      while (mapIt.hasNext) {
+        val (k, v) = mapIt.next()
+        result = result.updated(k, v.result())
+      }
+      result
+    }
+  }
 
   /** Create a new Builder which can be reused after calling `result()` without an
     * intermediate call to `clear()` in order to build multiple related results.
