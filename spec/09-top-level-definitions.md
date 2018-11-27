@@ -123,8 +123,14 @@ Like all other references, package references are relative. That is,
 a package reference starting in a name $p$ will be looked up in the
 closest enclosing scope that defines a member named $p$.
 
-The special predefined name `_root_` refers to the
-outermost root package which contains all top-level packages.
+If a package name is shadowed, it's possible to refer to its
+fully-qualified name by prefixing it with
+the special predefined name `_root_`, which refers to the
+outermost root package that contains all top-level packages.
+
+The name `_root_` has this special denotation only when
+used as the first element of a qualifier; it is an ordinary
+identifier otherwise.
 
 ###### Example
 Consider the following program:
@@ -134,11 +140,18 @@ package b {
   class B
 }
 
-package a.b {
-  class A {
-    val x = new _root_.b.B
+package a {
+  package b {
+    class A {
+      val x = new _root_.b.B
+    }
+    class C {
+      import _root_.b._
+      def y = new B
+    }
   }
 }
+
 ```
 
 Here, the reference `_root_.b.B` refers to class `B` in the
