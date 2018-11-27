@@ -524,7 +524,13 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   /** Applies a transformation function to all values stored in this map.
     *  Note: the default, if any,  is not transformed.
     */
-  def transformValues(f: V => V): this.type = {
+  @deprecated("Use transformValuesInPlace instead of transformValues", "2.13.0")
+  @`inline` final def transformValues(f: V => V): this.type = transformValuesInPlace(f)
+
+  /** Applies a transformation function to all values stored in this map.
+    *  Note: the default, if any,  is not transformed.
+    */
+  def transformValuesInPlace(f: V => V): this.type = {
     if ((extraKeys & 1) == 1) zeroValue = f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef]
     if ((extraKeys & 2) == 2) minValue = f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef]
     var i,j = 0

@@ -438,9 +438,15 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   }
 
   /** Applies a transformation function to all values stored in this map.
+    *  Note: the default, if any,  is not transformed.
+    */
+  @deprecated("Use transformValuesInPlace instead of transformValues", "2.13.0")
+  @`inline` final def transformValues(f: V => V): this.type = transformValuesInPlace(f)
+
+  /** Applies a transformation function to all values stored in this map.
    *  Note: the default, if any,  is not transformed.
    */
-  def transformValues(f: V => V): this.type = {
+  def transformValuesInPlace(f: V => V): this.type = {
     var i,j = 0
     while (i < _hashes.length & j < _size) {
       val h = _hashes(i)
