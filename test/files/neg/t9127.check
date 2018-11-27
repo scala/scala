@@ -7,6 +7,6 @@ t9127.scala:7: warning: possible missing interpolator: detected an interpolated 
 t9127.scala:8: warning: possible missing interpolator: detected interpolated identifier `$s`
   val v = "a$s b"
           ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

@@ -12,6 +12,6 @@ pat_unreachable.scala:26: warning: unreachable code due to variable pattern 'b' 
 pat_unreachable.scala:25: warning: unreachable code
     case c => println("matched c")
                      ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

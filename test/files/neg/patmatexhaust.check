@@ -37,6 +37,6 @@ patmatexhaust.scala:128: warning: match may not be exhaustive.
 It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 10 warnings found
 one error found

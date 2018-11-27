@@ -16,7 +16,7 @@ package nsc
 
 import java.io.{FileNotFoundException, IOException}
 import java.net.URL
-import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
 
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, SourceReader}
@@ -1243,18 +1243,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       // doesn't select a unique phase, that might be surprising too.
       def checkPhaseSettings(including: Boolean, specs: Seq[String]*) = {
         def isRange(s: String) = s.forall(c => c.isDigit || c == '-')
-        def isSpecial(s: String) = (s == "all" || isRange(s))
-        val setting = new ss.PhasesSetting("fake","fake")
+        def isSpecial(s: String) = (s == "_" || isRange(s))
+        val tester = new ss.PhasesSetting("fake","fake")
         for (p <- specs.flatten.to(Set)) {
-          setting.value = List(p)
-          val count = (
-            if (including) first.iterator count (setting containsPhase _)
-            else phaseDescriptors count (setting contains _.phaseName)
-          )
+          tester.value = List(p)
+          val count =
+            if (including) first.iterator.count(tester.containsPhase(_))
+            else phaseDescriptors.count(pd => tester.contains(pd.phaseName))
           if (count == 0) warning(s"'$p' specifies no phase")
           if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
           if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
-          setting.clear()
+          tester.clear()
         }
       }
       // phases that are excluded; for historical reasons, these settings only select by phase name
@@ -1454,20 +1453,19 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     /** Caching member symbols that are def-s in Definitions because they might change from Run to Run. */
     val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
 
-    private def printArgs(sources: List[SourceFile]): Unit = {
-      if (settings.printArgs.isSetByUser) {
+    private def printArgs(sources: List[SourceFile]): Unit =
+      settings.printArgs.valueSetByUser foreach { value =>
         val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString())).mkString("", "\n", "\n")
-        settings.printArgs.value match {
+        value match {
           case "-" =>
             reporter.echo(argsFile)
           case pathString =>
             import java.nio.file._
             val path = Paths.get(pathString)
-            Files.write(path, argsFile.getBytes(Charset.forName("UTF-8")))
-            reporter.echo("Compiler arguments written to: " + path)
+            Files.write(path, argsFile.getBytes(StandardCharsets.UTF_8))
+            reporter.echo(s"Compiler arguments written to: $path")
         }
       }
-    }
 
     /** Compile list of source files,
      *  unless there is a problem already,

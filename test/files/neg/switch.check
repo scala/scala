@@ -4,6 +4,6 @@ switch.scala:40: warning: could not emit switch for @switch annotated match
 switch.scala:47: warning: could not emit switch for @switch annotated match
   def fail3(c: Char) = (c: @unchecked @switch) match {
                                        ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

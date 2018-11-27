@@ -15,6 +15,6 @@ The type parameters XX, ZZ, Nix referenced in the message of the @implicitNotFou
     def m[S](implicit @implicitNotFound("${X} ${Y} ${ Z } ${R} ${S} -- ${XX} ${ZZ} ${ Nix }") i: Int) = ???
                                                                                               ^
 warning: there were two feature warnings; re-run with -feature for details
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 5 warnings found
 one error found

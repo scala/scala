@@ -22,6 +22,6 @@ case-collision.scala:16: warning: Generated class foo.wackO differs only in case
   Such classes will overwrite one another on case-insensitive filesystems.
 object wackO
        ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 6 warnings found
 one error found

@@ -10,6 +10,6 @@ virtpatmat_exhaust_compound.scala:24: warning: match may not be exhaustive.
 It would fail on the following input: O2
   def t2(a: Product with Base { def foo: Int }) = a match {
                                                   ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

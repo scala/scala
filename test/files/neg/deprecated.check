@@ -22,6 +22,6 @@ deprecated.scala:26: warning: method innie in trait T is deprecated (since 1.0):
 deprecated.scala:27: warning: method keeper in trait T is deprecated (since 1.0): Prefer toString instead.
   t.keeper  // don't warn because it's an inlined forwarder? maybe just warn.
     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 8 warnings found
 one error found

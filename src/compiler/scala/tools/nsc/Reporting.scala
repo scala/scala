@@ -134,7 +134,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       // todo: migrationWarnings
 
       if (settings.fatalWarnings && reporter.hasWarnings)
-        reporter.error(NoPosition, "No warnings can be incurred under -Xfatal-warnings.")
+        reporter.error(NoPosition, "No warnings can be incurred under -Werror.")
     }
   }
 }

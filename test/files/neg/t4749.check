@@ -44,6 +44,6 @@ t4749.scala:42: warning: not a valid main method for bippy.Win3,
 
     def main(args: Array[String]): T = null.asInstanceOf[T]
         ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 7 warnings found
 one error found
