@@ -806,7 +806,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     private def addForwarder(
         isRemoteClass: Boolean,
-        isBridge: Boolean,
         jclass: asm.ClassVisitor,
         moduleClass: Symbol,
         m: Symbol): Unit = {
@@ -834,7 +833,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
        */
       // TODO: evaluate the other flags we might be dropping on the floor here.
       val flags = GenBCode.PublicStatic |
-        (if (isBridge) asm.Opcodes.ACC_BRIDGE else 0) |
         (if (m.isVarargsMethod) asm.Opcodes.ACC_VARARGS else 0) |
         (if (m.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0)
 
@@ -887,32 +885,23 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def addForwarders(isRemoteClass: Boolean, jclass: asm.ClassVisitor, jclassName: String, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass, moduleClass)
-      debuglog(s"Dumping mirror class for object: $moduleClass")
 
-      val linkedClass  = moduleClass.companionClass
+      val linkedClass = moduleClass.companionClass
       lazy val conflictingNames: Set[Name] = {
         (linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name }).toSet
       }
-      debuglog(s"Potentially conflicting names for forwarders: $conflictingNames")
 
-      for (m <- moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD)) {
-        // Fix for scala/bug#11207, see https://github.com/scala/scala/pull/7035/files#r226274350. This makes sure that 2.12.8 generates
-        // the same forwarder methods as in 2.12.6 (but includes bridge flags). In 2.13 we don't generate any forwarders for bridges.
-        val bridgeImplementingAbstract = m.isBridge && m.nextOverriddenSymbol.isDeferred
-        if (m.isType || m.isDeferred || bridgeImplementingAbstract || (m.owner eq definitions.ObjectClass) || m.isConstructor)
-          debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass': ${m.isType} || ${m.isDeferred} || ${m.owner eq definitions.ObjectClass} || ${m.isConstructor}")
-        else if (conflictingNames(m.name))
-          log(s"No forwarder for $m due to conflict with ${linkedClass.info.member(m.name)}")
-        else if (m.hasAccessBoundary)
-          log(s"No forwarder for non-public member $m")
-        else {
-          log(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
-          addForwarder(isRemoteClass,
-            isBridge = m.isBridge,
-            jclass,
-            moduleClass,
-            m)
-        }
+      // Before erasure * to exclude bridge methods. Excluding them by flag doesn't work, because then
+      // the method from the base class that the bridge overrides is included (scala/bug#10812).
+      // * Using `exitingUncurry` (not `enteringErasure`) because erasure enters bridges in traversal,
+      //   not in the InfoTransform, so it actually modifies the type from the previous phase.
+      //   Uncurry adds java varargs, which need to be included in the mirror class.
+      val members = exitingUncurry(moduleClass.info.membersBasedOnFlags(BCodeHelpers.ExcludedForwarderFlags, symtab.Flags.METHOD))
+      for (m <- members) {
+        val excl = m.isDeferred || m.isConstructor || m.hasAccessBoundary ||
+          { val o = m.owner; (o eq ObjectClass) || (o eq AnyRefClass) || (o eq AnyClass) } ||
+          conflictingNames(m.name)
+        if (!excl) addForwarder(isRemoteClass, jclass, moduleClass, m)
       }
     }
 
@@ -1184,14 +1173,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 }
 
 object BCodeHelpers {
-  val ExcludedForwarderFlags = {
+  val ExcludedForwarderFlags: Long = {
     import scala.tools.nsc.symtab.Flags._
-    // Should include DEFERRED but this breaks findMember.
-    // Note that BRIDGE is *not* excluded. Trying to exclude bridges by flag doesn't work, findMembers
-    // will then include the member from the parent (which the bridge overrides / implements).
-    // This caused scala/bug#11061 and scala/bug#10812. In 2.13, they are fixed by not emitting
-    // forwarders for bridges. But in 2.12 that's not binary compatible, so instead we continue to
-    // emit forwarders for bridges, but mark them with ACC_BRIDGE.
+    // Don't include DEFERRED but filter afterwards, see comment on `findMembers`
     SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | PRIVATE | MACRO
   }
 
