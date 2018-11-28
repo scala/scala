@@ -16,7 +16,7 @@ package collection
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
-import scala.collection.View.{LeftPartitionedWith, RightPartitionedWith}
+import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
 import scala.collection.generic.DefaultSerializationProxy
 
 /** Base trait for generic collections.
@@ -668,12 +668,13 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   def collect[B](pf: PartialFunction[A, B]): CC[B] =
     iterableFactory.from(new View.Collect(this, pf))
 
-  /** A pair of ${coll}s, first, consisting of the values that are produced by `f` applied to this $coll elements contained in [[scala.util.Left]] and, second,
-    *  all the values contained in [[scala.util.Right]].
+  /** Applies a function `f` to each element of the $coll and returns a pair of ${coll}s: the first one
+    *  made of those values returned by `f` that were wrapped in [[scala.util.Left]], and the second
+    *  one made of those wrapped in [[scala.util.Right]].
     *
     *  Example:
     *  {{{
-    *    val xs = $Coll(1, "one", 2, "two", 3, "three") partitionWith {
+    *    val xs = $Coll(1, "one", 2, "two", 3, "three") partitionMap {
     *     case i: Int => Left(i)
     *     case s: String => Right(s)
     *    }
@@ -681,16 +682,16 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *    //        $Coll(one, two, three))
     *  }}}
     *
-    *  @tparam A1         element type of the first resulting collection
-    *  @tparam A2         element type of the second resulting collection
-    *  @param f          split function that map the element of the $coll into an [[scala.util.Either]][A1, A2]
+    *  @tparam A1  the element type of the first resulting collection
+    *  @tparam A2  the element type of the second resulting collection
+    *  @param f    the 'split function' mapping the elements of this $coll to an [[scala.util.Either]]
     *
-    *  @return           a pair of ${coll}s, first, consisting of the values that are produced by `f` applied to this $coll
-    *               elements contained in [[scala.util.Left]] and, second, all the values contained in [[scala.util.Right]].
+    *  @return     a pair of ${coll}s: the first one made of those values returned by `f` that were wrapped in [[scala.util.Left]], 
+    *              and the second one made of those wrapped in [[scala.util.Right]].
     */
-  def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
-    val left: View[A1] = new LeftPartitionedWith(this, f)
-    val right: View[A2] = new RightPartitionedWith(this, f)
+  def partitionMap[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
+    val left: View[A1] = new LeftPartitionMapped(this, f)
+    val right: View[A2] = new RightPartitionMapped(this, f)
     (iterableFactory.from(left), iterableFactory.from(right))
   }
 

@@ -133,7 +133,7 @@ class LazyListLazinessTest {
 
   @Test
   def partitionWith_properlyLazy(): Unit = {
-    val partition = lazyListOp(_.partitionWith(i => if (i % 2 == 0) Left(i) else Right(i)))
+    val partition = lazyListOp(_.partitionMap(i => if (i % 2 == 0) Left(i) else Right(i)))
     val op1 = partition.andThen(_._1)
     val op2 = partition.andThen(_._2)
     val d = DropProfile(dropCount = 1, repeatedDrops = true)
