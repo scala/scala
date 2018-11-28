@@ -23,15 +23,15 @@ class BytecodeTest extends BytecodeTesting {
         |  def g: Object
         |}
         |object B extends A {
-        |  override def f: String = "b" // "bridge" forwarder
-        |  def g: String = "b"          // no "bridge" forwarder, as the overridden method is abstract, scala/bug#11207
+        |  override def f: String = "b"
+        |  def g: String = "b"
         |}
         |case class K(x: Int, s: String)
       """.stripMargin
     for (base <- List("trait", "abstract class")) {
       val List(a, bMirror, bModule, kClass, kModule) = compileClasses(base + code)
       assertEquals("B", bMirror.name)
-      assertEquals(List("f()Ljava/lang/Object;0x49", "f()Ljava/lang/String;0x9", "g()Ljava/lang/String;0x9"),
+      assertEquals(List("f()Ljava/lang/String;0x9", "g()Ljava/lang/String;0x9"),
         bMirror.methods.asScala
           .filter(m => m.name == "f" || m.name == "g")
           .map(m => m.name + m.desc + "0x" + Integer.toHexString(m.access)).toList.sorted)
@@ -42,7 +42,7 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   @Test
-  def varArg(): Unit = {
+  def staticForwardersVarargFlag(): Unit = {
     val code =
       """ A { @annotation.varargs def f(i: Int*): Object = null }
         |object B extends A { @annotation.varargs override def f(i: Int*): String = "b" }
@@ -51,9 +51,7 @@ class BytecodeTest extends BytecodeTesting {
       val List(a, bMirror, bModule) = compileClasses(base + code)
       assertEquals("B", bMirror.name)
       assertEquals(List(
-        "f(Lscala/collection/Seq;)Ljava/lang/Object;0x49",
         "f(Lscala/collection/Seq;)Ljava/lang/String;0x9",
-        "f([I)Ljava/lang/Object;0xc9",
         "f([I)Ljava/lang/String;0x89"),
         bMirror.methods.asScala
           .filter(_.name == "f")

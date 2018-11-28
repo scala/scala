@@ -22,7 +22,7 @@ public final class SymbolLiteral {
                                      MethodType invokedType,
                                      String value) throws Throwable {
         ClassLoader classLoader = lookup.lookupClass().getClassLoader();
-        MethodType type = MethodType.fromMethodDescriptorString("(Ljava/lang/Object;)Ljava/lang/Object;", classLoader);
+        MethodType type = MethodType.fromMethodDescriptorString("(Ljava/lang/String;)Lscala/Symbol;", classLoader);
         Class<?> symbolClass = Class.forName("scala.Symbol", false, classLoader);
         MethodHandle factoryMethod = lookup.findStatic(symbolClass, "apply", type);
         Object symbolValue = factoryMethod.invokeWithArguments(value);
