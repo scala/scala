@@ -75,7 +75,7 @@ To run the REPL create an "Application" configuration with
   - Main class: `scala.tools.nsc.MainGenericRunner`
   - Program arguments: `-usejavacp`
   - Working directory: the path of your checkout
-  - Use classpath of module: `repl`
+  - Use classpath of module: `repl-frontend`
 
 ## Updating the `.SAMPLE` files
 
