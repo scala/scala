@@ -45,15 +45,15 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
-        val sourceFile = unit.source.file.file
+        val sourceFile = unit.source.file
+        lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile).file
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
-          lazy val outputDir = settings.outputDirs.outputDirFor(sym.sourceFile).file
           def addGenerated(separatorRequired: Boolean): Unit = {
             val locatedClass = {
               JarUtils.outputJar match {
                 case Some(outputJar) => locateClassInJar(sym, outputJar, separatorRequired)
-                case None            => locatePlainClassFile(sym, separatorRequired)
+                case None            => locatePlainClassFile(sym, outputDir, separatorRequired)
               }
             }
 
@@ -62,7 +62,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
               // Use own map of local classes computed before lambdalift to ascertain class locality
               if (localToNonLocalClass.isLocal(sym).getOrElse(true)) {
                 // Inform callback about local classes, non-local classes have been reported in API
-                callback.generatedLocalClass(sourceFile, classFile)
+                callback.generatedLocalClass(sourceFile.file, classFile)
               }
             }
           }
@@ -77,8 +77,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       }
     }
 
-    private def locatePlainClassFile(sym: Symbol, separatorRequired: Boolean): Option[File] = {
-      val outputDir = settings.outputDirs.outputDirFor(sym.sourceFile).file
+    private def locatePlainClassFile(sym: Symbol, outputDir: File, separatorRequired: Boolean): Option[File] = {
       val classFile = fileForClass(outputDir, sym, separatorRequired)
       if (classFile.exists()) Some(classFile) else None
     }
