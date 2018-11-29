@@ -903,12 +903,19 @@ abstract class TreeInfo {
 
   def isApplyDynamicName(name: Name) = (name == nme.updateDynamic) || (name == nme.selectDynamic) || (name == nme.applyDynamic) || (name == nme.applyDynamicNamed)
 
+  private object LiteralNameOrAdapted {
+    def unapply(tree: Tree) = tree match {
+      case Literal(Constant(name))                 => Some(name)
+      case Apply(_, List(Literal(Constant(name)))) => Some(name)
+      case _                                       => None
+    }
+  }
   class DynamicApplicationExtractor(nameTest: Name => Boolean) {
     def unapply(tree: Tree) = tree match {
-      case Apply(TypeApply(Select(qual, oper), _), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Select(qual, oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Ident(oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((EmptyTree, name))
-      case _ => None
+      case Apply(TypeApply(Select(qual, oper), _), List(LiteralNameOrAdapted(name))) if nameTest(oper) => Some((qual, name))
+      case Apply(Select(qual, oper), List(LiteralNameOrAdapted(name))) if nameTest(oper)               => Some((qual, name))
+      case Apply(Ident(oper), List(LiteralNameOrAdapted(name))) if nameTest(oper)                      => Some((EmptyTree, name))
+      case _                                                                                           => None
     }
   }
   object DynamicUpdate extends DynamicApplicationExtractor(_ == nme.updateDynamic)

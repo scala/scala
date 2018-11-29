@@ -4169,10 +4169,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
       else None
 
+    // if the qualifier is a Dynamic, that's all we need to know
     private def isDynamicallyUpdatable(tree: Tree) = tree match {
-      // if the qualifier is a Dynamic, that's all we need to know
       case DynamicUpdate(qual, name) => acceptsApplyDynamic(qual.tpe)
-      case _ => false
+      case _                         => false
     }
 
     private def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
@@ -4445,7 +4445,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(context, rhs1)) setType UnitTpe
         }
-        else if(isDynamicallyUpdatable(lhs1)) {
+        else if (isDynamicallyUpdatable(lhs1)) {
           val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
             Apply(lhs1, List(rhs))
           }
