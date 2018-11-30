@@ -73,4 +73,4 @@ import convert._
  *
  *  @since  2.8.1
  */
-object JavaConverters extends DecorateAsJava with DecorateAsScala
+object JavaConverters extends DecorateAsJava with DecorateAsScala with StreamConverters
