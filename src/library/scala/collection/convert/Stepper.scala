@@ -58,7 +58,7 @@ trait Stepper[@specialized(Double, Int, Long) A] extends StepperOps[A, Stepper[A
  * at worst O(log N) time and space complexity, and that the division is likely to
  * be reasonably even.
  */
-trait EfficientSubstep {}
+trait EfficientSubstep
 
 /** Provides functionality for Stepper while keeping track of a more precise type of the collection.
  */
@@ -243,8 +243,6 @@ trait AnyStepper[A] extends Stepper[A] with java.util.Iterator[A] with Spliterat
   def tryStep(f: A => Unit): Boolean = if (hasNext) { f(next()); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[A] = this
-  def seqStream: java.util.stream.Stream[A] = java.util.stream.StreamSupport.stream(this, false)
-  def parStream: java.util.stream.Stream[A] = java.util.stream.StreamSupport.stream(this, true)
 }
 
 private[convert] object AnyStepper {
@@ -285,8 +283,6 @@ trait DoubleStepper extends Stepper[Double] with java.util.PrimitiveIterator.OfD
   def tryStep(f: Double => Unit): Boolean = if (hasNext) { f(nextDouble); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Double] = this.asInstanceOf[Spliterator[Double]]  // Scala and Java disagree about whether it's java.lang.Double or double
-  def seqStream: java.util.stream.DoubleStream = java.util.stream.StreamSupport.doubleStream(this, false)
-  def parStream: java.util.stream.DoubleStream = java.util.stream.StreamSupport.doubleStream(this, true)
 }
 
 /** An `IntStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Int` values. */
@@ -301,8 +297,6 @@ trait IntStepper extends Stepper[Int] with java.util.PrimitiveIterator.OfInt wit
   def tryStep(f: Int => Unit): Boolean = if (hasNext) { f(nextInt); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Int] = this.asInstanceOf[Spliterator[Int]]  // Scala and Java disagree about whether it's java.lang.Integer or int
-  def seqStream: java.util.stream.IntStream = java.util.stream.StreamSupport.intStream(this, false)
-  def parStream: java.util.stream.IntStream = java.util.stream.StreamSupport.intStream(this, true)
 }
 
 /** A `LongStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Long` values. */
@@ -317,8 +311,6 @@ trait LongStepper extends Stepper[Long] with java.util.PrimitiveIterator.OfLong 
   def tryStep(f: Long => Unit): Boolean = if (hasNext) { f(nextLong); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Long] = this.asInstanceOf[Spliterator[Long]]  // Scala and Java disagree about whether it's java.lang.Long or long
-  def seqStream: java.util.stream.LongStream = java.util.stream.StreamSupport.longStream(this, false)
-  def parStream: java.util.stream.LongStream = java.util.stream.StreamSupport.longStream(this, true)
 }
 
 object Stepper {
