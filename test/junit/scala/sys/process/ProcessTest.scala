@@ -83,7 +83,7 @@ class ProcessTest {
   }
 
   // a test for A && B where A fails and B is not started
-  @Test def t10823_short_circuit(): Unit = {
+  @Test def t10823_short_circuit(): Unit = testily {
     def createFile(prefix: String) = {
       val file = createTempFile(prefix, "tmp")
       Files.write(file, List(prefix).asJava, UTF_8)
