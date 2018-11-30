@@ -129,7 +129,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     e | MissingBit
   }
 
-  private def seekEntryOrOpen(h: Int, k: AnyRef): Int = {
+  @`inline` private def seekEntryOrOpen(h: Int, k: AnyRef): Int = {
     var e = h & mask
     var x = 0
     var g = 0
@@ -251,12 +251,11 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
 
   override def put(key: K, value: V): Option[V] = {
     val h = hashOf(key)
-    val k = key
-    val i = seekEntryOrOpen(h, k)
+    val i = seekEntryOrOpen(h, key)
     if (i < 0) {
       val j = i & IndexMask
       _hashes(j) = h
-      _keys(j) = k
+      _keys(j) = key
       _values(j) = value.asInstanceOf[AnyRef]
       _size += 1
       if ((i & VacantBit) != 0) _vacant -= 1
@@ -266,7 +265,6 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     else {
       val ans = Some(_values(i).asInstanceOf[V])
       _hashes(i) = h
-      _keys(i) = k
       _values(i) = value.asInstanceOf[AnyRef]
       ans
     }
@@ -278,12 +276,11 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
    */
   override def update(key: K, value: V): Unit = {
     val h = hashOf(key)
-    val k = key
-    val i = seekEntryOrOpen(h, k)
+    val i = seekEntryOrOpen(h, key)
     if (i < 0) {
       val j = i & IndexMask
       _hashes(j) = h
-      _keys(j) = k
+      _keys(j) = key
       _values(j) = value.asInstanceOf[AnyRef]
       _size += 1
       if ((i & VacantBit) != 0) _vacant -= 1
@@ -291,7 +288,6 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     }
     else {
       _hashes(i) = h
-      _keys(i) = k
       _values(i) = value.asInstanceOf[AnyRef]
     }
   }

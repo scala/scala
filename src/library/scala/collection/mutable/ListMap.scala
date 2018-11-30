@@ -43,14 +43,18 @@ class ListMap[K, V]
   def get(key: K): Option[V] = elems find (_._1 == key) map (_._2)
   def iterator: Iterator[(K, V)] = elems.iterator
 
-  final override def addOne(kv: (K, V)) = { elems = remove(kv._1, elems, List()); elems = kv :: elems; siz += 1; this }
+  final override def addOne(kv: (K, V)) = {
+    val (e, key0) = remove(kv._1, elems, List())
+    elems = (key0, kv._2) :: e
+    siz += 1; this
+  }
 
-  final override def subtractOne(key: K) = { elems = remove(key, elems, List()); this }
+  final override def subtractOne(key: K) = { elems = remove(key, elems, List())._1; this }
 
   @tailrec
-  private def remove(key: K, elems: List[(K, V)], acc: List[(K, V)]): List[(K, V)] = {
-    if (elems.isEmpty) acc
-    else if (elems.head._1 == key) { siz -= 1; acc ::: elems.tail }
+  private def remove(key: K, elems: List[(K, V)], acc: List[(K, V)]): (List[(K, V)], K) = {
+    if (elems.isEmpty) (acc, key)
+    else if (elems.head._1 == key) { siz -= 1; (acc ::: elems.tail, elems.head._1) }
     else remove(key, elems.tail, elems.head :: acc)
   }
 

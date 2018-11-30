@@ -121,7 +121,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                 else false
               }
             case sn: SNode[K, V] =>
-              if (sn.hc == hc && equal(sn.k, k, ct)) GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)
+              if (sn.hc == hc && equal(sn.k, k, ct)) GCAS(cn, cn.updatedAt(pos, new SNode(sn.k, v, hc), gen), ct)
               else {
                 val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
                 val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
@@ -130,7 +130,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
           }
         } else {
           val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
-          val ncnode = rn.insertedAt(pos, flag, new SNode(k, v, hc), gen)
+          val ncnode = rn.insertedAt(pos, flag, k, v, hc, gen)
           GCAS(cn, ncnode, ct)
         }
       case tn: TNode[K, V] =>
@@ -176,7 +176,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
             case sn: SNode[K, V] => cond match {
               case INode.KEY_PRESENT_OR_ABSENT =>
                 if (sn.hc == hc && equal(sn.k, k, ct)) {
-                  if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
+                  if (GCAS(cn, cn.updatedAt(pos, new SNode(sn.k, v, hc), gen), ct)) Some(sn.v) else null
                 } else {
                   val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
                   val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
@@ -204,7 +204,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
         } else cond match {
           case INode.KEY_PRESENT_OR_ABSENT | INode.KEY_ABSENT =>
             val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
-            val ncnode = rn.insertedAt(pos, flag, new SNode(k, v, hc), gen)
+            val ncnode = rn.insertedAt(pos, flag, k, v, hc, gen)
             if (GCAS(cn, ncnode, ct)) None else null
           case INode.KEY_PRESENT => None
           case otherv => None
@@ -467,7 +467,19 @@ private[collection] final class LNode[K, V](val entries: List[(K, V)], equiv: Eq
   def this(k1: K, v1: V, k2: K, v2: V, equiv: Equiv[K]) =
     this(if (equiv.equiv(k1, k2)) (k2 -> v2) :: Nil else (k1 -> v1) :: (k2 -> v2) :: Nil, equiv)
 
-  def inserted(k: K, v: V) = new LNode((k -> v) :: entries.filterNot(entry => equiv.equiv(entry._1, k)), equiv)
+  def inserted(k: K, v: V) = {
+    var k0: K = k
+    @tailrec
+    def remove(elems: List[(K, V)], acc: List[(K, V)]): List[(K, V)] = {
+      if (elems.isEmpty) acc
+      else if (equiv.equiv(elems.head._1, k)) {
+        k0 = elems.head._1
+        acc ::: elems.tail
+      } else remove(elems.tail, elems.head :: acc)
+    }
+    val e = remove(entries, Nil)
+    new LNode((k0 -> v) :: e, equiv)
+  }
 
   def removed(k: K, ct: TrieMap[K, V]): MainNode[K, V] = {
     val updmap = entries.filterNot(entry => equiv.equiv(entry._1, k))
@@ -540,12 +552,12 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
     new CNode[K, V](bitmap ^ flag, narr, gen)
   }
 
-  def insertedAt(pos: Int, flag: Int, nn: BasicNode, gen: Gen) = {
+  def insertedAt(pos: Int, flag: Int, k: K, v: V, hc: Int, gen: Gen) = {
     val len = array.length
     val bmp = bitmap
     val narr = new Array[BasicNode](len + 1)
     Array.copy(array, 0, narr, 0, pos)
-    narr(pos) = nn
+    narr(pos) = new SNode(k, v, hc)
     Array.copy(array, pos, narr, pos + 1, len - pos)
     new CNode[K, V](bmp | flag, narr, gen)
   }
