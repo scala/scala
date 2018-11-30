@@ -29,4 +29,16 @@ trait StreamConverters {
     def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(cc.stepper, par = true)
   }
+
+  // steppers
+
+  implicit class StepperHasSeqStream[A](stepper: Stepper[A]) {
+    def seqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+      s.fromStepper(stepper.asInstanceOf[St], par = false)
+  }
+
+  implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSubstep) {
+    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+      s.fromStepper(stepper.asInstanceOf[St], par = true)
+  }
 }
