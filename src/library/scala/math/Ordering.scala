@@ -234,7 +234,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def hashCode(): Int = outer.hashCode() * reverseSeed
   }
 
-  private final val IntReverse: Ordering[Int] = new Reverse(Ordering.Int)
+  final val IntReverse: Ordering[Int] = new Reverse(Ordering.Int)
 
   private final class IterableOrdering[CC[X] <: Iterable[X], T](private val ord: Ordering[T]) extends Ordering[CC[T]] {
     def compare(x: CC[T], y: CC[T]): Int = {

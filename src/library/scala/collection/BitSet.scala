@@ -140,6 +140,62 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
 
+  override def max[B >: Int](implicit ord: Ordering[B]): Int =
+    if (Ordering.Int eq ord) {
+      var i = nwords - 1
+      var currentWord = 0L
+      while(i >= 0) {
+        currentWord = word(i)
+        if (currentWord != 0L) {
+          return ((i + 1) * WordLength) - java.lang.Long.numberOfLeadingZeros(currentWord) - 1
+        }
+        i -= 1
+      }
+      throw new UnsupportedOperationException("empty.max")
+    } else if (Ordering.Int.reverse eq ord) {
+      val thisnwords = nwords
+      var i = 0
+      var currentWord = 0L
+      while(i < thisnwords) {
+        currentWord = word(i)
+        if (currentWord != 0L) {
+          return java.lang.Long.numberOfTrailingZeros(currentWord) + (i * WordLength)
+        }
+        i += 1
+      }
+      throw new UnsupportedOperationException("empty.max")
+    } else {
+      super.max(ord)
+    }
+
+  override def min[B >: Int](implicit ord: Ordering[B]): Int =
+    if (Ordering.Int eq ord) {
+      val thisnwords = nwords
+      var i = 0
+      var currentWord = 0L
+      while(i < thisnwords) {
+        currentWord = word(i)
+        if (currentWord != 0L) {
+          return java.lang.Long.numberOfTrailingZeros(currentWord) + (i * WordLength)
+        }
+        i += 1
+      }
+      throw new UnsupportedOperationException("empty.min")
+    } else if (Ordering.Int.reverse eq ord) {
+      var i = nwords - 1
+      var currentWord = 0L
+      while(i >= 0) {
+        currentWord = word(i)
+        if (currentWord != 0L) {
+          return ((i + 1) * WordLength) - java.lang.Long.numberOfLeadingZeros(currentWord) - 1
+        }
+        i -= 1
+      }
+      throw new UnsupportedOperationException("empty.min")
+    } else {
+      super.min(ord)
+    }
+
   override def foreach[U](f: Int => U): Unit = {
     /* NOTE: while loops are significantly faster as of 2.11 and
        one major use case of bitsets is performance. Also, there
