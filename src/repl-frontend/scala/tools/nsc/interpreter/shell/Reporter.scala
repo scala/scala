@@ -17,7 +17,7 @@ import java.io.PrintWriter
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
-import scala.tools.nsc.reporters.AbstractReporter
+import scala.tools.nsc.reporters.{AbstractReporter, DisplayReporter}
 
 
 object ReplReporterImpl {
@@ -160,7 +160,8 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   // (should also comment out the error to keep multi-line copy/pastable)
   // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
   // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
-  def printMessage(posIn: Position, msg: String): Unit = {
+  def printMessage(posIn: Position, msg0: String): Unit = {
+    val msg = DisplayReporter.explanation(msg0)
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
     else if (posIn.source.file.name == "<console>" && posIn.line == 1) {
       // If there's only one line of input, and it's already printed on the console (as indicated by the position's source file name),
