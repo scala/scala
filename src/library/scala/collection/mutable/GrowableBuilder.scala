@@ -34,4 +34,5 @@ class GrowableBuilder[Elem, To <: Growable[Elem]](protected val elems: To)
 
   def addOne(elem: Elem): this.type = { elems += elem; this }
 
+  override def addAll(xs: IterableOnce[Elem]): this.type = { elems.addAll(xs); this }
 }
