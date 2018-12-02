@@ -3,6 +3,9 @@ package scala.collection.mutable
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import org.junit.Assert._
+
+import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class BitSetTest {
@@ -108,7 +111,7 @@ class BitSetTest {
   @Test def diff(): Unit = {
     val a = BitSet(1, 2, 3)
     val b = BitSet(2, 4, 6)
-    assert(a.diff(b) == BitSet(1, 3))
+    assertEquals(BitSet(1, 3), a.diff(b))
     assert(b.diff(a) == BitSet(4, 6))
     assert(a.diff(BitSet(4, 6)) == BitSet(1, 2, 3))
     assert(a.diff(BitSet()) == BitSet(1, 2, 3))

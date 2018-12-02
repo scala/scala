@@ -311,4 +311,24 @@ object BitSetOps {
     else assert(w == 0L)
     newelems
   }
+
+  private[collection] def computeWordForFilter(pred: Int => Boolean, isFlipped: Boolean, oldWord: Long, wordIndex: Int): Long =
+    if (oldWord == 0L) 0L else {
+      var w = oldWord
+      val trailingZeroes = java.lang.Long.numberOfTrailingZeros(w)
+      var jmask = 1L << trailingZeroes
+      var j = wordIndex * BitSetOps.WordLength + trailingZeroes
+      val maxJ = (wordIndex + 1) * BitSetOps.WordLength - java.lang.Long.numberOfLeadingZeros(w)
+      while (j != maxJ) {
+        if ((w & jmask) != 0L) {
+          if (pred(j) == isFlipped) {
+            // j did not pass the filter here
+            w = w & ~jmask
+          }
+        }
+        jmask = jmask << 1
+        j += 1
+      }
+      w
+    }
 }

@@ -14,8 +14,6 @@ package scala
 package collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.collection.immutable.Range
 import BitSetOps.{LogWL, MaxSize}
 import scala.annotation.implicitNotFound
@@ -142,10 +140,13 @@ class BitSet(protected[collection] final var elems: Array[Long])
     *  @param   other  the bitset to form the difference with.
     *  @return  the bitset itself.
     */
-  def &~= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- Range(0, other.nwords))
+  def &~= (other: collection.BitSet): this.type = {
+    val words = Math.min(nwords, other.nwords)
+    var i = 0
+    while (i < words) {
       elems(i) = elems(i) & ~other.word(i)
+      i += 1
+    }
     this
   }
 
@@ -171,6 +172,83 @@ class BitSet(protected[collection] final var elems: Array[Long])
     super.zip(that)
 
   override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
+
+  override def diff(that: collection.Set[Int]): BitSet = that match {
+    case bs: collection.BitSet =>
+      /*
+        * Algorithm:
+        *
+        * We iterate, word-by-word, backwards from the shortest of the two bitsets (this, or bs) i.e. the one with
+        * the fewer words.
+        *
+        * Array Shrinking:
+        * If `this` is not longer than `bs`, then since we must iterate through the full array of words,
+        * we can track the new highest index word which is non-zero, at little additional cost. At the end, the new
+        * Array[Long] allocated for the returned BitSet will only be of size `maxNonZeroIndex + 1`
+        */
+
+      val bsnwords = bs.nwords
+      val thisnwords = nwords
+      if (bsnwords >= thisnwords) {
+        // here, we may have opportunity to shrink the size of the array
+        // so, track the highest index which is non-zero. That ( + 1 ) will be our new array length
+        var i = thisnwords - 1
+        var currentWord = 0L
+
+        while (i >= 0 && currentWord == 0L) {
+          val oldWord = word(i)
+          currentWord = oldWord & ~bs.word(i)
+          i -= 1
+        }
+
+        if (i < 0) {
+          fromBitMaskNoCopy(Array(currentWord))
+        } else {
+          val minimumNonZeroIndex: Int = i + 1
+          val newArray = elems.take(minimumNonZeroIndex + 1)
+          newArray(i + 1) = currentWord
+          while (i >= 0) {
+            newArray(i) = word(i) & ~bs.word(i)
+            i -= 1
+          }
+          fromBitMaskNoCopy(newArray)
+        }
+      } else {
+        // here, there is no opportunity to shrink the array size, no use in tracking highest non-zero index
+        val newElems = elems.clone()
+        var i = bsnwords - 1
+        while (i >= 0) {
+          newElems(i) = word(i) & ~bs.word(i)
+          i -= 1
+        }
+        fromBitMaskNoCopy(newElems)
+      }
+    case _ => super.diff(that)
+  }
+
+  override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
+    // We filter the BitSet from highest to lowest, so we can determine exactly the highest non-zero word
+    // index which lets us avoid:
+    // * over-allocating -- the resulting array will be exactly the right size
+    // * multiple resizing allocations -- the array is allocated one time, not log(n) times.
+    var i = nwords - 1
+    var newArray: Array[Long] = null
+    while (i >= 0) {
+      val w = BitSetOps.computeWordForFilter(pred, isFlipped, word(i), i)
+      if (w != 0L) {
+        if (newArray eq null) {
+          newArray = new Array(i + 1)
+        }
+        newArray(i) = w
+      }
+      i -= 1
+    }
+    if (newArray eq null) {
+      empty
+    } else {
+      fromBitMaskNoCopy(newArray)
+    }
+  }
 }
 
 @SerialVersionUID(3L)
