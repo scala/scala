@@ -365,12 +365,18 @@ sealed abstract class Range(
     if (ord eq Ordering.Int) {
       if (step > 0) head
       else last
+    } else if (ord eq Ordering.Int.reverse) {
+      if (step > 0) last
+      else head
     } else super.min(ord)
 
   final override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
       else head
+    } else if (ord eq Ordering.Int.reverse) {
+      if (step > 0) head
+      else last
     } else super.max(ord)
 
   override def tails: Iterator[Range] =

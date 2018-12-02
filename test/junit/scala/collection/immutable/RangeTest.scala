@@ -74,4 +74,19 @@ class RangeTest {
   def largeRangeMap(): Unit = {
     Int.MinValue to Int.MaxValue map identity
   }
+
+  @Test
+  def rangeMinMax(): Unit = {
+    assertEquals(1, (1 to 20).min)
+    assertEquals(20, (1 to 20).max)
+
+    assertEquals(1, (20 to 1 by -1).min)
+    assertEquals(20, (20 to 1 by -1).max)
+
+    assertEquals(20, (1 to 20).min(Ordering.Int.reverse))
+    assertEquals(1, (1 to 20).max(Ordering.Int.reverse))
+
+    assertEquals(20, (20 to 1 by -1).min(Ordering.Int.reverse))
+    assertEquals(1, (20 to 1 by -1).max(Ordering.Int.reverse))
+  }
 }
