@@ -118,4 +118,10 @@ class BitSetTest {
     assert(BitSet().diff(a) == BitSet())
     assert(BitSet().diff(BitSet()) == BitSet())
   }
+
+  @Test def buildFromRange(): Unit = {
+    import scala.util.chaining._
+    assert((1 to 1000).to(BitSet) == BitSet().tap(bs => (1 to 1000).foreach(bs.addOne)))
+
+  }
 }
