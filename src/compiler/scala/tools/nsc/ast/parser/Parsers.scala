@@ -1758,7 +1758,7 @@ self =>
         case LBRACKET =>
           val t1 = stripParens(t)
           t1 match {
-            case Ident(_) | Select(_, _) | Apply(_, _) =>
+            case Ident(_) | Select(_, _) | Apply(_, _) | Literal(_) =>
               var app: Tree = t1
               while (in.token == LBRACKET)
                 app = atPos(app.pos.start, in.offset)(TypeApply(app, exprTypeArgs()))
