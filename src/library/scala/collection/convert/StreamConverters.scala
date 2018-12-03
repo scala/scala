@@ -12,7 +12,7 @@
 
 package scala.collection.convert
 
-import java.util.stream.BaseStream
+import java.util.stream._
 
 import scala.collection.AnyConstr
 import scala.collection.convert.impl.{StepperShape, StreamShape}
@@ -40,5 +40,31 @@ trait StreamConverters {
   implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSubstep) {
     def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(stepper.asInstanceOf[St], par = true)
+  }
+
+  // arrays
+  // uses the JDK array spliterators (`DoubleArraySpliterator`). users can also call
+  // `array.stepper.seqStream`, which then uses the Scala steppers (`DoubleArrayStepper`). the
+  // steppers are also available on byte/short/char/float arrays (`WidenedByteArrayStepper`),
+  // JDK spliterators only for double/int/long/reference.
+
+  implicit class DoubleArrayHasSeqParStream(a: Array[Double]) {
+    def seqStream: DoubleStream = java.util.Arrays.stream(a)
+    def parStream: DoubleStream = seqStream.parallel
+  }
+
+  implicit class IntArrayHasSeqParStream(a: Array[Int]) {
+    def seqStream: IntStream = java.util.Arrays.stream(a)
+    def parStream: IntStream = seqStream.parallel
+  }
+
+  implicit class LongArrayHasSeqParStream(a: Array[Long]) {
+    def seqStream: LongStream = java.util.Arrays.stream(a)
+    def parStream: LongStream = seqStream.parallel
+  }
+
+  implicit class AnyArrayHasSeqParStream[A <: AnyRef](a: Array[A]) {
+    def seqStream: Stream[A] = java.util.Arrays.stream(a)
+    def parStream: Stream[A] = seqStream.parallel
   }
 }

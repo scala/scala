@@ -48,6 +48,8 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   copyArrayToImmutableIndexedSeq => _,
   _
 }
+import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{EfficientSubstep, Stepper}
 
 object ArrayOps {
 
@@ -406,6 +408,24 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       case xs: Array[Unit]    => new ArrayOps.ArrayIterator(xs)
       case null               => throw new NullPointerException
     }).asInstanceOf[Iterator[A]]
+
+  def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSubstep = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.Reference => (xs: Any) match {
+        case bs: Array[Boolean] => new BoxedBooleanArrayStepper(bs, 0, xs.length)
+        case _ => new ObjectArrayStepper[AnyRef](xs.asInstanceOf[Array[AnyRef ]], 0, xs.length)
+      }
+      case StepperShape.IntValue    => new IntArrayStepper           (xs.asInstanceOf[Array[Int    ]], 0, xs.length)
+      case StepperShape.LongValue   => new LongArrayStepper          (xs.asInstanceOf[Array[Long   ]], 0, xs.length)
+      case StepperShape.DoubleValue => new DoubleArrayStepper        (xs.asInstanceOf[Array[Double ]], 0, xs.length)
+      case StepperShape.ByteValue   => new WidenedByteArrayStepper   (xs.asInstanceOf[Array[Byte   ]], 0, xs.length)
+      case StepperShape.ShortValue  => new WidenedShortArrayStepper  (xs.asInstanceOf[Array[Short  ]], 0, xs.length)
+      case StepperShape.CharValue   => new WidenedCharArrayStepper   (xs.asInstanceOf[Array[Char   ]], 0, xs.length)
+      case StepperShape.FloatValue  => new WidenedFloatArrayStepper  (xs.asInstanceOf[Array[Float  ]], 0, xs.length)
+    }
+    s.asInstanceOf[S with EfficientSubstep]
+  }
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`
