@@ -167,13 +167,13 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   override def max[B >: Int](implicit ord: Ordering[B]): Int =
     if (Ordering.Int eq ord) largestInt
-    else if (Ordering.Int.reverse eq ord) smallestInt
+    else if (Ordering.Int isReverseOf ord) smallestInt
     else super.max(ord)
 
 
   override def min[B >: Int](implicit ord: Ordering[B]): Int =
     if (Ordering.Int eq ord) smallestInt
-    else if (Ordering.Int.reverse eq ord) largestInt
+    else if (Ordering.Int isReverseOf ord) largestInt
     else super.min(ord)
 
   override def foreach[U](f: Int => U): Unit = {

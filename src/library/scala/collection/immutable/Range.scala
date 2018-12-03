@@ -365,7 +365,7 @@ sealed abstract class Range(
     if (ord eq Ordering.Int) {
       if (step > 0) head
       else last
-    } else if (ord eq Ordering.Int.reverse) {
+    } else if (Ordering.Int isReverseOf ord) {
       if (step > 0) last
       else head
     } else super.min(ord)
@@ -374,7 +374,7 @@ sealed abstract class Range(
     if (ord eq Ordering.Int) {
       if (step > 0) last
       else head
-    } else if (ord eq Ordering.Int.reverse) {
+    } else if (Ordering.Int isReverseOf ord) {
       if (step > 0) head
       else last
     } else super.max(ord)
