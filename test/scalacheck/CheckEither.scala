@@ -137,6 +137,11 @@ object CheckEitherTest extends Properties("Either") {
     case Right(b) => b
   }))
 
+  val prop_orElse = forAll((e: Either[Int, Int], or: Either[Int, Int]) => e.orElse(or) == (e match {
+    case Left(_) => or
+    case Right(_) => e
+  }))
+
   val prop_contains = forAll((e: Either[Int, Int], n: Int) =>
     e.contains(n) == (e.isRight && e.right.get == n))
 
@@ -223,6 +228,7 @@ object CheckEitherTest extends Properties("Either") {
       ("prop_Either_joinRight", prop_Either_joinRight),
       ("prop_Either_reduce", prop_Either_reduce),      
       ("prop_getOrElse", prop_getOrElse),
+      ("prop_orElse", prop_orElse),
       ("prop_contains", prop_contains),
       ("prop_forall", prop_forall),
       ("prop_exists", prop_exists),
