@@ -1998,8 +1998,8 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  id  @ Pattern3
-       *                |  `_' @ Pattern3
+       *  Pattern2    ::=  id  `@' Pattern3
+       *                |  `_' `@' Pattern3
        *                |   Pattern3
        *  }}}
        */
