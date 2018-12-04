@@ -62,6 +62,7 @@ import scala.util.matching.Regex
  *     def surfaceGravity: Double = Planet.G * mass / (radius * radius)
  *     def surfaceWeight(otherMass: Double): Double = otherMass * surfaceGravity
  *   }
+ *   import scala.language.implicitConversions
  *   implicit def valueToPlanetVal(x: Value): Val = x.asInstanceOf[Val]
  *
  *   val G: Double = 6.67300E-11
