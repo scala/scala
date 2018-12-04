@@ -1,12 +1,13 @@
 package scala.collection
 
 import scala.collection.immutable.List
-
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
 import language.postfixOps
+import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnit4])
 class ViewTest {
@@ -17,7 +18,8 @@ class ViewTest {
 
     import scala.language.postfixOps
     assertEquals(Iterable.empty[Int], iter.view take Int.MinValue to Iterable)
-    assertEquals(Iterable.empty[Int], iter.view takeRight Int.MinValue to Iterable)
+    assertEquals(Iterable.empty[Int],
+                 iter.view takeRight Int.MinValue to Iterable)
     assertEquals(iter, iter.view drop Int.MinValue to Iterable)
     assertEquals(iter, iter.view dropRight Int.MinValue to Iterable)
   }
@@ -67,6 +69,24 @@ class ViewTest {
     check(List(1, 2, 3)) // SeqView
     check(immutable.Vector(1, 2, 3)) // IndexedSeqView
     check(immutable.Map(1 -> "a", 2 -> "b")) // MapView
+  }
+
+  @Test
+  def tapEach: Unit = {
+    val lb = ListBuffer[Int]()
+
+    val v =
+      View(1, 2, 3)
+        .tapEach(lb += _)
+        .map(_ => 10)
+        .tapEach(lb += _)
+        .tapEach(_ => lb += -1)
+
+    assertEquals(ListBuffer[Int](), lb)
+
+    val strict = v.to(Seq)
+    assertEquals(strict, Seq(10, 10, 10))
+    assertEquals(lb, Seq(1, 10, -1, 2, 10, -1, 3, 10, -1))
   }
 
 }

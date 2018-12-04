@@ -535,13 +535,19 @@ class IteratorTest {
     // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
     class C extends Iterable[String] {
       val ss = Array("first", "second")
+
       def iterator = new Iterator[String] {
         var i = 0
+
         def hasNext = i < ss.length
+
         def next() =
-          if (hasNext) { val res = ss(i) ; i += 1 ; res }
+          if (hasNext) {
+            val res = ss(i); i += 1; res
+          }
           else Iterator.empty.next()
       }
+
       def apply(i: Int) = ss(i)
     }
     val seq1 = new WeakReference(new C)
@@ -549,10 +555,13 @@ class IteratorTest {
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
       case 1 => seq1.get
-      case _ => check() ; seq2
+      case _ => check(); seq2
     }
+
     def check() = assertNotReachable(seq1.get, it)(())
+
     def checkHasElement() = assertNotReachable(seq1.get.apply(1), it)(())
+
     assert(it.hasNext)
     assertEquals("first", it.next())
 
@@ -567,5 +576,28 @@ class IteratorTest {
       assertEquals("third", it.next())
     }
     assert(!it.hasNext)
+  }
+
+  @Test def tapEach(): Unit = {
+    locally {
+      var i = 0
+      val tapped = Iterator(-1, -1, -1).tapEach(_ => i += 1)
+      assertEquals(true, tapped.hasNext)
+      assertEquals(0, i)
+    }
+
+    locally {
+      var i = 0
+      val tapped = Iterator(-1, -1, -1).tapEach(_ => i += 1)
+      assertEquals(-3, tapped.sum)
+      assertEquals(3, i)
+    }
+
+    locally {
+      var i = 0
+      val tapped = Iterator(-1, -1, -1).tapEach(_ => i += 1)
+      assertEquals(-1, tapped.next())
+      assertEquals(1, i)
+    }
   }
 }

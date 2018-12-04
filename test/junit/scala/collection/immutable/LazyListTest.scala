@@ -6,6 +6,7 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.collection.Iterator
+import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
 import scala.util.Try
 
@@ -352,6 +353,15 @@ class LazyListTest {
   @Test
   def map_properlyLazy(): Unit = {
     val op = lazyListOp(_.map(_ + 1))
+    assertRepeatedlyFullyLazy(op)
+    assertLazyTailWhenHeadEvaluated(op)
+    assertLazyHeadWhenTailEvaluated(op)
+    assertLazyHeadWhenNextHeadEvaluated(op)
+  }
+
+  @Test
+  def tapEach_properlyLazy(): Unit = {
+    val op = lazyListOp(_.tapEach(_ + 1))
     assertRepeatedlyFullyLazy(op)
     assertLazyTailWhenHeadEvaluated(op)
     assertLazyHeadWhenTailEvaluated(op)
@@ -999,5 +1009,25 @@ class LazyListTest {
       assertEquals(s"mkString $i 3", goal(i,3), precyc(i,3).mkString)
       assertEquals(s"mkString 3 $i", goal(3,i), precyc(3,i).mkString)
     }
+  }
+  @Test
+  def tapEach: Unit = {
+
+    /** @param makeLL must make a lazylist that evaluates to Seq(1,2,3,4,5) */
+    def check(makeLL: => LazyList[Int]): Unit = {
+      val lb = ListBuffer[Int]()
+      val ll = makeLL.tapEach(lb += _)
+      assertEquals(ListBuffer[Int](), lb)
+      assertEquals(Vector(1, 2), ll.take(2).to(Vector))
+      assertEquals(ListBuffer(1, 2), lb)
+      assertEquals(4, ll(3))
+      assertEquals(ListBuffer(1, 2, 4), lb)
+      assertEquals(Vector(1,2,3,4,5), ll.to(Vector))
+      assertEquals(ListBuffer(1, 2, 4, 3, 5), lb)
+    }
+
+    check(LazyList.from(Iterator(1, 2, 3, 4, 5)))
+    check(LazyList.from(Vector(1, 2, 3, 4, 5)))
+    check(LazyList.tabulate(5)(_ + 1))
   }
 }
