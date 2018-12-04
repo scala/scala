@@ -1103,6 +1103,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val unit = newCompilationUnit(line, label)
       val trees = newUnitParser(unit).parseStats()
       if (reporter.hasErrors) Left(Error)
+      else if (reporter.hasWarnings && settings.fatalWarnings) {
+        currentRun.reporting.summarizeErrors()
+        Left(Error)
+      }
       else if (isIncomplete) Left(Incomplete)
       else Right((trees, unit.firstXmlPos))
     }
