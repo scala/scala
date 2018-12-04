@@ -557,8 +557,10 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   def flatMap[B](f: A => IterableOnce[B]): Iterator[B] = new AbstractIterator[B] {
     private[this] var myCurrent: Iterator[B] = Iterator.empty
     private def current = {
-      while (!myCurrent.hasNext && self.hasNext)
+      while (!myCurrent.hasNext && self.hasNext) {
+        myCurrent = null   // clear the stale reference before advancing
         myCurrent = f(self.next()).iterator
+      }
       myCurrent
     }
     def hasNext = current.hasNext
