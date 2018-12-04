@@ -119,10 +119,10 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     super.diff(that)
   }
 
-  override def removeAll(that: IterableOnce[A]): HashSet[A] = {
+  override def removedAll(that: IterableOnce[A]): HashSet[A] = {
     // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
     // in a minor release without breaking binary compatibility.
-    super.removeAll(that)
+    super.removedAll(that)
   }
 
   override def partition(p: A => Boolean): (HashSet[A], HashSet[A]) = {

@@ -168,7 +168,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @`inline` final def &~ (that: Set[A]): C = this diff that
 
   @deprecated("Consider requiring an immutable Set", "2.13.0")
-  def -- (that: IterableOnce[A]): C = fromSpecific(coll.toSet.removeAll(that))
+  def -- (that: IterableOnce[A]): C = fromSpecific(coll.toSet.removedAll(that))
 
   @deprecated("Consider requiring an immutable Set or fall back to Set.diff", "2.13.0")
   def - (elem: A): C = diff(Set(elem))

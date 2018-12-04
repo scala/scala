@@ -104,7 +104,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     if (newRootNode ne rootNode) new HashMap(newRootNode) else this
   }
 
-  def remove(key: K): HashMap[K, V] = {
+  def removed(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
     val keyHash = improve(keyUnimprovedHash)
     val newRootNode = rootNode.removed(key, keyUnimprovedHash, keyHash, 0)
@@ -155,10 +155,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   def merged[V1 >: V](that: HashMap[K, V1])(mergef: MergeFunction[K, V1]): HashMap[K, V1] = {
     val thisKeys = this.keySet
     if(mergef eq null)
-      that.removeAll(thisKeys) ++ this
+      that.removedAll(thisKeys) ++ this
     else {
       val thatKeys = that.keySet
-      that.removeAll(thisKeys) ++ this.removeAll(thatKeys) ++ thisKeys.intersect(thatKeys).map { case k => mergef((k, this(k)), (k, that(k))) }
+      that.removedAll(thisKeys) ++ this.removedAll(thatKeys) ++ thisKeys.intersect(thatKeys).map { case k => mergef((k, this(k)), (k, that(k))) }
     }
   }
 
@@ -177,14 +177,14 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     super.filterImpl(pred, flipped)
   }
 
-  override def removeAll(keys: IterableOnce[K]): HashMap[K, V] = {
+  override def removedAll(keys: IterableOnce[K]): HashMap[K, V] = {
     // This method has been preemptively overridden in order to ensure that an optimizing implementation may be included
     // in a minor release without breaking binary compatibility.
     //
     // In particular, `removeAll` could be optimized to avoid reallocating the `HashMap` wrapper of the rootNode on each
     // element in `keys`, and potentially to take advantage of the structure of `keys`, if it happens to be a HashSet
     // which would allow us to skip hashing keys all together.
-    super.removeAll(keys)
+    super.removedAll(keys)
   }
 
   override def partition(p: ((K, V)) => Boolean): (HashMap[K, V], HashMap[K, V]) = {
