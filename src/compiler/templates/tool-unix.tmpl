@@ -209,6 +209,14 @@ else
   classpath_args=(-classpath "$TOOL_CLASSPATH")
 fi
 
+# Remove newline as delimiter for word splitting the java command.
+# This permits the use case:
+# export JAVA_OPTS=-Dline.separator=$'\r'$'\n'
+# where otherwise the newline char is stripped after expansion.
+# The following works with the default IFS:
+# scala -J-Dline.separator=$'\r'$'\n'
+IFS=" "$'\t'
+
 # note that variables which may intentionally be empty must not
 # be quoted: otherwise an empty string will appear as a command line
 # argument, and java will think that is the program to run.
@@ -221,6 +229,8 @@ execCommand \
   $OVERRIDE_USEJAVACP \
   $WINDOWS_OPT \
   @properties@ @class@ @toolflags@ "$@@"
+
+unset IFS
 
 # record the exit status lest it be overwritten:
 # then reenable echo and propagate the code.
