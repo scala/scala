@@ -39,9 +39,6 @@ trait ScalaSettings extends AbsScalaSettings
    */
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
-  /** Enabled under -Xfuture. */
-  protected def futureSettings = List[BooleanSetting]()
-
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
   def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
 
@@ -470,7 +467,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   /** Groups of Settings.
    */
-  val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
+  val future        = BooleanSetting("-Xfuture", "Deprecated. The future is now.").withDeprecationMessage("Use -Xsource instead.")
   val optimise      = BooleanSetting("-optimise", "Compiler flag for the optimizer in Scala 2.11")
     .withAbbreviation("-optimize")
     .withDeprecationMessage("In 2.12, -optimise enables -opt:l:inline -opt-inline-from:**. Check -opt:help for using the Scala 2.12 optimizer.")

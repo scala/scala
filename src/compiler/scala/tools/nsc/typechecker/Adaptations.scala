@@ -74,21 +74,21 @@ trait Adaptations {
       }
 
       if (args.isEmpty) {
-        if (settings.future)
+        if (settings.isScala300) {
           context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
-        else {
+          false // drop adaptation
+        } else {
           val msg = "Adaptation of argument list by inserting () is deprecated: " + (
           if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
           else "this is unlikely to be what you want.")
           context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg), "2.11.0")
+          true // keep adaptation
         }
-      } else if (settings.warnAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage(
-          s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want.")
-        )
-
-      // return `true` if the adaptation should be kept
-      !(args.isEmpty && settings.future)
+      } else {
+        if (settings.warnAdaptedArgs)
+          context.warning(t.pos, adaptWarningMessage(s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want."))
+        true // keep adaptation
+      }
     }
   }
 }
