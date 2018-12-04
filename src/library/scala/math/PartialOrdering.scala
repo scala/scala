@@ -85,3 +85,7 @@ trait PartialOrdering[T] extends Equiv[T] {
     override def equiv(x: T, y: T) = outer.equiv(y, x)
   }
 }
+
+object PartialOrdering {
+  @inline def apply[T](implicit ev: PartialOrdering[T]): PartialOrdering[T] = ev
+}
