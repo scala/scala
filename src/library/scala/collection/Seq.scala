@@ -12,8 +12,6 @@
 
 package scala.collection
 
-import java.lang.{Object, String}
-
 import scala.collection.immutable.Range
 
 import scala.language.higherKinds
