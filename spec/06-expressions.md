@@ -1270,7 +1270,7 @@ include at least the expressions of the following forms:
 
 ```ebnf
 BlockStat    ::=  Import
-               |  {Annotation} [‘implicit’ | ‘lazy’] Def
+               |  {Annotation} [‘implicit’] [‘lazy’] Def
                |  {Annotation} {LocalModifier} TmplDef
                |  Expr1
                |

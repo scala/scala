@@ -174,7 +174,7 @@ grammar:
                       |  ‘{’ Block ‘}’
   Block             ::=  BlockStat {semi BlockStat} [ResultExpr]
   BlockStat         ::=  Import
-                      |  {Annotation} [‘implicit’ | ‘lazy’] Def
+                      |  {Annotation} [‘implicit’] [‘lazy’] Def
                       |  {Annotation} {LocalModifier} TmplDef
                       |  Expr1
                       |
