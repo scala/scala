@@ -2898,7 +2898,7 @@ self =>
     }
 
     /** {{{
-     *  ClassDef ::= Id [TypeParamClause] {Annotation}
+     *  ClassDef ::= Id [TypeParamClause] ConstrAnnotations
      *               [AccessModifier] ClassParamClauses RequiresTypeOpt ClassTemplateOpt
      *  TraitDef ::= Id [TypeParamClause] RequiresTypeOpt TraitTemplateOpt
      *  }}}
