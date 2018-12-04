@@ -188,7 +188,9 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       val otherName = freshTermName(clazz.name + "$")(freshNameCreatorFor(context))
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
-      val pairwise  = accessors collect {
+      //compare primitive fields first, slow equality checks of non-primitive fields can be skipped when primitives differ
+      val accessorsParts = accessors.partition(x => isPrimitiveValueType(x.info.resultType))
+      val pairwise  = (accessorsParts._1 ++ accessorsParts._2) collect {
         case acc if usefulEquality(acc) =>
           fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc))
       }
