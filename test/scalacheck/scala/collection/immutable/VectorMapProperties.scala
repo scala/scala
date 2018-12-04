@@ -19,7 +19,7 @@ object VectorMapProperties extends Properties("immutable.VectorMap") {
     }
   }
 
-  property("internal underlying and field length") = forAll { m: Map[K, V] => {
+  property("internal underlying and keys length") = forAll { m: Map[K, V] => {
       val vm = VectorMap.from(m)
       vm.underlying.size == vm.keys.length
     }
@@ -38,4 +38,31 @@ object VectorMapProperties extends Properties("immutable.VectorMap") {
       }
     }
   }
+
+  property("repeatedly removing to empty is empty at end") = forAll { (m: Map[K, V]) => {
+      var vm = VectorMap.from(m)
+      val sz1 = vm.size
+      for (k <- vm.keys) vm = vm.remove(k)
+      val sz2 = vm.size
+      for (n <- 0 until sz1) vm = vm + (n -> n)
+      val sz3 = vm.size
+      for (k <- vm.keys) vm = vm.remove(k)
+      vm.size == 0 && sz2 == 0 && sz3 == sz1
+    }
+  }
+
+  property("nullable types for keys and values") = forAll { m: Map[String, String] => {
+      val vm = VectorMap.from(m)
+      vm.underlying.size == vm.keys.length
+    }
+  }
+
+  property("internal underlying init size of non empty is consistent with original size and keys init size") = forAll { m: Map[K, V] =>
+    m.size >= 1 ==> {
+      val vm = VectorMap.from(m)
+      val sz = vm.size - 1
+      vm.underlying.init.size == sz && vm.keys.init.size == sz
+    }
+  }
+
 }
