@@ -36,16 +36,16 @@ class SymbolsTest {
   def symbolPatternMatch: Unit = {
     val bar = "foo"
     sym"foo" match {
-      case sym""              => assertTrue(false)
-      case sym"$bar"          => assertTrue(false)
-      case sym"$foo"          => assertTrue(false)
-      case sym"${foo}"        => assertTrue(false)
-      case sym"bar"           => assertTrue(false)
-      case sym"foo$bar"       => assertTrue(false)
-      case sym"foo${bar}baz"  => assertTrue(false)
-      case sym"${foo}bar$baz" => assertTrue(false)
-      case sym"foo"           => assertTrue(true )
-      case _                  => assertTrue(false)
+      case sym""              => fail
+      case sym"$bar"          => fail
+      case sym"$foo"          => fail
+      case sym"${foo}"        => fail
+      case sym"bar"           => fail
+      case sym"foo$bar"       => fail
+      case sym"foo${bar}baz"  => fail
+      case sym"${foo}bar$baz" => fail
+      case sym"foo"           => return
+      case _                  => fail
     }
   }
 
@@ -59,6 +59,5 @@ class SymbolsTest {
   @Test(expected = classOf[MatchError])
   def symbolMatchFailure: Unit = {
     val sym"bar" = sym"foo"
-    assertTrue(false)
   }
 }
