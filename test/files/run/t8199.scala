@@ -39,7 +39,7 @@ object Test extends App {
     checkClassName(c.getName)
   }
   def checkClassName(name: String): Unit = {
-    val defaultMaxClassFileLength = 255
+    val defaultMaxClassFileLength = 240
     assert((name + ".class").length <= defaultMaxClassFileLength, name)
   }
 

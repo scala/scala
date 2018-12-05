@@ -54,24 +54,21 @@ trait StdNames {
     /**
      * COMPACTIFY
      *
-     * The hashed name has the form (prefix + marker + md5 + marker + suffix), where
-     *   - prefix/suffix.length = MaxNameLength / 4
-     *   - md5.length = 32
+     * The maximum length of a filename on some platforms is 240 chars (docker).
+     * Therefore, compactify names that would create a filename longer than that.
+     * A compactified name looks like
+     *     prefix + $$$$ + md5 + $$$$ + suffix,
+     * where the prefix and suffix are the first and last quarter of the name,
+     * respectively.
      *
-     * We obtain the formula:
-     *
-     *   FileNameLength = 2*(MaxNameLength / 4) + 2.marker.length + 32 + suffixLength
-     *
-     * (+suffixLength for ".class" and potential module class suffix that is added *after* this transform).
-     *
-     * MaxNameLength can therefore be computed as follows:
+     * So how long is too long? For a (flattened class) name, the resulting file
+     * will be called "name.class", or, if it's a module class, "name$.class"
+     * (see scala/bug#8199). Therefore the maximum suffix is 7 characters, and
+     * names that are over (240 - 7) characters get compactified.
      */
-    val marker = "$$$$"
-    val maxSuffixLength = "$.class".length + 1 // potential module class suffix and file extension
-    val MaxNameLength = math.min(
-      settings.maxClassfileName.value - maxSuffixLength,
-      2 * (settings.maxClassfileName.value - maxSuffixLength - 2*marker.length - 32)
-    )
+    final val marker          = "$$$$"
+    final val MaxSuffixLength = 7 // "$.class".length + 1 // potential module class suffix and file extension
+    final val MaxNameLength   = 240 - MaxSuffixLength
     def toMD5(s: String, edge: Int): String = {
       val prefix = s take edge
       val suffix = s takeRight edge
