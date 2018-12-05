@@ -478,7 +478,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     val len = xs.length
     def boxed = if(len < ArrayOps.MaxStableSortLength) {
       val a = xs.clone()
-      Sorting.stableSort(xs)(ord.asInstanceOf[Ordering[A]])
+      Sorting.stableSort(a)(ord.asInstanceOf[Ordering[A]])//Performed the sort on 'a' instead of 'xs'
       a
     } else {
       val a = Array.copyAs[AnyRef](xs, len)(ClassTag.AnyRef)
