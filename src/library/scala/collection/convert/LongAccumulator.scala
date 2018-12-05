@@ -16,12 +16,12 @@ import scala.collection.{Factory, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `Accumulator` with no actual
- * subclassing relationship with `Accumulator`.
+ * This is a manually specialized variant of `AnyAccumulator` with no actual
+ * subclassing relationship with `AnyAccumulator`.
  */
 final class LongAccumulator
-  extends AccumulatorBase[Long, Accumulator, LongAccumulator]
-    with collection.IterableOps[Long, Accumulator, LongAccumulator] {
+  extends Accumulator[Long, AnyAccumulator, LongAccumulator]
+    with collection.IterableOps[Long, AnyAccumulator, LongAccumulator] {
   private[convert] var current: Array[Long] = LongAccumulator.emptyLongArray
   private[convert] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
 
@@ -188,7 +188,7 @@ final class LongAccumulator
   }
 
   /**
-   * Copy the elements in this `DoubleAccumulator` to a specified collection.
+   * Copy the elements in this `LongAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
    * Usage example: `acc.to(Vector)`
    */
@@ -225,7 +225,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   /** A `Supplier` of `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
   def supplier = new java.util.function.Supplier[LongAccumulator]{ def get: LongAccumulator = new LongAccumulator }
 
-  /** A `BiConsumer` that adds an element to an `Accumulator`, suitable for use with `java.util.stream.LongStream`'s `collect` method. */
+  /** A `BiConsumer` that adds an element to an `LongAccumulator`, suitable for use with `java.util.stream.LongStream`'s `collect` method. */
   def adder = new java.util.function.ObjLongConsumer[LongAccumulator]{ def accept(ac: LongAccumulator, a: Long): Unit = { ac += a } }
 
   /** A `BiConsumer` that adds a boxed `Long` to an `LongAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */

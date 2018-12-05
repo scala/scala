@@ -16,10 +16,10 @@ import scala.collection.{Factory, mutable}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `Accumulator` with no actual
- * subclassing relationship with `Accumulator`.
+ * This is a manually specialized variant of `AnyAccumulator` with no actual
+ * subclassing relationship with `AnyAccumulator`.
  */
-final class IntAccumulator extends AccumulatorBase[Int, Accumulator, IntAccumulator] {
+final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulator] {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
   private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
 
@@ -229,7 +229,7 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   /** A `Supplier` of `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
   def supplier = new java.util.function.Supplier[IntAccumulator]{ def get: IntAccumulator = new IntAccumulator }
 
-  /** A `BiConsumer` that adds an element to an `Accumulator`, suitable for use with `java.util.stream.IntStream`'s `collect` method. */
+  /** A `BiConsumer` that adds an element to an `IntAccumulator`, suitable for use with `java.util.stream.IntStream`'s `collect` method. */
   def adder = new java.util.function.ObjIntConsumer[IntAccumulator]{ def accept(ac: IntAccumulator, a: Int): Unit = { ac += a } }
 
   /** A `BiConsumer` that adds a boxed `Int` to an `IntAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */

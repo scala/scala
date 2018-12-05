@@ -15,12 +15,12 @@ import scala.collection.{Factory, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `Accumulator` with no actual
- * subclassing relationship with `Accumulator`.
+ * This is a manually specialized variant of `AnyAccumulator` with no actual
+ * subclassing relationship with `AnyAccumulator`.
  */
 final class DoubleAccumulator
-  extends AccumulatorBase[Double, Accumulator, DoubleAccumulator]
-    with collection.IterableOps[Double, Accumulator, DoubleAccumulator] {
+  extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
+    with collection.IterableOps[Double, AnyAccumulator, DoubleAccumulator] {
   private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
   private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
 
@@ -224,7 +224,7 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   /** A `Supplier` of `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
   def supplier = new java.util.function.Supplier[DoubleAccumulator]{ def get: DoubleAccumulator = new DoubleAccumulator }
 
-  /** A `BiConsumer` that adds an element to an `Accumulator`, suitable for use with `java.util.stream.DoubleStream`'s `collect` method. */
+  /** A `BiConsumer` that adds an element to an `DoubleAccumulator`, suitable for use with `java.util.stream.DoubleStream`'s `collect` method. */
   def adder = new java.util.function.ObjDoubleConsumer[DoubleAccumulator]{ def accept(ac: DoubleAccumulator, a: Double): Unit = { ac += a } }
 
   /** A `BiConsumer` that adds a boxed `Double` to an `DoubleAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */

@@ -21,7 +21,7 @@ private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
   def next(): A = if (proxied ne null) proxied.nextStep() else underlying.next()
 
   override def substep(): AnyStepper[A] = if (proxied ne null) proxied.substep() else {
-    val acc = new Accumulator[A]
+    val acc = new AnyAccumulator[A]
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
     while (i < n && underlying.hasNext) { acc += underlying.next(); i += 1 }

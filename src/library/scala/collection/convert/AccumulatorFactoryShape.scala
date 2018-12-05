@@ -31,13 +31,9 @@ object AccumulatorFactoryShape extends LowPriorityAccumulatorFactoryShape {
 }
 
 sealed trait LowPriorityAccumulatorFactoryShape {
-  implicit def anyAccumulatorFactoryShape[A]: AccumulatorFactoryShape[A, Accumulator[A]] = anyAccumulatorFactoryShapePrototype.asInstanceOf[AccumulatorFactoryShape[A, Accumulator[A]]]
+  implicit def anyAccumulatorFactoryShape[A]: AccumulatorFactoryShape[A, AnyAccumulator[A]] = anyAccumulatorFactoryShapePrototype.asInstanceOf[AccumulatorFactoryShape[A, AnyAccumulator[A]]]
 
-  private val anyAccumulatorFactoryShapePrototype = new AccumulatorFactoryShape[AnyRef, Accumulator[AnyRef]] {
-    def factory: collection.Factory[AnyRef, Accumulator[AnyRef]] = collection.IterableFactory.toFactory(Accumulator)
+  private val anyAccumulatorFactoryShapePrototype = new AccumulatorFactoryShape[AnyRef, AnyAccumulator[AnyRef]] {
+    def factory: collection.Factory[AnyRef, AnyAccumulator[AnyRef]] = collection.IterableFactory.toFactory(AnyAccumulator)
   }
-}
-
-object SpecializedAccumulator {
-  implicit def toFactory[A, C](sa: SpecializedAccumulator.type)(implicit canAccumulate: AccumulatorFactoryShape[A, C]): collection.Factory[A, C] = canAccumulate.factory
 }
