@@ -56,6 +56,21 @@ class StreamConvertersTest {
     (saa1: AnyAccumulator[String]).clear()
     val saa2 = sa.to(Accumulator)
     (saa2: AnyAccumulator[String]).clear()
+
+    val is = il.stepper
+    val ss = sl.stepper
+
+    val isa1 = is.to(AnyAccumulator)
+    (isa1: AnyAccumulator[Int]).clear()
+    val isa2 = is.to(IntAccumulator)
+    (isa2: IntAccumulator).clear()
+    val isa3 = is.to(Accumulator)
+    (isa3: IntAccumulator).clear()
+
+    val ssa1 = ss.to(AnyAccumulator)
+    (ssa1: AnyAccumulator[String]).clear()
+    val ssa2 = ss.to(Accumulator)
+    (ssa2: AnyAccumulator[String]).clear()
   }
 
   // check that `stepper` returns the right type

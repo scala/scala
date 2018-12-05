@@ -164,12 +164,10 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
     def next() = self.nextStep()
   }
 
-  /** Returns a Scala collection of the type requested. */
-  def to[Coll[_]](implicit factory: collection.Factory[A, Coll[A]]): Coll[A] = {
-    val b = factory.newBuilder
-    while (hasStep) b += nextStep()
-    b.result()
-  }
+  /**
+   * Copy the elements of this stepper into a Scala collection.
+   */
+  def to[C1](factory: collection.Factory[A, C1]): C1 = factory.fromSpecific(iterator)
 }
 
 /** This trait indicates that a `Stepper` will implement `tryStep` in terms of `hasNext` and `nextStep`. */
