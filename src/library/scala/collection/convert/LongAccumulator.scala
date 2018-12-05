@@ -12,12 +12,16 @@
 
 package scala.collection.convert
 
+import scala.collection.{Factory, mutable}
+
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `Accumulator` with no actual
  * subclassing relationship with `Accumulator`.
  */
-final class LongAccumulator extends AccumulatorOps[Long, LongAccumulator] { self =>
+final class LongAccumulator
+  extends AccumulatorBase[Long, Accumulator, LongAccumulator]
+    with collection.IterableOps[Long, Accumulator, LongAccumulator] {
   private[convert] var current: Array[Long] = LongAccumulator.emptyLongArray
   private[convert] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
 
@@ -40,12 +44,16 @@ final class LongAccumulator extends AccumulatorOps[Long, LongAccumulator] { self
   }
 
   /** Appends an element to this `LongAccumulator`. */
-  final def +=(a: Long): Unit = {
+  final def addOne(a: Long): this.type = {
     totalSize += 1
     if (index+1 >= current.length) expand()
     current(index) = a
     index += 1
+    this
   }
+
+  /** Result collection consisting of all elements appended so far. */
+  override def result(): LongAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `LongAccumulator`. */
   final def drain(that: LongAccumulator): Unit = {
@@ -159,7 +167,7 @@ final class LongAccumulator extends AccumulatorOps[Long, LongAccumulator] { self
   }
 
   /** Copies the elements in this `LongAccumulator` to a `List` */
-  final def toList: List[Long] = {
+  final override def toList: List[Long] = {
     var ans: List[Long] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -179,11 +187,12 @@ final class LongAccumulator extends AccumulatorOps[Long, LongAccumulator] { self
     ans
   }
 
-  /** Copies the elements in this `LongAccumulator` to a specified collection.
+  /**
+   * Copy the elements in this `DoubleAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
-   * Usage example: `acc.to[Vector]`
+   * Usage example: `acc.to(Vector)`
    */
-  final def to[Coll[_]](implicit factory: collection.Factory[Long, Coll[Long]]): Coll[Long] = {
+  override def to[C1](factory: Factory[Long, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     val b = factory.newBuilder
     b.sizeHint(totalSize.toInt)
@@ -209,7 +218,7 @@ final class LongAccumulator extends AccumulatorOps[Long, LongAccumulator] { self
   }
 }
 
-object LongAccumulator {
+object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccumulator] {
   private val emptyLongArray = new Array[Long](0)
   private val emptyLongArrayArray = new Array[Array[Long]](0)
 
@@ -231,6 +240,12 @@ object LongAccumulator {
     source.iterator.foreach(a += _)
     a
   }
+
+  override def empty: LongAccumulator = new LongAccumulator
+
+  override def newBuilder: mutable.Builder[Long, LongAccumulator] = new LongAccumulator
+
+  override def fromSpecific(it: IterableOnce[Long]): LongAccumulator = (new LongAccumulator).addAll(it)
 }
 
 private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper {

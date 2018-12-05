@@ -43,16 +43,7 @@ import java.util.Spliterator
  * println(s.hasStep)                      //  Prints `false`
  * }}}
  */
-trait Stepper[@specialized(Double, Int, Long) A] extends StepperOps[A, Stepper[A]] {
-  /**
-   * Drains the contents of this stepper into an `Accumulator` or specialized variant thereof as
-   * appropriate. This is a terminal operation.
-   *
-   * Note: accumulation will occur sequentially. To accumulate in parallel, use a `Stream` (i.e.
-   * `.parStream.accumulate`).
-   */
-  def accumulate[Acc <: AccumulatorOps[A, Acc]](implicit accer: impl.AccumulatesFromStepper[A, Acc]) = accer(this)
-}
+trait Stepper[@specialized(Double, Int, Long) A] extends StepperOps[A, Stepper[A]]
 
 /** An (optional) marker trait that indicates that a `Stepper` can call `substep` with
  * at worst O(log N) time and space complexity, and that the division is likely to

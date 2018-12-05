@@ -11,13 +11,16 @@
  */
 
 package scala.collection.convert
+import scala.collection.{Factory, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `Accumulator` with no actual
  * subclassing relationship with `Accumulator`.
  */
-final class DoubleAccumulator extends AccumulatorOps[Double, DoubleAccumulator] { self =>
+final class DoubleAccumulator
+  extends AccumulatorBase[Double, Accumulator, DoubleAccumulator]
+    with collection.IterableOps[Double, Accumulator, DoubleAccumulator] {
   private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
   private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
 
@@ -40,12 +43,16 @@ final class DoubleAccumulator extends AccumulatorOps[Double, DoubleAccumulator] 
   }
 
   /** Appends an element to this `DoubleAccumulator`. */
-  final def +=(a: Double): Unit = {
+  final def addOne(a: Double): this.type = {
     totalSize += 1
     if (index+1 >= current.length) expand()
     current(index) = a
     index += 1
+    this
   }
+
+  /** Result collection consisting of all elements appended so far. */
+  override def result(): DoubleAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `DoubleAccumulator`. */
   final def drain(that: DoubleAccumulator): Unit = {
@@ -159,7 +166,7 @@ final class DoubleAccumulator extends AccumulatorOps[Double, DoubleAccumulator] 
   }
 
   /** Copies the elements in this `DoubleAccumulator` to a `List` */
-  final def toList: List[Double] = {
+  final override def toList: List[Double] = {
     var ans: List[Double] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -179,11 +186,13 @@ final class DoubleAccumulator extends AccumulatorOps[Double, DoubleAccumulator] 
     ans
   }
 
-  /** Copies the elements in this `DoubleAccumulator` to a specified collection.
+
+  /**
+   * Copy the elements in this `DoubleAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
-   * Usage example: `acc.to[Vector]`
+   * Usage example: `acc.to(Vector)`
    */
-  final def to[Coll[_]](implicit factory: collection.Factory[Double, Coll[Double]]): Coll[Double] = {
+  override def to[C1](factory: Factory[Double, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     val b = factory.newBuilder
     b.sizeHint(totalSize.toInt)
@@ -208,7 +217,7 @@ final class DoubleAccumulator extends AccumulatorOps[Double, DoubleAccumulator] 
     b.result()
   }
 }
-object DoubleAccumulator {
+object DoubleAccumulator extends collection.SpecificIterableFactory[Double, DoubleAccumulator] {
   private val emptyDoubleArray = new Array[Double](0)
   private val emptyDoubleArrayArray = new Array[Array[Double]](0)
 
@@ -230,6 +239,12 @@ object DoubleAccumulator {
     source.iterator.foreach(a += _)
     a
   }
+
+  override def empty: DoubleAccumulator = new DoubleAccumulator
+
+  override def newBuilder: mutable.Builder[Double, DoubleAccumulator] = new DoubleAccumulator
+
+  override def fromSpecific(it: IterableOnce[Double]): DoubleAccumulator = (new DoubleAccumulator).addAll(it)
 }
 
 private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper {

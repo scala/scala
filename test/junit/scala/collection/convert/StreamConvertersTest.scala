@@ -19,6 +19,45 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
 
+  @Test
+  def convertToAccumulator(): Unit = {
+    val il = List(1)
+    val bl = List(1.toByte)
+    val sl = List("")
+
+    val ia = Array(1)
+    val sa = Array("")
+
+    val ila1 = il.to(Accumulator)
+    (ila1: Accumulator[Int]).clear()
+    val ila2 = il.to(IntAccumulator)
+    (ila2: IntAccumulator).clear()
+    val ila3 = il.to(SpecializedAccumulator)
+    (ila3: IntAccumulator).clear()
+    val bla1 = bl.to(Accumulator)
+    (bla1: Accumulator[Byte]).clear()
+//    val bla2 = bl.to(IntAccumulator) // Could implement a WideningAccumulator to support that.
+    val bla2 = bl.to(SpecializedAccumulator)
+    (bla2: Accumulator[Byte]).clear()
+
+    val sla1 = sl.to(Accumulator)
+    (sla1: Accumulator[String]).clear()
+    val sla2 = sl.to(SpecializedAccumulator)
+    (sla2: Accumulator[String]).clear()
+
+    val iaa1 = ia.to(Accumulator)
+    (iaa1: Accumulator[Int]).clear()
+    val iaa2 = ia.to(IntAccumulator)
+    (iaa2: IntAccumulator).clear()
+    val iaa3 = ia.to(SpecializedAccumulator)
+    (iaa3: IntAccumulator).clear()
+
+    val saa1 = sa.to(Accumulator)
+    (saa1: Accumulator[String]).clear()
+    val saa2 = sa.to(SpecializedAccumulator)
+    (saa2: Accumulator[String]).clear()
+  }
+
   // check that `stepper` returns the right type
   // check that `seqStream` and `parStream` extension methods are available and have the right type
   @Test

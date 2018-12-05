@@ -12,6 +12,10 @@
 
 package scala.collection.convert
 
+import scala.language.higherKinds
+import scala.collection.{Factory, IterableOps, mutable}
+import scala.reflect.ClassTag
+
 /** An `Accumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging Accumulators.
  * Accumulators can contain more than `Int.MaxValue` elements.
@@ -19,7 +23,9 @@ package scala.collection.convert
  * TODO: doc performance characteristics.
  * TODO: integrate into hierarchy
  */
-final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
+final class Accumulator[A]
+  extends AccumulatorBase[A, Accumulator, Accumulator[A]]
+    with collection.IterableOps[A, Accumulator, Accumulator[A]] {
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
   // created with `nextBlockSize` (which depends on `totalSize`).
   // `cumul(i)` is `(0 until i).map(history(_).length)`
@@ -52,12 +58,16 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
   }
 
   /** Appends an element to this `Accumulator`. */
-  final def +=(a: A): Unit = {
+  final def addOne(a: A): this.type = {
     totalSize += 1
     if (index >= current.length) expand()
     current(index) = a.asInstanceOf[AnyRef]
     index += 1
+    this
   }
+
+  /** Result collection consisting of all elements appended so far. */
+  override def result(): Accumulator[A] = this
 
   /** Removes all elements from `that` and appends them to this `Accumulator`. */
   final def drain[A1 <: A](that: Accumulator[A1]): Unit = {
@@ -141,10 +151,11 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
   /** Produces a parallel Java 8 Stream over the elements of this `Accumulator`*/
   final def parStream: java.util.stream.Stream[A] = java.util.stream.StreamSupport.stream(spliterator, true)
 
-  /** Copies the elements in this `Accumulator` into an `Array` */
-  final def toArray(implicit tag: reflect.ClassTag[A]) = {
+
+  /** Copy the elements in this `Accumulator` into an `Array` */
+  override def toArray[B >: A : ClassTag]: Array[B] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
-    val a = new Array[A](totalSize.toInt)
+    val a = new Array[B](totalSize.toInt)
     var j = 0
     var h = 0
     var pv = 0L
@@ -154,7 +165,7 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
       pv = cumulative(h)
       var i = 0
       while (i < n) {
-        a(j) = x(i).asInstanceOf[A]
+        a(j) = x(i).asInstanceOf[B]
         i += 1
         j += 1
       }
@@ -162,7 +173,7 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
     }
     var i = 0
     while (i < index) {
-      a(j) = current(i).asInstanceOf[A]
+      a(j) = current(i).asInstanceOf[B]
       i += 1
       j += 1
     }
@@ -170,7 +181,7 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
   }
 
   /** Copies the elements in this `Accumulator` to a `List` */
-  final def toList: List[A] = {
+  final override def toList: List[A] = {
     var ans: List[A] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -190,10 +201,12 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
     ans
   }
 
-  /** Copies the elements in this `Accumulator` to a specified collection.
-   * Usage example: `acc.to[Vector]`
+
+  /**
+   * Copy the elements in this `Accumulator` to a specified collection. Example use:
+   * `acc.to(Vector)`.
    */
-  final def to[Coll[_]](implicit factory: collection.Factory[A, Coll[A]]): Coll[A] = {
+  override def to[C1](factory: Factory[A, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     val b = factory.newBuilder
     b.sizeHint(totalSize.toInt)
@@ -220,7 +233,7 @@ final class Accumulator[A] extends AccumulatorOps[A, Accumulator[A]] { self =>
 }
 
 
-object Accumulator {
+object Accumulator extends collection.IterableFactory[Accumulator] {
   private val emptyAnyRefArray = new Array[AnyRef](0)
   private val emptyAnyRefArrayArray = new Array[Array[AnyRef]](0)
   private val emptyLongArray = new Array[Long](0)
@@ -240,13 +253,28 @@ object Accumulator {
     source.iterator.foreach(a += _)
     a
   }
+
+  /** An empty collection
+   *
+   * @tparam A the type of the ${coll}'s elements
+   */
+  override def empty[A]: Accumulator[A] = new Accumulator[A]
+
+  /**
+   * @return A builder for $Coll objects.
+   * @tparam A the type of the ${coll}’s elements
+   */
+  override def newBuilder[A]: mutable.Builder[A, Accumulator[A]] = new Accumulator[A]
 }
 
 
-/** An accumulator that works with Java 8 streams; it accepts elements of type `A`,
- * is itself an `AC`.  Accumulators can handle more than `Int.MaxValue` elements.
+/**
+ * Base class to share code between the [[Accumulator]] class (for reference types) and the manual
+ * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
  */
-trait AccumulatorOps[@specialized(Double, Int, Long) A, AC] {
+trait AccumulatorBase[@specialized(Double, Int, Long) A, +CC[_], +C]
+  extends mutable.Iterable[A]
+    with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
   private[convert] var hIndex: Int = 0
   private[convert] var totalSize: Long = 0L
@@ -261,8 +289,10 @@ trait AccumulatorOps[@specialized(Double, Int, Long) A, AC] {
     else 1 << 24
   }
 
+  final override def size: Int = if (longSize < Int.MaxValue) longSize.toInt else Int.MaxValue /* not sure.. default implementation just overflows */
+
   /** Size of the accumulated collection, as a `Long` */
-  final def size: Long = totalSize
+  final def longSize: Long = totalSize
 
   /** Remove all accumulated elements from this accumulator. */
   def clear(): Unit = {

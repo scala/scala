@@ -12,12 +12,14 @@
 
 package scala.collection.convert
 
+import scala.collection.{Factory, mutable}
+
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `Accumulator` with no actual
  * subclassing relationship with `Accumulator`.
  */
-final class IntAccumulator extends AccumulatorOps[Int, IntAccumulator] { self =>
+final class IntAccumulator extends AccumulatorBase[Int, Accumulator, IntAccumulator] {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
   private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
 
@@ -42,12 +44,16 @@ final class IntAccumulator extends AccumulatorOps[Int, IntAccumulator] { self =>
   }
 
   /** Appends an element to this `IntAccumulator`. */
-  final def +=(a: Int): Unit = {
+  final def addOne(a: Int): this.type = {
     totalSize += 1
     if (index+2 >= current.length) expand()
     current(index) = a
     index += 1
+    this
   }
+
+  /** Result collection consisting of all elements appended so far. */
+  override def result(): IntAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `IntAccumulator`. */
   final def drain(that: IntAccumulator): Unit = {
@@ -164,7 +170,7 @@ final class IntAccumulator extends AccumulatorOps[Int, IntAccumulator] { self =>
   }
 
   /** Copies the elements in this `IntAccumulator` to a `List` */
-  final def toList: List[Int] = {
+  final override def toList: List[Int] = {
     var ans: List[Int] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -184,11 +190,12 @@ final class IntAccumulator extends AccumulatorOps[Int, IntAccumulator] { self =>
     ans
   }
 
-  /** Copies the elements in this `IntAccumulator` to a specified collection.
+  /**
+   * Copy the elements in this `DoubleAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
-   * Usage example: `acc.to[Vector]`
+   * Usage example: `acc.to(Vector)`
    */
-  final def to[Coll[_]](implicit factory: collection.Factory[Int, Coll[Int]]): Coll[Int] = {
+  override def to[C1](factory: Factory[Int, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     val b = factory.newBuilder
     b.sizeHint(totalSize.toInt)
@@ -215,7 +222,7 @@ final class IntAccumulator extends AccumulatorOps[Int, IntAccumulator] { self =>
   }
 }
 
-object IntAccumulator {
+object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumulator] {
   private val emptyIntArray = new Array[Int](0)
   private val emptyIntArrayArray = new Array[Array[Int]](0)
 
@@ -237,6 +244,12 @@ object IntAccumulator {
     source.iterator.foreach(a += _)
     a
   }
+
+  override def empty: IntAccumulator = new IntAccumulator
+
+  override def newBuilder: mutable.Builder[Int, IntAccumulator] = new IntAccumulator
+
+  override def fromSpecific(it: IterableOnce[Int]): IntAccumulator = (new IntAccumulator).addAll(it)
 }
 
 private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper {
