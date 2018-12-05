@@ -136,6 +136,33 @@ case class StringContext(parts: String*) {
     bldr.toString
   }
 
+  /** Shorthand symbol constructor.
+   *
+   *  Here's an example of usage:
+   *  {{{
+   *    val abc = List(sym"a", sym"b", sym"c")
+   *    println(syms) // List('a, 'b, 'c)
+   *  }}}
+   *  This string-based shorthand, replaces the old built-in quote syntax:
+   *  {{{
+   *    val abc = List('a, 'b, 'c) // Quoted symbol literals dropped in 2.14
+   *  }}}
+   *
+   *  @param `str` The string to be converted to a symbol.
+   */
+  def sym(args: String*): Symbol = {
+    Symbol(standardInterpolator(processEscapes, args, parts))
+  }
+
+  object sym {
+    def unapplySeq(s: Symbol): Option[Seq[String]] = {
+      parts match {
+        case first +: Seq() if s.name == first => Some(Seq.empty[String])
+        case _                                 => None
+      }
+    }
+  }
+
   /** The formatted string interpolator.
    *
    *  It inserts its arguments between corresponding parts of the string context.

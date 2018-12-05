@@ -14,12 +14,6 @@ package scala
 
 /** This class provides a simple way to get unique objects for equal strings.
  *  Since symbols are interned, they can be compared using reference equality.
- *  Instances of `Symbol` can be created easily with Scala's built-in quote
- *  mechanism.
- *
- *  For instance, the Scala term `'mysym` will
- *  invoke the constructor of the `Symbol` class in the following way:
- *  `Symbol("mysym")`.
  *
  *  @author  Martin Odersky, Iulian Dragos
  *  @since   1.7

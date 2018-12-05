@@ -41,7 +41,7 @@ jobs:
         script:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info "junit/testOnly scala.lang.stringinterpol.SymbolsTest"
 
       # build the spec using jekyll
       - stage: build
