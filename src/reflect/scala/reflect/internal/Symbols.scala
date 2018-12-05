@@ -2959,7 +2959,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def name: TermName = {
       if (!isMethod && needsFlatClasses) {
         if (flatname eq null)
-          flatname = nme.flattenedName(rawowner.name, rawname)
+          flatname = nme.flattenedName(rawowner, rawname)
 
         flatname
       }
@@ -3380,7 +3380,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def name: TypeName = {
       if (needsFlatClasses) {
         if (flatname eq null)
-          flatname = tpnme.flattenedName(rawowner.name, rawname)
+          flatname = tpnme.flattenedName(rawowner, rawname)
 
         flatname
       }
