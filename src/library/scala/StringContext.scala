@@ -138,8 +138,8 @@ case class StringContext(parts: String*) {
   object sym {
     def unapplySeq(s: Symbol): Option[Seq[String]] = {
       parts match {
-        case first +: Seq() if s.name == first => Some(Seq.empty[String])
-        case _                                 => None
+        case s.name +: Seq() => Some(Seq.empty[String])
+        case _               => None
       }
     }
   }
