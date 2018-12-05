@@ -458,6 +458,17 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def span(p: A => Boolean): (C, C)
 
+  /** Applies a side-effecting function to each element in this collection.
+    * Strict collections will apply `f` to their elements immediately, while lazy collections
+    * like Views and LazyLists will only apply `f` on each element if and when that element
+    * is evaluated, and each time that element is evaluated.
+    *
+    * @param f a function to apply to each element in this $coll
+    * @tparam U the return type of f
+    * @return The same logical collection as this
+    */
+  def tapEach[U](f: A => U): C
+
   /////////////////////////////////////////////////////////////// Concrete methods based on iterator
 
   def knownSize: Int = -1

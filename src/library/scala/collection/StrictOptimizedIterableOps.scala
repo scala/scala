@@ -249,4 +249,10 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     (l.result(), r.result())
   }
 
+  // Optimization avoids creation of second collection
+  override def tapEach[U](f: A => U): C  = {
+    foreach(f)
+    coll
+  }
+
 }

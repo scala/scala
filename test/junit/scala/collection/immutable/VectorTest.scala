@@ -5,6 +5,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
+import scala.collection.mutable.ListBuffer
+
 @RunWith(classOf[JUnit4])
 class VectorTest {
 
@@ -161,4 +163,22 @@ class VectorTest {
     assertEquals(-1, test.indexOf(1000))
   }
 
+  @Test
+  def tapEach(): Unit = {
+    val lb = ListBuffer[Int]()
+
+    val v =
+      Vector(1,2,3)
+      .tapEach(lb += _)
+      .tapEach(lb += _)
+
+    assertEquals(ListBuffer(1,2,3,1,2,3), lb)
+    assertEquals(Vector(1,2,3), v)
+
+
+    val f: Any => Unit = println
+
+    // test that type info is not lost
+    val x: Vector[Char] = Vector[Char]().tapEach(f)
+  }
 }

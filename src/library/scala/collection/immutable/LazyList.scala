@@ -380,6 +380,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (knownIsEmpty) LazyList.empty
     else (mapImpl(f): @inline)
 
+  override def tapEach[U](f: A => U): LazyList[A] = map { a => f(a); a}
+
   private def mapImpl[B](f: A => B): LazyList[B] =
     newLL {
       if (isEmpty) State.Empty

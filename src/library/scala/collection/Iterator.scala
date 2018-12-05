@@ -863,6 +863,16 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       }
     }
 
+  override def tapEach[U](f: A => U): Iterator[A] = new AbstractIterator[A] {
+    override def knownSize = self.knownSize
+    override def hasNext = self.hasNext
+    override def next() = {
+      val _next = self.next()
+      f(_next)
+      _next
+    }
+  }
+
   /** Converts this iterator to a string.
    *
    *  @return `"<iterator>"`
