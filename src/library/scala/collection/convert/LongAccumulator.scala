@@ -194,33 +194,15 @@ final class LongAccumulator
    */
   override def to[C1](factory: Factory[Long, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
-    val b = factory.newBuilder
-    b.sizeHint(totalSize.toInt)
-    var h = 0
-    var pv = 0L
-    while (h < hIndex) {
-      val x = history(h)
-      val n = cumulative(h) - pv
-      pv = cumulative(h)
-      var i = 0
-      while (i < n) {
-        b += x(i)
-        i += 1
-      }
-      h += 1
-    }
-    var i = 0
-    while (i < index) {
-      b += current(i)
-      i += 1
-    }
-    b.result()
+    factory.fromSpecific(iterator)
   }
 }
 
 object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccumulator] {
   private val emptyLongArray = new Array[Long](0)
   private val emptyLongArrayArray = new Array[Array[Long]](0)
+
+  implicit def toJavaLongAccumulator(ia: LongAccumulator.type): collection.SpecificIterableFactory[java.lang.Long, LongAccumulator] = LongAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Long, LongAccumulator]]
 
   /** A `Supplier` of `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
   def supplier = new java.util.function.Supplier[LongAccumulator]{ def get: LongAccumulator = new LongAccumulator }
@@ -234,18 +216,14 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   /** A `BiConsumer` that merges `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
   def merger = new java.util.function.BiConsumer[LongAccumulator, LongAccumulator]{ def accept(a1: LongAccumulator, a2: LongAccumulator): Unit = { a1 drain a2 } }
 
-  /** Builds a `LongAccumulator` from any `Long`-valued `IterableOnce` */
-  def from[A](source: IterableOnce[Long]) = {
-    val a = new LongAccumulator
-    source.iterator.foreach(a += _)
-    a
+  override def fromSpecific(it: IterableOnce[Long]): LongAccumulator = it match {
+    case acc: LongAccumulator => acc
+    case _ => (new LongAccumulator).addAll(it)
   }
 
   override def empty: LongAccumulator = new LongAccumulator
 
   override def newBuilder: mutable.Builder[Long, LongAccumulator] = new LongAccumulator
-
-  override def fromSpecific(it: IterableOnce[Long]): LongAccumulator = (new LongAccumulator).addAll(it)
 }
 
 private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper {

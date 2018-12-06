@@ -197,34 +197,15 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
    */
   override def to[C1](factory: Factory[Int, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
-    val b = factory.newBuilder
-    b.sizeHint(totalSize.toInt)
-    var h = 0
-    var pv = 0L
-    while (h < hIndex) {
-      val x = history(h)
-      val cuml = cumulative(h)
-      val n = cuml - pv
-      pv = cuml
-      var i = 0
-      while (i < n) {
-        b += x(i)
-        i += 1
-      }
-      h += 1
-    }
-    var i = 0
-    while (i < index) {
-      b += current(i)
-      i += 1
-    }
-    b.result()
+    factory.fromSpecific(iterator)
   }
 }
 
 object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumulator] {
   private val emptyIntArray = new Array[Int](0)
   private val emptyIntArrayArray = new Array[Array[Int]](0)
+
+  implicit def toJavaIntegerAccumulator(ia: IntAccumulator.type): collection.SpecificIterableFactory[java.lang.Integer, IntAccumulator] = IntAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Integer, IntAccumulator]]
 
   /** A `Supplier` of `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
   def supplier = new java.util.function.Supplier[IntAccumulator]{ def get: IntAccumulator = new IntAccumulator }
@@ -238,18 +219,14 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   /** A `BiConsumer` that merges `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
   def merger = new java.util.function.BiConsumer[IntAccumulator, IntAccumulator]{ def accept(a1: IntAccumulator, a2: IntAccumulator): Unit = { a1 drain a2 } }
 
-  /** Builds an `IntAccumulator` from any `Int`-valued `IterableOnce` */
-  def from[A](source: IterableOnce[Int]) = {
-    val a = new IntAccumulator
-    source.iterator.foreach(a += _)
-    a
+  override def fromSpecific(it: IterableOnce[Int]): IntAccumulator = it match {
+    case acc: IntAccumulator => acc
+    case _ => (new IntAccumulator).addAll(it)
   }
 
   override def empty: IntAccumulator = new IntAccumulator
 
   override def newBuilder: mutable.Builder[Int, IntAccumulator] = new IntAccumulator
-
-  override def fromSpecific(it: IterableOnce[Int]): IntAccumulator = (new IntAccumulator).addAll(it)
 }
 
 private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper {

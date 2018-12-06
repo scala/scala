@@ -28,6 +28,10 @@ object AccumulatorFactoryShape extends LowPriorityAccumulatorFactoryShape {
   implicit val longAccumulatorFactoryShape: AccumulatorFactoryShape[Long, LongAccumulator] = new AccumulatorFactoryShape[Long, LongAccumulator] {
     def factory: collection.Factory[Long, LongAccumulator] = LongAccumulator
   }
+
+  implicit val javaDoubleAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Double, DoubleAccumulator] = doubleAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Double, DoubleAccumulator]]
+  implicit val javaIntegerAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Integer, IntAccumulator] = intAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Integer, IntAccumulator]]
+  implicit val javaLongAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Long, LongAccumulator] = longAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Long, LongAccumulator]]
 }
 
 sealed trait LowPriorityAccumulatorFactoryShape {

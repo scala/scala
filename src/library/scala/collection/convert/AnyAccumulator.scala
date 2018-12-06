@@ -208,27 +208,7 @@ final class AnyAccumulator[A]
    */
   override def to[C1](factory: Factory[A, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
-    val b = factory.newBuilder
-    b.sizeHint(totalSize.toInt)
-    var h = 0
-    var pv = 0L
-    while (h < hIndex) {
-      val x = history(h)
-      val n = cumulative(h) - pv
-      pv = cumulative(h)
-      var i = 0
-      while (i < n) {
-        b += x(i).asInstanceOf[A]
-        i += 1
-      }
-      h += 1
-    }
-    var i = 0
-    while (i < index) {
-      b += current(i).asInstanceOf[A]
-      i += 1
-    }
-    b.result()
+    factory.fromSpecific(iterator)
   }
 }
 
@@ -243,12 +223,58 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   /** A `BiConsumer` that adds an element to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
   def adder[A] = new java.util.function.BiConsumer[AnyAccumulator[A], A]{ def accept(ac: AnyAccumulator[A], a: A): Unit = { ac += a } }
 
+  /** A `BiConsumer` that adds an `Int` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
+  def unboxedIntAdder = new java.util.function.ObjIntConsumer[AnyAccumulator[Int]]{ def accept(ac: AnyAccumulator[Int], a: Int): Unit = { ac += a } }
+
+  /** A `BiConsumer` that adds a `Long` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
+  def unboxedLongAdder = new java.util.function.ObjLongConsumer[AnyAccumulator[Long]]{ def accept(ac: AnyAccumulator[Long], a: Long): Unit = { ac += a } }
+
+  /** A `BiConsumer` that adds a `Double` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
+  def unboxedDoubleAdder = new java.util.function.ObjDoubleConsumer[AnyAccumulator[Double]]{ def accept(ac: AnyAccumulator[Double], a: Double): Unit = { ac += a } }
+
   /** A `BiConsumer` that merges `AnyAccumulator`s, suitable for use with `java.util.stream.Stream`'s `collect` method. */
   def merger[A] = new java.util.function.BiConsumer[AnyAccumulator[A], AnyAccumulator[A]]{ def accept(a1: AnyAccumulator[A], a2: AnyAccumulator[A]): Unit = { a1 drain a2 } }
 
-  def from[A](source: IterableOnce[A]): AnyAccumulator[A] = (new AnyAccumulator[A]).addAll(source)
+  def from[A](source: IterableOnce[A]): AnyAccumulator[A] = source match {
+    case acc: AnyAccumulator[A] => acc
+    case _ => new AnyAccumulator[A].addAll(source)
+  }
 
   def empty[A]: AnyAccumulator[A] = new AnyAccumulator[A]
 
   def newBuilder[A]: mutable.Builder[A, AnyAccumulator[A]] = new AnyAccumulator[A]
+}
+
+
+trait AccumulatorFactoryInfo[A, C] {
+  val companion: AnyRef
+}
+trait LowPriorityAccumulatorFactoryInfo {
+  implicit def noAccumulatorFactoryInfo[A, C]: AccumulatorFactoryInfo[A, C] = noAccumulatorFactoryInfoPrototype.asInstanceOf[AccumulatorFactoryInfo[A, C]]
+  private val noAccumulatorFactoryInfoPrototype: AccumulatorFactoryInfo[AnyRef, AnyRef] = new AccumulatorFactoryInfo[AnyRef, AnyRef] {
+    val companion: AnyRef = null
+  }
+}
+object AccumulatorFactoryInfo extends LowPriorityAccumulatorFactoryInfo {
+  implicit def anyAccumulatorFactoryInfo[A]: AccumulatorFactoryInfo[A, AnyAccumulator[A]] = anyAccumulatorFactoryInfoPrototype.asInstanceOf[AccumulatorFactoryInfo[A, AnyAccumulator[A]]]
+
+  private object anyAccumulatorFactoryInfoPrototype extends AccumulatorFactoryInfo[AnyRef, AnyAccumulator[AnyRef]] {
+    val companion: AnyRef = AnyAccumulator
+  }
+
+  implicit val intAccumulatorFactoryInfo: AccumulatorFactoryInfo[Int, IntAccumulator] = new AccumulatorFactoryInfo[Int, IntAccumulator] {
+    val companion: AnyRef = IntAccumulator
+  }
+
+  implicit val longAccumulatorFactoryInfo: AccumulatorFactoryInfo[Long, LongAccumulator] = new AccumulatorFactoryInfo[Long, LongAccumulator] {
+    val companion: AnyRef = LongAccumulator
+  }
+
+  implicit val doubleAccumulatorFactoryInfo: AccumulatorFactoryInfo[Double, DoubleAccumulator] = new AccumulatorFactoryInfo[Double, DoubleAccumulator] {
+    val companion: AnyRef = DoubleAccumulator
+  }
+
+  implicit val javaIntegerAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Integer, IntAccumulator] = intAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Integer, IntAccumulator]]
+  implicit val javaLongAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Long, IntAccumulator] = longAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Long, IntAccumulator]]
+  implicit val javaDoubleAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Double, IntAccumulator] = doubleAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Double, IntAccumulator]]
 }

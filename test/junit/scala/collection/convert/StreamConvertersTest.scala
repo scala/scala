@@ -13,11 +13,64 @@
 package scala.collection.convert
 
 import org.junit.Test
+import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
+
+  @Test
+  def convertStreamToScala(): Unit = {
+    import collection.JavaConverters._
+    import java.util.stream._
+
+    for (par <- List(false, true)) {
+      def is = { val s = Vector(1).seqStream; if (par) s.parallel else s }
+      (is: IntStream).sum()
+      def isbj: Stream[Integer] = is.boxed()
+      def isbs: Stream[Int] = isbj.asInstanceOf[Stream[Int]]
+
+      val isa = is.toScala(Accumulator)
+      (isa: IntAccumulator).sum
+      val isbja = isbj.toScala(Accumulator)
+      (isbja: IntAccumulator).sum
+      val isbsa = isbs.toScala(Accumulator)
+      (isbsa: IntAccumulator).sum
+
+      val isi = is.toScala(IntAccumulator)
+      (isi: IntAccumulator).sum
+      val isbji = isbj.toScala(IntAccumulator)
+      (isbji: IntAccumulator).sum
+      val isbsi = isbs.toScala(IntAccumulator)
+      (isbsi: IntAccumulator).sum
+
+      val isg = is.toScala(AnyAccumulator)
+      (isg: AnyAccumulator[Int]).sum
+      val isbjg = isbj.toScala(AnyAccumulator)
+      (isbjg: AnyAccumulator[Integer]).asInstanceOf[AnyAccumulator[Int]].sum
+      val isbsg = isbs.toScala(AnyAccumulator)
+      (isbsg: AnyAccumulator[Int]).sum
+
+      val isv = is.toScala(Vector)
+      (isv: Vector[Int]).sum
+      val isbjv = isbj.toScala(Vector)
+      (isbjv: Vector[Integer]).asInstanceOf[Vector[Int]].sum
+      val isbsv = isbs.toScala(Vector)
+      (isbsv: Vector[Int]).sum
+
+      var changer = 0
+      val isbspll = isbs.parallel.map[Int](x => {changer += 1; x}).toScala(LazyList)
+      assertEquals(1, changer) // parallel streams are converted to an (eager) Accumulator first
+      assertEquals(1, (isbspll: LazyList[Int]).sum)
+      assertEquals(1, changer)
+
+      val isbsqll = isbs.sequential.map[Int](x => {changer += 1; x}).toScala(LazyList)
+      assertEquals(1, changer) // sequential streams are converted lazily to lazy collections
+      assertEquals(1, (isbsqll: LazyList[Int]).sum)
+      assertEquals(2, changer)
+    }
+  }
 
   @Test
   def convertToAccumulator(): Unit = {

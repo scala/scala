@@ -194,32 +194,14 @@ final class DoubleAccumulator
    */
   override def to[C1](factory: Factory[Double, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
-    val b = factory.newBuilder
-    b.sizeHint(totalSize.toInt)
-    var h = 0
-    var pv = 0L
-    while (h < hIndex) {
-      val x = history(h)
-      val n = cumulative(h) - pv
-      pv = cumulative(h)
-      var i = 0
-      while (i < n) {
-        b += x(i)
-        i += 1
-      }
-      h += 1
-    }
-    var i = 0
-    while (i < index) {
-      b += current(i)
-      i += 1
-    }
-    b.result()
+    factory.fromSpecific(iterator)
   }
 }
 object DoubleAccumulator extends collection.SpecificIterableFactory[Double, DoubleAccumulator] {
   private val emptyDoubleArray = new Array[Double](0)
   private val emptyDoubleArrayArray = new Array[Array[Double]](0)
+
+  implicit def toJavaDoubleAccumulator(ia: DoubleAccumulator.type): collection.SpecificIterableFactory[java.lang.Double, DoubleAccumulator] = DoubleAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Double, DoubleAccumulator]]
 
   /** A `Supplier` of `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
   def supplier = new java.util.function.Supplier[DoubleAccumulator]{ def get: DoubleAccumulator = new DoubleAccumulator }
@@ -233,18 +215,14 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   /** A `BiConsumer` that merges `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
   def merger = new java.util.function.BiConsumer[DoubleAccumulator, DoubleAccumulator]{ def accept(a1: DoubleAccumulator, a2: DoubleAccumulator): Unit = { a1 drain a2 } }
 
-  /** Builds a `DoubleAccumulator` from any `Double`-valued `IterableOnce` */
-  def from[A](source: IterableOnce[Double]) = {
-    val a = new DoubleAccumulator
-    source.iterator.foreach(a += _)
-    a
+  override def fromSpecific(it: IterableOnce[Double]): DoubleAccumulator = it match {
+    case acc: DoubleAccumulator => acc
+    case _ => (new DoubleAccumulator).addAll(it)
   }
 
   override def empty: DoubleAccumulator = new DoubleAccumulator
 
   override def newBuilder: mutable.Builder[Double, DoubleAccumulator] = new DoubleAccumulator
-
-  override def fromSpecific(it: IterableOnce[Double]): DoubleAccumulator = (new DoubleAccumulator).addAll(it)
 }
 
 private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper {
