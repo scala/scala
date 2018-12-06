@@ -65,7 +65,7 @@ object Accumulator {
   implicit def toFactory[A, C](sa: Accumulator.type)(implicit canAccumulate: AccumulatorFactoryShape[A, C]): collection.Factory[A, C] = canAccumulate.factory
 }
 
-private[convert] class AccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] {
+private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] {
   import java.util.Spliterator._
 
   private var h = 0
@@ -74,8 +74,8 @@ private[convert] class AccumulatorStepper[A](private val acc: AnyAccumulator[A])
   private var n = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
   private var N = acc.totalSize
 
-  private def duplicateSelf(limit: Long): AccumulatorStepper[A] = {
-    val ans = new AccumulatorStepper(acc)
+  private def duplicateSelf(limit: Long): AnyAccumulatorStepper[A] = {
+    val ans = new AnyAccumulatorStepper(acc)
     ans.h = h
     ans.i = i
     ans.a = a

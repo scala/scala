@@ -137,7 +137,7 @@ final class AnyAccumulator[A]
   final def apply(i: Int): A = apply(i.toLong)
 
   /** Returns a `Stepper` over the contents of this `AnyAccumulator`*/
-  final def stepper: AnyStepper[A] = new AccumulatorStepper[A](this)
+  final def stepper: AnyStepper[A] = new AnyAccumulatorStepper[A](this)
 
   /** Returns an `Iterator` over the contents of this `AnyAccumulator`. */
   final def iterator = stepper.iterator
