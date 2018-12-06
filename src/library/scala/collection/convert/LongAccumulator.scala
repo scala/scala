@@ -27,6 +27,8 @@ final class LongAccumulator
 
   private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-1) }
 
+  override protected[this] def className: String = "LongAccumulator"
+
   private def expand(): Unit = {
     if (index > 0) {
       current(current.length-1) = (if (hIndex > 0) { val x = history(hIndex-1); x(x.length-1) } else 0) + index

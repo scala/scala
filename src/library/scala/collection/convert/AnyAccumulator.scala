@@ -35,6 +35,8 @@ final class AnyAccumulator[A]
 
   private[convert] def cumulative(i: Int): Long = cumul(i)
 
+  override protected[this] def className: String = "AnyAccumulator"
+
   private def expand(): Unit = {
     if (index > 0) {
       if (hIndex >= history.length) hExpand()

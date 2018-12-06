@@ -25,6 +25,8 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
 
   private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-2).toLong << 32 | (x(x.length-1)&0xFFFFFFFFL) }
 
+  override protected[this] def className: String = "IntAccumulator"
+
   private def expand(): Unit = {
     if (index > 0) {
       val cuml = (if (hIndex > 0) cumulative(hIndex-1) else 0) + index
