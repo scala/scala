@@ -8,8 +8,9 @@ import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.GenIterable
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.SyncVar
+import scala.concurrent.{Await, Awaitable, SyncVar, TimeoutException}
 import scala.tools.nsc.settings.ScalaVersion
+import scala.util.Try
 import scala.util.Properties.javaSpecVersion
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
@@ -156,21 +157,38 @@ object AssertUtil {
       case Slow => (10000L, 5)
       case Fast => (250L, 4)
     }
+    var period = 0L
     var done = false
-    while (!done && !terminated && n < 5) {
+    var ended = false
+    while (!done && n < limit) {
       try {
-        //println(s"Wait for test condition: $label")
-        Thread.sleep(dormancy)
+        ended = terminated
+        if (ended) {
+          done = true
+        } else {
+          //println(s"Wait for test condition: $label")
+          Thread.sleep(dormancy)
+          period += dormancy
+        }
       } catch {
         case _: InterruptedException => done = true
       }
       n += 1
       dormancy *= factor
     }
+    assertTrue(s"Expired after dormancy period $period waiting for termination condition $label", ended)
   }
 
   /** How frequently to check a termination condition. */
   sealed trait Progress
   final case object Slow extends Progress
   final case object Fast extends Progress
+
+  /** Like Await.ready but return false on timeout, true on completion, throw InterruptedException. */
+  def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
+}
+
+object TestDuration {
+  import scala.concurrent.duration.{Duration, SECONDS}
+  val Standard = Duration(4, SECONDS)
 }

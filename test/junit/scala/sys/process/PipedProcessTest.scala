@@ -11,17 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 import org.junit.Assert._
 
-// Each test normally ends in a moment, but for failure cases, waits four seconds.
-// scala/bug#7350, scala/bug#8768
-
-// one second wasn't always enough --
-// https://github.com/scala/scala-dev/issues/313
-// two seconds wasn't always enough --
-// https://github.com/scala/community-builds/issues/569
-object TestDuration {
-  import scala.concurrent.duration.{Duration, SECONDS}
-  val Standard = Duration(4, SECONDS)
-}
+import scala.tools.testing.AssertUtil.{readyOrNot, waitForIt}
+import scala.tools.testing.TestDuration
 
 @RunWith(classOf[JUnit4])
 class PipedProcessTest {
@@ -35,14 +26,13 @@ class PipedProcessTest {
     val a = new ProcessMock(error = false)
     val b = new ProcessMock(error = false)
     val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = false), io, false)
-    val f = Future {
-      p.callRunAndExitValue(source, sink)
-    }
-    Await.result(f, TestDuration.Standard)
-    assert(source.releaseCount == 0)
-    assert(sink.releaseCount == 0)
-    assert(a.destroyCount == 0)
-    assert(b.destroyCount == 0)
+    val f = Future(p.callRunAndExitValue(source, sink))
+    waitForIt(readyOrNot(f), label = "normallyEnd")
+    assertEquals(Some(0), Await.result(f, TestDuration.Standard))
+    assertEquals(0, source.releaseCount)
+    assertEquals(0, sink.releaseCount)
+    assertEquals(0, a.destroyCount)
+    assertEquals(0, b.destroyCount)
   }
 
   @Test
@@ -79,11 +69,11 @@ class PipedProcessTest {
         p.callRunAndExitValue(source, sink)
       }
     }
-    Await.result(f, TestDuration.Standard)
-    assert(source.releaseCount == 1)
-    assert(sink.releaseCount == 1)
-    assert(a.destroyCount == 0)
-    assert(b.destroyCount == 0)
+    waitForIt(f.isCompleted)
+    assertEquals(1, source.releaseCount)
+    assertEquals(1, sink.releaseCount)
+    assertEquals(0, a.destroyCount)
+    assertEquals(0, b.destroyCount)
   }
 
   // PipedProcesses must release resources when a.run() failed
@@ -100,11 +90,11 @@ class PipedProcessTest {
         p.callRunAndExitValue(source, sink)
       }
     }
-    Await.result(f, TestDuration.Standard)
-    assert(source.releaseCount == 1)
-    assert(sink.releaseCount == 1)
-    assert(a.destroyCount == 0)
-    assert(b.destroyCount == 1)
+    waitForIt(f.isCompleted)
+    assertEquals(1, source.releaseCount)
+    assertEquals(1, sink.releaseCount)
+    assertEquals(0, a.destroyCount)
+    assertEquals(1, b.destroyCount)
   }
 
   // PipedProcesses must release resources when interrupted during waiting for first.exitValue()
@@ -119,11 +109,11 @@ class PipedProcessTest {
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
-    Await.result(f, TestDuration.Standard)
-    assert(source.releaseCount == 1)
-    assert(sink.releaseCount == 1)
-    assert(a.destroyCount == 1)
-    assert(b.destroyCount == 1)
+    waitForIt(f.isCompleted)
+    assertEquals(1, source.releaseCount)
+    assertEquals(1, sink.releaseCount)
+    assertEquals(1, a.destroyCount)
+    assertEquals(1, b.destroyCount)
   }
 
   // PipedProcesses must release resources when interrupted during waiting for second.exitValue()
@@ -138,11 +128,11 @@ class PipedProcessTest {
     val f = Future {
       p.callRunAndExitValue(source, sink)
     }
-    Await.result(f, TestDuration.Standard)
-    assert(source.releaseCount == 1)
-    assert(sink.releaseCount == 1)
-    assert(a.destroyCount == 1)
-    assert(b.destroyCount == 1)
+    waitForIt(f.isCompleted)
+    assertEquals(1, source.releaseCount)
+    assertEquals(1, sink.releaseCount)
+    assertEquals(1, a.destroyCount)
+    assertEquals(1, b.destroyCount)
   }
 }
 
@@ -206,7 +196,7 @@ class PipeSourceSinkTest {
       sink.done()
       sink.join()
     }
-    Await.result(f, TestDuration.Standard)
+    waitForIt(f.isCompleted)
     assertTrue(in.closed)
     assertTrue(out.closed)
     assertTrue(source.isReleased)
@@ -224,10 +214,10 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, TestDuration.Standard)
-    assert(out.closed == true)
-    assert(source.isReleased == true)
-    assert(sink.isReleased == true)
+    waitForIt(f.isCompleted)
+    assertTrue(out.closed)
+    assertTrue(source.isReleased)
+    assertTrue(sink.isReleased)
   }
 
   // PipeSource and PipeSink must release resources when interrupted during waiting for sink.take()
@@ -241,7 +231,7 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, TestDuration.Standard)
+    waitForIt(f.isCompleted)
     assertTrue(in.closed)
     assertTrue(source.isReleased)
     assertTrue(sink.isReleased)
@@ -261,11 +251,11 @@ class PipeSourceSinkTest {
       source.release()
       sink.release()
     }
-    Await.result(f, TestDuration.Standard)
-    assert(in.closed == true)
-    assert(out.closed == true)
-    assert(source.isReleased == true)
-    assert(sink.isReleased == true)
+    waitForIt(f.isCompleted)
+    assertTrue(in.closed)
+    assertTrue(out.closed)
+    assertTrue(source.isReleased)
+    assertTrue(sink.isReleased)
   }
 }
 
