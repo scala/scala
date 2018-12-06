@@ -31,6 +31,12 @@ class StreamConvertersTest {
       def isbj: Stream[Integer] = is.boxed()
       def isbs: Stream[Int] = isbj.asInstanceOf[Stream[Int]]
 
+      val isJavaUnboxed = isbj.unboxed
+      (isJavaUnboxed: IntStream).sum
+      val isUnboxed = isbs.unboxed
+      (isUnboxed: IntStream).sum
+      // Vector("").seqStream.unboxed // should not and does not compile, no unboxer available
+
       val isa = is.toScala(Accumulator)
       (isa: IntAccumulator).sum
       val isbja = isbj.toScala(Accumulator)

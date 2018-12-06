@@ -15,7 +15,7 @@ package scala.collection.convert
 import java.util.stream._
 
 import scala.collection.AnyConstr
-import scala.collection.convert.impl.{StepperShape, StreamShape}
+import scala.collection.convert.impl.{StepperShape, StreamShape, StreamUnboxer}
 
 trait StreamConverters {
   // collections
@@ -97,6 +97,8 @@ trait StreamConverters {
       else if (stream.isParallel) anyAcc.to(factory)
       else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator))
     }
+
+    def unboxed[S](implicit unboxer: StreamUnboxer[A, S]): S = unboxer(stream)
   }
 
   implicit class IntStreamHasToScala(stream: IntStream) {
