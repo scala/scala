@@ -285,12 +285,18 @@ private[convert] object AnyStepper {
 
 /** A `DoubleStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Double` values. */
 trait DoubleStepper extends Stepper[Double] with java.util.PrimitiveIterator.OfDouble with Spliterator.OfDouble with StepperOps[Double, DoubleStepper] {
-  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Double]): Unit = { while (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)) } }
+  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Double]): Unit = (c: AnyRef) match {
+    case dc: java.util.function.DoubleConsumer => forEachRemaining(dc)
+    case _ => while (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)) }
+  }
   override def forEachRemaining(c: java.util.function.DoubleConsumer): Unit = { while (hasNext) { c.accept(nextDouble) } }
   def hasStep = hasNext
   def knownSize = getExactSizeIfKnown
   def nextStep() = nextDouble
-  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Double]): Boolean = if (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)); true } else false
+  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Double]): Boolean = (c: AnyRef) match {
+    case dc: java.util.function.DoubleConsumer => tryAdvance(dc)
+    case _ => if (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)); true } else false
+  }
   def tryAdvance(c: java.util.function.DoubleConsumer): Boolean = if (hasNext) { c.accept(nextDouble); true } else false
   def tryStep(f: Double => Unit): Boolean = if (hasNext) { f(nextDouble); true } else false
   def trySplit() = substep()
@@ -299,12 +305,18 @@ trait DoubleStepper extends Stepper[Double] with java.util.PrimitiveIterator.OfD
 
 /** An `IntStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Int` values. */
 trait IntStepper extends Stepper[Int] with java.util.PrimitiveIterator.OfInt with Spliterator.OfInt with StepperOps[Int, IntStepper] {
-  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Integer]): Unit = { while (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)) } }
+  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Integer]): Unit = (c: AnyRef) match {
+    case ic: java.util.function.IntConsumer => forEachRemaining(ic)
+    case _ => while (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)) }
+  }
   override def forEachRemaining(c: java.util.function.IntConsumer): Unit = { while (hasNext) { c.accept(nextInt) } }
   def hasStep = hasNext
   def knownSize = getExactSizeIfKnown
   def nextStep() = nextInt
-  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Integer]): Boolean = if (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)); true } else false
+  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Integer]): Boolean = (c: AnyRef) match {
+    case ic: java.util.function.IntConsumer => tryAdvance(ic)
+    case _ => if (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)); true } else false
+  }
   def tryAdvance(c: java.util.function.IntConsumer): Boolean = if (hasNext) { c.accept(nextInt); true } else false
   def tryStep(f: Int => Unit): Boolean = if (hasNext) { f(nextInt); true } else false
   def trySplit() = substep()
@@ -313,12 +325,18 @@ trait IntStepper extends Stepper[Int] with java.util.PrimitiveIterator.OfInt wit
 
 /** A `LongStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Long` values. */
 trait LongStepper extends Stepper[Long] with java.util.PrimitiveIterator.OfLong with Spliterator.OfLong with StepperOps[Long, LongStepper] {
-  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Long]): Unit = { while (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)) } }
+  override def forEachRemaining(c: java.util.function.Consumer[_ >: java.lang.Long]): Unit = (c: AnyRef) match {
+    case lc: java.util.function.LongConsumer => forEachRemaining(lc)
+    case _ => while (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)) }
+  }
   override def forEachRemaining(c: java.util.function.LongConsumer): Unit = { while (hasNext) { c.accept(nextLong) } }
   def hasStep = hasNext
   def knownSize = getExactSizeIfKnown
   def nextStep() = nextLong
-  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Long]): Boolean = if (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)); true } else false
+  override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Long]): Boolean = (c: AnyRef) match {
+    case lc: java.util.function.LongConsumer => tryAdvance(lc)
+    case _ => if (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)); true } else false
+  }
   def tryAdvance(c: java.util.function.LongConsumer): Boolean = if (hasNext) { c.accept(nextLong); true } else false
   def tryStep(f: Long => Unit): Boolean = if (hasNext) { f(nextLong); true } else false
   def trySplit() = substep()
