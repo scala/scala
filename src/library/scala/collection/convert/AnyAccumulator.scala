@@ -221,16 +221,16 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   def supplier[A] = new java.util.function.Supplier[AnyAccumulator[A]]{ def get: AnyAccumulator[A] = new AnyAccumulator[A] }
 
   /** A `BiConsumer` that adds an element to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def adder[A] = new java.util.function.BiConsumer[AnyAccumulator[A], A]{ def accept(ac: AnyAccumulator[A], a: A): Unit = { ac += a } }
+  def adder[A] = new java.util.function.BiConsumer[AnyAccumulator[A], A]{ def accept(ac: AnyAccumulator[A], a: A): Unit = { ac addOne a } }
 
   /** A `BiConsumer` that adds an `Int` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedIntAdder = new java.util.function.ObjIntConsumer[AnyAccumulator[Int]]{ def accept(ac: AnyAccumulator[Int], a: Int): Unit = { ac += a } }
+  def unboxedIntAdder = new java.util.function.ObjIntConsumer[AnyAccumulator[Int]]{ def accept(ac: AnyAccumulator[Int], a: Int): Unit = { ac addOne a } }
 
   /** A `BiConsumer` that adds a `Long` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedLongAdder = new java.util.function.ObjLongConsumer[AnyAccumulator[Long]]{ def accept(ac: AnyAccumulator[Long], a: Long): Unit = { ac += a } }
+  def unboxedLongAdder = new java.util.function.ObjLongConsumer[AnyAccumulator[Long]]{ def accept(ac: AnyAccumulator[Long], a: Long): Unit = { ac addOne a } }
 
   /** A `BiConsumer` that adds a `Double` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedDoubleAdder = new java.util.function.ObjDoubleConsumer[AnyAccumulator[Double]]{ def accept(ac: AnyAccumulator[Double], a: Double): Unit = { ac += a } }
+  def unboxedDoubleAdder = new java.util.function.ObjDoubleConsumer[AnyAccumulator[Double]]{ def accept(ac: AnyAccumulator[Double], a: Double): Unit = { ac addOne a } }
 
   /** A `BiConsumer` that merges `AnyAccumulator`s, suitable for use with `java.util.stream.Stream`'s `collect` method. */
   def merger[A] = new java.util.function.BiConsumer[AnyAccumulator[A], AnyAccumulator[A]]{ def accept(a1: AnyAccumulator[A], a2: AnyAccumulator[A]): Unit = { a1 drain a2 } }
