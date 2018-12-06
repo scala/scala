@@ -27,37 +27,57 @@ class SymbolsTest {
   }
 
   @Test
-  def symbolInterpolation: Unit = {
+  def symbolInterpolationTest: Unit = {
     val foo = "bar"
+    assertEquals('bar, sym"$foo")
     assertEquals("'bar", sym"$foo".toString)
   }
 
   @Test
-  def symbolPatternMatch: Unit = {
+  def patternMatchTest: Unit = {
+    val foo = "foo"
+    sym"foo" match {
+      case sym""           => fail
+      case sym"$$foo"      => fail
+      case sym"$${foo}"    => fail
+      case sym"foo$${bar}" => fail
+      case sym"foo\n"      => fail
+      case sym"foo"        => return
+      case _               => fail
+    }
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def patternMatchDollarFail: Unit = {
     val bar = "foo"
     sym"foo" match {
-      case sym""              => fail
-      case sym"$bar"          => fail
-      case sym"$foo"          => fail
-      case sym"${foo}"        => fail
-      case sym"bar"           => fail
-      case sym"foo$bar"       => fail
-      case sym"foo${bar}baz"  => fail
-      case sym"${foo}bar$baz" => fail
-      case sym"foo"           => return
-      case _                  => fail
+      // Variable interpolation not supported, use '$$' for '$'
+      case sym"$bar" =>
+    }
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def patternMatchDollarBracesFail: Unit = {
+    val bar = "foo"
+    sym"foo" match {
+      // Variable interpolation not supported, use '$$' for '$'
+      case sym"${bar}" =>
     }
   }
 
   @Test
-  def symbolDeconstruct: Unit = {
+  def deconstructTest: Unit = {
     val sym"foo" = sym"foo"
-    val Symbol(foo) = sym"foo"
-    assertEquals("foo", foo)
   }
 
   @Test(expected = classOf[MatchError])
-  def symbolMatchFailure: Unit = {
+  def deconstructFail: Unit = {
     val sym"bar" = sym"foo"
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def deconstructDollarFail: Unit = {
+    // Variable interpolation not supported, use '$$' for '$'
+    val sym"$foo" = sym"foo"
   }
 }
