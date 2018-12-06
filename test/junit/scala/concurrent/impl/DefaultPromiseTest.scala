@@ -2,14 +2,21 @@ package scala.concurrent.impl
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.RejectedExecutionException
+
 import org.junit.Assert._
-import org.junit.{ After, Before, Test }
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
 import scala.annotation.tailrec
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 import scala.concurrent.impl.Promise.DefaultPromise
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /** Tests for the private class DefaultPromise */
@@ -310,15 +317,13 @@ class DefaultPromiseTest {
       val doneLatch = new CountDownLatch(flatMapCount + 1)
       def execute(f: => Unit): Unit = {
         val ec = ExecutionContext.global
-        ec.execute(new Runnable {
-          def run(): Unit = {
-            try {
-              startLatch.await()
-              f
-              doneLatch.countDown()
-            } catch {
-              case NonFatal(e) => ec.reportFailure(e)
-            }
+        ec.execute({ () =>
+          try {
+            startLatch.await()
+            f
+            doneLatch.countDown()
+          } catch {
+            case NonFatal(e) => ec.reportFailure(e)
           }
         })
       }
@@ -339,6 +344,15 @@ class DefaultPromiseTest {
       doneLatch.await()
       assertEquals(Some(Success(1)), p.value)
     }
+  }
+
+  @Test
+  def testRejectedExecutionException(): Unit = {
+    implicit val e: ExecutionContext = ExecutionContext.fromExecutor(_ => throw new RejectedExecutionException("foo"))
+    val p = new DefaultPromise[String]()
+    p.success("foo")
+    val f = p.future.map(identity)
+    val Failure(_: RejectedExecutionException) = Await.ready(f, 2.seconds).value.get
   }
 
 }
