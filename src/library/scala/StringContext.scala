@@ -158,6 +158,10 @@ case class StringContext(parts: String*) {
     def unapplySeq(s: Symbol): Option[Seq[String]] = {
       parts match {
         case s.name +: Seq() => Some(Seq.empty[String])
+        case _ +: _ +: _     => // if parts.size > 1
+          throw new IllegalArgumentException(
+            "Variable interpolation not supported, use '$$' for '$'"
+          )
         case _               => None
       }
     }
