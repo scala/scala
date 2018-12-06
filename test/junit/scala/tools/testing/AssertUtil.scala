@@ -111,12 +111,7 @@ object AssertUtil {
       body
 
       val afterCount = {
-        var n = 1
-        while (group.activeCount > beforeCount && n < 5) {
-          //println("Wait for quiescence")
-          Thread.sleep(250L * n)
-          n += 1
-        }
+        waitForIt(group.activeCount <= beforeCount, label = "after count")
         group.activeCount
       }
       val afterThreads = new Array[Thread](afterCount)
@@ -134,14 +129,48 @@ object AssertUtil {
         case t: Throwable => result.put(Some(t))
       }
     }
+    val timeout = 10 * 1000L  // last chance timeout
     val thread = new Thread(group, () => test())
+    def resulted: Boolean = result.get(timeout).isDefined
     try {
       thread.start()
-      val timeout = 10 * 1000L
+      waitForIt(resulted, Slow, label = "test result")
       val err = result.take(timeout)
       err.foreach(e => throw e)
     } finally {
+      thread.join(timeout)
       group.destroy()
     }
   }
+
+  /** Wait for a condition, with a simple back-off strategy.
+   *
+   *  It would be nicer if what we're waiting for gave us
+   *  a progress indicator: we don't care if something
+   *  takes a long time, so long as we can verify progress.
+   */
+  def waitForIt(terminated: => Boolean, progress: Progress = Fast, label: => String = "test"): Unit = {
+    val limit = 5
+    var n = 1
+    var (dormancy, factor) = progress match {
+      case Slow => (10000L, 5)
+      case Fast => (250L, 4)
+    }
+    var done = false
+    while (!done && !terminated && n < 5) {
+      try {
+        //println(s"Wait for test condition: $label")
+        Thread.sleep(dormancy)
+      } catch {
+        case _: InterruptedException => done = true
+      }
+      n += 1
+      dormancy *= factor
+    }
+  }
+
+  /** How frequently to check a termination condition. */
+  sealed trait Progress
+  final case object Slow extends Progress
+  final case object Fast extends Progress
 }
