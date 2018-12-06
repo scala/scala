@@ -167,7 +167,28 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
   /**
    * Copy the elements of this stepper into a Scala collection.
    */
-  def to[C1](factory: collection.Factory[A, C1]): C1 = factory.fromSpecific(iterator)
+  def to[C1](factory: collection.Factory[A, C1])(implicit info: AccumulatorFactoryInfo[A, C1]): C1 = {
+    // special casing accumulators avoids boxing
+    if (info.companion == IntAccumulator) {
+      val is = this.asInstanceOf[StepperOps[Int, _]]
+      val a = new IntAccumulator
+      while (is.hasStep) a addOne is.nextStep()
+      a.asInstanceOf[C1]
+    }
+    else if (info.companion == LongAccumulator) {
+      val is = this.asInstanceOf[StepperOps[Long, _]]
+      val a = new LongAccumulator
+      while (is.hasStep) a addOne is.nextStep()
+      a.asInstanceOf[C1]
+    }
+    else if (info.companion == DoubleAccumulator) {
+      val is = this.asInstanceOf[StepperOps[Double, _]]
+      val a = new DoubleAccumulator
+      while (is.hasStep) a addOne is.nextStep()
+      a.asInstanceOf[C1]
+    }
+    else factory.fromSpecific(iterator)
+  }
 }
 
 /** This trait indicates that a `Stepper` will implement `tryStep` in terms of `hasNext` and `nextStep`. */
