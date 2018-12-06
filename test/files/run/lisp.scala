@@ -303,17 +303,17 @@ object LispAny extends Lisp {
   def asBoolean(x: Data): Boolean = x != 0
 
   def normalize(x: Data): Data = x match {
-    case 'and :: x :: y :: Nil =>
-      normalize('if :: x :: y :: 0 :: Nil)
-    case 'or :: x :: y :: Nil =>
-      normalize('if :: x :: 1 :: y :: Nil)
-    case 'def :: (name :: args) :: body :: expr :: Nil =>
-      normalize('def :: name :: ('lambda :: args :: body :: Nil) :: expr :: Nil)
-    case 'cond :: ('else :: expr :: Nil) :: rest =>
+    case sym"and" :: x :: y :: Nil =>
+      normalize(sym"if" :: x :: y :: 0 :: Nil)
+    case sym"or" :: x :: y :: Nil =>
+      normalize(sym"if" :: x :: 1 :: y :: Nil)
+    case sym"def" :: (name :: args) :: body :: expr :: Nil =>
+      normalize(sym"def" :: name :: (sym"lambda" :: args :: body :: Nil) :: expr :: Nil)
+    case sym"cond" :: (sym"else" :: expr :: Nil) :: rest =>
         normalize(expr);
-    case 'cond :: (test :: expr :: Nil) :: rest =>
-	normalize('if :: test :: expr :: ('cond :: rest) :: Nil)
-    case 'cond :: 'else :: expr :: Nil =>
+    case sym"cond" :: (test :: expr :: Nil) :: rest =>
+	normalize(sym"if" :: test :: expr :: (sym"cond" :: rest) :: Nil)
+    case sym"cond" :: sym"else" :: expr :: Nil =>
       normalize(expr)
     case h :: t =>
       normalize(h) :: asList(normalize(t))
@@ -342,15 +342,15 @@ object LispAny extends Lisp {
   def eval1(x: Data, env: Environment): Data = x match {
     case Symbol(name) =>
       env lookup name
-    case 'def :: Symbol(name) :: y :: z :: Nil =>
+    case sym"def" :: Symbol(name) :: y :: z :: Nil =>
       eval(z, env.extendRec(name, (env1 => eval(y, env1))))
-    case 'val :: Symbol(name) :: y :: z :: Nil =>
+    case sym"val" :: Symbol(name) :: y :: z :: Nil =>
       eval(z, env.extend(name, eval(y, env)))
-    case 'lambda :: params :: y :: Nil =>
+    case sym"lambda" :: params :: y :: Nil =>
       mkLambda(params, y, env)
-    case 'if :: c :: y :: z :: Nil =>
+    case sym"if" :: c :: y :: z :: Nil =>
       if (asBoolean(eval(c, env))) eval(y, env) else eval(z, env)
-    case 'quote :: y :: Nil =>
+    case sym"quote" :: y :: Nil =>
       y
     case y :: z =>
       apply(eval(y, env), z map (x => eval(x, env)))

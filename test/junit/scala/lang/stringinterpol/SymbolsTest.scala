@@ -29,7 +29,6 @@ class SymbolsTest {
   @Test
   def symbolInterpolationTest: Unit = {
     val foo = "bar"
-    assertEquals('bar, sym"$foo")
     assertEquals("'bar", sym"$foo".toString)
   }
 

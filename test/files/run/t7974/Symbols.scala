@@ -1,6 +1,6 @@
 class Symbols {
-  def someSymbol1 = 'Symbolic1
-  def someSymbol2 = 'Symbolic2
-  def sameSymbol1 = 'Symbolic1
-  val someSymbol3 = 'Symbolic3
+  def someSymbol1 = sym"Symbolic1"
+  def someSymbol2 = sym"Symbolic2"
+  def sameSymbol1 = sym"Symbolic1"
+  val someSymbol3 = sym"Symbolic3"
 }

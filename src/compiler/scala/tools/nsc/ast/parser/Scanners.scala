@@ -562,7 +562,7 @@ trait Scanners extends ScannersCommon {
                     wholeLine.count(_ == '\'') > 1
                   case _ => false
                 }
-              if (token == SYMBOLLIT && offset == lastOffset) s"""$unclosed (or use " for string literal "$strVal")"""
+              if (token == IDENTIFIER && offset == lastOffset) s"""$unclosed (or use " for string literal "$strVal")"""
               else if (maybeMistakenQuote) s"""$unclosed (or use " not ' for string literal)"""
               else unclosed
             }
@@ -661,7 +661,7 @@ trait Scanners extends ScannersCommon {
 
     /** Can token end a statement? */
     def inLastOfStat(token: Token) = token match {
-      case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
+      case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
            TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
         true
@@ -1093,7 +1093,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Parse character literal if current character is followed by \',
-     *  or follow with given op and return a symbol literal token
+     *  or follow with given op and return an identifier token.
      */
     def charLitOr(op: () => Unit): Unit = {
       putChar(ch)
@@ -1104,7 +1104,7 @@ trait Scanners extends ScannersCommon {
         setStrVal()
       } else {
         op()
-        token = SYMBOLLIT
+        token = IDENTIFIER
         strVal = name.toString
       }
     }
@@ -1257,7 +1257,6 @@ trait Scanners extends ScannersCommon {
     case FLOATLIT => "float literal"
     case DOUBLELIT => "double literal"
     case STRINGLIT | STRINGPART | INTERPOLATIONID => "string literal"
-    case SYMBOLLIT => "symbol literal"
     case LPAREN => "'('"
     case RPAREN => "')'"
     case LBRACE => "'{'"

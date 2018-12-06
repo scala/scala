@@ -690,7 +690,7 @@ self =>
 
     def isLiteralToken(token: Token) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-           STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL => true
+           STRINGLIT | INTERPOLATIONID | TRUE | FALSE | NULL        => true
       case _                                                        => false
     }
     def isLiteral = isLiteralToken(in.token)
@@ -1302,7 +1302,6 @@ self =>
 
     /** {{{
      *  SimpleExpr    ::= literal
-     *                  | symbol
      *                  | null
      *  }}}
      */
@@ -1310,8 +1309,6 @@ self =>
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
       if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
-      else if (in.token == SYMBOLLIT)
-        Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       else finish(in.token match {
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt
@@ -2116,7 +2113,7 @@ self =>
             in.nextToken()
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-               STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
+               STRINGLIT | INTERPOLATIONID | TRUE | FALSE | NULL   =>
             literal(inPattern = true)
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))

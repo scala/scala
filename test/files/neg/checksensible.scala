@@ -51,7 +51,7 @@ class EqEqValTest {
   (scala.runtime.BoxedUnit.UNIT: java.io.Serializable) != () // shouldn't warn
 
   (1 != println)
-  (1 != 'sym)
+  (1 != sym"sym")
 }
 
 // 12 warnings

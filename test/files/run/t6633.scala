@@ -1,12 +1,12 @@
 object Test extends App {
   import collection.mutable.ListBuffer
 
-  def newLB = ListBuffer('a, 'b, 'c, 'd, 'e)
+  def newLB = ListBuffer(sym"a", sym"b", sym"c", sym"d", sym"e")
 
   val lb0 = newLB
 
   try {
-    lb0.insert(9, 'x)
+    lb0.insert(9, sym"x")
   } catch {
     case ex: IndexOutOfBoundsException => println(ex)
   }
@@ -14,7 +14,7 @@ object Test extends App {
   val lb1 = newLB
 
   try {
-    lb1.insert(9, 'x)
+    lb1.insert(9, sym"x")
   } catch {
     case ex: IndexOutOfBoundsException =>
   }

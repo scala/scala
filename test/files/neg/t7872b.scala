@@ -5,7 +5,7 @@ object coinv {
   up(List("hi"))
  
   // should not compile; `l' is unsound
-  def oops1 = down[({type l[-a] = List[a]})#l](List('whatever: Object)).head + "oops"
+  def oops1 = down[({type l[-a] = List[a]})#l](List(sym"whatever": Object)).head + "oops"
   // scala> oops1
   // java.lang.ClassCastException: scala.Symbol cannot be cast to java.lang.String
   //         at com.nocandysw.coinv$.oops1(coinv.scala:12)

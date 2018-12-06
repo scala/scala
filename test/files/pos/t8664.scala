@@ -1,4 +1,4 @@
 object Test extends App {
   Ordering[Symbol]
-  Seq('b, 'c, 'a).sorted
+  Seq(sym"b", sym"c", sym"a").sorted
 }

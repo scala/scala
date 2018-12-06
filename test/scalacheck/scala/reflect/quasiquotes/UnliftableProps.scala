@@ -73,8 +73,8 @@ object UnliftableProps extends QuasiquoteProperties("unliftable") {
   }
 
   property("unlift scala.symbol") = test {
-    val q"${s: scala.Symbol}" = q"'foo"
-    assert(s.isInstanceOf[scala.Symbol] && s == 'foo)
+    val q"${s: scala.Symbol}" = q"""sym"foo""""
+    assert(s.isInstanceOf[scala.Symbol] && s == sym"foo")
   }
 
   implicit def unliftList[T: Unliftable]: Unliftable[List[T]] = Unliftable {

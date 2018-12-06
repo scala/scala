@@ -100,9 +100,9 @@ object Test extends App {
   deprNam5(deprNam5Arg = null)
 
   // deprecated deprecatatedName constructors
-  def deprNam6(@deprecatedName('foo) deprNam6Arg: String) = 0
+  def deprNam6(@deprecatedName("foo") deprNam6Arg: String) = 0
   deprNam6(foo = null)
-  def deprNam7(@deprecatedName('bar, "2.12.0") deprNam7Arg: String) = 0
+  def deprNam7(@deprecatedName("bar", "2.12.0") deprNam7Arg: String) = 0
   deprNam7(bar = null)
 
   // t3818

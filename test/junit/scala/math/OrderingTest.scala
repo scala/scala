@@ -205,7 +205,7 @@ class OrderingTest {
   /* Test for scala/bug#8664 */
   @Test
   def testSymbolOrdering(): Unit = {
-    assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
+    assertEquals(Seq(sym"b", sym"c", sym"a").sorted, Seq(sym"a", sym"b", sym"c"))
   }
 
   @Test

@@ -1,5 +1,5 @@
 
-scala> def method : String = { implicit def f(s: Symbol) = "" ; 'symbol }
+scala> def method : String = { implicit def f(s: Symbol) = "" ; sym"symbol" }
 warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 method: String
 

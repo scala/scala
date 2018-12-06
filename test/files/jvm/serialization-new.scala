@@ -150,7 +150,7 @@ object Test1_scala {
     check(r1, _r1)
 */
     // Symbol
-    val s1 = 'hello
+    val s1 = sym"hello"
     val _s1: Symbol = read(write(s1))
     println("s1 = " + s1)
     println("_s1 = " + _s1)
@@ -262,7 +262,7 @@ object Test2_immutable {
     check(ts1, _ts1)
 
     // Vector
-    val v1 = Vector('a, 'b, 'c)
+    val v1 = Vector(sym"a", sym"b", sym"c")
     val _v1: Vector[Symbol] = read(write(v1))
     check(v1, _v1)
   }
