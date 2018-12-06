@@ -29,6 +29,12 @@ object Option {
    */
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
+  def of[A](x: A): Option[A] = if (x == null) None else Some(x)
+
+  def none[A]: Option[A] = None
+
+  def some[A](x: A): Option[A] = Some(x)
+
   /** An Option factory which returns `None` in a manner consistent with
    *  the collections hierarchy.
    */
@@ -402,9 +408,14 @@ sealed abstract class Option[+A] extends Product with Serializable {
  *  @since   1.0
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
-final case class Some[+A](value: A) extends Option[A] {
+final case class Some[+A] private[scala] (value: A) extends Option[A] {
   def isEmpty = false
   def get = value
+}
+
+object Some{
+  @deprecated("Use Option.some instead.")
+  def apply[A](value: A): Some[A] = new Some(value)
 }
 
 
