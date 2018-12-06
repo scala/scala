@@ -18,7 +18,7 @@ import scala.language.higherKinds
   * Trait that overrides operations on sequences in order
   * to take advantage of strict builders.
   */
-trait StrictOptimizedSeqOps [+A, +CC[_], +C]
+trait StrictOptimizedSeqOps [+A, +CC[X] <: Seq[X], +C]
   extends Any
     with StrictOptimizedIterableOps[A, CC, C]
     with SeqOps[A, CC, C] {

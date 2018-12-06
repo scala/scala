@@ -19,7 +19,7 @@ import scala.language.higherKinds
 /**
   * Trait that overrides operations to take advantage of strict builders.
   */
-trait StrictOptimizedSeqOps[+A, +CC[_], +C]
+trait StrictOptimizedSeqOps[+A, +CC[X] <: Seq[X], +C]
   extends SeqOps[A, CC, C]
     with collection.StrictOptimizedSeqOps[A, CC, C] {
 

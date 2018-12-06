@@ -24,7 +24,7 @@ import scala.runtime.Statics
   * @tparam CC Collection type constructor
   * @tparam C  Collection type
   */
-trait StrictOptimizedIterableOps[+A, +CC[_], +C]
+trait StrictOptimizedIterableOps[+A, +CC[X] <: IterableOnce[X], +C]
   extends Any
     with IterableOps[A, CC, C] {
 

@@ -156,7 +156,7 @@ object SortedSetOps {
     *
     * @define coll sorted collection
     */
-  class WithFilter[+A, +IterableCC[_], +CC[X] <: SortedSet[X]](
+  class WithFilter[+A, +IterableCC[X] <: Iterable[X], +CC[X] <: SortedSet[X]](
     self: SortedSetOps[A, CC, _] with IterableOps[A, IterableCC, _],
     p: A => Boolean
   ) extends IterableOps.WithFilter[A, IterableCC](self, p) {

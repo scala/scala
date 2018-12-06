@@ -32,11 +32,11 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
 object SeqView {
 
   /** A `SeqOps` whose collection type and collection type constructor are unknown */
-  type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
+  type SomeSeqOps[+A] = SeqOps[A, Iterable, _]
 
   /** A view that doesn’t apply any transformation to an underlying sequence */
   @SerialVersionUID(3L)
-  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends AbstractSeqView[A] {
+  class Id[+A](underlying: SeqOps[A, Iterable, _]) extends AbstractSeqView[A] {
     def apply(idx: Int): A = underlying.apply(idx)
     def length: Int = underlying.length
     def iterator: Iterator[A] = underlying.iterator

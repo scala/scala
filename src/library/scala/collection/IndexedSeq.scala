@@ -27,7 +27,7 @@ trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 
 /** Base trait for indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
+trait IndexedSeqOps[+A, +CC[X] <: Iterable[X], +C] extends Any with SeqOps[A, CC, C] { self => // not CC[X] <: IndexedSeq[X] because IndexedSeqOps is also used by IndexedSeqView
 
   def iterator: Iterator[A] = view.iterator
 

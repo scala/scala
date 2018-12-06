@@ -261,7 +261,7 @@ object IterableOnce {
   * @define coll collection
   *
   */
-trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
+trait IterableOnceOps[+A, +CC[X] <: IterableOnce[X], +C] extends Any { this: IterableOnce[A] =>
 
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 

@@ -35,7 +35,7 @@ object Seq extends SeqFactory.Delegate[Seq](ArrayBuffer)
   * @define coll mutable sequence
   * @define Coll `mutable.Seq`
   */
-trait SeqOps[A, +CC[_], +C <: AnyRef]
+trait SeqOps[A, +CC[X] <: Seq[X], +C <: AnyRef]
   extends collection.SeqOps[A, CC, C]
     with Cloneable[C] {
 

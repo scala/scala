@@ -29,7 +29,7 @@ trait Seq[+A] extends Iterable[A]
   * @define coll immutable sequence
   * @define Coll `immutable.Seq`
   */
-trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C]
+trait SeqOps[+A, +CC[X] <: Seq[X], +C] extends Any with collection.SeqOps[A, CC, C]
 
 /**
   * $factoryInfo
@@ -107,7 +107,7 @@ object IndexedSeqDefaults {
 object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
 
 /** Base trait for immutable indexed Seq operations */
-trait IndexedSeqOps[+A, +CC[_], +C]
+trait IndexedSeqOps[+A, +CC[X] <: IndexedSeq[X], +C]
   extends SeqOps[A, CC, C]
     with collection.IndexedSeqOps[A, CC, C] {
 

@@ -313,7 +313,7 @@ private[collection] trait Wrappers {
     extends mutable.AbstractMap[K, V]
       with JMapWrapperLike[K, V, mutable.Map, mutable.Map[K, V]]
 
-  trait JMapWrapperLike[K, V, +CC[X, Y] <: mutable.MapOps[X, Y, CC, _], +C <: mutable.MapOps[K, V, CC, C]]
+  trait JMapWrapperLike[K, V, +CC[X, Y] <: mutable.Iterable[(X, Y)] with mutable.MapOps[X, Y, CC, _], +C <: mutable.MapOps[K, V, CC, C]]
     extends mutable.MapOps[K, V, CC, C] {
 
     def underlying: ju.Map[K, V]

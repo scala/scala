@@ -204,7 +204,7 @@ object SortedMapOps {
     *
     * @define coll sorted map collection
     */
-  class WithFilter[K, +V, +IterableCC[_], +MapCC[X, Y] <: Map[X, Y], +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]](
+  class WithFilter[K, +V, +IterableCC[X] <: Iterable[X], +MapCC[X, Y] <: Map[X, Y], +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]](
     self: SortedMapOps[K, V, CC, _] with MapOps[K, V, MapCC, _] with IterableOps[(K, V), IterableCC, _],
     p: ((K, V)) => Boolean
   ) extends MapOps.WithFilter[K, V, IterableCC, MapCC](self, p) {

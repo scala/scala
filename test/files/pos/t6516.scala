@@ -4,7 +4,7 @@ import scala.collection.IterableOps
 
 // This one compiles
 object Test {
-  type Alias[T, CC[_]] = Context { type PrefixType = IterableOps[T, CC, CC[T]] }
+  type Alias[T, CC[X] <: IterableOnce[X]] = Context { type PrefixType = IterableOps[T, CC, CC[T]] }
   def f(): Nothing = macro f_impl
   def f_impl(c: Alias[Int, List])() = ???
 }
@@ -12,7 +12,7 @@ object Test {
 // This one doesn't
 object Test2 {
   type Ctx = scala.reflect.macros.blackbox.Context
-  type Alias[T, CC[_]] = Ctx { type PrefixType = IterableOps[T, CC, CC[T]] }
+  type Alias[T, CC[X] <: IterableOnce[X]] = Ctx { type PrefixType = IterableOps[T, CC, CC[T]] }
 
   def f(): Nothing = macro f_impl
   def f_impl(c: Alias[Int, List])() = ???

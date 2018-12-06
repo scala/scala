@@ -43,7 +43,7 @@ trait MapView[K, +V]
 object MapView {
 
   /** An `IterableOps` whose collection type and collection type constructor are unknown */
-  type SomeIterableConstr[X, Y] = IterableOps[_, AnyConstr, _]
+  type SomeIterableConstr[X, Y] = Iterable[(X, Y)]
   /** A `MapOps` whose collection type and collection type constructor are (mostly) unknown */
   type SomeMapOps[K, +V] = MapOps[K, V, SomeIterableConstr, _]
 

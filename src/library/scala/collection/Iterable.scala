@@ -148,7 +148,8 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   *  The order in which operations are performed on elements is unspecified
   *  and may be nondeterministic.
   */
-trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
+trait IterableOps[+A, +CC[X] <: IterableOnce[X], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
+  // We want CC[X] <: Iterable[X] but we also need this constraint in MapOps and we can't have it erase to the same type
 
   /**
     * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
@@ -841,7 +842,7 @@ object IterableOps {
     * These operations are implemented in terms of
     * [[scala.collection.IterableOps.sizeCompare(Int) `sizeCompare(Int)`]].
     */
-  final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
+  final class SizeCompareOps private[collection](val it: IterableOps[_, IterableOnce, _]) extends AnyVal {
     /** Tests if the size of the collection is less than some value. */
     @inline def <(size: Int): Boolean = it.sizeCompare(size) < 0
     /** Tests if the size of the collection is less than or equal to some value. */
@@ -864,7 +865,7 @@ object IterableOps {
     *
     * @define coll collection
     */
-  class WithFilter[+A, +CC[_]](
+  class WithFilter[+A, +CC[X] <: IterableOnce[X]](
     self: IterableOps[A, CC, _],
     p: A => Boolean
   ) extends collection.WithFilter[A, CC] {

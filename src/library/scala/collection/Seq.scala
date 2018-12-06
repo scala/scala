@@ -80,7 +80,7 @@ object Seq extends SeqFactory.Delegate[Seq](immutable.Seq)
   * @define coll sequence
   * @define Coll `Seq`
   */
-trait SeqOps[+A, +CC[_], +C] extends Any
+trait SeqOps[+A, +CC[X] <: Iterable[X], +C] extends Any // not CC[X] <: Seq[X] because SeqOps is also used by SeqView
   with IterableOps[A, CC, C] { self =>
 
   override def view: SeqView[A] = new SeqView.Id[A](this)
@@ -928,7 +928,7 @@ object SeqOps {
     * These operations are implemented in terms of
     * [[scala.collection.SeqOps.lengthCompare(Int) `lengthCompare(Int)`]].
     */
-  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, AnyConstr, _]) extends AnyVal {
+  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, Seq, _]) extends AnyVal {
     /** Tests if the length of the collection is less than some value. */
     @inline def <(len: Int): Boolean = seq.lengthCompare(len) < 0
     /** Tests if the length of the collection is less than or equal to some value. */

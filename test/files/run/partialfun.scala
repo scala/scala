@@ -4,14 +4,14 @@ import collection.generic._
 import scala.language.higherKinds
 
 object Test {
-  def collectIDA[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
+  def collectIDA[A, B, CC[X] <: IterableOnce[X], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     val repr: Repr = _this.asInstanceOf[Repr]
     val b = bf.newBuilder(repr)
     _this foreach { x => if (pf isDefinedAt x) b += pf(x) }
     b.result
   }
 
-  def collectRW[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
+  def collectRW[A, B, CC[X] <: IterableOnce[X], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     val repr: Repr = _this.asInstanceOf[Repr]
     val b = bf.newBuilder(repr)
     val f = pf runWith { b += _ }
