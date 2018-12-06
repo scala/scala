@@ -15,7 +15,7 @@ package scala.collection.convert
 import java.util.stream._
 
 import scala.collection.AnyConstr
-import scala.collection.convert.impl.{StepperShape, StreamShape, StreamUnboxer}
+import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
 
 trait StreamConverters {
   // collections
@@ -89,6 +89,7 @@ trait StreamConverters {
      * is lazy, the conversion is lazy as well.
      */
     def toScala[C1](factory: collection.Factory[A, C1])(implicit info: AccumulatorFactoryInfo[A, C1]): C1 = {
+
       def anyAcc = stream.collect(AnyAccumulator.supplier[A], AnyAccumulator.adder[A], AnyAccumulator.merger[A])
       if (info.companion == AnyAccumulator) anyAcc.asInstanceOf[C1]
       else if (info.companion == IntAccumulator) stream.asInstanceOf[Stream[Int]].collect(IntAccumulator.supplier, IntAccumulator.boxedAdder, IntAccumulator.merger).asInstanceOf[C1]

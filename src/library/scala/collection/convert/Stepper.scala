@@ -14,6 +14,8 @@ package scala.collection.convert
 
 import java.util.Spliterator
 
+import scala.collection.convert.impl.AccumulatorFactoryInfo
+
 /**
  * A Stepper is a specialized collection that can step through its contents once.  It provides the
  * same test-and-get methods as `Iterator`, named `hasStep` and `nextStep` so they can coexist with

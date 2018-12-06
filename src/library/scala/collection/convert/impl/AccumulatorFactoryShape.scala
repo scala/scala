@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.collection.convert.impl
+
+import scala.collection.convert._
 
 sealed trait AccumulatorFactoryShape[A, C] {
   def factory: collection.Factory[A, C]

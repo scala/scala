@@ -12,6 +12,7 @@
 
 package scala.collection.convert
 
+import scala.collection.convert.impl.AccumulatorFactoryShape
 import scala.collection.mutable
 
 
