@@ -221,8 +221,17 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   /** A `BiConsumer` that merges `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
   def merger = new java.util.function.BiConsumer[IntAccumulator, IntAccumulator]{ def accept(a1: IntAccumulator, a2: IntAccumulator): Unit = { a1 drain a2 } }
 
+  private def fromArray(a: Array[Int]): IntAccumulator = {
+    val r = new IntAccumulator
+    var i = 0
+    while (i < a.length) { r addOne a(i); i += 1 }
+    r
+  }
+
   override def fromSpecific(it: IterableOnce[Int]): IntAccumulator = it match {
     case acc: IntAccumulator => acc
+    case as: collection.immutable.ArraySeq.ofInt => fromArray(as.unsafeArray)
+    case as: collection.mutable.ArraySeq.ofInt => fromArray(as.array) // this case ensures Array(1).to(Accumulator) doesn't box
     case _ => (new IntAccumulator).addAll(it)
   }
 

@@ -217,8 +217,17 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   /** A `BiConsumer` that merges `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
   def merger = new java.util.function.BiConsumer[DoubleAccumulator, DoubleAccumulator]{ def accept(a1: DoubleAccumulator, a2: DoubleAccumulator): Unit = { a1 drain a2 } }
 
+  private def fromArray(a: Array[Double]): DoubleAccumulator = {
+    val r = new DoubleAccumulator
+    var i = 0
+    while (i < a.length) { r addOne a(i); i += 1 }
+    r
+  }
+
   override def fromSpecific(it: IterableOnce[Double]): DoubleAccumulator = it match {
     case acc: DoubleAccumulator => acc
+    case as: collection.immutable.ArraySeq.ofDouble => fromArray(as.unsafeArray)
+    case as: collection.mutable.ArraySeq.ofDouble => fromArray(as.array) // this case ensures Array(1).to(Accumulator) doesn't box
     case _ => (new DoubleAccumulator).addAll(it)
   }
 

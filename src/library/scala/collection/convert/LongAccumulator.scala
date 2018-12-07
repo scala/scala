@@ -218,8 +218,17 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   /** A `BiConsumer` that merges `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
   def merger = new java.util.function.BiConsumer[LongAccumulator, LongAccumulator]{ def accept(a1: LongAccumulator, a2: LongAccumulator): Unit = { a1 drain a2 } }
 
+  private def fromArray(a: Array[Long]): LongAccumulator = {
+    val r = new LongAccumulator
+    var i = 0
+    while (i < a.length) { r addOne a(i); i += 1 }
+    r
+  }
+
   override def fromSpecific(it: IterableOnce[Long]): LongAccumulator = it match {
     case acc: LongAccumulator => acc
+    case as: collection.immutable.ArraySeq.ofLong => fromArray(as.unsafeArray)
+    case as: collection.mutable.ArraySeq.ofLong => fromArray(as.array) // this case ensures Array(1).to(Accumulator) doesn't box
     case _ => (new LongAccumulator).addAll(it)
   }
 
