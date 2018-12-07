@@ -827,7 +827,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     (it ++ Iterator.single(Iterable.empty)).map(fromSpecific)
   }
 
-  @deprecated("Use xs ++ ys instead of ys ++: xs for xs of type Iterable", "2.13.0")
+  @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
   def ++:[B >: A](that: IterableOnce[B]): IterableCC[B] =
     (iterableFactory.from(that).asInstanceOf[Iterable[B]] ++ coll.asInstanceOf[Iterable[B]]).asInstanceOf[IterableCC[B]]
     // These casts are needed because C and CC do not have the proper constraints.

@@ -314,6 +314,19 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     lazy val keysSet = keys.toSet
     fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
+
+  @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
+  def ++: [V1 >: V](that: IterableOnce[(K,V1)]): CC[K,V1] = {
+    val thatIterable: Iterable[(K, V1)] = that match {
+      case that: Iterable[(K, V1)] => that
+      case that => View.from(that)
+    }
+    mapFactory.from(new View.Concat(toIterable, thatIterable))
+  }
+
+  // explicit override for correct disambiguation with the new overload above
+  @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
+  override def ++:[B >: (K, V)](that: IterableOnce[B]): IterableCC[B] = super.++:[B](that)
 }
 
 object MapOps {
