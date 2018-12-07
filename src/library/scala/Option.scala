@@ -412,7 +412,7 @@ final case class Some[+A] private[scala] (value: A) extends Option[A] {
 }
 
 object Some{
-  @deprecated("Use Option.some instead.")
+  @deprecated("Create Some(...) directly is deprecated, use Option.apply(...) instead.")
   def apply[A](value: A): Some[A] = new Some(value)
 }
 
