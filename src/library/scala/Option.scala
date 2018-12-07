@@ -27,10 +27,9 @@ object Option {
    *  @param  x the value
    *  @return   Some(value) if value != null, None if value == null
    */
-  @deprecated("Use Option.of instead.")
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
-  def of[A](x: A): Option[A] = if (x == null) None else Some(x)
+  def of[A](x: A): Option[A] = apply(x)
 
   def none[A]: Option[A] = None
 
