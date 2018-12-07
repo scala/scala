@@ -27,9 +27,9 @@ object Option {
    *  @param  x the value
    *  @return   Some(value) if value != null, None if value == null
    */
-  def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
+  def apply[A](x: A): Option[A] = of(x)
 
-  def of[A](x: A): Option[A] = apply(x)
+  def of[A](x: A): Option[A] = if (x == null) None else Some(x)
 
   def none[A]: Option[A] = None
 
