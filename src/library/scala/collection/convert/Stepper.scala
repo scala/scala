@@ -15,6 +15,7 @@ package scala.collection.convert
 import java.util.Spliterator
 
 import scala.collection.convert.impl.AccumulatorFactoryInfo
+import scala.reflect.ClassTag
 
 /**
  * A Stepper is a specialized collection that can step through its contents once.  It provides the
@@ -203,6 +204,15 @@ trait AnyStepper[A] extends Stepper[A] with java.util.Iterator[A] with Spliterat
   def tryStep(f: A => Unit): Boolean = if (hasNext) { f(next()); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[A] = this
+  def toArray[B >: A : ClassTag] = {
+    if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
+    else if (knownSize > 0) {
+      val a = new Array[B](knownSize.toInt)
+      var i = 0
+      while (hasNext) { a(i) = next(); i += 1 }
+      a
+    } else collection.mutable.ArrayBuffer.from[B](iterator).toArray
+  }
 }
 
 private[convert] object AnyStepper {
@@ -249,6 +259,15 @@ trait DoubleStepper extends Stepper[Double] with java.util.PrimitiveIterator.OfD
   def tryStep(f: Double => Unit): Boolean = if (hasNext) { f(nextDouble); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Double] = this.asInstanceOf[Spliterator[Double]]  // Scala and Java disagree about whether it's java.lang.Double or double
+  def toArray: Array[Double] = {
+    if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
+    else if (knownSize > 0) {
+      val a = new Array[Double](knownSize.toInt)
+      var i = 0
+      while (hasStep) { a(i) = nextStep(); i += 1 }
+      a
+    } else to(DoubleAccumulator).toArray // doesn't box
+  }
 }
 
 /** An `IntStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Int` values. */
@@ -269,6 +288,15 @@ trait IntStepper extends Stepper[Int] with java.util.PrimitiveIterator.OfInt wit
   def tryStep(f: Int => Unit): Boolean = if (hasNext) { f(nextInt); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Int] = this.asInstanceOf[Spliterator[Int]]  // Scala and Java disagree about whether it's java.lang.Integer or int
+  def toArray: Array[Int] = {
+    if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
+    else if (knownSize > 0) {
+      val a = new Array[Int](knownSize.toInt)
+      var i = 0
+      while (hasStep) { a(i) = nextStep(); i += 1 }
+      a
+    } else to(IntAccumulator).toArray // doesn't box
+  }
 }
 
 /** A `LongStepper` combines the functionality of a Java `PrimitiveIterator`, a Java `Spliterator`, and a `Stepper`, all specialized for `Long` values. */
@@ -289,6 +317,15 @@ trait LongStepper extends Stepper[Long] with java.util.PrimitiveIterator.OfLong 
   def tryStep(f: Long => Unit): Boolean = if (hasNext) { f(nextLong); true } else false
   def trySplit() = substep()
   override def spliterator: Spliterator[Long] = this.asInstanceOf[Spliterator[Long]]  // Scala and Java disagree about whether it's java.lang.Long or long
+  def toArray: Array[Long] = {
+    if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
+    else if (knownSize > 0) {
+      val a = new Array[Long](knownSize.toInt)
+      var i = 0
+      while (hasStep) { a(i) = nextStep(); i += 1 }
+      a
+    } else to(LongAccumulator).toArray // doesn't box
+  }
 }
 
 object Stepper {

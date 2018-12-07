@@ -19,6 +19,26 @@ import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
+  @Test
+  def toArrayTests(): Unit = {
+    import collection.JavaConverters._
+    val ia = Array(1,2,3)
+    val ba = Array[Byte](1,2,3)
+
+    def f(a: Any) = ()
+
+    val ias = ia.stepper
+    (ias: IntStepper).toArray : Array[Int]
+    val bas = ba.stepper
+    (bas: IntStepper).toArray : Array[Int]
+
+    val iaa = ia.to(Accumulator)
+    (iaa: IntAccumulator).toArray : Array[Int]
+    val baa = ba.to(Accumulator)
+    (baa: AnyAccumulator[Byte]).toArray : Array[Byte]
+    val baai = ba.stepper.to(Accumulator)
+    (baai: IntAccumulator).toArray : Array[Int]
+  }
 
   @Test
   def convertStreamToScala(): Unit = {
