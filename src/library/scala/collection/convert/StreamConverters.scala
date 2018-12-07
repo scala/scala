@@ -12,6 +12,7 @@
 
 package scala.collection.convert
 
+import java.util.Spliterator
 import java.util.stream._
 
 import scala.collection.AnyConstr
@@ -181,5 +182,21 @@ trait StreamConverters {
       else if (stream.isParallel) intAcc.to(factory)
       else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator.asInstanceOf[java.util.Iterator[Double]]))
     }
+  }
+
+  implicit class SpliteratorHasStepper[A](s: Spliterator[A]) {
+    def stepper: Stepper[A] = Stepper.ofSpliterator(s)
+  }
+
+  implicit class DoubleSpliteratorHasStepper(s: Spliterator.OfDouble) {
+    def stepper: DoubleStepper = Stepper.ofSpliterator(s)
+  }
+
+  implicit class IntSpliteratorHasStepper(s: Spliterator.OfInt) {
+    def stepper: IntStepper = Stepper.ofSpliterator(s)
+  }
+
+  implicit class LongSpliteratorHasStepper(s: Spliterator.OfLong) {
+    def stepper: LongStepper = Stepper.ofSpliterator(s)
   }
 }

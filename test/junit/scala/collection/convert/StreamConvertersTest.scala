@@ -20,6 +20,21 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
   @Test
+  def spliteratorHasStepper(): Unit = {
+    import collection.JavaConverters._
+
+    val ia = Array(1,2,3)
+    val sa = Array("")
+
+    val ias = ia.seqStream.spliterator.stepper
+    (ias: IntStepper)
+    val iasb = ias.seqStream.boxed.spliterator.stepper
+    (iasb: Stepper[Integer])
+    val sas = sa.seqStream.spliterator.stepper
+    (sas: Stepper[String])
+  }
+
+  @Test
   def toArrayTests(): Unit = {
     import collection.JavaConverters._
     val ia = Array(1,2,3)
