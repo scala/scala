@@ -246,3 +246,123 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
 
   def newBuilder[A]: mutable.Builder[A, AnyAccumulator[A]] = new AnyAccumulator[A]
 }
+
+private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] {
+  import java.util.Spliterator._
+
+  private var h = 0
+  private var i = 0
+  private var a = if (acc.hIndex > 0) acc.history(0) else acc.current
+  private var n = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
+  private var N = acc.totalSize
+
+  private def duplicateSelf(limit: Long): AnyAccumulatorStepper[A] = {
+    val ans = new AnyAccumulatorStepper(acc)
+    ans.h = h
+    ans.i = i
+    ans.a = a
+    ans.n = n
+    ans.N = limit
+    ans
+  }
+
+  private def loadMore(): Unit = {
+    h += 1
+    if (h < acc.hIndex) { a = acc.history(h); n = acc.cumulative(h) - acc.cumulative(h-1) }
+    else { a = acc.current; n = acc.index }
+    i = 0
+  }
+
+  def characteristics = ORDERED | SIZED | SUBSIZED
+
+  def estimateSize = N
+
+  def hasNext = N > 0
+
+  def next(): A =
+    if (N <= 0) throw new NoSuchElementException("Next in empty Stepper")
+    else {
+      if (i >= n) loadMore()
+      val ans = a(i).asInstanceOf[A]
+      i += 1
+      N -= 1
+      ans
+    }
+
+  // Overidden for efficiency
+  override def tryStep(f: A => Unit): Boolean =
+    if (N <= 0) false
+    else {
+      if (i >= n) loadMore()
+      f(a(i).asInstanceOf[A])
+      i += 1
+      N -= 1
+      true
+    }
+
+  // Overidden for efficiency
+  override def tryAdvance(f: java.util.function.Consumer[_ >: A]): Boolean =
+    if (N <= 0) false
+    else {
+      if (i >= n) loadMore()
+      f.accept(a(i).asInstanceOf[A])
+      i += 1
+      N -= 1
+      true
+    }
+
+  // Overridden for efficiency
+  override def foreach(f: A => Unit): Unit = {
+    while (N > 0) {
+      if (i >= n) loadMore()
+      val i0 = i
+      if ((n-i) > N) n = i + N.toInt
+      while (i < n) {
+        f(a(i).asInstanceOf[A])
+        i += 1
+      }
+      N -= (n - i0)
+    }
+  }
+
+  // Overridden for efficiency
+  override def forEachRemaining(f: java.util.function.Consumer[_ >: A]): Unit = {
+    while (N > 0) {
+      if (i >= n) loadMore()
+      val i0 = i
+      if ((n-i) > N) n = i + N.toInt
+      while (i < n) {
+        f.accept(a(i).asInstanceOf[A])
+        i += 1
+      }
+      N -= (n - i0)
+    }
+  }
+
+  def substep(): AnyStepper[A] =
+    if (N <= 1) null
+    else {
+      val half = N >> 1
+      val M = (if (h <= 0) 0L else acc.cumulative(h-1)) + i
+      val R = M + half
+      val ans = duplicateSelf(half)
+      if (h < acc.hIndex) {
+        val w = acc.seekSlot(R)
+        h = (w >>> 32).toInt
+        if (h < acc.hIndex) {
+          a = acc.history(h)
+          n = acc.cumulative(h) - (if (h > 0) acc.cumulative(h-1) else 0)
+        }
+        else {
+          a = acc.current
+          n = acc.index
+        }
+        i = (w & 0xFFFFFFFFL).toInt
+      }
+      else i += half.toInt
+      N -= half
+      ans
+    }
+
+  override def toString = s"$h $i ${a.mkString("{",",","}")} $n $N"
+}
