@@ -355,15 +355,15 @@ object Test extends App {
   (new DBLAH())
 
   // deprecated names
-  def deprNam1(@deprecatedName('x) a: Int, @deprecatedName('y) b: Int) = a + b
+  def deprNam1(@deprecatedName(Symbol("x")) a: Int, @deprecatedName(Symbol("y")) b: Int) = a + b
   deprNam1(y = 10, a = 1)
   deprNam1(b = 2, x = 10)
 
   object deprNam2 {
-    def f(@deprecatedName('s) x: String) = 1
+    def f(@deprecatedName(Symbol("s")) x: String) = 1
     def f(s: Object) = 2
 
-    def g(@deprecatedName('x) s: Object) = 3
+    def g(@deprecatedName(Symbol("x")) s: Object) = 3
     def g(s: String) = 4
   }
   println(deprNam2.f(s = "dlf"))

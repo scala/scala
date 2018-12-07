@@ -4,5 +4,5 @@ object coinv {
  
   up(List("hi"))
   // [error] type A is covariant, but type _ is declared contravariant
-  down(List('whatever: Object))
+  down(List(sym"whatever": Object))
 }

@@ -424,7 +424,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  */
-final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
+final case class Left[+A, +B](@deprecatedName(Symbol("a"), "2.12.0") value: A) extends Either[A, B] {
   def isLeft  = true
   def isRight = false
 
@@ -435,7 +435,7 @@ final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Ei
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  */
-final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
+final case class Right[+A, +B](@deprecatedName(Symbol("b"), "2.12.0") value: B) extends Either[A, B] {
   def isLeft  = false
   def isRight = true
 
@@ -530,7 +530,7 @@ object Either {
      *  Right(12).left.forall(_ > 10) // true
      *  }}}
      */
-    def forall(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def forall(@deprecatedName(Symbol("f")) p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => true
     }
@@ -544,7 +544,7 @@ object Either {
      *  Right(12).left.exists(_ > 10) // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def exists(@deprecatedName(Symbol("f")) p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => false
     }
@@ -688,7 +688,7 @@ object Either {
      *  Left(12).right.exists(_ > 10)   // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: B => Boolean): Boolean = e match {
+    def exists(@deprecatedName(Symbol("f")) p: B => Boolean): Boolean = e match {
       case Right(b) => p(b)
       case _        => false
     }

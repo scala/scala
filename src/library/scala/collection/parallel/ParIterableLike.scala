@@ -525,7 +525,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for all elements, false otherwise
    */
-  def forall(@deprecatedName('pred) p: T => Boolean): Boolean = {
+  def forall(@deprecatedName(Symbol("pred")) p: T => Boolean): Boolean = {
     tasksupport.executeAndWaitResult(new Forall(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
@@ -536,7 +536,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @param p       a predicate used to test elements
    *  @return        true if `p` holds for some element, false otherwise
    */
-  def exists(@deprecatedName('pred) p: T => Boolean): Boolean = {
+  def exists(@deprecatedName(Symbol("pred")) p: T => Boolean): Boolean = {
     tasksupport.executeAndWaitResult(new Exists(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 
@@ -551,7 +551,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @param p        predicate used to test the elements
    *  @return         an option value with the element if such an element exists, or `None` otherwise
    */
-  def find(@deprecatedName('pred) p: T => Boolean): Option[T] = {
+  def find(@deprecatedName(Symbol("pred")) p: T => Boolean): Option[T] = {
     tasksupport.executeAndWaitResult(new Find(p, splitter assign new DefaultSignalling with VolatileAbort))
   }
 

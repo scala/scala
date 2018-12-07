@@ -81,7 +81,7 @@ trait ExecutionContext {
    *
    *  @param cause  the cause of the failure
    */
-  def reportFailure(@deprecatedName('t) cause: Throwable): Unit
+  def reportFailure(@deprecatedName(Symbol("t")) cause: Throwable): Unit
 
   /** Prepares for the execution of a task. Returns the prepared
      *  execution context. The recommended implementation of

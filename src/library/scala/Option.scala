@@ -347,7 +347,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
  *  @since   1.0
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
-final case class Some[+A](@deprecatedName('x, "2.12.0") value: A) extends Option[A] {
+final case class Some[+A](@deprecatedName(Symbol("x"), "2.12.0") value: A) extends Option[A] {
   def isEmpty = false
   def get = value
 

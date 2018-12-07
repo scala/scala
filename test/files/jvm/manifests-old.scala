@@ -12,14 +12,14 @@ object Test1 extends TestUtil {
   print('a')
   print(1)
   print("abc")
-  print('abc)
+  print(sym"abc")
   println()
 
   print(List(()))
   print(List(true))
   print(List(1))
   print(List("abc"))
-  print(List('abc))
+  print(List(sym"abc"))
   println()
 
   //print(Array(()))  //Illegal class name "[V" in class file Test$
@@ -27,14 +27,14 @@ object Test1 extends TestUtil {
   print(Array('a'))
   print(Array(1))
   print(Array("abc"))
-  print(Array('abc))
+  print(Array(sym"abc"))
   println()
 
   print(((), ()))
   print((true, false))
   print((1, 2))
   print(("abc", "xyz"))
-  print(('abc, 'xyz))
+  print((sym"abc", sym"xyz"))
   println()
 
   // Disabled: should these work? changing the inference for objects from
@@ -60,12 +60,12 @@ object Test2 {
   println("true="+load[Boolean](dump(true)))
   println("a="+load[Char](dump('a')))
   println("1="+load[Int](dump(1)))
-  println("'abc="+load[Symbol](dump('abc)))
+  println("'abc="+load[Symbol](dump(sym"abc")))
   println()
 
   println("List(())="+load[List[Unit]](dump(List(()))))
   println("List(true)="+load[List[Boolean]](dump(List(true))))
-  println("List('abc)="+load[List[Symbol]](dump(List('abc))))
+  println("List('abc)="+load[List[Symbol]](dump(List(sym"abc"))))
   println()
 
   def loadArray[T](x: Array[Byte])(implicit m: reflect.Manifest[Array[T]]) =

@@ -1,40 +1,64 @@
 
   // access flags 0x1
   public someSymbol1()Lscala/Symbol;
-    INVOKEDYNAMIC apply()Lscala/Symbol; [
-      // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
-      // arguments:
-      "Symbolic1"
-    ]
+    NEW scala/StringContext
+    DUP
+    GETSTATIC scala/Predef$.MODULE$ : Lscala/Predef$;
+    ICONST_1
+    ANEWARRAY java/lang/String
+    DUP
+    ICONST_0
+    LDC "Symbolic1"
+    AASTORE
+    CHECKCAST [Ljava/lang/Object;
+    INVOKEVIRTUAL scala/Predef$.wrapRefArray ([Ljava/lang/Object;)Lscala/collection/mutable/WrappedArray;
+    INVOKESPECIAL scala/StringContext.<init> (Lscala/collection/Seq;)V
+    GETSTATIC scala/collection/immutable/Nil$.MODULE$ : Lscala/collection/immutable/Nil$;
+    INVOKEVIRTUAL scala/StringContext.sym (Lscala/collection/Seq;)Lscala/Symbol;
     ARETURN
-    MAXSTACK = 1
+    MAXSTACK = 7
     MAXLOCALS = 1
 
 
   // access flags 0x1
   public someSymbol2()Lscala/Symbol;
-    INVOKEDYNAMIC apply()Lscala/Symbol; [
-      // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
-      // arguments:
-      "Symbolic2"
-    ]
+    NEW scala/StringContext
+    DUP
+    GETSTATIC scala/Predef$.MODULE$ : Lscala/Predef$;
+    ICONST_1
+    ANEWARRAY java/lang/String
+    DUP
+    ICONST_0
+    LDC "Symbolic2"
+    AASTORE
+    CHECKCAST [Ljava/lang/Object;
+    INVOKEVIRTUAL scala/Predef$.wrapRefArray ([Ljava/lang/Object;)Lscala/collection/mutable/WrappedArray;
+    INVOKESPECIAL scala/StringContext.<init> (Lscala/collection/Seq;)V
+    GETSTATIC scala/collection/immutable/Nil$.MODULE$ : Lscala/collection/immutable/Nil$;
+    INVOKEVIRTUAL scala/StringContext.sym (Lscala/collection/Seq;)Lscala/Symbol;
     ARETURN
-    MAXSTACK = 1
+    MAXSTACK = 7
     MAXLOCALS = 1
 
 
   // access flags 0x1
   public sameSymbol1()Lscala/Symbol;
-    INVOKEDYNAMIC apply()Lscala/Symbol; [
-      // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
-      // arguments:
-      "Symbolic1"
-    ]
+    NEW scala/StringContext
+    DUP
+    GETSTATIC scala/Predef$.MODULE$ : Lscala/Predef$;
+    ICONST_1
+    ANEWARRAY java/lang/String
+    DUP
+    ICONST_0
+    LDC "Symbolic1"
+    AASTORE
+    CHECKCAST [Ljava/lang/Object;
+    INVOKEVIRTUAL scala/Predef$.wrapRefArray ([Ljava/lang/Object;)Lscala/collection/mutable/WrappedArray;
+    INVOKESPECIAL scala/StringContext.<init> (Lscala/collection/Seq;)V
+    GETSTATIC scala/collection/immutable/Nil$.MODULE$ : Lscala/collection/immutable/Nil$;
+    INVOKEVIRTUAL scala/StringContext.sym (Lscala/collection/Seq;)Lscala/Symbol;
     ARETURN
-    MAXSTACK = 1
+    MAXSTACK = 7
     MAXLOCALS = 1
 
 
@@ -52,14 +76,22 @@
     ALOAD 0
     INVOKESPECIAL java/lang/Object.<init> ()V
     ALOAD 0
-    INVOKEDYNAMIC apply()Lscala/Symbol; [
-      // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
-      // arguments:
-      "Symbolic3"
-    ]
+    NEW scala/StringContext
+    DUP
+    GETSTATIC scala/Predef$.MODULE$ : Lscala/Predef$;
+    ICONST_1
+    ANEWARRAY java/lang/String
+    DUP
+    ICONST_0
+    LDC "Symbolic3"
+    AASTORE
+    CHECKCAST [Ljava/lang/Object;
+    INVOKEVIRTUAL scala/Predef$.wrapRefArray ([Ljava/lang/Object;)Lscala/collection/mutable/WrappedArray;
+    INVOKESPECIAL scala/StringContext.<init> (Lscala/collection/Seq;)V
+    GETSTATIC scala/collection/immutable/Nil$.MODULE$ : Lscala/collection/immutable/Nil$;
+    INVOKEVIRTUAL scala/StringContext.sym (Lscala/collection/Seq;)Lscala/Symbol;
     PUTFIELD Symbols.someSymbol3 : Lscala/Symbol;
     RETURN
-    MAXSTACK = 2
+    MAXSTACK = 8
     MAXLOCALS = 1
 

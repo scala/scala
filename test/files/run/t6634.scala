@@ -1,7 +1,7 @@
 import collection.mutable.ListBuffer
 
 object Test extends App {
-  def newLB = ListBuffer('a, 'b, 'c, 'd, 'e)
+  def newLB = ListBuffer(sym"a", sym"b", sym"c", sym"d", sym"e")
 
   val lb0 = newLB
   println("Trying lb0 ...")

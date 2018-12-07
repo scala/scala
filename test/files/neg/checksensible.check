@@ -77,7 +77,7 @@ checksensible.scala:51: warning: comparing values of types Int and Unit using `!
   (1 != println)
      ^
 checksensible.scala:52: warning: comparing values of types Int and Symbol using `!=' will always yield true
-  (1 != 'sym)
+  (1 != sym"sym")
      ^
 checksensible.scala:58: warning: comparing a fresh object using `==' will always yield false
   ((x: Int) => x + 1) == null

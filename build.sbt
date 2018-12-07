@@ -125,7 +125,7 @@ headerLicense in ThisBuild  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
-mimaReferenceVersion in Global := Some("2.12.0")
+mimaReferenceVersion in Global := None
 
 scalaVersion in Global         := versionProps("starr.version")
 

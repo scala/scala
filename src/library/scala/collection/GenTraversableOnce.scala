@@ -454,7 +454,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return        `true` if this $coll is empty or the given predicate `p`
    *                 holds for all elements of this $coll, otherwise `false`.
    */
-  def forall(@deprecatedName('pred) p: A => Boolean): Boolean
+  def forall(@deprecatedName(Symbol("pred")) p: A => Boolean): Boolean
 
   /** Tests whether a predicate holds for at least one element of this $coll.
    *
@@ -463,7 +463,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @param   p     the predicate used to test elements.
    *  @return        `true` if the given predicate `p` is satisfied by at least one element of this $coll, otherwise `false`
    */
-  def exists(@deprecatedName('pred) p: A => Boolean): Boolean
+  def exists(@deprecatedName(Symbol("pred")) p: A => Boolean): Boolean
 
   /** Finds the first element of the $coll satisfying a predicate, if any.
    *
@@ -474,7 +474,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @return        an option value containing the first element in the $coll
    *                 that satisfies `p`, or `None` if none exists.
    */
-  def find(@deprecatedName('pred) p: A => Boolean): Option[A]
+  def find(@deprecatedName(Symbol("pred")) p: A => Boolean): Option[A]
 
   /** Copies the elements of this $coll to an array.
    *  Fills the given array `xs` with values of this $coll.

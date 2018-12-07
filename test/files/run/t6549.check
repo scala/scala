@@ -2,7 +2,7 @@
 scala> case class `X"`(var xxx: Any)
 defined class X$u0022
 
-scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
+scala> val m = Map(("": Any) -> `X"`("\""), (sym"s": Any) -> `X"`("\""))
 m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))
 
 scala> m("")
@@ -17,8 +17,8 @@ m("").xxx: Any = 0
 scala> m("").xxx = "\""
 m("").xxx: Any = "
 
-scala> m('s).xxx = 's
-m(scala.Symbol("s")).xxx: Any = 's
+scala> m(sym"s").xxx = sym"s"
+m(StringContext("s").sym()).xxx: Any = 's
 
 scala> val `"` = 0
 ": Int = 0

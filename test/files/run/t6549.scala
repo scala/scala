@@ -11,12 +11,12 @@ import scala.tools.partest.ReplTest
 object Test extends ReplTest {
   def code = """
     |case class `X"`(var xxx: Any)
-    |val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
+    |val m = Map(("": Any) -> `X"`("\""), (sym"s": Any) -> `X"`("\""))
     |m("")
     |m("").xxx
     |m("").xxx = 0
     |m("").xxx = "\""
-    |m('s).xxx = 's
+    |m(sym"s").xxx = sym"s"
     |val `"` = 0
   """.stripMargin
 }

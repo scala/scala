@@ -107,11 +107,11 @@ names-defaults-neg.scala:86: error: module extending its companion class cannot 
     object C extends C()
                      ^
 names-defaults-neg.scala:90: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
-  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
-                                           ^
+  def deprNam1(x: Int, @deprecatedName(Symbol("x")) y: String) = 0
+                                                    ^
 names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
-  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
-                                              ^
+  def deprNam2(a: String)(@deprecatedName(Symbol("a")) b: Int) = 1
+                                                       ^
 names-defaults-neg.scala:93: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^

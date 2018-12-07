@@ -216,9 +216,6 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   def                     srBoxesRunTimeRef         : ClassBType = _srBoxesRunTimeRef.get
   private[this] lazy val _srBoxesRunTimeRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.BoxesRunTime]))
 
-  def                     srSymbolLiteral           : ClassBType = _srSymbolLiteral.get
-  private[this] lazy val _srSymbolLiteral           : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.SymbolLiteral]))
-
   def                     srStructuralCallSite      : ClassBType = _srStructuralCallSite.get
   private[this] lazy val _srStructuralCallSite      : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(requiredClass[scala.runtime.StructuralCallSite]))
 

@@ -142,7 +142,7 @@ trait Future[+T] extends Awaitable[T] {
    * @group Callbacks
    */
   @deprecated("use `onComplete` or `failed.foreach` instead (keep in mind that they take total rather than partial functions)", "2.12.0")
-  def onFailure[U](@deprecatedName('callback) pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
+  def onFailure[U](@deprecatedName(Symbol("callback")) pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Unit = onComplete {
     case Failure(t) =>
       pf.applyOrElse[Throwable, Any](t, Predef.identity[Throwable]) // Exploiting the cached function to avoid MatchError
     case _ =>
@@ -164,7 +164,7 @@ trait Future[+T] extends Awaitable[T] {
    * @param f     the function to be executed when this `Future` completes
    * @group Callbacks
    */
-  def onComplete[U](@deprecatedName('func) f: Try[T] => U)(implicit executor: ExecutionContext): Unit
+  def onComplete[U](@deprecatedName(Symbol("func")) f: Try[T] => U)(implicit executor: ExecutionContext): Unit
 
 
   /* Miscellaneous */
@@ -336,7 +336,7 @@ trait Future[+T] extends Awaitable[T] {
    * @return    a `Future` which will hold the successful result of this `Future` if it matches the predicate or a `NoSuchElementException`
    * @group Transformations
    */
-  def filter(@deprecatedName('pred) p: T => Boolean)(implicit executor: ExecutionContext): Future[T] =
+  def filter(@deprecatedName(Symbol("pred")) p: T => Boolean)(implicit executor: ExecutionContext): Future[T] =
     map { r => if (p(r)) r else throw new NoSuchElementException("Future.filter predicate is not satisfied") }
 
   /** Used by for-comprehensions.
@@ -654,7 +654,7 @@ object Future {
   *  @param executor  the execution context on which the future is run
   *  @return          the `Future` holding the result of the computation
   */
-  def apply[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] =
+  def apply[T](body: =>T)(implicit @deprecatedName(Symbol("execctx")) executor: ExecutionContext): Future[T] =
     unit.map(_ => body)
 
   /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms a `TraversableOnce[Future[A]]`
@@ -699,7 +699,7 @@ object Future {
    * @return          the `Future` holding the optional result of the search
    */
   @deprecated("use the overloaded version of this method that takes a scala.collection.immutable.Iterable instead", "2.12.0")
-  def find[T](@deprecatedName('futurestravonce) futures: TraversableOnce[Future[T]])(@deprecatedName('predicate) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
+  def find[T](@deprecatedName(Symbol("futurestravonce")) futures: TraversableOnce[Future[T]])(@deprecatedName(Symbol("predicate")) p: T => Boolean)(implicit executor: ExecutionContext): Future[Option[T]] = {
     val futuresBuffer = futures.toBuffer
     if (futuresBuffer.isEmpty) successful[Option[T]](None)
     else {
@@ -786,7 +786,7 @@ object Future {
    * @return         the `Future` holding the result of the fold
    */
   @deprecated("use Future.foldLeft instead", "2.12.0")
-  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName('foldFun) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
+  def fold[T, R](futures: TraversableOnce[Future[T]])(zero: R)(@deprecatedName(Symbol("foldFun")) op: (R, T) => R)(implicit executor: ExecutionContext): Future[R] = {
     if (futures.isEmpty) successful(zero)
     else sequence(futures).map(_.foldLeft(zero)(op))
   }

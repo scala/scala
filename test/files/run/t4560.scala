@@ -18,7 +18,7 @@ trait B {
 
   def y = new { def f() = println("Success 1") }
   def fail() = {
-    println('Test)
+    println(sym"Test")
     y.f()
   }
 }
@@ -35,7 +35,7 @@ trait B2 {
 
   def y = new { def f() = println("Success 2") }
   def fail() = {
-    println('Test)
+    println(sym"Test")
     y.f()
   }
 }
@@ -50,7 +50,7 @@ trait B3 {
 
   def y = new { def f() = println("Success 3") }
   def fail() = {
-    println('Test)
+    println(sym"Test")
     y.f()
   }
 }

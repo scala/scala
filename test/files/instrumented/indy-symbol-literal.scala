@@ -3,11 +3,11 @@ import scala.tools.partest.instrumented.Instrumentation._
 
 object Test {
   def main(args: Array[String]): Unit = {
-    'warmup
+    Symbol("warmup")
     startProfiling()
     var i = 0;
     while (i < 2) {
-      'foo.name
+      Symbol("foo").name
       i += 1
     }
     stopProfiling()

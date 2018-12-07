@@ -21,7 +21,7 @@ case $prDryRun in
        --warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
-       "junit/testOnly scala.lang.stringinterpol.SymbolsTest"
+       testAll
 
     ;;
 

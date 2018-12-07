@@ -4,7 +4,7 @@ trait B {
   self: A =>
 
   def test {
-    println('blubber)
+    println(sym"blubber")
   }
 }
 
