@@ -193,58 +193,6 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
   }
 }
 
-/** This trait indicates that a `Stepper` will implement `tryStep` in terms of `hasNext` and `nextStep`. */
-trait NextStepper[@specialized(Double, Int, Long) A] extends Stepper[A] with StepperOps[A, NextStepper[A]] {
-  def tryStep(f: A => Unit) = if (hasStep) { f(nextStep()); true } else false
-  def spliterator: Spliterator[A] = new ProxySpliteratorViaNext[A](this)
-}
-private[convert] class ProxySpliteratorViaNext[A](underlying: NextStepper[A]) extends Spliterator[A] {
-  def characteristics = underlying.characteristics
-  def estimateSize() = underlying.knownSize
-  def tryAdvance(f: java.util.function.Consumer[_ >: A]): Boolean = if (underlying.hasStep) { f.accept(underlying.nextStep()); true } else false
-  def trySplit() = underlying.substep() match { case null => null; case x => new ProxySpliteratorViaNext[A](x) }
-}
-
-/** This trait indicates that a `Stepper` will implement `hasNext` and `nextStep` by caching applications of `tryStep`.
- * Subclasses must implement `tryUncached` instead of `tryStep`, and should leave it protected, and must implement
- * `knownUncachedSize` instead of `knownSize`. For speed, `foreachUncached` may also be overridden.  It is recommended
- * that all of the `Uncached` methods be left protected.
- */
-trait TryStepper[@specialized(Double, Int, Long) A] extends Stepper[A] with StepperOps[A, TryStepper[A]] {
-  protected def myCache: A
-  protected def myCache_=(a: A): Unit
-  protected final var myCacheIsFull = false
-  private def load(): Boolean = {
-    myCacheIsFull = tryStep(myCache = _)
-    myCacheIsFull
-  }
-  final def hasStep = myCacheIsFull || load()
-  final def nextStep() = {
-    if (!myCacheIsFull) {
-      load()
-      if (!myCacheIsFull) Stepper.throwNSEE()
-    }
-    val ans = myCache
-    myCacheIsFull = false
-    myCache = null.asInstanceOf[A]
-    ans
-  }
-  final def knownSize = knownUncachedSize + (if (myCacheIsFull) 1 else 0)
-  protected def knownUncachedSize: Long
-  final def tryStep(f: A => Unit): Boolean = if (myCacheIsFull) { f(myCache); myCacheIsFull = false; true } else tryUncached(f)
-  protected def tryUncached(f: A => Unit): Boolean
-  final override def foreach(f: A => Unit): Unit = { if (myCacheIsFull) { f(myCache); myCacheIsFull = false }; foreachUncached(f) }
-  protected def foreachUncached(f: A => Unit): Unit = { while (tryUncached(f)) {} }
-  def spliterator: Spliterator[A] = new ProxySpliteratorViaTry[A](this)
-}
-private[convert] class ProxySpliteratorViaTry[A](underlying: TryStepper[A]) extends Spliterator[A] {
-  def characteristics = underlying.characteristics
-  def estimateSize() = underlying.knownSize
-  def tryAdvance(f: java.util.function.Consumer[_ >: A]): Boolean = underlying.tryStep(a => f.accept(a))
-  override def forEachRemaining(f: java.util.function.Consumer[_ >: A]): Unit = { underlying.foreach(a => f.accept(a)) }
-  def trySplit() = underlying.substep() match { case null => null; case x => new ProxySpliteratorViaTry[A](x) }
-}
-
 /** Any `AnyStepper` combines the functionality of a Java `Iterator`, a Java `Spliterator`, and a `Stepper`. */
 trait AnyStepper[A] extends Stepper[A] with java.util.Iterator[A] with Spliterator[A] with StepperOps[A, AnyStepper[A]] {
   override def forEachRemaining(c: java.util.function.Consumer[_ >: A]): Unit = { while (hasNext) { c.accept(next()) } }
