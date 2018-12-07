@@ -33,8 +33,6 @@ object Option {
 
   def none[A]: Option[A] = None
 
-  def some[A](x: A): Option[A] = Some(x)
-
   /** An Option factory which returns `None` in a manner consistent with
    *  the collections hierarchy.
    */
