@@ -327,10 +327,15 @@ trait Implicits {
    */
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
-    name match {
-      case x: TermName => result.typeSymbol.newMethod(x) setInfoAndEnter tp
-      case x: TypeName => result.typeSymbol.newAbstractType(x) setInfoAndEnter tp
+    val owner = result.typeSymbol orElse { // after erasure (for async?)...
+      val clazz = NoSymbol.newRefinementClass(NoPosition)
+      clazz setInfo RefinedType(Nil, newScope, clazz)
     }
+    (name match {
+      case x: TermName => owner.newMethod(x)
+      case x: TypeName => owner.newAbstractType(x)
+    }).setInfoAndEnter(tp)
+
     result
   }
 
@@ -339,7 +344,7 @@ trait Implicits {
   object HasMember {
     private val hasMemberCache = perRunCaches.newMap[Name, Type]()
     def apply(name: Name): Type = hasMemberCache.getOrElseUpdate(name, memberWildcardType(name, WildcardType))
-    }
+  }
 
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
