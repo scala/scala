@@ -42,11 +42,11 @@ object VectorMapProperties extends Properties("immutable.VectorMap") {
   property("repeatedly removing to empty is empty at end") = forAll { (m: Map[K, V]) => {
       var vm = VectorMap.from(m)
       val sz1 = vm.size
-      for (k <- vm.keys) vm = vm.remove(k)
+      for (k <- vm.keys) vm = vm.removed(k)
       val sz2 = vm.size
       for (n <- 0 until sz1) vm = vm + (n -> n)
       val sz3 = vm.size
-      for (k <- vm.keys) vm = vm.remove(k)
+      for (k <- vm.keys) vm = vm.removed(k)
       vm.size == 0 && sz2 == 0 && sz3 == sz1
     }
   }

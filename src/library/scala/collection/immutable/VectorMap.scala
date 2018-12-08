@@ -119,7 +119,7 @@ final class VectorMap[K, +V] private (
     }
   }
 
-  def remove(key: K): VectorMap[K, V] = {
+  def removed(key: K): VectorMap[K, V] = {
     if (isEmpty) empty
     else {
       var fs = fields

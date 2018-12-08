@@ -64,7 +64,7 @@ class VectorMapTest {
 
   @Test
   def hasCorrectInit_t11218: Unit = {
-    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").remove(2).init
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(2).init
     assertEquals(List(1 -> "a"), m.toList)
   }
 

@@ -153,10 +153,10 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
     newSetOrSelf(t)
   }
 
-  override def removeAll(that: IterableOnce[A]): TreeSet[A] = that match {
+  override def removedAll(that: IterableOnce[A]): TreeSet[A] = that match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
       newSetOrSelf(RB.difference(tree, ts.tree))
-    case _ => super.removeAll(that)
+    case _ => super.removedAll(that)
   }
 
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {

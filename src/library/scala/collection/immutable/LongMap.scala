@@ -340,7 +340,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil => LongMap.Tip(key, value)
   }
 
-  def remove(key: Long): LongMap[T] = this match {
+  def removed(key: Long): LongMap[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this
       else if (zero(key, mask)) bin(prefix, mask, left - key, right)

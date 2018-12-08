@@ -357,7 +357,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil => IntMap.Tip(key, value)
   }
 
-  def remove (key: Int): IntMap[T] = this match {
+  def removed (key: Int): IntMap[T] = this match {
     case IntMap.Bin(prefix, mask, left, right) =>
       if (!hasMatch(key, prefix, mask)) this
       else if (zero(key, mask)) bin(prefix, mask, left - key, right)
