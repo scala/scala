@@ -656,8 +656,7 @@ abstract class RefChecks extends Transform {
             return
           }
 
-          for (member <- missing) {
-            def undefined(msg: String) = abstractClassError(false, infoString(member) + " is not defined" + msg)
+          def diagnose(member: Symbol): String = {
             val underlying = analyzer.underlyingSymbol(member) // TODO: don't use this method
 
             // Give a specific error message for abstract vars based on why it fails:
@@ -667,40 +666,38 @@ abstract class RefChecks extends Transform {
 
             if (groupedAccessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {
               // If both getter and setter are missing, squelch the setter error.
-              if (member.isSetter && isMultiple) ()
-              else undefined(
+              if (member.isSetter && isMultiple) null
+              else {
                 if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
                 else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
                 else "\n(Note that variables need to be initialized to be defined)"
-              )
-            }
-            else if (underlying.isMethod) {
-              // If there is a concrete method whose name matches the unimplemented
-              // abstract method, and a cursory examination of the difference reveals
-              // something obvious to us, let's make it more obvious to them.
+              }
+            } else if (underlying.isMethod) {
+              // Highlight any member that nearly matches: same name and arity,
+              // but differs in one param or param list.
               val abstractParamLists = underlying.paramLists
               val matchingName       = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
-              val matchingArity      = matchingName filter { m =>
-                !m.isDeferred &&
-                (m.name == underlying.name) &&
-                (m.paramLists.length == abstractParamLists.length) &&
-                (m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum) &&
-                (m.tpe.typeParams.size == underlying.tpe.typeParams.size)
+              val matchingArity      = matchingName.filter { m => !m.isDeferred &&
+                m.name == underlying.name &&
+                m.paramLists.length == abstractParamLists.length &&
+                m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum &&
+                m.tpe.typeParams.size == underlying.tpe.typeParams.size
               }
 
               matchingArity match {
                 // So far so good: only one candidate method
-                case Scope(concrete)   =>
-                  val mismatches  = abstractParamLists.flatten.map(_.tpe) zip concrete.paramLists.flatten.map(_.tpe) filterNot { case (x, y) => x =:= y }
+                case Scope(concrete) =>
+                  val sideBySide = abstractParamLists.flatten.map(_.tpe) zip concrete.paramLists.flatten.map(_.tpe)
+                  val mismatches = sideBySide.filterNot {
+                    case (abs, konkret) => abs.asSeenFrom(clazz.tpe, underlying.owner) =:= konkret
+                  }
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
                       val abstractSym = pa.typeSymbol
                       val concreteSym = pc.typeSymbol
-                      def subclassMsg(c1: Symbol, c2: Symbol) = (
-                        ": %s is a subclass of %s, but method parameter types must match exactly.".format(
-                          c1.fullLocationString, c2.fullLocationString)
-                      )
+                      def subclassMsg(c1: Symbol, c2: Symbol) =
+                        s": ${c1.fullLocationString} is a subclass of ${c2.fullLocationString}, but method parameter types must match exactly."
                       val addendum = (
                         if (abstractSym == concreteSym) {
                           // TODO: what is the optimal way to test for a raw type at this point?
@@ -711,7 +708,7 @@ abstract class RefChecks extends Transform {
                           else if (pa.prefix =:= pc.prefix)
                             ": their type parameters differ"
                           else
-                            ": their prefixes (i.e. enclosing instances) differ"
+                            ": their prefixes (i.e., enclosing instances) differ"
                         }
                         else if (abstractSym isSubClass concreteSym)
                           subclassMsg(abstractSym, concreteSym)
@@ -719,16 +716,23 @@ abstract class RefChecks extends Transform {
                           subclassMsg(concreteSym, abstractSym)
                         else ""
                       )
-
-                      undefined("\n(Note that %s does not match %s%s)".format(pa, pc, addendum))
-                    case xs =>
-                      undefined("")
+                      s"\n(Note that $pa does not match $pc$addendum)"
+                    case Nil => // other overriding gotchas
+                      val missingImplicit = abstractParamLists.zip(concrete.paramLists).exists {
+                        case (abss, konkrete) => abss.headOption.exists(_.isImplicit) && !konkrete.headOption.exists(_.isImplicit)
+                      }
+                      val msg = if (missingImplicit) "\n(overriding member must declare implicit parameter list)" else ""
+                      msg
+                    case _ => ""
                   }
-                case _ =>
-                  undefined("")
+                case _ => ""
               }
             }
-            else undefined("")
+            else ""
+          }
+          for (member <- missing ; msg = diagnose(member) ; if msg != null) {
+            val addendum = if (msg.isEmpty) msg else " " + msg
+            abstractClassError(false, s"${infoString(member)} is not defined$addendum")
           }
 
           // Check the remainder for invalid absoverride.
