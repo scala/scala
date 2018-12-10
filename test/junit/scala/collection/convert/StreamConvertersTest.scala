@@ -20,6 +20,21 @@ import org.junit.runners.JUnit4
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
   @Test
+  def keyValueSteppers(): Unit = {
+    val m1 = Map(1 -> "a")
+    val m2 = collection.mutable.HashMap('c' -> 35f)
+
+    val m1ks = m1.keyStepper
+    (m1ks: IntStepper /*with EfficientSubstep*/).nextStep()
+    val m1vs = m1.valueStepper
+    (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
+    val m2ks = m2.keyStepper
+    (m2ks: IntStepper /*with EfficientSubstep*/).nextStep()
+    val m2vs = m2.valueStepper
+    (m2vs: DoubleStepper /*with EfficientSubstep*/).nextStep()
+  }
+
+  @Test
   def spliteratorHasStepper(): Unit = {
     import collection.JavaConverters._
 
@@ -27,11 +42,11 @@ class StreamConvertersTest {
     val sa = Array("")
 
     val ias = ia.seqStream.spliterator.stepper
-    (ias: IntStepper)
+    (ias: IntStepper).nextStep()
     val iasb = ias.seqStream.boxed.spliterator.stepper
-    (iasb: Stepper[Integer])
+    (iasb: Stepper[Integer]).nextStep()
     val sas = sa.seqStream.spliterator.stepper
-    (sas: Stepper[String])
+    (sas: Stepper[String]).nextStep()
   }
 
   @Test

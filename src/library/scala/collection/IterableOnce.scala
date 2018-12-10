@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.switch
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.math.{Numeric, Ordering}
@@ -283,7 +284,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    */
   def stepper[B >: A, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
     import convert.impl._
-    val s = shape.shape match {
+    val s = (shape.shape: @switch) match {
       case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
       case StepperShape.LongValue   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
       case StepperShape.DoubleValue => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])

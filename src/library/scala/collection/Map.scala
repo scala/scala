@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
@@ -89,6 +90,28 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     with PartialFunction[K, V] {
 
   override def view: MapView[K, V] = new MapView.Id(this)
+
+  def keyStepper[S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[K, S]): S = {
+    import convert.impl._
+    val s = (shape.shape: @switch) match {
+      case StepperShape.IntValue    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongValue   => new LongIteratorStepper  (keysIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleValue => new DoubleIteratorStepper(keysIterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper(keysIterator))
+    }
+    s.asInstanceOf[S]
+  }
+
+  def valueStepper[V1 >: V, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[V1, S]): S = {
+    import convert.impl._
+    val s = (shape.shape: @switch) match {
+      case StepperShape.IntValue    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongValue   => new LongIteratorStepper  (valuesIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleValue => new DoubleIteratorStepper(valuesIterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper(valuesIterator))
+    }
+    s.asInstanceOf[S]
+  }
 
   /**
     * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
