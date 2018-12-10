@@ -38,6 +38,44 @@ trait StreamConverters {
       s.fromStepper((cc: collection.IterableOnceOps[A, AnyConstr, _]).stepper, par = true)
   }
 
+  // maps
+
+  implicit class MapHasSeqKeyValueStream[K, V](cc: collection.MapOps[K, V, AnyConstr, _]) {
+    def seqKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
+      s.fromStepper(cc.keyStepper, par = false)
+
+    def seqValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
+      s.fromStepper(cc.valueStepper, par = false)
+  }
+
+  private type MapOpsWithEfficientKeyStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def keyStepper[S <: Stepper[_]](implicit shape : StepperShape[K, S]) : S with EfficientSubstep }
+  private type MapOpsWithEfficientValueStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape : StepperShape[V1, S]) : S with EfficientSubstep }
+  private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSubstep }
+
+  implicit class MapHasParKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, AnyConstr, _]](cc: CC[K, V]) {
+    def parKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+        s: StreamShape[K, S, St],
+        st: StepperShape[K, St],
+        @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSubstep`")
+        isEfficient: CC[K, V] <:< MapOpsWithEfficientKeyStepper[K, V]): S =
+      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).keyStepper(st), par = true)
+
+    def parValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+        s: StreamShape[V, S, St],
+        st: StepperShape[V, St],
+        @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSubstep`")
+        isEfficient: CC[K, V] <:< MapOpsWithEfficientValueStepper[K, V]): S =
+      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).valueStepper(st), par = true)
+
+    // The parStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
+    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+        s: StreamShape[(K, V), S, St],
+        st: StepperShape[(K, V), St],
+        @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSubstep`")
+        isEfficient: CC[K, V] <:< MapOpsWithEfficientStepper[K, V]): S =
+      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).stepper(st), par = true)
+  }
+
   // steppers
 
   implicit class StepperHasSeqStream[A](stepper: Stepper[A]) {

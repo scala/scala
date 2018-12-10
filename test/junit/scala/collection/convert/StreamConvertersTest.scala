@@ -12,8 +12,10 @@
 
 package scala.collection.convert
 
-import org.junit.Test
+import java.util.stream._
+
 import org.junit.Assert._
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -21,17 +23,43 @@ import org.junit.runners.JUnit4
 class StreamConvertersTest {
   @Test
   def keyValueSteppers(): Unit = {
+    import collection.JavaConverters._
+
     val m1 = Map(1 -> "a")
-    val m2 = collection.mutable.HashMap('c' -> 35f)
+    val m2 = collection.mutable.LinkedHashMap('c' -> 35f)
 
     val m1ks = m1.keyStepper
     (m1ks: IntStepper /*with EfficientSubstep*/).nextStep()
     val m1vs = m1.valueStepper
     (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
     val m2ks = m2.keyStepper
-    (m2ks: IntStepper /*with EfficientSubstep*/).nextStep()
+    (m2ks: IntStepper with EfficientSubstep).nextStep()
     val m2vs = m2.valueStepper
-    (m2vs: DoubleStepper /*with EfficientSubstep*/).nextStep()
+    (m2vs: DoubleStepper with EfficientSubstep).nextStep()
+
+    val m1sps = m1.seqStream
+    (m1sps: Stream[(Int, String)]).count()
+    val m1sks = m1.seqKeyStream
+    (m1sks: IntStream).sum()
+    val m1svs = m1.seqValueStream
+    (m1svs: Stream[String]).count()
+
+    // val m1pps = m1.parStream // Not available
+    // val m1pks = m1.parKeyStream // Not available
+    // val m1pvs = m1.parValueStream // Not available
+
+    val m2sps = m2.seqStream
+    (m2sps: Stream[(Char, Float)]).count()
+    val m2sks = m2.seqKeyStream
+    (m2sks: IntStream).sum()
+    val m2svs = m2.seqValueStream
+    (m2svs: DoubleStream).count()
+
+    // val m2pps = m2.parStream // Not available because LinkedHashMap doesn't override stepper to be `with EfficientSubstep`
+    val m2pks = m2.parKeyStream
+    (m2pks: IntStream).sum()
+    val m2pvs = m2.parValueStream
+    (m2pvs: DoubleStream).count()
   }
 
   @Test
@@ -51,7 +79,6 @@ class StreamConvertersTest {
 
   @Test
   def toArrayTests(): Unit = {
-    import collection.JavaConverters._
     val ia = Array(1,2,3)
     val ba = Array[Byte](1,2,3)
 
@@ -73,7 +100,6 @@ class StreamConvertersTest {
   @Test
   def convertStreamToScala(): Unit = {
     import collection.JavaConverters._
-    import java.util.stream._
 
     for (par <- List(false, true)) {
       def is = { val s = Vector(1).seqStream; if (par) s.parallel else s }

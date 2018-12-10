@@ -68,6 +68,12 @@ class LinkedHashMap[K, V]
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
+  // TODO implement efficient stepper
+  override def keyStepper[S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[K, S]): S with convert.EfficientSubstep = super.keyStepper(shape).asInstanceOf[S with convert.EfficientSubstep]
+
+  // TODO implement efficient stepper
+  override def valueStepper[V1 >: V, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[V1, S]): S with convert.EfficientSubstep = super.valueStepper(shape).asInstanceOf[S with convert.EfficientSubstep]
+
   private[collection] type Entry = LinkedHashMap.LinkedEntry[K, V]
   private[collection] def _firstEntry: Entry = firstEntry
 
