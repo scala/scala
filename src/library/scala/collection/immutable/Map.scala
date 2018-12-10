@@ -71,14 +71,14 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     * @param key the key to be removed
     * @return a new map without a binding for ''key''
     */
-  def remove(key: K): C
+  def removed(key: K): C
 
   /** Alias for `remove` */
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /*@`inline` final*/ def - (key: K): C = remove(key)
+  /*@`inline` final*/ def - (key: K): C = removed(key)
 
   @deprecated("Use -- with an explicit collection", "2.13.0")
-  def - (key1: K, key2: K, keys: K*): C = remove(key1).remove(key2).removeAll(keys)
+  def - (key1: K, key2: K, keys: K*): C = removed(key1).removed(key2).removedAll(keys)
 
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.
@@ -87,11 +87,11 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     *  @return a new $coll that contains all elements of the current $coll
     *  except one less occurrence of each of the elements of `elems`.
     */
-  def removeAll(keys: IterableOnce[K]): C = keys.iterator.foldLeft[C](coll)(_ - _)
+  def removedAll(keys: IterableOnce[K]): C = keys.iterator.foldLeft[C](coll)(_ - _)
 
   /** Alias for `removeAll` */
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /* @`inline` final */ override def -- (keys: IterableOnce[K]): C = removeAll(keys)
+  /* @`inline` final */ override def -- (keys: IterableOnce[K]): C = removedAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key
@@ -165,7 +165,7 @@ object Map extends MapFactory[Map] {
     override def concat [V2 >: V](xs: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
       new WithDefault(underlying.concat(xs), defaultValue)
 
-    def remove(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.remove(key), defaultValue)
+    def removed(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.removed(key), defaultValue)
 
     def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =
       new WithDefault[K, V1](underlying.updated(key, value), defaultValue)
@@ -200,7 +200,7 @@ object Map extends MapFactory[Map] {
     override def getOrElse [V1](key: Any, default: => V1): V1 = default
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
-    def remove(key: Any): Map[Any, Nothing] = this
+    def removed(key: Any): Map[Any, Nothing] = this
   }
 
   final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
@@ -219,7 +219,7 @@ object Map extends MapFactory[Map] {
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
-    def remove(key: K): Map[K, V] =
+    def removed(key: K): Map[K, V] =
       if (key == key1) Map.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
@@ -271,7 +271,7 @@ object Map extends MapFactory[Map] {
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
       else new Map3(key1, value1, key2, value2, key, value)
-    def remove(key: K): Map[K, V] =
+    def removed(key: K): Map[K, V] =
       if (key == key1) new Map1(key2, value2)
       else if (key == key2) new Map1(key1, value1)
       else this
@@ -330,7 +330,7 @@ object Map extends MapFactory[Map] {
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
       else if (key == key3) new Map3(key1, value1, key2, value2, key3, value)
       else new Map4(key1, value1, key2, value2, key3, value3, key, value)
-    def remove(key: K): Map[K, V] =
+    def removed(key: K): Map[K, V] =
       if (key == key1)      new Map2(key2, value2, key3, value3)
       else if (key == key2) new Map2(key1, value1, key3, value3)
       else if (key == key3) new Map2(key1, value1, key2, value2)
@@ -397,7 +397,7 @@ object Map extends MapFactory[Map] {
       else if (key == key3) new Map4(key1, value1, key2, value2, key3, value, key4, value4)
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
       else HashMap.empty[K, V1].updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
-    def remove(key: K): Map[K, V] =
+    def removed(key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)
       else if (key == key3) new Map3(key1, value1, key2, value2, key4, value4)

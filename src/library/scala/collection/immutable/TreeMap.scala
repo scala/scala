@@ -61,7 +61,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   def get(key: K): Option[V] = RB.get(tree, key)
 
-  def remove(key: K): TreeMap[K,V] =
+  def removed(key: K): TreeMap[K,V] =
     newMapOrSelf(RB.delete(tree, key))
 
   def updated[V1 >: V](key: K, value: V1): TreeMap[K, V1] =
@@ -81,10 +81,10 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
         t
     })
 
-  override def removeAll(keys: IterableOnce[K]): TreeMap[K, V] = keys match {
+  override def removedAll(keys: IterableOnce[K]): TreeMap[K, V] = keys match {
     case ts: TreeSet[K] if ordering == ts.ordering =>
       newMapOrSelf(RB.difference(tree, ts.tree))
-    case _ => super.removeAll(keys)
+    case _ => super.removedAll(keys)
   }
 
   /** A new TreeMap with the entry added is returned,
