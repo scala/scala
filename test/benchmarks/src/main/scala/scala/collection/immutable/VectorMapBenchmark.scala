@@ -14,19 +14,20 @@ import java.util.concurrent.TimeUnit
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 class VectorMapBenchmark {
-  @Param(Array("10", "100", "1000"))
+  @Param(Array("1", "10", "100", "1000", "1000000"))
   var size: Int = _
 
-  var values: Vector[Any] = _
+  var kvs: Iterable[(Int, Int)] = _
 
-  @Setup(Level.Trial) def initKeys(): Unit = {
-    values = (0 to size).map(i => (i % 4) match {
-      case 0 => i.toString
-      case 1 => i.toChar
-      case 2 => i.toDouble
-      case 3 => i.toInt
-    }).toVector
+  @Setup(Level.Trial)
+  def initKeys(): Unit = {
+    val unique = (0 to size).map(i => i -> i)
+    kvs = unique ++ unique
   }
 
-  @Benchmark def groupBy = values.groupBy(_.getClass)
+  @Benchmark
+  def builder(bh: Blackhole): Unit = {
+    val b = VectorMap.newBuilder[Int, Int]
+    bh.consume(b.addAll(kvs).result())
+  }
 }

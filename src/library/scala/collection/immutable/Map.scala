@@ -421,6 +421,10 @@ private[immutable] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[
   private[this] var switchedToHashMapBuilder: Boolean = false
   private[this] var hashMapBuilder: HashMapBuilder[K, V] = _
 
+  private[immutable] def getOrElse[V0 >: V](key: K, value: V0): V0 =
+    if (hashMapBuilder ne null) hashMapBuilder.getOrElse(key, value)
+    else elems.getOrElse(key, value)
+
   override def clear(): Unit = {
     elems = Map.empty
     if (hashMapBuilder != null) {
@@ -432,27 +436,29 @@ private[immutable] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[
   override def result(): Map[K, V] =
     if (switchedToHashMapBuilder) hashMapBuilder.result() else elems
 
-  def addOne(elem: (K, V)) = {
+  def addOne(key: K, value: V): this.type = {
     if (switchedToHashMapBuilder) {
-      hashMapBuilder.addOne(elem)
+      hashMapBuilder.addOne(key, value)
     } else if (elems.size < 4) {
-      elems = elems + elem
+      elems = elems.updated(key, value)
     } else {
       // assert(elems.size == 4)
-      if (elems.contains(elem._1)) {
-        elems = elems + elem
+      if (elems.contains(key)) {
+        elems = elems.updated(key, value)
       } else {
         switchedToHashMapBuilder = true
         if (hashMapBuilder == null) {
           hashMapBuilder = new HashMapBuilder
         }
         elems.asInstanceOf[Map4[K, V]].buildTo(hashMapBuilder)
-        hashMapBuilder.addOne(elem)
+        hashMapBuilder.addOne(key, value)
       }
     }
 
     this
   }
+
+  def addOne(elem: (K, V)) = addOne(elem._1, elem._2)
 
   override def addAll(xs: IterableOnce[(K, V)]): this.type =
     if (switchedToHashMapBuilder) {
