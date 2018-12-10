@@ -221,7 +221,11 @@ private[convert] object AnyStepper {
     def next(): Double = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): AnyStepper[Double] = new BoxedDoubleStepper(st.substep())
+    def substep(): AnyStepper[Double] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxedDoubleStepper(sub)
+    }
   }
 
   final class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
@@ -229,7 +233,11 @@ private[convert] object AnyStepper {
     def next(): Int = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): AnyStepper[Int] = new BoxedIntStepper(st.substep())
+    def substep(): AnyStepper[Int] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxedIntStepper(sub)
+    }
   }
 
   final class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
@@ -237,7 +245,11 @@ private[convert] object AnyStepper {
     def next(): Long = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): AnyStepper[Long] = new BoxedLongStepper(st.substep())
+    def substep(): AnyStepper[Long] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxedLongStepper(sub)
+    }
   }
 }
 
@@ -588,7 +600,11 @@ object Stepper {
     def nextDouble(): Double = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): DoubleStepper = new UnboxingDoubleStepper(st.substep())
+    def substep(): DoubleStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingDoubleStepper(sub)
+    }
   }
 
   private[convert] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
@@ -596,7 +612,11 @@ object Stepper {
     def nextInt(): Int = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): IntStepper = new UnboxingIntStepper(st.substep())
+    def substep(): IntStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingIntStepper(sub)
+    }
   }
 
   private[convert] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
@@ -604,7 +624,11 @@ object Stepper {
     def nextLong(): Long = st.next()
     def characteristics: Int = st.characteristics
     def estimateSize(): Long = st.estimateSize()
-    def substep(): LongStepper = new UnboxingLongStepper(st.substep())
+    def substep(): LongStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingLongStepper(sub)
+    }
   }
 
   private[convert] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
@@ -612,7 +636,11 @@ object Stepper {
     def nextInt(): Int = st.next()
     def characteristics: Int = st.characteristics | NonNull
     def estimateSize(): Long = st.estimateSize()
-    def substep(): IntStepper = new UnboxingByteStepper(st.substep())
+    def substep(): IntStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingByteStepper(sub)
+    }
   }
 
   private[convert] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
@@ -620,7 +648,11 @@ object Stepper {
     def nextInt(): Int = st.next()
     def characteristics: Int = st.characteristics | NonNull
     def estimateSize(): Long = st.estimateSize()
-    def substep(): IntStepper = new UnboxingCharStepper(st.substep())
+    def substep(): IntStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingCharStepper(sub)
+    }
   }
 
   private[convert] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
@@ -628,7 +660,11 @@ object Stepper {
     def nextInt(): Int = st.next()
     def characteristics: Int = st.characteristics | NonNull
     def estimateSize(): Long = st.estimateSize()
-    def substep(): IntStepper = new UnboxingShortStepper(st.substep())
+    def substep(): IntStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingShortStepper(sub)
+    }
   }
 
   private[convert] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
@@ -636,6 +672,10 @@ object Stepper {
     def nextDouble(): Double = st.next()
     def characteristics: Int = st.characteristics | NonNull
     def estimateSize(): Long = st.estimateSize()
-    def substep(): DoubleStepper = new UnboxingFloatStepper(st.substep())
+    def substep(): DoubleStepper = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new UnboxingFloatStepper(sub)
+    }
   }
 }
