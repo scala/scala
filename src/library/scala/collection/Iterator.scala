@@ -391,9 +391,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def indexWhere(p: A => Boolean, from: Int = 0): Int = {
     var i = math.max(from, 0)
-    drop(from)
-    while (hasNext) {
-      if (p(next())) return i
+    val modifiedIterator = drop(from)
+    while (modifiedIterator.hasNext) {
+      if (p(modifiedIterator.next())) return i
       i += 1
     }
     -1
@@ -590,14 +590,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     def next() = if (hasNext) { hdDefined = false; hd } else Iterator.empty.next()
   }
 
-  def drop(n: Int): Iterator[A] = {
-    var i = 0
-    while (i < n && hasNext) {
-      next()
-      i += 1
-    }
-    this
-  }
+  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
+
 
   def dropWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // Magic value: -1 = hasn't dropped, 0 = found first, 1 = defer to parent iterator
