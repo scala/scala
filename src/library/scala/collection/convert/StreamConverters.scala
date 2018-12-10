@@ -15,20 +15,27 @@ package scala.collection.convert
 import java.util.Spliterator
 import java.util.stream._
 
+import scala.annotation.implicitNotFound
 import scala.collection.AnyConstr
 import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
 
 trait StreamConverters {
   // collections
 
-  implicit class IterableHasSeqStream[A](cc: collection.IterableOps[A, AnyConstr, _]) {
+  implicit class IterableHasSeqStream[A](cc: collection.IterableOnceOps[A, AnyConstr, _]) {
     def seqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(cc.stepper, par = false)
   }
 
-  implicit class IndexedSeqHasParStream[A](cc: collection.IndexedSeqOps[A, AnyConstr, _]) {
-    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
-      s.fromStepper(cc.stepper, par = true)
+  private type IterableOnceOpsWithEfficientStepper[A] = collection.IterableOnceOps[A, AnyConstr, _] { def stepper[B >: A, S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSubstep }
+
+  implicit class IterableHasParStream[A, CC[X] <: collection.IterableOnceOps[X, AnyConstr, _]](cc: CC[A]) {
+    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+        s: StreamShape[A, S, St],
+        st: StepperShape[A, St],
+        @implicitNotFound("parStream can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
+        isEfficient: CC[A] <:< IterableOnceOpsWithEfficientStepper[A]): S =
+      s.fromStepper((cc: collection.IterableOnceOps[A, AnyConstr, _]).stepper, par = true)
   }
 
   // steppers
