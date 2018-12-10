@@ -14,12 +14,10 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import collection.{Iterator, MapFactory}
 import scala.annotation.tailrec
 
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.mutable.Builder
+import scala.runtime.Statics.releaseFence
 
 /**
   * This class implements immutable maps using a list-based data structure. List map iterators and
@@ -60,7 +58,7 @@ sealed class ListMap[K, +V]
   override def knownSize: Int = 0
   def get(key: K): Option[V] = None
 
-  def updated[B1 >: V](key: K, value: B1): ListMap[K, B1] = new Node[B1](key, value)
+  def updated[V1 >: V](key: K, value: V1): ListMap[K, V1] = new ListMap.Node[K, V1](key, value, this)
 
   def removed(key: K): ListMap[K, V] = this
 
@@ -84,65 +82,12 @@ sealed class ListMap[K, +V]
     res
   }
 
-  protected def key: K = throw new NoSuchElementException("key of empty map")
-  protected def value: V = throw new NoSuchElementException("value of empty map")
-  protected def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
+  private[immutable] def key: K = throw new NoSuchElementException("key of empty map")
+  private[immutable] def value: V = throw new NoSuchElementException("value of empty map")
+  private[immutable] def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
 
   override protected[this] def className = "ListMap"
 
-  /**
-    * Represents an entry in the `ListMap`.
-    */
-  protected class Node[V1 >: V](override protected val key: K,
-                                override protected val value: V1) extends ListMap[K, V1] {
-
-    override def size: Int = sizeInternal(this, 0)
-
-    @tailrec private[this] def sizeInternal(cur: ListMap[K, V1], acc: Int): Int =
-      if (cur.isEmpty) acc
-      else sizeInternal(cur.next, acc + 1)
-
-    override def isEmpty: Boolean = false
-    override def knownSize: Int = -1
-    @throws[NoSuchElementException]
-    override def apply(k: K): V1 = applyInternal(this, k)
-
-    @tailrec private[this] def applyInternal(cur: ListMap[K, V1], k: K): V1 =
-      if (cur.isEmpty) throw new NoSuchElementException("key not found: " + k)
-      else if (k == cur.key) cur.value
-      else applyInternal(cur.next, k)
-
-    override def get(k: K): Option[V1] = getInternal(this, k)
-
-    @tailrec private[this] def getInternal(cur: ListMap[K, V1], k: K): Option[V1] =
-      if (cur.isEmpty) None
-      else if (k == cur.key) Some(cur.value)
-      else getInternal(cur.next, k)
-
-    override def contains(k: K): Boolean = containsInternal(this, k)
-
-    @tailrec private[this] def containsInternal(cur: ListMap[K, V1], k: K): Boolean =
-      if(cur.isEmpty) false
-      else if (k == cur.key) true
-      else containsInternal(cur.next, k)
-
-    override def updated[V2 >: V1](k: K, v: V2): ListMap[K, V2] = {
-      val (m, k0) = removeInternal(k, this, Nil)
-      new m.Node[V2](k0, v)
-    }
-
-    override def removed(k: K): ListMap[K, V1] = removeInternal(k, this, Nil)._1
-
-    @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V1], acc: List[ListMap[K, V1]]): (ListMap[K, V1], K) =
-      if (cur.isEmpty) (acc.last, k)
-      else if (k == cur.key) (acc.foldLeft(cur.next) { (t, h) => new t.Node(h.key, h.value) }, cur.key)
-      else removeInternal(k, cur.next, cur :: acc)
-
-    override protected def next: ListMap[K, V1] = ListMap.this
-
-    override def last: (K, V1) = (key, value)
-    override def init: ListMap[K, V1] = next
-  }
 }
 
 /**
@@ -160,6 +105,67 @@ sealed class ListMap[K, +V]
   */
 @SerialVersionUID(3L)
 object ListMap extends MapFactory[ListMap] {
+  /**
+    * Represents an entry in the `ListMap`.
+    */
+  private[immutable] class Node[K, V](
+    override private[immutable] val key: K,
+    override private[immutable] val value: V,
+    private[immutable] var _init: ListMap[K, V]
+  ) extends ListMap[K, V] {
+
+    releaseFence()
+
+    override def size: Int = sizeInternal(this, 0)
+
+    @tailrec private[this] def sizeInternal(cur: ListMap[K, V], acc: Int): Int =
+      if (cur.isEmpty) acc
+      else sizeInternal(cur.next, acc + 1)
+
+    override def isEmpty: Boolean = false
+
+    override def knownSize: Int = -1
+
+    @throws[NoSuchElementException]
+    override def apply(k: K): V = applyInternal(this, k)
+
+    @tailrec private[this] def applyInternal(cur: ListMap[K, V], k: K): V =
+      if (cur.isEmpty) throw new NoSuchElementException("key not found: " + k)
+      else if (k == cur.key) cur.value
+      else applyInternal(cur.next, k)
+
+    override def get(k: K): Option[V] = getInternal(this, k)
+
+    @tailrec private[this] def getInternal(cur: ListMap[K, V], k: K): Option[V] =
+      if (cur.isEmpty) None
+      else if (k == cur.key) Some(cur.value)
+      else getInternal(cur.next, k)
+
+    override def contains(k: K): Boolean = containsInternal(this, k)
+
+    @tailrec private[this] def containsInternal(cur: ListMap[K, V], k: K): Boolean =
+      if (cur.isEmpty) false
+      else if (k == cur.key) true
+      else containsInternal(cur.next, k)
+
+    override def updated[V1 >: V](k: K, v: V1): ListMap[K, V1] = {
+      val (m, k0) = removeInternal(k, this, Nil)
+      new Node(k0, v, m)
+    }
+
+    @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V], acc: List[ListMap[K, V]]): (ListMap[K, V], K) =
+      if (cur.isEmpty) (acc.last, k)
+      else if (k == cur.key) (acc.foldLeft(cur.next) { (t, h) => new Node(h.key, h.value, t) }, cur.key)
+      else removeInternal(k, cur.next, cur :: acc)
+
+    override def removed(k: K): ListMap[K, V] = removeInternal(k, this, Nil)._1
+
+    override private[immutable] def next: ListMap[K, V] = _init
+
+    override def last: (K, V) = (key, value)
+    override def init: ListMap[K, V] = next
+
+  }
 
   def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
 
@@ -171,8 +177,54 @@ object ListMap extends MapFactory[ListMap] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), ListMap[K, V]] =
-    new ImmutableBuilder[(K, V), ListMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
+  /** Returns a new ListMap builder
+    *
+    * The implementation safely handles additions after `result()` without calling `clear()`
+    *
+    * @tparam K the map key type
+    * @tparam V the map value type
+    */
+  def newBuilder[K, V]: Builder[(K, V), ListMap[K, V]] = new ListMapBuilder[K, V]
+}
+
+private[immutable] final class ListMapBuilder[K, V] extends mutable.Builder[(K, V), ListMap[K, V]] {
+  private[this] var isAliased: Boolean = false
+  private[this] var underlying: ListMap[K, V] = ListMap.empty
+
+  override def clear(): Unit = {
+    underlying = ListMap.empty
+    isAliased = false
+  }
+
+  override def result(): ListMap[K, V] = {
+    isAliased = true
+    releaseFence()
+    underlying
+  }
+
+  override def addOne(elem: (K, V)): this.type = addOne(elem._1, elem._2)
+
+  def addOne(key: K, value: V): this.type = {
+    if (isAliased) {
+      underlying = underlying.updated(key, value)
+    } else {
+      var prev: ListMap.Node[K, V] = null
+      var curr = underlying
+      while (curr.nonEmpty) {
+        if (key == curr.key) {
+          if (prev eq null) {
+            underlying = underlying.next
+          } else {
+            prev._init = curr.init
+          }
+          underlying = new ListMap.Node(curr.key, value, underlying)
+          return this
+        }
+        prev = curr.asInstanceOf[ListMap.Node[K, V]]
+        curr = curr.next
+      }
+      underlying = new ListMap.Node(key, value, underlying)
     }
+    this
+  }
 }
