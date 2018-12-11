@@ -361,26 +361,28 @@ class IteratorTest {
     import java.lang.ref._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class.
-    val seq1 = new WeakReference(Array("first", "second"))
+    var seq1 = Array("first", "second") // captured, need to set to null
+    var seq11: String = null
     val seq2 = List("third")
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
-      case 1 => seq1.get
+      case 1 => val r = seq1; seq1 = null; seq11 = r(1); r
       case _ => check() ; seq2
     }
-    def check() = assertNotReachable(seq1.get, it)(())
-    def checkHasElement() = assertNotReachable(seq1.get.apply(1), it)(())
+    def check() = assertNotReachable(seq1, it)(())
+    def checkHasElement() = assertNotReachable(seq11, it)(())
     assert(it.hasNext)
     assertEquals("first", it.next())
 
     // verify that we're in the middle of seq1
     assertThrows[AssertionError](checkHasElement())
+    seq11 = null
     assertThrows[AssertionError](check())
     assert(it.hasNext)
     assertEquals("second", it.next())
 
     assert(it.hasNext)
-    assertNotReachable(seq1.get, it) {
+    assertNotReachable(seq1, it) {
       assertEquals("third", it.next())
     }
     assert(!it.hasNext)
