@@ -5118,7 +5118,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedTypeSelectionQualifier(tree: Tree, pt: Type) =
-        context.withImplicitsDisabled { typed(tree, MonoQualifierModes | mode.onlyTypePat, pt) }
+        context.withImplicitsDisabled {
+          val mode1 = MonoQualifierModes | mode.onlyTypePat
+          typed(checkRootOfQualifier(tree, mode1), mode1, pt)
+        }
 
       def typedSelectOrSuperCall(tree: Select) = tree match {
         case Select(qual @ Super(_, _), nme.CONSTRUCTOR) =>
@@ -5332,9 +5335,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedPackageDef(pdef0: PackageDef) = {
         val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, namer.expandMacroAnnotations(pdef0.stats)))
-        val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
+        val pid1 = typedPackageQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
-        if(pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule ))
+        if (pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule))
           reporter.error(pdef.pos, s"There is name conflict between the ${pid1.symbol.fullName} and the package ${sym.fullName}.")
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
           .typedStats(pdef.stats, NoSymbol)
@@ -5808,7 +5811,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  E.g. is tree occurs in a context like `tree.m`.
      */
     @inline final def typedQualifier(tree: Tree, mode: Mode, pt: Type): Tree =
-      typed(tree, PolyQualifierModes | mode.onlyTypePat, pt) // TR: don't set BYVALmode, since qualifier might end up as by-name param to an implicit
+      typed(checkRootOfQualifier(tree, mode), PolyQualifierModes | mode.onlyTypePat, pt) // TR: don't set BYVALmode, since qualifier might end up as by-name param to an implicit
 
     /** Types qualifier `tree` of a select node.
      *  E.g. is tree occurs in a context like `tree.m`.
@@ -5817,6 +5820,53 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       typedQualifier(tree, mode, WildcardType)
 
     @inline final def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode, WildcardType)
+
+    // if a package id is a selection from _root_ in scope, warn about semantics and set symbol for typedQualifier
+    @inline final def typedPackageQualifier(tree: Tree): Tree = typedQualifier(packageQualifierTraverser(tree))
+
+    object packageQualifierTraverser extends Traverser {
+      def checkRootSymbol(t: Tree): Unit =
+        context.lookupSymbol(nme.ROOTPKG, p => p.isPackage && !p.isRootPackage) match {
+          case LookupSucceeded(_, sym) =>
+            warning(t.pos, s"${nme.ROOTPKG} in root position in package definition does not refer to the root package, but to ${sym.fullLocationString}, which is in scope")
+            t.setSymbol(sym)
+          case _ => ()
+        }
+      override def traverse(tree: Tree): Unit =
+        tree match {
+          case Select(id@Ident(nme.ROOTPKG), _) if !id.hasExistingSymbol => checkRootSymbol(id)
+          case _ => super.traverse(tree)
+        }
+    }
+
+    /** If import from path starting with _root_, warn if there is a _root_ value in scope,
+     *  and ensure _root_ can only be the root package in that position.
+     */
+    @inline def checkRootOfQualifier(q: Tree, mode: Mode): Tree =
+      if (mode.typingPatternOrTypePat) patternQualifierTraverser(q) else nonpatternQualifierTraverser(q)
+
+    abstract class QualifierTraverser extends Traverser {
+      def startContext: Context
+      def checkRootSymbol(t: Tree): Unit = {
+        startContext.lookupSymbol(nme.ROOTPKG, !_.isRootPackage) match {
+          case LookupSucceeded(_, sym) =>
+            warning(t.pos, s"${nme.ROOTPKG} in root position of qualifier refers to the root package, not ${sym.fullLocationString}, which is in scope")
+            t.setSymbol(rootMirror.RootPackage)
+          case _ => ()
+        }
+      }
+      override def traverse(tree: Tree): Unit =
+        tree match {
+          case Select(id@Ident(nme.ROOTPKG), _) if !id.hasExistingSymbol => checkRootSymbol(id)
+          case _ => super.traverse(tree)
+        }
+    }
+    object patternQualifierTraverser extends QualifierTraverser {
+      override def startContext = context.outer
+    }
+    object nonpatternQualifierTraverser extends QualifierTraverser {
+      override def startContext = context
+    }
 
     /** Types function part of an application */
     @inline final def typedOperator(tree: Tree): Tree = typed(tree, OperatorModes)
