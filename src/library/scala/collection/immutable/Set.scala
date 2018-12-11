@@ -102,10 +102,7 @@ object Set extends IterableFactory[Set] {
       case _                       => (newBuilder[E] ++= it).result()
     }
 
-  def newBuilder[A]: Builder[A, Set[A]] =
-    new ImmutableBuilder[A, Set[A]](empty) {
-      def addOne(elem: A): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[A]: Builder[A, Set[A]] = new SetBuilderImpl[A]
 
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] {
