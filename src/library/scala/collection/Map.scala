@@ -122,9 +122,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
    *   @tparam  V1       the result type of the default computation.
    *   @return  the value associated with `key` if it exists,
    *            otherwise the result of the `default` computation.
-   *
-   *   @usecase def getOrElse(key: K, default: => V): V
-   *     @inheritdoc
    */
   def getOrElse[V1 >: V](key: K, default: => V1): V1 = get(key) match {
     case Some(v) => v

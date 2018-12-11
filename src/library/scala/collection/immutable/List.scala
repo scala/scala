@@ -94,12 +94,8 @@ sealed abstract class List[+A]
     *  @param elem the element to prepend.
     *  @return  a list which contains `x` as first element and
     *           which continues with this list.
-    *
-    *  @usecase def ::(elem: A): List[A]
-    *    @inheritdoc
-    *
-    *    Example:
-    *    {{{1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)}}}
+    *  Example:
+    *  {{{1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)}}}
     */
   def :: [B >: A](elem: B): List[B] =  new ::(elem, this)
 
@@ -422,9 +418,6 @@ sealed abstract class List[+A]
     *  @tparam B     the element type of the returned collection.
     *  @return       a list resulting from applying the given function
     *                `f` to each element of this list and collecting the results.
-    *
-    *  @usecase def mapConserve(f: A => A): List[A]
-    *    @inheritdoc
     */
   @`inline` final def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.

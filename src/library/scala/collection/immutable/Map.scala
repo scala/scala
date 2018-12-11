@@ -99,7 +99,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     *  @tparam   V1 the type of the added value
     *  @return   A new map with the new key/value mapping added to this map.
     *
-    *  @usecase  def updated(key: K, value: V): Map[K, V]
     *    @inheritdoc
     */
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
