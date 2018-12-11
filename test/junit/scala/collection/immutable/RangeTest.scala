@@ -89,4 +89,9 @@ class RangeTest {
     assertEquals(20, (20 to 1 by -1).min(Ordering.Int.reverse))
     assertEquals(1, (20 to 1 by -1).max(Ordering.Int.reverse))
   }
+
+  @Test
+  def t11152: Unit = {
+    assertEquals(11, (BigDecimal(1) to BigDecimal(s"1.${"0" * 32}1") by BigDecimal(s"0.${"0" * 33}1")).toList.length)
+  }
 }
