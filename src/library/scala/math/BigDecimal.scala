@@ -484,11 +484,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Addition of BigDecimals
    */
-  def +  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.add(that.bigDecimal, mc), mc)
+  def +  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal add that.bigDecimal, mc)
 
   /** Subtraction of BigDecimals
    */
-  def -  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.subtract(that.bigDecimal, mc), mc)
+  def -  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal subtract that.bigDecimal, mc)
 
   /** Multiplication of BigDecimals
    */
@@ -502,14 +502,14 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *  divideToIntegralValue and the remainder.  The computation is exact: no rounding is applied.
    */
   def /% (that: BigDecimal): (BigDecimal, BigDecimal) = {
-    val qr = this.bigDecimal.divideAndRemainder(that.bigDecimal, mc)
+    val qr = this.bigDecimal.divideAndRemainder(that.bigDecimal)
     (new BigDecimal(qr(0), mc), new BigDecimal(qr(1), mc))
   }
 
   /** Divide to Integral value.
    */
   def quot (that: BigDecimal): BigDecimal =
-    new BigDecimal(this.bigDecimal.divideToIntegralValue(that.bigDecimal, mc), mc)
+    new BigDecimal(this.bigDecimal divideToIntegralValue that.bigDecimal, mc)
 
   /** Returns the minimum of this and that, or this if the two are equal
    */
@@ -527,11 +527,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Remainder after dividing this by that.
    */
-  def remainder (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.remainder(that.bigDecimal, mc), mc)
+  def remainder (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal remainder that.bigDecimal, mc)
 
   /** Remainder after dividing this by that.
    */
-  def % (that: BigDecimal): BigDecimal = this.remainder(that)
+  def % (that: BigDecimal): BigDecimal = this remainder that
 
   /** Returns a BigDecimal whose value is this ** n.
    */
@@ -539,7 +539,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
-  def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(mc), mc)
+  def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(), mc)
 
   /** Returns the absolute value of this BigDecimal
    */

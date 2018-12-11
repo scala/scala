@@ -4,7 +4,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import java.math.{BigDecimal => BD, MathContext => MC}
-import java.util.Formatter.BigDecimalLayoutForm
 
 /* Tests various maps by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
@@ -258,29 +257,6 @@ class BigDecimalTest {
 
     testPrecision()
     testRounded()
-  }
-
-  // Motivated by scala/bug#10882: Operators for BigDecimal don't use value of mc (MathContext)
-  @Test
-  def testUsesMathContextInOperators(): Unit = {
-    def isAE[A](a: => A): Boolean = try { a; false } catch { case e: ArithmeticException => true }
-
-    val bd128 = BigDecimal("4.2e1000", MC.DECIMAL128)
-    assert(bd128 + 10 == bd128)
-    assert(bd128 - 10 == bd128)
-    assert(bd128 + BigDecimal("1e100", MC.UNLIMITED) == bd128)
-    assert(bd128 - BigDecimal("1e100", MC.UNLIMITED) == bd128)
-    assert(bd128.quot(BigDecimal("1e100", MC.UNLIMITED)) == BigDecimal("4.2e900", MC.DECIMAL128))
-    assert(isAE(bd128.quot(BigDecimal("1e100", MC.UNLIMITED) + 1)))
-    assert(isAE(bd128 % (BigDecimal("1e100", MC.UNLIMITED) + 1)))
-    assert(isAE(bd128 /% (BigDecimal("1e100", MC.UNLIMITED) + 1)))
-
-    val bdUnlimited = BigDecimal("4.2e1000", MC.UNLIMITED)
-    assert(bdUnlimited + 10 > bdUnlimited)
-    assert(bdUnlimited - 10 < bdUnlimited)
-    assert(bdUnlimited + BigDecimal("1e100", MC.DECIMAL128) > bdUnlimited)
-    assert(bdUnlimited - BigDecimal("1e100", MC.DECIMAL128) < bdUnlimited)
-    assert(bdUnlimited.quot(BigDecimal("1e100", MC.DECIMAL128)) == BigDecimal("4.2e900", MC.UNLIMITED))
   }
 
   @Test
