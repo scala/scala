@@ -35,7 +35,7 @@ trait StreamConverters {
         st: StepperShape[A, St],
         @implicitNotFound("parStream can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[A] <:< IterableOnceOpsWithEfficientStepper[A]): S =
-      s.fromStepper((cc: collection.IterableOnceOps[A, AnyConstr, _]).stepper, par = true)
+      s.fromStepper(cc.stepper, par = true)
   }
 
   // maps
@@ -58,14 +58,14 @@ trait StreamConverters {
         st: StepperShape[K, St],
         @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientKeyStepper[K, V]): S =
-      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).keyStepper(st), par = true)
+      s.fromStepper(cc.keyStepper, par = true)
 
     def parValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[V, S, St],
         st: StepperShape[V, St],
         @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientValueStepper[K, V]): S =
-      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).valueStepper(st), par = true)
+      s.fromStepper(cc.valueStepper, par = true)
 
     // The parStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
     def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
@@ -73,7 +73,7 @@ trait StreamConverters {
         st: StepperShape[(K, V), St],
         @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientStepper[K, V]): S =
-      s.fromStepper((cc: collection.MapOps[K, V, AnyConstr, _]).stepper(st), par = true)
+      s.fromStepper(cc.stepper, par = true)
   }
 
   // steppers
