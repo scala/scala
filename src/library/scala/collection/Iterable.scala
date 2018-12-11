@@ -16,8 +16,7 @@ package collection
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
-import java.lang.{String, UnsupportedOperationException}
-
+import scala.collection.View.{LeftPartitionedWith, RightPartitionedWith}
 import scala.collection.generic.DefaultSerializationProxy
 
 /** Base trait for generic collections.
@@ -427,8 +426,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  which requires only a single traversal.
     */
   def partition(p: A => Boolean): (C, C) = {
-    val pn = new View.Partition(this, p)
-    (fromSpecific(pn.first), fromSpecific(pn.second))
+    val first = new View.Filter(this, p, false)
+    val second = new View.Filter(this, p, true)
+    (fromSpecific(first), fromSpecific(second))
   }
 
   /** Splits this $coll into two at a given position.
@@ -698,8 +698,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *               elements contained in [[scala.util.Left]] and, second, all the values contained in [[scala.util.Right]].
     */
   def partitionWith[A1, A2](f: A => Either[A1, A2]): (CC[A1], CC[A2]) = {
-    val mp = new View.PartitionWith(this, f)
-    (iterableFactory.from(mp.left), iterableFactory.from(mp.right))
+    val left: View[A1] = new LeftPartitionedWith(this, f)
+    val right: View[A2] = new RightPartitionedWith(this, f)
+    (iterableFactory.from(left), iterableFactory.from(right))
   }
 
   /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
@@ -771,8 +772,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *                half of each element pair of this $coll.
     */
   def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
-    val unzipped = new View.Unzip(this)
-    (iterableFactory.from(unzipped.first), iterableFactory.from(unzipped.second))
+    val first: View[A1] = new View.Map[A, A1](this, asPair(_)._1)
+    val second: View[A2] = new View.Map[A, A2](this, asPair(_)._2)
+    (iterableFactory.from(first), iterableFactory.from(second))
   }
 
   /** Converts this $coll of triples into three collections of the first, second,
@@ -797,8 +799,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *                   third member of each element triple of this $coll.
     */
   def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
-    val unzipped = new View.Unzip3(this)
-    (iterableFactory.from(unzipped.first), iterableFactory.from(unzipped.second), iterableFactory.from(unzipped.third))
+    val first: View[A1] = new View.Map[A, A1](this, asTriple(_)._1)
+    val second: View[A2] = new View.Map[A, A2](this, asTriple(_)._2)
+    val third: View[A3] = new View.Map[A, A3](this, asTriple(_)._3)
+    (iterableFactory.from(first), iterableFactory.from(second), iterableFactory.from(third))
   }
 
   /** Iterates over the tails of this $coll. The first value will be this

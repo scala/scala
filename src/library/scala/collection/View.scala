@@ -163,50 +163,10 @@ object View extends IterableFactory[View] {
     override def isEmpty: Boolean = underlying.isEmpty
   }
 
-  /** A class that partitions an underlying collection into two views */
   @SerialVersionUID(3L)
-  class Partition[A](val underlying: SomeIterableOps[A], val p: A => Boolean) extends Serializable {
-
-    /** The view consisting of all elements of the underlying collection
-     *  that satisfy `p`.
-     */
-    val first = new Partitioned(this, true)
-
-    /** The view consisting of all elements of the underlying collection
-     *  that do not satisfy `p`.
-     */
-    val second = new Partitioned(this, false)
-  }
-
-  /** A view representing one half of a partition. */
-  @SerialVersionUID(3L)
-  class Partitioned[A](partition: Partition[A], cond: Boolean) extends AbstractView[A] {
-    def iterator = partition.underlying.iterator.filter(x => partition.p(x) == cond)
-    override def knownSize: Int = if (partition.underlying.knownSize == 0) 0 else super.knownSize
-    override def isEmpty: Boolean = iterator.isEmpty
-  }
-
-  /** A class that splits an underlying collection into two views */
-  @SerialVersionUID(3L)
-  class PartitionWith[A, A1, A2](val underlying: SomeIterableOps[A], val f: A => Either[A1, A2]) extends Serializable {
-
-    /** The view consisting of all elements of the underlying collection
-      *  that map to `Left`.
-      */
-    val left: View[A1] = new LeftPartitionedWith(this, f)
-
-
-    /** The view consisting of all elements of the underlying collection
-      *  that map to `Right`.
-      */
-    val right: View[A2] = new RightPartitionedWith(this, f)
-
-  }
-
-  @SerialVersionUID(3L)
-  class LeftPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A1] {
+  class LeftPartitionedWith[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A1] {
     def iterator = new AbstractIterator[A1] {
-      private[this] val self = partitionWith.underlying.iterator
+      private[this] val self = underlying.iterator
       private[this] var hd: A1 = _
       private[this] var hdDefined: Boolean = false
       def hasNext = hdDefined || {
@@ -228,9 +188,9 @@ object View extends IterableFactory[View] {
   }
 
   @SerialVersionUID(3L)
-  class RightPartitionedWith[A, A1, A2](partitionWith: PartitionWith[A, A1, A2], f: A => Either[A1, A2]) extends AbstractView[A2] {
+  class RightPartitionedWith[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A2] {
       def iterator = new AbstractIterator[A2] {
-        private[this] val self = partitionWith.underlying.iterator
+        private[this] val self = underlying.iterator
         private[this] var hd: A2 = _
         private[this] var hdDefined: Boolean = false
         def hasNext = hdDefined || {
@@ -416,19 +376,6 @@ object View extends IterableFactory[View] {
     def iterator: Iterator[(A, Int)] = underlying.iterator.zipWithIndex
     override def knownSize: Int = underlying.knownSize
     override def isEmpty: Boolean = underlying.isEmpty
-  }
-
-  @SerialVersionUID(3L)
-  class Unzip[A, A1, A2](underlying: SomeIterableOps[A])(implicit asPair: A => (A1, A2)) extends Serializable {
-    val first: View[A1] = new View.Map[A, A1](underlying, asPair(_)._1)
-    val second: View[A2] = new View.Map[A, A2](underlying, asPair(_)._2)
-  }
-
-  @SerialVersionUID(3L)
-  class Unzip3[A, A1, A2, A3](underlying: SomeIterableOps[A])(implicit asTriple: A => (A1, A2, A3)) extends Serializable {
-    val first: View[A1] = new View.Map[A, A1](underlying, asTriple(_)._1)
-    val second: View[A2] = new View.Map[A, A2](underlying, asTriple(_)._2)
-    val third: View[A3] = new View.Map[A, A3](underlying, asTriple(_)._3)
   }
 
   @SerialVersionUID(3L)
