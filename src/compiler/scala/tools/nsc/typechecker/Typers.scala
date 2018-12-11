@@ -959,11 +959,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def insertApply(): Tree = {
         assert(!context.inTypeConstructorAllowed, mode) //@M
-        val adapted = adaptToName(tree, nme.apply)
+        val adapted = adaptToName(unmarkDynamicRewrite(tree), nme.apply)
         val qual = gen.stabilize(adapted)
-        typedPos(tree.pos, mode, pt) {
-          Select(qual setPos tree.pos.makeTransparent, nme.apply)
-        }
+        val t = atPos(tree.pos)(Select(qual setPos tree.pos.makeTransparent, nme.apply))
+        wrapErrors(t, _.typed(t, mode, pt))
       }
       def adaptConstant(value: Constant): Tree = {
         val sym = tree.symbol
@@ -1114,12 +1113,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def hasPolymorphicApply = applyMeth.alternatives exists (_.tpe.typeParams.nonEmpty)
           def hasMonomorphicApply = applyMeth.alternatives exists (_.tpe.paramSectionCount > 0)
 
-          acceptsApplyDynamic(tree.tpe) || (
-            if (mode.inTappMode)
-              tree.tpe.typeParams.isEmpty && hasPolymorphicApply
-            else
-              hasMonomorphicApply
-          )
+          def badDynamicApply() = {
+            tree match {
+              case Apply(fun, _) => DynamicRewriteError(tree, ApplyWithoutArgsError(tree, fun))
+              case _             => ()
+            }
+            false
+          }
+          if (acceptsApplyDynamic(tree.tpe))
+            !isDynamicRewrite(tree) || badDynamicApply()
+          else if (mode.inTappMode)
+            tree.tpe.typeParams.isEmpty && hasPolymorphicApply
+          else
+            hasMonomorphicApply
         }
         def shouldInsertApply(tree: Tree) = mode.typingExprFun && {
           tree.tpe match {
@@ -4169,10 +4175,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!isApplyDynamicName(name) && acceptsApplyDynamic(qual.tpe.widen)) Some(NoType)
       else None
 
+    // if the qualifier is a Dynamic, that's all we need to know
     private def isDynamicallyUpdatable(tree: Tree) = tree match {
-      // if the qualifier is a Dynamic, that's all we need to know
       case DynamicUpdate(qual, name) => acceptsApplyDynamic(qual.tpe)
-      case _ => false
+      case _                         => false
     }
 
     private def isApplyDynamicNamed(fun: Tree): Boolean = fun match {
@@ -4445,7 +4451,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val rhs1 = typedByValueExpr(rhs, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(context, rhs1)) setType UnitTpe
         }
-        else if(isDynamicallyUpdatable(lhs1)) {
+        else if (isDynamicallyUpdatable(lhs1)) {
           val t = atPos(lhs1.pos.withEnd(rhs.pos.end)) {
             Apply(lhs1, List(rhs))
           }
