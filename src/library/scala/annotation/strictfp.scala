@@ -18,4 +18,4 @@ package scala.annotation
  *  @author Paul Phillips
  *  @since 2.9
  */
-class strictfp extends scala.annotation.StaticAnnotation
+final class strictfp extends scala.annotation.StaticAnnotation

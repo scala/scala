@@ -47,4 +47,4 @@ package scala
  *
  * @author Lex Spoon
  */
-class noinline extends scala.annotation.StaticAnnotation
+final class noinline extends scala.annotation.StaticAnnotation

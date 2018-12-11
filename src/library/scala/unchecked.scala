@@ -37,4 +37,4 @@ package scala
  *
  *  @since 2.4
  */
-class unchecked extends scala.annotation.Annotation {}
+final class unchecked extends scala.annotation.Annotation {}

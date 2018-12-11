@@ -15,4 +15,4 @@ package scala
 import scala.annotation.meta._
 
 @field
-class transient extends scala.annotation.StaticAnnotation
+final class transient extends scala.annotation.StaticAnnotation

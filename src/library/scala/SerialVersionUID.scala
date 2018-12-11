@@ -23,4 +23,4 @@ package scala
   * @see [[http://docs.oracle.com/javase/8/docs/api/java/io/Serializable.html `java.io.Serializable`]]
   * @see [[Serializable]]
   */
-class SerialVersionUID(value: Long) extends scala.annotation.ConstantAnnotation
+final class SerialVersionUID(value: Long) extends scala.annotation.ConstantAnnotation

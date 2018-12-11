@@ -15,4 +15,4 @@ package scala
 import scala.annotation.meta._
 
 @field
-class volatile extends scala.annotation.StaticAnnotation
+final class volatile extends scala.annotation.StaticAnnotation

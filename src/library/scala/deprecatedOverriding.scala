@@ -49,4 +49,4 @@ import scala.annotation.meta._
  *  @see    [[scala.deprecatedName]]
  */
 @getter @setter @beanGetter @beanSetter
-class deprecatedOverriding(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
+final class deprecatedOverriding(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation

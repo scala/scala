@@ -30,7 +30,7 @@ import Specializable._
  */
 // class tspecialized[T](group: Group[T]) extends scala.annotation.StaticAnnotation {
 
-class specialized(group: SpecializedGroup) extends scala.annotation.StaticAnnotation {
+final class specialized(group: SpecializedGroup) extends scala.annotation.StaticAnnotation {
   def this(types: Specializable*) = this(new Group(types.toList))
   def this() = this(Primitives)
 }
