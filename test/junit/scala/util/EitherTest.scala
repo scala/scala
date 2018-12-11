@@ -44,4 +44,65 @@ class EitherTest {
     assertEquals(leftSumOrRightEmpty(List(1, 2, 3)), Left(6))
     assertEquals(leftSumOrRightEmpty(Nil), Right("empty"))
   }
+
+  @Test
+  def testCollectLeftsWithNoLeft: Unit = {
+    val e1 = Right(1)
+    val e2 = Right(2)
+    val e3 = Right(3)
+
+    assertEquals(Either.collectLefts(e1,e2,e3), Nil)
+  }
+
+  @Test
+  def testCollectLeftsWithSomeLefts: Unit = {
+    val e1 = Right(1)
+    val e2 = Left("nan")
+    val e3 = Left("nan2")
+
+    assertEquals(Either.collectLefts(e1,e2,e3), Seq("nan", "nan2"))
+  }
+
+  @Test
+  def testCollectLeftsWithSomeLeftsWithMixedRightTypes: Unit = {
+    val e1 = Right(1)
+    val e2 = Right("2")
+    val e3 = Left("nan")
+
+    assertEquals(Either.collectLefts(e1, e2, e3), Seq("nan"))
+  }
+
+  @Test
+  def testCollectLeftsWithSomeLeftsWithErrorTrait: Unit = {
+    sealed trait Error
+    case class NumericError(message: String) extends Error
+    case class OtherError(message: String) extends Error
+
+    val e1 = Right(1)
+    val e2 = Left(NumericError("nan"))
+    val e3 = Left(OtherError("foo"))
+
+    val lefts: Seq[Error] = Either.collectLefts(e1,e2,e3)
+    assertEquals(lefts, Seq(NumericError("nan"), OtherError("foo")))
+  }
+
+  @Test
+  def testCollectRightsWithNoRight: Unit = {
+    val e1 = Left(1)
+    val e2 = Left(2)
+    val e3 = Left(3)
+
+    assertEquals(Either.collectRights(e1,e2,e3), Nil)
+  }
+
+  @Test
+  def testCollectRightsWithSomeRights: Unit = {
+    val e0 = Left("nan")
+    val e1 = Right(1)
+    val e2 = Right(2)
+    val e3 = Left("nan bis")
+    val e4 = Right(3)
+
+    assertEquals(Either.collectRights(e0, e1, e2, e3, e4), Seq(1, 2, 3))
+  }  
 }
