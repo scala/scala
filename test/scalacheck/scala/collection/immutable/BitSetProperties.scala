@@ -3,6 +3,7 @@ package scala.collection.immutable
 import org.scalacheck._
 import org.scalacheck.Prop._
 import Gen._
+
 object BitSetProperties extends Properties("immutable.BitSet") {
 
   override def overrideParameters(p: Test.Parameters): Test.Parameters =
