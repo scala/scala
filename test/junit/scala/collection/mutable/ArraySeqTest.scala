@@ -13,7 +13,13 @@ class ArraySeqTest {
   @Test
   def t11187(): Unit = {
     assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sorted)
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortInPlace)
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortBy(identity))
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortInPlaceBy(identity))
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortWith(_ < _))
+    assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortInPlaceWith(_ < _))
   }
+
   @Test
   def t10851(): Unit = {
     val s1 = ArraySeq.untagged(1,2,3)
