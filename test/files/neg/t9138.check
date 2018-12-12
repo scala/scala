@@ -1,4 +1,5 @@
 t9138.scala:9: error: class D needs to be abstract, since method f in class C of type (t: B)(s: String)B is not defined
+(Note that String does not match Int)
 class D extends C[B] {
       ^
 t9138.scala:19: error: object creation impossible, since method foo in trait Base of type (a: String)(b: Int)Nothing is not defined
@@ -8,4 +9,8 @@ t9138.scala:29: error: class DDD needs to be abstract, since method f in class C
 (Note that T does not match Int)
 class DDD extends CCC[B] {
       ^
-three errors found
+t9138.scala:43: error: object creation impossible, since method create in trait Model of type (conditionalParams: ImplementingParamTrait)(implicit d: Double)Int is not defined
+(overriding member must declare implicit parameter list)
+object Obj extends Model[ImplementingParamTrait] {
+       ^
+four errors found
