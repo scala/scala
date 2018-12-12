@@ -183,7 +183,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      */
     def withPartial(x: Boolean): this.type = {
       _partial = x
-      if (_partial == true) // reset pad since otherwise it will take precedence
+      if (_partial) // reset pad since otherwise it will take precedence
         pad = None
 
       this
