@@ -295,7 +295,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
     override def split: Seq[HashMap[A, B]] = {
       val (x, y) = kvs.splitAt(kvs.size / 2)
-      def newhm(lm: ListMap[A, B @uV]) = new HashMapCollision1(hash, lm)
+      def newhm(lm: ListMap[A, B @uV]) = {
+        if (lm.size > 1) new HashMapCollision1(hash, lm)
+        else new HashMap1(lm.head._1, hash, lm.head._2, lm.head)
+      }
       List(newhm(x), newhm(y))
     }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
