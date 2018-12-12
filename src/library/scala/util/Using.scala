@@ -14,7 +14,7 @@ package scala.util
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.util.control.{ControlThrowable, NonFatal}
+import scala.util.control.NonFatal
 
 /** A utility for performing automatic resource management. It can be used to perform an
   * operation using resources, after which it will release the resources, in reverse order
@@ -148,10 +148,8 @@ object Using {
   def resource[R: Resource, A](resource: R)(body: R => A): A = {
     if (resource == null) throw new NullPointerException("null resource")
 
-    @inline def safeAddSuppressed(t: Throwable, suppressed: Throwable): Unit = {
-      // don't `addSuppressed` to something which is a `ControlThrowable`
-      if (!t.isInstanceOf[ControlThrowable]) t.addSuppressed(suppressed)
-    }
+    @inline def safeAddSuppressed(t: Throwable, suppressed: Throwable): Unit =
+      t.addSuppressed(suppressed)  // a no-op for ControlThrowable
 
     var primary: Throwable = null
     try {

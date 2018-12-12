@@ -5064,8 +5064,8 @@ trait Types
     if (settings.debug) printStackTrace()
   }
 
-  class NoCommonType(tps: List[Type]) extends Throwable(
-    "lub/glb of incompatible types: " + tps.mkString("", " and ", "")) with ControlThrowable
+  class NoCommonType(tps: List[Type]) extends ControlThrowable(
+    "lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
 
   /** A throwable signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {

@@ -54,6 +54,16 @@ object AssertUtil {
     }
   }
 
+  def assertThrown[T <: Throwable: ClassTag](checker: T => Boolean)(body: => Any): Unit =
+    try {
+      body
+      fail("Expression did not throw!")
+    } catch {
+      case e: T if checker(e) => ()
+      case other: T => val ae = new AssertionError(s"Exception failed check: $other") ; ae.addSuppressed(other) ; throw ae
+      case other => val ae = new AssertionError(s"Exception not a ${implicitly[ClassTag[T]]}: $other") ; ae.addSuppressed(other) ; throw ae
+    }
+
   /** JUnit-style assertion for `IterableLike.sameElements`.
    */
   def assertSameElements[A, B >: A](expected: Iterable[A], actual: Iterable[B], message: String = ""): Unit =
