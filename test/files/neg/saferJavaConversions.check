@@ -1,6 +1,0 @@
-saferJavaConversions.scala:13: error: type mismatch;
- found   : String("a")
- required: Foo
-    val v = map.get("a")  // now this is a type error
-                    ^
-one error found

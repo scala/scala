@@ -8,7 +8,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.collection.convert.ImplicitConversions._
 import scala.collection.{concurrent, mutable}
 
 // scala/bug#9113: tests to insure that wrappers return null instead of wrapping it as a collection
