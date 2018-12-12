@@ -140,6 +140,42 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
 
+  @inline private[this] def smallestInt: Int = {
+    val thisnwords = nwords
+    var i = 0
+    while(i < thisnwords) {
+      val currentWord = word(i)
+      if (currentWord != 0L) {
+        return java.lang.Long.numberOfTrailingZeros(currentWord) + (i * WordLength)
+      }
+      i += 1
+    }
+    throw new UnsupportedOperationException("empty.smallestInt")
+  }
+
+  @inline private[this] def largestInt: Int = {
+    var i = nwords - 1
+    while(i >= 0) {
+      val currentWord = word(i)
+      if (currentWord != 0L) {
+        return ((i + 1) * WordLength) - java.lang.Long.numberOfLeadingZeros(currentWord) - 1
+      }
+      i -= 1
+    }
+    throw new UnsupportedOperationException("empty.largestInt")
+  }
+
+  override def max[B >: Int](implicit ord: Ordering[B]): Int =
+    if (Ordering.Int eq ord) largestInt
+    else if (Ordering.Int.reverse eq ord) smallestInt
+    else super.max(ord)
+
+
+  override def min[B >: Int](implicit ord: Ordering[B]): Int =
+    if (Ordering.Int eq ord) smallestInt
+    else if (Ordering.Int.reverse eq ord) largestInt
+    else super.min(ord)
+
   override def foreach[U](f: Int => U): Unit = {
     /* NOTE: while loops are significantly faster as of 2.11 and
        one major use case of bitsets is performance. Also, there
