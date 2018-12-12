@@ -8,8 +8,9 @@ import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.GenIterable
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.SyncVar
+import scala.concurrent.{Await, Awaitable, SyncVar, TimeoutException}
 import scala.tools.nsc.settings.ScalaVersion
+import scala.util.Try
 import scala.util.Properties.javaSpecVersion
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
@@ -121,12 +122,7 @@ object AssertUtil {
       body
 
       val afterCount = {
-        var n = 1
-        while (group.activeCount > beforeCount && n < 5) {
-          //println("Wait for quiescence")
-          Thread.sleep(250L * n)
-          n += 1
-        }
+        waitForIt(group.activeCount <= beforeCount, label = "after count")
         group.activeCount
       }
       val afterThreads = new Array[Thread](afterCount)
@@ -144,14 +140,65 @@ object AssertUtil {
         case t: Throwable => result.put(Some(t))
       }
     }
+    val timeout = 10 * 1000L  // last chance timeout
     val thread = new Thread(group, () => test())
+    def resulted: Boolean = result.get(timeout).isDefined
     try {
       thread.start()
-      val timeout = 10 * 1000L
+      waitForIt(resulted, Slow, label = "test result")
       val err = result.take(timeout)
       err.foreach(e => throw e)
     } finally {
+      thread.join(timeout)
       group.destroy()
     }
   }
+
+  /** Wait for a condition, with a simple back-off strategy.
+   *
+   *  It would be nicer if what we're waiting for gave us
+   *  a progress indicator: we don't care if something
+   *  takes a long time, so long as we can verify progress.
+   */
+  def waitForIt(terminated: => Boolean, progress: Progress = Fast, label: => String = "test"): Unit = {
+    val limit = 5
+    var n = 1
+    var (dormancy, factor) = progress match {
+      case Slow => (10000L, 5)
+      case Fast => (250L, 4)
+    }
+    var period = 0L
+    var done = false
+    var ended = false
+    while (!done && n < limit) {
+      try {
+        ended = terminated
+        if (ended) {
+          done = true
+        } else {
+          //println(s"Wait for test condition: $label")
+          Thread.sleep(dormancy)
+          period += dormancy
+        }
+      } catch {
+        case _: InterruptedException => done = true
+      }
+      n += 1
+      dormancy *= factor
+    }
+    assertTrue(s"Expired after dormancy period $period waiting for termination condition $label", ended)
+  }
+
+  /** How frequently to check a termination condition. */
+  sealed trait Progress
+  final case object Slow extends Progress
+  final case object Fast extends Progress
+
+  /** Like Await.ready but return false on timeout, true on completion, throw InterruptedException. */
+  def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
+}
+
+object TestDuration {
+  import scala.concurrent.duration.{Duration, SECONDS}
+  val Standard = Duration(4, SECONDS)
 }
