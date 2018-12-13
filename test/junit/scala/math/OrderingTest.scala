@@ -39,10 +39,9 @@ class OrderingTest {
     Double.NaN
   )
 
-
   /* Test for scala/bug#9077 */
   @Test
-  def testReverseOrdering: Unit = {
+  def reverseOrdering(): Unit = {
     def check[T: Ordering](t1: T, t2: T): Unit = {
       val O = Ordering[T]
       val R = O.reverse
@@ -91,7 +90,43 @@ class OrderingTest {
   }
 
   @Test
-  def testComposedOrdering(): Unit = {
+  def reverseOf(): Unit = {
+    def check[T](ord: Ordering[T]): Unit = {
+      assert(ord isReverseOf ord.reverse)
+      assert(ord.reverse isReverseOf ord)
+      assert(!(ord isReverseOf ord))
+      assert(!(ord.reverse isReverseOf ord.reverse))
+      assert(!ord.isReverseOf({ (_, _) => 0 }: Ordering[T]))
+      assert(!ord.reverse.isReverseOf({ (_, _) => 0 }: Ordering[T]))
+    }
+
+    check(Ordering[Int])
+    check(Ordering[(Int, Long)])
+    check(Ordering[(Int, Long, Float)])
+    check(Ordering[(Int, Long, Float, Double)])
+    check(Ordering[(Int, Long, Float, Double, Byte)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
+    check(Ordering[Option[Int]])
+
+    import Ordering.Implicits._
+    check(Ordering[Seq[Int]])
+    check(Ordering[SortedSet[Int]])
+  }
+
+  @Test
+  def cachedReverse(): Unit = {
+    def check[T](ord: Ordering[T]): Unit = {
+      assert(ord.reverse eq ord.reverse)
+    }
+
+    check(Ordering[Int])
+  }
+
+  @Test
+  def composedOrdering(): Unit = {
     case class Pair(a: Int, b: Int)
 
     def check(ord1: Ordering[Pair], ord2: Ordering[Pair]): Unit = {
@@ -111,7 +146,7 @@ class OrderingTest {
 
   /* Test for scala/bug#10511 */
   @Test
-  def testFloatDoubleTotalOrdering(): Unit = {
+  def floatDoubleTotalOrdering(): Unit = {
     val fNegZeroBits = jl.Float.floatToRawIntBits(-0.0f)
     val fPosZeroBits = jl.Float.floatToRawIntBits(0.0f)
 
@@ -204,7 +239,7 @@ class OrderingTest {
 
   /* Test for scala/bug#8664 */
   @Test
-  def testSymbolOrdering(): Unit = {
+  def symbolOrdering(): Unit = {
     assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
   }
 

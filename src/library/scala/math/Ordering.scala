@@ -109,8 +109,26 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Return `x` if `x` <= `y`, otherwise `y`. */
   def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
 
-  /** Return the opposite ordering of this one. */
+  /** Return the opposite ordering of this one.
+    *
+    * Implementations overriding this method MUST override [[isReverseOf]]
+    * as well if they change the behavior at all (for example, caching does
+    * not require overriding it).
+    */
   override def reverse: Ordering[T] = new Ordering.Reverse[T](this)
+
+  /** Returns whether or not the other ordering is the opposite
+    * ordering of this one.
+    *
+    * Equivalent to `other == this.reverse`.
+    *
+    * Implementations should only override this method if they are overriding
+    * [[reverse]] as well.
+    */
+  def isReverseOf(other: Ordering[_]): Boolean = other match {
+    case that: Ordering.Reverse[_] => that.outer == this
+    case _ => false
+  }
 
   /** Given f, a function from U into T, creates an Ordering[U] whose compare
     * function is equivalent to:
@@ -214,9 +232,18 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   @inline def apply[T](implicit ord: Ordering[T]) = ord
 
+  /** An ordering which caches the value of its reverse. */
+  sealed trait CachedReverse[T] extends Ordering[T] {
+    private[this] val _reverse = super.reverse
+    override final def reverse: Ordering[T] = _reverse
+    override final def isReverseOf(other: Ordering[_]): Boolean = other eq _reverse
+  }
+
   /** A reverse ordering */
-  private final class Reverse[T](private val outer: Ordering[T]) extends Ordering[T] {
-    override def reverse: Ordering[T]       = outer
+  private final class Reverse[T](private[Ordering] val outer: Ordering[T]) extends Ordering[T] {
+    override def reverse: Ordering[T]                   = outer
+    override def isReverseOf(other: Ordering[_]): Boolean = other == outer
+
     def compare(x: T, y: T): Int            = outer.compare(y, x)
     override def lteq(x: T, y: T): Boolean  = outer.lteq(y, x)
     override def gteq(x: T, y: T): Boolean  = outer.gteq(y, x)
@@ -233,8 +260,6 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     override def hashCode(): Int = outer.hashCode() * reverseSeed
   }
-
-  final val IntReverse: Ordering[Int] = new Reverse(Ordering.Int)
 
   private final class IterableOrdering[CC[X] <: Iterable[X], T](private val ord: Ordering[T]) extends Ordering[CC[T]] {
     def compare(x: CC[T], y: CC[T]): Int = {
@@ -336,9 +361,8 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   trait IntOrdering extends Ordering[Int] {
     def compare(x: Int, y: Int) = java.lang.Integer.compare(x, y)
-    override def reverse: Ordering[Int] = Ordering.IntReverse
   }
-  implicit object Int extends IntOrdering
+  implicit object Int extends IntOrdering with CachedReverse[Int]
 
   trait LongOrdering extends Ordering[Long] {
     def compare(x: Long, y: Long) = java.lang.Long.compare(x, y)

@@ -199,7 +199,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
       case ts: TreeSet[E] if ordering == ts.ordering => ts
       case ss: scala.collection.SortedSet[E] if ordering == ss.ordering =>
         new TreeSet[E](RB.fromOrderedKeys(ss.iterator, ss.size))
-      case r: Range if (ordering eq Ordering.Int) || (ordering eq Ordering.Int.reverse) =>
+      case r: Range if (ordering eq Ordering.Int) || (Ordering.Int isReverseOf ordering) =>
         val it = if((ordering eq Ordering.Int) == (r.step > 0)) r.iterator else r.reverseIterator
         val tree = RB.fromOrderedKeys(it.asInstanceOf[Iterator[E]], r.size)
           // The cast is needed to compile with Dotty:
