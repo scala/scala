@@ -481,7 +481,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
     private var cur: Iterator[B] = empty
-    private def nextCur() { cur = f(self.next()).toIterator }
+    private def nextCur(): Unit = { cur = null ; cur = f(self.next()).toIterator }
     def hasNext: Boolean = {
       // Equivalent to cur.hasNext || self.hasNext && { nextCur(); hasNext }
       // but slightly shorter bytecode (better JVM inlining!)
