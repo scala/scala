@@ -1,10 +1,10 @@
-import scala.collection.convert.ImplicitConversionsToScala._
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 object Test extends App {
   def testMap(): Unit = {
     val mapJ = new java.util.HashMap[Int, String]
-    val mapS: mutable.Map[Int, String] = mapJ
+    val mapS: mutable.Map[Int, String] = mapJ.asScala
 
     (10 to 20).foreach(i => mapS += ((i, i.toString)))
     assert(11 == mapS.size)
@@ -16,7 +16,7 @@ object Test extends App {
 
   def testSet(): Unit = {
     val mapJ = new java.util.HashSet[Int]
-    val mapS: mutable.Set[Int] = mapJ
+    val mapS: mutable.Set[Int] = mapJ.asScala
 
     (10 to 20).foreach(i => mapS += i)
     assert(11 == mapS.size)

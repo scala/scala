@@ -1,8 +1,8 @@
 reload: CrashOnLoad.scala, TestIterable.java
 
-askTypeCompletion at CrashOnLoad.scala(6,11)
+askTypeCompletion at CrashOnLoad.scala(9,11)
 ================================================================================
-[response] askTypeCompletion at (6,11)
+[response] askTypeCompletion at (9,11)
 retrieved 30 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
