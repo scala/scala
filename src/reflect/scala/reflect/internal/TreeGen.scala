@@ -857,10 +857,11 @@ abstract class TreeGen {
    */
   private def matchVarPattern(tree: Tree): Option[(Name, Tree)] = {
     import nme.{WILDCARD => WC}
+    val forFor = tree.hasAttachment[ForAttachment.type]   // exclude user-written x @ _
     tree match {
-      case id @ Ident(name) if name.toTermName != WC || id.isBackquoted => Some((name, TypeTree()))
-      case Bind(name, Ident(x)) if x.toTermName == WC                   => Some((name, TypeTree()))
-      case Bind(name, Typed(Ident(x), tpt)) if x.toTermName == WC       => Some((name, tpt))
+      case id @ Ident(name) if name.toTermName != WC || id.isBackquoted             => Some((name, TypeTree()))
+      case Bind(name, Ident(x)) if forFor && x.toTermName == WC                     => Some((name, TypeTree()))
+      case Bind(name, Typed(Ident(x), tpt)) if forFor && x.toTermName == WC         => Some((name, tpt))
       case Typed(id @ Ident(name), tpt) if name.toTermName != WC || id.isBackquoted => Some((name, tpt))
       case _ => None
     }
@@ -934,15 +935,18 @@ abstract class TreeGen {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if treeInfo.isVarPattern(tree) && name != nme.WILDCARD =>
         atPos(tree.pos) {
-          val b = Bind(name, atPos(tree.pos.focus) (Ident(nme.WILDCARD)))
-          if (forFor && isPatVarWarnable) b updateAttachment NoWarnAttachment
-          else b
+          val b = Bind(name, atPos(tree.pos.focus) { Ident(nme.WILDCARD) })
+          if (forFor) {
+            b.updateAttachment(ForAttachment)
+            if (isPatVarWarnable) b.updateAttachment(NoWarnAttachment)
+          }
+          b
         }
       case Typed(id @ Ident(name), tpt) if treeInfo.isVarPattern(id) && name != nme.WILDCARD =>
         atPos(tree.pos.withPoint(id.pos.point)) {
-          Bind(name, atPos(tree.pos.withStart(tree.pos.point)) {
-            Typed(Ident(nme.WILDCARD), tpt)
-          })
+          val b = Bind(name, atPos(tree.pos.withStart(tree.pos.point)) { Typed(Ident(nme.WILDCARD), tpt) })
+          if (forFor) b.updateAttachment(ForAttachment)
+          b
         }
       case Apply(fn @ Apply(_, _), args) =>
         treeCopy.Apply(tree, transform(fn), transformTrees(args))
