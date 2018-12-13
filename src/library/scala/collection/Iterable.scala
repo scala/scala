@@ -434,43 +434,38 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   def take(n: Int): C = fromSpecific(new View.Take(this, n))
 
-  /** A collection containing the last `n` elements of this collection.
-    * $willForceEvaluation
+  /** Selects the last ''n'' elements.
+    *  $orderDependent
+    *  @param  n    the number of elements to take from this $coll.
+    *  @return a $coll consisting only of the last `n` elements of this $coll,
+    *          or else the whole $coll, if it has less than `n` elements.
+    *          If `n` is negative, returns an empty $coll.
+    *  @note    Reuse: $consumesAndProducesIterator
     */
-  def takeRight(n: Int): C = {
-    val b = newSpecificBuilder
-    b.sizeHintBounded(n, toIterable)
-    val lead = iterator drop n
-    val it = iterator
-    while (lead.hasNext) {
-      lead.next()
-      it.next()
-    }
-    while (it.hasNext) b += it.next()
-    b.result()
-  }
+  def takeRight(n: Int): C = fromSpecific(new View.TakeRight(this, n))
 
+  /** Takes longest prefix of elements that satisfy a predicate.
+    *  $orderDependent
+    *  @param   p  The predicate used to test elements.
+    *  @return  the longest prefix of this $coll whose elements all satisfy
+    *           the predicate `p`.
+    *  @note    Reuse: $consumesAndProducesIterator
+    */
   def takeWhile(p: A => Boolean): C = fromSpecific(new View.TakeWhile(this, p))
 
   def span(p: A => Boolean): (C, C) = (takeWhile(p), dropWhile(p))
 
   def drop(n: Int): C = fromSpecific(new View.Drop(this, n))
 
-  /** The rest of the collection without its `n` last elements. For
-    *  linear, immutable collections this should avoid making a copy.
-    *  $willForceEvaluation
+  /** Selects all elements except last ''n'' ones.
+    *  $orderDependent
+    *  @param  n    the number of elements to drop from this $coll.
+    *  @return a $coll consisting of all elements of this $coll except the last `n` ones, or else the
+    *          empty $coll, if this $coll has less than `n` elements.
+    *          If `n` is negative, don't drop any elements.
+    *  @note    Reuse: $consumesAndProducesIterator
     */
-  def dropRight(n: Int): C = {
-    val b = newSpecificBuilder
-    if (n >= 0) b.sizeHint(toIterable, delta = -n)
-    val lead = iterator drop n
-    val it = iterator
-    while (lead.hasNext) {
-      b += it.next()
-      lead.next()
-    }
-    b.result()
-  }
+  def dropRight(n: Int): C = fromSpecific(new View.DropRight(this, n))
 
   def dropWhile(p: A => Boolean): C = fromSpecific(new View.DropWhile(this, p))
 

@@ -23,6 +23,9 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   override def prepended[B >: A](elem: B): SeqView[B] = new SeqView.Prepended(elem, this)
   override def reverse: SeqView[A] = new SeqView.Reverse(this)
   override def take(n: Int): SeqView[A] = new SeqView.Take(this, n)
+  override def drop(n: Int): SeqView[A] = new SeqView.Drop(this, n)
+  override def takeRight(n: Int): SeqView[A] = new SeqView.TakeRight(this, n)
+  override def dropRight(n: Int): SeqView[A] = new SeqView.DropRight(this, n)
 
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
@@ -85,6 +88,29 @@ object SeqView {
       throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${if (underlying.knownSize >= 0) knownSize - 1 else "unknown"})")
     }
     def length: Int = underlying.length min normN
+  }
+
+  @SerialVersionUID(3L)
+  class TakeRight[+A](underlying: SomeSeqOps[A], n: Int) extends View.TakeRight(underlying, n) with SeqView[A] {
+    private[this] val delta = (underlying.size - (n max 0)) max 0
+    def length = underlying.size - delta
+    @throws[IndexOutOfBoundsException]
+    def apply(i: Int) = underlying.apply(i + delta)
+  }
+
+  @SerialVersionUID(3L)
+  class Drop[A](underlying: SomeSeqOps[A], n: Int) extends View.Drop[A](underlying, n) with SeqView[A] {
+    def length = (underlying.size - normN) max 0
+    @throws[IndexOutOfBoundsException]
+    def apply(i: Int) = underlying.apply(i + normN)
+  }
+
+  @SerialVersionUID(3L)
+  class DropRight[A](underlying: SomeSeqOps[A], n: Int) extends View.DropRight[A](underlying, n) with SeqView[A] {
+    private[this] val len = (underlying.size - (n max 0)) max 0
+    def length = len
+    @throws[IndexOutOfBoundsException]
+    def apply(i: Int) = underlying.apply(i)
   }
 }
 

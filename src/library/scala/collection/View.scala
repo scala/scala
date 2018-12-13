@@ -223,6 +223,20 @@ object View extends IterableFactory[View] {
     override def isEmpty: Boolean = iterator.isEmpty
   }
 
+  /** A view that drops trailing elements of the underlying collection. */
+  @SerialVersionUID(3L)
+  class DropRight[A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
+    def iterator = dropRightIterator(underlying.iterator, n)
+    protected val normN = n max 0
+    override def knownSize = {
+      val size = underlying.knownSize
+      if (size >= 0) (size - normN) max 0 else -1
+    }
+    override def isEmpty: Boolean =
+      if(knownSize >= 0) knownSize == 0
+      else iterator.isEmpty
+  }
+
   @SerialVersionUID(3L)
   class DropWhile[A](underlying: SomeIterableOps[A], p: A => Boolean) extends AbstractView[A] {
     def iterator = underlying.iterator.dropWhile(p)
@@ -240,6 +254,20 @@ object View extends IterableFactory[View] {
       if (size >= 0) size min normN else -1
     }
     override def isEmpty: Boolean = iterator.isEmpty
+  }
+
+  /** A view that takes trailing elements of the underlying collection. */
+  @SerialVersionUID(3L)
+  class TakeRight[+A](underlying: SomeIterableOps[A], n: Int) extends AbstractView[A] {
+    def iterator = takeRightIterator(underlying.iterator, n)
+    protected val normN = n max 0
+    override def knownSize = {
+      val size = underlying.knownSize
+      if (size >= 0) size min normN else -1
+    }
+    override def isEmpty: Boolean =
+      if(knownSize >= 0) knownSize == 0
+      else iterator.isEmpty
   }
 
   @SerialVersionUID(3L)
@@ -396,6 +424,102 @@ object View extends IterableFactory[View] {
       if (size >= 0) size max len else -1
     }
     override def isEmpty: Boolean = underlying.isEmpty && len <= 0
+  }
+
+  private[collection] def takeRightIterator[A](it: Iterator[A], n: Int): Iterator[A] = {
+    val k = it.knownSize
+    if(k == 0 || n <= 0) Iterator.empty
+    else if(n == Int.MaxValue) it
+    else if(k > 0) it.drop((k-n) max 0)
+    else new TakeRightIterator[A](it, n)
+  }
+
+  private final class TakeRightIterator[A](private[this] var underlying: Iterator[A], maxlen: Int) extends AbstractIterator[A] {
+    private[this] var len: Int = -1
+    private[this] var pos: Int = 0
+    private[this] var buf: ArrayBuffer[AnyRef] = _
+    def init(): Unit = if(buf eq null) {
+      buf = new ArrayBuffer[AnyRef](maxlen min 256)
+      len = 0
+      while(underlying.hasNext) {
+        val n = underlying.next().asInstanceOf[AnyRef]
+        if(pos >= buf.length) buf.addOne(n)
+        else buf(pos) = n
+        pos += 1
+        if(pos == maxlen) pos = 0
+        len += 1
+      }
+      underlying = null
+      if(len > maxlen) len = maxlen
+      pos = pos - len
+      if(pos < 0) pos += maxlen
+    }
+    override def knownSize = len
+    def hasNext: Boolean = {
+      init()
+      len > 0
+    }
+    def next(): A = {
+      init()
+      if(len == 0) Iterator.empty.next()
+      else {
+        val x = buf(pos).asInstanceOf[A]
+        pos += 1
+        if(pos == maxlen) pos = 0
+        len -= 1
+        x
+      }
+    }
+    override def drop(n: Int): Iterator[A] = {
+      init()
+      if (n > 0) {
+        len = (len - n) max 0
+        pos = (pos + n) % maxlen
+      }
+      this
+    }
+  }
+
+  private[collection] def dropRightIterator[A](it: Iterator[A], n: Int): Iterator[A] = {
+    if(n <= 0) it
+    else {
+      val k = it.knownSize
+      if(k >= 0) it.take(k - n)
+      else new DropRightIterator[A](it, n)
+    }
+  }
+
+  private final class DropRightIterator[A](private[this] var underlying: Iterator[A], maxlen: Int) extends AbstractIterator[A] {
+    private[this] var len: Int = -1 // known size or -1 if the end of `underlying` has not been seen yet
+    private[this] var pos: Int = 0
+    private[this] var buf: ArrayBuffer[AnyRef] = _
+    def init(): Unit = if(buf eq null) {
+      buf = new ArrayBuffer[AnyRef](maxlen min 256)
+      while(pos < maxlen && underlying.hasNext) {
+        buf.addOne(underlying.next().asInstanceOf[AnyRef])
+        pos += 1
+      }
+      if(!underlying.hasNext) len = 0
+      pos = 0
+    }
+    override def knownSize = len
+    def hasNext: Boolean = {
+      init()
+      len != 0
+    }
+    def next(): A = {
+      if(!hasNext) Iterator.empty.next()
+      else {
+        val x = buf(pos).asInstanceOf[A]
+        if(len == -1) {
+          buf(pos) = underlying.next().asInstanceOf[AnyRef]
+          if(!underlying.hasNext) len = 0
+        } else len -= 1
+        pos += 1
+        if(pos == maxlen) pos = 0
+        x
+      }
+    }
   }
 }
 
