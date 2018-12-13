@@ -577,7 +577,7 @@ private final class BitmapIndexedMapNode[K, +V](
 
     // copy 'src' and set 1 element(s) at position 'idx'
     arraycopy(src, 0, dst, 0, src.length)
-    dst(idx) = newKey
+    //dst(idx) = newKey
     dst(idx + 1) = newValue
     new BitmapIndexedMapNode[K, V1](dataMap, nodeMap, dst, originalHashes, size, cachedJavaKeySetHashCode)
   }
@@ -1428,7 +1428,7 @@ private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), Hash
   private def setValue[V1 >: V](bm: BitmapIndexedMapNode[K, V], bitpos: Int, newKey: K, newValue: V1): Unit = {
     val dataIx = bm.dataIndex(bitpos)
     val idx = TupleLength * dataIx
-    bm.content(idx) = newKey
+    //bm.content(idx) = newKey
     bm.content(idx + 1) = newValue
   }
 

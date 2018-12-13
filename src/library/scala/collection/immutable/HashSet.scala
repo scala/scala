@@ -298,7 +298,8 @@ private final class BitmapIndexedSetNode[A](
         val element0UnimprovedHash = getHash(index)
         val element0Hash = improve(element0UnimprovedHash)
         if (element0.equals(element)) {
-          return copyAndSetValue(bitpos, element, originalHash, elementHash)
+          return this
+          //return copyAndSetValue(bitpos, element, originalHash, elementHash)
         } else {
           val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
           return copyAndMigrateFromInlineToNode(bitpos, element0Hash, subNodeNew)
