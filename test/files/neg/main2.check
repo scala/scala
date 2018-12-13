@@ -4,6 +4,6 @@ main2.scala:7: warning: X has a valid main method (args: Array[String])Unit,
 
   object X {
          ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found

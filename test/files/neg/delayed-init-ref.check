@@ -10,6 +10,6 @@ trait Before extends DelayedInit {
 delayed-init-ref.scala:42: warning: Selecting value foo from trait UserContext, which extends scala.DelayedInit, is likely to yield an uninitialized value
     println({locally(()); this}.foo)  // warn (spurious, but we can't discriminate)
                                 ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

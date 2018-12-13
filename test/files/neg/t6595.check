@@ -1,6 +1,6 @@
 t6595.scala:5: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
 class Foo extends {
                   ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found

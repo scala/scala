@@ -10,6 +10,6 @@ t5426.scala:10: warning: comparing values of types Int and Some[Int] using `==' 
 t5426.scala:11: warning: comparing values of types Some[Int] and Int using `==' will always yield false
   (x2 == x1)
       ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

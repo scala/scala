@@ -2,6 +2,6 @@ warning: -target is deprecated: -target:jvm-1.7 is deprecated, forcing use of jv
 warning: -Xfuture is deprecated: Not used since 2.13.
 warning: -optimize is deprecated: Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.
 warning: -Xexperimental is deprecated: Not used since 2.13.
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

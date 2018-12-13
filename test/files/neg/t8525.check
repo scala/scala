@@ -10,6 +10,6 @@ t8525.scala:11: warning: private[this] value name in class X shadows mutable nam
 t8525.scala:10: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
   def u: Unit = ()      // unitarian universalist
       ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

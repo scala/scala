@@ -10,6 +10,6 @@ t8417.scala:7: warning: Adapting argument list by creating a 2-tuple: this may n
  after adaptation: T.f(("holy", "moly"): (String, String))
   def g = f("hello", "world")("holy", "moly")
                              ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

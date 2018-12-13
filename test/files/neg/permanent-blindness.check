@@ -7,6 +7,6 @@ permanent-blindness.scala:12: warning: imported `Bop' is permanently hidden by d
 permanent-blindness.scala:12: warning: imported `Dingus' is permanently hidden by definition of object Dingus in package bar
   import foo.{ Bippy, Bop, Dingus }
                            ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

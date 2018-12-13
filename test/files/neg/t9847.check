@@ -40,6 +40,6 @@ t9847.scala:24: warning: a pure expression does nothing in statement position; m
 t9847.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   class D { 42 ; 17 }
                  ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 14 warnings found
 one error found

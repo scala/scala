@@ -4,6 +4,6 @@ constructor-init-order.scala:9: warning: Reference to uninitialized value baz
 constructor-init-order.scala:19: warning: Reference to uninitialized variable baz
   var bar1         = baz     // warn
                      ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

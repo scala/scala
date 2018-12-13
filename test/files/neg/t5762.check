@@ -10,6 +10,6 @@ t5762.scala:22: warning: non-variable type argument D[Int] in type pattern D[D[I
 t5762.scala:23: warning: non-variable type argument D[String] in type pattern D[D[String]] is unchecked since it is eliminated by erasure
     case _: D[D[String]]          => 2
             ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

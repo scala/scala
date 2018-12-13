@@ -15,6 +15,6 @@ t6120.scala:15: warning: method bippy in class BooleanOps has changed semantics 
 Used to return 5
   def g = true.bippy
                ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 5 warnings found
 one error found

@@ -16,6 +16,6 @@ t8035-deprecated.scala:11: warning: Adaptation of argument list by inserting () 
  after adaptation: Format.format((): Unit)
   sdf.format()
             ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

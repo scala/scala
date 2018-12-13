@@ -116,7 +116,7 @@ checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 36 warnings found
 one error found
 #partest !java8
@@ -249,6 +249,6 @@ checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 40 warnings found
 one error found

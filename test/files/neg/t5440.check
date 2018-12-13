@@ -2,6 +2,6 @@ t5440.scala:5: warning: match may not be exhaustive.
 It would fail on the following inputs: (List(_), Nil), (Nil, List(_))
     (list1, list2) match {
     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found
