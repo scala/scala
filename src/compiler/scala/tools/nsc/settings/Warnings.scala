@@ -107,6 +107,7 @@ trait Warnings {
     val NonlocalReturn         = LintWarning("nonlocal-return",           "A return statement used an exception for flow control.")
     val ImplicitNotFound       = LintWarning("implicit-not-found",        "Check @implicitNotFound and @implicitAmbiguous messages.")
     val Serial                 = LintWarning("serial",                    "@SerialVersionUID on traits and non-serializable classes.")
+    val ValPattern             = LintWarning("valpattern",                "Enable pattern checks in val definitions.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -131,6 +132,7 @@ trait Warnings {
   def warnNonlocalReturn         = lint contains NonlocalReturn
   def lintImplicitNotFound       = lint contains ImplicitNotFound
   def warnSerialization          = lint contains Serial
+  def lintValPatterns            = lint contains ValPattern
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
