@@ -38,14 +38,4 @@ class TreeGenTest {
       case _ => fail(showRaw(ref))
     }
   }
-  @Test
-  def attributedRefToTopLevelMemberNotPrefixedByThis_t9473_c(): Unit = {
-    val DummyImplicitClass = symbolOf[Predef.DummyImplicit]
-    val ref = gen.mkAttributedRef(DummyImplicitClass)
-    assertEquals("scala.Predef.DummyImplicit", ref.toString)
-//    ref match {
-//      case sel @ Select(Select(Ident(TermName("scala")), TermName("runtime")), TermName("ScalaRunTime")) =>
-//      case _ => fail(showRaw(ref))
-//    }
-  }
 }
