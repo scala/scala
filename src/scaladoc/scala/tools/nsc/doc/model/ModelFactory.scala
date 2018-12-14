@@ -300,13 +300,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val assumedSourceRoot  = fixPath(settings.sourcepath.value) stripSuffix "/"
 
       if (!settings.docsourceurl.isDefault)
-        inSource map { case (file, _) =>
-          val filePath = fixPath(file.path).replaceFirst("^" + assumedSourceRoot, "").stripSuffix(".scala")
+        inSource map { case (file, line) =>
+          val filePathExt = fixPath(file.path).replaceFirst("^" + assumedSourceRoot, "")
+          val (filePath, fileExt) = filePathExt.splitAt(filePathExt.indexOf(".", filePathExt.lastIndexOf("/")))
           val tplOwner = this.inTemplate.qualifiedName
           val tplName = this.name
-          val patches = new Regex("""€\{(FILE_PATH|TPL_OWNER|TPL_NAME)\}""")
+          val patches = new Regex("""€\{(FILE_PATH|FILE_EXT|FILE_PATH_EXT|FILE_LINE|TPL_OWNER|TPL_NAME)\}""")
           def substitute(name: String): String = name match {
             case "FILE_PATH" => filePath
+            case "FILE_EXT" => fileExt
+            case "FILE_PATH_EXT" => filePathExt
+            case "FILE_LINE" => line.toString
             case "TPL_OWNER" => tplOwner
             case "TPL_NAME" => tplName
           }
