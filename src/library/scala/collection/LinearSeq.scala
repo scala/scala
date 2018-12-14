@@ -35,6 +35,9 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
   def head: A
   def tail: C
 
+  override def headOption: Option[A] =
+    if (isEmpty) None else Some(head)
+
   def iterator: Iterator[A] =
     if (knownSize == 0) Iterator.empty
     else new LinearSeqIterator[A](this)
@@ -73,6 +76,30 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     }
     if (len < 0) 1
     else loop(0, coll)
+  }
+
+  override def sizeCompare(that: Iterable[_]): Int = {
+    val thatKnownSize = that.knownSize
+
+    if (thatKnownSize >= 0) this lengthCompare thatKnownSize
+    else that match {
+      case that: LinearSeq[_] =>
+        var thisSeq = this
+        var thatSeq = that
+        while (thisSeq.nonEmpty && thatSeq.nonEmpty) {
+          thisSeq = thisSeq.tail
+          thatSeq = thatSeq.tail
+        }
+        java.lang.Boolean.compare(thisSeq.nonEmpty, thatSeq.nonEmpty)
+      case _                  =>
+        var thisSeq = this
+        val thatIt = that.iterator
+        while (thisSeq.nonEmpty && thatIt.hasNext) {
+          thisSeq = thisSeq.tail
+          thatIt.next()
+        }
+        java.lang.Boolean.compare(thisSeq.nonEmpty, thatIt.hasNext)
+    }
   }
 
   override def isDefinedAt(x: Int): Boolean = x >= 0 && lengthCompare(x) > 0
@@ -158,6 +185,15 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     }
   }
 
+  override def segmentLength(p: A => Boolean, from: Int): Int = {
+    var i = 0
+    var seq = drop(from)
+    while (seq.nonEmpty && p(seq.head)) {
+      i += 1
+      seq = seq.tail
+    }
+    i
+  }
 
   override def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = math.max(from, 0)
@@ -184,7 +220,6 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     last
   }
 
-  /** $willForceEvaluation */
   override def tails: Iterator[C] =
     Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator.single(newSpecificBuilder.result())
 }

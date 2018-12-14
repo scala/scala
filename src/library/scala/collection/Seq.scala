@@ -203,7 +203,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    *                followed by all elements of `that`.
    */
   @deprecated("Use `concat` instead", "2.13.0")
-  @inline final def union[B >: A, That](that: Seq[B]): CC[B] = concat(that)
+  @inline final def union[B >: A](that: Seq[B]): CC[B] = concat(that)
 
   final override def size: Int = length
 
@@ -301,11 +301,21 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  $mayNotTerminateInf
     *
     *  @param   p     the predicate used to test elements.
+    *  @return  the length of the longest segment of this $coll such that
+    *           every element of the segment satisfies the predicate `p`.
+    */
+  final def segmentLength(p: A => Boolean): Int = segmentLength(p, 0)
+
+  /** Computes length of longest segment whose elements all satisfy some predicate.
+    *
+    *  $mayNotTerminateInf
+    *
+    *  @param   p     the predicate used to test elements.
     *  @param   from  the index where the search starts.
     *  @return  the length of the longest segment of this $coll starting from index `from`
     *           such that every element of the segment satisfies the predicate `p`.
     */
-  def segmentLength(p: A => Boolean, from: Int = 0): Int = {
+  def segmentLength(p: A => Boolean, from: Int): Int = {
     var i = 0
     val it = iterator.drop(from)
     while (it.hasNext && p(it.next()))
@@ -487,6 +497,8 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def reverseMap[B](f: A => B): CC[B] = iterableFactory.from(new View.Map(View.fromIteratorProvider(() => reverseIterator), f))
 
   /** Iterates over distinct permutations.
+    *
+    *  $willForceEvaluation
     *
     *  @return   An Iterator which traverses the distinct permutations of this $coll.
     *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
@@ -791,19 +803,17 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
-    *  $willNotTerminateInf
-    *  $willForceEvaluation
     */
   def diff(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
-    //TODO make diff and intersect use efficient lazy implementations now that fromSpecific accepts an IterableOnce
-    val b = newSpecificBuilder
-    for (x <- this) {
+    fromSpecific(iterator.filter { x =>
       val ox = occ(x)  // Avoid multiple map lookups
-      if (ox == 0) b += x
-      else occ(x) = ox - 1
-    }
-    b.result()
+      if (ox == 0) true
+      else {
+        occ(x) = ox - 1
+        false
+      }
+    })
   }
 
   /** Computes the multiset intersection between this $coll and another sequence.
@@ -814,20 +824,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                If an element value `x` appears
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
-    *  $mayNotTerminateInf
-    *  $willForceEvaluation
     */
   def intersect(that: Seq[_ >: A]): C = {
     val occ = occCounts(that)
-    val b = newSpecificBuilder
-    for (x <- this) {
+    fromSpecific(iterator.filter { x =>
       val ox = occ(x)  // Avoid multiple map lookups
       if (ox > 0) {
-        b += x
         occ(x) = ox - 1
-      }
-    }
-    b.result()
+        true
+      } else false
+    })
   }
 
   /** Produces a new $coll where a slice of elements in this $coll is replaced by another sequence.
@@ -856,7 +862,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def updated[B >: A](index: Int, elem: B): CC[B] = iterableFactory.from(new View.Updated(this, index, elem))
 
-  private[this] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
+  protected[collection] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
     for (y <- sq) occ(y) += 1
     occ
