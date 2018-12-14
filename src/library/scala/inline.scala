@@ -49,4 +49,5 @@ package scala
  *
  * @author Lex Spoon
  */
-final class inline extends scala.annotation.StaticAnnotation
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+class inline extends scala.annotation.StaticAnnotation
