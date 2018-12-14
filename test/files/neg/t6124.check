@@ -1,0 +1,28 @@
+t6124.scala:3: error: trailing separator is not allowed
+  def i: Int = 123_456_
+                      ^
+t6124.scala:4: error: trailing separator is not allowed
+  def j: Long = 123_456_L * 1000
+                       ^
+t6124.scala:7: error: trailing separator is not allowed
+  def f = 3_14_E-2
+              ^
+t6124.scala:8: error: Invalid literal number
+  def e = 3_14E-_2
+          ^
+t6124.scala:9: error: trailing separator is not allowed
+  def d = 3_14E-2_
+                 ^
+t6124.scala:11: error: trailing separator is not allowed
+  def p = 3.1_4_
+               ^
+t6124.scala:12: error: trailing separator is not allowed
+  def q = 3.1_4_d
+               ^
+t6124.scala:13: error: trailing separator is not allowed
+  def r = 3.1_4_dd
+               ^
+t6124.scala:13: error: Invalid literal number
+  def r = 3.1_4_dd
+          ^
+9 errors found

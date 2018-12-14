@@ -333,13 +333,15 @@ digit           ::=  ‘0’ | nonZeroDigit
 nonZeroDigit    ::=  ‘1’ | … | ‘9’
 ```
 
-Integer literals are usually of type `Int`, or of type
-`Long` when followed by a `L` or
-`l` suffix. Values of type `Int` are all integer
+Values of type `Int` are all integer
 numbers between $-2\^{31}$ and $2\^{31}-1$, inclusive.  Values of
 type `Long` are all integer numbers between $-2\^{63}$ and
 $2\^{63}-1$, inclusive. A compile-time error occurs if an integer literal
 denotes a number outside these ranges.
+
+Integer literals are usually of type `Int`, or of type
+`Long` when followed by a `L` or `l` suffix.
+(Lowercase `l` is deprecated for reasons of legibility.)
 
 However, if the expected type [_pt_](06-expressions.html#expression-typing) of a literal
 in an expression is either `Byte`, `Short`, or `Char`
@@ -353,8 +355,11 @@ is _pt_. The numeric ranges given by these types are:
 |`Short`         | $-2\^{15}$ to $2\^{15}-1$|
 |`Char`          | $0$ to $2\^{16}-1$       |
 
+The digits of a numeric literal may be separated by
+arbitrarily many underscores for purposes of legibility.
+
 > ```scala
-> 0          21          0xFFFFFFFF       -42L
+> 0           21_000      0x7F        -42L        0xFFFF_FFFF
 > ```
 
 ### Floating Point Literals
