@@ -525,10 +525,15 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   def replay(): Unit = {
     if (replayCommandStack.isEmpty)
       echo("Nothing to replay.")
-    else for (cmd <- replayCommands) {
-      echo("Replaying: " + cmd)  // flush because maybe cmd will have its own output
-      command(cmd)
-      echo("")
+    else {
+      val reprompt = "replay> "
+      intp.reporter.indenting(reprompt.length) {
+        for (cmd <- replayCommands) {
+          echo(s"$reprompt$cmd")
+          command(cmd)
+          echo("") // flush because maybe cmd will have its own output
+        }
+      }
     }
   }
   /** `reset` the interpreter in an attempt to start fresh.
@@ -856,7 +861,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     result
   }
 
-  private val continueText   = {
+  private val continueText = {
     val text   = enversion(continueString)
     val margin = promptText.linesIterator.toList.last.length - text.length
     if (margin > 0) " " * margin + text else text

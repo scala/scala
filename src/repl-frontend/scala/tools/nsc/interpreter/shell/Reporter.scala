@@ -43,8 +43,16 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     flush()
   }
 
+  private def indentDepth: Int = config.promptText.linesIterator.toList.last.length
+  private[this] var indentation: String = " " * indentDepth
+  def indenting(n: Int)(body: => Unit): Unit = {
+    val save = indentation
+    indentation = " " * n
+    try body finally indentation = save
+  }
+  private def indented(str: String) = str.linesIterator.mkString(indentation, "\n" + indentation, "")
+
   def colorOk: Boolean = config.colorOk
-  def indentDepth: Int = config.promptText.linesIterator.toList.last.length
   def isDebug: Boolean = config.isReplDebug
   def isTrace: Boolean = config.isReplTrace
 
@@ -151,9 +159,6 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
     printMessage(pos, prefix + msg)
   }
-
-  private val indentation = " " * indentDepth
-  private def indented(str: String) = str.linesIterator.mkString(indentation, "\n" + indentation, "")
 
   // indent errors, error message uses the caret to point at the line already on the screen instead of repeating it
   // TODO: can we splice the error into the code the user typed when multiple lines were entered?
