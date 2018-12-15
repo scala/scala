@@ -13,6 +13,8 @@
 package scala
 package util
 
+import scala.language.implicitConversions
+
 trait ChainingSyntax {
   implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }

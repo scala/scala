@@ -95,6 +95,7 @@ object Reference {
       line1 + "\n" + line2
     }
 
+    import scala.language.postfixOps
     lazy val unary          = (_unary ++ _expand.keys).distinct
     lazy val binary         = _binary.distinct
     lazy val all            = unary ++ binary

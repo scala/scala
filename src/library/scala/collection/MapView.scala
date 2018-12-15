@@ -14,6 +14,7 @@ package scala.collection
 
 
 import scala.collection.mutable.Builder
+import scala.language.reflectiveCalls
 
 trait MapView[K, +V]
   extends MapOps[K, V, ({ type l[X, Y] = View[(X, Y)] })#l, View[(K, V)]]

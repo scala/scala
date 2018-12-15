@@ -14,6 +14,7 @@ package scala.tools
 package cmd
 
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 trait CommandLineConfig {
   def enforceArity: Boolean = true
@@ -84,7 +85,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
           else                          residual(List(x1)) ++ loop(args.tail)
       }
     }
-
+    import scala.language.postfixOps
     (loop(originalArgs), residualBuffer map stripQuotes toList)
   }
 

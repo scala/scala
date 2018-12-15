@@ -4,7 +4,9 @@ import org.junit.Assert._
 import org.junit.{After, Assert, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
 import scala.collection.mutable
+import scala.language.{existentials, higherKinds}
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 

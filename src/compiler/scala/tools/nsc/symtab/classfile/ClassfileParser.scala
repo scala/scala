@@ -21,6 +21,7 @@ import java.lang.Integer.toHexString
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
+import scala.language.reflectiveCalls
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.io.NoAbstractFile

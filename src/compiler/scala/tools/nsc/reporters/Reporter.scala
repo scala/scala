@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package reporters
 
+import scala.language.implicitConversions
 import scala.reflect.internal.{ForwardingReporter, Reporter => InternalReporter}
 import scala.reflect.internal.util.{Position, ScalaClassLoader}
 

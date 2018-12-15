@@ -12,6 +12,7 @@
 
 package scala.tools.partest
 
+import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => ru}
 import scala.tools.nsc._
 

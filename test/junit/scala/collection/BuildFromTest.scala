@@ -3,6 +3,7 @@ package scala.collection
 import org.junit.Test
 
 import scala.collection.mutable.Builder
+import scala.language.higherKinds
 import scala.math.Ordering
 
 class BuildFromTest {

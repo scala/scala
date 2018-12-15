@@ -15,7 +15,7 @@ package generic
 
 import IsMap.Tupled
 import scala.collection.immutable.{IntMap, LongMap}
-import scala.language.higherKinds
+import scala.language.{higherKinds, reflectiveCalls}
 
 /**
   * Type class witnessing that a collection type `Repr`

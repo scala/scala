@@ -13,9 +13,11 @@
 package scala.tools.nsc.doc.html
 
 import java.io.Writer
+
 import javax.xml.stream.XMLStreamWriter
 
 import scala.collection.Iterator
+import scala.language.implicitConversions
 
 // a lightweight replacement for scala-xml
 object HtmlTags {

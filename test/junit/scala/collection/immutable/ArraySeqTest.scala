@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnit4])
@@ -85,7 +86,7 @@ class ArraySeqTest {
     assertEquals(ArraySeq.empty[T], array.slice(1, 1))
     assertEquals(ArraySeq.empty[T], array.slice(2, 1))
   }
-  
+
   @Test def checkSearch: Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
   @Test

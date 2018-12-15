@@ -13,6 +13,7 @@
 package scala
 package reflect
 
+import scala.language.experimental.macros
 import scala.reflect.api.{Universe => ApiUniverse}
 
 /**

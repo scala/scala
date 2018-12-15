@@ -5,6 +5,8 @@ import org.scalacheck._
 import Prop._
 import Gen._
 
+import scala.language.postfixOps
+
 /*
 Properties of a Red & Black Tree:
 

@@ -12,8 +12,10 @@
 
 package scala
 
-import java.lang.{ StringBuilder => JLSBuilder }
+import java.lang.{StringBuilder => JLSBuilder}
+
 import scala.annotation.tailrec
+import scala.language.experimental.macros
 
 /** This class provides the basic mechanism to do String Interpolation.
  * String Interpolation allows users

@@ -15,6 +15,8 @@ package symtab
 
 import classfile.ClassfileParser
 import java.io.IOException
+
+import scala.language.reflectiveCalls
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}

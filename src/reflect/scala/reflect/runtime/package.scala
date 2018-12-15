@@ -13,6 +13,8 @@
 package scala
 package reflect
 
+import scala.language.experimental.macros
+
 /** Entry points into runtime reflection.
  *  See [[scala.reflect.api.package the overview page]] for details on how to use them.
  */

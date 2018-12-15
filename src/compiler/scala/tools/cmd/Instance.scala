@@ -13,6 +13,8 @@
 package scala.tools
 package cmd
 
+import scala.language.implicitConversions
+
 /** The trait mixed into each instance of a specification.
  *
  *  @see    Reference

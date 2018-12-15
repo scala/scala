@@ -13,6 +13,7 @@
 package scala
 
 import scala.annotation.implicitNotFound
+import scala.language.higherKinds
 
 /** An instance of `A <:< B` witnesses that `A` is a subtype of `B`.
   *  Requiring an implicit argument of the type `A <:< B` encodes

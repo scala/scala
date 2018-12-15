@@ -12,8 +12,10 @@
 
 package scala.tools
 
-import java.util.concurrent.{ Callable, ExecutorService }
+import java.util.concurrent.{Callable, ExecutorService}
+
 import scala.concurrent.duration.Duration
+import scala.language.implicitConversions
 import scala.tools.nsc.util.Exceptional
 
 package object partest {

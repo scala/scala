@@ -14,11 +14,11 @@
 
 package scala.tools.nsc.interpreter
 
-import java.io.{PrintWriter, StringWriter, Closeable}
+import java.io.{Closeable, PrintWriter, StringWriter}
 import java.net.URL
 
 import PartialFunction.cond
-import scala.language.implicitConversions
+import scala.language.{implicitConversions, postfixOps}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}

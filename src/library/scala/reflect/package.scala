@@ -12,7 +12,9 @@
 
 package scala
 
-import java.lang.reflect.{ AccessibleObject => jAccessibleObject }
+import java.lang.reflect.{AccessibleObject => jAccessibleObject}
+
+import scala.language.experimental.macros
 
 package object reflect {
 

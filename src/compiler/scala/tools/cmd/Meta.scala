@@ -15,6 +15,7 @@ package cmd
 
 import nsc.io.File
 import Interpolation._
+import scala.language.postfixOps
 
 /** Meta-options for command line tools.  We could have all kinds
  *  of additional goodness here, but for now it's completion and script
@@ -30,6 +31,7 @@ object Meta {
     self: Spec with Interpolation =>
 
                                 Bash.name   --> runAndExit(Bash.action())
+    import scala.language.postfixOps
     val selfUpdateName  = SelfUpdate.name   --| ;
 
     if (selfUpdateName.isDefined)

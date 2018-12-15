@@ -12,6 +12,8 @@
 
 package scala.collection
 
+import scala.language.higherKinds
+
 /**
   * Trait that overrides set operations to take advantage of strict builders.
   *

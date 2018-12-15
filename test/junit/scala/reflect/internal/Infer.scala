@@ -4,10 +4,11 @@ import org.junit.Assert._
 import org.junit.{After, Assert, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
 import scala.collection.mutable
+import scala.language.higherKinds
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
-
 import scala.tools.testing.BytecodeTesting
 
 @RunWith(classOf[JUnit4])

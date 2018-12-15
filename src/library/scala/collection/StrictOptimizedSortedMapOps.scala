@@ -13,6 +13,7 @@
 package scala.collection
 
 import scala.annotation.implicitNotFound
+import scala.language.higherKinds
 
 /**
   * Trait that overrides sorted map operations to take advantage of strict builders.
