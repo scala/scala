@@ -137,11 +137,11 @@ package object scala {
   type Either[+A, +B] = scala.util.Either[A, B]
   val Either = scala.util.Either
 
-  type Left[+A, +B] = scala.util.Left[A, B]
-  val Left = scala.util.Left
+  type Left[+A, +B] = scala.util.Either.Left[A, B]
+  val Left = scala.util.Either.Left
 
-  type Right[+A, +B] = scala.util.Right[A, B]
-  val Right = scala.util.Right
+  type Right[+A, +B] = scala.util.Either.Right[A, B]
+  val Right = scala.util.Either.Right
 
   type Try[+T] = scala.util.Try[T]
   val Try = scala.util.Try

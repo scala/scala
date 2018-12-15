@@ -210,8 +210,8 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  }}}
    */
   def swap: Either[B, A] = this match {
-    case Left(a)  => Right(a)
-    case Right(b) => Left(b)
+    case Left(a)  => Either.Right(a)
+    case Right(b) => Either.Left(b)
   }
 
   /** Joins an `Either` through `Right`.
@@ -383,7 +383,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  }}}
    */
   def map[B1](f: B => B1): Either[A, B1] = this match {
-    case Right(b) => Right(f(b))
+    case Right(b) => Either.Right(f(b))
     case _        => this.asInstanceOf[Either[A, B1]]
   }
 
@@ -399,7 +399,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    * }}}
    */
   def filterOrElse[A1 >: A](p: B => Boolean, zero: => A1): Either[A1, B] = this match {
-    case Right(b) if !p(b) => Left(zero)
+    case Right(b) if !p(b) => Either.Left(zero)
     case _                 => this
   }
 
@@ -453,45 +453,45 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
   def isRight: Boolean
 }
 
-/** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
- *
- *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- */
-final case class Left[+A, +B](value: A) extends Either[A, B] {
-  def isLeft  = true
-  def isRight = false
-
-  /**
-    * Upcasts this `Left[A, B]` to `Either[A, B1]`
-    * {{{
-    *   Left(1)                   // Either[Int, Nothing]
-    *   Left(1).withRight[String] // Either[Int, String]
-    * }}}
-    */
-  def withRight[B1 >: B]: Either[A, B1] = this
-
-}
-
-/** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
- *
- *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- */
-final case class Right[+A, +B](value: B) extends Either[A, B] {
-  def isLeft  = false
-  def isRight = true
-
-  /**
-    * Upcasts this `Right[A, B]` to `Either[A1, B]`
-    * {{{
-    *   Right("x")               // Either[Nothing, String]
-    *   Right("x").withLeft[Int] // Either[Int, String]
-    * }}}
-    */
-  def withLeft[A1 >: A]: Either[A1, B] = this
-
-}
-
 object Either {
+
+  /** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
+    *
+    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
+    */
+  final case class Left[+A, +B](value: A) extends Either[A, B] {
+    def isLeft  = true
+    def isRight = false
+
+    /**
+      * Upcasts this `Left[A, B]` to `Either[A, B1]`
+      * {{{
+      *   Left(1)                   // Either[Int, Nothing]
+      *   Left(1).withRight[String] // Either[Int, String]
+      * }}}
+      */
+    def withRight[B1 >: B]: Either[A, B1] = this
+
+  }
+
+  /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
+    *
+    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
+    */
+  final case class Right[+A, +B](value: B) extends Either[A, B] {
+    def isLeft  = false
+    def isRight = true
+
+    /**
+      * Upcasts this `Right[A, B]` to `Either[A1, B]`
+      * {{{
+      *   Right("x")               // Either[Nothing, String]
+      *   Right("x").withLeft[Int] // Either[Int, String]
+      * }}}
+      */
+    def withLeft[A1 >: A]: Either[A1, B] = this
+
+  }
 
   /** If the condition is satisfied, return the given `B` in `Right`,
    *  otherwise, return the given `A` in `Left`.

@@ -245,7 +245,7 @@ object Try {
     }
     override def failed: Try[Throwable] = Success(exception)
     override def toOption: Option[T] = None
-    override def toEither: Either[Throwable, T] = Left(exception)
+    override def toEither: Either[Throwable, T] = Either.Left(exception)
     override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
   }
 
@@ -278,7 +278,7 @@ object Try {
     override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
     override def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
     override def toOption: Option[T] = Some(value)
-    override def toEither: Either[Throwable, T] = Right(value)
+    override def toEither: Either[Throwable, T] = Either.Right(value)
     override def fold[U](fa: Throwable => U, fb: T => U): U =
       try { fb(value) } catch { case NonFatal(e) => fa(e) }
   }

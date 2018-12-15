@@ -249,7 +249,7 @@ object Exception {
      *  into `Either[Throwable, T]` - `Left(exception)` if an exception was caught,
      *  `Right(T)` otherwise.
      */
-    def either[U >: T](body: => U): Either[Throwable, U] = toEither(Right(body))
+    def either[U >: T](body: => U): Either[Throwable, U] = toEither(Either.Right(body))
 
     /** Apply this catch logic to the supplied body, mapping the result
      * into `Try[T]` - `Failure` if an exception was caught, `Success(T)` otherwise.
@@ -268,7 +268,7 @@ object Exception {
 
     /** Convenience methods. */
     def toOption: Catch[Option[T]] = withApply(_ => None)
-    def toEither: Catch[Either[Throwable, T]] = withApply(Left(_))
+    def toEither: Catch[Either[Throwable, T]] = withApply(Either.Left(_))
     def toTry: Catch[scala.util.Try[T]] = withApply(x => Try.Failure(x))
   }
 
