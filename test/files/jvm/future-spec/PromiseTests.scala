@@ -204,7 +204,7 @@ class PromiseTests extends MinimalScalaTest {
     "cast using mapTo" in {
       f {
         (future, result) =>
-        Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), defaultTimeout) mustBe (false)
+        Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException => false }), defaultTimeout) mustBe (false)
       }
     }
 
@@ -271,7 +271,7 @@ class PromiseTests extends MinimalScalaTest {
     "recover from exception" in {
       f {
         (future, message) =>
-        Await.result(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), defaultTimeout) mustBe ("pigdog")
+        Await.result(future.recover({ case e if e.getMessage == message => "pigdog" }), defaultTimeout) mustBe ("pigdog")
       }
     }
 

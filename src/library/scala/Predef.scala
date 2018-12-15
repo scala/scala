@@ -351,6 +351,7 @@ object Predef extends LowPriorityImplicits {
   /** @group implicit-classes-any */
   implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
     @inline def -> [B](y: B): (A, B) = (self, y)
+    @deprecated("Use `->` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
     def →[B](y: B): (A, B) = ->(y)
   }
 

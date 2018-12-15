@@ -576,14 +576,14 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
       /*
        * enforce the 2^63-1 ns limit, must be pos/neg symmetrical because of unary_-
        */
-      case NANOSECONDS  ⇒ bounded(max_ns)
-      case MICROSECONDS ⇒ bounded(max_µs)
-      case MILLISECONDS ⇒ bounded(max_ms)
-      case SECONDS      ⇒ bounded(max_s)
-      case MINUTES      ⇒ bounded(max_min)
-      case HOURS        ⇒ bounded(max_h)
-      case DAYS         ⇒ bounded(max_d)
-      case _ ⇒
+      case NANOSECONDS  => bounded(max_ns)
+      case MICROSECONDS => bounded(max_µs)
+      case MILLISECONDS => bounded(max_ms)
+      case SECONDS      => bounded(max_s)
+      case MINUTES      => bounded(max_min)
+      case HOURS        => bounded(max_h)
+      case DAYS         => bounded(max_d)
+      case _ =>
         val v = DAYS.convert(length, unit)
         -max_d <= v && v <= max_d
     }, "Duration is limited to +-(2^63-1)ns (ca. 292 years)")
