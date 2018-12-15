@@ -299,6 +299,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     iterator.map { case (k, v) => s"$k -> $v" }.addString(sb, start, sep, end)
 
   @deprecated("Consider requiring an immutable Map or fall back to Map.concat.", "2.13.0")
+  @deprecatedOverriding("Override the updated method instead", "2.13.0")
   def + [V1 >: V](kv: (K, V1)): CC[K, V1] =
     mapFactory.from(new View.Appended(toIterable, kv))
 

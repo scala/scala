@@ -192,6 +192,8 @@ object Map extends MapFactory[Map] {
     def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =
       new WithDefault[K, V1](underlying.updated(key, value), defaultValue)
 
+    override def + [V1 >: V](kv: (K, V1)): WithDefault[K, V1] = updated(kv._1, kv._2)
+
     override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
 
     override protected def fromSpecific(coll: collection.IterableOnce[(K, V)] @uncheckedVariance): WithDefault[K, V] =
