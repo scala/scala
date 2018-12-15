@@ -836,8 +836,8 @@ object Future {
    * @tparam A        the type of the value inside the Futures in the `IterableOnce`
    * @tparam B        the type of the value of the returned `Future`
    * @tparam M        the type of the `IterableOnce` of Futures
-   * @param in        the `IterableOnce` to be mapped to an `IterableOnce` of Futures to be sequenced into a Future of `IterableOnce`
-   * @param fn        the function to apply to the `IterableOnce` to produce an `IterableOnce` of Futures
+   * @param in        the `IterableOnce` to be mapped over with the provided function to produce an `IterableOnce` of Futures that is then sequenced into a Future of `IterableOnce`
+   * @param fn        the function to be mapped over the `IterableOnce` to produce an `IterableOnce` of Futures
    * @return          the `Future` of the `IterableOnce` of results
    */
   final def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
