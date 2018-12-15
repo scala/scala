@@ -215,7 +215,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *
    *  @return         the shuffled collection
    */
-  def shuffle[T, CC[X] <: IterableOnce[X]](xs: CC[T])(implicit bf: BuildFrom[CC[T], T, CC[T]]): CC[T] = {
+  def shuffle[T, C](xs: IterableOnce[T])(implicit bf: BuildFrom[xs.type, T, C]): C = {
     val buf = new ArrayBuffer[T] ++= xs
 
     def swap(i1: Int, i2: Int): Unit = {

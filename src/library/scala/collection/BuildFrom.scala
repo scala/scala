@@ -13,10 +13,9 @@
 package scala.collection
 
 import scala.language.higherKinds
-
 import scala.collection.mutable.Builder
 import scala.annotation.implicitNotFound
-
+import scala.collection.immutable.WrappedString
 import scala.reflect.ClassTag
 
 /** Builds a collection of type `C` from elements of type `A` when a source collection of type `From` is available.
@@ -63,6 +62,12 @@ object BuildFrom extends BuildFromLowPriority1 {
     new BuildFrom[String, Char, String] {
       def fromSpecific(from: String)(it: IterableOnce[Char]): String = Factory.stringFactory.fromSpecific(it)
       def newBuilder(from: String): Builder[Char, String] = Factory.stringFactory.newBuilder
+    }
+
+  implicit val buildFromWrappedString: BuildFrom[WrappedString, Char, WrappedString] =
+    new BuildFrom[WrappedString, Char, WrappedString] {
+      def fromSpecific(from: WrappedString)(it: IterableOnce[Char]): WrappedString = WrappedString.fromSpecific(it)
+      def newBuilder(from: WrappedString): mutable.Builder[Char, WrappedString] = WrappedString.newBuilder
     }
 
   implicit def buildFromArray[A : ClassTag]: BuildFrom[Array[_], A, Array[A]] =
