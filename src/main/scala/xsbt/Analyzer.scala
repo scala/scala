@@ -77,7 +77,9 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       }
     }
 
-    private def locatePlainClassFile(sym: Symbol, outputDir: File, separatorRequired: Boolean): Option[File] = {
+    private def locatePlainClassFile(sym: Symbol,
+                                     outputDir: File,
+                                     separatorRequired: Boolean): Option[File] = {
       val classFile = fileForClass(outputDir, sym, separatorRequired)
       if (classFile.exists()) Some(classFile) else None
     }
