@@ -600,4 +600,15 @@ class IteratorTest {
       assertEquals(1, i)
     }
   }
+
+  @Test
+  def t11106(): Unit = {
+    var i = 0
+    Iterator.continually(0)
+      .map(_ => {i += 1; i})
+      .withFilter(_ < 10)
+      .take(3)
+      .foreach(_ => ())
+    assertEquals(3, i)
+  }
 }
