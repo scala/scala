@@ -20,7 +20,7 @@ import scala.util.control.NonFatal
  * The `Try` type represents a computation that may either result in an exception, or return a
  * successfully computed value. It's similar to, but semantically different from the [[scala.util.Either]] type.
  *
- * Instances of `Try[T]`, are either an instance of [[scala.util.Success]][T] or [[scala.util.Failure]][T].
+ * Instances of `Try[T]`, are either an instance of [[scala.util.Try.Success]][T] or [[scala.util.Try.Failure]][T].
  *
  * For example, `Try` can be used to perform division on a user-defined input, without the need to do explicit
  * exception-handling in all of the places that an exception might occur.
@@ -28,7 +28,7 @@ import scala.util.control.NonFatal
  * Example:
  * {{{
  *   import scala.io.StdIn
- *   import scala.util.{Try, Success, Failure}
+ *   import scala.Try.{Success, Failure}
  *
  *   def divide: Try[Int] = {
  *     val dividend = Try(StdIn.readLine("Enter an Int that you'd like to divide:\n").toInt)
@@ -61,6 +61,7 @@ import scala.util.control.NonFatal
  *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  *
+ * @tparam T Type of the expected result value type.
  * @author based on Twitter's original implementation in com.twitter.util.
  * @since 2.10
  */
@@ -214,6 +215,11 @@ object Try {
       case NonFatal(e) => Failure(e)
     }
 
+  /**
+   * Class `Failure[+T]` represent a computation of `T` is failed with a [[Throwable]].
+   *
+   * @tparam T Type of the expected result value type.
+   */
   final case class Failure[+T](exception: Throwable) extends Try[T] {
     override def isFailure: Boolean = true
     override def isSuccess: Boolean = false
@@ -249,7 +255,11 @@ object Try {
     override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
   }
 
-
+  /**
+   * Class `Success[+T]` represent a computation of `T` is succeeded with a value of `T`.
+   *
+   * @tparam T Type of the expected result value type.
+   */
   final case class Success[+T](value: T) extends Try[T] {
     override def isFailure: Boolean = false
     override def isSuccess: Boolean = true
