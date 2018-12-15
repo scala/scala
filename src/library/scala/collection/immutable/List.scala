@@ -603,6 +603,7 @@ object List extends StrictOptimizedSeqFactory[List] {
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll
     case _ if coll.knownSize == 0 => empty[B]
+    case b: ListBuffer[B] => b.toList
     case _ => ListBuffer.from(coll).toList
   }
 
