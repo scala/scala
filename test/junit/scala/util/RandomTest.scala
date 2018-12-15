@@ -1,6 +1,8 @@
 package scala.util
 
-import org.junit.{ Assert, Test }
+import org.junit.{Assert, Test}
+
+import scala.tools.testing.AssertUtil._
 
 class RandomTest {
   // Test for scala/bug#9059
@@ -11,5 +13,10 @@ class RandomTest {
     for (c <- items) {
       Assert.assertTrue(s"$c should be alphanumeric", isAlphaNum(c))
     }
+  }
+
+  @Test def test11315: Unit = {
+    // test for scala/bug#11315
+    assertSameElements(Random.shuffle("hello".toSeq).sorted, "hello".toSeq.sorted)
   }
 }
