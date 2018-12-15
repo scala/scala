@@ -46,8 +46,8 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
     val end = if (until > length) length else until
     new WrappedString(self.substring(start, end))
   }
-  override def length = self.length
-  override def toString = self
+  override def length: Int = self.length
+  override def toString: String = self
   override def view: StringView = new StringView(self)
 
   override def startsWith[B >: Char](that: IterableOnce[B], offset: Int = 0): Boolean =

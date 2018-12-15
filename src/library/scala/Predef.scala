@@ -570,7 +570,7 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
   implicit def wrapUnitArray(xs: Array[Unit]): ArraySeq.ofUnit = if (xs ne null) new ArraySeq.ofUnit(xs) else null
 
   /** @group conversions-string */
-  implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
+  implicit def wrapString(s: String): IndexedSeq[Char] = if (s ne null) new WrappedString(s) else null
 }
 
 private[scala] abstract class LowPriorityImplicits2 {
