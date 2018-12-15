@@ -121,6 +121,8 @@ object Predef extends LowPriorityImplicits {
    * val mapIntString = classOf[Map[Int,String]]
    * // mapIntString is java.lang.Class[Map[Int,String]] = interface scala.collection.immutable.Map
    * }}}
+   *
+   * @return The runtime [[Class]] representation of type [[T]].
    * @group utilities
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
@@ -199,14 +201,19 @@ object Predef extends LowPriorityImplicits {
 
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("use scala.reflect.classTag[T] and scala.reflect.runtime.universe.typeTag[T] instead", "2.10.0")
-  def manifest[T](implicit m: Manifest[T])           = m
+  def manifest[T](implicit m: Manifest[T]): Manifest[T]          = m
   // TODO undeprecated until Scala reflection becomes non-experimental
   // @deprecated("this notion doesn't have a corresponding concept in 2.10, because scala.reflect.runtime.universe.TypeTag can capture arbitrary types. Use type tags instead of manifests, and there will be no need in opt manifests.", "2.10.0")
-  def optManifest[T](implicit m: OptManifest[T])     = m
+  def optManifest[T](implicit m: OptManifest[T]): OptManifest[T] = m
 
   // Minor variations on identity functions
 
-  /** @group utilities */
+  /**
+   * A method that returns its input value.
+   * @tparam A type of the input value x.
+   * @param x the value of type [[A]] to be returned.
+   * @return the value `x`.
+   * @group utilities */
   @inline def identity[A](x: A): A = x // see `$conforms` for the implicit version
 
   /** Summon an implicit value of type `T`. Usually, the argument is not passed explicitly.
@@ -215,7 +222,7 @@ object Predef extends LowPriorityImplicits {
    *  @return the implicit value of type `T`
    *  @group utilities
    */
-  @inline def implicitly[T](implicit e: T) = e // TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
+  @inline def implicitly[T](implicit e: T): T = e // TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
 
   /** Used to mark code blocks as being expressions, instead of being taken as part of anonymous classes and the like.
    *  This is just a different name for [[identity]].
@@ -338,7 +345,7 @@ object Predef extends LowPriorityImplicits {
   }
 
   /** `???` can be used for marking methods that remain to be implemented.
-   *  @throws NotImplementedError
+   *  @throws NotImplementedError when `???` is invoked.
    *  @group utilities
    */
   def ??? : Nothing = throw new NotImplementedError
@@ -347,8 +354,8 @@ object Predef extends LowPriorityImplicits {
 
   /** @group implicit-classes-any */
   implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
-    def →[B](y: B): Tuple2[A, B] = ->(y)
+    @inline def -> [B](y: B): (A, B) = (self, y)
+    def →[B](y: B): (A, B) = ->(y)
   }
 
   /** @group implicit-classes-any */
@@ -400,19 +407,19 @@ object Predef extends LowPriorityImplicits {
    *  @param x the object to print; may be null.
    *  @group console-output
    */
-  def print(x: Any) = Console.print(x)
+  def print(x: Any): Unit = Console.print(x)
 
   /** Prints a newline character on the default output.
    *  @group console-output
    */
-  def println() = Console.println()
+  def println(): Unit = Console.println()
 
   /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
    *  @group console-output
    */
-  def println(x: Any) = Console.println(x)
+  def println(x: Any): Unit = Console.println(x)
 
   /** Prints its arguments as a formatted string to the default output,
    *  based on a string pattern (in a fashion similar to printf in C).
@@ -429,7 +436,7 @@ object Predef extends LowPriorityImplicits {
    *  @see [[scala.StringContext.f StringContext.f]]
    *  @group console-output
    */
-  def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
+  def printf(text: String, xs: Any*): Unit = Console.print(text.format(xs: _*))
 
   // views --------------------------------------------------------------
 
