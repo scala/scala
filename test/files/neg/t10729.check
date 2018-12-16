@@ -1,0 +1,20 @@
+AbstractAnnotation.scala:6: error: class AbstractAnnotation is abstract; cannot be instantiated
+  1: @AbstractAnnotation
+      ^
+ArrayAsAnnotation.scala:2: error: class Array does not extend scala.annotation.Annotation
+  1: @Array(10)
+      ^
+SeqAsAnnotation.scala:2: error: trait Seq is abstract; cannot be instantiated
+  1: @Seq(10)
+      ^
+Switch.scala:1: warning: imported `switch` is permanently hidden by definition of class switch
+import annotation.switch
+                  ^
+Switch.scala:4: error: class switch does not extend scala.annotation.Annotation
+  def test(x: Int) = (x: @switch) match {
+                          ^
+TraitAnnotation.scala:6: error: trait TraitAnnotation is abstract; cannot be instantiated
+  1: @TraitAnnotation
+      ^
+one warning found
+5 errors found
