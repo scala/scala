@@ -13,9 +13,8 @@
 package scala
 package collection.mutable
 
-import collection.{SortedIterableFactory, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
+import collection.{SortedIterableFactory, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps, mutable}
 import collection.mutable.{RedBlackTree => RB}
-
 import java.lang.String
 
 /**
@@ -87,6 +86,18 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
   override def maxBefore(key: A): Option[A] = RB.maxKeyBefore(tree, key)
 
   override def foreach[U](f: A => U): Unit = RB.foreachKey(tree, f)
+
+  override def filterImpl(pred: A => Boolean, isFlipped: Boolean): mutable.TreeSet[A] = {
+    // This method has been preemptively overridden to allow an optimized implementation to be written without breaking
+    // binary compatibility throughout the 2.13.X releases
+    super.filterImpl(pred, isFlipped)
+  }
+
+  override def filterInPlace(p: A => Boolean): this.type = {
+    // This method has been preemptively overridden to allow an optimized implementation to be written without breaking
+    // binary compatibility throughout the 2.13.X releases
+    super.filterInPlace(p)
+  }
 
 
   /**

@@ -14,8 +14,11 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.switch
+
 
 /** $factoryInfo
+ *
  *  @define Coll `LinkedHashMap`
  *  @define coll linked hash map
  */
@@ -127,6 +130,53 @@ class LinkedHashMap[K, V]
       e.later = null
       Some(e.value)
     }
+  }
+
+  override def filterInPlace(p: (K, V) => Boolean): this.type = {
+    if (size > 0) {
+      var bucket = 0 // the index of the current bucket in the hash table
+      val tableTable = table.table
+      val buckets = tableTable.length
+
+      while (bucket < buckets) {
+        var head = tableTable(bucket).asInstanceOf[Entry]
+
+        def removeEntry(entry: Entry): Unit = {
+          if (head.earlier eq null) firstEntry = head.later
+          else head.earlier.later = head.later
+
+          if (head.later eq null) lastEntry = head.earlier
+          else head.later.earlier = head.earlier
+
+          head.earlier = null
+          head.later = null
+        }
+
+        while ((head ne null) && !p(head.key, head.value)) {
+          removeEntry(head)
+          head = head.next
+          table.tableSize -= 1
+        }
+
+        if (head ne null) {
+          var prev = head
+          var next = head.next
+
+          while (next ne null) {
+            if (p(next.key, next.value)) {
+              prev = next
+            } else {
+              prev.next = next.next
+              removeEntry(next)
+              table.tableSize -= 1
+            }
+            next = next.next
+          }
+        }
+        bucket += 1
+      }
+    }
+    this
   }
 
   def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2); this }

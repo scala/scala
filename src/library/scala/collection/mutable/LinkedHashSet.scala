@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.switch
+
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
@@ -22,10 +24,8 @@ package mutable
  *  @author  Martin Odersky
  *  @author  Pavel Pavlov
  *  @since   1
- *
- *  @tparam A     the type of the elements contained in this set.
- *
- *  @define Coll `LinkedHashSet`
+  *  @tparam A     the type of the elements contained in this set.
+  *  @define Coll `LinkedHashSet`
  *  @define coll linked hash set
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
@@ -93,6 +93,53 @@ class LinkedHashSet[A]
       e.later = null
       true
     }
+  }
+
+  override def filterInPlace(p: A => Boolean): this.type = {
+    if (size > 0) {
+      var bucket = 0 // the index of the current bucket in the hashtable
+      val tableTable = table.table
+      val buckets = tableTable.length
+
+      while (bucket < buckets) {
+        var head = tableTable(bucket).asInstanceOf[Entry]
+
+        def removeEntry(entry: Entry): Unit = {
+          if (head.earlier eq null) firstEntry = head.later
+          else head.earlier.later = head.later
+
+          if (head.later eq null) lastEntry = head.earlier
+          else head.later.earlier = head.earlier
+
+          head.earlier = null
+          head.later = null
+        }
+
+        while ((head ne null) && !p(head.key)) {
+          removeEntry(head)
+          head = head.next
+          table.tableSize -= 1
+        }
+
+        if (head ne null) {
+          var prev = head
+          var next = head.next
+
+          while (next ne null) {
+            if (p(next.key)) {
+              prev = next
+            } else {
+              prev.next = next.next
+              removeEntry(next)
+              table.tableSize -= 1
+            }
+            next = next.next
+          }
+        }
+        bucket += 1
+      }
+    }
+    this
   }
 
   def iterator: Iterator[A] = new AbstractIterator[A] {

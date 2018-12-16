@@ -131,6 +131,14 @@ private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, En
     foreachEntry(writeEntry)
   }
 
+  /** Get the entry at a given index, or null if none exist */
+  final def apply(index: Int): Entry = table(index).asInstanceOf[Entry]
+
+  /** Set the entry at bucket `index` to `entry` */
+  final def update(index: Int, entry: Entry): Unit = {
+    table(index) = entry
+  }
+
   /** Find entry with given key in table, null if not found.
    */
   final def findEntry(key: A): Entry =

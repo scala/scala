@@ -13,7 +13,6 @@
 package scala.collection
 package mutable
 
-import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
 import scala.collection.generic.DefaultSerializationProxy
 
@@ -201,6 +200,40 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
         oldlen *= 2
       }
     }
+  }
+
+  override def filterInPlace(p: A => Boolean): this.type = {
+    if (nonEmpty) {
+      var bucket = 0
+
+      while (bucket < table.length) {
+        var head = table(bucket)
+
+        while ((head ne null) && !p(head.key)) {
+          head = head.next
+          contentSize -= 1
+        }
+
+        if (head ne null) {
+          var prev = head
+          var next = head.next
+
+          while (next ne null) {
+            if (p(next.key)) {
+              prev = next
+            } else {
+              prev.next = next.next
+              contentSize -= 1
+            }
+            next = next.next
+          }
+        }
+
+        table(bucket) = head
+        bucket += 1
+      }
+    }
+    this
   }
 
   /*
