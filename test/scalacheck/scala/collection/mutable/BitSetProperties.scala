@@ -30,4 +30,8 @@ object BitSetProperties extends Properties("mutable.BitSet") {
   property("filterNot") = forAll { (bs: BitSet) =>
     bs.filterNot(_ % 2 == 0) ?= bs.toList.filterNot(_ % 2 == 0).to(BitSet)
   }
+  property("filterInPlace") = forAll { (bs: BitSet) =>
+    val list = bs.toList
+    bs.filterInPlace(_ % 2 == 0) ?= list.filter(_ % 2 == 0).to(BitSet)
+  }
 }

@@ -249,6 +249,16 @@ class BitSet(protected[collection] final var elems: Array[Long])
       fromBitMaskNoCopy(newArray)
     }
   }
+
+  override def filterInPlace(p: Int => Boolean): this.type = {
+    val thisnwords = nwords
+    var i = 0
+    while (i < thisnwords) {
+      elems(i) = BitSetOps.computeWordForFilter(p, isFlipped = false, elems(i), i)
+      i += 1
+    }
+    this
+  }
 }
 
 @SerialVersionUID(3L)
