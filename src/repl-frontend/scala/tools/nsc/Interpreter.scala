@@ -111,7 +111,6 @@ class InterpreterLoop {
             override protected def newCompiler(settings: Settings, reporter: Reporter) =
               super.newCompiler(compilerSettings, reporter)
           }
-          interpreter.setContextClassLoader()
         }
 
         // for 2.8 compatibility
