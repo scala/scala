@@ -248,13 +248,25 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
               i -= 1
             }
             if (anyChanges) {
-              val newArray = elems.take(minimumNonZeroIndex + 1)
-              newArray(i + 1) = currentWord
-              while (i >= 0) {
-                newArray(i) = word(i) & ~bs.word(i)
-                i -= 1
+              if (minimumNonZeroIndex >= 0) {
+                if (minimumNonZeroIndex >= 1) {
+                  if (minimumNonZeroIndex >= 2) {
+                    val newArray = elems.take(minimumNonZeroIndex + 1)
+                    newArray(i + 1) = currentWord
+                    while (i >= 0) {
+                      newArray(i) = word(i) & ~bs.word(i)
+                      i -= 1
+                    }
+                    fromBitMaskNoCopy(newArray)
+                  } else {
+                    new BitSet2(word(0) & ~bs.word(0), currentWord)
+                  }
+                } else {
+                  new BitSet1(currentWord)
+                }
+              } else {
+                empty
               }
-              fromBitMaskNoCopy(newArray)
             } else {
               this
             }
