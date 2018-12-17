@@ -14,8 +14,6 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import BitSetOps.{LogWL, updateArray}
 import mutable.Builder
 import scala.annotation.implicitNotFound
@@ -97,7 +95,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       case _          => (newBuilder ++= it).result()
     }
 
-  def empty: BitSet = new BitSet1(0L)
+  final val empty: BitSet = new BitSet1(0L)
 
   def newBuilder: Builder[Int, BitSet] =
     mutable.BitSet.newBuilder.mapResult(bs => fromBitMaskNoCopy(bs.elems))
@@ -134,6 +132,22 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       if (idx == 0) new BitSet1(w)
       else if (idx == 1) createSmall(elems, w)
       else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
+
+
+    override def diff(other: collection.Set[Int]): BitSet = other match {
+      case bs: collection.BitSet => bs.nwords match {
+        case 0 => this
+        case _ =>
+          val newElems = elems & ~bs.word(0)
+          if (newElems == 0L) empty else new BitSet1(newElems)
+      }
+      case _ => super.diff(other)
+    }
+
+    override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
+      val _elems = BitSetOps.computeWordForFilter(pred, isFlipped, elems, 0)
+      if (_elems == 0L) empty else new BitSet1(_elems)
+    }
   }
 
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
@@ -143,12 +157,187 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       if (idx == 0) new BitSet2(w, elems1)
       else if (idx == 1) createSmall(elems0, w)
       else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
+
+
+    override def diff(other: collection.Set[Int]): BitSet = other match {
+      case bs: collection.BitSet => bs.nwords match {
+        case 0 => this
+        case 1 =>
+          new BitSet2(elems0 & ~bs.word(0), elems1)
+        case _ =>
+          val _elems0 = elems0 & ~bs.word(0)
+          val _elems1 = elems1 & ~bs.word(1)
+
+          if (_elems1 == 0L) {
+            if (_elems0 == 0L) {
+              empty
+            } else {
+              new BitSet1(_elems0)
+            }
+          } else {
+            new BitSet2(_elems0, _elems1)
+          }
+      }
+      case _ => super.diff(other)
+    }
+
+    override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
+      val _elems0 = BitSetOps.computeWordForFilter(pred, isFlipped, elems0, 0)
+      val _elems1 = BitSetOps.computeWordForFilter(pred, isFlipped, elems1, 0)
+
+      if (_elems1 == 0L) {
+        if (_elems0 == 0L) {
+          empty
+        }
+        new BitSet1(_elems0)
+      }
+      new BitSet2(_elems0, _elems1)
+    }
   }
 
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected[collection] def nwords = elems.length
+
     protected[collection] def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
+
     protected[collection] def updateWord(idx: Int, w: Long): BitSet = fromBitMaskNoCopy(updateArray(elems, idx, w))
+
+    override def diff(that: collection.Set[Int]): BitSet = that match {
+      case bs: collection.BitSet =>
+        /*
+          * Algorithm:
+          *
+          * We iterate, word-by-word, backwards from the shortest of the two bitsets (this, or bs) i.e. the one with
+          * the fewer words. Two extra concerns for optimization are described below.
+          *
+          * Array Shrinking:
+          * If `this` is not longer than `bs`, then since we must iterate through the full array of words,
+          * we can track the new highest index word which is non-zero, at little additional cost. At the end, the new
+          * Array[Long] allocated for the returned BitSet will only be of size `maxNonZeroIndex + 1`
+          *
+          * Tracking Changes:
+          * If the two sets are disjoint, then we can return `this`. Therefor, until at least one change is detected,
+          * we check each word for if it has changed from its corresponding word in `this`. Once a single change is
+          * detected, we stop checking because the cost of the new Array must be paid anyways.
+          */
+
+        val bsnwords = bs.nwords
+        val thisnwords = nwords
+        if (bsnwords >= thisnwords) {
+          // here, we may have opportunity to shrink the size of the array
+          // so, track the highest index which is non-zero. That ( + 1 ) will be our new array length
+          var i = thisnwords - 1
+          var currentWord = 0L
+          // if there are never any changes, we can return `this` at the end
+          var anyChanges = false
+          while (i >= 0 && currentWord == 0L) {
+            val oldWord = word(i)
+            currentWord = oldWord & ~bs.word(i)
+            anyChanges ||= currentWord != oldWord
+            i -= 1
+          }
+          if (i < 0) {
+            // all indices >= 0 have had result 0, so the bitset is empty
+            empty
+          } else {
+            val minimumNonZeroIndex: Int = i + 1
+            while (!anyChanges && i >= 0) {
+              val oldWord = word(i)
+              currentWord = oldWord & ~bs.word(i)
+              anyChanges ||= currentWord != oldWord
+              i -= 1
+            }
+            if (anyChanges) {
+              if (minimumNonZeroIndex == -1) {
+                empty
+              } else if (minimumNonZeroIndex == 0) {
+                new BitSet1(currentWord)
+              } else if (minimumNonZeroIndex == 1) {
+                new BitSet2(word(0) & ~bs.word(0), currentWord)
+              } else {
+                val newArray = elems.take(minimumNonZeroIndex + 1)
+                newArray(i + 1) = currentWord
+                while (i >= 0) {
+                  newArray(i) = word(i) & ~bs.word(i)
+                  i -= 1
+                }
+                fromBitMaskNoCopy(newArray)
+              }
+            } else {
+              this
+            }
+          }
+        } else {
+          var i = bsnwords - 1
+          var anyChanges = false
+          var currentWord = 0L
+          while (i >= 0 && !anyChanges) {
+            val oldWord = word(i)
+            currentWord = oldWord & ~bs.word(i)
+            anyChanges ||= currentWord != oldWord
+            i -= 1
+          }
+          if (anyChanges) {
+            val newElems = elems.clone()
+            newElems(i + 1) = currentWord
+            while (i >= 0) {
+              newElems(i) = word(i) & ~bs.word(i)
+              i -= 1
+            }
+            fromBitMaskNoCopy(newElems)
+          } else {
+            this
+          }
+        }
+      case _ => super.diff(that)
+    }
+
+
+    override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
+      // here, we may have opportunity to shrink the size of the array
+      // so, track the highest index which is non-zero. That ( + 1 ) will be our new array length
+      var i = nwords - 1
+      var currentWord = 0L
+      // if there are never any changes, we can return `this` at the end
+      var anyChanges = false
+      while (i >= 0 && currentWord == 0L) {
+        val oldWord = word(i)
+        currentWord = BitSetOps.computeWordForFilter(pred, isFlipped, oldWord, i)
+        anyChanges ||= currentWord != oldWord
+        i -= 1
+      }
+      if (i < 0) {
+        // all indices >= 0 have had result 0, so the bitset is empty
+        if (currentWord == 0) empty else fromBitMaskNoCopy(Array(currentWord))
+      } else {
+        val minimumNonZeroIndex: Int = i + 1
+        while (!anyChanges && i >= 0) {
+          val oldWord = word(i)
+          currentWord = BitSetOps.computeWordForFilter(pred, isFlipped, oldWord, i)
+          anyChanges ||= currentWord != oldWord
+          i -= 1
+        }
+        if (anyChanges) {
+          if (minimumNonZeroIndex == -1) {
+            empty
+          } else if (minimumNonZeroIndex == 0) {
+            new BitSet1(currentWord)
+          } else if (minimumNonZeroIndex == 1) {
+            new BitSet2(BitSetOps.computeWordForFilter(pred, isFlipped, word(0), 0), currentWord)
+          } else {
+            val newArray = elems.take(minimumNonZeroIndex + 1)
+            newArray(i + 1) = currentWord
+            while (i >= 0) {
+              newArray(i) = BitSetOps.computeWordForFilter(pred, isFlipped, word(i), i)
+              i -= 1
+            }
+            fromBitMaskNoCopy(newArray)
+          }
+        } else {
+          this
+        }
+      }
+    }
   }
 
   @SerialVersionUID(3L)
