@@ -144,8 +144,32 @@ sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
 }
 
 object <:< {
+  // the only instance for <:< and =:=, used to avoid overhead
+  private val singleton: =:=[Any, Any] = new =:=[Any,Any] {
+    override def substituteBoth[F[_, _]](ftf: F[Any, Any]) = ftf
+    override def substituteCo    [F[_]](ff: F[Any]) = ff
+    override def substituteContra[F[_]](ff: F[Any]) = ff
+    override def apply(x: Any) = x
+    override def flip = this
+    override def compose[C](r: C =>  Any) = r
+    override def compose[C](r: C <:< Any) = r
+    override def compose[C](r: C =:= Any) = r
+    override def andThen[C](r: Any =>  C) = r
+    override def andThen[C](r: Any <:< C) = r
+    override def andThen[C](r: Any =:= C) = r
+    override def liftCo    [F[_]] = asInstanceOf[F[Any] =:= F[Any]]
+    override def liftContra[F[_]] = asInstanceOf[F[Any] =:= F[Any]]
+    override def toString = "generalized constraint"
+  }
+
+  /** `A =:= A` for all `A` (equality is reflexive). This also provides implicit views `A <:< B`
+   *  when `A <: B`, because `(A =:= A) <: (A <:< A) <: (A <:< B)`.
+   */
+  implicit def refl[A]: A =:= A = singleton.asInstanceOf[A =:= A]
+  // = new =:=[A, A] { override def substituteBoth[F[_, _]](faa: F[A, A]): F[A, A] = faa }
+
   /** If `A <: B` and `B <: A`, then `A = B` (subtyping is antisymmetric) */
-  def antisymm[A, B](implicit l: A <:< B, r: B <:< A): A =:= B = =:=.singleton.asInstanceOf[A =:= B]
+  def antisymm[A, B](implicit l: A <:< B, r: B <:< A): A =:= B = singleton.asInstanceOf[A =:= B]
   // = ??? (I don't think this is possible to implement "safely")
 }
 
@@ -216,27 +240,4 @@ sealed abstract class =:=[From, To] extends (From <:< To) with Serializable {
   }
   /** Lift this evidence over the type constructor `F`, but flipped. */
   override def liftContra[F[_]]: F[To] =:= F[From] = liftCo[F].flip
-}
-/** @group type-constraints */
-object =:= {
-  // the only instance for <:< and =:=, used to avoid overhead
-  private[scala] final val singleton = new =:=[Any,Any] {
-    override def substituteBoth[F[_, _]](ftf: F[Any, Any]) = ftf
-    override def substituteCo    [F[_]](ff: F[Any]) = ff
-    override def substituteContra[F[_]](ff: F[Any]) = ff
-    override def apply(x: Any) = x
-    override def flip = this
-    override def compose[C](r: C =>  Any) = r
-    override def compose[C](r: C <:< Any) = r
-    override def compose[C](r: C =:= Any) = r
-    override def andThen[C](r: Any =>  C) = r
-    override def andThen[C](r: Any <:< C) = r
-    override def andThen[C](r: Any =:= C) = r
-    override def liftCo    [F[_]] = asInstanceOf[F[Any] =:= F[Any]]
-    override def liftContra[F[_]] = asInstanceOf[F[Any] =:= F[Any]]
-    override def toString = "generalized constraint"
-  }
-  /** `A = A` for all `A` (equality is reflexive) */
-  implicit def refl[A]: A =:= A = singleton.asInstanceOf[A =:= A]
-  // = new =:=[A, A] { override def substituteBoth[F[_, _]](faa: F[A, A]): F[A, A] = faa }
 }
