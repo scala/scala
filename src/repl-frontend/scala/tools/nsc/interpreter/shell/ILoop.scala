@@ -982,7 +982,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   /** Start an interpreter with the given settings.
    *  @return true if successful
    */
-  def run(interpreterSettings: Settings): Boolean = savingContextLoader {
+  def run(interpreterSettings: Settings): Boolean = {
     if (!batchMode) printWelcome()
 
     in = defaultIn

@@ -356,9 +356,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       _runtimeClassLoader
     })
 
-  // Set the current Java "context" class loader to this interpreter's class loader
-  override def setContextClassLoader() = classLoader.setAsContext()
-
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
   def unqualifiedIds: List[String] = allDefinedNames.map(_.decode).sorted
 

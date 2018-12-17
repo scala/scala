@@ -13,18 +13,17 @@
 package scala
 package reflect.internal.util
 
-import java.lang.invoke.{ MethodHandles, MethodType }
+import java.lang.invoke.{MethodHandles, MethodType}
 
 import scala.language.implicitConversions
-import java.lang.{ ClassLoader => JClassLoader }
+import java.lang.{ClassLoader => JClassLoader}
 import java.lang.reflect.Modifier
-import java.net.{ URLClassLoader => JURLClassLoader }
+import java.net.{URLClassLoader => JURLClassLoader}
 import java.net.URL
 
-import scala.reflect.runtime.ReflectionUtils.{ show, unwrapHandler }
-import ScalaClassLoader._
-import scala.util.control.Exception.{ catching }
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.runtime.ReflectionUtils.{show, unwrapHandler}
+import scala.util.control.Exception.catching
+import scala.reflect.{ClassTag, classTag}
 
 trait HasClassPath {
   def classPathURLs: Seq[URL]
@@ -36,11 +35,11 @@ trait HasClassPath {
 trait ScalaClassLoader extends JClassLoader {
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
-    val saved = contextLoader
+    import ScalaClassLoader.setContext
+    val saved = Thread.currentThread.getContextClassLoader
     try { setContext(this) ; action }
     finally setContext(saved)
   }
-  def setAsContext(): Unit = { setContext(this) }
 
   /** Load and link a class with this classloader */
   def tryToLoadClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, initialize = false)
@@ -126,13 +125,7 @@ object ScalaClassLoader {
   }
   def contextLoader = apply(Thread.currentThread.getContextClassLoader)
   def appLoader     = apply(JClassLoader.getSystemClassLoader)
-  def setContext(cl: JClassLoader) =
-    Thread.currentThread.setContextClassLoader(cl)
-  def savingContextLoader[T](body: => T): T = {
-    val saved = contextLoader
-    try body
-    finally setContext(saved)
-  }
+  def setContext(cl: JClassLoader) = Thread.currentThread.setContextClassLoader(cl)
 
   class URLClassLoader(urls: Seq[URL], parent: JClassLoader)
       extends JURLClassLoader(urls.toArray, parent)
