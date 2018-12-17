@@ -108,13 +108,15 @@ object ListMap extends MapFactory[ListMap] {
   /**
     * Represents an entry in the `ListMap`.
     */
-  private[immutable] class Node[K, V](
+  private[immutable] final class Node[K, V](
     override private[immutable] val key: K,
-    override private[immutable] val value: V,
+    private[immutable] var _value: V,
     private[immutable] var _init: ListMap[K, V]
   ) extends ListMap[K, V] {
 
     releaseFence()
+
+    override private[immutable] def value: V = _value
 
     override def size: Int = sizeInternal(this, 0)
 
@@ -149,16 +151,62 @@ object ListMap extends MapFactory[ListMap] {
       else containsInternal(cur.next, k)
 
     override def updated[V1 >: V](k: K, v: V1): ListMap[K, V1] = {
-      val (m, k0) = removeInternal(k, this, Nil)
-      new Node(k0, v, m)
+
+      var index = -1 // the index (in reverse) where the key to update exists, if it is found
+      var found = false // true if the key is found int he map
+      var isDifferent = false // true if the key was found and the values are different
+
+      {
+        var curr: ListMap[K, V] = this
+
+        while (curr.nonEmpty && !found) {
+          if (k == curr.key) {
+            found = true
+            isDifferent = v.asInstanceOf[AnyRef] ne curr.value.asInstanceOf[AnyRef]
+          }
+          index += 1
+          curr = curr.init
+        }
+      }
+
+      if (found) {
+        if (isDifferent) {
+          var newHead: ListMap.Node[K, V1] = null
+          var prev: ListMap.Node[K, V1] = null
+          var curr: ListMap[K, V1] = this
+          var i = 0
+          while (i < index) {
+            val temp = new ListMap.Node(curr.key, curr.value, null)
+            if (prev ne null) {
+              prev._init = temp
+            }
+            prev = temp
+            curr = curr.init
+            if (newHead eq null) {
+              newHead = prev
+            }
+            i += 1
+          }
+          val newNode = new ListMap.Node(curr.key, v, curr.init)
+          if (prev ne null) {
+            prev._init = newNode
+          }
+          releaseFence()
+          if (newHead eq null) newNode else newHead
+        } else {
+          this
+        }
+      } else {
+        new ListMap.Node(k, v, this)
+      }
     }
 
-    @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V], acc: List[ListMap[K, V]]): (ListMap[K, V], K) =
-      if (cur.isEmpty) (acc.last, k)
-      else if (k == cur.key) (acc.foldLeft(cur.next) { (t, h) => new Node(h.key, h.value, t) }, cur.key)
+    @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V], acc: List[ListMap[K, V]]): ListMap[K, V] =
+      if (cur.isEmpty) acc.last
+      else if (k == cur.key) acc.foldLeft(cur.next) { (t, h) => new Node(h.key, h.value, t) }
       else removeInternal(k, cur.next, cur :: acc)
 
-    override def removed(k: K): ListMap[K, V] = removeInternal(k, this, Nil)._1
+    override def removed(k: K): ListMap[K, V] = removeInternal(k, this, Nil)
 
     override private[immutable] def next: ListMap[K, V] = _init
 
@@ -204,27 +252,45 @@ private[immutable] final class ListMapBuilder[K, V] extends mutable.Builder[(K, 
 
   override def addOne(elem: (K, V)): this.type = addOne(elem._1, elem._2)
 
+  @tailrec
+  private[this] def insertValueAtKeyReturnFound(m: ListMap[K, V], key: K, value: V): Boolean = m match {
+    case n: ListMap.Node[K, V] =>
+      if (n.key == key) {
+        n._value = value
+        true
+      } else {
+        insertValueAtKeyReturnFound(n.init, key, value)
+      }
+    case _ => false
+  }
+
   def addOne(key: K, value: V): this.type = {
     if (isAliased) {
       underlying = underlying.updated(key, value)
     } else {
-      var prev: ListMap.Node[K, V] = null
-      var curr = underlying
-      while (curr.nonEmpty) {
-        if (key == curr.key) {
-          if (prev eq null) {
-            underlying = underlying.next
-          } else {
-            prev._init = curr.init
-          }
-          underlying = new ListMap.Node(curr.key, value, underlying)
-          return this
-        }
-        prev = curr.asInstanceOf[ListMap.Node[K, V]]
-        curr = curr.next
+      if (!insertValueAtKeyReturnFound(underlying, key, value)) {
+        underlying = new ListMap.Node(key, value, underlying)
       }
-      underlying = new ListMap.Node(key, value, underlying)
     }
     this
+  }
+
+  override def addAll(xs: IterableOnce[(K, V)]): this.type = xs match {
+    case m: collection.Map[K, V] =>
+      // if it is a map, then its keys will not collide with themselves.
+      // therefor we only need to check the already-existing elements for collisions.
+      // No need to check the entire list
+
+      val iter = m.iterator
+      var newUnderlying = underlying
+      while (iter.hasNext) {
+        val next = iter.next()
+        if (!insertValueAtKeyReturnFound(underlying, next._1, next._2)) {
+          newUnderlying = new ListMap.Node[K, V](next._1, next._2, newUnderlying)
+        }
+      }
+      this
+
+    case _ => super.addAll(xs)
   }
 }
