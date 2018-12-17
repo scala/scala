@@ -25,4 +25,5 @@ package scala
   *
   * @since 2.6
   */
-final class native extends scala.annotation.StaticAnnotation {}
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+class native extends scala.annotation.StaticAnnotation {}

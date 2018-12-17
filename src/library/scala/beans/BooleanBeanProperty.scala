@@ -17,4 +17,5 @@ package scala.beans
  *  named `isFieldName` instead of `getFieldName`.
  */
 @scala.annotation.meta.field
-final class BooleanBeanProperty extends scala.annotation.StaticAnnotation
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+class BooleanBeanProperty extends scala.annotation.StaticAnnotation

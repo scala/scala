@@ -18,4 +18,5 @@ package scala.annotation
  *
  *  @since 2.10
  */
-final class unspecialized extends scala.annotation.StaticAnnotation
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+class unspecialized extends scala.annotation.StaticAnnotation
