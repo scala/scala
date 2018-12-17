@@ -28,7 +28,7 @@ final abstract class Unit private extends AnyVal {
 }
 
 object Unit extends AnyValCompanion {
-  def void[A](x: A): Unit = ()
+  final def void[A](x: A): Unit = ()
 
   /** Transform a value type into a boxed reference type.
    *
