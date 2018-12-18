@@ -90,6 +90,38 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
   override def andThen[C](k: B => C): PartialFunction[A, C] =
     new AndThen[A, B, C] (this, k)
 
+  /**
+   * Composes this partial function with another partial function that
+   * gets applied to results of this partial function.
+   *
+   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
+   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
+   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   *
+   * @param  k  the transformation function
+   * @tparam C  the result type of the transformation function.
+   * @return a partial function with the domain of this partial function narrowed by
+   *         other partial function, which maps arguments `x` to `k(this(x))`.
+   */
+  def andThen[C](k: PartialFunction[B, C]): PartialFunction[A, C] =
+    new Combined[A, B, C](this, k)
+
+  /**
+   * Composes another partial function `k` with this partial function so that this
+   * partial function gets applied to results of `k`.
+   *
+   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
+   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
+   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   *
+   * @param  k  the transformation function
+   * @tparam R  the parameter type of the transformation function.
+   * @return a partial function with the domain of other partial function narrowed by
+   *         this partial function, which maps arguments `x` to `this(k(x))`.
+   */
+  def compose[R](k: PartialFunction[R, A]): PartialFunction[R, B] =
+    new Combined[R, A, B](k, this)
+
   /** Turns this partial function into a plain function returning an `Option` result.
    *  @see     Function.unlift
    *  @return  a function that takes an argument `x` to `Some(this(x))` if `this`
@@ -193,6 +225,22 @@ object PartialFunction {
     override def applyOrElse[A1 <: A, C1 >: C](x: A1, default: A1 => C1): C1 = {
       val z = pf.applyOrElse(x, checkFallback[B])
       if (!fallbackOccurred(z)) k(z) else default(x)
+    }
+  }
+
+  /** Composite function produced by `PartialFunction#andThen` method
+    */
+  private class Combined[-A, B, +C] (pf: PartialFunction[A, B], k: PartialFunction[B, C]) extends PartialFunction[A, C] with Serializable {
+    def isDefinedAt(x: A): Boolean = {
+      val b: B = pf.applyOrElse(x, checkFallback[B])
+      if (!fallbackOccurred(b)) k.isDefinedAt(b) else false
+    }
+
+    def apply(x: A): C = k(pf(x))
+
+    override def applyOrElse[A1 <: A, C1 >: C](x: A1, default: A1 => C1): C1 = {
+      val pfv = pf.applyOrElse(x, checkFallback[B])
+      if (!fallbackOccurred(pfv)) k.applyOrElse(pfv, (_: B) => default(x)) else default(x)
     }
   }
 
