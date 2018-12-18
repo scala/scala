@@ -238,6 +238,9 @@ trait ReplReporter extends Reporter {
     */
   def withoutUnwrapping(body: => Unit): Unit
 
+  /** Change indentation due to prompt. */
+  def indenting(n: Int)(body: => Unit): Unit
+
 
   /** Print result (Right --> success, Left --> error)
     */
