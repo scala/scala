@@ -82,13 +82,20 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 
   /**  Composes this partial function with a transformation function that
    *   gets applied to results of this partial function.
+   *
+   *   If the runtime type of the function is a `PartialFunction` then the
+   *   other `andThen` method is used (note its cautions).
+   *
    *   @param  k  the transformation function
    *   @tparam C  the result type of the transformation function.
-   *   @return a partial function with the same domain as this partial function, which maps
+   *   @return a partial function with the domain of this partial function,
+   *           possibly narrowed by the specified function, which maps
    *           arguments `x` to `k(this(x))`.
    */
-  override def andThen[C](k: B => C): PartialFunction[A, C] =
-    new AndThen[A, B, C] (this, k)
+  override def andThen[C](k: B => C): PartialFunction[A, C] = k match {
+    case pf: PartialFunction[B, C] => andThen(pf)
+    case _                         => new AndThen[A, B, C](this, k)
+  }
 
   /**
    * Composes this partial function with another partial function that
