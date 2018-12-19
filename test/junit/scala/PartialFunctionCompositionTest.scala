@@ -122,6 +122,16 @@ class PartialFunctionCompositionTest {
   }
 
   @Test
+  def andThenWithUpcastPartialFunctionTests(): Unit = {
+    val f: PartialFunction[Int, Int] = {case x if x % 2 == 0 => x + 2}
+    val g: PartialFunction[Int, Int] = {case x if x % 2 == 1 => x - 2}
+    val c1 = f andThen g
+    val c2 = f andThen (g: Int => Int)
+    assertEquals(8, c1.applyOrElse(2, (_: Int) => 8))
+    assertEquals(8, c2.applyOrElse(2, (_: Int) => 8))
+  }
+
+  @Test
   def inferenceTests(): Unit = {
     val fb = (_: Int) => 42
     val pf: PartialFunction[Int, Int] = { case x if x > 10 => x + 1 }
