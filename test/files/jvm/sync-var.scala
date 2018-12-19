@@ -1,4 +1,3 @@
-import java.util.concurrent._
 import java.util.concurrent.atomic._
 
 object Test { def main(args: Array[String]): Unit = {
