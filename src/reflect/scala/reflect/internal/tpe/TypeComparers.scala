@@ -15,7 +15,7 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.{ mutable }
+import scala.collection.mutable
 import util.TriState
 import scala.annotation.tailrec
 import scala.reflect.internal.util.StatisticsStatics

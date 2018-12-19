@@ -369,7 +369,7 @@ private[internal] trait GlbLubs {
             // In theory this should not be necessary, but higher-order type
             // parameters are not handled correctly.
             val ok = ts forall { t =>
-              isSubType(t, lubRefined, depth) || {
+              isSubType(t, lubRefined, depth.decr) || {
                 if (settings.debug || printLubs) {
                   Console.println(
                     "Malformed lub: " + lubRefined + "\n" +
