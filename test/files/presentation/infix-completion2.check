@@ -3,7 +3,7 @@ reload: Snippet.scala
 askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
-retrieved 202 members
+retrieved 201 members
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
@@ -159,7 +159,6 @@ def toString(): String
 def unary_+: Int
 def unary_-: Int
 def unary_~: Int
-def underlying: AnyRef
 def until(end: Int): scala.collection.immutable.Range
 def until(end: Int, step: Int): scala.collection.immutable.Range
 def until(end: Long): scala.collection.immutable.NumericRange.Exclusive[Long]

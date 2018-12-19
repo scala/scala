@@ -27,7 +27,6 @@ import Proxy.Typed
 trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed[T] with OrderedProxy[T] {
   protected implicit def num: Numeric[T]
 
-  def underlying  = self.asInstanceOf[AnyRef]
   def doubleValue = num.toDouble(self)
   def floatValue  = num.toFloat(self)
   def longValue   = num.toLong(self)

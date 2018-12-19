@@ -1,0 +1,22 @@
+primitive-numbers-no-underlying.scala:3: error: value underlying is not a member of Byte
+    b.underlying
+      ^
+primitive-numbers-no-underlying.scala:4: error: value underlying is not a member of Short
+    s.underlying
+      ^
+primitive-numbers-no-underlying.scala:5: error: value underlying is not a member of Char
+    c.underlying
+      ^
+primitive-numbers-no-underlying.scala:6: error: value underlying is not a member of Int
+    i.underlying
+      ^
+primitive-numbers-no-underlying.scala:7: error: value underlying is not a member of Long
+    l.underlying
+      ^
+primitive-numbers-no-underlying.scala:8: error: value underlying is not a member of Float
+    f.underlying
+      ^
+primitive-numbers-no-underlying.scala:9: error: value underlying is not a member of Double
+    d.underlying
+      ^
+7 errors found
