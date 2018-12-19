@@ -43,6 +43,10 @@ abstract class AbstractBaseFutureBenchmark {
         executorService = fix // we want to close this
         fix
       case "gbl" =>
+        // make sure we set the global ec to use the number of threads the bench wants
+        System.setProperty("scala.concurrent.context.minThreads", threads.toString)
+        System.setProperty("scala.concurrent.context.numThreads", threads.toString)
+        System.setProperty("scala.concurrent.context.maxThreads", threads.toString)
         ExecutionContext.global
       case "fie" =>
         scala.concurrent.Future.InternalCallbackExecutor.asInstanceOf[Executor]
@@ -81,11 +85,9 @@ abstract class OpFutureBenchmark extends AbstractBaseFutureBenchmark {
   final val pre_f_p: Promise[Result] = Promise.fromTry(aFailure)
 
   @inline protected final def await[T](a: Future[T]): Boolean = {
-    var r: Option[Try[T]] = None
-    do {
-      r = a.value
-    } while(r eq None);
-    r.get.isInstanceOf[Success[T]]
+    val v = a.value
+    val r = if (v eq None) Await.ready(a, timeout).value else v
+    r.get.getClass eq classOf[Success[T]]
   }
 }
 

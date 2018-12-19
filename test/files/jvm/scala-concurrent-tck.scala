@@ -81,9 +81,8 @@ class FutureCallbacks extends TestBase {
     done =>
       val f = Future[Unit] { throw cause }
       f onComplete {
-        case Success(_) => done(false)
         case Failure(e: ExecutionException) if e.getCause == cause => done(true)
-        case Failure(_) => done(false)
+        case _ => done(false)
       }
   }
 
@@ -744,8 +743,9 @@ class BlockContexts extends TestBase {
 
   // test BlockContext in our default ExecutionContext
   def testDefaultFJP(): Unit = {
+    val prevCurrent = BlockContext.current
     val bc = getBlockContext(BlockContext.current)
-    assert(bc.isInstanceOf[java.util.concurrent.ForkJoinWorkerThread])
+    assert(bc ne prevCurrent) // Should have been replaced by the EC.
   }
 
   // test BlockContext inside BlockContext.withBlockContext

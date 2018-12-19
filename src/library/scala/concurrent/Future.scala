@@ -416,7 +416,7 @@ trait Future[+T] extends Awaitable[T] {
    * @group Transformations
    */
   def zipWith[U, R](that: Future[U])(f: (T, U) => R)(implicit executor: ExecutionContext): Future[R] =
-    flatMap(r1 => that.map(r2 => f(r1, r2)))(internalExecutor)
+    flatMap(r1 => that.map(r2 => f(r1, r2)))
 
   /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
    *  the result of the `that` future if `that` is completed successfully.
@@ -563,8 +563,6 @@ object Future {
   private[this] final val _addToBuilderFun: (Builder[Any, Nothing], Any) => Builder[Any, Nothing] = (b: Builder[Any, Nothing], e: Any) => b += e
   private[concurrent] final def addToBuilderFun[A, M] =  _addToBuilderFun.asInstanceOf[Function2[Builder[A, M], A, Builder[A, M]]]
 
-  private[concurrent] final val successOfUnit: Success[Unit] = Success(())
-
   /** A Future which is never completed.
    */
   final object never extends Future[Nothing] {
@@ -616,7 +614,7 @@ object Future {
 
   /** A Future which is completed with the Unit value.
    */
-  final val unit: Future[Unit] = fromTry(successOfUnit)
+  final val unit: Future[Unit] = fromTry(Success(()))
 
   /** Creates an already completed Future with the specified exception.
    *
@@ -703,8 +701,9 @@ object Future {
    * @param futures   the `IterableOnce` of Futures in which to find the first completed
    * @return          the `Future` holding the result of the future that is first to be completed
    */
-  final def firstCompletedOf[T](futures: IterableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] =
-    if (futures.iterator.isEmpty) Future.never
+  final def firstCompletedOf[T](futures: IterableOnce[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
+    val i = futures.iterator
+    if (!i.hasNext) Future.never
     else {
       val p = Promise[T]()
       val firstCompleteHandler = new AtomicReference[Promise[T]](p) with (Try[T] => Unit) {
@@ -714,9 +713,11 @@ object Future {
             r tryComplete v1 // tryComplete is likely to be cheaper than complete
         }
       }
-      futures.iterator foreach { _ onComplete firstCompleteHandler }
+      while(i.hasNext && firstCompleteHandler.get != null) // exit early if possible
+        i.next().onComplete(firstCompleteHandler)
       p.future
     }
+  }
 
   /** Asynchronously and non-blockingly returns a `Future` that will hold the optional result
    *  of the first `Future` with a result that matches the predicate, failed `Future`s will be ignored.
