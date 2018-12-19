@@ -18,7 +18,7 @@ package scala.concurrent
  *  @tparam A type of data exchanged
  *  @author  Martin Odersky
  */
-@deprecated("Use `java.util.concurrent.LinkedTransferQueue` instead.", since = "Scala 2.13.0")
+@deprecated("Use `java.util.concurrent.LinkedTransferQueue` instead.", since = "2.13.0")
 class Channel[A] {
   private class LinkedList {
     var elem: A = _

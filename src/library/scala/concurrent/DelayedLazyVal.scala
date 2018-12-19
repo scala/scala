@@ -27,7 +27,7 @@ package scala.concurrent
  *  @author  Paul Phillips
  *  @since 2.8
  */
-@deprecated("`DelayedLazyVal` Will be removed in Scala 2.14.0 release.", since = "Scala 2.13.0")
+@deprecated("`DelayedLazyVal` Will be removed in Scala 2.14.0 release.", since = "2.13.0")
 class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionContext){
   @volatile private[this] var _isDone = false
   private[this] lazy val complete = f()
