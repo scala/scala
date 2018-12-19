@@ -14,7 +14,7 @@ package scala.concurrent
 
 import java.util.ArrayDeque
 import java.util.concurrent.Executor
-import scala.annotation.tailrec
+import scala.annotation.{ switch, tailrec }
 import scala.util.control.NonFatal
 
 /**
@@ -22,6 +22,10 @@ import scala.util.control.NonFatal
  */
 trait Batchable {
   self: Runnable =>
+}
+
+private[concurrent] object BatchingExecutorStatics {
+  final val emptyBatchArray: Array[Runnable] = new Array[Runnable](0)
 }
 
 /**
@@ -55,65 +59,111 @@ trait Batchable {
  private[concurrent] trait BatchingExecutor extends Executor {
   private[this] final val _tasksLocal = new ThreadLocal[Batch]()
 
-  private[this] final class Batch(capacity: Int) extends ArrayDeque[Runnable](capacity) with Runnable with BlockContext with (BlockContext => Unit) {
+  private[this] final class Batch extends Runnable with BlockContext with (BlockContext => Throwable) {
     private[this] final var parentBlockContext: BlockContext = _
+    private[this] final var first: Runnable = _
+    private[this] final var size: Int = _
+    private[this] final var other: Array[Runnable] = BatchingExecutorStatics.emptyBatchArray
 
-    def this(r: Runnable, capacity: Int) = {
-      this(capacity)
-      addLast(r)
+    def this(r: Runnable) = {
+      this()
+      first = r
+      size = 1
     }
 
-    final def executor: BatchingExecutor = BatchingExecutor.this
+    private def this(first: Runnable, other: Array[Runnable], size: Int) = {
+      this()
+      this.first = first
+      this.other = other
+      this.size = size
+    }
+
+    private[this] final def cloneAndClear(): Batch = {
+      val newBatch = new Batch(first, other, size)
+      this.first = null
+      this.other = BatchingExecutorStatics.emptyBatchArray
+      this.size = 0
+      newBatch
+    }
+
+    private[this] final def grow(): Unit = {
+      val len = other.length
+      other =
+        if (len == 0) new Array[Runnable](4)
+        else {
+          val newOther = new Array[Runnable](len << 1)
+          System.arraycopy(other, 0, newOther, 0, len)
+          newOther
+        }
+    }
+
+    final def push(r: Runnable): Unit = {
+      val sz = size
+      if(sz > 0) {
+        if (sz > other.length)
+          grow()
+        other(sz - 1) = r
+      } else first = r
+      size = sz + 1
+    }
+
+    final def pop(): Runnable =
+      (size: @switch) match {
+        case 0 => null
+        case 1 =>
+          val ret = first
+          first = null
+          size = 0
+          ret
+        case n =>
+          val ret = other(n - 2)
+          other(n - 2) = null
+          size = n - 1
+          ret
+      }
 
     // this method runs in the delegate ExecutionContext's thread
-    override final def run(): Unit = BlockContext.usingBlockContext(this)(this)
-
-    override final def apply(prevBlockContext: BlockContext): Unit = {
+    override final def run(): Unit = {
       //This invariant needs to hold: require(_tasksLocal.get eq null)
+      _tasksLocal.set(this)
+      val failure = BlockContext.usingBlockContext(this)(this)
+      _tasksLocal.remove()
+      if (failure ne null)
+        throw handleRunFailure(failure)
+    }
+
+    override final def apply(prevBlockContext: BlockContext): Throwable = {
       parentBlockContext = prevBlockContext
+      var failure: Throwable = null
       try {
-        _tasksLocal.set(this)
-        runAll()
-        _tasksLocal.remove() // Will be cleared in the throwing-case by runAll()
-      } finally {
-        parentBlockContext = null
+        var r = pop()
+        while(r ne null) {
+          r.run()
+          r = pop()
+        }
+      } catch {
+        case t: Throwable => failure = t
       }
+      parentBlockContext = null
+      failure
     }
 
-    @tailrec private[this] final def runAll(): Unit = {
-      val next = pollLast()
-      if (next ne null) {
-        try next.run() catch {
-          case t: Throwable =>
-            parentBlockContext = null // Need to reset this before re-submitting it
-            _tasksLocal.remove() // If unbatchedExecute runs synchronously
-            handleRunFailure(t)
-         }
-        runAll()
-      }
-    }
-
-    private[this] final def handleRunFailure(cause: Throwable): Nothing =
-      if (NonFatal(cause) || cause.isInstanceOf[InterruptedException]) {
-        try unbatchedExecute(this) catch {
+    private[this] final def handleRunFailure(cause: Throwable): Throwable =
+      if (size > 0 && (NonFatal(cause) || cause.isInstanceOf[InterruptedException])) {
+        try { unbatchedExecute(this); cause } catch {
           case inner: Throwable =>
             if (NonFatal(inner)) {
               val e = new ExecutionException("Non-fatal error occurred and resubmission failed, see suppressed exception.", cause)
               e.addSuppressed(inner)
-              throw e
-            } else throw inner
+              e
+            } else inner
         }
-        throw cause
-      } else throw cause
+      } else cause
 
     override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
       val pbc = parentBlockContext
-      if(!isEmpty) { // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
-        val b = new Batch(math.max(4, this.size))
-        b.addAll(this)
-        this.clear()
-        unbatchedExecute(b)
-      }
+      if(size > 0) // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
+        unbatchedExecute(cloneAndClear())
 
       if (pbc ne null) pbc.blockOn(thunk) // now delegate the blocking to the previous BC
       else {
@@ -126,8 +176,8 @@ trait Batchable {
 
   private[this] final def batchedExecute(runnable: Runnable): Unit = {
     val b = _tasksLocal.get
-    if (b ne null) b.addLast(runnable)
-    else unbatchedExecute(new Batch(runnable, 4))
+    if (b ne null) b.push(runnable)
+    else unbatchedExecute(new Batch(runnable))
   }
 
   override def execute(runnable: Runnable): Unit =

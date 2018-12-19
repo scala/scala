@@ -15,7 +15,7 @@ package scala.concurrent.impl
 import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Collection
-import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.concurrent.{ BatchingExecutor, BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.annotation.tailrec
 
 
@@ -111,7 +111,8 @@ private[concurrent] object ExecutionContextImpl {
                                                  prefix = "scala-execution-context-global",
                                                  uncaught = (thread: Thread, cause: Throwable) => reporter(cause))
 
-    new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService {
+    new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService with BatchingExecutor {
+      final override def unbatchedExecute(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
       final override def reportFailure(cause: Throwable): Unit =
         getUncaughtExceptionHandler() match {
           case null =>
