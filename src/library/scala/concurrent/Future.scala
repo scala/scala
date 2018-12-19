@@ -833,12 +833,12 @@ object Future {
    *  {{{
    *    val myFutureList = Future.traverse(myList)(x => Future(myFunc(x)))
    *  }}}
-   * @tparam A        the type of the value inside the Futures in the `IterableOnce`
+   * @tparam A        the type of the value inside the Futures in the collection
    * @tparam B        the type of the value of the returned `Future`
-   * @tparam M        the type of the `IterableOnce` of Futures
-   * @param in        the `IterableOnce` of Futures which will be sequenced
-   * @param fn        the function to apply to the `IterableOnce` of Futures to produce the results
-   * @return          the `Future` of the `IterableOnce` of results
+   * @tparam M        the type of the collection of Futures
+   * @param in        the collection to be mapped over with the provided function to produce a collection of Futures that is then sequenced into a Future collection
+   * @param fn        the function to be mapped over the collection to produce a collection of Futures
+   * @return          the `Future` of the collection of results
    */
   final def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
     in.iterator.foldLeft(successful(bf.newBuilder(in))) {
