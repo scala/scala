@@ -19,7 +19,7 @@ package scala.concurrent
  *  @author  Philipp Haller
  *  @since 2.0
  */
-@deprecated("Use `java.util.concurrent.Exchanger` instead.", since = "Scala 2.13.0")
+@deprecated("Use `java.util.concurrent.Exchanger` instead.", since = "2.13.0")
 class SyncChannel[A] {
 
   private[this] var pendingWrites = List[(A, SyncVar[Boolean])]()
