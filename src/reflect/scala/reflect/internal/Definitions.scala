@@ -1392,9 +1392,10 @@ trait Definitions extends api.StandardDefinitions {
       }
     }
     def getMemberMethod(owner: Symbol, name: Name): TermSymbol = {
+      def miss = fatalMissingSymbol(owner, name, "method")
       getMember(owner, name.toTermName) match {
-        case x: TermSymbol => x
-        case _             => fatalMissingSymbol(owner, name, "method")
+        case x: TermSymbol => x.filter(_.isMethod).orElse(miss).asInstanceOf[TermSymbol]
+        case _             => miss
       }
     }
 

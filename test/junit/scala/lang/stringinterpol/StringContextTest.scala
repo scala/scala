@@ -252,4 +252,104 @@ class StringContextTest {
 
     for ((f, s) <- ss) assertEquals(s, f)
   }
+
+  @Test
+  def globTests(): Unit = {
+    val cases = Seq(
+      // Empty literal
+      StringContext.glob(Seq(""), "")    -> Some(Nil),
+      StringContext.glob(Seq(""), "a")   -> None,
+      StringContext.glob(Seq(""), "b")   -> None,
+      StringContext.glob(Seq(""), "aa")  -> None,
+      StringContext.glob(Seq(""), "ab")  -> None,
+      StringContext.glob(Seq(""), "ba")  -> None,
+  
+      // Trivial literal
+      StringContext.glob(Seq("a"), "a")  -> Some(Nil),
+      StringContext.glob(Seq("a"), "b")  -> None,
+      StringContext.glob(Seq("a"), "aa") -> None,
+      StringContext.glob(Seq("a"), "ab") -> None,
+      StringContext.glob(Seq("a"), "ba") -> None,
+  
+      // Non-trivial literal
+      StringContext.glob(Seq("abc"), "abc")  -> Some(Nil),
+      StringContext.glob(Seq("abc"), "babc") -> None,
+      StringContext.glob(Seq("abc"), "aabc") -> None,
+      StringContext.glob(Seq("abc"), "abcb") -> None,
+      StringContext.glob(Seq("abc"), "cba")  -> None,
+      StringContext.glob(Seq("abc"), "abbc") -> None,
+  
+      // Single wildcard
+      StringContext.glob(Seq("a", "b"), "ab")      -> Some(Seq("")),
+      StringContext.glob(Seq("a", "b"), "a b")     -> Some(Seq(" ")),
+      StringContext.glob(Seq("a", "b"), "a    b")  -> Some(Seq("    ")),
+      StringContext.glob(Seq("a", "b"), "a***b")   -> Some(Seq("***")),
+      StringContext.glob(Seq("a", "b"), "a")       -> None,
+      StringContext.glob(Seq("a", "b"), "b")       -> None,
+      StringContext.glob(Seq("a", "b"), "abc")     -> None,
+      StringContext.glob(Seq("a", "b"), "cab")     -> None,
+      StringContext.glob(Seq("a", "b"), " ab ")    -> None,
+  
+      // Leading wildcard
+      StringContext.glob(Seq("", "b"), "ab")     -> Some(Seq("a")),
+      StringContext.glob(Seq("", "b"), "a b")    -> Some(Seq("a ")),
+      StringContext.glob(Seq("", "b"), "a    b") -> Some(Seq("a    ")),
+      StringContext.glob(Seq("", "b"), "a***b")  -> Some(Seq("a***")),
+      StringContext.glob(Seq("", "b"), "a")      -> None,
+      StringContext.glob(Seq("", "b"), "b")      -> Some(Seq("")),
+      StringContext.glob(Seq("", "b"), "abc")    -> None,
+      StringContext.glob(Seq("", "b"), "cab")    -> Some(Seq("ca")),
+      StringContext.glob(Seq("", "b"), " ab ")   -> None,
+  
+      // Trailing wildcard
+      StringContext.glob(Seq("a", ""), "ab")     -> Some(Seq("b")),
+      StringContext.glob(Seq("a", ""), "a b")    -> Some(Seq(" b")),
+      StringContext.glob(Seq("a", ""), "a    b") -> Some(Seq("    b")),
+      StringContext.glob(Seq("a", ""), "a***b")  -> Some(Seq("***b")),
+      StringContext.glob(Seq("a", ""), "a")      -> Some(Seq("")),
+      StringContext.glob(Seq("a", ""), "b")      -> None,
+      StringContext.glob(Seq("a", ""), "abc")    -> Some(Seq("bc")),
+      StringContext.glob(Seq("a", ""), "cab")    -> None,
+      StringContext.glob(Seq("a", ""), " ab ")   -> None,
+  
+      // Lonely wildcard
+      StringContext.glob(Seq("", ""), "ab")      -> Some(Seq("ab")),
+      StringContext.glob(Seq("", ""), "a b")     -> Some(Seq("a b")),
+      StringContext.glob(Seq("", ""), "a    b")  -> Some(Seq("a    b")),
+      StringContext.glob(Seq("", ""), "a***b")   -> Some(Seq("a***b")),
+      StringContext.glob(Seq("", ""), "a")       -> Some(Seq("a")),
+      StringContext.glob(Seq("", ""), "b")       -> Some(Seq("b")),
+      StringContext.glob(Seq("", ""), "abc")     -> Some(Seq("abc")),
+      StringContext.glob(Seq("", ""), "cab")     -> Some(Seq("cab")),
+      StringContext.glob(Seq("", ""), " ab ")    -> Some(Seq(" ab ")),
+  
+      // Ambiguous lonely wildcard
+      StringContext.glob(Seq("", "", ""), "ab")      -> Some(Seq("", "ab")),
+      StringContext.glob(Seq("", "", ""), "a b")     -> Some(Seq("", "a b")),
+      StringContext.glob(Seq("", "", ""), "a    b")  -> Some(Seq("", "a    b")),
+      StringContext.glob(Seq("", "", ""), "a***b")   -> Some(Seq("", "a***b")),
+      StringContext.glob(Seq("", "", ""), "a")       -> Some(Seq("", "a")),
+      StringContext.glob(Seq("", "", ""), "b")       -> Some(Seq("", "b")),
+      StringContext.glob(Seq("", "", ""), "abc")     -> Some(Seq("", "abc")),
+      StringContext.glob(Seq("", "", ""), "cab")     -> Some(Seq("", "cab")),
+      StringContext.glob(Seq("", "", ""), " ab ")    -> Some(Seq("", " ab ")),
+  
+      // Multiple wildcards
+      StringContext.glob(Seq("a", "bb", "c"), "a__bb___c") -> Some(Seq("__", "___")),
+      StringContext.glob(Seq("a", "bb", "c"), "abbc")      -> Some(Seq("", "")),
+      StringContext.glob(Seq("a", "bb", "c"), "aabbbc")    -> Some(Seq("a", "b")),
+      // Kind ambiguous
+      StringContext.glob(Seq("a", "bb", "c"), "abbbc")     -> Some(Seq("", "b")),
+      // Failures
+      StringContext.glob(Seq("a", "bb", "c"), "a")         -> None,
+      StringContext.glob(Seq("a", "bb", "c"), "abc")       -> None,
+      StringContext.glob(Seq("a", "bb", "c"), "abb")       -> None,
+      StringContext.glob(Seq("a", "bb", "c"), "bbc")       -> None,
+      StringContext.glob(Seq("a", "bb", "c"), "bbaaac")    -> None,
+  
+      // Many many ambiguous wildcards
+      StringContext.glob(Seq.fill(100)("a"), "a" * 200) -> Some(Seq.fill(98)("") :+ "a" * 100)
+    )
+    for((lhs, rhs) <- cases) assertEquals(rhs, lhs)
+  }
 }
