@@ -15,6 +15,7 @@ package collection
 
 import generic._
 import immutable.Stream
+import scala.collection.mutable.ListBuffer
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
@@ -172,12 +173,21 @@ self =>
    *  @return An iterator producing ${coll}s of size `size`, except the
    *          last will be less than size `size` if the elements don't divide evenly.
    */
-  def grouped(size: Int): Iterator[Repr] =
-    for (xs <- iterator grouped size) yield {
+  def grouped(size: Int): Iterator[Repr] = {
+    require(size >= 1, f"size=$size%d, but it must be positive")
+    val it = iterator
+    val listBuffer = new ListBuffer[Repr]()
+    while (it.hasNext) {
       val b = newBuilder
-      b ++= xs
-      b.result()
+      var i = 0
+      while (i < size && it.hasNext) {
+        b += it.next
+        i += 1
+      }
+      listBuffer += b.result()
     }
+    listBuffer.toIterator
+  }
 
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in `grouped`.)
