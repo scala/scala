@@ -171,4 +171,39 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
       distinct.foreach(b.addOne)
       b.result().rootNode.cachedJavaKeySetHashCode == expectedHash
     }
+
+  property("xs.toList.filter(p).toMap == xs.filter(p)") = forAll { (xs: HashMap[Int, Int], flipped: Boolean) =>
+    val p: ((Int, Int)) => Boolean = { case (k, v) => k * v >= 0} // "key and value are the same sign"
+    xs.toList.filterImpl(p, flipped).toMap == xs.filterImpl(p, flipped)
+  }
+
+  property("xs.filter(p) retains all elements that pass `p`, and only those") =
+    forAll { (xs: HashMap[Int, Int], p: ((Int, Int)) => Boolean, flipped: Boolean) =>
+      xs.filterImpl(p, flipped) == {
+        val builder = HashMap.newBuilder[Int, Int]
+        xs.foreach (kv => if (p(kv) != flipped) builder.addOne(kv))
+        builder.result()
+      }
+  }
+  property("xs.filter(p) does not perform any hashes") =
+    forAll { (xs: HashMap[Int, Int], p: ((Int, Int)) => Boolean, flipped: Boolean) =>
+      // container which tracks the number of times its hashCode() is called
+      case class Container(inner: Int) {
+        var timesHashed = 0
+        override def hashCode() = {
+            timesHashed += 1
+            inner.hashCode()
+          }
+      }
+
+      val ys: HashMap[Container, Int] = xs.map { case (k, v) => Container(k) -> v }
+      val zs = ys.filterImpl( { case (k, v) => p((k.inner, v))}, flipped)
+
+      ys.forall(_._1.timesHashed <= 1)
+     }
+
+  property("xs.removeAll(ys) == xs.filterNot(kv => ys.toSet.contains(kv._1))") = forAll { (xs: HashMap[K, V], ys: Iterable[K]) =>
+    val ysSet = ys.toSet
+    xs.removedAll(ys) == xs.filterNot { case (k, _) => ysSet.contains(k) }
+  }
 }

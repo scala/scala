@@ -14,7 +14,6 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.immutable.Set.Set4
 import scala.collection.mutable.{Builder, ImmutableBuilder}

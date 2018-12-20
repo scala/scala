@@ -51,7 +51,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   }
 
   property("containsAfterInsert") = forAll { (inputValues: HashSet[K]) =>
-    var testSet = HashSet.empty[K] ++ inputValues
+    val testSet = HashSet.empty[K] ++ inputValues
     inputValues.forall(testSet.contains)
   }
 
@@ -290,5 +290,11 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   property("(xs - elem) == xs.toList.filterNot(_ == elem).toSet") = forAll { (xs: Set[K], elem: K) =>
     (xs - elem) == xs.toList.filterNot(_ == elem).toSet
   }
-
+  property("(xs + elem) == (xs.toList :+ elem).toSet") = forAll { (xs: Set[K], elem: K) =>
+    (xs + elem) == (xs.toList :+ elem).toSet
+  }
+  property("xs -- range == xs -- range.toSet") = forAll { (xs: Set[Int], rangeMax: Int) =>
+    val range = 1 to (rangeMax % 10000)
+    xs -- range == xs -- range.toSet
+  }
 }
