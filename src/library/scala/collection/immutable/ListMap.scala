@@ -127,11 +127,21 @@ sealed class ListMap[K, +V]
       else containsInternal(cur.next, k)
 
     override def updated[V2 >: V1](k: K, v: V2): ListMap[K, V2] = {
-      val m = this - k
-      new m.Node[V2](k, v)
+      replaceInternal(k, v, this, Nil)
     }
 
-    override def remove(k: K): ListMap[K, V1] = removeInternal(k, this, Nil)
+    @tailrec private[this] def replaceInternal[V2 >: V1](k: K, v : V2, cur: ListMap[K, V2], acc: List[ListMap[K, V2]]): ListMap[K, V2] =
+      if (cur.isEmpty) new this.Node(k,v)
+      else if (k == cur.key) {
+        val nextNode : ListMap[K, V2] = cur.next
+        val updatedCurrentNode : ListMap[K, V2] = new nextNode.Node(k,v)
+        acc.foldLeft(updatedCurrentNode) { (t, h) => new t.Node(h.key, h.value) }
+      }
+      else replaceInternal(k, v, cur.next, cur :: acc)
+
+    override def remove(k: K): ListMap[K, V1] = {
+      removeInternal(k, this, Nil)
+    }
 
     @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V1], acc: List[ListMap[K, V1]]): ListMap[K, V1] =
       if (cur.isEmpty) acc.last

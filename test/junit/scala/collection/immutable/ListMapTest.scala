@@ -14,10 +14,14 @@ class ListMapTest {
     assertEquals(ListMap(2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5), m.tail)
   }
 
+  /*
+  Modifying this test to make up for the fix (bug #11306)
+  where updating existing key retains its position
+   */
   @Test
   def hasCorrectBuilder(): Unit = {
     val m = ListMap("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "2.2", "d" -> "4")
-    assertEquals(List("a" -> "1", "c" -> "3", "b" -> "2.2", "d" -> "4"), m.toList)
+    assertEquals(List("a" -> "1","b" -> "2.2", "c" -> "3",  "d" -> "4"), m.toList)
   }
 
   @Test
@@ -50,5 +54,16 @@ class ListMapTest {
   def keysShouldPreserveOrderAsInserted: Unit = {
     val m = ListMap("a" -> "1", "b" -> "2", "c" -> "3", "d" -> "4", "e" -> "5")
     assertEquals(List("A", "B", "C", "D", "E"), m.keys.map(_.toUpperCase).toList)
+  }
+
+  @Test
+  def updatingExistingKeyShouldRetainItsPosition : Unit = {
+    val m = ListMap(1 -> 100, 2 -> 200, 3 -> 500, 10 -> 455)
+    val newNode1 = (2 -> 2343)
+    val result1 = m + newNode1
+    assertEquals(result1, ListMap(1 -> 100, newNode1, 3 -> 500, 10 -> 455))
+    val newNode2 = (1 -> 101)
+    val result2 = result1 + newNode2
+    assertEquals(result2, ListMap(1 -> 101, newNode1, 3 -> 500, 10 -> 455))
   }
 }
