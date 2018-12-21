@@ -1,6 +1,12 @@
 value-discard.scala:6: warning: discarded non-Unit value
     mutable.Set[String]().remove("")   // expected to warn
                                 ^
+value-discard.scala:13: warning: discarded non-Unit value
+  def subtract(): Unit = mutable.Set.empty[String].subtractOne("")     // warn
+                                                              ^
+value-discard.scala:17: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+    ""                         // warn
+    ^
 error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
+three warnings found
 one error found

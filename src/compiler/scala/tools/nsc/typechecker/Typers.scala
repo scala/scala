@@ -233,6 +233,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
     private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
 
+    private def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
+
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
@@ -1057,14 +1059,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            def wasTypedExpectingUnit = {
-              tree.attachments.contains[TypedExpectingUnitAttachment.type] && {
-                tree.attachments.remove[TypedExpectingUnitAttachment.type] // cleanup
-                true
-              }
-            }
-            if (!isThisTypeResult && !wasTypedExpectingUnit)
-              context.warning(tree.pos, "discarded non-Unit value")
+            if (!isThisTypeResult && !explicitlyUnit(tree)) context.warning(tree.pos, "discarded non-Unit value")
           }
           @inline def warnNumericWiden(): Unit =
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
@@ -2453,7 +2448,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _                                         => (1, EmptyTree, false)
             }
           def checkPure(t: Tree, supple: Boolean): Unit =
-            if (treeInfo.isPureExprForWarningPurposes(t)) {
+            if (!explicitlyUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
               val msg = "a pure expression does nothing in statement position"
               val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
               val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""

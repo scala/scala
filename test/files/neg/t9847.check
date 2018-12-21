@@ -4,9 +4,6 @@ t9847.scala:6: warning: discarded non-Unit value
 t9847.scala:6: warning: a pure expression does nothing in statement position
   def f(): Unit = 42
                   ^
-t9847.scala:7: warning: a pure expression does nothing in statement position
-  def g = (42: Unit)
-           ^
 t9847.scala:9: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     1
     ^
@@ -38,5 +35,5 @@ t9847.scala:24: warning: a pure expression does nothing in statement position; m
   class D { 42 ; 17 }
                  ^
 error: No warnings can be incurred under -Xfatal-warnings.
-13 warnings found
+12 warnings found
 one error found

@@ -497,7 +497,7 @@ trait Types {
     def sym: Symbol
   }
   /** The `SuperType` type is not directly written, but arises when `C.super` is used
-   *  as a prefix in a `TypeRef` or `SingleType`. It's internal presentation is
+   *  as a prefix in a `TypeRef` or `SingleType`. Its internal presentation is
    *  {{{
    *     SuperType(thistpe, supertpe)
    *  }}}
@@ -514,7 +514,7 @@ trait Types {
    */
   val SuperType: SuperTypeExtractor
 
-  /** An extractor class to create and pattern match with syntax `SingleType(thistpe, supertpe)`
+  /** An extractor class to create and pattern match with syntax `SuperType(thistpe, supertpe)`
    *  @group Extractors
    */
   abstract class SuperTypeExtractor {

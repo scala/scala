@@ -7,6 +7,15 @@ final class UnusedTest {
   }
 
   def removeAscribed(): Unit = {
-    mutable.Set[String]().remove(""): Unit
+    mutable.Set[String]().remove(""): Unit    // no warn
+  }
+
+  def subtract(): Unit = mutable.Set.empty[String].subtractOne("")     // warn
+
+  def warnings(): Unit = {
+    val s: mutable.Set[String] = mutable.Set.empty[String]
+    ""                         // warn
+    "": Unit                   // no warn
+    s.subtractOne("")          // no warn
   }
 }
