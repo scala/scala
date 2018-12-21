@@ -197,6 +197,9 @@ trait StdAttachments {
    */
   case class OriginalTreeAttachment(original: Tree)
 
+  /** Marks a Typed tree with Unit tpt. */
+  case object TypedExpectingUnitAttachment
+
   case class StabilizingDefinitions(vdefs: List[ValDef])
   private[this] val StabilizingDefinitionsTag: reflect.ClassTag[StabilizingDefinitions] = reflect.classTag[StabilizingDefinitions]
 
