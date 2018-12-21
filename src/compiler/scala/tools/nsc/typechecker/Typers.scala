@@ -1057,7 +1057,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value")
+            def wasTypedExpectingUnit = {
+              tree.attachments.contains[TypedExpectingUnitAttachment.type] && {
+                tree.attachments.remove[TypedExpectingUnitAttachment.type] // cleanup
+                true
+              }
+            }
+            if (!isThisTypeResult && !wasTypedExpectingUnit)
+              context.warning(tree.pos, "discarded non-Unit value")
           }
           @inline def warnNumericWiden(): Unit =
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
@@ -5442,7 +5449,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           case Typed(expr, tpt) =>
             val tpt1  = typedType(tpt, mode)                           // type the ascribed type first
-            val expr1 = typed(expr, mode.onlySticky, tpt1.tpe.deconst) // then type the expression with tpt1 as the expected type
+            val exprWithAttachment =
+              if (definitions.isUnitType(tpt1.tpe)) expr.updateAttachment(TypedExpectingUnitAttachment)
+              else expr
+            val expr1 = typed(exprWithAttachment, mode.onlySticky, tpt1.tpe.deconst) // then type the expression with tpt1 as the expected type
             treeCopy.Typed(tree, expr1, tpt1) setType tpt1.tpe
         }
       }

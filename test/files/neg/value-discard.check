@@ -1,0 +1,6 @@
+value-discard.scala:6: warning: discarded non-Unit value
+    mutable.Set[String]().remove("")   // expected to warn
+                                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
