@@ -855,9 +855,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     }
     def compileCode() = paste.compilePaste(label = label, code = code)
 
-    if (code.nonEmpty) {
-      if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
-    }
+    if (code.nonEmpty)
+      intp.reporter.indenting(0) {
+        if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
+      }
     result
   }
 
