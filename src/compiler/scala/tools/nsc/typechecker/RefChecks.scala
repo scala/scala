@@ -115,6 +115,7 @@ abstract class RefChecks extends Transform {
 
     var localTyper: analyzer.Typer = typer
     var currentApplication: Tree = EmptyTree
+    var inAnnotation: Boolean = false
     var inPattern: Boolean = false
     @inline final def savingInPattern[A](body: => A): A = {
       val saved = inPattern
@@ -1283,7 +1284,7 @@ abstract class RefChecks extends Transform {
           reporter.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
-      if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
+      if (sym.isCompileTimeOnly && !inAnnotation && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
         def defaultMsg =
           sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
               |it should have been processed and eliminated during expansion of an enclosing macro."""
@@ -1427,11 +1428,14 @@ abstract class RefChecks extends Transform {
           if (ann.original != null && ann.original.hasExistingSymbol)
             checkUndesiredProperties(ann.original.symbol, tree.pos)
         }
-        annots
+        val saved = inAnnotation
+        inAnnotation = true
+        try annots
           .map(_.transformArgs(transformTrees))
           .groupBy(_.symbol)
           .flatMap((groupRepeatableAnnotations _).tupled)
           .toList
+        finally inAnnotation = saved
       }
 
       // assumes non-empty `anns`
