@@ -624,11 +624,35 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (knownIsEmpty) LazyList.empty
     else super.intersect(that)
 
-  // TODO: override to detect cycles
-  override def distinct: LazyList[A] = super.distinct
+  /**Overrode distinctBy to detect circular lazy list so that they terminate
+  @param f The treatment to apply to each element - to check if they are distinct
+  @return A lazy list containing all the distinct elements as defined by f
+  Done as part of Bug Fix #11270
+    */
+  override def distinctBy[B](f : A => B) : LazyList[A] = {
 
-  // TODO: override to detect cycles
-  override def distinctBy[B](f: A => B): LazyList[A] = super.distinctBy(f)
+    var set = Set[B]()
+    def isDistinct(elem : A) : Boolean = {
+      if(set.contains(f(elem))) false
+      else {
+        set = set + f(elem)
+        true
+      }
+    }
+
+    @tailrec
+    def internalDistinct(dll : LazyList[A], slowIterator : LazyList[A], fastIterator : LazyList[A]) : LazyList[A] =
+      if(slowIterator.isEmpty) dll
+      else if(fastIterator.isEmpty || fastIterator.tail.isEmpty)
+        internalDistinct(if(isDistinct(slowIterator.head)) slowIterator.head #:: dll else dll, slowIterator.tail, fastIterator)
+      else if(slowIterator ne fastIterator)
+        internalDistinct(if(isDistinct(slowIterator.head)) slowIterator.head #:: dll else dll, slowIterator.tail, fastIterator.tail.tail)
+      else
+        slowIterator.head #:: dll
+
+    internalDistinct(dll = LazyList(),slowIterator = this, fastIterator = if(this.isEmpty) this else this.tail).reverse //reversed to maintain original sequence
+
+  }
 
   override def endsWith[B >: A](that: collection.Iterable[B]): Boolean =
     takeRight(that.size) == that
