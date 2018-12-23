@@ -423,3 +423,10 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
       array.take(size).mkString("Unrolled@%08x".format(System.identityHashCode(this)) + "[" + size + "/" + array.length + "](", ", ", ")") + " -> " + (if (next ne null) next.toString else "")
   }
 }
+
+// This is used by scala.collection.parallel.mutable.UnrolledParArrayCombiner:
+// Todo -- revisit whether inheritance is the best way to achieve this functionality
+private[collection] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
+  override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
+  protected override def newUnrolled = new UnrolledBuffer.Unrolled[T](0, new Array[T](4), null, this)
+}
