@@ -14,6 +14,6 @@
 
 package scala.runtime
 
-abstract class AbstractFunction1[@specialized(scala.Int, scala.Long, scala.Float, scala.Double) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends Function1[T1, R] {
+abstract class AbstractFunction1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.Return) +R] extends Function1[T1, R] {
 
 }

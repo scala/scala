@@ -118,7 +118,7 @@ object ArrayOps {
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), xs)
   }
 
-  private final class ArrayIterator[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) A](xs: Array[A]) extends AbstractIterator[A] {
+  private final class ArrayIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = 0
     private[this] val len = xs.length
     def hasNext: Boolean = pos < len
@@ -133,7 +133,7 @@ object ArrayOps {
     }
   }
 
-  private final class ReverseIterator[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) A](xs: Array[A]) extends AbstractIterator[A] {
+  private final class ReverseIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
     def next(): A = try {
@@ -700,7 +700,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+    def f[@specialized(Specializable.Everything) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
       val length = xs.length
       var v: Any = z
       var i = 0
@@ -806,7 +806,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *           Returns `z` if this array is empty.
     */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
-    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+    def f[@specialized(Specializable.Everything) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
       var v = z
       var i = xs.length - 1
       while(i >= 0) {
@@ -841,7 +841,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return        the result of applying the fold operator `op` between all the elements, or `z` if this array is empty.
     */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = {
-    def f[@specialized(AnyRef, Int, Double, Long, Float, Char, Byte, Short, Boolean, Unit) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
+    def f[@specialized(Specializable.Everything) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
       // Start with the last element and run the loop from 0 until length-1. It would be more logical to start with
       // the first element and loop from 1 until length but hotspot performs special optimizations for loops starting
       // at 0 which have a huge impact when the actual folding operation is fast.

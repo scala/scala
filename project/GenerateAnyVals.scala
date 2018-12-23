@@ -468,6 +468,9 @@ override def getClass(): Class[Boolean] = ???
     )
     def objectLines = interpolate(allCompanions).linesIterator.toList
 
+    private def nono = "`Unit` companion object is not allowed in source; instead, use `()` for the unit value"
+    override def mkObject = s"""@scala.annotation.compileTimeOnly("$nono")\n${super.mkObject}"""
+
     override def boxUnboxInterpolations = Map(
       "@boxRunTimeDoc@" -> "",
       "@unboxRunTimeDoc@" -> "",
@@ -495,7 +498,7 @@ object GenerateAnyVals {
 
     av.make() foreach { case (name, code ) =>
       val file = new java.io.File(outDir, name + ".scala")
-      sbt.IO.write(file, code, java.nio.charset.Charset.forName("UTF-8"), false)
+      sbt.IO.write(file, code, java.nio.charset.StandardCharsets.UTF_8, false)
     }
   }
 }
