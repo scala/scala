@@ -1030,4 +1030,17 @@ class LazyListTest {
     check(LazyList.from(Vector(1, 2, 3, 4, 5)))
     check(LazyList.tabulate(5)(_ + 1))
   }
+
+  @Test
+  def testDistinctCircularLazyList : Unit = {
+    lazy val ring : LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: 5#:: ring
+    assertEquals(ring.distinct.toList, List(1,2,3,4,5))
+
+    lazy val ring1 : LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: 5#:: ring1
+    val distinctByFunc : Int => Int = {i : Int => if(i == 4) 3 else i}
+    assertEquals(ring1.distinctBy(distinctByFunc), List(1,2,3,5))
+
+    lazy val nonRing : LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: 5#:: LazyList(2,6) //added as part of regression to test non circular lazyList
+    assertEquals(nonRing.distinct, List(1,2,3,4,5,6))
+  }
 }
