@@ -19,7 +19,7 @@ import java.lang.{StringBuilder => JStringBuilder}
 
 import scala.annotation.tailrec
 import scala.collection.generic.SerializeEnd
-import scala.collection.mutable.{ArrayBuffer, Builder, StringBuilder}
+import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder, StringBuilder}
 import scala.language.implicitConversions
 
 /**  The class `LazyList` implements lazy lists where elements
@@ -194,6 +194,10 @@ import scala.language.implicitConversions
   *  @define coll lazy list
   *  @define orderDependent
   *  @define orderDependentFold
+  *  @define appendStackSafety Note: Repeated chaining of calls to append methods (`appended`,
+  *                            `appendedAll`, `lazyAppendedAll`) without forcing any of the
+  *                            intermediate resulting lazy lists may overflow the stack when
+  *                            the final result is forced.
   */
 @SerialVersionUID(3L)
 final class LazyList[+A] private(private[this] var lazyState: () => LazyList.State[A])
@@ -301,6 +305,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   /** The lazy list resulting from the concatenation of this lazy list with the argument lazy list.
     *
+    * $appendStackSafety
+    *
     * @param suffix The collection that gets appended to this lazy list
     * @return The lazy list containing elements of this lazy list and the iterable object.
     */
@@ -314,10 +320,18 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       else sCons(head, tail lazyAppendedAll suffix)
     }
 
+  /** @inheritdoc
+    *
+    * $appendStackSafety
+    */
   override def appendedAll[B >: A](suffix: IterableOnce[B]): LazyList[B] =
     if (knownIsEmpty) LazyList.from(suffix)
     else lazyAppendedAll(suffix)
 
+  /** @inheritdoc
+    *
+    * $appendStackSafety
+    */
   override def appended[B >: A](elem: B): LazyList[B] =
     if (knownIsEmpty) newLL(sCons(elem, LazyList.empty))
     else lazyAppendedAll(Iterator.single(elem))
@@ -789,38 +803,6 @@ object LazyList extends SeqFactory[LazyList] {
     final class Cons[A](val head: A, val tail: LazyList[A]) extends State[A]
   }
 
-  private class SlidingIterator[A](private[this] var lazyList: LazyList[A], size: Int, step: Int)
-    extends AbstractIterator[LazyList[A]] {
-    private val minLen = size - step max 0
-    private var first = true
-
-    def hasNext: Boolean =
-      if (first) lazyList.nonEmpty
-      else lazyList.lengthGt(minLen)
-
-    def next(): LazyList[A] = {
-      if (!hasNext) Iterator.empty.next()
-      else {
-        first = false
-        val list = lazyList
-        lazyList = list.drop(step)
-        list.take(size)
-      }
-    }
-  }
-
-  private class LazyIterator[+A](private[this] var lazyList: LazyList[A]) extends AbstractIterator[A] {
-    override def hasNext: Boolean = lazyList.nonEmpty
-
-    override def next(): A =
-      if (lazyList.isEmpty) Iterator.empty.next()
-      else {
-        val res = lazyList.head
-        lazyList = lazyList.tail
-        res
-      }
-  }
-
   /** Creates a new LazyList. */
   @inline private def newLL[A](state: => State[A]): LazyList[A] = new LazyList[A](() => state)
 
@@ -886,15 +868,6 @@ object LazyList extends SeqFactory[LazyList] {
     if (!it.hasNext) State.Empty
     else stateFromIteratorConcatSuffix(it.next().iterator)(concatIterator(it))
 
-  private final class WithFilter[A] private[LazyList](lazyList: LazyList[A], p: A => Boolean)
-    extends collection.WithFilter[A, LazyList] {
-    private[this] val filtered = lazyList.filter(p)
-    def map[B](f: A => B): LazyList[B] = filtered.map(f)
-    def flatMap[B](f: A => IterableOnce[B]): LazyList[B] = filtered.flatMap(f)
-    def foreach[U](f: A => U): Unit = filtered.foreach(f)
-    def withFilter(q: A => Boolean): collection.WithFilter[A, LazyList] = new WithFilter(filtered, q)
-  }
-
   /** An infinite LazyList that repeatedly applies a given function to a start value.
     *
     *  @param start the start value of the LazyList
@@ -954,7 +927,103 @@ object LazyList extends SeqFactory[LazyList] {
       }
     }
 
-  def newBuilder[A]: Builder[A, LazyList[A]] = ArrayBuffer.newBuilder[A].mapResult(array => from(array))
+  def newBuilder[A]: Builder[A, LazyList[A]] = new LazyBuilder[A]
+
+  private class LazyIterator[+A](private[this] var lazyList: LazyList[A]) extends AbstractIterator[A] {
+    override def hasNext: Boolean = lazyList.nonEmpty
+
+    override def next(): A =
+      if (lazyList.isEmpty) Iterator.empty.next()
+      else {
+        val res = lazyList.head
+        lazyList = lazyList.tail
+        res
+      }
+  }
+
+  private class SlidingIterator[A](private[this] var lazyList: LazyList[A], size: Int, step: Int)
+    extends AbstractIterator[LazyList[A]] {
+    private val minLen = size - step max 0
+    private var first = true
+
+    def hasNext: Boolean =
+      if (first) lazyList.nonEmpty
+      else lazyList.lengthGt(minLen)
+
+    def next(): LazyList[A] = {
+      if (!hasNext) Iterator.empty.next()
+      else {
+        first = false
+        val list = lazyList
+        lazyList = list.drop(step)
+        list.take(size)
+      }
+    }
+  }
+
+  private final class WithFilter[A] private[LazyList](lazyList: LazyList[A], p: A => Boolean)
+    extends collection.WithFilter[A, LazyList] {
+    private[this] val filtered = lazyList.filter(p)
+    def map[B](f: A => B): LazyList[B] = filtered.map(f)
+    def flatMap[B](f: A => IterableOnce[B]): LazyList[B] = filtered.flatMap(f)
+    def foreach[U](f: A => U): Unit = filtered.foreach(f)
+    def withFilter(q: A => Boolean): collection.WithFilter[A, LazyList] = new WithFilter(filtered, q)
+  }
+
+  private final class LazyBuilder[A] extends ReusableBuilder[A, LazyList[A]] {
+    import LazyBuilder._
+
+    private[this] var next: DeferredState[A] = _
+    private[this] var list: LazyList[A] = _
+
+    clear()
+
+    override def clear(): Unit = {
+      val deferred = new DeferredState[A]
+      list = newLL(deferred.eval())
+      next = deferred
+    }
+
+    override def result(): LazyList[A] = {
+      next init State.Empty
+      list
+    }
+
+    override def addOne(elem: A): this.type = {
+      val deferred = new DeferredState[A]
+      next init sCons(elem, newLL(deferred.eval()))
+      next = deferred
+      this
+    }
+
+    // lazy implementation which doesn't evaluate the collection being added
+    override def addAll(xs: IterableOnce[A]): this.type = {
+      if (xs.knownSize != 0) {
+        val deferred = new DeferredState[A]
+        next init stateFromIteratorConcatSuffix(xs.iterator)(deferred.eval())
+        next = deferred
+      }
+      this
+    }
+  }
+
+  private object LazyBuilder {
+    final class DeferredState[A] {
+      private[this] var _state: () => State[A] = _
+
+      def eval(): State[A] = {
+        val state = _state
+        if (state == null) throw new IllegalStateException("uninitialized")
+        state()
+      }
+
+      // racy
+      def init(state: => State[A]): Unit = {
+        if (_state != null) throw new IllegalStateException("already initialized")
+        _state = () => state
+      }
+    }
+  }
 
   /** This serialization proxy is used for LazyLists which start with a sequence of evaluated cons cells.
     * The forced sequence is serialized in a compact, sequential format, followed by the unevaluated tail, which uses

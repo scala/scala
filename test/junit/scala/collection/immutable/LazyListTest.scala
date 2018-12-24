@@ -1,12 +1,12 @@
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.collection.Iterator
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{Builder, ListBuffer}
 import scala.ref.WeakReference
 import scala.tools.testing.AssertUtil
 import scala.util.Try
@@ -382,5 +382,22 @@ class LazyListTest {
     check(LazyList.from(Iterator(1, 2, 3, 4, 5)))
     check(LazyList.from(Vector(1, 2, 3, 4, 5)))
     check(LazyList.tabulate(5)(_ + 1))
+  }
+
+  @Test
+  def builder(): Unit = {
+    def build(init: Builder[Int, LazyList[Int]] => Unit): LazyList[Int] = {
+      val b = LazyList.newBuilder[Int]
+      init(b)
+      b.result()
+    }
+
+    assertEquals(Nil, build(_ => ()))
+    assertEquals(Nil, build(_ ++= Nil))
+    assertEquals(Nil, build(_ ++= LazyList.empty))
+    assertEquals(1 to 10, build(_ += 1 ++= (2 to 5) += 6 += 7 ++= (8 to 10)))
+    assertEquals(1 to 10, build(_ ++= (1 to 4) ++= (5 to 6) += 7 ++= (8 to 9) += 10))
+    assertEquals(1 to 10, build(_ ++= LazyList.from(1).take(10)))
+    assertEquals(1 to 10, build(_ ++= Iterator.from(1).take(10)))
   }
 }
