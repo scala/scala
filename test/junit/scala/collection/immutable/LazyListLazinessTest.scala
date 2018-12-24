@@ -554,21 +554,27 @@ class LazyListLazinessTest {
     assertKnownEmptyYieldsKnownEmpty(op)
   }
 
-  @Test
-  def distinct_properlyLazy(): Unit = {
-    val op = lazyListOp(_.distinct)
-    assertRepeatedlyFullyLazy(op)
-    assertLazyNextStateWhenHeadEvaluated(op)
-    assertKnownEmptyYieldsKnownEmpty(op)
-  }
-
-  @Test
-  def distinctBy_properlyLazy(): Unit = {
-    val op = lazyListOp(_.distinctBy(identity))
-    assertRepeatedlyFullyLazy(op)
-    assertLazyNextStateWhenHeadEvaluated(op)
-    assertKnownEmptyYieldsKnownEmpty(op)
-  }
+  /**
+    * Removing distinct and distinctBy tests.
+    * As part of bug fix #11270
+    * To know whether a lazy list is circular or not, we will have to have the state evaluated (using the classic 1x, 2x iterator)
+    * and there by making it non-lazy
+    */
+  //  @Test
+//  def distinct_properlyLazy(): Unit = {
+//    val op = lazyListOp(_.distinct)
+//    assertRepeatedlyFullyLazy(op)
+//    assertLazyNextStateWhenHeadEvaluated(op)
+//    assertKnownEmptyYieldsKnownEmpty(op)
+//  }
+//
+//  @Test
+//  def distinctBy_properlyLazy(): Unit = {
+//    val op = lazyListOp(_.distinctBy(identity))
+//    assertRepeatedlyFullyLazy(op)
+//    assertLazyNextStateWhenHeadEvaluated(op)
+//    assertKnownEmptyYieldsKnownEmpty(op)
+//  }
 
   @Test
   def startsWith_properlyLazy(): Unit = {
