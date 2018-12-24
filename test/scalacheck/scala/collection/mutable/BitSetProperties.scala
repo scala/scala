@@ -34,4 +34,9 @@ object BitSetProperties extends Properties("mutable.BitSet") {
     val list = bs.toList
     bs.filterInPlace(_ % 2 == 0) ?= list.filter(_ % 2 == 0).to(BitSet)
   }
+  property("partition") = forAll { (bs: BitSet) =>
+    val p = (i: Int) => i % 2 == 0
+    val (left, right) = bs.partition(p)
+    (left ?= bs.filter(p)) && (right ?= bs.filterNot(p))
+  }
 }

@@ -46,4 +46,10 @@ object BitSetProperties extends Properties("immutable.BitSet") {
   property("filterNot") = forAll { (bs: BitSet) =>
     bs.filterNot(_ % 2 == 0) ?= bs.toList.filterNot(_ % 2 == 0).to(BitSet)
   }
+
+  property("partition") = forAll { (bs: BitSet) =>
+    val p = (i: Int) => i % 2 == 0
+    val (left, right) = bs.partition(p)
+    (left ?= bs.filter(p)) && (right ?= bs.filterNot(p))
+  }
 }

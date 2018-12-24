@@ -291,6 +291,11 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def flatMap(f: Int => IterableOnce[Int]): C = fromSpecific(new View.FlatMap(toIterable, f))
 
   def collect(pf: PartialFunction[Int, Int]): C = fromSpecific(super[SortedSetOps].collect(pf).toIterable)
+
+  override def partition(p: Int => Boolean): (C, C) = {
+    val left = filter(p)
+    (left, this &~ left)
+  }
 }
 
 object BitSetOps {
