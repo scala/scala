@@ -40,6 +40,11 @@ trait Process {
   def exitValue(): Int
   /** Destroys this process. */
   def destroy(): Unit
+  /** Destroy this process forcibly. Requires overriding in some scenario depending on type of process. */
+  def destroyForcibly(): Process = {
+    destroy()
+    this
+  }
 }
 
 /** Methods for constructing simple commands that can then be combined. */
