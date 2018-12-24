@@ -313,7 +313,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   override def equals(that: Any): Boolean =
     if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def scanLeft[B](z: B)(op: (B, A) => B): LazyList[B] =
     if (knownIsEmpty) newLL(sCons(z, LazyList.empty))
     else newLL(scanLeftState(z)(op))
@@ -360,12 +359,10 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     (left.map(_.asInstanceOf[Left[A1, _]].value), right.map(_.asInstanceOf[Right[_, A2]].value))
   }
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def filter(pred: A => Boolean): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else filterTrampoline(pred, isFlipped = false)
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def filterNot(pred: A => Boolean): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else filterTrampoline(pred, isFlipped = true)
@@ -385,7 +382,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   }
 
   /** A `collection.WithFilter` which allows GC of the head of lazy list during processing */
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def withFilter(p: A => Boolean): collection.WithFilter[A, LazyList] =
     new LazyList.WithFilter(coll, p)
 
@@ -407,7 +403,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       else sCons(f(head), tail.mapImpl(f))
     }
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def collect[B](pf: PartialFunction[A, B]): LazyList[B] =
     if (knownIsEmpty) LazyList.empty
     else collectTrampoline(pf.lift)
@@ -426,7 +421,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   // optimisations are not for speed, but for functionality
   // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def flatMap[B](f: A => IterableOnce[B]): LazyList[B] =
     if (knownIsEmpty) LazyList.empty
     else newLL(flatMapState(f))
@@ -516,7 +510,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   override def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (LazyList[A1], LazyList[A2], LazyList[A3]) =
     (map(asTriple(_)._1), map(asTriple(_)._2), map(asTriple(_)._3))
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def drop(n: Int): LazyList[A] =
     if (n <= 0) this
     else if (knownIsEmpty) LazyList.empty
@@ -557,7 +550,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (scout.isEmpty) State.Empty
     else sCons(head, newLL(tail.dropRightState(scout.tail)))
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def take(n: Int): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else (takeImpl(n): @inline)
@@ -570,7 +562,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     }
   }
 
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override def takeWhile(p: A => Boolean): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else (takeWhileImpl(p): @inline)
