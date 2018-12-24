@@ -131,10 +131,8 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     * @return The resulting collection
     */
   @inline protected[this] final def strictOptimizedConcat[B >: A, C2](that: IterableOnce[B], b: mutable.Builder[B, C2]): C2 = {
-    val it1 = iterator
-    val it2 = that.iterator
-    b ++= it1
-    b ++= it2
+    b ++= this
+    b ++= that
     b.result()
   }
 
