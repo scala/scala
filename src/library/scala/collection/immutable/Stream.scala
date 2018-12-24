@@ -150,7 +150,6 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
   }
 
   /** A `collection.WithFilter` which allows GC of the head of stream during processing */
-  @noinline // Workaround scala/bug#9137, see https://github.com/scala/scala/pull/4284#issuecomment-73180791
   override final def withFilter(p: A => Boolean): collection.WithFilter[A, Stream] =
     Stream.withFilter(coll, p)
 
