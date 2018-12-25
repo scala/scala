@@ -431,16 +431,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     (fromSpecific(first), fromSpecific(second))
   }
 
-  /** Splits this $coll into two at a given position.
-    *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
-    *         `(c take n, c drop n)`.
-    *  $orderDependent
-    *
-    *  @param n the position at which to split.
-    *  @return  a pair of ${coll}s consisting of the first `n`
-    *           elements of this $coll, and the other elements.
-    */
-  def splitAt(n: Int): (C, C) = (take(n), drop(n))
+  override def splitAt(n: Int): (C, C) = (take(n), drop(n))
 
   def take(n: Int): C = fromSpecific(new View.Take(this, n))
 
