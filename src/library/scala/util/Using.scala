@@ -12,131 +12,231 @@
 
 package scala.util
 
-import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.util.control.NonFatal
+import scala.util.control.{ControlThrowable, NonFatal}
 
 /** A utility for performing automatic resource management. It can be used to perform an
-  * operation using resources, after which it will release the resources, in reverse order
-  * of their creation. The resource opening, operation, and resource releasing are wrapped
-  * in a `Try`.
+  * operation using resources, after which it releases the resources in reverse order
+  * of their creation.
   *
-  * If more than one exception is thrown by the operation and releasing resources,
-  * the exception thrown ''first'' is returned within the `Try`, with the other exceptions
-  * [[java.lang.Throwable.addSuppressed(Throwable) added as suppressed exceptions]]
-  * to the one thrown first. This is the case ''unless'' a later exception is
-  * [[scala.util.control.NonFatal fatal]], and the one preceding it is not. In that case,
-  * the first exception is added as a suppressed exception to the fatal one, and the fatal
-  * one is thrown. If an exception is a
-  * [[scala.util.control.ControlThrowable ControlThrowable]], no exception will be added to
-  * it as a suppressed exception.
+  * ==Usage==
   *
-  * @example
+  * There are multiple ways to automatically manage resources with `Using`. If you only need
+  * to manage a single resource, the [[Using.apply `apply`]] method is easiest; it wraps the
+  * resource opening, operation, and resource releasing in a `Try`.
+  *
+  * Example:
   * {{{
-  * val lines: Try[List[String]] = Using(resource1) { r1 =>
-  *   r1.lines.toList
-  * }
+  * val lines: Try[Seq[String]] =
+  *   Using(new BufferedReader(new FileReader("file.txt"))) { reader =>
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *   }
   * }}}
   *
-  * @example
+  * If you need to manage multiple resources, [[Using.Manager$.apply `Using.Manager`]] should
+  * be used. It allows the managing of arbitrarily many resources, whose creation, use, and
+  * release are all wrapped in a `Try`.
+  *
+  * Example:
   * {{{
-  * val lines: Try[Seq[String]] = for {
-  *   r1 <- Using(resource1)
-  *   r2 <- Using(resource2)
-  *   r3 <- Using(resource3)
-  *   r4 <- Using(resource4)
-  * } yield {
+  * val lines: Try[Seq[String]] = Using.Manager { use =>
+  *   val r1 = use(new BufferedReader(new FileReader(("file1.txt")))
+  *   val r2 = use(new BufferedReader(new FileReader(("file2.txt")))
+  *   val r3 = use(new BufferedReader(new FileReader(("file3.txt")))
+  *   val r4 = use(new BufferedReader(new FileReader(("file4.txt")))
+  *
   *   // use your resources here
-  *   r1.lines ++ r2.lines ++ r3.lines ++ r4.lines
+  *   def lines(reader: BufferedReader): Iterator[String] =
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *
+  *   lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)
   * }
   * }}}
-  */
-final class Using[R] private(resource: => R) {
-  private[this] val used = new AtomicBoolean(false)
-
-  /** Performs an operation using a resource, and then releases the resource,
-    * even if the operation throws an exception.
-    *
-    * @param f the operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  @inline def apply[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = map(f)
-
-  /** Performs an operation using a resource, and then releases the resource,
-    * even if the operation throws an exception.
-    *
-    * @param f the operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return a [[scala.util.Try `Try`]] containing the result of the operation, or
-    *         an exception if one was thrown by the operation or by releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def map[A](f: R => A)(implicit r: Using.Resource[R]): Try[A] = Try { useWith(f) }
-
-  /** Performs an operation which returns a [[scala.util.Try `Try`]] using a resource,
-    * and then releases the resource, even if the operation throws an exception.
-    *
-    * @param f the `Try`-returning operation to perform
-    * @param r an implicit [[Using.Resource]]
-    * @tparam A the return type of the operation
-    * @throws java.lang.IllegalStateException if the resource has already been used
-    * @return the result of the inner operation, or a [[scala.util.Try `Try`]]
-    *         containing an exception if one was thrown by the operation or by
-    *         releasing the resource
-    */
-  @throws[IllegalStateException]("if the resource has already been used")
-  def flatMap[A](f: R => Try[A])(implicit r: Using.Resource[R]): Try[A] =
-    map {
-      r => f(r).get // otherwise inner Failure will be lost on exceptional release
-    }
-
-  @inline private[this] def useWith[A](f: R => A)(implicit r: Using.Resource[R]): A =
-    if (used.getAndSet(true)) throw new IllegalStateException("resource has already been used")
-    else Using.resource(resource)(f)
-}
-
-/** @define recommendUsing                   It is highly recommended to use the `Using` construct,
-  *                                          which safely wraps resource usage and management in a `Try`.
-  * @define multiResourceSuppressionBehavior If more than one exception is thrown by the operation and releasing resources,
-  *                                          the exception thrown ''first'' is thrown, with the other exceptions
-  *                                          [[java.lang.Throwable.addSuppressed(Throwable) added as suppressed exceptions]]
-  *                                          to the one thrown first. This is the case ''unless'' a later exception is
-  *                                          [[scala.util.control.NonFatal fatal]], and the one preceding it is not. In that case,
-  *                                          the first exception is added as a suppressed exception to the fatal one, and the fatal
-  *                                          one is thrown. If an exception is a
-  *                                          [[scala.util.control.ControlThrowable ControlThrowable]], no exception will be added to
-  *                                          it as a suppressed exception.
+  *
+  * If you wish to avoid wrapping management and operations in a `Try`, you can use
+  * [[Using.resource `Using.resource`]], which throws any exceptions that occur.
+  *
+  * Example:
+  * {{{
+  * val lines: Seq[String] =
+  *   Using.resource(new BufferedReader(new FileReader("file.txt"))) { reader =>
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *   }
+  * }}}
+  *
+  * ==Suppression Behavior==
+  *
+  * If two exceptions are thrown (e.g., by an operation and closing a resource),
+  * one of them is re-thrown, and the other is
+  * [[java.lang.Throwable.addSuppressed(Throwable) added to it as a suppressed exception]].
+  * If the two exceptions are of different 'severities' (see below), the one of a higher
+  * severity is re-thrown, and the one of a lower severity is added to it as a suppressed
+  * exception. If the two exceptions are of the same severity, the one thrown first is
+  * re-thrown, and the one thrown second is added to it as a suppressed exception.
+  * If an exception is a [[scala.util.control.ControlThrowable `ControlThrowable`]], or
+  * if it does not support suppression (see
+  * [[java.lang.Throwable `Throwable`'s constructor with an `enableSuppression` parameter]]),
+  * an exception that would have been suppressed is instead discarded.
+  *
+  * Exceptions are ranked from highest to lowest severity as follows:
+  *   - `java.lang.VirtualMachineError`
+  *   - `java.lang.LinkageError`
+  *   - `java.lang.InterruptedException` and `java.lang.ThreadDeath`
+  *   - [[scala.util.control.NonFatal fatal exceptions]], excluding `scala.util.control.ControlThrowable`
+  *   - `scala.util.control.ControlThrowable`
+  *   - all other exceptions
+  *
+  * When more than two exceptions are thrown, the first two are combined and
+  * re-thrown as described above, and each successive exception thrown is combined
+  * as it is thrown.
+  *
+  * @define suppressionBehavior See the main doc for [[Using `Using`]] for full details of
+  *                             suppression behavior.
+  * @author NthPortal
   */
 object Using {
-  /** Creates a `Using` from the given resource.
+  /** Performs an operation using a resource, and then releases the resource,
+    * even if the operation throws an exception.
     *
-    * @note If the resource does not have an implicit [[Resource]] in
-    *       scope, the returned `Using` will be useless.
+    * $suppressionBehavior
+    *
+    * @return a [[Try]] containing an exception if one or more were thrown,
+    *         or the result of the operation if no exceptions were thrown
     */
-  def apply[R](resource: => R): Using[R] = new Using(resource)
+  def apply[R: Releasable, A](resource: => R)(f: R => A): Try[A] = Try { Using.resource(resource)(f) }
+
+  /** A resource manager.
+    *
+    * Resources can be registered with the manager by calling [[acquire `acquire`]];
+    * such resources will be released in reverse order of their acquisition
+    * when the manager is closed, regardless of any exceptions thrown
+    * during use.
+    *
+    * $suppressionBehavior
+    *
+    * @note It is recommended for API designers to require an implicit `Manager`
+    *       for the creation of custom resources, and to call `acquire` during those
+    *       resources' construction. Doing so guarantees that the resource ''must'' be
+    *       automatically managed, and makes it impossible to forget to do so.
+    *
+    *
+    *       Example:
+    *       {{{
+    *       class SafeFileReader(file: File)(implicit manager: Using.Manager)
+    *         extends BufferedReader(new FileReader(file)) {
+    *
+    *         def this(fileName: String)(implicit manager: Using.Manager) = this(new File(fileName))
+    *
+    *         manager.acquire(this)
+    *       }
+    *       }}}
+    */
+  final class Manager private {
+    import Manager._
+
+    private var closed = false
+    private[this] var resources: List[Resource[_]] = Nil
+
+    /** Registers the specified resource with this manager, so that
+      * the resource is released when the manager is closed, and then
+      * returns the (unmodified) resource.
+      */
+    def apply[R: Releasable](resource: R): R = {
+      acquire(resource)
+      resource
+    }
+
+    /** Registers the specified resource with this manager, so that
+      * the resource is released when the manager is closed.
+      */
+    def acquire[R: Releasable](resource: R): Unit = {
+      if (resource == null) throw new NullPointerException("null resource")
+      if (closed) throw new IllegalStateException("Manager has already been closed")
+      resources = new Resource(resource) :: resources
+    }
+
+    private def manage[A](op: Manager => A): A = {
+      var toThrow: Throwable = null
+      try {
+        op(this)
+      } catch {
+        case t: Throwable =>
+          toThrow = t
+          null.asInstanceOf[A] // compiler doesn't know `finally` will throw
+      } finally {
+        closed = true
+        var rs = resources
+        resources = null // allow GC, in case something is holding a reference to `this`
+        while (rs.nonEmpty) {
+          val resource = rs.head
+          rs = rs.tail
+          try resource.release()
+          catch {
+            case t: Throwable =>
+              if (toThrow == null) toThrow = t
+              else toThrow = preferentiallySuppress(toThrow, t)
+          }
+        }
+        if (toThrow != null) throw toThrow
+      }
+    }
+  }
+
+  object Manager {
+    /** Performs an operation using a `Manager`, then closes the `Manager`,
+      * releasing its resources (in reverse order of acquisition).
+      *
+      * Example:
+      * {{{
+      * val lines = Using.Manager { use =>
+      *   use(new BufferedReader(new FileReader("file.txt"))).lines()
+      * }
+      * }}}
+      *
+      * If using resources which require an implicit `Manager` as a parameter,
+      * this method should be invoked with an `implicit` modifier before the function
+      * parameter:
+      *
+      * Example:
+      * {{{
+      * val lines = Using.Manager { implicit use =>
+      *   new SafeFileReader("file.txt").lines()
+      * }
+      * }}}
+      *
+      * See the main doc for [[Using `Using`]] for full details of suppression behavior.
+      *
+      * @param op the operation to perform using the manager
+      * @tparam A the return type of the operation
+      * @return a [[Try]] containing an exception if one or more were thrown,
+      *         or the result of the operation if no exceptions were thrown
+      */
+    def apply[A](op: Manager => A): Try[A] = Try { (new Manager).manage(op) }
+
+    private final class Resource[R](resource: R)(implicit releasable: Releasable[R]) {
+      def release(): Unit = releasable.release(resource)
+    }
+  }
+
+  private def preferentiallySuppress(primary: Throwable, secondary: Throwable): Throwable = {
+    def score(t: Throwable): Int = t match {
+      case _: VirtualMachineError                   => 4
+      case _: LinkageError                          => 3
+      case _: InterruptedException | _: ThreadDeath => 2
+      case _: ControlThrowable                      => 0
+      case e if !NonFatal(e)                        => 1 // in case this method gets out of sync with NonFatal
+      case _                                        => -1
+    }
+    @inline def suppress(t: Throwable, suppressed: Throwable): Throwable = { t.addSuppressed(suppressed); t }
+
+    if (score(secondary) > score(primary)) suppress(secondary, primary)
+    else suppress(primary, secondary)
+  }
 
   /** Performs an operation using a resource, and then releases the resource,
     * even if the operation throws an exception. This method behaves similarly
     * to Java's try-with-resources.
     *
-    * $recommendUsing
-    *
-    * If both the operation and releasing the resource throw exceptions, the one thrown
-    * when releasing the resource is
-    * [[java.lang.Throwable.addSuppressed(Throwable) added as a suppressed exception]]
-    * to the one thrown by the operation, ''unless'' the exception thrown when releasing
-    * the resource is [[scala.util.control.NonFatal fatal]], and the one thrown by the
-    * operation is not. In that case, the exception thrown by the operation is added
-    * as a suppressed exception to the one thrown when releasing the resource. If an
-    * exception is a [[scala.util.control.ControlThrowable ControlThrowable]], no
-    * exception will be added to it as a suppressed exception.
+    * $suppressionBehavior
     *
     * @param resource the resource
     * @param body     the operation to perform with the resource
@@ -145,38 +245,22 @@ object Using {
     * @return the result of the operation, if neither the operation nor
     *         releasing the resource throws
     */
-  def resource[R: Resource, A](resource: R)(body: R => A): A = {
+  def resource[R, A](resource: R)(body: R => A)(implicit releasable: Releasable[R]): A = {
     if (resource == null) throw new NullPointerException("null resource")
 
-    @inline def safeAddSuppressed(t: Throwable, suppressed: Throwable): Unit =
-      t.addSuppressed(suppressed)  // a no-op for ControlThrowable
-
-    var primary: Throwable = null
+    var toThrow: Throwable = null
     try {
       body(resource)
     } catch {
       case t: Throwable =>
-        primary = t
+        toThrow = t
         null.asInstanceOf[A] // compiler doesn't know `finally` will throw
     } finally {
-      if (primary eq null) implicitly[Resource[R]].release(resource)
+      if (toThrow eq null) releasable.release(resource)
       else {
-        var toThrow = primary
-        try {
-          implicitly[Resource[R]].release(resource)
-        } catch {
-          case other: Throwable =>
-            if (NonFatal(primary) && !NonFatal(other)) {
-              // `other` is fatal, `primary` is not
-              toThrow = other
-              safeAddSuppressed(other, primary)
-            } else {
-              // `toThrow` is already `primary`
-              safeAddSuppressed(primary, other)
-            }
-        } finally {
-          throw toThrow
-        }
+        try releasable.release(resource)
+        catch { case other: Throwable => toThrow = preferentiallySuppress(toThrow, other) }
+        finally throw toThrow
       }
     }
   }
@@ -185,9 +269,7 @@ object Using {
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
-    * $recommendUsing
-    *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
@@ -198,7 +280,7 @@ object Using {
     * @return the result of the operation, if neither the operation nor
     *         releasing the resources throws
     */
-  def resources[R1: Resource, R2: Resource, A](
+  def resources[R1: Releasable, R2: Releasable, A](
       resource1: R1,
       resource2: => R2
     )(body: (R1, R2) => A
@@ -213,9 +295,7 @@ object Using {
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
-    * $recommendUsing
-    *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
@@ -228,7 +308,7 @@ object Using {
     * @return the result of the operation, if neither the operation nor
     *         releasing the resources throws
     */
-  def resources[R1: Resource, R2: Resource, R3: Resource, A](
+  def resources[R1: Releasable, R2: Releasable, R3: Releasable, A](
       resource1: R1,
       resource2: => R2,
       resource3: => R3
@@ -246,9 +326,7 @@ object Using {
     * in reverse order, even if the operation throws an exception. This method
     * behaves similarly to Java's try-with-resources.
     *
-    * $recommendUsing
-    *
-    * $multiResourceSuppressionBehavior
+    * $suppressionBehavior
     *
     * @param resource1 the first resource
     * @param resource2 the second resource
@@ -263,7 +341,7 @@ object Using {
     * @return the result of the operation, if neither the operation nor
     *         releasing the resources throws
     */
-  def resources[R1: Resource, R2: Resource, R3: Resource, R4: Resource, A](
+  def resources[R1: Releasable, R2: Releasable, R3: Releasable, R4: Releasable, A](
       resource1: R1,
       resource2: => R2,
       resource3: => R3,
@@ -280,18 +358,28 @@ object Using {
       }
     }
 
-  /** A typeclass describing a resource which can be released.
+  /** A typeclass describing how to release a particular type of resource.
+    *
+    * A resource is anything which needs to be released, closed, or otherwise cleaned up
+    * in some way after it is finished being used, and for which waiting for the object's
+    * garbage collection to be cleaned up would be unacceptable. For example, an instance of
+    * [[java.io.OutputStream]] would be considered a resource, because it is important to close
+    * the stream after it is finished being used.
+    *
+    * An instance of `Releasable` is needed in order to automatically manage a resource
+    * with [[Using `Using`]]. An implicit instance is provided for all types extending
+    * [[java.lang.AutoCloseable]].
     *
     * @tparam R the type of the resource
     */
-  trait Resource[-R] {
+  trait Releasable[-R] {
     /** Releases the specified resource. */
     def release(resource: R): Unit
   }
 
-  object Resource {
-    /** An implicit `Resource` for [[java.lang.AutoCloseable `AutoCloseable`s]]. */
-    implicit val autoCloseableResource: Resource[AutoCloseable] = (resource: AutoCloseable) => resource.close()
+  object Releasable {
+    /** An implicit `Releasable` for [[java.lang.AutoCloseable `AutoCloseable`s]]. */
+    implicit val autoCloseableIsReleasable: Releasable[AutoCloseable] = (resource: AutoCloseable) => resource.close()
   }
 
 }
