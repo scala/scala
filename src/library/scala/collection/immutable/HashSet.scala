@@ -978,6 +978,74 @@ private final class BitmapIndexedSetNode[A](
     if (size == 0) this
     else if (size == 1) {
       if (pred(getPayload(0)) != flipped) this else SetNode.empty
+    } else if (nodeMap == 0) {
+      // Performance optimization for nodes of depth 1:
+      //
+      // this node has no "node" children, all children are inlined data elems, therefor logic is significantly simpler
+      // approach:
+      //   * traverse the content array, accumulating in `newDataMap: Int` any bit positions of keys which pass the filter
+      //   * (bitCount(newDataMap) * TupleLength) tells us the new content array and originalHashes array size, so now perform allocations
+      //   * traverse the content array once more, placing each passing element (according to `newDatamap`) in the new content and originalHashes arrays
+      //
+      // note:
+      //   * this optimization significantly improves performance of not only small trees, but also larger trees, since
+      //     even non-root nodes are affected by this improvement, and large trees will consist of many nodes as
+      //     descendants
+      //
+      val minimumIndex: Int = Integer.numberOfTrailingZeros(dataMap)
+      val maximumIndex: Int = Node.BranchingFactor - Integer.numberOfLeadingZeros(dataMap)
+
+      var newDataMap = 0
+      var newCachedHashCode = 0
+      var dataIndex = 0
+
+      var i = minimumIndex
+
+      while(i < maximumIndex) {
+        val bitpos = bitposFrom(i)
+
+        if ((bitpos & dataMap) != 0) {
+          val payload = getPayload(dataIndex)
+          val passed = pred(payload) != flipped
+
+          if (passed) {
+            newDataMap |= bitpos
+            newCachedHashCode += improve(getHash(dataIndex))
+          }
+
+          dataIndex += 1
+        }
+
+        i += 1
+      }
+
+      if (newDataMap == 0) {
+        SetNode.empty
+      } else if (newDataMap == dataMap) {
+        this
+      } else {
+        val newSize = Integer.bitCount(newDataMap)
+        val newContent = new Array[Any](newSize)
+        val newOriginalHashCodes = new Array[Int](newSize)
+        val newMaximumIndex: Int = Node.BranchingFactor - Integer.numberOfLeadingZeros(newDataMap)
+
+        var j = Integer.numberOfTrailingZeros(newDataMap)
+
+        var newDataIndex = 0
+
+        while (j < newMaximumIndex) {
+          val bitpos = bitposFrom(j)
+          if ((bitpos & newDataMap) != 0) {
+            val oldIndex = indexFrom(dataMap, bitpos)
+            newContent(newDataIndex) = content(oldIndex)
+            newOriginalHashCodes(newDataIndex) = originalHashes(oldIndex)
+            newDataIndex += 1
+          }
+          j += 1
+        }
+
+        new BitmapIndexedSetNode(newDataMap, 0, newContent, newOriginalHashCodes, newSize, newCachedHashCode)
+      }
     } else {
       val allMap = dataMap | nodeMap
       val minimumIndex: Int = Integer.numberOfTrailingZeros(allMap)
@@ -988,9 +1056,10 @@ private final class BitmapIndexedSetNode[A](
       // bitmap of nodes which, when filtered, returned a single-element node. These must be migrated to data
       var nodeMigrateToDataTargetMap = 0
 
-      // TODO: When filtering results in a single-elem node, simply `A` should be returned,
-      //  not a singleton (to avoid pointlessly allocating arrays, nodes). This would probably
-      //  involve changing the return type of filterImpl to `Any` which may return at runtime a SetNode[A] or an A
+      // TODO: When filtering results in a single-elem node, simply `(A, originalHash, improvedHash)` could be returned,
+      //  rather than a singleton node (to avoid pointlessly allocating arrays, nodes, which would just be inlined in
+      //  the parent anyways). This would probably involve changing the return type of filterImpl to `AnyRef` which may
+      //  return at runtime a SetNode[A], or a tuple of (A, Int, Int)
 
       // the queue of single-element, post-filter nodes
       var nodesToMigrateToData: mutable.Queue[SetNode[A]] = null

@@ -325,6 +325,14 @@ object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
     val actual: collection.Set[Int] = left -- right
     actual ?= expected
   }
+  property("(xs.filter(p) == xs.toList.filter(p).toSet") = forAll { xs: HashSet[Int] =>
+    val isEven = (i: Int) => i % 2 == 0
+    xs.toList.filter(isEven).toSet =? xs.filter(isEven)
+  }
+  property("(xs.filterNot(p) == xs.toList.filterNot(p).toSet") = forAll { xs: HashSet[Int] =>
+    val isEven = (i: Int) => i % 2 == 0
+    xs.toList.filterNot(isEven).toSet =? xs.filterNot(isEven)
+  }
 
   property("xs ++ list == list.foldLeft(xs)(_ + _)") = forAll { (xs: HashSet[Int], list: List[Int]) =>
     xs.concat(list) ?= list.foldLeft(xs)(_ + _)

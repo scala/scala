@@ -78,7 +78,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
   }
 
   property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[(K, V)],ys: Seq[(K, V)]) =>
-    (xs ++ ys).toMap == xs.toMap ++ ys.toMap
+    (xs ++ ys).toMap ?= xs.toMap ++ ys.toMap
   }
 
   property("HashMapBuilder produces the same Map as MapBuilder") = forAll { (xs: Seq[(K, V)]) =>
@@ -289,4 +289,29 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     (hm ?= clone).label("hm is unmutated") &&
       ((mhs : collection.Set[K]) ?= hs).label("mhs is unmutated")
   }
+
+  property("xs.keySet + k == xs.map(_._1).to(Set) + k") = forAll { (hm: HashMap[K, V], k: K) =>
+    (hm.keySet + k) ?= (hm.map((kv: (K, V)) => kv._1).to(Set) + k)
+  }
+  property("xs.keySet - k == xs.map(_._1).to(Set) - k") = forAll { (hm: HashMap[K, V], k: K) =>
+    (hm.keySet - k) ?= (hm.map((kv: (K, V)) => kv._1).to(Set) - k)
+  }
+  property("xs.keySet removedAll ys == xs.map(_._1).to(Set) removedAll ys") = forAll { (hm: HashMap[K, V], ys: List[K]) =>
+    (hm.keySet.removedAll(ys) ?= hm.map((kv: (K, V)) => kv._1).to(Set).removedAll(ys)).label("RemovedAll(List)") &&
+      (hm.keySet.removedAll(ys.toSet) ?= hm.map((kv: (K, V)) => kv._1).to(Set).removedAll(ys)).label("RemovedAll(Set)")
+  }
+  property("xs.keySet filter p == xs.map(_._1).to(Set) filter p") = forAll { (hm: HashMap[K, V], p: (K => Boolean)) =>
+    hm.keySet.filter(p) ?= hm.to(List).map(_._1).to(Set).filter(p)
+  }
+
+  property("xs.keySet filterNot p == xs.map(_._1).to(Set) filterNot p") = forAll { (hm: HashMap[K, V], p: (K => Boolean)) =>
+    hm.keySet.filterNot(p) ?= hm.to(List).map(_._1).to(Set).filterNot(p)
+  }
+  property("xs.keySet ks == xs.map(_._1).to(Set) concat ks") = forAll { (hm: HashMap[K, V], ks: List[K]) =>
+    hm.keySet.concat(ks) ?= hm.to(List).map(_._1).to(Set).concat(ks)
+  }
+  property("xs.keySet diff ks == xs.map(_._1).to(Set) diff ks") = forAll { (hm: HashMap[K, V], ks: Set[K]) =>
+    hm.keySet.diff(ks) ?= hm.to(List).map(_._1).to(Set).diff(ks)
+  }
+
 }
