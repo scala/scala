@@ -1,0 +1,9 @@
+unused.scala:8: warning: parameter value foo in method bip is never used
+  def bip(foo: String): Int = 0           // warn
+          ^
+unused.scala:17: warning: parameter value sc in class StringContextOps is never used
+final class StringContextOps(sc: StringContext)               // warn
+                             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
