@@ -35,7 +35,7 @@ import immutable.{RedBlackTree => RB}
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[A, Any])(implicit val ordering: Ordering[A])
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
@@ -48,7 +48,7 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
 
   override def sortedIterableFactory = TreeSet
 
-  private[this] def newSetOrSelf(t: RB.Tree[A, Null]) = if(t eq tree) this else new TreeSet[A](t)
+  private[this] def newSetOrSelf(t: RB.Tree[A, Any]) = if(t eq tree) this else new TreeSet[A](t)
 
   override def size: Int = RB.count(tree)
 
@@ -213,7 +213,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
     }
 
   def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = new ReusableBuilder[A, TreeSet[A]] {
-    private[this] var tree: RB.Tree[A, Null] = null
+    private[this] var tree: RB.Tree[A, Any] = null
     def addOne(elem: A): this.type = { tree = RB.update(tree, elem, null, overwrite = false); this }
     override def addAll(xs: IterableOnce[A]): this.type = {
       xs match {
