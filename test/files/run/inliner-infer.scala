@@ -1,6 +1,6 @@
 
 
-/** Test that the inliner is not inferring that `xs' is
+/** Test that the inliner is not inferring that `xs` is
  *  always Nil, removing the call to isEmpty.
  */
 object Test extends App {

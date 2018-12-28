@@ -464,7 +464,7 @@ trait Trees extends api.Trees {
   case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree with LabelDefApi {
     override def transform(transformer: Transformer): Tree =
-      transformer.treeCopy.LabelDef(this, name, transformer.transformIdents(params), transformer.transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy'
+      transformer.treeCopy.LabelDef(this, name, transformer.transformIdents(params), transformer.transform(rhs)) //bq: Martin, once, atOwner(...) works, also change `LambdaLifter.proxy`
     override def traverse(traverser: Traverser): Unit = {
       traverser.traverseName(name)
       traverser.traverseParams(params)

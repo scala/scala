@@ -1134,13 +1134,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Can this symbol be loaded by a reflective mirror?
      *
-     *  Scalac relies on `ScalaSignature' annotation to retain symbols across compilation runs.
+     *  Scalac relies on `ScalaSignature` annotation to retain symbols across compilation runs.
      *  Such annotations (also called "pickles") are applied on top-level classes and include information
      *  about all symbols reachable from the annotee. However, local symbols (e.g. classes or definitions local to a block)
      *  are typically unreachable and information about them gets lost.
      *
      *  This method is useful for macro writers who wish to save certain ASTs to be used at runtime.
-     *  With `isLocatable' it's possible to check whether a tree can be retained as is, or it needs special treatment.
+     *  With `isLocatable` it's possible to check whether a tree can be retained as is, or it needs special treatment.
      */
     final def isLocatable: Boolean = {
       if (this == NoSymbol) return false
@@ -2058,7 +2058,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *   scala> intp("Foo2").thisSym
      *   res1: $r.intp.global.Symbol = value self
      *
-     *  Martin says: The reason `thisSym' is `this' is so that thisType can be this.thisSym.tpe.
+     *  Martin says: The reason `thisSym` is `this` is so that thisType can be this.thisSym.tpe.
      *  It's a trick to shave some cycles off.
      *
      *  Morale: DO:    if (clazz.typeOfThis.typeConstructor ne clazz.typeConstructor) ...

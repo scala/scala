@@ -182,7 +182,7 @@ class Parser(s: String) {
 	if (token equals "(") {
 	  token = it.next;
 	  val ts: List[Term] = if (token equals ")") List() else rep(term);
-	  if (token equals ")") token = it.next else syntaxError("`)' expected");
+	  if (token equals ")") token = it.next else syntaxError("`)` expected");
 	  ts
 	} else List())
   }
@@ -204,7 +204,7 @@ class Parser(s: String) {
           constructor,
           if (token equals ":-") { token = it.next; rep(constructor) } else List())
       }
-    if (token equals ".") token = it.next else syntaxError("`.' expected");
+    if (token equals ".") token = it.next else syntaxError("`.` expected");
     result
   }
 

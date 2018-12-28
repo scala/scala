@@ -5,7 +5,7 @@ t6120.scala:14: warning: method bippy in class BooleanOps has changed semantics 
 Used to return 5
   def f = (null == null).bippy
                          ^
-t6120.scala:14: warning: comparing values of types Null and Null using `==' will always yield true
+t6120.scala:14: warning: comparing values of types Null and Null using `==` will always yield true
   def f = (null == null).bippy
                 ^
 t6120.scala:15: warning: method bippy in class BooleanOps is deprecated (since 2.11.0): bobo

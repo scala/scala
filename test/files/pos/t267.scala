@@ -1,9 +1,9 @@
 package expAbstractData
 
 /** A base class consisting of
- *   - a root trait (i.e. abstract class) `Exp' with an `eval' function
- *   - an abstract type `exp' bounded by `Exp'
- *   - a concrete instance class `Num' of `Exp' for numeric literals
+ *   - a root trait (i.e. abstract class) `Exp` with an `eval` function
+ *   - an abstract type `exp` bounded by `Exp`
+ *   - a concrete instance class `Num` of `Exp` for numeric literals
  */
 trait Base {
   type exp <: Exp
@@ -23,7 +23,7 @@ object testBase extends App with Base {
   Console.println(term.eval)
 }
 
-/** Data extension: An extension of `Base' with `Plus' expressions
+/** Data extension: An extension of `Base` with `Plus` expressions
  */
 trait BasePlus extends Base {
   class Plus(l: exp, r: exp) extends Exp { self: exp =>
@@ -33,7 +33,7 @@ trait BasePlus extends Base {
   }
 }
 
-/** Operation extension: An extension of `Base' with 'show' methods.
+/** Operation extension: An extension of `Base` with 'show' methods.
  */
 trait Show extends Base {
   type exp <: Exp1
@@ -46,7 +46,7 @@ trait Show extends Base {
   }
 }
 
-/** Operation extension: An extension of `BasePlus' with 'show' methods.
+/** Operation extension: An extension of `BasePlus` with 'show' methods.
  */
 trait ShowPlus extends BasePlus with Show {
   class Plus1(l: exp, r: exp) extends Plus(l, r) with Exp1 { self: exp with Plus1 =>

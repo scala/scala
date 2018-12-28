@@ -55,7 +55,7 @@ trait Warnings {
   val warnUnused = MultiChoiceSetting(
     name    = "-Ywarn-unused",
     helpArg = "warning",
-    descr   = "Enable or disable specific `unused' warnings",
+    descr   = "Enable or disable specific `unused` warnings",
     domain  = UnusedWarnings,
     default = Some(List("_"))
   )

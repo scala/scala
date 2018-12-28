@@ -264,7 +264,7 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
     /** The path
-     *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
+     *  <blockquote><pre>`base`.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
      *  which refers to the outer instance of class to of
      *  value base. The result is typed but not positioned.
      */

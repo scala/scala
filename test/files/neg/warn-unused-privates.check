@@ -88,25 +88,25 @@ warn-unused-privates.scala:221: warning: private class for your eyes only in obj
 warn-unused-privates.scala:237: warning: private class D in class nonprivate alias is enclosing is never used
   private class D extends C2   // warn
                 ^
-warn-unused-privates.scala:158: warning: pattern var x in method f is never used; `x@_' suppresses this warning
+warn-unused-privates.scala:158: warning: pattern var x in method f is never used; `x@_` suppresses this warning
     val C(x, y, Some(z)) = c              // warn
           ^
-warn-unused-privates.scala:158: warning: pattern var y in method f is never used; `y@_' suppresses this warning
+warn-unused-privates.scala:158: warning: pattern var y in method f is never used; `y@_` suppresses this warning
     val C(x, y, Some(z)) = c              // warn
              ^
-warn-unused-privates.scala:158: warning: pattern var z in method f is never used; `z@_' suppresses this warning
+warn-unused-privates.scala:158: warning: pattern var z in method f is never used; `z@_` suppresses this warning
     val C(x, y, Some(z)) = c              // warn
                      ^
-warn-unused-privates.scala:166: warning: pattern var z in method h is never used; `z@_' suppresses this warning
+warn-unused-privates.scala:166: warning: pattern var z in method h is never used; `z@_` suppresses this warning
     val C(x @ _, y @ _, z @ Some(_)) = c  // warn for z?
                         ^
-warn-unused-privates.scala:171: warning: pattern var x in method v is never used; `x@_' suppresses this warning
+warn-unused-privates.scala:171: warning: pattern var x in method v is never used; `x@_` suppresses this warning
     val D(x) = d                          // warn
          ^
-warn-unused-privates.scala:206: warning: pattern var z in method f is never used; `z@_' suppresses this warning
+warn-unused-privates.scala:206: warning: pattern var z in method f is never used; `z@_` suppresses this warning
     case z => "warn"
          ^
-warn-unused-privates.scala:213: warning: pattern var z in method f is never used; `z@_' suppresses this warning
+warn-unused-privates.scala:213: warning: pattern var z in method f is never used; `z@_` suppresses this warning
     case Some(z) => "warn"
               ^
 warn-unused-privates.scala:23: warning: parameter value msg0 in class B3 is never used

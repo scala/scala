@@ -637,7 +637,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String,
     val domain: E,
     val default: Option[List[String]]
-  ) extends Setting(name, s"$descr: `_' for all, `$name:help' to list choices.") with Clearable {
+  ) extends Setting(name, s"$descr: `_` for all, `$name:help` to list choices.") with Clearable {
 
     withHelpSyntax(s"$name:<_,$helpArg,-$helpArg>")
 
@@ -847,7 +847,7 @@ class MutableSettings(val errorFn: String => Unit)
     val choicesHelp: List[String])
   extends Setting(name,
     if (choicesHelp.isEmpty) s"$descr Choices: ${choices.mkString("(", ",", ")")}, default: $default."
-    else s"$descr Default: `$default', `help' to list choices.") {
+    else s"$descr Default: `$default`, `help` to list choices.") {
     type T = String
     protected var v: T = default
     def indexOfChoice: Int = choices indexOf value

@@ -1356,7 +1356,7 @@ trait Scanners extends ScannersCommon {
 //        println("applying brace patch "+offset)//DEBUG
         if (patch.inserted) {
           next copyFrom this
-          error(offset, "Missing closing brace `}' assumed here")
+          error(offset, "Missing closing brace `}` assumed here")
           token = RBRACE
           true
         } else {

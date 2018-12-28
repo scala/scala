@@ -1,7 +1,7 @@
 Test_2.scala:3: error: <$anon: C with A> inherits conflicting members:
   macro method t in trait C of type ()Unit and
   method t in trait A of type ()Unit
-  (note: this can be resolved by declaring an `override' in <$anon: C with A>.)
+  (note: this can be resolved by declaring an `override` in <$anon: C with A>.)
   val c2 = new C with A {}
                ^
 Test_2.scala:5: error: overriding macro method t in trait C of type ()Unit;

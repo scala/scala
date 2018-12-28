@@ -151,7 +151,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (mix != tpnme.EMPTY || member == NoSymbol ||
             !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           reporter.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
-                               "unless it is overridden by a member declared `abstract' and `override'")
+                               "unless it is overridden by a member declared `abstract` and `override`")
       } else {
         val owner = sym.owner
         if (mix == tpnme.EMPTY && !owner.isTrait) {

@@ -31,7 +31,7 @@ Test.scala:34: error: annotation argument cannot be null
 Test.scala:35: error: annotation argument needs to be a constant; found: Test.this.getClass()
   @JAnn(value = 0, b = getClass) def t11 = 0 // err
                        ^
-Test.scala:36: error: Array constants have to be specified using the `Array(...)' factory method
+Test.scala:36: error: Array constants have to be specified using the `Array(...)` factory method
   @JAnn(value = 0, c = new Array(1)) def t12 = 0 // err
                        ^
 Test.scala:37: error: annotation argument cannot be null
@@ -70,7 +70,7 @@ Test.scala:54: error: annotation argument cannot be null
 Test.scala:55: error: annotation argument needs to be a constant; found: Test.this.getClass()
   @Ann(value = 0, b = getClass) def u11 = 0 // err
                       ^
-Test.scala:56: error: Array constants have to be specified using the `Array(...)' factory method
+Test.scala:56: error: Array constants have to be specified using the `Array(...)` factory method
   @Ann(value = 0, c = new Array(1)) def u12 = 0 // err
                       ^
 Test.scala:59: error: annotation argument needs to be a constant; found: java.lang.Integer.TYPE

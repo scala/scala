@@ -21,7 +21,7 @@ $ ~/scala-2.10.4/bin/scalac -d /tmp -Xmigration:2.10 -deprecation test/files/neg
 test/files/neg/t6120.scala:14: warning: method bippy in class BooleanOps is deprecated: bobo
   def f = (null == null).bippy
                          ^
-test/files/neg/t6120.scala:14: warning: comparing values of types Null and Null using `==' will always yield true
+test/files/neg/t6120.scala:14: warning: comparing values of types Null and Null using `==` will always yield true
   def f = (null == null).bippy
                 ^
 test/files/neg/t6120.scala:15: warning: method bippy in class BooleanOps is deprecated: bobo
