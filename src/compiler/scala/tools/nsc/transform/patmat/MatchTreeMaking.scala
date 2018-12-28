@@ -457,7 +457,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       // a `prevBinder` is expected to have type `expectedTp`
       // the actual tree-generation logic is factored out, since the analyses generate Cond(ition)s rather than Trees
       // TODO: `null match { x : T }` will yield a check that (indirectly) tests whether `null ne null`
-      // don't bother (so that we don't end up with the warning "comparing values of types Null and Null using `ne' will always yield false")
+      // don't bother (so that we don't end up with the warning "comparing values of types Null and Null using `ne` will always yield false")
       def renderCondition(cs: TypeTestCondStrategy): cs.Result = {
         import cs._
 

@@ -438,10 +438,10 @@ abstract class RefChecks extends Transform {
                   clazz + " inherits conflicting members:\n"
                     + indent + infoStringWithLocation(other) + " and\n"
                     + indent + infoStringWithLocation(member) + "\n"
-                    + indent + s"(note: this can be resolved by declaring an `override' in $clazz.)"
+                    + indent + s"(note: this can be resolved by declaring an `override` in $clazz.)"
                 )
               else
-                overrideError("needs `override' modifier")
+                overrideError("needs `override` modifier")
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
           }
@@ -742,7 +742,7 @@ abstract class RefChecks extends Transform {
               if (other != NoSymbol) " and overrides incomplete superclass member " + infoString(other)
               else ", but no concrete implementation could be found in a base class"
 
-            abstractClassError(true, infoString(member) + " is marked `abstract' and `override'" + explanation)
+            abstractClassError(true, infoString(member) + " is marked `abstract` and `override`" + explanation)
           }
         }
 
@@ -1063,7 +1063,7 @@ abstract class RefChecks extends Transform {
 
       def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
         val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
-        reporter.warning(pos, s"comparing $what using `${name.decode}' will always yield $msg")
+        reporter.warning(pos, s"comparing $what using `${name.decode}` will always yield $msg")
         isNonSensible = true
       }
       def nonSensible(pre: String, alwaysEqual: Boolean) =
@@ -1688,7 +1688,7 @@ abstract class RefChecks extends Transform {
         if (clazz.isTrait)
           reporter.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
         else if (clazz.hasAbstractFlag)
-          reporter.error(clazz.pos, "`abstract' modifier cannot be used with value classes")
+          reporter.error(clazz.pos, "`abstract` modifier cannot be used with value classes")
       }
     }
 

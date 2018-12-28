@@ -671,7 +671,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   def withFile[A](filename: String)(action: File => A): Option[A] = intp.withLabel(filename) {
     val res = Some(File(filename)) filter (_.exists) map action
-    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename' does not exist.")  // courtesy side-effect
+    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename` does not exist.")  // courtesy side-effect
     res
   }
 

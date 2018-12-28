@@ -1016,10 +1016,10 @@ self =>
       }
 
       /** {{{
-       *  Type ::= InfixType `=>' Type
-       *         | `(' [`=>' Type] `)' `=>' Type
+       *  Type ::= InfixType `=>` Type
+       *         | `(` [`=>` Type] `)` `=>` Type
        *         | InfixType [ExistentialClause]
-       *  ExistentialClause ::= forSome `{' ExistentialDcl {semi ExistentialDcl} `}'
+       *  ExistentialClause ::= forSome `{` ExistentialDcl {semi ExistentialDcl} `}`
        *  ExistentialDcl    ::= type TypeDcl | val ValDcl
        *  }}}
        */
@@ -1037,7 +1037,7 @@ self =>
       }
 
       /** {{{
-       *  TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
+       *  TypeArgs    ::= `[` ArgType {`,` ArgType} `]`
        *  }}}
        */
       def typeArgs(): List[Tree] = inBrackets(types())
@@ -1050,11 +1050,11 @@ self =>
 
       /** {{{
        *  SimpleType       ::=  SimpleType TypeArgs
-       *                     |  SimpleType `#' Id
+       *                     |  SimpleType `#` Id
        *                     |  StableId
-       *                     |  Path `.' type
+       *                     |  Path `.` type
        *                     |  Literal
-       *                     |  `(' Types `)'
+       *                     |  `(` Types `)`
        *                     |  WildcardType
        *  }}}
        */
@@ -1164,7 +1164,7 @@ self =>
         placeholderTypeBoundary { infixTypeRest(compoundType(), mode) }
 
       /** {{{
-       *  Types ::= Type {`,' Type}
+       *  Types ::= Type {`,` Type}
        *  }}}
        */
       def types(): List[Tree] = commaSeparated(argType())
@@ -1201,8 +1201,8 @@ self =>
 
     /** {{{
      *  Path       ::= StableId
-     *              |  [Ident `.'] this
-     *  AnnotType ::= Path [`.' type]
+     *              |  [Ident `.`] this
+     *  AnnotType ::= Path [`.` type]
      *  }}}
      */
     def path(thisOK: Boolean, typeOK: Boolean): Tree = {
@@ -1260,7 +1260,7 @@ self =>
       }
 
     /** {{{
-    *   MixinQualifier ::= `[' Id `]'
+    *   MixinQualifier ::= `[` Id `]`
     *   }}}
     */
     def mixinQualifierOpt(): TypeName =
@@ -1269,15 +1269,15 @@ self =>
 
     /** {{{
      *  StableId ::= Id
-     *            |  Path `.' Id
-     *            |  [id `.'] super [`[' id `]']`.' id
+     *            |  Path `.` Id
+     *            |  [id `.`] super [`[` id `]`]`.` id
      *  }}}
      */
     def stableId(): Tree =
       path(thisOK = false, typeOK = false)
 
     /** {{{
-    *   QualId ::= Id {`.' Id}
+    *   QualId ::= Id {`.` Id}
     *   }}}
     */
     def qualId(): Tree = {
@@ -1418,7 +1418,7 @@ self =>
 /* ------------- TYPES ---------------------------------------------------- */
 
     /** {{{
-     *  TypedOpt ::= [`:' Type]
+     *  TypedOpt ::= [`:` Type]
      *  }}}
      */
     def typedOpt(): Tree =
@@ -1433,7 +1433,7 @@ self =>
       annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
 
     /** {{{
-     *  WildcardType ::= `_' TypeBounds
+     *  WildcardType ::= `_` TypeBounds
      *  }}}
      */
     def wildcardType(start: Offset) = {
@@ -1465,26 +1465,26 @@ self =>
     def statement(location: Location): Tree = expr(location) // !!! still needed?
 
     /** {{{
-     *  Expr       ::= (Bindings | [`implicit'] Id | `_')  `=>' Expr
+     *  Expr       ::= (Bindings | [`implicit`] Id | `_`)  `=>` Expr
      *               | Expr1
-     *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
+     *  ResultExpr ::= (Bindings | Id `:` CompoundType) `=>` Block
      *               | Expr1
-     *  Expr1      ::= if `(' Expr `)' {nl} Expr [[semi] else Expr]
-     *               | try (`{' Block `}' | Expr) [catch `{' CaseClauses `}'] [finally Expr]
-     *               | while `(' Expr `)' {nl} Expr
-     *               | do Expr [semi] while `(' Expr `)'
-     *               | for (`(' Enumerators `)' | `{' Enumerators `}') {nl} [yield] Expr
+     *  Expr1      ::= if `(` Expr `)` {nl} Expr [[semi] else Expr]
+     *               | try (`{` Block `}` | Expr) [catch `{` CaseClauses `}`] [finally Expr]
+     *               | while `(` Expr `)` {nl} Expr
+     *               | do Expr [semi] while `(` Expr `)`
+     *               | for (`(` Enumerators `)` | `{` Enumerators `}`) {nl} [yield] Expr
      *               | throw Expr
      *               | return [Expr]
-     *               | [SimpleExpr `.'] Id `=' Expr
-     *               | SimpleExpr1 ArgumentExprs `=' Expr
+     *               | [SimpleExpr `.`] Id `=` Expr
+     *               | SimpleExpr1 ArgumentExprs `=` Expr
      *               | PostfixExpr Ascription
-     *               | PostfixExpr match `{' CaseClauses `}'
-     *  Bindings   ::= `(' [Binding {`,' Binding}] `)'
-     *  Binding    ::= (Id | `_') [`:' Type]
-     *  Ascription ::= `:' CompoundType
-     *               | `:' Annotation {Annotation}
-     *               | `:' `_' `*'
+     *               | PostfixExpr match `{` CaseClauses `}`
+     *  Bindings   ::= `(` [Binding {`,` Binding}] `)`
+     *  Binding    ::= (Id | `_`) [`:` Type]
+     *  Ascription ::= `:` CompoundType
+     *               | `:` Annotation {Annotation}
+     *               | `:` `_` `*`
      *  }}}
      */
     def expr(): Tree = expr(Local)
@@ -1604,7 +1604,7 @@ self =>
                   Typed(t, atPos(uscorePos) { Ident(tpnme.WILDCARD_STAR) })
                 }
               } else {
-                syntaxErrorOrIncomplete("`*' expected", skipIt = true)
+                syntaxErrorOrIncomplete("`*` expected", skipIt = true)
               }
             } else if (isAnnotation) {
               t = annotations(skipNewLines = false).foldLeft(t)(makeAnnotated)
@@ -1691,7 +1691,7 @@ self =>
     }
 
     /** {{{
-     *  PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
+     *  PrefixExpr   ::= [`-` | `+` | `~` | `!`] SimpleExpr
      *  }}}
      */
     def prefixExpr(): Tree = {
@@ -1716,12 +1716,12 @@ self =>
     /** {{{
      *  SimpleExpr    ::= new (ClassTemplate | TemplateBody)
      *                  |  BlockExpr
-     *                  |  SimpleExpr1 [`_']
+     *                  |  SimpleExpr1 [`_`]
      *  SimpleExpr1   ::= literal
      *                  |  xLiteral
      *                  |  Path
-     *                  |  `(' [Exprs] `)'
-     *                  |  SimpleExpr `.' Id
+     *                  |  `(` [Exprs] `)`
+     *                  |  SimpleExpr `.` Id
      *                  |  SimpleExpr TypeArgs
      *                  |  SimpleExpr1 ArgumentExprs
      *  }}}
@@ -1795,7 +1795,7 @@ self =>
     }
 
     /** {{{
-     *  ArgumentExprs ::= `(' [Exprs] `)'
+     *  ArgumentExprs ::= `(` [Exprs] `)`
      *                  | [nl] BlockExpr
      *  }}}
      */
@@ -1816,7 +1816,7 @@ self =>
     }
 
     /** {{{
-     *  BlockExpr ::= `{' (CaseClauses | Block) `}'
+     *  BlockExpr ::= `{` (CaseClauses | Block) `}`
      *  }}}
      */
     def blockExpr(): Tree = atPos(in.offset) {
@@ -1838,7 +1838,7 @@ self =>
 
     /** {{{
      *  CaseClauses ::= CaseClause {CaseClause}
-     *  CaseClause  ::= case Pattern [Guard] `=>' Block
+     *  CaseClause  ::= case Pattern [Guard] `=>` Block
      *  }}}
      */
     def caseClauses(): List[CaseDef] = {
@@ -1865,7 +1865,7 @@ self =>
      *  Enumerators ::= Generator {semi Enumerator}
      *  Enumerator  ::=  Generator
      *                |  Guard
-     *                |  Pattern1 `=' Expr
+     *                |  Pattern1 `=` Expr
      *  }}}
      */
     def enumerators(): List[Tree] = {
@@ -1883,7 +1883,7 @@ self =>
       else generator(!isFirst, allowNestedIf)
 
     /** {{{
-     *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
+     *  Generator ::= Pattern1 (`<-` | `=`) Expr [Guard]
      *  }}}
      */
     def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
@@ -1953,15 +1953,15 @@ self =>
       }
 
       /** {{{
-       *  Patterns ::= Pattern { `,' Pattern }
-       *  SeqPatterns ::= SeqPattern { `,' SeqPattern }
+       *  Patterns ::= Pattern { `,` Pattern }
+       *  SeqPatterns ::= SeqPattern { `,` SeqPattern }
        *  }}}
        */
       def patterns(): List[Tree] = commaSeparated(pattern())
 
       /** {{{
-       *  Pattern  ::=  Pattern1 { `|' Pattern1 }
-       *  SeqPattern ::= SeqPattern1 { `|' SeqPattern1 }
+       *  Pattern  ::=  Pattern1 { `|` Pattern1 }
+       *  SeqPattern ::= SeqPattern1 { `|` SeqPattern1 }
        *  }}}
        */
       def pattern(): Tree = {
@@ -1977,11 +1977,11 @@ self =>
       }
 
       /** {{{
-       *  Pattern1    ::= boundvarid `:' TypePat
-       *                |  `_' `:' TypePat
+       *  Pattern1    ::= boundvarid `:` TypePat
+       *                |  `_` `:` TypePat
        *                |  Pattern2
-       *  SeqPattern1 ::= boundvarid `:' TypePat
-       *                |  `_' `:' TypePat
+       *  SeqPattern1 ::= boundvarid `:` TypePat
+       *                |  `_` `:` TypePat
        *                |  [SeqPattern2]
        *  }}}
        */
@@ -1998,8 +1998,8 @@ self =>
       }
 
       /** {{{
-       *  Pattern2    ::=  id  `@' Pattern3
-       *                |  `_' `@' Pattern3
+       *  Pattern2    ::=  id  `@` Pattern3
+       *                |  `_` `@` Pattern3
        *                |   Pattern3
        *  }}}
        */
@@ -2075,13 +2075,13 @@ self =>
 
       /** {{{
        *  SimplePattern    ::= varid
-       *                    |  `_'
+       *                    |  `_`
        *                    |  literal
        *                    |  XmlPattern
-       *                    |  StableId  /[TypeArgs]/ [`(' [Patterns] `)']
-       *                    |  StableId  [`(' [Patterns] `)']
-       *                    |  StableId  [`(' [Patterns] `,' [varid `@'] `_' `*' `)']
-       *                    |  `(' [Patterns] `)'
+       *                    |  StableId  /[TypeArgs]/ [`(` [Patterns] `)`]
+       *                    |  StableId  [`(` [Patterns] `)`]
+       *                    |  StableId  [`(` [Patterns] `,` [varid `@`] `_` `*` `)`]
+       *                    |  `(` [Patterns] `)`
        *  }}}
        *
        * XXX: Hook for IDE
@@ -2183,7 +2183,7 @@ self =>
       r2p(token.offset, token.offset, token.offset + token.name.length - 1)
 
     /** {{{
-     *  AccessQualifier ::= `[' (Id | this) `]'
+     *  AccessQualifier ::= `[` (Id | this) `]`
      *  }}}
      */
     def accessQualifierOpt(mods: Modifiers): Modifiers = {
@@ -2257,8 +2257,8 @@ self =>
     }
 
     /** {{{
-     *  Annotations       ::= {`@' SimpleType {ArgumentExprs}}
-     *  ConstrAnnotations ::= {`@' SimpleType ArgumentExprs}
+     *  Annotations       ::= {`@` SimpleType {ArgumentExprs}}
+     *  ConstrAnnotations ::= {`@` SimpleType ArgumentExprs}
      *  }}}
      */
     def annotations(skipNewLines: Boolean): List[Tree] = readAnnots {
@@ -2279,14 +2279,14 @@ self =>
 /* -------- PARAMETERS ------------------------------------------- */
 
     /** {{{
-     *  ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
-     *  ParamClause       ::= [nl] `(' [Params] `)'
-     *  Params            ::= Param {`,' Param}
-     *  Param             ::= {Annotation} Id [`:' ParamType] [`=' Expr]
-     *  ClassParamClauses ::= {ClassParamClause} [[nl] `(' implicit ClassParams `)']
-     *  ClassParamClause  ::= [nl] `(' [ClassParams] `)'
-     *  ClassParams       ::= ClassParam {`,' ClassParam}
-     *  ClassParam        ::= {Annotation}  [{Modifier} (`val' | `var')] Id [`:' ParamType] [`=' Expr]
+     *  ParamClauses      ::= {ParamClause} [[nl] `(` implicit Params `)`]
+     *  ParamClause       ::= [nl] `(` [Params] `)`
+     *  Params            ::= Param {`,` Param}
+     *  Param             ::= {Annotation} Id [`:` ParamType] [`=` Expr]
+     *  ClassParamClauses ::= {ClassParamClause} [[nl] `(` implicit ClassParams `)`]
+     *  ClassParamClause  ::= [nl] `(` [ClassParams] `)`
+     *  ClassParams       ::= ClassParam {`,` ClassParam}
+     *  ClassParam        ::= {Annotation}  [{Modifier} (`val` | `var`)] Id [`:` ParamType] [`=` Expr]
      *  }}}
      */
     def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
@@ -2355,7 +2355,7 @@ self =>
     }
 
     /** {{{
-     *  ParamType ::= Type | `=>' Type | Type `*'
+     *  ParamType ::= Type | `=>` Type | Type `*`
      *  }}}
      */
     def paramType(): Tree = paramType(repeatedParameterOK = true, useStartAsPosition = false)
@@ -2404,7 +2404,7 @@ self =>
             if (owner.isTypeName && !mods.isLocalToThis)
               syntaxError(
                 in.offset,
-                (if (mods.isMutable) "`var'" else "`val'") +
+                (if (mods.isMutable) "`var`" else "`val`") +
                 " parameters may not be call-by-name", skipIt = false)
             else bynamemod = Flags.BYNAMEPARAM
           }
@@ -2423,10 +2423,10 @@ self =>
 
     /** {{{
      *  TypeParamClauseOpt    ::= [TypeParamClause]
-     *  TypeParamClause       ::= `[' VariantTypeParam {`,' VariantTypeParam} `]']
-     *  VariantTypeParam      ::= {Annotation} [`+' | `-'] TypeParam
+     *  TypeParamClause       ::= `[` VariantTypeParam {`,` VariantTypeParam} `]`]
+     *  VariantTypeParam      ::= {Annotation} [`+` | `-`] TypeParam
      *  FunTypeParamClauseOpt ::= [FunTypeParamClause]
-     *  FunTypeParamClause    ::= `[' TypeParam {`,' TypeParam} `]']
+     *  FunTypeParamClause    ::= `[` TypeParam {`,` TypeParam} `]`]
      *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds {<% Type} {":" Type}
      *  }}}
      */
@@ -2472,7 +2472,7 @@ self =>
     }
 
     /** {{{
-     *  TypeBounds ::= [`>:' Type] [`<:' Type]
+     *  TypeBounds ::= [`>:` Type] [`<:` Type]
      *  }}}
      */
     def typeBounds(): TypeBoundsTree = {
@@ -2495,7 +2495,7 @@ self =>
 
 
     /** {{{
-     *  Import  ::= import ImportExpr {`,' ImportExpr}
+     *  Import  ::= import ImportExpr {`,` ImportExpr}
      *  }}}
      */
     def importClause(): List[Tree] = {
@@ -2510,7 +2510,7 @@ self =>
     }
 
     /** {{{
-     *  ImportExpr ::= StableId `.' (Id | `_' | ImportSelectors)
+     *  ImportExpr ::= StableId `.` (Id | `_` | ImportSelectors)
      *  }}}
      */
     def importExpr(): Tree = {
@@ -2561,7 +2561,7 @@ self =>
     }
 
     /** {{{
-     *  ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
+     *  ImportSelectors ::= `{` {ImportSelector `,`} (ImportSelector | `_`) `}`
      *  }}}
      */
     def importSelectors(): List[ImportSelector] = {
@@ -2641,9 +2641,9 @@ self =>
     }
 
     /** {{{
-     *  PatDef ::= Pattern2 {`,' Pattern2} [`:' Type] `=' Expr
-     *  ValDcl ::= Id {`,' Id} `:' Type
-     *  VarDef ::= PatDef | Id {`,' Id} `:' Type `=' `_'
+     *  PatDef ::= Pattern2 {`,` Pattern2} [`:` Type] `=` Expr
+     *  ValDcl ::= Id {`,` Id} `:` Type
+     *  VarDef ::= PatDef | Id {`,` Id} `:` Type `=` `_`
      *  }}}
      */
     def patDefOrDcl(pos : Int, mods: Modifiers): List[Tree] = {
@@ -2694,8 +2694,8 @@ self =>
 
     /** {{{
      *  VarDef ::= PatDef
-     *           | Id {`,' Id} `:' Type `=' `_'
-     *  VarDcl ::= Id {`,' Id} `:' Type
+     *           | Id {`,` Id} `:` Type `=` `_`
+     *  VarDcl ::= Id {`,` Id} `:` Type
      *  }}}
     def varDefOrDcl(mods: Modifiers): List[Tree] = {
       var newmods = mods | Flags.MUTABLE
@@ -2721,11 +2721,11 @@ self =>
      */
 
     /** {{{
-     *  FunDef ::= FunSig [`:' Type] `=' [`macro'] Expr
-     *          |  FunSig [nl] `{' Block `}'
-     *          |  `this' ParamClause ParamClauses
-     *                 (`=' ConstrExpr | [nl] ConstrBlock)
-     *  FunDcl ::= FunSig [`:' Type]
+     *  FunDef ::= FunSig [`:` Type] `=` [`macro`] Expr
+     *          |  FunSig [nl] `{` Block `}`
+     *          |  `this` ParamClause ParamClauses
+     *                 (`=` ConstrExpr | [nl] ConstrBlock)
+     *  FunDcl ::= FunSig [`:` Type]
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      *  }}}
      */
@@ -2821,7 +2821,7 @@ self =>
       }
 
     /** {{{
-     *  ConstrBlock    ::=  `{' SelfInvocation {semi BlockStat} `}'
+     *  ConstrBlock    ::=  `{` SelfInvocation {semi BlockStat} `}`
      *  }}}
      */
     def constrBlock(vparamss: List[List[ValDef]]): Tree =
@@ -2835,8 +2835,8 @@ self =>
       }
 
     /** {{{
-     *  TypeDef ::= type Id [TypeParamClause] `=' Type
-     *            | FunSig `=' Expr
+     *  TypeDef ::= type Id [TypeParamClause] `=` Type
+     *            | FunSig `=` Expr
      *  TypeDcl ::= type Id [TypeParamClause] TypeBounds
      *  }}}
      */
@@ -2854,7 +2854,7 @@ self =>
           case t if t == SUPERTYPE || t == SUBTYPE || t == COMMA || t == RBRACE || isStatSep(t) =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
-            syntaxErrorOrIncompleteAnd("`=', `>:', or `<:' expected", skipIt = true)(
+            syntaxErrorOrIncompleteAnd("`=`, `>:`, or `<:` expected", skipIt = true)(
               // assume a dummy type def so as to have somewhere to stash the annotations
               TypeDef(mods, tpnme.ERROR, Nil, EmptyTree)
             )
@@ -2982,7 +2982,7 @@ self =>
     }
 
     /** {{{
-     *  ClassParents       ::= AnnotType {`(' [Exprs] `)'} {with AnnotType}
+     *  ClassParents       ::= AnnotType {`(` [Exprs] `)`} {with AnnotType}
      *  TraitParents       ::= AnnotType {with AnnotType}
      *  }}}
      */
@@ -3004,7 +3004,7 @@ self =>
     /** {{{
      *  ClassTemplate ::= [EarlyDefs with] ClassParents [TemplateBody]
      *  TraitTemplate ::= [EarlyDefs with] TraitParents [TemplateBody]
-     *  EarlyDefs     ::= `{' [EarlyDef {semi EarlyDef}] `}'
+     *  EarlyDefs     ::= `{` [EarlyDef {semi EarlyDef}] `}`
      *  EarlyDef      ::= Annotations Modifiers PatDef
      *  }}}
      */
@@ -3052,9 +3052,9 @@ self =>
     }
 
     /** {{{
-     *  ClassTemplateOpt ::= `extends' ClassTemplate | [[`extends'] TemplateBody]
+     *  ClassTemplateOpt ::= `extends` ClassTemplate | [[`extends`] TemplateBody]
      *  TraitTemplateOpt ::= TraitExtends TraitTemplate | [[TraitExtends] TemplateBody]
-     *  TraitExtends     ::= `extends' | `<:' (deprecated)
+     *  TraitExtends     ::= `extends` | `<:` (deprecated)
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Offset): Template = {
@@ -3094,7 +3094,7 @@ self =>
 /* -------- TEMPLATES ------------------------------------------- */
 
     /** {{{
-     *  TemplateBody ::= [nl] `{' TemplateStatSeq `}'
+     *  TemplateBody ::= [nl] `{` TemplateStatSeq `}`
      *  }}}
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
@@ -3116,7 +3116,7 @@ self =>
     }
 
     /** {{{
-     *  Refinement ::= [nl] `{' RefineStat {semi RefineStat} `}'
+     *  Refinement ::= [nl] `{` RefineStat {semi RefineStat} `}`
      *  }}}
      */
     def refinement(): List[Tree] = inBraces(refineStatSeq())
@@ -3165,7 +3165,7 @@ self =>
     }
 
     /** {{{
-     *  TemplateStatSeq  ::= [id [`:' Type] `=>'] TemplateStats
+     *  TemplateStatSeq  ::= [id [`:` Type] `=>`] TemplateStats
      *  }}}
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
@@ -3241,7 +3241,7 @@ self =>
       } else if (!isStatSep) {
         syntaxErrorOrIncomplete(
           "illegal start of declaration"+
-          (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
+          (if (inFunReturnType) " (possible cause: missing `=` in front of current method body)"
            else ""), skipIt = true)
         Nil
       } else Nil

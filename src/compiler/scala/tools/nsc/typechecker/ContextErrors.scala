@@ -295,7 +295,7 @@ trait ContextErrors {
         issueNormalTypeError(param, "*-parameter must come last")
 
       def StarWithDefaultError(meth: Symbol) =
-        issueSymbolTypeError(meth, "a parameter section with a `*'-parameter is not allowed to have default arguments")
+        issueSymbolTypeError(meth, "a parameter section with a `*`-parameter is not allowed to have default arguments")
 
       def InvalidConstructorDefError(ddef: Tree) =
         issueNormalTypeError(ddef, "constructor definition not allowed here")
@@ -398,7 +398,7 @@ trait ContextErrors {
             }
             val semicolon = (
               if (linePrecedes(qual, sel))
-                "\npossible cause: maybe a semicolon is missing before `"+nameString+"'?"
+                "\npossible cause: maybe a semicolon is missing before `"+nameString+"`?"
               else
                 ""
             )
@@ -524,7 +524,7 @@ trait ContextErrors {
         NormalTypeError(tree, "annotation argument cannot be null")
 
       def ArrayConstantsError(tree: Tree) =
-        NormalTypeError(tree, "Array constants have to be specified using the `Array(...)' factory method")
+        NormalTypeError(tree, "Array constants have to be specified using the `Array(...)` factory method")
 
       def ArrayConstantsTypeMismatchError(tree: Tree, pt: Type) =
         NormalTypeError(tree, "found array constant, expected argument of type " + pt)
@@ -1260,7 +1260,7 @@ trait ContextErrors {
         issueSymbolTypeError(getter, getter+" is defined twice")
 
       def ValOrVarWithSetterSuffixError(tree: Tree) =
-        issueNormalTypeError(tree, "Names of vals or vars may not end in `_='")
+        issueNormalTypeError(tree, "Names of vals or vars may not end in `_=`")
 
       def PrivateThisCaseClassParameterError(tree: Tree) =
         issueNormalTypeError(tree, "private[this] not allowed for case class parameters")
@@ -1269,10 +1269,10 @@ trait ContextErrors {
         issueNormalTypeError(tree, "implementation limitation: the BeanProperty annotation cannot be used in a type alias or renamed import")
 
       def BeanPropertyAnnotationFieldWithoutLetterError(tree: Tree) =
-        issueNormalTypeError(tree, "`BeanProperty' annotation can be applied only to fields that start with a letter")
+        issueNormalTypeError(tree, "`BeanProperty` annotation can be applied only to fields that start with a letter")
 
       def BeanPropertyAnnotationPrivateFieldError(tree: Tree) =
-        issueNormalTypeError(tree, "`BeanProperty' annotation can be applied only to non-private fields")
+        issueNormalTypeError(tree, "`BeanProperty` annotation can be applied only to non-private fields")
 
       def DoubleDefError(currentSym: Symbol, prevSym: Symbol) = {
         val s1 = if (prevSym.isModule) "case class companion " else ""
@@ -1298,25 +1298,25 @@ trait ContextErrors {
       def SymbolValidationError(sym: Symbol, errKind: SymValidateErrors.Value): Unit = {
         val msg = errKind match {
           case ImplicitConstr =>
-            "`implicit' modifier not allowed for constructors"
+            "`implicit` modifier not allowed for constructors"
 
           case ImplicitNotTermOrClass =>
-            "`implicit' modifier can be used only for values, variables, methods and classes"
+            "`implicit` modifier can be used only for values, variables, methods and classes"
 
           case ImplicitAtToplevel =>
-            "`implicit' modifier cannot be used for top-level objects"
+            "`implicit` modifier cannot be used for top-level objects"
 
           case OverrideClass =>
-            "`override' modifier not allowed for classes"
+            "`override` modifier not allowed for classes"
 
           case SealedNonClass =>
-            "`sealed' modifier can be used only for classes"
+            "`sealed` modifier can be used only for classes"
 
           case AbstractNonClass =>
-            "`abstract' modifier can be used only for classes; it should be omitted for abstract members"
+            "`abstract` modifier can be used only for classes; it should be omitted for abstract members"
 
           case OverrideConstr =>
-            "`override' modifier not allowed for constructors"
+            "`override` modifier not allowed for constructors"
 
           case AbstractOverride =>
             "`abstract override' modifier only allowed for members of traits"
@@ -1325,7 +1325,7 @@ trait ContextErrors {
             "`abstract override' modifier not allowed for type members"
 
           case LazyAndEarlyInit =>
-            "`lazy' definitions may not be initialized early"
+            "`lazy` definitions may not be initialized early"
 
           case ByNameParameter =>
             "pass-by-name arguments not allowed for case class parameters"

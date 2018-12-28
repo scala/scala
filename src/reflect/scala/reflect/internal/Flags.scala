@@ -98,7 +98,7 @@ class ModifierFlags {
   final val CASE          = 1L << 11
   final val ABSTRACT      = 1L << 3        // abstract class, or used in conjunction with abstract override.
                                           // Note difference to DEFERRED!
-  final val DEFERRED      = 1L << 4        // was `abstract' for members | trait is virtual
+  final val DEFERRED      = 1L << 4        // was `abstract` for members | trait is virtual
   final val INTERFACE     = 1L << 7        // symbol is an interface. the flag is set for:
                                           //  - scala-defined traits with only abstract methods or fields
                                           //  - any java-defined interface (even if it has default methods)

@@ -1,5 +1,5 @@
-t2866.scala:30: warning: imported `one' is permanently hidden by definition of value one
-    import A.one // warning: imported `one' is permanently hidden by definition of value one.
+t2866.scala:30: warning: imported `one` is permanently hidden by definition of value one
+    import A.one // warning: imported `one` is permanently hidden by definition of value one.
              ^
 t2866.scala:42: error: ambiguous implicit values:
  both value two of type Int

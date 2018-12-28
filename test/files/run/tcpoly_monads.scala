@@ -11,8 +11,8 @@ trait Monads {
    * an instance of MonadTC corresponds to a method dictionary.
    * (see http://lampwww.epfl.ch/~odersky/talks/wg2.8-boston06.pdf)
    *
-   * Note that the identity (`this') of the method dictionary does not really correspond
-   * to the instance of m[x] (`self') that is `wrapped': e.g., unit does not use `self' (which
+   * Note that the identity (`this`) of the method dictionary does not really correspond
+   * to the instance of m[x] (`self`) that is `wrapped`: e.g., unit does not use `self` (which
    * corresponds to the argument of the implicit conversion that encodes an instance of this type class)
    */
   trait MonadTC[m[x], a] {
