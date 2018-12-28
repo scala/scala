@@ -14,10 +14,7 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-import java.util
-
-import scala.collection.mutable.{Builder, ReusableBuilder}
+import scala.collection.mutable.ReusableBuilder
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
@@ -77,7 +74,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
+final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, private[immutable] val focus: Int)
   extends AbstractSeq[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
@@ -228,30 +225,51 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     dropRight(1)
   }
 
-  // appendAll (suboptimal but avoids worst performance gotchas)
-  override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): Vector[B] = {
-    import Vector.{Log2ConcatFaster, TinyAppendFaster}
-    if (suffix.iterator.isEmpty) this
-    else {
-      suffix match {
-        case suffix: collection.Iterable[B] =>
-          suffix.size match {
-            // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
-            case n if n <= TinyAppendFaster || n < (this.size >>> Log2ConcatFaster) =>
-              var v: Vector[B] = this
-              for (x <- suffix) v = v :+ x
-              v
-            case n if this.size < (n >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]] =>
-              var v = suffix.asInstanceOf[Vector[B]]
-              val ri = this.reverseIterator
-              while (ri.hasNext) v = ri.next() +: v
-              v
-            case _ => super.appendedAll(suffix)
+  override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): Vector[B] =
+    suffix match {
+      case v: Vector[B] =>
+        val thisLength = this.length
+        val thatLength = v.length
+        if (thisLength == 0) v
+        else if (thatLength == 0) this
+        else if (thatLength <= Vector.TinyAppendFaster) {
+          // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+          var v0: Vector[B] = this
+          var i = 0
+          while (i < thatLength) {
+            v0 = v0.appended(v(i))
+            i += 1
           }
-        case _ => super.appendedAll(suffix)
-      }
+          v0
+        } else {
+          if (thisLength < (thatLength >>> Vector.Log2ConcatFaster)) {
+            var v0 = v
+            val iter = this.reverseIterator
+            while(iter.hasNext) {
+              v0 = iter.next() +: v0
+            }
+            v0
+          } else {
+            new VectorBuilder[B]().addAll(this).addAll(suffix).result()
+          }
+        }
+      case _ =>
+        val thatKnownSize = suffix.knownSize
+        if (thatKnownSize == 0) this
+        else if (thatKnownSize > 0 && thatKnownSize <= Vector.TinyAppendFaster) {
+          var v0: Vector[B] = this
+          val iter = suffix.iterator
+          while (iter.hasNext) {
+            v0 = v0.appended(iter.next())
+          }
+          v0
+        } else {
+          val iter = suffix.iterator
+          if (iter.hasNext) {
+            new VectorBuilder[B]().addAll(this).addAll(suffix).result()
+          } else this
+        }
     }
-  }
 
   override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): Vector[B] = {
     // Implementation similar to `appendAll`: when of the collections to concatenate (either `this` or `prefix`)
@@ -755,10 +773,21 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   display0 = new Array[AnyRef](32)
   depth = 1
 
+  /** The index within the final Vector of `this.display0(0)` */
   private[this] var blockIndex = 0
+  /** The index within `this.display0` which is the next available index to write to.
+    * This value may be equal to display0.length, in which case before writing, a new block
+    * should be created (see advanceToNextBlockIfNecessary)*/
   private[this] var lo = 0
+  /** Indicates an offset of the final vector from the actual underlying array elements. This is
+    * used for example in `drop(1)` where instead of copying the entire Vector, only the startIndex is changed.
+    *
+    * This is present in the Builder because we may be able to share structure with a Vector that is `addAll`'d to this.
+    * In which case we must track that Vector's startIndex offset.
+    * */
+  private[this] var startIndex = 0
 
-  def size: Int = blockIndex + lo
+  def size: Int = (blockIndex & ~31) + lo - startIndex
   def isEmpty: Boolean = size == 0
   def nonEmpty: Boolean = size != 0
 
@@ -781,10 +810,49 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   }
 
   override def addAll(xs: IterableOnce[A]): this.type = {
-    val it = (xs.iterator : Iterator[A]).asInstanceOf[Iterator[AnyRef]]
-    while (it.hasNext) {
-      advanceToNextBlockIfNecessary()
-      lo += it.copyToArray(xs = display0, start = lo, len = display0.length - lo)
+
+    xs match {
+      case v: Vector[A] if this.isEmpty && v.length >= 32 =>
+        depth = v.depth
+        blockIndex = (v.endIndex - 1) & ~31
+        lo = v.endIndex - blockIndex
+        startIndex = v.startIndex
+
+        /** `initFrom` will overwrite display0. Keep reference to it so we can reuse the array.*/
+        val initialDisplay0 = display0
+        initFrom(v)
+        stabilize(v.focus)
+        gotoPosWritable1(v.focus, blockIndex, v.focus ^ blockIndex, initialDisplay0)
+
+        depth match {
+          case 2 =>
+            display1((blockIndex >>> 5) & 31) = display0
+          case 3 =>
+            display1((blockIndex >>> 5) & 31) = display0
+            display2((blockIndex >>> 10) & 31) = display1
+          case 4 =>
+            display1((blockIndex >>> 5) & 31) = display0
+            display2((blockIndex >>> 10) & 31) = display1
+            display3((blockIndex >>> 15) & 31) = display2
+          case 5 =>
+            display1((blockIndex >>> 5) & 31) = display0
+            display2((blockIndex >>> 10) & 31) = display1
+            display3((blockIndex >>> 15) & 31) = display2
+            display4((blockIndex >>> 20) & 31) = display3
+          case 6 =>
+            display1((blockIndex >>> 5) & 31) = display0
+            display2((blockIndex >>> 10) & 31) = display1
+            display3((blockIndex >>> 15) & 31) = display2
+            display4((blockIndex >>> 20) & 31) = display3
+            display5((blockIndex >>> 25) & 31) = display4
+          case _ => ()
+        }
+      case _ =>
+        val it = (xs.iterator : Iterator[A]).asInstanceOf[Iterator[AnyRef]]
+        while (it.hasNext) {
+          advanceToNextBlockIfNecessary()
+          lo += it.copyToArray(xs = display0, start = lo, len = display0.length - lo)
+        }
     }
     this
   }
@@ -793,9 +861,9 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     val size = this.size
     if (size == 0)
       return Vector.empty
-    val s = new Vector[A](0, size, 0) // should focus front or back?
+    val s = new Vector[A](startIndex, blockIndex + lo, 0) // should focus front or back?
     s.initFrom(this)
-    if (depth > 1) s.gotoPos(0, size - 1) // we're currently focused to size - 1, not size!
+    if (depth > 1) s.gotoPos(startIndex, blockIndex + lo - 1) // we're currently focused to size - 1, not size!
     releaseFence()
     s
   }
@@ -805,6 +873,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
     display0 = new Array[AnyRef](32)
     blockIndex = 0
     lo = 0
+    startIndex = 0
   }
 }
 
@@ -1000,10 +1069,19 @@ private[immutable] trait VectorPointer[T] {
 
     // STUFF BELOW USED BY APPEND / UPDATE
 
-    private[immutable] final def nullSlotAndCopy[T <: AnyRef](array: Array[Array[T]], index: Int): Array[T] = {
+  /** Sets array(index) to null and returns an array with same contents as what was previously at array(index)
+    *
+    * If `destination` array is not null, original contents of array(index) will be copied to it, and it will be returned.
+    * Otherwise array(index).clone() is returned
+    */
+    private[immutable] final def nullSlotAndCopy[T <: AnyRef](array: Array[Array[T]], index: Int, destination: Array[T] = null): Array[T] = {
       val x = array(index)
       array(index) = null
-      x.clone()
+      if (destination == null) x.clone()
+      else {
+        x.copyToArray(destination, 0)
+        destination
+      }
     }
 
     // make sure there is no aliasing
@@ -1086,10 +1164,9 @@ private[immutable] trait VectorPointer[T] {
         display0 = display0.clone()
     }
 
-
     // requires structure is dirty and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
-    private[immutable] final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
+    private[immutable] final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int, reuseDisplay0: Array[AnyRef] = null): Unit = {
       if        (xor < (1 <<  5)) { // level = 0
         display0 = display0.clone()
       } else if (xor < (1 << 10)) { // level = 1
@@ -1102,7 +1179,7 @@ private[immutable] trait VectorPointer[T] {
         display1((oldIndex >>>  5) & 31) = display0
         display2((oldIndex >>> 10) & 31) = display1
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 20)) { // level = 3
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1112,7 +1189,7 @@ private[immutable] trait VectorPointer[T] {
         display3((oldIndex >>> 15) & 31) = display2
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 25)) { // level = 4
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1125,7 +1202,7 @@ private[immutable] trait VectorPointer[T] {
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 30)) { // level = 5
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1141,7 +1218,7 @@ private[immutable] trait VectorPointer[T] {
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else {                      // level = 6
         throw new IllegalArgumentException()
       }
