@@ -52,9 +52,6 @@ trait ImplicitTags {
   // Tags for Annotations.
   implicit val AnnotationTag: ClassTag[Annotation]
   implicit val JavaArgumentTag: ClassTag[JavaArgument]
-  implicit val LiteralArgumentTag: ClassTag[LiteralArgument]
-  implicit val ArrayArgumentTag: ClassTag[ArrayArgument]
-  implicit val NestedArgumentTag: ClassTag[NestedArgument]
 
   // Tags for Symbols.
   implicit val TermSymbolTag: ClassTag[TermSymbol]

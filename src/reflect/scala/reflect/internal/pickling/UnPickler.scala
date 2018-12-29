@@ -474,7 +474,7 @@ abstract class UnPickler {
     private def readArrayAnnot() = {
       readByte() // skip the `annotargarray` tag
       val end = readEnd()
-      until(end, () => readClassfileAnnotArg(readNat())).toArray(JavaArgumentTag)
+      until(end, () => readClassfileAnnotArg(readNat())).toArray
     }
     protected def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
       case ANNOTINFO     => NestedAnnotArg(at(i, () => readAnnotation()))

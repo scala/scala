@@ -79,6 +79,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    * TODO: rename to `ConstantAnnotationArg`
    */
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
+  type JavaArgument = ClassfileAnnotArg
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
   case object UnmappableAnnotArg extends ClassfileAnnotArg
 
@@ -86,40 +87,21 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
    *  an instance of a Java enumeration value).
    */
-  case class LiteralAnnotArg(const: Constant)
-  extends ClassfileAnnotArg with LiteralArgumentApi {
-    def value = const
+  case class LiteralAnnotArg(const: Constant) extends ClassfileAnnotArg {
     override def toString = const.escapedStringValue
   }
-  object LiteralAnnotArg extends LiteralArgumentExtractor
 
   /** Represents an array of classfile annotation arguments */
-  case class ArrayAnnotArg(args: Array[ClassfileAnnotArg])
-  extends ClassfileAnnotArg with ArrayArgumentApi {
+  case class ArrayAnnotArg(args: Array[ClassfileAnnotArg]) extends ClassfileAnnotArg {
     override def toString = args.mkString("[", ", ", "]")
   }
-  object ArrayAnnotArg extends ArrayArgumentExtractor
 
   /** Represents a nested classfile annotation */
-  case class NestedAnnotArg(annInfo: AnnotationInfo)
-  extends ClassfileAnnotArg with NestedArgumentApi {
+  case class NestedAnnotArg(annInfo: AnnotationInfo) extends ClassfileAnnotArg {
     // The nested annotation should not have any Scala annotation arguments
     assert(annInfo.args.isEmpty, annInfo.args)
-    def annotation = annInfo
     override def toString = annInfo.toString
   }
-  object NestedAnnotArg extends NestedArgumentExtractor
-
-  type JavaArgument = ClassfileAnnotArg
-  type LiteralArgument = LiteralAnnotArg
-  val LiteralArgument = LiteralAnnotArg
-  implicit val LiteralArgumentTag = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
-  type ArrayArgument = ArrayAnnotArg
-  val ArrayArgument = ArrayAnnotArg
-  implicit val ArrayArgumentTag = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
-  type NestedArgument = NestedAnnotArg
-  val NestedArgument = NestedAnnotArg
-  implicit val NestedArgumentTag = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
 
   object AnnotationInfo {
     def marker(atp: Type): AnnotationInfo =
@@ -342,8 +324,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case (name, jarg) :: rest => NamedArg(Ident(name), reverseEngineerArg(jarg)) :: reverseEngineerArgs(rest)
         case Nil => Nil
       }
-      if (ann.javaArgs.isEmpty) ann.scalaArgs
-      else reverseEngineerArgs(ann.javaArgs.toList)
+      if (ann.assocs.isEmpty) ann.args
+      else reverseEngineerArgs(ann.assocs)
     }
 
     // TODO: at the moment, constructor selection is unattributed, because AnnotationInfos lack necessary information
