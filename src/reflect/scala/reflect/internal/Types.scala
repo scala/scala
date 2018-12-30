@@ -2989,8 +2989,8 @@ trait Types
           else new TypeVar(origin, constr) {}
         }
         else if (args.size == params.size) {
-          if (untouchable) new AppliedTypeVar(origin, constr, params zip args) with UntouchableTypeVar
-          else new AppliedTypeVar(origin, constr, params zip args)
+          if (untouchable) new AppliedTypeVar(origin, constr, params, args) with UntouchableTypeVar
+          else new AppliedTypeVar(origin, constr, params, args)
         }
         else if (args.isEmpty) {
           if (untouchable) new HKTypeVar(origin, constr, params) with UntouchableTypeVar
@@ -3019,20 +3019,17 @@ trait Types
     override def isHigherKinded          = true
   }
 
-  /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
-   */
+  /** Precondition: `params.length == typeArgs.length > 0` (enforced structurally). */
   class AppliedTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
-    zippedArgs: List[(Symbol, Type)]
+    override val params: List[Symbol],
+    override val typeArgs: List[Type]
   ) extends TypeVar(_origin, _constr) {
-
-    require(zippedArgs.nonEmpty, this)
-
-    override def params: List[Symbol] = zippedArgs map (_._1)
-    override def typeArgs: List[Type] = zippedArgs map (_._2)
-
+    require(params.nonEmpty && sameLength(params, typeArgs), this)
     override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
+    override def setInst(tp: Type): this.type =
+      super.setInst(if (isSubArgs(typeArgs, tp.typeArgs, params, Depth.AnyDepth)) tp.typeConstructor else NoType)
   }
 
   trait UntouchableTypeVar extends TypeVar {
