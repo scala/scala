@@ -45,7 +45,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
 
-  protected var array: Array[AnyRef] = initialElements
+  protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
 
   /** Ensure that the internal array has at least `n` cells. */
