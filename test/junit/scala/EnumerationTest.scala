@@ -19,4 +19,11 @@ class EnumerationTest {
     val s4 = A.values.flatMap(x => Set(x))
     assertEquals(Set.empty, (s4: A.ValueSet))
   }
+
+  @Test def implicitOrderingIsSameAsEnumerationOrdering: Unit = {
+    object MyEnum extends Enumeration {
+      val a, b, c = Value
+    }
+    assertSame(Ordering[MyEnum.Value], MyEnum.ValueOrdering)
+  }
 }

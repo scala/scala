@@ -266,7 +266,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
   }
 
   /** An ordering by id for values of this set */
-  object ValueOrdering extends Ordering[Value] {
+  implicit object ValueOrdering extends Ordering[Value] {
     def compare(x: Value, y: Value): Int = x compare y
   }
 
