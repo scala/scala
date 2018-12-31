@@ -39,4 +39,9 @@ trait Iterable[+A] extends collection.Iterable[A]
 }
 
 @SerialVersionUID(3L)
-object Iterable extends IterableFactory.Delegate[Iterable](List)
+object Iterable extends IterableFactory.Delegate[Iterable](List) {
+  override def from[E](it: IterableOnce[E]): Iterable[E] = it match {
+    case iterable: Iterable[E] => iterable
+    case _ => super.from(it)
+  }
+}
