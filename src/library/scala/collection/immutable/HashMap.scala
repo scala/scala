@@ -1072,12 +1072,11 @@ private final class BitmapIndexedMapNode[K, +V](
   }
 
   override def copy(): BitmapIndexedMapNode[K, V] = {
-    val contentClone = new Array[Any](content.length)
-    val dataIndices = bitCount(dataMap) * TupleLength
-    Array.copy(content, 0, contentClone, 0, dataIndices)
-    var i = dataIndices
-    while (i < content.length) {
-      contentClone(i) = content(i).asInstanceOf[MapNode[K, V]].copy()
+    val contentClone = content.clone()
+    val contentLength = contentClone.length
+    var i = bitCount(dataMap) * TupleLength
+    while (i < contentLength) {
+      contentClone(i) = contentClone(i).asInstanceOf[MapNode[K, V]].copy()
       i += 1
     }
     new BitmapIndexedMapNode[K, V](dataMap, nodeMap, contentClone, originalHashes.clone(), size, cachedJavaKeySetHashCode)

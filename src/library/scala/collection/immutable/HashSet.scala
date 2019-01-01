@@ -1004,12 +1004,11 @@ private final class BitmapIndexedSetNode[A](
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def copy(): BitmapIndexedSetNode[A] = {
-    val contentClone = new Array[Any](content.length)
-    val dataIndices = bitCount(dataMap)
-    Array.copy(content, 0, contentClone, 0, dataIndices)
-    var i = dataIndices
-    while (i < content.length) {
-      contentClone(i) = content(i).asInstanceOf[SetNode[A]].copy()
+    val contentClone = content.clone()
+    val contentLength = contentClone.length
+    var i = bitCount(dataMap)
+    while (i < contentLength) {
+      contentClone(i) = contentClone(i).asInstanceOf[SetNode[A]].copy()
       i += 1
     }
     new BitmapIndexedSetNode[A](dataMap, nodeMap, contentClone, originalHashes.clone(), size, cachedJavaKeySetHashCode)
