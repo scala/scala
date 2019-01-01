@@ -3348,9 +3348,9 @@ trait Types
     _constr: TypeConstraint,
     override val params: List[Symbol]
   ) extends TypeVar(_origin, _constr) {
-
     require(params.nonEmpty, this)
-    override def isHigherKinded          = true
+    override def isHigherKinded: Boolean = true
+    override def typeParams: List[Symbol] = params
   }
 
   /** Precondition: `params.length == typeArgs.length > 0` (enforced structurally). */

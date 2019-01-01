@@ -1121,20 +1121,6 @@ trait Infer extends Checkable {
       }
     }
 
-    def instBounds(tvar: TypeVar): TypeBounds = {
-      val tparam               = tvar.origin.typeSymbol
-      val instType             = toOrigin(tvar.constr.inst)
-      val TypeBounds(lo, hi)   = tparam.info.bounds
-      val (loBounds, hiBounds) =
-        if (isFullyDefined(instType)) (List(instType), List(instType))
-        else (tvar.constr.loBounds, tvar.constr.hiBounds)
-
-      TypeBounds(
-        lub(lo :: loBounds map toOrigin),
-        glb(hi :: hiBounds map toOrigin)
-      )
-    }
-
     def isInstantiatable(tvars: List[TypeVar]) = {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
@@ -1146,11 +1132,23 @@ trait Infer extends Checkable {
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentionally observed in the mean time
     def instantiateTypeVar(tvar: TypeVar): Unit = {
-      val tparam                    = tvar.origin.typeSymbol
-      val TypeBounds(lo0, hi0)      = tparam.info.bounds
-      val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
-      val enclCase                  = context.enclosingCaseDef
-      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
+      val tparam = tvar.origin.typeSymbol
+      val tparams = cloneSymbols(tvar.typeParams)
+      val targs = tparams.map(_.tpeHK)
+      val instType = if (!tvar.instValid) Nil else {
+        val inst = toOrigin(genPolyType(tparams, appliedType(tvar.inst, targs)))
+        if (isFullyDefined(inst)) List(inst) else Nil
+      }
+
+      def instBounds(bounds: List[Type]) =
+        if (instType.isEmpty) bounds.map(toOrigin) else instType
+
+      val lo0 = tparam.info.lowerBound
+      val hi0 = tparam.info.upperBound
+      val lo1 = lub(toOrigin(lo0) :: instBounds(tvar.constr.loBounds))
+      val hi1 = glb(toOrigin(hi0) :: instBounds(tvar.constr.hiBounds))
+      val enclCase = context.enclosingCaseDef
+      def enclCase_s = enclCase.toString.replaceAll("\\n", " ").take(60)
 
       if (enclCase.savedTypeBounds.nonEmpty) log(
         sm"""|instantiateTypeVar with nonEmpty saved type bounds {
@@ -1166,6 +1164,7 @@ trait Infer extends Checkable {
           log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
         else {
           enclCase pushTypeBounds tparam
+          val tb = genPolyType(tparams, appliedType(TypeBounds(lo1, hi1), targs))
           tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
         }
       }
@@ -1474,7 +1473,7 @@ trait Infer extends Checkable {
 
   object toOrigin extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeVar(origin, _) => origin
+      case TypeVar(origin, _) => appliedType(origin, tp.typeArgs)
       case _ => mapOver(tp)
     }
   }
