@@ -39,6 +39,10 @@ class C1 {
     flv
   }
   def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass) }
+  def fc = {
+    def fcf(f0: => Boolean) = synchronized { f0 }
+    fcf(checkLocks(this)(this.getClass))
+  }
 
   def g1 = checkLocks()(this, this.getClass)
   @inline final def gi = checkLocks()(this, this.getClass)
@@ -66,6 +70,10 @@ class C1 {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, C1.this, C1.this.getClass) }
     def fn = C1.this.synchronized { checkLocks(C1.this)(C1.this.getClass, this, this.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, C1.this, C1.this.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, C1.this, C1.this.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, C1.this, C1.this.getClass)
@@ -95,6 +103,10 @@ class C1 {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, C1.this, C1.this.getClass) }
     def fn = C1.this.synchronized { checkLocks(C1.this)(C1.this.getClass, this, this.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, C1.this, C1.this.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, C1.this, C1.this.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, C1.this, C1.this.getClass)
@@ -127,6 +139,10 @@ object O1 {
     flv
   }
   def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass) }
+  def fc = {
+    def fcf(f0: => Boolean) = synchronized { f0 }
+    fcf(checkLocks(this)(this.getClass))
+  }
 
   def g1 = checkLocks()(this, this.getClass)
   @inline final def gi = checkLocks()(this, this.getClass)
@@ -154,6 +170,10 @@ object O1 {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, O1, O1.getClass) }
     def fn = O1.synchronized { checkLocks(O1)(O1.getClass, this, this.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, O1, O1.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, O1, O1.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, O1, O1.getClass)
@@ -183,6 +203,10 @@ object O1 {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, O1, O1.getClass) }
     def fn = O1.synchronized { checkLocks(O1)(O1.getClass, this, this.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, O1, O1.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, O1, O1.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, O1, O1.getClass)
@@ -215,6 +239,10 @@ trait T {
     flv
   }
   def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, classOf[T], classOf[C2], O2.getClass) }
+  def fc = {
+    def fcf(f0: => Boolean) = synchronized { f0 }
+    fcf(checkLocks(this)(this.getClass, classOf[T], classOf[C2], O2.getClass))
+  }
 
   def g1 = checkLocks()(this, this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
   @inline final def gi = checkLocks()(this, this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
@@ -242,6 +270,10 @@ trait T {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass) }
     def fn = T.this.synchronized { checkLocks(T.this)(T.this.getClass, this, this.getClass, classOf[T], classOf[C2], O2.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
@@ -271,6 +303,10 @@ trait T {
     }
     def fo = lock.synchronized { checkLocks(lock)(lock.getClass, this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass) }
     def fn = T.this.synchronized { checkLocks(T.this)(T.this.getClass, this, this.getClass, classOf[T], classOf[C2], O2.getClass) }
+    def fc = {
+      def fcf(f0: => Boolean) = synchronized { f0 }
+      fcf(checkLocks(this)(this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass))
+    }
 
     def g1 = checkLocks()(this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
     @inline final def gi = checkLocks()(this, this.getClass, T.this, T.this.getClass, classOf[T], classOf[C2], O2, O2.getClass)
@@ -301,6 +337,7 @@ object Test extends App {
   check("c1.ff",   c1.ff)
   check("c1.fl",   c1.fl)
   check("c1.fo",   c1.fo)
+  check("c1.fc",   c1.fc)
   check("c1.g1",   c1.g1)
   check("c1.gi",   c1.gi)
   check("c1.gv",   c1.gv())
@@ -314,6 +351,7 @@ object Test extends App {
   check("c1.c.fl",   c1.c.fl)
   check("c1.c.fo",   c1.c.fo)
   check("c1.c.fn",   c1.c.fn)
+  check("c1.c.fc",   c1.c.fc)
   check("c1.c.g1",   c1.c.g1)
   check("c1.c.gi",   c1.c.gi)
   check("c1.c.gv",   c1.c.gv())
@@ -327,6 +365,7 @@ object Test extends App {
   check("c1.O.fl",   c1.O.fl)
   check("c1.O.fo",   c1.O.fo)
   check("c1.O.fn",   c1.O.fn)
+  check("c1.O.fc",   c1.O.fc)
   check("c1.O.g1",   c1.O.g1)
   check("c1.O.gi",   c1.O.gi)
   check("c1.O.gv",   c1.O.gv())
@@ -339,6 +378,7 @@ object Test extends App {
   check("O1.ff",   O1.ff)
   check("O1.fl",   O1.fl)
   check("O1.fo",   O1.fo)
+  check("O1.fc",   O1.fc)
   check("O1.g1",   O1.g1)
   check("O1.gi",   O1.gi)
   check("O1.gv",   O1.gv())
@@ -352,6 +392,7 @@ object Test extends App {
   check("O1.c.fl",   O1.c.fl)
   check("O1.c.fo",   O1.c.fo)
   check("O1.c.fn",   O1.c.fn)
+  check("O1.c.fc",   O1.c.fc)
   check("O1.c.g1",   O1.c.g1)
   check("O1.c.gi",   O1.c.gi)
   check("O1.c.gv",   O1.c.gv())
@@ -365,6 +406,7 @@ object Test extends App {
   check("O1.O.fl",   O1.O.fl)
   check("O1.O.fo",   O1.O.fo)
   check("O1.O.fn",   O1.O.fn)
+  check("O1.O.fc",   O1.O.fc)
   check("O1.O.g1",   O1.O.g1)
   check("O1.O.gi",   O1.O.gi)
   check("O1.O.gv",   O1.O.gv())
@@ -378,6 +420,7 @@ object Test extends App {
   check("c2.ff",   c2.ff)
   check("c2.fl",   c2.fl)
   check("c2.fo",   c2.fo)
+  check("c2.fc",   c2.fc)
   check("c2.g1",   c2.g1)
   check("c2.gi",   c2.gi)
   check("c2.gv",   c2.gv())
@@ -391,6 +434,7 @@ object Test extends App {
   check("c2.c.fl",   c2.c.fl)
   check("c2.c.fo",   c2.c.fo)
   check("c2.c.fn",   c2.c.fn)
+  check("c2.c.fc",   c2.c.fc)
   check("c2.c.g1",   c2.c.g1)
   check("c2.c.gi",   c2.c.gi)
   check("c2.c.gv",   c2.c.gv())
@@ -404,6 +448,7 @@ object Test extends App {
   check("c2.O.fl",   c2.O.fl)
   check("c2.O.fo",   c2.O.fo)
   check("c2.O.fn",   c2.O.fn)
+  check("c2.O.fc",   c2.O.fc)
   check("c2.O.g1",   c2.O.g1)
   check("c2.O.gi",   c2.O.gi)
   check("c2.O.gv",   c2.O.gv())
@@ -416,6 +461,7 @@ object Test extends App {
   check("O2.ff",   O2.ff)
   check("O2.fl",   O2.fl)
   check("O2.fo",   O2.fo)
+  check("O2.fc",   O2.fc)
   check("O2.g1",   O2.g1)
   check("O2.gi",   O2.gi)
   check("O2.gv",   O2.gv())
@@ -429,6 +475,7 @@ object Test extends App {
   check("O2.c.fl",   O2.c.fl)
   check("O2.c.fo",   O2.c.fo)
   check("O2.c.fn",   O2.c.fn)
+  check("O2.c.fc",   O2.c.fc)
   check("O2.c.g1",   O2.c.g1)
   check("O2.c.gi",   O2.c.gi)
   check("O2.c.gv",   O2.c.gv())
@@ -442,6 +489,7 @@ object Test extends App {
   check("O2.O.fl",   O2.O.fl)
   check("O2.O.fo",   O2.O.fo)
   check("O2.O.fn",   O2.O.fn)
+  check("O2.O.fc",   O2.O.fc)
   check("O2.O.g1",   O2.O.g1)
   check("O2.O.gi",   O2.O.gi)
   check("O2.O.gv",   O2.O.gv())
