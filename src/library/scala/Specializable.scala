@@ -30,4 +30,9 @@ object Specializable {
   final val Integral:    Group[(Byte, Short, Int, Long, Char)] = null
   final val AllNumeric:  Group[(Byte, Short, Int, Long, Char, Float, Double)] = null
   final val BestOfBreed: Group[(Int, Double, Boolean, Unit, AnyRef)] = null
+  final val Unit:        Group[Tuple1[Unit]] = null
+
+  final val Arg:         Group[(Int, Long, Float, Double)] = null
+  final val Args:        Group[(Int, Long, Double)] = null
+  final val Return:      Group[(Int, Long, Float, Double, Boolean, Unit)] = null
 }

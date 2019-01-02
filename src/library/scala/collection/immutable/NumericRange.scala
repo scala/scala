@@ -91,7 +91,7 @@ sealed class NumericRange[T](
     else locationAfterN(idx)
   }
 
-  override def foreach[@specialized(Unit) U](f: T => U): Unit = {
+  override def foreach[@specialized(Specializable.Unit) U](f: T => U): Unit = {
     var count = 0
     var current = start
     while (count < length) {

@@ -119,8 +119,8 @@ object FunctionZero extends Function(0) {
 
 object FunctionOne extends Function(1) {
   override def classAnnotation    = "@annotation.implicitNotFound(msg = \"No implicit view available from ${T1} => ${R}.\")\n"
-  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double) "
-  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
+  override def contravariantSpecs = "@specialized(Specializable.Arg) "
+  override def covariantSpecs     = "@specialized(Specializable.Return) "
 
   override def descriptiveComment = "  " + functionNTemplate.format("succ", "anonfun1",
 """
@@ -154,8 +154,8 @@ object FunctionOne extends Function(1) {
 }
 
 object FunctionTwo extends Function(2) {
-  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Double) "
-  override def covariantSpecs = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
+  override def contravariantSpecs = "@specialized(Specializable.Args) "
+  override def covariantSpecs = "@specialized(Specializable.Return) "
 
   override def descriptiveComment = "  " + functionNTemplate.format("max", "anonfun2",
 """

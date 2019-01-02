@@ -27,7 +27,7 @@ final abstract class Unit private extends AnyVal {
   override def getClass(): Class[Unit] = ???
 }
 
-//@scala.annotation.compileTimeOnly("`Unit` companion object is not allowed in source; instead, use `()` for the unit value")
+@scala.annotation.compileTimeOnly("`Unit` companion object is not allowed in source; instead, use `()` for the unit value")
 object Unit extends AnyValCompanion {
 
   /** Transform a value type into a boxed reference type.
