@@ -231,11 +231,11 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
   }
 
   property("tails") = forAll(myGen) { r =>
-    r.tails.toList == r.toList.tails.toList
+    (r.size < 1024) ==> { r.tails.toList == r.toList.tails.toList }
   }
 
   property("inits") = forAll(myGen) { r =>
-    r.inits.toList == r.toList.inits.toList
+    (r.size < 1024) ==> { r.inits.toList == r.toList.inits.toList }
   }
 
   property("reverse.toSet.equal") = forAll(myGen) { r =>
