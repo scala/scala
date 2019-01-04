@@ -8,6 +8,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - $HOME/.rvm/
 
 stages:
   - name: build
