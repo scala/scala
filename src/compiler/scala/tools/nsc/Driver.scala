@@ -14,8 +14,9 @@ package scala
 package tools.nsc
 
 import Properties.{versionMsg, residentPromptString}
-import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.FakePos
+import scala.tools.nsc.reporters.Reporter
+import scala.tools.util.SystemExit
 
 abstract class Driver {
 
@@ -66,6 +67,7 @@ abstract class Driver {
         else
           doCompile(compiler)
       } catch {
+        case _: SystemExit => // user requested to bail
         case ex: Throwable =>
           compiler.reportThrowable(ex)
           ex match {
