@@ -66,7 +66,7 @@ trait PrintReporter extends InternalReporter {
     writer.print("a)bort, s)tack, r)esume: ")
     writer.flush()
     if (reader != null) {
-      reader.read match {
+      Option(reader.readLine).flatMap(_.trim.headOption).getOrElse('r') match {
         case 'a' | 'A' =>
           new Throwable().printStackTrace(writer)
           throw SystemExit(1)
@@ -76,7 +76,7 @@ trait PrintReporter extends InternalReporter {
           writer.flush()
         case _ =>
       }
-    }
+    } else writer.println("r")
   }
 
   override def flush() = {
