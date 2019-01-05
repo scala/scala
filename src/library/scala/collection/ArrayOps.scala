@@ -183,7 +183,7 @@ object ArrayOps {
   *
   *  @tparam A   type of the elements contained in this array.
   */
-final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
+final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   @`inline` private[this] implicit def elemTag: ClassTag[A] = ClassTag(xs.getClass.getComponentType)
 
@@ -702,7 +702,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(1, 2, 3, 4).scanLeft(0)(_ + _) == Array(0, 1, 3, 6, 10)
-    *  }}}    
+    *  }}}
     *
     */
   def scanLeft[ B : ClassTag ](z: B)(op: (B, A) => B): Array[B] = {
@@ -715,7 +715,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       i += 1
     }
     res(i) = v
-    res 
+    res
   }
 
   /** Computes a prefix scan of the elements of the array.
@@ -741,7 +741,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     *  Example:
     *  {{{
     *    Array(4, 3, 2, 1).scanRight(0)(_ + _) == Array(10, 6, 3, 1, 0)
-    *  }}}    
+    *  }}}
     *
     */
   def scanRight[ B : ClassTag ](z: B)(op: (A, B) => B): Array[B] = {
@@ -754,7 +754,7 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
       res(i) = v
       i -= 1
     }
-    res 
+    res
   }
 
   /** Applies a binary operator to all elements of this array and a start value,
@@ -1366,19 +1366,40 @@ final class ArrayOps[A](val xs: Array[A]) extends AnyVal {
     immutable.ArraySeq.unsafeWrapArray(Array.copyOf(xs, xs.length))
 
   /** Copy elements of this array to another array.
-    *  Fills the given array `dest` starting at index `start` with at most `len` values.
-    *  Copying will stop once either the all elements of this array have been copied,
+    *  Fills the given array `xs` starting at index 0.
+    *  Copying will stop once either all the elements of this array have been copied,
+    *  or the end of the array is reached.
+    *
+    *  @param  xs   the array to fill.
+    *  @tparam B      the type of the elements of the array.
+    */
+  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0)
+
+  /** Copy elements of this array to another array.
+    *  Fills the given array `xs` starting at index `start`.
+    *  Copying will stop once either all the elements of this array have been copied,
+    *  or the end of the array is reached.
+    *
+    *  @param  xs   the array to fill.
+    *  @param  start  the starting index within the destination array.
+    *  @tparam B      the type of the elements of the array.
+    */
+  def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray(xs, start, Int.MaxValue)
+
+  /** Copy elements of this array to another array.
+    *  Fills the given array `xs` starting at index `start` with at most `len` values.
+    *  Copying will stop once either all the elements of this array have been copied,
     *  or the end of the array is reached, or `len` elements have been copied.
     *
-    *  @param  dest   the array to fill.
-    *  @param  start  the starting index.
+    *  @param  xs   the array to fill.
+    *  @param  start  the starting index within the destination array.
     *  @param  len    the maximal number of elements to copy.
     *  @tparam B      the type of the elements of the array.
     */
-  def copyToArray[B >: A](dest: Array[B], start: Int, len: Int = Int.MaxValue): Int = {
-    val copied = IterableOnce.elemsToCopyToArray(xs.length, dest.length, start, len)
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(this.xs.length, xs.length, start, len)
     if (copied > 0) {
-      Array.copy(xs, 0, dest, start, copied)
+      Array.copy(this.xs, 0, xs, start, copied)
     }
     copied
   }
