@@ -39,6 +39,7 @@ object Symbol extends UniquenessCache[String, Symbol] {
   override def apply(name: String): Symbol = super.apply(name)
   protected def valueFromKey(name: String): Symbol = new Symbol(name)
   protected def keyFromValue(sym: Symbol): Option[String] = Some(sym.name)
+  def unapply(sym: Symbol): Some[String] = Some(sym.name)
 }
 
 /** This is private so it won't appear in the library API, but
