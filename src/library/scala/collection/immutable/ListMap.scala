@@ -216,8 +216,6 @@ object ListMap extends MapFactory[ListMap] {
 
   private object EmptyListMap extends ListMap[Any, Nothing]
 
-  def from_old[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] = (newBuilder[K, V] ++= it).result()
-
   def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
     it match {
       case lm: ListMap[K, V] => lm
