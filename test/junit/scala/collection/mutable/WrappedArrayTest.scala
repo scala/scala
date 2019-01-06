@@ -1,8 +1,11 @@
 package scala.collection.mutable
 
+import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+
+import scala.collection.immutable
 
 @RunWith(classOf[JUnit4])
 class WrappedArrayTest {
@@ -15,5 +18,13 @@ class WrappedArrayTest {
     assertOfRef(Array(Double.box(65.0)), Array(Int.box(65)))
     assertOfRef(Array(Int.box(65)), Array(Char.box('A')))
     assertOfRef(Array(Char.box('A')), Array(Int.box(65)))
+  }
+
+  @Test
+  def byteArrayHashCodeEquality(): Unit = {
+    val x = immutable.Seq[Byte](10)
+    val y = Array[Byte](10).toSeq
+    assertEquals(x, y)
+    assertEquals(x.hashCode(), y.hashCode())
   }
 }
