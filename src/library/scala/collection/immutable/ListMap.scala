@@ -294,24 +294,50 @@ private[immutable] final class ListMapBuilder[K, V] extends mutable.ReusableBuil
     }
     this
   }
+  override def addAll(xs: IterableOnce[(K, V)]): this.type = {
+    if (isAliased) {
+      super.addAll(xs)
+    } else if (underlying.nonEmpty) {
+      xs match {
+        case m: collection.Map[K, V] =>
+          // if it is a map, then its keys will not collide with themselves.
+          // therefor we only need to check the already-existing elements for collisions.
+          // No need to check the entire list
 
-  override def addAll(xs: IterableOnce[(K, V)]): this.type = xs match {
-    case m: collection.Map[K, V] =>
-      // if it is a map, then its keys will not collide with themselves.
-      // therefor we only need to check the already-existing elements for collisions.
-      // No need to check the entire list
+          val iter = m.iterator
+          var newUnderlying = underlying
+          while (iter.hasNext) {
+            val next = iter.next()
+            if (!insertValueAtKeyReturnFound(underlying, next._1, next._2)) {
+              newUnderlying = new ListMap.Node[K, V](next._1, next._2, newUnderlying)
+            }
+          }
+          underlying = newUnderlying
+          this
 
-      val iter = m.iterator
-      var newUnderlying = underlying
-      while (iter.hasNext) {
-        val next = iter.next()
-        if (!insertValueAtKeyReturnFound(underlying, next._1, next._2)) {
-          newUnderlying = new ListMap.Node[K, V](next._1, next._2, newUnderlying)
-        }
+        case _ =>
+          super.addAll(xs)
       }
-      underlying = newUnderlying
-      this
+    } else xs match {
+      case lhm: collection.mutable.LinkedHashMap[K, V] =>
+        // special-casing LinkedHashMap avoids creating of Iterator and tuples for each key-value
+        var firstEntry = lhm._firstEntry
+        while (firstEntry ne null) {
+          underlying = new ListMap.Node(firstEntry.key, firstEntry.value, underlying)
+          firstEntry = firstEntry.later
+        }
+        this
 
-    case _ => super.addAll(xs)
+      case _: collection.Map[K, V] | _: collection.MapView[K, V] =>
+        val iter = xs.iterator
+        while (iter.hasNext) {
+          val (k, v) = iter.next()
+          underlying = new ListMap.Node(k, v, underlying)
+        }
+
+        this
+      case _ =>
+        super.addAll(xs)
+    }
   }
 }
