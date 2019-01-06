@@ -15,7 +15,6 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
-
 import scala.collection.mutable.ReusableBuilder
 import scala.runtime.Statics.releaseFence
 
@@ -217,9 +216,31 @@ object ListMap extends MapFactory[ListMap] {
 
   private object EmptyListMap extends ListMap[Any, Nothing]
 
+  def from_old[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] = (newBuilder[K, V] ++= it).result()
+
   def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
     it match {
       case lm: ListMap[K, V] => lm
+      case lhm: collection.mutable.LinkedHashMap[K, V] =>
+        // by directly iterating through LinkedHashMap entries, we save creating intermediate tuples for each
+        // key-value pair
+        var current: ListMap[K, V] = empty[K, V]
+        var firstEntry = lhm._firstEntry
+        while (firstEntry ne null) {
+          current = new Node(firstEntry.key, firstEntry.value, current)
+          firstEntry = firstEntry.later
+        }
+        current
+      case _: collection.Map[K, V] | _: collection.MapView[K, V] =>
+        // when creating from a map, we need not handle duplicate keys, so we can just append each key-value to the end
+        var current: ListMap[K, V] = empty[K, V]
+        val iter = it.iterator
+        while (iter.hasNext) {
+          val (k, v) = iter.next()
+          current = new Node(k, v, current)
+        }
+        current
+
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
