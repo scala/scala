@@ -1,0 +1,5 @@
+px_2.scala:19: error: reference to X is ambiguous;
+it is both defined in package p and available as class X in package q
+      implicitly[T[X]]   // ambiguous
+                   ^
+one error found
