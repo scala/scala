@@ -89,4 +89,19 @@ class RangeTest {
     assertEquals(20, (20 to 1 by -1).min(Ordering.Int.reverse))
     assertEquals(1, (20 to 1 by -1).max(Ordering.Int.reverse))
   }
+
+  @Test
+  def testRangeEndsWith(): Unit = {
+    assertFalse((0 until 0).endsWith(List(-4, -3, -2, -1)))
+    assertTrue((-8 until -1).endsWith((-8 until -1).takeRight(1)))
+    assertTrue((0 until 0).endsWith(0 until 0))
+  }
+
+  @Test
+  def testRangeDrop(): Unit = {
+    assertTrue((0 until 0).iterator.drop(-4).toList.isEmpty)
+    assertEquals(4, (1 to 4).iterator.drop(-4).toList.size)
+  }
+
+
 }

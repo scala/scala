@@ -609,15 +609,17 @@ private class RangeIterator(
   }
 
   override def drop(n: Int): Iterator[Int] = {
-    val longPos = _next.toLong + step * n
-    if (step > 0) {
-      _next = Math.min(lastElement, longPos).toInt
-      _hasNext = longPos <= lastElement
+    if (n > 0) {
+      val longPos = _next.toLong + step * n
+      if (step > 0) {
+        _next = Math.min(lastElement, longPos).toInt
+        _hasNext = longPos <= lastElement
+      }
+      else if (step < 0) {
+        _next = Math.max(lastElement, longPos).toInt
+        _hasNext = longPos >= lastElement
+      }
     }
-    else if (step < 0) {
-      _next = Math.max(lastElement, longPos).toInt
-      _hasNext = longPos >= lastElement
-    }
-    this
+      this
   }
 }
