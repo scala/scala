@@ -42,34 +42,66 @@ object IndexedSeqView {
   @SerialVersionUID(3L)
   private final class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
     private[this] var current = 0
+    private[this] var remainder = self.size
     override def knownSize: Int = self.size - current
-    def hasNext = current < self.size
+    def hasNext = remainder > 0
     def next(): A =
       if (hasNext) {
         val r = self.apply(current)
         current += 1
+        remainder -= 1
         r
       } else Iterator.empty.next()
 
     override def drop(n: Int): Iterator[A] = {
-      if (n > 0) current = Math.min(self.size, current + n)
+      if (n > 0) {
+        current += n
+        remainder = Math.max(0, remainder - n)
+      }
+      this
+    }
+
+    override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+
+      def formatRange(value : Int) : Int = if (value < 0) 0 else if (value > remainder) remainder else value
+
+      val formatFrom = formatRange(from)
+      val formatUntil = formatRange(until)
+      remainder = Math.max(0, formatUntil - formatFrom)
+      current = current + formatFrom
       this
     }
   }
   @SerialVersionUID(3L)
   private final class IndexedSeqViewReverseIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = self.size - 1
-    def hasNext: Boolean = pos >= 0
+    private[this] var remainder = self.size
+    def hasNext: Boolean = remainder > 0
     def next(): A =
       if (pos < 0) throw new NoSuchElementException
       else {
         val r = self(pos)
         pos -= 1
+        remainder -= 1
         r
       }
 
     override def drop(n: Int): Iterator[A] = {
-      if (n > 0) pos = Math.max( -1, pos - n)
+      if (n > 0) {
+        pos -= n
+        remainder = Math.max(0, remainder - n)
+      }
+      this
+    }
+
+
+    override def sliceIterator(from: Int, until: Int): Iterator[A] = {
+      val startCutoff = pos
+      val untilCutoff = startCutoff - remainder + 1
+      val nextStartCutoff = if (from < 0) startCutoff else if (startCutoff - from < 0) 0 else startCutoff - from
+      val nextUntilCutoff = if (until < 0) startCutoff else if (startCutoff - until < untilCutoff) untilCutoff else startCutoff - until + 1
+      remainder = Math.max(0, nextStartCutoff - nextUntilCutoff + 1)
+      pos = nextStartCutoff
       this
     }
   }
