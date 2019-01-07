@@ -16,8 +16,8 @@ class ListMapTest {
 
   @Test
   def hasCorrectBuilder(): Unit = {
-    val m = ListMap("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "2.2", "d" -> "4")
-    assertEquals(List("a" -> "1", "c" -> "3", "b" -> "2.2", "d" -> "4"), m.toList)
+    val m = ListMap("a" -> "1", "b" -> "2.2", "c" -> "3", "b" -> "2.2", "d" -> "4")
+    assertEquals(List("a" -> "1", "b" -> "2.2", "c" -> "3", "d" -> "4"), m.toList)
   }
 
   @Test
@@ -33,7 +33,7 @@ class ListMapTest {
   def hasCorrectAddRemove(): Unit = {
     val m = ListMap(1 -> 1, 2 -> 2, 3 -> 3)
     assertEquals(ListMap(1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4), m + (4 -> 4))
-    assertEquals(ListMap(1 -> 1, 3 -> 3, 2 -> 4), m + (2 -> 4))
+    assertEquals(ListMap(1 -> 1, 2 -> 4, 3 -> 3), m + (2 -> 4))
     assertEquals(ListMap(1 -> 1, 2 -> 2, 3 -> 3), m + (2 -> 2))
     assertEquals(ListMap(2 -> 2, 3 -> 3), m - 1)
     assertEquals(ListMap(1 -> 1, 3 -> 3), m - 2)
