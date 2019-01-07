@@ -511,7 +511,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       private def isStationaryParamRef(sym: Symbol) = (
         isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
-        !sym.isSetter
+        !sym.isSetter &&
+        !sym.isVariable
       )
 
       /*
