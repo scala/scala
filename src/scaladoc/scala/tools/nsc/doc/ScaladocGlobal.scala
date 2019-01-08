@@ -7,6 +7,7 @@ package scala.tools.nsc
 package doc
 
 import reporters.Reporter
+import scala.tools.nsc.typechecker.MacroAnnotationNamers
 
 trait ScaladocGlobalTrait extends Global {
   outer =>
@@ -46,7 +47,7 @@ class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(
   override def forScaladoc = true
   override def createJavadoc = if (settings.docNoJavaComments.value) false else true
 
-  override lazy val analyzer = new {
-    val global: ScaladocGlobal.this.type = ScaladocGlobal.this
-  } with ScaladocAnalyzer
+  override lazy val analyzer =
+    if (settings.YmacroAnnotations) new { val global: ScaladocGlobal.this.type = ScaladocGlobal.this } with ScaladocAnalyzer with MacroAnnotationNamers
+    else new { val global: ScaladocGlobal.this.type = ScaladocGlobal.this } with ScaladocAnalyzer
 }
