@@ -54,6 +54,12 @@ trait Positions extends api.Positions { self: SymbolTable =>
       while (rest ne Nil) {
         val head = rest.head
         rest = rest.tail
+        // workaround for a MemberDef's position not wrapping its annotations (scala/bug#11060)
+        // TODO: should we change the range pos for a member def to actually wrap the annotations/modifiers?
+        head match {
+          case md: MemberDef => rest = md.mods.annotations ::: rest
+          case _ =>
+        }
         val pos = head.pos
         if (pos.isRange) {
           min = Math.min(min, pos.start)
