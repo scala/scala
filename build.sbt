@@ -204,7 +204,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     "-doc-version", versionProperties.value.canonicalVersion,
     "-doc-title", description.value,
     "-sourcepath", (baseDirectory in ThisBuild).value.toString,
-    "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH}.scala#L1"
+    "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
   incOptions := (incOptions in LocalProject("root")).value,
   apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
