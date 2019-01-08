@@ -62,10 +62,10 @@ final class VectorMap[K, +V] private (
     }
   }
 
-  override def withDefault[V1 >: V](d: K => V1): Map.WithDefault[K, V1] =
+  override def withDefault[V1 >: V](d: K => V1): Map[K, V1] =
     new Map.WithDefault(this, d)
 
-  override def withDefaultValue[V1 >: V](d: V1): Map.WithDefault[K, V1] =
+  override def withDefaultValue[V1 >: V](d: V1): Map[K, V1] =
     new Map.WithDefault[K, V1](this, _ => d)
 
   def get(key: K): Option[V] = underlying.get(key) match {

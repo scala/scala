@@ -76,7 +76,7 @@ class HashMapTest {
   def testWithDefault: Unit = {
     val m1 = HashMap(1 -> "a", 2 -> "b")
 
-    val m2: Map.WithDefault[Int, String] =
+    val m2: Map[Int, String] =
       m1.withDefault(i => (i + 1).toString)
         .updated(1, "aa")
         .updated(100, "bb")
@@ -90,10 +90,10 @@ class HashMapTest {
     assertEquals(m2(501), "c")
     assertEquals(m2(502), "503")
 
-    val m3: Map.WithDefault[Int, String] = m2 - 1
+    val m3: Map[Int, String] = m2 - 1
     assertEquals(m3(1), "2")
 
-    val m4: Map.WithDefault[Int, String] = m3 -- List(2, 100)
+    val m4: Map[Int, String] = m3 -- List(2, 100)
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }

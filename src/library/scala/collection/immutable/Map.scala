@@ -41,7 +41,7 @@ trait Map[K, +V]
     *  @param d     the function mapping keys to values, used for non-present keys
     *  @return      a wrapper of the map with a default value
     */
-  def withDefault[V1 >: V](d: K => V1): Map.WithDefault[K, V1] = new Map.WithDefault[K, V1](this, d)
+  def withDefault[V1 >: V](d: K => V1): Map[K, V1] = new Map.WithDefault[K, V1](this, d)
 
   /** The same map with a given default value.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
@@ -52,7 +52,7 @@ trait Map[K, +V]
     *  @param d     default value used for non-present keys
     *  @return      a wrapper of the map with a default value
     */
-  def withDefaultValue[V1 >: V](d: V1): Map.WithDefault[K, V1] = new Map.WithDefault[K, V1](this, _ => d)
+  def withDefaultValue[V1 >: V](d: V1): Map[K, V1] = new Map.WithDefault[K, V1](this, _ => d)
 }
 
 /** Base trait of immutable Maps implementations
