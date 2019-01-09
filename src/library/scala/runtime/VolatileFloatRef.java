@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class VolatileFloatRef implements java.io.Serializable {
+public final class VolatileFloatRef implements java.io.Serializable {
     private static final long serialVersionUID = -5793980990371366933L;
 
     volatile public float elem;

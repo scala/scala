@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class FloatRef implements java.io.Serializable {
+public final class FloatRef implements java.io.Serializable {
     private static final long serialVersionUID = -5793980990371366933L;
 
     public float elem;

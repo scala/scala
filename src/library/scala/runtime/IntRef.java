@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class IntRef implements java.io.Serializable {
+public final class IntRef implements java.io.Serializable {
     private static final long serialVersionUID = 1488197132022872888L;
 
     public int elem;

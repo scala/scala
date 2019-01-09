@@ -12,7 +12,7 @@
 
 package scala.runtime;
 
-public class VolatileDoubleRef implements java.io.Serializable {
+public final class VolatileDoubleRef implements java.io.Serializable {
     private static final long serialVersionUID = 8304402127373655534L;
 
     volatile public double elem;

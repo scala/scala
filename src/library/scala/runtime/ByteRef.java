@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class ByteRef implements java.io.Serializable {
+public final class ByteRef implements java.io.Serializable {
     private static final long serialVersionUID = -100666928446877072L;
 
     public byte elem;
