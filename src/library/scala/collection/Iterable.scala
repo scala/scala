@@ -340,7 +340,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /** A view over a slice of the elements of this collection. */
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
-  @`inline` final def view(from: Int, until: Int): View[A] = view.slice(from, until)
+  def view(from: Int, until: Int): View[A] = view.slice(from, until)
 
   /** Transposes this $coll of iterable collections into
     *  a $coll of ${coll}s.
