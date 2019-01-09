@@ -1396,15 +1396,15 @@ type $T$ by evaluating the expression to which $m$ is bound.
 If the method takes only implicit parameters, implicit
 arguments are passed following the rules [here](07-implicits.html#implicit-parameters).
 
-###### Eta Expansion
-Otherwise, if the method is not a constructor,
-and the expected type $\mathit{pt}$ is a function type
-$(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
-is performed on the expression $e$.
-
 ###### Empty Application
 Otherwise, if $e$ has method type $()T$, it is implicitly applied to the empty
 argument list, yielding $e()$.
+
+###### Eta Expansion
+Otherwise, if the method is not a constructor,
+and the expected type $\mathit{pt}$ is a function type (potentially after sam conversion)
+$(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
+is performed on the expression $e$.
 
 ### Overloading Resolution
 
