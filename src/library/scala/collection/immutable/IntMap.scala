@@ -324,7 +324,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   override def concat[V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] =
     super.concat(that).asInstanceOf[IntMap[V1]] // Already has corect type but not declared as such
 
-  override def ++ [V1 >: T](that: collection.Iterable[(Int, V1)]): IntMap[V1] = concat(that)
+  override def ++ [V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] = concat(that)
 
   def collect[V2](pf: PartialFunction[(Int, T), (Int, V2)]): IntMap[V2] =
     strictOptimizedCollect(IntMap.newBuilder[V2], pf)

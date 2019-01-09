@@ -462,7 +462,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     lm
   }
 
-  override def ++ [V1 >: V](xs: scala.collection.Iterable[(Long, V1)]): LongMap[V1] = concat(xs)
+  override def ++ [V1 >: V](xs: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] = concat(xs)
 
   @deprecated("Use m.clone().addOne(k,v) instead of m.updated(k, v)", "2.13.0")
   override def updated[V1 >: V](key: Long, value: V1): LongMap[V1] =
