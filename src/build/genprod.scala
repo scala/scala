@@ -102,7 +102,7 @@ import genprod._
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
 object FunctionZero extends Function(0) {
-  override def genprodString  = "\n// genprod generated these sources at: " + new java.util.Date()
+  override def genprodString  = "\n// genprod generated these sources at: " + java.time.Instant.now()
   override def covariantSpecs = "@specialized(Specializable.Primitives) "
   override def descriptiveComment = "  " + functionNTemplate.format("javaVersion", "anonfun0",
 """
