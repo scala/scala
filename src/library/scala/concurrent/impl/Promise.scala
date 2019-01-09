@@ -11,7 +11,7 @@
  */
 
 package scala.concurrent.impl
-import scala.concurrent.{ ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, Batchable }
+import scala.concurrent.{ Batchable, ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, OnCompleteRunnable }
 import Future.InternalCallbackExecutor
 import scala.concurrent.duration.Duration
 import scala.annotation.{ tailrec, switch }
@@ -76,8 +76,10 @@ private[concurrent] object Promise {
           if (compareAndSet(current, target)) target // Link
           else compressed(current = get(), target = target, owner = owner) // Retry
         } else if (value.isInstanceOf[Link[T]]) compressed(current = current, target = value.asInstanceOf[Link[T]].get(), owner = owner) // Compress
-        else /*if (value.isInstanceOf[Try[T]])*/
-          owner.unlink(value.asInstanceOf[Try[T]], owner) // Discard links
+        else /*if (value.isInstanceOf[Try[T]])*/ {
+          owner.unlink(value.asInstanceOf[Try[T]]) // Discard links
+          owner
+        }
       }
     }
 
@@ -111,7 +113,7 @@ private[concurrent] object Promise {
     final def this() = this(Noop: AnyRef)
 
     /**
-     * Returns the associaed `Future` with this `Promise`
+     * Returns the associated `Future` with this `Promise`
      */
     override final def future: Future[T] = this
 
@@ -246,9 +248,10 @@ private[concurrent] object Promise {
       } else /* if(state.isInstanceOf[Try[T]]) */ false
 
     override final def completeWith(other: Future[T]): this.type = {
-      if ((other ne this) && !get().isInstanceOf[Try[T]]) {
-        val r = if (other.isInstanceOf[DefaultPromise[T]]) other.asInstanceOf[DefaultPromise[T]].value0 else null
-        if (r ne null) tryComplete(r)
+      val state = get()
+      if ((other ne this) && !state.isInstanceOf[Try[T]]) {
+        val resolved = if (other.isInstanceOf[DefaultPromise[T]]) other.asInstanceOf[DefaultPromise[T]].value0 else null
+        if (resolved ne null) tryComplete0(state, resolved)
         else super.completeWith(other)
       }
 
@@ -298,9 +301,7 @@ private[concurrent] object Promise {
         if (state.isInstanceOf[Try[T]]) {
           if(!target.tryComplete0(target.get(), state.asInstanceOf[Try[T]]))
             throw new IllegalStateException("Cannot link completed promises together")
-        } else if (state.isInstanceOf[Link[T]]) {
-          state.asInstanceOf[Link[T]].promise(this).linkRootOf(target, link)
-        } else /*if (state.isInstanceOf[Callbacks[T]]) */ {
+        } else if (state.isInstanceOf[Callbacks[T]]) {
           val l = if (link ne null) link else new Link(target)
           val p = l.promise(this)
           if (p ne this) {
@@ -308,23 +309,22 @@ private[concurrent] object Promise {
               if (state ne Noop) p.dispatchOrAddCallbacks(p.get(), state.asInstanceOf[Callbacks[T]]) // Noop-check is important here
             } else linkRootOf(p, l)
           }
-        }
+        } else /* if (state.isInstanceOf[Link[T]]) */
+          state.asInstanceOf[Link[T]].promise(this).linkRootOf(target, link)
       }
 
     /**
      * Unlinks (removes) the link chain if the root is discovered to be already completed,
      * and completes the `owner` with that result.
      **/
-    @tailrec private[concurrent] final def unlink(resolved: Try[T], originalOwner: DefaultPromise[T]): originalOwner.type = {
+    @tailrec private[concurrent] final def unlink(resolved: Try[T]): Unit = {
       val state = get()
       if (state.isInstanceOf[Link[T]]) {
         val next = if (compareAndSet(state, resolved)) state.asInstanceOf[Link[T]].get() else this
-        next.unlink(resolved, originalOwner)
+        next.unlink(resolved)
       } else {
         if(state.isInstanceOf[Callbacks[T]])
           tryComplete0(state, resolved) // Already resolved
-
-        originalOwner
       }
     }
   }
@@ -364,11 +364,10 @@ private[concurrent] object Promise {
     private[this] final var _fun: Any => Any,
     private[this] final var _arg: AnyRef,
     private[this] final val _xform: Byte
-  ) extends DefaultPromise[T]() with Callbacks[F] with Runnable with Batchable {
+  ) extends DefaultPromise[T]() with Callbacks[F] with Runnable with Batchable with OnCompleteRunnable {
     final def this(xform: Int, f: _ => _, ec: ExecutionContext) = this(f.asInstanceOf[Any => Any], ec.prepare(): AnyRef, xform.toByte)
 
-    // Enables the possibility of checking what type of transformation this is from the outside
-    final def xform: Byte = _xform
+    final def benefitsFromBatching: Boolean = _xform != Xform_onComplete && _xform != Xform_foreach
 
     // Gets invoked when a value is available, schedules it to be run():ed by the ExecutionContext
     // submitWithValue *happens-before* run(), through ExecutionContext.execute.
@@ -381,6 +380,7 @@ private[concurrent] object Promise {
       catch {
         case t: Throwable => handleFailure(t, e)
       }
+
       this
     }
 
@@ -388,7 +388,7 @@ private[concurrent] object Promise {
       _fun = null // allow to GC
       _arg = null // see above
       val wasInterrupted = t.isInstanceOf[InterruptedException]
-      if (NonFatal(t) || wasInterrupted) {
+      if (wasInterrupted || NonFatal(t)) {
         val completed = tryComplete0(get(), resolve(Failure(t)))
         if (completed && wasInterrupted) Thread.currentThread.interrupt()
         if (!completed && (e ne null)) e.reportFailure(t)

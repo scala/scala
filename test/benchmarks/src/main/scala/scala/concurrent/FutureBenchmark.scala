@@ -1,7 +1,7 @@
 package scala.concurrent
 
 import scala.concurrent.duration._
-import java.util.concurrent.{ TimeUnit, Executor, Executors, ExecutorService, ForkJoinPool, CountDownLatch }
+import java.util.concurrent.{ TimeUnit, Executor, ThreadPoolExecutor, ExecutorService, ForkJoinPool, CountDownLatch, LinkedBlockingQueue }
 import org.openjdk.jmh.infra.Blackhole
 import org.openjdk.jmh.annotations._
 import scala.util.{ Try, Success, Failure }
@@ -33,13 +33,27 @@ abstract class AbstractBaseFutureBenchmark {
 
   @Setup(Level.Trial)
   def startup: Unit = {
-    val e = pool match {
+    executionContext = pool match {
       case "fjp" =>
-        val fjp = new ForkJoinPool(threads)
+        val fjp = new ForkJoinPool(threads) with ExecutionContext with BatchingExecutor {
+          final override def submitAsync(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
+          final override def isAsync = true
+          final override def batchable(runnable: Runnable): Boolean =
+            if (runnable.isInstanceOf[impl.Promise.Transformation[_,_]]) runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching
+            else super.batchable(runnable)
+          override final def reportFailure(t: Throwable) = t.printStackTrace(System.err)
+        }
         executorService = fjp // we want to close this
         fjp
       case "fix" =>
-        val fix = Executors.newFixedThreadPool(threads)
+        val fix = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue[Runnable]()) with ExecutionContext with BatchingExecutor {
+          final override def submitAsync(runnable: Runnable): Unit = super[ThreadPoolExecutor].execute(runnable)
+          final override def isAsync = true
+          final override def batchable(runnable: Runnable): Boolean =
+            if (runnable.isInstanceOf[impl.Promise.Transformation[_,_]]) runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching
+            else super.batchable(runnable)
+          override final def reportFailure(t: Throwable) = t.printStackTrace(System.err)
+        }
         executorService = fix // we want to close this
         fix
       case "gbl" =>
@@ -49,18 +63,8 @@ abstract class AbstractBaseFutureBenchmark {
         System.setProperty("scala.concurrent.context.maxThreads", threads.toString)
         ExecutionContext.global
       case "fie" =>
-        scala.concurrent.Future.InternalCallbackExecutor.asInstanceOf[Executor]
+        scala.concurrent.Future.InternalCallbackExecutor
     }
-
-    executionContext =
-      if (e.isInstanceOf[ExecutionContext]) e.asInstanceOf[ExecutionContext]
-      else { // TODO: may want to extend this in the implementations directly
-        new ExecutionContext with BatchingExecutor {
-          private[this] final val g = e
-          override final def unbatchedExecute(r: Runnable) = g.execute(r)
-          override final def reportFailure(t: Throwable) = t.printStackTrace(System.err)
-        }
-      }
   }
 
   @TearDown(Level.Trial)
@@ -84,11 +88,8 @@ abstract class OpFutureBenchmark extends AbstractBaseFutureBenchmark {
 
   final val pre_f_p: Promise[Result] = Promise.fromTry(aFailure)
 
-  @inline protected final def await[T](a: Future[T]): Boolean = {
-    val v = a.value
-    val r = if (v eq None) Await.ready(a, timeout).value else v
-    r.get.getClass eq classOf[Success[T]]
-  }
+  @inline protected final def await[T](a: Future[T]): Boolean =
+    (a.value ne None) || (Await.ready(a, timeout) eq a)
 }
 
 class NoopFutureBenchmark extends OpFutureBenchmark {

@@ -88,11 +88,10 @@ object BlockContext {
    **/
   final def withBlockContext[T](blockContext: BlockContext)(body: => T): T = {
     val old = contextLocal.get // can be null
-    try {
+    if (old eq blockContext) body
+    else {
       contextLocal.set(blockContext)
-      body
-    } finally {
-      contextLocal.set(old)
+      try body finally contextLocal.set(old)
     }
   }
 
@@ -102,7 +101,10 @@ object BlockContext {
    **/
   final def usingBlockContext[I, T](blockContext: BlockContext)(f: BlockContext => T): T = {
     val old = contextLocal.get // can be null
-    contextLocal.set(blockContext)
-    try f(prefer(old)) finally contextLocal.set(old)
+    if (old eq blockContext) f(prefer(old))
+    else {
+      contextLocal.set(blockContext)
+      try f(prefer(old)) finally contextLocal.set(old)
+    }
   }
 }
