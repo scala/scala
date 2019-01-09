@@ -485,7 +485,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
               def wrapInDefaultLabelDef(cd: CaseDef): CaseDef =
                 if (needDefaultLabel) deriveCaseDef(cd){ b =>
                   // TODO: can b.tpe ever be null? can't really use pt, see e.g. pos/t2683 or cps/match1.scala
-                  defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe else pt)
+                  defaultLabel setInfo MethodType(Nil, if (b.tpe != null) b.tpe.deconst else pt)
                   LabelDef(defaultLabel, Nil, b)
                 } else cd
 
@@ -507,8 +507,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
       // The tree itself can be a literal, an ident, a selection, ...
       object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
-        case FoldableConstantType(const) if const.isIntRange =>
-          Some(Literal(Constant(const.intValue))) // TODO: Java 7 allows strings in switches
+        case const: ConstantType if const.value.isIntRange =>
+          Some(Literal(Constant(const.value.intValue))) // TODO: Java 7 allows strings in switches
         case _ => None
       }}
 

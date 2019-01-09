@@ -303,10 +303,10 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     private def newSuperLazy(lazyCallingSuper: Symbol, site: Type, lazyVar: Symbol) = {
       lazyCallingSuper.asTerm.referenced = lazyVar
 
-      val tp = site.memberInfo(lazyCallingSuper)
+      val tp = resultTypeMemberOfDeconst(site, lazyCallingSuper)
 
-      lazyVar setInfo tp.resultType
-      lazyCallingSuper setInfo tp
+      lazyVar setInfo tp
+      lazyCallingSuper setInfo MethodType(Nil, tp)
     }
 
     private def classNeedsInfoTransform(cls: Symbol): Boolean = {
@@ -387,7 +387,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         def newModuleVarMember(module: Symbol): TermSymbol = {
           val moduleVar =
             (clazz.newVariable(nme.moduleVarName(module.name.toTermName), module.pos.focus, MODULEVAR | ModuleOrLazyFieldFlags)
-             setInfo site.memberType(module).resultType
+             setInfo resultTypeMemberOfDeconst(site, module)
              addAnnotation VolatileAttr)
 
           moduleOrLazyVarOf(module) = moduleVar
@@ -396,7 +396,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         }
 
         def newLazyVarMember(member: Symbol): TermSymbol =
-          Fields.this.newLazyVarMember(clazz, member, site.memberType(member).resultType)
+          Fields.this.newLazyVarMember(clazz, member, resultTypeMemberOfDeconst(site, member))
 
         // a module does not need treatment here if it's static, unless it has a matching member in a superclass
         // a non-static method needs a module var
@@ -528,6 +528,12 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   }
 
 
+  // Deconst the result type of the getter (not relevant for modules, but we'll just be consistent),
+  // since we're after typers -- it's between unnecessary and wrong to keep constant types for result types of methods
+  // constant folding has already happened during typer. We can keep literal types around until erasure,
+  // but we shouldn't assume expressions of these types to be pure/constant foldable. (See pos/t10768.scala)
+  private def resultTypeMemberOfDeconst(site: Type, acc: Symbol) = site.memberType(acc).resultType.deconst
+
   // done by uncurry's info transformer
   // instead of forcing every member's info to run said transformer, duplicate the flag update logic...
   def nonStaticModuleToMethod(module: Symbol): Unit =
@@ -579,7 +585,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       import scala.reflect.{NameTransformer => nx}
       val owner = lazySym.owner
 
-      val lazyValType = lazySym.tpe.resultType
+      val lazyValType = lazySym.info.resultType.deconst
       val refClass    = lazyHolders.getOrElse(lazyValType.typeSymbol, LazyRefClass)
       val isUnit      = refClass == LazyUnitClass
       val refTpe      = if (refClass != LazyRefClass) refClass.tpe else appliedType(refClass.typeConstructor, List(lazyValType))
