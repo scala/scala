@@ -193,7 +193,9 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     } else throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${sz-1})")
 
   override def subtractOne(elem: T): this.type = {
-    headptr.subtractOne(elem, this)
+    if (headptr.subtractOne(elem, this)) {
+      sz -= 1
+    }
     this
   }
 
@@ -333,16 +335,16 @@ object UnrolledBuffer extends StrictOptimizedClassTagSeqFactory[UnrolledBuffer] 
         r
       } else next.remove(idx - size, buffer)
 
-    @tailrec final def subtractOne(elem: T, buffer: UnrolledBuffer[T]): Unit = {
+    @tailrec final def subtractOne(elem: T, buffer: UnrolledBuffer[T]): Boolean = {
       var i = 0
       while (i < size) {
         if(array(i) == elem) {
           remove(i, buffer)
-          return ()
+          return true
         }
         i += 1
       }
-      if(next ne null) next.subtractOne(elem, buffer)
+      if(next ne null) next.subtractOne(elem, buffer) else false
     }
 
     // shifts left elements after `leftb` (overwrites `leftb`)
