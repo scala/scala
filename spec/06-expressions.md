@@ -931,7 +931,8 @@ be implemented in different ways for different carrier types.
 
 The translation scheme is as follows.  In a first step, every
 generator `$p$ <- $e$`, where $p$ is not [irrefutable](08-pattern-matching.html#patterns)
-for the type of $e$ is replaced by
+for the type of $e$, and $p$ is some pattern other than a simple name
+or a name followed by a colon and a type, is replaced by
 
 ```scala
 $p$ <- $e$.withFilter { case $p$ => true; case _ => false }
