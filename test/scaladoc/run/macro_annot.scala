@@ -7,12 +7,15 @@ object Test extends ScaladocModelTest {
 
   def scaladocSettings = "-Ymacro-annotations"
 
-  override def model: Option[Universe] = {
-    val docf = newDocFactory
+  override def extraSettings = super.extraSettings + s" -cp ${testOutput.path}"
 
-    // first compile the macro
-    new docf.compiler.Run() compile List(new java.io.File(resourcePath.toString + "/" + "simulacrum_1.scala").getPath)
-    docf.makeUniverse(Right(code))
+  override def model: Option[Universe] = {
+    val macroCode = new reflect.io.File(new java.io.File(resourcePath.toString + "/" + "simulacrum_1.scala")).slurp()
+
+    // before generating the model, first compile the macro (using a full compiler)
+    compileString(newCompiler())(macroCode)
+
+    super.model
   }
 
   def testModel(rootPackage: Package) = {
