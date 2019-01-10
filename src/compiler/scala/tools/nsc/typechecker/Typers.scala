@@ -2018,6 +2018,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } else typedModifiers(vdef.mods)
 
       sym.annotations.map(_.completeInfo())
+      sym.filterAnnotations(_ != UnmappableAnnotation)
+
       val tpt1 = checkNoEscaping.privates(this, sym, typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
 
@@ -2244,6 +2246,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       warnTypeParameterShadow(tparams1, meth)
 
       meth.annotations.map(_.completeInfo())
+      // we only have to move annotations around for accessors -- see annotSig as used by AccessorTypeCompleter and ValTypeCompleter
+      if (meth.isAccessor) meth.filterAnnotations(_ != UnmappableAnnotation)
+
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))

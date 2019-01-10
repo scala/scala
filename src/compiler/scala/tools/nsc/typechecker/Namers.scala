@@ -858,7 +858,7 @@ trait Namers extends MethodSynthesis {
         // on these flag checks so it can't hurt.
         def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
 
-        val annotations = annotSig(tree.mods.annotations)
+        val annotations = annotSig(tree.mods.annotations, _ => true)
 
         val tp = typeSig(tree, annotations)
 
@@ -922,15 +922,19 @@ trait Namers extends MethodSynthesis {
         val annots =
           if (mods.annotations.isEmpty) Nil
           else {
-            val annotSigs = annotSig(mods.annotations)
-            if (isGetter) filterAccessorAnnots(annotSigs, tree) // if this is really a getter, retain annots targeting either field/getter
-            else annotSigs filter annotationFilter(FieldTargetClass, !mods.isParamAccessor)
+            // if this is really a getter, retain annots targeting either field/getter
+            val pred: AnnotationInfo => Boolean =
+              if (isGetter) accessorAnnotsFilter(tree.mods)
+              else annotationFilter(FieldTargetClass, !mods.isParamAccessor)
+            annotSig(mods.annotations, pred)
           }
 
         // must use typeSig, not memberSig (TODO: when do we need to switch namers?)
         val sig = typeSig(tree, annots)
 
         fieldOrGetterSym setInfo (if (isGetter) NullaryMethodType(sig) else sig)
+
+        checkBeanAnnot(tree, annots)
 
         validate(fieldOrGetterSym)
       }
@@ -970,17 +974,17 @@ trait Namers extends MethodSynthesis {
             val mods = valDef.mods
             val annots =
               if (mods.annotations.isEmpty) Nil
-              else filterAccessorAnnots(annotSig(mods.annotations), valDef, isSetter, isBean)
+              else annotSig(mods.annotations, accessorAnnotsFilter(valDef.mods, isSetter, isBean))
 
             // for a setter, call memberSig to attribute the parameter (for a bean, we always use the regular method sig completer since they receive method types)
             // for a regular getter, make sure it gets a NullaryMethodType (also, no need to recompute it: we already have the valSig)
             val sig =
-            if (isSetter || isBean) typeSig(ddef, annots)
-            else {
-              if (annots.nonEmpty) annotate(accessorSym, annots)
+              if (isSetter || isBean) typeSig(ddef, annots)
+              else {
+                if (annots.nonEmpty) annotate(accessorSym, annots)
 
-              NullaryMethodType(valSig)
-            }
+                NullaryMethodType(valSig)
+              }
 
             accessorSym setInfo pluginsTypeSigAccessor(sig, typer, valDef, accessorSym)
 
@@ -988,12 +992,23 @@ trait Namers extends MethodSynthesis {
               if (isSetter) ddef.rhs.setType(ErrorType)
               else GetterDefinedTwiceError(accessorSym)
 
+
             validate(accessorSym)
 
           case _ =>
             throw new TypeError(valDef.pos, s"Internal error: no synthetic tree found for bean accessor $accessorSym")
         }
       }
+    }
+
+    private def checkBeanAnnot(tree: ValDef, annotSigs: List[AnnotationInfo]) = {
+      val mods = tree.mods
+      // neg/t3403: check that we didn't get a sneaky type alias/renamed import that we couldn't detect
+      // because we only look at names during synthesis (in deriveBeanAccessors)
+      // (TODO: can we look at symbols earlier?)
+      val hasNamedBeanAnnots = (mods hasAnnotationNamed tpnme.BeanPropertyAnnot) || (mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot)
+      if (!hasNamedBeanAnnots && annotSigs.exists(ann => (ann.matches(BeanPropertyAttr)) || ann.matches(BooleanBeanPropertyAttr)))
+        BeanPropertyAnnotationLimitationError(tree)
     }
 
     // see scala.annotation.meta's package class for more info
@@ -1007,16 +1022,7 @@ trait Namers extends MethodSynthesis {
     //
     // TODO: these defaults can be surprising for annotations not meant for accessors/fields -- should we revisit?
     // (In order to have `@foo val X` result in the X getter being annotated with `@foo`, foo needs to be meta-annotated with @getter)
-    private def filterAccessorAnnots(annotSigs: List[global.AnnotationInfo], tree: global.ValDef, isSetter: Boolean = false, isBean: Boolean = false): List[AnnotationInfo] = {
-      val mods = tree.mods
-      if (!isBean) {
-        // neg/t3403: check that we didn't get a sneaky type alias/renamed import that we couldn't detect because we only look at names during synthesis
-        // (TODO: can we look at symbols earlier?)
-        if (!((mods hasAnnotationNamed tpnme.BeanPropertyAnnot) || (mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot))
-          && annotSigs.exists(ann => (ann.matches(BeanPropertyAttr)) || ann.matches(BooleanBeanPropertyAttr)))
-          BeanPropertyAnnotationLimitationError(tree)
-      }
-
+    private def accessorAnnotsFilter(mods: Modifiers, isSetter: Boolean = false, isBean: Boolean = false): AnnotationInfo => Boolean = {
       val canTriageAnnotations = isSetter || !fields.getterTreeAnnotationsTargetFieldAndGetter(owner, mods)
 
       def filterAccessorAnnotations: AnnotationInfo => Boolean =
@@ -1033,9 +1039,8 @@ trait Namers extends MethodSynthesis {
           annotationFilter(FieldTargetClass, defaultRetention = true)(ann) ||
             annotationFilter(BeanGetterTargetClass, defaultRetention = true)(ann))
 
-      annotSigs filter (if (isBean) filterBeanAccessorAnnotations else filterAccessorAnnotations)
+      if (isBean) filterBeanAccessorAnnotations else filterAccessorAnnotations
     }
-
 
     def selfTypeCompleter(tree: Tree) = new SelfTypeCompleter(tree)
     class SelfTypeCompleter(tree: Tree) extends TypeCompleterBase(tree) {
@@ -1848,13 +1853,14 @@ trait Namers extends MethodSynthesis {
      * they were added only in typer, depending on the compilation order, they may
      * or may not be visible.
      */
-    def annotSig(annotations: List[Tree]): List[AnnotationInfo] =
+    def annotSig(annotations: List[Tree], pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
       annotations filterNot (_ eq null) map { ann =>
         val ctx = typer.context
         // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
         AnnotationInfo lazily {
           enteringTyper {
-            newTyper(ctx.makeNonSilent(ann)) typedAnnotation ann
+            val annotSig = newTyper(ctx.makeNonSilent(ann)) typedAnnotation ann
+            if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
           }
         }
       }

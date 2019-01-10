@@ -243,7 +243,7 @@ trait Reshape {
       }
 
       def extractOriginal: PartialFunction[Tree, Tree] = { case Apply(Select(New(tpt), _), _) => tpt }
-      assert(extractOriginal.isDefinedAt(ann.original), showRaw(ann.original))
+      assert(extractOriginal.isDefinedAt(ann.original), s"$ann has unexpected original ${showRaw(ann.original)}" )
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
@@ -278,7 +278,10 @@ trait Reshape {
             var flags1 = flags & ~LOCAL
             if (!ddef.symbol.isPrivate) flags1 = flags1 & ~PRIVATE
             val privateWithin1 = ddef.mods.privateWithin
-            val annotations1 = accessors(vdef).foldLeft(annotations)((curr, acc) => curr ++ (acc.symbol.annotations map toPreTyperAnnotation))
+            val annotations1 =
+              accessors(vdef).foldLeft(annotations){ (curr, acc) =>
+                curr ++ (acc.symbol.annotations.filterNot(_ == UnmappableAnnotation ).map(toPreTyperAnnotation))
+              }
             Modifiers(flags1, privateWithin1, annotations1) setPositions mods.positions
           } else {
             mods
