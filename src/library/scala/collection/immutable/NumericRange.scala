@@ -49,7 +49,8 @@ sealed class NumericRange[T](
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
-    with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]] { self =>
+    with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
+    with Serializable { self =>
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
 
@@ -239,8 +240,6 @@ sealed class NumericRange[T](
     val stepped = if (step == 1) "" else s" by $step"
     s"${empty}NumericRange $start $preposition $end$stepped"
   }
-
-  override protected[this] def writeReplace(): AnyRef = this
 
   override protected[this] def className = "NumericRange"
 }

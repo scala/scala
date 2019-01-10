@@ -32,7 +32,8 @@ sealed abstract class BitSet
     with SortedSetOps[Int, SortedSet, BitSet]
     with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSet
-    with collection.BitSetOps[BitSet] {
+    with collection.BitSetOps[BitSet]
+    with Serializable {
 
   override def unsorted: Set[Int] = this
 
@@ -77,7 +78,7 @@ sealed abstract class BitSet
   override def zip[B](that: scala.IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
     super.zip(that)
 
-  override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
+  protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 }
 
 /**

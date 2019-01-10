@@ -176,7 +176,8 @@ private[immutable] class LongMapKeyIterator[V](it: LongMap[V]) extends LongMapIt
   *  @define willNotTerminateInf
   */
 sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
-  with StrictOptimizedMapOps[Long, T, Map, LongMap[T]] {
+  with StrictOptimizedMapOps[Long, T, Map, LongMap[T]]
+  with Serializable {
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?
@@ -479,5 +480,5 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   def collect[V2](pf: PartialFunction[(Long, T), (Long, V2)]): LongMap[V2] =
     strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[T](LongMap), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[T](LongMap), this)
 }

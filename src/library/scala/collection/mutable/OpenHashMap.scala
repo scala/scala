@@ -15,6 +15,8 @@ package mutable
 
 import java.util.ConcurrentModificationException
 
+import scala.collection.generic.DefaultSerializable
+
 /**
   *  @define Coll `OpenHashMap`
   *  @define coll open hash map
@@ -65,7 +67,8 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
 class OpenHashMap[Key, Value](initialSize : Int)
   extends AbstractMap[Key, Value]
     with MapOps[Key, Value, OpenHashMap, OpenHashMap[Key, Value]]
-    with StrictOptimizedIterableOps[(Key, Value), Iterable, OpenHashMap[Key, Value]] {
+    with StrictOptimizedIterableOps[(Key, Value), Iterable, OpenHashMap[Key, Value]]
+    with DefaultSerializable {
 
   import OpenHashMap.OpenEntry
   private type Entry = OpenEntry[Key, Value]

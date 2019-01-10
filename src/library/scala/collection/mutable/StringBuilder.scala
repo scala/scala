@@ -45,7 +45,8 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   with ReusableBuilder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
-  with java.lang.CharSequence {
+  with java.lang.CharSequence
+  with Serializable {
 
   def this() = this(new java.lang.StringBuilder)
 
@@ -465,8 +466,6 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    *  @return             the last applicable index where target occurs, or -1 if not found.
    */
   def lastIndexOf(str: String, fromIndex: Int): Int = underlying.lastIndexOf(str, fromIndex)
-
-  override protected[this] def writeReplace(): AnyRef = this
 }
 
 object StringBuilder {

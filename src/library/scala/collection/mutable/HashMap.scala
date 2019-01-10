@@ -37,7 +37,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
-    with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]]
+    with Serializable {
 
   def this() = this(HashMap.defaultInitialCapacity, HashMap.defaultLoadFactor)
 
@@ -317,7 +318,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     }
   }
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new mutable.HashMap.DeserializationFactory[K, V](table.length, loadFactor), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new mutable.HashMap.DeserializationFactory[K, V](table.length, loadFactor), this)
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 

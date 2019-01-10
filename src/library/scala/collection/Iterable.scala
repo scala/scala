@@ -17,7 +17,6 @@ import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
-import scala.collection.generic.DefaultSerializationProxy
 
 /** Base trait for generic collections.
   *
@@ -26,7 +25,7 @@ import scala.collection.generic.DefaultSerializationProxy
   * @define Coll `Iterable`
   * @define coll iterable collection
   */
-trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] with Serializable {
+trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
 
   // The collection itself
   final def toIterable: this.type = this
@@ -49,12 +48,6 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 
   @deprecated("Iterable.seq always returns the iterable itself", "2.13.0")
   def seq: this.type = this
-
-  /** Create a proxy for Java serialization. The default implementation will serialize all elements and
-    * deserialize by using a builder for `CC` via `iterableFactory`. Override in subclasses if more data needs
-    * to be preserved or a more efficient implementation is available. Override to return `this` in order to
-    * use self-serialization instead of a proxy. */
-  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(iterableFactory.iterableFactory, this)
 
   /** Defines the prefix of this object's `toString` representation.
     *
@@ -861,10 +854,11 @@ object IterableOps {
     *
     * @define coll collection
     */
+  @SerialVersionUID(3L)
   class WithFilter[+A, +CC[_]](
     self: IterableOps[A, CC, _],
     p: A => Boolean
-  ) extends collection.WithFilter[A, CC] {
+  ) extends collection.WithFilter[A, CC] with Serializable {
 
     protected def filtered: Iterable[A] =
       new View.Filter(self, p, isFlipped = false)

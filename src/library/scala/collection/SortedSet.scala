@@ -14,7 +14,6 @@ package scala.collection
 
 import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.generic.DefaultSerializationProxy
 import scala.language.higherKinds
 
 /** Base type of sorted sets */
@@ -35,8 +34,6 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] 
   def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
 
   override def empty: SortedIterableCC[A] = sortedIterableFactory.empty
-
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(sortedIterableFactory.evidenceIterableFactory[A], this)
 
   override protected[this] def stringPrefix: String = "SortedSet"
 }

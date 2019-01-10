@@ -17,6 +17,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{List, Nil, ::}
 import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
+import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
 
 /** A `Buffer` implementation backed by a list. It provides constant time
@@ -41,7 +42,8 @@ class ListBuffer[A]
   extends AbstractBuffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
-     with ReusableBuilder[A, immutable.List[A]] {
+     with ReusableBuilder[A, immutable.List[A]]
+     with DefaultSerializable {
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null

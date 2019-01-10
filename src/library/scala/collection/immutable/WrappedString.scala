@@ -29,8 +29,10 @@ import mutable.{Builder, StringBuilder}
   *  @define Coll `WrappedString`
   *  @define coll wrapped string
   */
+@SerialVersionUID(3L)
 final class WrappedString(private val self: String) extends AbstractSeq[Char] with IndexedSeq[Char]
-  with IndexedSeqOps[Char, IndexedSeq, WrappedString] {
+  with IndexedSeqOps[Char, IndexedSeq, WrappedString]
+  with Serializable {
 
   def apply(i: Int): Char = self.charAt(i)
 

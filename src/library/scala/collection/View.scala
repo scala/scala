@@ -24,7 +24,7 @@ import scala.collection.immutable.LazyList
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
+trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Serializable {
 
   override def view: View[A] = this
 
@@ -36,8 +36,6 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] {
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
   @`inline` def force: IndexedSeq[A] = toIndexedSeq
-
-  override protected[this] def writeReplace(): AnyRef = this
 }
 
 /** This object reifies operations on views as case classes

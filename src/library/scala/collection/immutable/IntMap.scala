@@ -180,7 +180,8 @@ import IntMap._
   *  @define willNotTerminateInf
   */
 sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
-  with StrictOptimizedMapOps[Int, T, Map, IntMap[T]] {
+  with StrictOptimizedMapOps[Int, T, Map, IntMap[T]]
+  with Serializable {
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[(Int, T) @uncheckedVariance]): IntMap[T] =
     intMapFrom[T](coll)
@@ -491,5 +492,5 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil => throw new IllegalStateException("Empty set")
   }
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(IntMap.toFactory[T](IntMap), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(IntMap.toFactory[T](IntMap), this)
 }

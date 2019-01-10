@@ -32,7 +32,8 @@ import scala.collection.generic.DefaultSerializationProxy
 final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
+    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
+    with Serializable {
 
   def this() = this(HashSet.defaultInitialCapacity, HashSet.defaultLoadFactor)
 
@@ -254,7 +255,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     }
   }
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new HashSet.DeserializationFactory[A](table.length, loadFactor), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new HashSet.DeserializationFactory[A](table.length, loadFactor), this)
 
   override protected[this] def stringPrefix = "HashSet"
 }

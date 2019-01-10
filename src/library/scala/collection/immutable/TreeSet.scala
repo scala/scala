@@ -16,6 +16,7 @@ package immutable
 
 import mutable.{Builder, ReusableBuilder}
 import immutable.{RedBlackTree => RB}
+import scala.collection.generic.DefaultSerializable
 
 
 /** This class implements immutable sorted sets using a tree.
@@ -39,7 +40,8 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
-    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]] {
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
+    with DefaultSerializable {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")
 

@@ -13,6 +13,8 @@
 package scala.collection
 package mutable
 
+import scala.collection.generic.DefaultSerializable
+
 
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -32,7 +34,8 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedSeqOps[A, Queue, Queue[A]]
-    with Cloneable[Queue[A]] {
+    with Cloneable[Queue[A]]
+    with DefaultSerializable {
 
   def this(initialSize: Int = ArrayDeque.DefaultInitialSize) =
     this(ArrayDeque.alloc(initialSize), start = 0, end = 0)

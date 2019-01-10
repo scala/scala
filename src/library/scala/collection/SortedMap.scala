@@ -17,7 +17,6 @@ import scala.annotation.implicitNotFound
 import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.generic.DefaultSerializationProxy
 
 /** Base type of sorted sets */
 trait SortedMap[K, +V]
@@ -40,8 +39,6 @@ trait SortedMap[K, +V]
   def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
   override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
-
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(sortedMapFactory.sortedMapFactory[K, V], this)
 
   override protected[this] def stringPrefix: String = "SortedMap"
 }
