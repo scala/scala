@@ -1,0 +1,4 @@
+t4889.scala:19: error: could not find implicit value for parameter ma1: t4889.MatrixAdder[Int,[S]t4889.SparseMatrix[S]]
+  m1.foo
+     ^
+one error found
