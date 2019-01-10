@@ -13,7 +13,7 @@
 package scala
 package compat
 
-@deprecated("Will be removed in Scala 2.14.0.",since = "Scala 2.13.0")
+@deprecated("Will be removed in Scala 2.14.0.", since = "2.13.0")
 object Platform {
 
   /** Thrown when a stack overflow occurs because a method or function recurses too deeply.
@@ -21,7 +21,7 @@ object Platform {
     * On the JVM, this is a type alias for `java.lang.StackOverflowError`, which itself extends `java.lang.Error`.
     * The same rules apply to catching a `java.lang.Error` as for Java, that it indicates a serious problem that a reasonable application should not try and catch.
     */
-  @deprecated("Use `java.lang.StackOverflowError` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.StackOverflowError` instead.", since = "2.13.0")
   type StackOverflowError = java.lang.StackOverflowError
 
   /** This is a type alias for `java.util.ConcurrentModificationException`,
@@ -29,7 +29,7 @@ object Platform {
     * For example, many common collection types do not allow modifying a collection
     * while it is being iterated over.
     */
-  @deprecated("Use `java.util.ConcurrentModificationException` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.util.ConcurrentModificationException` instead.", since = "2.13.0")
   type ConcurrentModificationException = java.util.ConcurrentModificationException
 
   /** Copies `length` elements of array `src` starting at position `srcPos` to the
@@ -52,7 +52,7 @@ object Platform {
     *                after `srcPos` or `destPos` in `src` and `dest` respectively.
     */
   @inline
-  @deprecated("Use `java.lang.System#arraycopy` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.System#arraycopy` instead.", since = "2.13.0")
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
     System.arraycopy(src, srcPos, dest, destPos, length)
   }
@@ -81,7 +81,7 @@ object Platform {
    *  @throws java.lang.NegativeArraySizeException if the specified length is negative
    */
   @inline
-  @deprecated("Use `java.lang.reflect.Array#newInstance` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.reflect.Array#newInstance` instead.", since = "2.13.0")
   def createArray(elemClass: Class[_], length: Int): AnyRef =
     java.lang.reflect.Array.newInstance(elemClass, length)
 
@@ -90,7 +90,7 @@ object Platform {
     * @throws java.lang.NullPointerException If `arr` is `null`.
     */
   @inline
-  @deprecated("Use `java.util.Arrays#fill` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.util.Arrays#fill` instead.", since = "2.13.0")
   def arrayclear(arr: Array[Int]): Unit = { java.util.Arrays.fill(arr, 0) }
 
   /** Returns the `Class` object associated with the class or interface with the given string name using the current `ClassLoader`.
@@ -108,7 +108,7 @@ object Platform {
    *  }}}
    */
   @inline
-  @deprecated("Use `java.lang.Class#forName` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.Class#forName` instead.", since = "2.13.0")
   def getClassForName(name: String): Class[_] = java.lang.Class.forName(name)
 
   /** The default line separator.
@@ -116,7 +116,7 @@ object Platform {
    * On the JVM, this is equivalent to calling the method:
    * `java.lang.System.lineSeparator`
    */
-  @deprecated("Use `java.lang.System#lineSeparator` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.System#lineSeparator` instead.", since = "2.13.0")
   val EOL: String = System.lineSeparator
 
   /** The current time in milliseconds. The time is counted since 1 January 1970
@@ -126,7 +126,7 @@ object Platform {
     * precise than a millisecond.
     */
   @inline
-  @deprecated("Use `java.lang.System#currentTimeMillis` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.System#currentTimeMillis` instead.", since = "2.13.0")
   def currentTime: Long = System.currentTimeMillis()
 
   /** Runs the garbage collector.
@@ -136,11 +136,11 @@ object Platform {
    * The underlying JVM is free to ignore this request.
    */
   @inline
-  @deprecated("Use `java.lang.System#gc` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.lang.System#gc` instead.", since = "2.13.0")
   def collectGarbage(): Unit = System.gc()
 
   /** The name of the default character set encoding as a string */
   @inline
-  @deprecated("Use `java.nio.charset.Charset.defaultCharset#name` instead.",since = "Scala 2.13.0")
+  @deprecated("Use `java.nio.charset.Charset.defaultCharset#name` instead.", since = "2.13.0")
   def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name
 }
