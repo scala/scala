@@ -14,7 +14,7 @@ package scala
 package collection
 package immutable
 
-import mutable.Builder
+import mutable.ReusableBuilder
 import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
@@ -1187,10 +1187,16 @@ object HashSet extends IterableFactory[HashSet] {
       case _ => (newBuilder[A] ++= source).result()
     }
 
-  def newBuilder[A]: Builder[A, HashSet[A]] = new HashSetBuilder
+  /** Create a new Builder which can be reused after calling `result()` without an
+    * intermediate call to `clear()` in order to build multiple related results.
+    */
+  def newBuilder[A]: ReusableBuilder[A, HashSet[A]] = new HashSetBuilder
 }
 
-private[collection] final class HashSetBuilder[A] extends Builder[A, HashSet[A]] {
+/** Builder for HashSet.
+  * $multipleResults
+  */
+private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, HashSet[A]] {
   import Node._
   import SetNode._
 

@@ -18,7 +18,7 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.collection.{Iterator, MapFactory, StrictOptimizedIterableOps, mutable}
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence
@@ -1530,11 +1530,17 @@ object HashMap extends MapFactory[HashMap] {
       case _ => (newBuilder[K, V] ++= source).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), HashMap[K, V]] = new HashMapBuilder[K, V]
+  /** Create a new Builder which can be reused after calling `result()` without an
+    * intermediate call to `clear()` in order to build multiple related results.
+    */
+  def newBuilder[K, V]: ReusableBuilder[(K, V), HashMap[K, V]] = new HashMapBuilder[K, V]
 }
 
 
-private[immutable] final class HashMapBuilder[K, V] extends Builder[(K, V), HashMap[K, V]] {
+/** A Builder for a HashMap.
+  * $multipleResults
+  */
+private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, V), HashMap[K, V]] {
   import Node._
   import MapNode._
 

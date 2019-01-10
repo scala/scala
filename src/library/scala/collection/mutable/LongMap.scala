@@ -609,7 +609,7 @@ object LongMap {
     case _ => buildFromIterableOnce(source)
   }
 
-  def newBuilder[V]: Builder[(Long, V), LongMap[V]] = new LongMapBuilder[V]
+  def newBuilder[V]: ReusableBuilder[(Long, V), LongMap[V]] = new LongMapBuilder[V]
 
   /** Creates a new `LongMap` from arrays of keys and values.
     *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.

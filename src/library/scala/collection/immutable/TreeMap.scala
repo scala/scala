@@ -216,7 +216,7 @@ object TreeMap extends SortedMapFactory[TreeMap] {
         new TreeMap[K, V](t)
     }
 
-  def newBuilder[K, V](implicit ordering: Ordering[K]): Builder[(K, V), TreeMap[K, V]] = new ReusableBuilder[(K, V), TreeMap[K, V]] {
+  def newBuilder[K, V](implicit ordering: Ordering[K]): ReusableBuilder[(K, V), TreeMap[K, V]] = new ReusableBuilder[(K, V), TreeMap[K, V]] {
     private[this] var tree: RB.Tree[K, V] = null
     def addOne(elem: (K, V)): this.type = { tree = RB.update(tree, elem._1, elem._2, overwrite = true); this }
     override def addAll(xs: IterableOnce[(K, V)]): this.type = {

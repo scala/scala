@@ -37,7 +37,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
       case _ => (newBuilder ++= it).result()
     }
 
-  def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
+  def newBuilder[A]: ReusableBuilder[A, Vector[A]] = new VectorBuilder[A]
 
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
 

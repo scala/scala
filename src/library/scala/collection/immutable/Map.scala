@@ -18,7 +18,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable.Map.Map4
-import scala.collection.mutable.Builder
+import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
 
 
@@ -447,7 +447,7 @@ object Map extends MapFactory[Map] {
 @SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
 
-private[immutable] final class MapBuilderImpl[K, V] extends Builder[(K, V), Map[K, V]] {
+private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, V), Map[K, V]] {
   private[this] var elems: Map[K, V] = Map.empty
   private[this] var switchedToHashMapBuilder: Boolean = false
   private[this] var hashMapBuilder: HashMapBuilder[K, V] = _
