@@ -1,0 +1,12 @@
+t10790.scala:13: warning: private val y in class X is never used
+  private val Some(y) = Option(42) // warn
+                  ^
+t10790.scala:10: warning: private class C in class X is never used
+  private class C                  // warn
+                ^
+t10790.scala:8: warning: parameter value x in method control is never used
+  def control(x: Int) = 42         // warn to verify control
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

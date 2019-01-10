@@ -576,8 +576,10 @@ trait TypeDiagnostics {
         }
         super.traverse(t)
       }
+      def isSuppressed(sym: Symbol): Boolean = sym.hasAnnotation(UnusedClass)
       def isUnusedType(m: Symbol): Boolean = (
         m.isType
+          && !isSuppressed(m)
           && !m.isTypeParameterOrSkolem // would be nice to improve this
           && (m.isPrivate || m.isLocalToBlock)
           && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
@@ -587,6 +589,7 @@ trait TypeDiagnostics {
         )
       def isUnusedTerm(m: Symbol): Boolean = (
         m.isTerm
+          && !isSuppressed(m)
           && (!m.isSynthetic || isSyntheticWarnable(m))
           && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock)
           && !targets(m)
@@ -624,7 +627,7 @@ trait TypeDiagnostics {
         clean.sortBy(treepos)
       }
       // local vars which are never set, except those already returned in unused
-      def unsetVars = localVars.filter(v => !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
+      def unsetVars = localVars.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
       def unusedParams = params.toList.filter(isUnusedParam).sortBy(sympos)
       def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
       def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)

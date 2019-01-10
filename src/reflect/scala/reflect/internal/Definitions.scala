@@ -1281,6 +1281,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UncheckedClass             = requiredClass[scala.unchecked]
     lazy val UncheckedBoundsClass       = getClassIfDefined("scala.reflect.internal.annotations.uncheckedBounds")
     lazy val UnspecializedClass         = requiredClass[scala.annotation.unspecialized]
+    lazy val UnusedClass                = requiredClass[scala.annotation.unused]
     lazy val VolatileAttr               = requiredClass[scala.volatile]
     lazy val FunctionalInterfaceClass   = requiredClass[java.lang.FunctionalInterface]
 
