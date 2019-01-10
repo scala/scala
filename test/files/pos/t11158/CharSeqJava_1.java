@@ -1,0 +1,3 @@
+interface CharSeqJava {
+  int length();
+}

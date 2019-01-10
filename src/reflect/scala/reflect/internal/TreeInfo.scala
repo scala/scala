@@ -286,21 +286,23 @@ abstract class TreeInfo {
    */
   def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
     case NullaryMethodType(_)              => sym.owner.isClass && !sym.isStable
+    case MethodType(Nil, _)                => sym.owner.isClass && !sym.isStable && sym.owner.ancestors.filter(_.isJava).exists(base => sym.overriddenSymbol(base).exists) // we likely inherited the empty argument list...
     case PolyType(_, NullaryMethodType(_)) => sym.owner.isClass && !sym.isStable
-    case PolyType(_, mt @ MethodType(_, _))=> mt.isImplicit && sym.owner.isClass && !sym.isStable
-    case mt @ MethodType(_, _)             => mt.isImplicit && sym.owner.isClass && !sym.isStable
+    case PolyType(_, mt@MethodType(_, _))  => mt.isImplicit && sym.owner.isClass && !sym.isStable
+    case mt@MethodType(_, _)               => mt.isImplicit && sym.owner.isClass && !sym.isStable
     case _                                 => false
   }
 
   /** Is tree a mutable variable, or the getter of a mutable field?
    */
-  def isVariableOrGetter(tree: Tree) = {
+  def isVariableOrGetter(tree: Tree): Boolean = {
     def sym       = tree.symbol
     def isVar     = sym.isVariable
 
     tree match {
       case Ident(_)                               => isVar
       case Select(qual, _)                        => isVar || mayBeVarGetter(sym) && qual.tpe.member(sym.setterName) != NoSymbol
+      case Apply(sel, Nil)                        => isVariableOrGetter(sel)
       case Applied(Select(qual, nme.apply), _, _) => qual.tpe.member(nme.update) != NoSymbol
       case _                                      => false
     }

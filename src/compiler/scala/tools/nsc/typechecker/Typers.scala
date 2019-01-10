@@ -4891,6 +4891,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Ident(_) =>
             mkAssign(qual)
 
+          // a getter that had a MethodType(Nil, _) (due to java interop...)
+          case Apply(sel, Nil) => convertToAssignment(fun, sel, name, args)
+
           case Select(qualqual, vname) =>
             gen.evalOnce(qualqual, context.owner, fresh) { qq =>
               val qq1 = qq()
