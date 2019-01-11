@@ -616,11 +616,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (isEmpty) tl
     else tail.reverseOnto(newLL(sCons(head, tl)))
 
-  override def diff(that: collection.Seq[_ >: A]): LazyList[A] =
+  override def diff[B >: A](that: collection.Seq[B]): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else super.diff(that)
 
-  override def intersect(that: collection.Seq[_ >: A]): LazyList[A] =
+  override def intersect[B >: A](that: collection.Seq[B]): LazyList[A] =
     if (knownIsEmpty) LazyList.empty
     else super.intersect(that)
 

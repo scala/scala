@@ -1346,7 +1346,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *                part of the result, but any following occurrences will.
     */
   @deprecated("Use `s.toSeq.diff(...).unwrap` instead of `s.diff(...)`", "2.13.0")
-  def diff(that: Seq[_ >: Char]): String = new WrappedString(s).diff(that).unwrap
+  def diff[B >: Char](that: Seq[B]): String = new WrappedString(s).diff(that).unwrap
 
   /** Computes the multiset intersection between this string and another sequence.
     *
@@ -1358,7 +1358,7 @@ final class StringOps(private val s: String) extends AnyVal {
     *                in the result, but any following occurrences will be omitted.
     */
   @deprecated("Use `s.toSeq.intersect(...).unwrap` instead of `s.intersect(...)`", "2.13.0")
-  def intersect(that: Seq[_ >: Char]): String = new WrappedString(s).intersect(that).unwrap
+  def intersect[B >: Char](that: Seq[B]): String = new WrappedString(s).intersect(that).unwrap
 
   /** Selects all distinct chars of this string ignoring the duplicates. */
   @deprecated("Use `s.toSeq.distinct.unwrap` instead of `s.distinct`", "2.13.0")
