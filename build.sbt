@@ -362,8 +362,7 @@ lazy val library = configureAsSubproject(project)
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both"
   )
-  .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
-                                           regexFileFilter(".*/runtime/ScalaRunTime\\.scala"))))
+  .settings(filterDocSources("*.scala" -- regexFileFilter(".*/scala/runtime/.*")))
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
