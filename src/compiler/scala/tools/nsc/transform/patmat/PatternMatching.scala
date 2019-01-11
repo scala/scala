@@ -224,19 +224,16 @@ trait Interface extends ast.TreeDSL {
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
 
         val checkType = new TypeCollector[Boolean](false) {
-          def traverse(tp: Type): Unit = {
+          override def apply(tp: Type): Unit =
             if (!result) {
               tp match {
-                case SingleType(_, sym) =>
-                  if (from contains sym) {
-                    if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree, subst= $this")
-                    result = true
-                  }
+                case SingleType(_, sym) if from contains sym =>
+                  if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree, subst= $this")
+                  result = true
                 case _ =>
+                  tp.foldOver(this)
               }
-              tp.mapOver(this)
             }
-          }
         }
         val containsSym = tree.exists {
           case i@Ident(_) => from contains i.symbol

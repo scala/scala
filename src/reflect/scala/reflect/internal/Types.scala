@@ -1072,6 +1072,7 @@ trait Types
     def kind: String = "unknown type of class "+getClass()
 
     def mapOver(map: TypeMap): Type = this
+    def foldOver(folder: TypeFolder): Unit = {}
   }
 
 // Subclasses ------------------------------------------------------------
@@ -1171,6 +1172,7 @@ trait Types
       if (bounds1 eq bounds) this
       else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
     }
+    override def foldOver(folder: TypeFolder): Unit = folder(bounds)
   }
 
   object BoundedWildcardType extends BoundedWildcardTypeExtractor
@@ -1249,6 +1251,11 @@ trait Types
       val alts1 = map.mapOver(alternatives)
       if ((pre ne pre1) || (alternatives ne alts1)) OverloadedArgFunProto(argIdx, pre1, alts1)
       else this
+    }
+
+    override def foldOver(folder: TypeFolder): Unit = {
+      pre.foldOver(folder)
+      folder.foldOver(alternatives)
     }
 
     // TODO
@@ -1444,6 +1451,7 @@ trait Types
         else singleType(pre1, sym)
       }
     }
+    override def foldOver(folder: TypeFolder): Unit = folder(pre)
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym)
@@ -1483,6 +1491,10 @@ trait Types
       val supertp1 = map(supertpe)
       if ((thistp1 eq thistpe) && (supertp1 eq supertpe)) this
       else SuperType(thistp1, supertp1)
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder(thistpe)
+      folder(supertpe)
     }
   }
 
@@ -1538,6 +1550,7 @@ trait Types
       if ((lo1 eq lo) && (hi1 eq hi)) this
       else TypeBounds(lo1, hi1)
     }
+    override def foldOver(folder: TypeFolder): Unit = { folder(lo); folder(hi) }
   }
 
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi)
@@ -1864,6 +1877,10 @@ trait Types
       val parents1 = parents mapConserve map
       val decls1 = map.mapOver(decls)
       copyRefinedType(this, parents1, decls1)
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      parents.foreach(folder)
+      folder.foldOver(decls)
     }
   }
 
@@ -2359,6 +2376,10 @@ trait Types
       }
       if ((pre1 eq pre) && (args1 eq args)) this
       else copyTypeRef(this, pre1, this.coevolveSym(pre1), args1)
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder(pre)
+      args.foreach(folder)
     }
     private[this] var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
@@ -2884,6 +2905,10 @@ trait Types
       if ((params1 eq params) && (result1 eq resultType)) this
       else copyMethodType(this, params1, result1.substSym(params, params1))
     }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder.foldOver(params)
+      folder(resultType)
+    }
   }
 
   object MethodType extends MethodTypeExtractor
@@ -2915,6 +2940,7 @@ trait Types
       if (result1 eq resultType) this
       else NullaryMethodType(result1)
     }
+    override def foldOver(folder: TypeFolder): Unit = folder(resultType)
 
   }
 
@@ -2988,6 +3014,10 @@ trait Types
       val result1 = map(resultType)
       if ((tparams1 eq typeParams) && (result1 eq resultType)) this
       else PolyType(tparams1, result1.substSym(typeParams, tparams1))
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder.foldOver(typeParams)
+      folder(resultType)
     }
 
   }
@@ -3172,6 +3202,10 @@ trait Types
       if ((quantified1 eq quantified) && (underlying1 eq underlying)) this
       else newExistentialType(quantified1, underlying1.substSym(quantified, quantified1))
     }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder.foldOver(quantified)
+      folder(underlying)
+    }
   }
 
   object ExistentialType extends ExistentialTypeExtractor
@@ -3189,6 +3223,8 @@ trait Types
       if (pre1 eq pre) this
       else OverloadedType(pre1, alternatives)
     }
+    override def foldOver(folder: TypeFolder): Unit =
+      if (! pre.isInstanceOf[ClassInfoType]) folder(pre)
   }
 
   /** The canonical creator for OverloadedTypes.
@@ -3218,6 +3254,10 @@ trait Types
       val targs1 = targs mapConserve map
       if ((pre1 eq pre) && (targs1 eq targs)) this
       else AntiPolyType(pre1, targs1)
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder(pre)
+      targs.foreach(folder)
     }
   }
 
@@ -3741,6 +3781,10 @@ trait Types
           applyArgs(map.mapOverArgs(typeArgs, params))
         case _ => applyArgs(typeArgs mapConserve map)
       }
+
+    override def foldOver(folder: TypeFolder): Unit =
+      if (constr.instValid) folder(constr.inst)
+      else this.typeArgs.foreach(folder)
   }
 
   /** A type carrying some annotations. Created by the typechecker
@@ -3820,6 +3864,10 @@ trait Types
       if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
       else if (annotations1.isEmpty) underlying1
       else AnnotatedType(annotations1, underlying1)
+    }
+    override def foldOver(folder: TypeFolder): Unit = {
+      folder.foldOverAnnotations(annotations)
+      folder(underlying)
     }
   }
 

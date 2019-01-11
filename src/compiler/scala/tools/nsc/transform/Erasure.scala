@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.tailrec
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
@@ -51,29 +52,30 @@ abstract class Erasure extends InfoTransform
   }
 
   private object NeedsSigCollector extends TypeCollector(false) {
-    def traverse(tp: Type): Unit = {
+    def apply(tp: Type): Unit =
       if (!result) {
         tp match {
           case st: SubType =>
-            traverse(st.supertype)
+            apply(st.supertype)
           case TypeRef(pre, sym, args) =>
-            if (sym == ArrayClass) args foreach traverse
+            if (sym == ArrayClass) untilApply(args)
             else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound || !args.isEmpty) result = true
-            else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
-            else if (!sym.isTopLevel) traverse(pre)
-          case PolyType(_, _) | ExistentialType(_, _) =>
-            result = true
+            else if (sym.isClass) apply(rebindInnerClass(pre, sym)) // #2585
+            else if (!sym.isTopLevel) apply(pre)
+          case PolyType(_, _) | ExistentialType(_, _) => result = true
           case RefinedType(parents, _) =>
-            parents foreach traverse
+            untilApply(parents)
           case ClassInfoType(parents, _, _) =>
-            parents foreach traverse
+            untilApply(parents)
           case AnnotatedType(_, atp) =>
-            traverse(atp)
+            apply(atp)
           case _ =>
-            mapOver(tp)
+            tp.foldOver(this)
         }
       }
-    }
+    @tailrec
+    private[this] def untilApply(ts: List[Type]): Unit =
+      if (! ts.isEmpty && ! result) { apply(ts.head) ; untilApply(ts.tail) }
   }
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
