@@ -2893,8 +2893,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       */
     private def argsResProtosFromFun(pt: Type, numVparams: Int): (List[Type], Type) =
       pt match {
-        case pt: OverloadedArgFunProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
-        case _ =>
+        case pt: OverloadedArgProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
+        case _                                                                         =>
           val FunctionSymbol = FunctionClass(numVparams)
 
           // In case of any non-trivial type slack between `pt` and the built-in function types, we go the SAM route,
@@ -3418,8 +3418,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val amode = forArgMode(fun, mode)
 
               mapWithIndex(args) { (arg, argIdx) =>
-                def typedArg0(tree: Tree) = {
-                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgFunProto(argIdx, pre, alts))
+                def typedArg0(tree: Tree, argIdxOrName: Either[Int, Name] = Left(argIdx)) = {
+                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts))
                   (argTyped, argTyped.tpe.deconst)
                 }
 
@@ -3431,7 +3431,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case NamedArg(lhs@Ident(name), rhs) =>
                     // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                     // the assign is untyped; that's ok because we call doTypedApply
-                    typedArg0(rhs) match {
+                    typedArg0(rhs, Right(name)) match {
                       case (rhsTyped, tp) => (treeCopy.NamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
                     }
                   case treeInfo.WildcardStarArg(_) =>

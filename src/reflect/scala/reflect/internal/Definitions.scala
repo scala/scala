@@ -737,8 +737,8 @@ trait Definitions extends api.StandardDefinitions {
     // @requires pt.typeSymbol == PartialFunctionClass
     def partialFunctionArgResTypeFromProto(pt: Type): (Type, Type) =
       pt match {
-        case oap: OverloadedArgFunProto => (oap.hofParamTypes.head, WildcardType)
-        case _                          =>
+        case oap: OverloadedArgProto => (oap.hofParamTypes.head, WildcardType)
+        case _                       =>
           val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs
           (arg, res)
       }
