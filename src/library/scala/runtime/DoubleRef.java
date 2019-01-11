@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class DoubleRef implements java.io.Serializable {
+public final class DoubleRef implements java.io.Serializable {
     private static final long serialVersionUID = 8304402127373655534L;
 
     public double elem;

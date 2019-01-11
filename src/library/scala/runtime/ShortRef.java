@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class ShortRef implements java.io.Serializable {
+public final class ShortRef implements java.io.Serializable {
     private static final long serialVersionUID = 4218441291229072313L;
 
     public short elem;

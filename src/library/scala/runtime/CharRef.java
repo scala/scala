@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class CharRef implements java.io.Serializable {
+public final class CharRef implements java.io.Serializable {
     private static final long serialVersionUID = 6537214938268005702L;
 
     public char elem;

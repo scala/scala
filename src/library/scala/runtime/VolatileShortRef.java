@@ -12,8 +12,7 @@
 
 package scala.runtime;
 
-
-public class VolatileShortRef implements java.io.Serializable {
+public final class VolatileShortRef implements java.io.Serializable {
     private static final long serialVersionUID = 4218441291229072313L;
 
     volatile public short elem;
