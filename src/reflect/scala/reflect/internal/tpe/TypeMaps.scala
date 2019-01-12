@@ -256,11 +256,6 @@ private[internal] trait TypeMaps {
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
 
-  abstract class TypeTraverserWithResult[T] extends TypeTraverser {
-    def result: T
-    def clear(): Unit
-  }
-
   abstract class TypeCollector[T](initial: T) extends TypeFolder {
     var result: T = _
     def collect(tp: Type) = {
