@@ -588,7 +588,8 @@ final class StringOps(private val s: String) extends AnyVal {
     }
   }
 
-  @inline private[this] def isLineBreak(c: Char) = c == LF || c == FF
+  @`inline` private[this] def isLineBreak(c: Char) = c == CR || c == LF || c == FF
+  @`inline` private[this] def isLineBreak2(c0: Char, c: Char) = c0 == CR && c == LF
 
   /**
     *  Strip trailing line end character from this string if it has one.
@@ -600,17 +601,15 @@ final class StringOps(private val s: String) extends AnyVal {
     *  If a line feed character `LF` is preceded by a carriage return `CR`
     *  (`0x0D` hex), the `CR` character is also stripped (Windows convention).
     */
-  def stripLineEnd: String = {
-    val len = s.length
-    if (len == 0) s
-    else {
-      val last = apply(len - 1)
-      if (isLineBreak(last))
-        s.substring(0, if (last == LF && len >= 2 && apply(len - 2) == CR) len - 2 else len - 1)
-      else
-        s
-    }
-  }
+  def stripLineEnd: String =
+    if (!s.isEmpty) {
+      var i = s.length - 1
+      val last = apply(i)
+      if (isLineBreak(last)) {
+        if (i > 0 && isLineBreak2(apply(i - 1), last)) i -= 1
+        s.substring(0, i)
+      } else s
+    } else s
 
   /** Return all lines in this string in an iterator, including trailing
     *  line end characters.
@@ -623,16 +622,33 @@ final class StringOps(private val s: String) extends AnyVal {
     *  - `LF` - line feed   (`0x0A`)
     *  - `FF` - form feed   (`0x0C`)
     */
-  def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
+  def linesWithSeparators: Iterator[String] = linesSeparated(stripped = false)
+
+  /** Lines in this string, where a line is terminated by
+   *  `"\n"`, `"\r"`, `"\r\n"`, `"\f"`, or the end of the string.
+   *  A line may be empty. Line terminators are removed.
+   */
+  def linesIterator: Iterator[String] = linesSeparated(stripped = true)
+
+  // if `stripped`, exclude the line separators
+  private def linesSeparated(stripped: Boolean): Iterator[String] = new AbstractIterator[String] {
+    def hasNext: Boolean = !done
+    def next(): String = if (done) Iterator.empty.next() else advance()
+
     private[this] val len = s.length
     private[this] var index = 0
-    def hasNext: Boolean = index < len
-    def next(): String = {
-      if (index >= len) Iterator.empty.next()
+    @`inline` private def done = index >= len
+    private def advance(): String = {
       val start = index
-      while (index < len && !isLineBreak(apply(index))) index += 1
-      index += 1
-      s.substring(start, index min len)
+      while (!done && !isLineBreak(apply(index))) index += 1
+      var end   = index
+      if (!done) {
+        val c = apply(index)
+        index += 1
+        if (!done && isLineBreak2(c, apply(index))) index += 1
+        if (!stripped) end = index
+      }
+      s.substring(start, end)
     }
   }
 
@@ -640,16 +656,8 @@ final class StringOps(private val s: String) extends AnyVal {
     *  end characters; i.e., apply `.stripLineEnd` to all lines
     *  returned by `linesWithSeparators`.
     */
-  def linesIterator: Iterator[String] =
-    linesWithSeparators map (_.stripLineEnd)
-
-  /** Return all lines in this string in an iterator, excluding trailing line
-    *  end characters; i.e., apply `.stripLineEnd` to all lines
-    *  returned by `linesWithSeparators`.
-    */
-  @deprecated("Use .linesIterator, because JDK 11 adds a `lines` method on String", "2.13.0")
-  def lines: Iterator[String] =
-    linesWithSeparators map (_.stripLineEnd)
+  @deprecated("Use `linesIterator`, because JDK 11 adds a `lines` method on String", "2.13.0")
+  def lines: Iterator[String] = linesIterator
 
   /** Returns this string with first character converted to upper case.
     * If the first character of the string is capitalized, it is returned unchanged.
@@ -693,10 +701,10 @@ final class StringOps(private val s: String) extends AnyVal {
       val len = line.length
       var index = 0
       while (index < len && line.charAt(index) <= ' ') index += 1
-      sb.append {
+      val stripped =
         if (index < len && line.charAt(index) == marginChar) line.substring(index + 1)
         else line
-      }
+      sb.append(stripped)
     }
     sb.toString
   }
