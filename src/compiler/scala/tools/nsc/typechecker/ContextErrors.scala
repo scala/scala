@@ -184,7 +184,7 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def AdaptTypeError(tree: Tree, found: Type, req: Type) = {
+      def AdaptTypeError(tree: Tree, found: Type, req: Type): Tree = {
         // scala/bug#3971 unwrapping to the outermost Apply helps prevent confusion with the
         // error message point.
         def callee = {
@@ -195,16 +195,24 @@ trait ContextErrors {
           unwrap(tree)
         }
 
+        def issueError(foundType: Type): Tree = {
+          assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
+          assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
+          issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(context, foundType, req)))
+          infer.explainTypes(foundType, req)
+          setError(tree)
+        }
+
         // If the expected type is a refinement type, and the found type is a refinement or an anon
         // class, we can greatly improve the error message by retyping the tree to recover the actual
         // members present, then display along with the expected members. This is done here because
         // this is the last point where we still have access to the original tree, rather than just
         // the found/req types.
-        val foundType: Type = req.dealiasWiden match {
+        req.dealiasWiden match {
           case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
             val retyped    = typed (tree.duplicate.clearType())
-            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic && !sym.isErroneous)
-            if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) found
+            val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
+            if (foundDecls.isEmpty || (found.typeSymbol eq NoSymbol)) issueError(found)
             else {
               // The members arrive marked private, presumably because there was no
               // expected type and so they're considered members of an anon class.
@@ -212,16 +220,13 @@ trait ContextErrors {
               // TODO: if any of the found parents match up with required parents after normalization,
               // print the error so that they match. The major beneficiary there would be
               // java.lang.Object vs. AnyRef.
-              refinedType(found.parents, found.typeSymbol.owner, foundDecls, tree.pos)
+              val refined = refinedType(found.parents, found.typeSymbol.owner, foundDecls, tree.pos)
+              // If the refinement type of an anonymous class is erroneous, the errors will be issued at its definition.
+              if (found.typeSymbol.isAnonymousClass && refined.isErroneous) tree else issueError(refined)
             }
           case _ =>
-            found
+            issueError(found)
         }
-        assert(!foundType.isErroneous, s"AdaptTypeError - foundType is Erroneous: $foundType")
-        assert(!req.isErroneous, s"AdaptTypeError - req is Erroneous: $req")
-
-        issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(context, foundType, req)))
-        infer.explainTypes(foundType, req)
       }
 
       def WithFilterError(tree: Tree, ex: AbsTypeError) = {
