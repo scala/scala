@@ -5,7 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.AssertUtil
+import scala.tools.testing.AssertUtil._
 import scala.util.Random
 
 /* Test for scala/bug#8988 */
@@ -23,7 +23,7 @@ class StringLikeTest {
       // make sure we can match a literal character done by Java's split
       val jSplit = jString.split("\\Q" + c.toString + "\\E")
       val sSplit = s.split(c)
-      AssertUtil.assertSameElements(jSplit, sSplit, s"Not same result as Java split for char $c in string $s")
+      assertSameElements(jSplit, sSplit, s"Not same result as Java split for char $c in string $s")
     }
   }
 
@@ -34,12 +34,12 @@ class StringLikeTest {
     val surrogatepair = List(high, low).mkString
     val twopairs = surrogatepair + "_" + surrogatepair
     
-    AssertUtil.assertSameElements("abcd".split('d'), Array("abc")) // not Array("abc", "")
-    AssertUtil.assertSameElements("abccc".split('c'), Array("ab")) // not Array("ab", "", "", "")
-    AssertUtil.assertSameElements("xxx".split('x'), Array[String]()) // not Array("", "", "", "")
-    AssertUtil.assertSameElements("".split('x'), Array("")) // not Array()
-    AssertUtil.assertSameElements("--ch--omp--".split("-"), Array("", "", "ch", "", "omp")) // All the cases!
-    AssertUtil.assertSameElements(twopairs.split(high), Array(twopairs)) //don't split on characters that are half a surrogate pair
+    assertSameElements("abcd".split('d'), Array("abc")) // not Array("abc", "")
+    assertSameElements("abccc".split('c'), Array("ab")) // not Array("ab", "", "", "")
+    assertSameElements("xxx".split('x'), Array[String]()) // not Array("", "", "", "")
+    assertSameElements("".split('x'), Array("")) // not Array()
+    assertSameElements("--ch--omp--".split("-"), Array("", "", "ch", "", "omp")) // All the cases!
+    assertSameElements(twopairs.split(high), Array(twopairs)) //don't split on characters that are half a surrogate pair
   }
 
   /* Test for scala/bug#9767 */
@@ -49,26 +49,56 @@ class StringLikeTest {
     val sOk  = "2"
     val sNull:String = null
 
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toInt)
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toLong)
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toShort)
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sOne.toByte)
-    assertTrue("trim toDouble", sOne.toDouble == 1.0d)
-    assertTrue("trim toFloat", sOne.toFloat == 1.0f)
+    assertThrows[java.lang.NumberFormatException](sOne.toInt)
+    assertThrows[java.lang.NumberFormatException](sOne.toLong)
+    assertThrows[java.lang.NumberFormatException](sOne.toShort)
+    assertThrows[java.lang.NumberFormatException](sOne.toByte)
+    assertEquals("trim toDouble", 1.0d, sOne.toDouble, 0.1d)
+    assertEquals("trim toDouble", 1.0d, sOne.toDouble, 0.1d)
+    assertEquals("trim toFloat", 1.0f, sOne.toFloat, 0.1f)
 
-    assertTrue("no trim toInt", sOk.toInt == 2)
-    assertTrue("no trim toLong", sOk.toLong == 2L)
-    assertTrue("no trim toShort", sOk.toShort == 2.toShort)
-    assertTrue("no trim toByte", sOk.toByte == 2.toByte)
-    assertTrue("no trim toDouble", sOk.toDouble == 2.0d)
-    assertTrue("no trim toFloat", sOk.toFloat == 2.0f)
+    assertEquals("no trim toInt", 2, sOk.toInt)
+    assertEquals("no trim toLong", 2L, sOk.toLong)
+    assertEquals("no trim toShort",  2.toShort, sOk.toShort)
+    assertEquals("no trim toByte", 2.toByte, sOk.toByte)
+    assertEquals("no trim toDouble", 2.0d, sOk.toDouble, 0.1d)
+    assertEquals("no trim toFloat", 2.0f, sOk.toFloat, 0.1f)
 
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"})
-    AssertUtil.assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"})
+    assertThrows[java.lang.NumberFormatException](sNull.toInt, {s => s == "null"})
+    assertThrows[java.lang.NumberFormatException](sNull.toLong, {s => s == "null"})
+    assertThrows[java.lang.NumberFormatException](sNull.toShort, {s => s == "null"})
+    assertThrows[java.lang.NumberFormatException](sNull.toByte, {s => s == "null"})
 
-    AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toDouble)
-    AssertUtil.assertThrows[java.lang.NullPointerException](sNull.toFloat)
+    assertThrows[java.lang.NullPointerException](sNull.toDouble)
+    assertThrows[java.lang.NullPointerException](sNull.toFloat)
+  }
+
+  @Test
+  def `line split on CR`(): Unit = {
+    assertEquals(2, "abc\r\ndef".linesIterator.size)
+    assertEquals(2, "abc\rdef".linesIterator.size)
+  }
+
+  @Test
+  def `line split on NL, FF`(): Unit = {
+    assertEquals(2, "abc\ndef".linesIterator.size)
+    assertEquals(1, "abc\fdef".linesIterator.size)     // no more form feed splitting
+    assertEquals(2, "abc\ndef\n".linesIterator.size)
+
+    // previous status quo
+    assertEquals(2, "abc\n\fdef".linesIterator.size)
+    assertEquals(3, "abc\n\f\ndef".linesIterator.size)
+
+    assertSameElements(List("abc", "def"), "abc\ndef".linesIterator)
+  }
+
+  @Test
+  def `strip line endings`(): Unit = {
+    assertEquals("abc", "abc".stripLineEnd)
+    assertEquals("abc", "abc\n".stripLineEnd)
+    assertEquals("abc\n", "abc\n\n".stripLineEnd)
+    assertEquals("abc", "abc\r\n".stripLineEnd)
+    assertEquals("abc\r\n\f", "abc\r\n\f".stripLineEnd)  // no more form feed stripping
+    assertEquals("abc\f", "abc\f".stripLineEnd)
   }
 }
