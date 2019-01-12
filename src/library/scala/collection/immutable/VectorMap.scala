@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
   *
@@ -226,9 +227,41 @@ object VectorMap extends MapFactory[VectorMap] {
       case _                   => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: mutable.Builder[(K, V), VectorMap[K, V]] =
-    new mutable.ImmutableBuilder[(K, V), VectorMap[K, V]](empty) {
-      def addOne(elem: (K, V)): this.type = { elems = elems + elem; this }
-    }
+  def newBuilder[K, V]: mutable.Builder[(K, V), VectorMap[K, V]] = new VectorMapBuilder[K, V]
+}
 
+private[immutable] final class VectorMapBuilder[K, V] extends mutable.Builder[(K, V), VectorMap[K, V]] {
+  private[this] val vectorBuilder = new VectorBuilder[K]
+  private[this] val mapBuilder = new MapBuilderImpl[K, (Int, V)]
+  private[this] var aliased: VectorMap[K, V] = _
+
+  override def clear(): Unit = {
+    vectorBuilder.clear()
+    mapBuilder.clear()
+    aliased = null
+  }
+
+  override def result(): VectorMap[K, V] = {
+    if (aliased eq null) {
+        aliased = new VectorMap(vectorBuilder.result(), mapBuilder.result())
+    }
+    aliased
+  }
+  def addOne(key: K, value: V): this.type = {
+    if (aliased ne null) {
+      aliased = aliased.updated(key, value)
+    } else {
+      mapBuilder.getOrElse(key, null) match {
+        case (slot, _) =>
+          mapBuilder.addOne(key, (slot, value))
+        case null =>
+          val vectorSize = vectorBuilder.size
+          vectorBuilder.addOne(key)
+          mapBuilder.addOne(key, (vectorSize, value))
+      }
+    }
+    this
+  }
+
+  override def addOne(elem: (K, V)): this.type = addOne(elem._1, elem._2)
 }
