@@ -78,15 +78,17 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     *             are removed.
     */
   def filterInPlace(p: A => Boolean): this.type = {
-    val array = this.toArray[Any] // scala/bug#7269 toArray avoids ConcurrentModificationException
-    val arrayLength = array.length
-    var i = 0
-    while (i < arrayLength) {
-      val elem = array(i).asInstanceOf[A]
-      if (!p(elem)) {
-        this -= elem
+    if (nonEmpty) {
+      val array = this.toArray[Any] // scala/bug#7269 toArray avoids ConcurrentModificationException
+      val arrayLength = array.length
+      var i = 0
+      while (i < arrayLength) {
+        val elem = array(i).asInstanceOf[A]
+        if (!p(elem)) {
+          this -= elem
+        }
+        i += 1
       }
-      i += 1
     }
     this
   }
