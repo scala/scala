@@ -47,13 +47,15 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)
 
-  private[this] def newMapOrSelf[V1 >: V](t: RB.Tree[K, V1]) = if(t eq tree) this else new TreeMap[K, V1](t)
+  private[this] def newMapOrSelf[V1 >: V](t: RB.Tree[K, V1]): TreeMap[K, V1] = if(t eq tree) this else new TreeMap[K, V1](t)
 
-  override def sortedMapFactory = TreeMap
+  override def sortedMapFactory: SortedMapFactory[TreeMap] = TreeMap
 
   def iterator: Iterator[(K, V)] = RB.iterator(tree)
 
   def keysIteratorFrom(start: K): Iterator[K] = RB.keysIterator(tree, Some(start))
+
+  override def keySet: TreeSet[K] = new TreeSet(tree)(ordering)
 
   def iteratorFrom(start: K): Iterator[(K, V)] = RB.iterator(tree, Some(start))
 
