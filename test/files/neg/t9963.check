@@ -1,0 +1,4 @@
+t9963.scala:14: error: value withFilter is not a member of t9963.MySet[A]
+    j: A <- new MySet[A]() // must have a typecheck patmat here to trigger this bug
+            ^
+one error found
