@@ -527,7 +527,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
-    lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
+    lazy val FullManifestModule    = requiredModule[scala.reflect.Manifest.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
 

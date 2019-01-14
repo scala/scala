@@ -275,7 +275,7 @@ abstract class BackendUtils extends PerRunInit {
       "scala/Predef$",
       "scala/runtime/ScalaRunTime$",
       "scala/reflect/ClassTag$",
-      "scala/reflect/ManifestFactory$",
+      "scala/reflect/Manifest$",
       "scala/Array$",
       "scala/collection/ArrayOps$",
       "scala/collection/StringOps$",
@@ -1125,7 +1125,7 @@ object BackendUtils {
     ("Double", Type.DOUBLE_TYPE))
 
   private val primitiveManifestApplies: Map[String, String] = primitiveTypes map {
-    case (k, _) => (k, s"()Lscala/reflect/ManifestFactory$$${k}Manifest;")
+    case (k, _) => (k, s"()Lscala/reflect/Manifest$$${k}Manifest;")
   }
 
   def isClassTagApply(mi: MethodInsnNode): Boolean = {

@@ -93,7 +93,7 @@ object ClassTag {
   private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
   private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
-  import ManifestFactory._
+  import Manifest._
 
   val Byte    : ByteManifest               = Manifest.Byte
   val Short   : ShortManifest              = Manifest.Short

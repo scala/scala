@@ -80,14 +80,11 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
   override val hashCode = System.identityHashCode(this)
 }
 
-/** `ManifestFactory` defines factory methods for manifests.
- *  It is intended for use by the compiler and should not be used in client code.
- *
- *  Unlike `Manifest`, this factory isn't annotated with a deprecation warning.
- *  This is done to prevent avalanches of deprecation warnings in the code that calls methods with manifests.
- *  Why so complicated? Read up the comments for `ClassManifestFactory`.
+/** Defines factory methods for manifests.
  */
-object ManifestFactory {
+object Manifest extends ManifestFactoryImpl
+object ManifestFactory extends ManifestFactoryImpl  // TODO: remove after next re-STARR
+class ManifestFactoryImpl {
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
