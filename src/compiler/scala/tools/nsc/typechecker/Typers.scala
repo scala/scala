@@ -670,7 +670,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    /** The member with given name of given qualifier type   */
+    /** The member with given name of given qualifier type */
     def member(qual: Type, name: Name): Symbol = {
       def callSiteWithinClass(clazz: Symbol) = context.enclClass.owner hasTransOwner clazz
       val includeLocals = qual match {
@@ -5231,7 +5231,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (name.isTypeName) {
             val qualTyped = typedTypeSelectionQualifier(tree.qualifier, WildcardType)
             val qualStableOrError =
-              if (qualTyped.isErrorTyped || treeInfo.admitsTypeSelection(qualTyped)) qualTyped
+              if (qualTyped.isErrorTyped || unit.isJava || treeInfo.admitsTypeSelection(qualTyped)) qualTyped
               else UnstableTreeError(qualTyped)
             typedSelect(tree, qualStableOrError, name)
           } else {
@@ -5285,6 +5285,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
           // ignore current variable scope in patterns to enforce linearity
         val startContext = if (mode.typingPatternOrTypePat) context.outer else context
+
+        def asTypeName = if (mode.inAll(MonoQualifierModes) && unit.isJava && name.isTermName) {
+          startContext.lookupSymbol(name.toTypeName, qualifies).symbol
+        } else NoSymbol
+
         val nameLookup   = tree.symbol match {
           case NoSymbol   => startContext.lookupSymbol(name, qualifies)
           case sym        => LookupSucceeded(EmptyTree, sym)
@@ -5294,7 +5299,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
-            inEmptyPackage orElse lookupInRoot(name) match {
+            asTypeName orElse inEmptyPackage orElse lookupInRoot(name) match {
               case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
               case sym      => typed1(tree setSymbol sym, mode, pt)
             }
