@@ -66,6 +66,22 @@ class LinkedHashSet[A]
       }
     }
 
+  override def last: A =
+    if (size > 0) lastEntry.key
+    else throw new java.util.NoSuchElementException("Cannot call .last on empty LinkedHashSet")
+      
+  override def lastOption: Option[A] =
+    if (size > 0) Some(lastEntry.key)
+    else None
+
+  override def head: A =
+    if (size > 0) firstEntry.key
+    else throw new java.util.NoSuchElementException("Cannot call .head on empty LinkedHashSet")
+      
+  override def headOption: Option[A] =
+    if (size > 0) Some(firstEntry.key)
+    else None
+
   override def size: Int = table.tableSize
   override def knownSize: Int = size
   override def isEmpty: Boolean = size == 0
