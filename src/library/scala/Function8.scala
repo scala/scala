@@ -36,8 +36,8 @@ trait Function8[-T1, -T2, -T3, -T4, -T5, -T6, -T7, -T8, +R] extends AnyRef { sel
    *  @return   a function `f` such that `f((x1, x2, x3, x4, x5, x6, x7, x8)) == f(Tuple8(x1, x2, x3, x4, x5, x6, x7, x8)) == apply(x1, x2, x3, x4, x5, x6, x7, x8)`
    */
 
-  @annotation.unspecialized def tupled: Tuple8[T1, T2, T3, T4, T5, T6, T7, T8] => R = {
-    case Tuple8(x1, x2, x3, x4, x5, x6, x7, x8) => apply(x1, x2, x3, x4, x5, x6, x7, x8)
+  @annotation.unspecialized def tupled: ((T1, T2, T3, T4, T5, T6, T7, T8)) => R = {
+    case ((x1, x2, x3, x4, x5, x6, x7, x8)) => apply(x1, x2, x3, x4, x5, x6, x7, x8)
   }
-  override def toString() = "<function8>"
+  override def toString(): String = "<function8>"
 }

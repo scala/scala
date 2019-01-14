@@ -36,8 +36,8 @@ trait Function7[-T1, -T2, -T3, -T4, -T5, -T6, -T7, +R] extends AnyRef { self =>
    *  @return   a function `f` such that `f((x1, x2, x3, x4, x5, x6, x7)) == f(Tuple7(x1, x2, x3, x4, x5, x6, x7)) == apply(x1, x2, x3, x4, x5, x6, x7)`
    */
 
-  @annotation.unspecialized def tupled: Tuple7[T1, T2, T3, T4, T5, T6, T7] => R = {
-    case Tuple7(x1, x2, x3, x4, x5, x6, x7) => apply(x1, x2, x3, x4, x5, x6, x7)
+  @annotation.unspecialized def tupled: ((T1, T2, T3, T4, T5, T6, T7)) => R = {
+    case ((x1, x2, x3, x4, x5, x6, x7)) => apply(x1, x2, x3, x4, x5, x6, x7)
   }
-  override def toString() = "<function7>"
+  override def toString(): String = "<function7>"
 }

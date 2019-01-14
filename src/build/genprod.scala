@@ -37,6 +37,7 @@ object genprod extends App {
     def i: Int    // arity
 
     def typeArgsString(xs: Seq[String]) = xs.mkString("[", ", ", "]")
+    def typeArgsToTupleSyntacticSugarString(xs: Seq[String]) = xs.mkString("(", ", ", ")")
 
     def to              = (1 to i).toList
     def s               = if (i == 1) "" else "s"
@@ -201,7 +202,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
    */
   def apply({funArgs}): R
 {moreMethods}
-  override def toString() = {toStr}
+  override def toString(): String = {toStr}
 }}
 </file>
 }
@@ -237,9 +238,10 @@ class Function(val i: Int) extends Group("Function") with Arity {
    *  @return   a function `f` such that `f(%s) == f(Tuple%d%s) == apply%s`
    */
 """.format(i, i, commaXs, i, commaXs, commaXs)
-    def body = "case Tuple%d%s => apply%s".format(i, commaXs, commaXs)
+    def body = "case (%s) => apply%s".format(commaXs, commaXs)
 
-    comment + "\n  @annotation.unspecialized def tupled: Tuple%d%s => R = {\n    %s\n  }".format(i, invariantArgs, body)
+    comment + "\n  @annotation.unspecialized def tupled: (%s) => R = {\n    %s\n  }".format(
+      typeArgsToTupleSyntacticSugarString(targs), body)
   }
 
   def curryMethod = {
@@ -324,7 +326,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
 final case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
 {{
-  override def toString() = "(" + {mkToString} + ")"
+  override def toString(): String = "(" + {mkToString} + ")"
   {moreMethods}
 }}
 </file>}
@@ -356,13 +358,13 @@ object ProductTwo extends Product(2)
 }
 
 class Product(val i: Int) extends Group("Product") with Arity {
-  val productElementComment = """
+  val productElementComment = s"""
   /** Returns the n-th projection of this product if 0 <= n < productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
    *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
-   *  @throws  IndexOutOfBoundsException
+   *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= ${i}).
    */
 """
 
@@ -395,11 +397,11 @@ trait {className}{covariantArgs} extends Any with Product {{
   /** The arity of this product.
    *  @return {i}
    */
-  override def productArity = {i}
+  override def productArity: Int = {i}
 
   {productElementComment}
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match {{ {cases} }}
+  override def productElement(n: Int): Any = n match {{ {cases} }}
 
 {proj}
 {moreMethods}

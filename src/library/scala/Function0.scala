@@ -11,7 +11,7 @@
  */
 
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: 2018-12-25T05:03:28.218Z
+// genprod generated these sources at: 2019-01-14T03:08:31.937870Z
 
 package scala
 
@@ -38,5 +38,5 @@ trait Function0[@specialized(Specializable.Primitives) +R] extends AnyRef { self
    */
   def apply(): R
 
-  override def toString() = "<function0>"
+  override def toString(): String = "<function0>"
 }
