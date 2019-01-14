@@ -98,10 +98,12 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
   /** Returns the symbol that is accessed by a super-accessor in a mixin composition.
    *
    *  @param base       The class in which everything is mixed together
-   *  @param member     The symbol statically referred to by the superaccessor in the trait
+   *  @param acc        The symbol statically referred to by the superaccessor in the trait
    *  @param mixinClass The mixin class that produced the superaccessor
    */
-  private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
+  private def rebindSuper(base: Symbol, acc: Symbol, mixinClass: Symbol): Symbol = {
+    val site = base.thisType
+
     exitingSpecialize {
       // the specialized version T$sp of a trait T will have a super accessor that has the same alias
       // as the super accessor in trait T; we must rebind super
@@ -111,22 +113,30 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       var bcs = base.info.baseClasses.dropWhile(superTargetClass != _).tail
       var sym: Symbol = NoSymbol
 
-      // println(s"starting rebindsuper $base mixing in from $mixinClass: $member:${member.tpe} of ${member.owner} ; looking for super in $bcs (all bases: ${base.info.baseClasses})")
+      // println(s"starting rebindsuper $base mixing in from $mixinClass: $acc : ${acc.tpe} of ${acc.owner} ; looking for super in $bcs (all bases: ${base.info.baseClasses})")
 
       // don't rebind to specialized members unless we're looking for the super of a specialized member,
       // since we can't jump back and forth between the unspecialized name and specialized one
       // (So we jump into the non-specialized world and stay there until we hit our super.)
-      val likeSpecialized = if (member.isSpecialized) 0 else SPECIALIZED
+      val likeSpecialized = if (acc.isSpecialized) 0 else SPECIALIZED
 
       while (sym == NoSymbol && bcs.nonEmpty) {
-        sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE | likeSpecialized))
+        sym = acc.matchingSymbol(bcs.head, site).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE | likeSpecialized))
         bcs = bcs.tail
       }
 
       // println(s"rebound $base from $mixinClass to $sym in ${sym.owner} ($bcs)")
 
+      // Having a matching symbol is not enough: its info should also be a subtype
+      // of the superaccessor's type, see test/files/run/t11351.scala
+      if ((sym ne acc) && sym.exists && !(sym.isErroneous || (site.memberInfo(sym) <:< site.memberInfo(acc))))
+        reporter.error(base.pos, s"illegal trait super target found for $acc required by $mixinClass;" +
+                                 s"\n found   : ${exitingTyper{sym.defStringSeenAs(site.memberInfo(sym))}} in ${sym.owner};" +
+                                 s"\n expected: ${exitingTyper{acc.defStringSeenAs(site.memberInfo(acc))}} in ${acc.owner}")
+
       sym
     }
+  }
 
 // --------- type transformation -----------------------------------------------
 

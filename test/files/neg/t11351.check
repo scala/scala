@@ -1,0 +1,6 @@
+t11351.scala:17: error: illegal trait super target found for method foo required by trait C;
+ found   : override def foo: X in trait B;
+ expected: def foo: Y in trait A
+class Fail extends B with C
+      ^
+one error found
