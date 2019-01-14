@@ -164,7 +164,7 @@ object View extends IterableFactory[View] {
   }
 
   @SerialVersionUID(3L)
-  class LeftPartitionedWith[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A1] {
+  class LeftPartitionMapped[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A1] {
     def iterator = new AbstractIterator[A1] {
       private[this] val self = underlying.iterator
       private[this] var hd: A1 = _
@@ -188,7 +188,7 @@ object View extends IterableFactory[View] {
   }
 
   @SerialVersionUID(3L)
-  class RightPartitionedWith[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A2] {
+  class RightPartitionMapped[A, A1, A2](underlying: SomeIterableOps[A], f: A => Either[A1, A2]) extends AbstractView[A2] {
       def iterator = new AbstractIterator[A2] {
         private[this] val self = underlying.iterator
         private[this] var hd: A2 = _

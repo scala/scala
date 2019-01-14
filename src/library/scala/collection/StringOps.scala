@@ -1309,6 +1309,36 @@ final class StringOps(private val s: String) extends AnyVal {
     (res1.toString, res2.toString)
   }
 
+  /** Applies a function `f` to each character of the string and returns a pair of strings: the first one
+    *  made of those characters returned by `f` that were wrapped in [[scala.util.Left]], and the second
+    *  one made of those wrapped in [[scala.util.Right]].
+    *
+    *  Example:
+    *  {{{
+    *    val xs = "1one2two3three" partitionMap { c =>
+    *      if (c > 'a') Left(c) else Right(c)
+    *    }
+    *    // xs == ("onetwothree", "123")
+    *  }}}
+    *
+    *  @param f    the 'split function' mapping the elements of this string to an [[scala.util.Either]]
+    *
+    *  @return     a pair of strings: the first one made of those characters returned by `f` that were wrapped in [[scala.util.Left]], 
+    *              and the second one made of those wrapped in [[scala.util.Right]]. */
+  def partitionMap(f: Char => Either[Char,Char]): (String, String) = {
+    val res1, res2 = new JStringBuilder
+    var i = 0
+    val len = s.length
+    while(i < len) {
+      f(s.charAt(i)) match {
+        case Left(c) => res1.append(c)
+        case Right(c) => res2.append(c)
+      }
+      i += 1
+    }
+    (res1.toString, res2.toString)
+  }
+
   /** Analogous to `zip` except that the elements in each collection are not consumed until a strict operation is
     * invoked on the returned `LazyZip2` decorator.
     *
