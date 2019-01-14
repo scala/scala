@@ -15,56 +15,6 @@ package reflect
 
 import scala.collection.mutable.{ArrayBuilder, ArraySeq}
 
-/** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
- *  is to give access to the erasure of the type as a `Class` instance, as
- *  is necessary for the creation of native `Arrays` if the class is not
- *  known at compile time.
- *
- *  The type-relation operators `<:<` and `=:=` should be considered
- *  approximations only, as there are numerous aspects of type conformance
- *  which are not yet adequately represented in manifests.
- *
- *  Example usages:
- *  {{{
- *    def arr[T] = new Array[T](0)                          // does not compile
- *    def arr[T](implicit m: Manifest[T]) = new Array[T](0) // compiles
- *    def arr[T: Manifest] = new Array[T](0)                // shorthand for the preceding
- *
- *    // Methods manifest and optManifest are in [[scala.Predef]].
- *    def isApproxSubType[T: Manifest, U: Manifest] = manifest[T] <:< manifest[U]
- *    isApproxSubType[List[String], List[AnyRef]] // true
- *    isApproxSubType[List[String], List[Int]]    // false
- *
- *    def methods[T: Manifest] = manifest[T].runtimeClass.getMethods
- *    def retType[T: Manifest](name: String) =
- *      methods[T] find (_.getName == name) map (_.getGenericReturnType)
- *
- *    retType[Map[_, _]]("values")  // Some(scala.collection.Iterable<B>)
- *  }}}
- */
-@scala.annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
-// TODO undeprecated until Scala reflection becomes non-experimental
-// @deprecated("use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
-trait Manifest[T] extends ClassManifest[T] with Equals {
-  override def typeArguments: List[Manifest[_]] = Nil
-
-  override def arrayManifest: Manifest[Array[T]] =
-    Manifest.classType[Array[T]](arrayClass[T](runtimeClass), this)
-
-  override def canEqual(that: Any): Boolean = that match {
-    case _: Manifest[_]   => true
-    case _                => false
-  }
-  /** Note: testing for erasure here is important, as it is many times
-   *  faster than <:< and rules out most comparisons.
-   */
-  override def equals(that: Any): Boolean = that match {
-    case m: Manifest[_] => (m canEqual this) && (this.runtimeClass == m.runtimeClass) && (this <:< m) && (m <:< this)
-    case _              => false
-  }
-  override def hashCode = this.runtimeClass.##
-}
-
 // TODO undeprecated until Scala reflection becomes non-experimental
 // @deprecated("use type tags and manually check the corresponding class or type instead", "2.10.0")
 @SerialVersionUID(1L)

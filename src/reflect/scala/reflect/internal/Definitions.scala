@@ -526,7 +526,7 @@ trait Definitions extends api.StandardDefinitions {
          def UniverseInternal = getMemberValue(UniverseClass, nme.internal)
 
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
-    lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
+    lazy val FullManifestClass     = getClassIfDefined("scala.reflect.Manifest").orElse(getMemberClass(ReflectPackage, newTypeName("Manifest"))) // first alternative necessary until next re-starr
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
     lazy val OptManifestClass      = requiredClass[scala.reflect.OptManifest[_]]
     lazy val NoManifest            = requiredModule[scala.reflect.NoManifest.type]
