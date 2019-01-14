@@ -26,7 +26,6 @@ trait ScalaNumericConversions extends ScalaNumber with ScalaNumericAnyConversion
 trait ScalaNumericAnyConversions extends Any {
   /** @return `'''true'''` if this number has no decimal component, `'''false'''` otherwise. */
   def isWhole: Boolean
-  def underlying: Any
 
   def byteValue: Byte
   def shortValue: Short
