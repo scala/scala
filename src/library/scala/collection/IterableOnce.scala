@@ -458,6 +458,22 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def span(p: A => Boolean): (C, C)
 
+  /** Splits this $coll into a prefix/suffix pair at a given position.
+   *
+   *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
+   *         `(c take n, c drop n)`.
+   *  $orderDependent
+   *
+   *  @param n the position at which to split.
+   *  @return  a pair of ${coll}s consisting of the first `n`
+   *           elements of this $coll, and the other elements.
+   *  @note    Reuse: $consumesOneAndProducesTwoIterators
+   */
+  def splitAt(n: Int): (C, C) = {
+    var i = 0
+    span { _ => if (i < n) { i += 1; true } else false }
+  }
+
   /** Applies a side-effecting function to each element in this collection.
     * Strict collections will apply `f` to their elements immediately, while lazy collections
     * like Views and LazyLists will only apply `f` on each element if and when that element
