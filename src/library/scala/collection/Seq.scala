@@ -377,21 +377,25 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Finds index of last occurrence of some value in this $coll before or at a given end index.
-    *
-    *  @param   elem   the element value to search for.
-    *  @param   end    the end index.
-    *  @tparam  B      the type of the element `elem`.
-    *  @return  the index `<= end` of the last element of this $coll that is equal (as determined by `==`)
-    *           to `elem`, or `-1`, if none exists.
-    */
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @param   end    the end index.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index `<= end` of the last element of this $coll that is equal (as determined by `==`)
+   *           to `elem`, or `-1`, if none exists.
+   */
   def lastIndexOf[B >: A](elem: B, end: Int = length - 1): Int = lastIndexWhere(elem == _, end)
 
   /** Finds index of last element satisfying some predicate before or at given end index.
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
-    *           or `-1`, if none exists.
-    */
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
   def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
     val it = reverseIterator
@@ -400,11 +404,13 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   /** Finds index of last element satisfying some predicate.
-    *
-    *  @param   p     the predicate used to test elements.
-    *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
-    *           or `-1`, if none exists.
-    */
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
   @deprecatedOverriding("Override lastIndexWhere(p, end) instead - lastIndexWhere(p) calls lastIndexWhere(p, Int.MaxValue)", "2.13.0")
   def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, Int.MaxValue)
 
@@ -452,6 +458,9 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
+   *
+   *  $willNotTerminateInf
+   *
    *  @param  that    the sequence to test
    *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
@@ -469,12 +478,32 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   /** Finds last index where this $coll contains a given sequence as a slice.
+    *
+    *  $willNotTerminateInf
+    *
     *  @param  that    the sequence to test
     *  @return  the last index such that the elements of this $coll starting at this index
     *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
     */
   @deprecatedOverriding("Override lastIndexOfSlice(that, end) instead - lastIndexOfSlice(that) calls lastIndexOfSlice(that, Int.MaxValue)", "2.13.0")
   def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, Int.MaxValue)
+
+  /** Finds the last element of the $coll satisfying a predicate, if any.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param p       the predicate used to test elements.
+   *  @return        an option value containing the last element in the $coll
+   *                 that satisfies `p`, or `None` if none exists.
+   */
+  def findLast(p: A => Boolean): Option[A] = {
+    val it = reverseIterator
+    while (it.hasNext) {
+      val elem = it.next()
+      if (p(elem)) return Some(elem)
+    }
+    None
+  }
 
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf

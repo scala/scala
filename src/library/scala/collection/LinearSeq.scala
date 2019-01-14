@@ -220,6 +220,21 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     last
   }
 
+  override def findLast(p: A => Boolean): Option[A] = {
+    var these: LinearSeq[A] = coll
+    var found = false
+    var last: A = null.asInstanceOf[A] // don't use `Option`, to prevent excessive `Some` allocation
+    while (these.nonEmpty) {
+      val elem = these.head
+      if (p(elem)) {
+        found = true
+        last = elem
+      }
+      these = these.tail
+    }
+    if (found) Some(last) else None
+  }
+
   override def tails: Iterator[C] =
     Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator.single(newSpecificBuilder.result())
 }
