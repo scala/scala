@@ -4637,7 +4637,7 @@ trait Types
       && (variance.isContravariant || isSubType(t1, t2, depth))
     )
 
-    corresponds3(tps1, tps2, mapList(tparams)(_.variance))(isSubArg)
+    sameLength(tps1, tps2) && forall3(tps1, tps2, mapList(tparams)(_.variance))(isSubArg)
   }
 
   def specializesSym(tp: Type, sym: Symbol, depth: Depth): Boolean = {

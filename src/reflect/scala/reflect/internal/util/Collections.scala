@@ -23,14 +23,6 @@ import scala.runtime.Statics.releaseFence
  *  methods in traits aren't inlined.
  */
 trait Collections {
-  /** True if all three arguments have the same number of elements and
-   *  the function is true for all the triples.
-   */
-  @tailrec final def corresponds3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C])
-        (f: (A, B, C) => Boolean): Boolean = (
-    if (xs1.isEmpty) xs2.isEmpty && xs3.isEmpty
-    else !xs2.isEmpty && !xs3.isEmpty && f(xs1.head, xs2.head, xs3.head) && corresponds3(xs1.tail, xs2.tail, xs3.tail)(f)
-  )
 
   /** All these mm methods are "deep map" style methods for
    *  mapping etc. on a list of lists while avoiding unnecessary

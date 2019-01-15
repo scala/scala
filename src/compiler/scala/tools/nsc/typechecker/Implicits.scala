@@ -763,7 +763,7 @@ trait Implicits {
                 (!tparam.isContravariant || isPlausiblySubType(t2, t1)) &&
                 (!tparam.isCovariant || isPlausiblySubType(t1, t2))
 
-              if ((sym1 eq sym2) && (args1 ne Nil)) corresponds3(sym1.typeParams, args1, args2)(isSubArg)
+              if ((sym1 eq sym2) && (args1 ne Nil)) sameLength(args1, args2) && forall3(sym1.typeParams, args1, args2)(isSubArg)
               else (sym1 eq ByNameParamClass) == (sym2 eq ByNameParamClass) && (!sym2.isClass || (sym1 isWeakSubClass sym2))
             case RefinedType(parents, decls)                       =>
               // OPT avoid full call to .member
