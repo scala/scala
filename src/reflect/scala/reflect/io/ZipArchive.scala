@@ -149,6 +149,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
     else ensureDir(dirs, dirName(entry.getName), null)
   }
+  def close(): Unit
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArchive(file, release) {
@@ -232,6 +233,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
       }
     } finally {
       if (ZipArchive.closeZipFile) zipFile.close()
+      else closeables ::= zipFile
     }
     root
   }
@@ -259,6 +261,10 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     case x: FileZipArchive => file.getAbsoluteFile == x.file.getAbsoluteFile
     case _                 => false
   }
+  private[this] var closeables: List[java.io.Closeable] = Nil
+  override def close(): Unit = {
+    closeables.foreach(_.close)
+  }
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
@@ -266,6 +272,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
+    closeables ::= in
 
     @tailrec def loop() {
       val zipEntry = in.getNextEntry()
@@ -327,6 +334,10 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
     case x: URLZipArchive => url == x.url
     case _                => false
   }
+  private[this] var closeables: List[java.io.Closeable] = Nil
+  def close(): Unit = {
+    closeables.foreach(_.close())
+  }
 }
 
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
@@ -334,6 +345,8 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("" -> root)
     val manifest = new Manifest(input)
+    closeables ::= input
+
     val iter     = manifest.getEntries().keySet().iterator().asScala.filter(_.endsWith(".class")).map(new ZipEntry(_))
 
     for (zipEntry <- iter) {
@@ -384,5 +397,9 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
         in = null
       }
     }
+  }
+  private[this] var closeables: List[java.io.Closeable] = Nil
+  override def close(): Unit = {
+    closeables.foreach(_.close())
   }
 }

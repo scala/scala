@@ -40,9 +40,11 @@ import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
+import java.io.Closeable
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
+    with Closeable
     with CompilationUnits
     with Plugins
     with PhaseAssembly
@@ -817,7 +819,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
-    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings))
+    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings, closeableRegistry))
     val newClassPath = AggregateClassPath.createAggregate(platform.classPath +: urlClasspaths : _*)
     platform.currentClassPath = Some(newClassPath)
     invalidateClassPathEntries(urls.map(_.getPath): _*)
@@ -879,7 +881,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
       entries(classPath) find matchesCanonical match {
         case Some(oldEntry) =>
-          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings))
+          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry))
         case None =>
           error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None
@@ -1706,6 +1708,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   }
 
   def createJavadoc    = false
+
+  final val closeableRegistry: CloseableRegistry = new CloseableRegistry
+
+  def close(): Unit = {
+    perRunCaches.clearAll()
+    closeableRegistry.close()
+  }
 }
 
 object Global {

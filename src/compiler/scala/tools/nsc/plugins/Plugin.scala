@@ -93,40 +93,7 @@ object Plugin {
 
   private val PluginXML = "scalac-plugin.xml"
 
-  private val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader]()
-
-  /** Create a class loader with the specified locations plus
-   *  the loader that loaded the Scala compiler.
-   *
-   *  If the class loader has already been created before and the
-   *  file stamps are the same, the previous loader is returned to
-   *  mitigate the cost of dynamic classloading as it has been
-   *  measured in https://github.com/scala/scala-dev/issues/458.
-   */
-  private def loaderFor(locations: Seq[Path], disableCache: Boolean): ScalaClassLoader = {
-    def newLoader = () => {
-      val compilerLoader = classOf[Plugin].getClassLoader
-      val urls = locations map (_.toURL)
-      ScalaClassLoader fromURLs (urls, compilerLoader)
-    }
-
-    if (disableCache || locations.exists(!Jar.isJarOrZip(_))) newLoader()
-    else pluginClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader)
-  }
-
-  /** Try to load a plugin description from the specified location.
-   */
-  private def loadDescriptionFromJar(jarp: Path): Try[PluginDescription] = {
-    // XXX Return to this once we have more ARM support
-    def read(is: Option[InputStream]) = is match {
-      case None     => throw new PluginLoadException(jarp.path, s"Missing $PluginXML in $jarp")
-      case Some(is) => PluginDescription.fromXML(is)
-    }
-    Try(new Jar(jarp.jfile).withEntryStream(PluginXML)(read))
-  }
-
-  private def loadDescriptionFromFile(f: Path): Try[PluginDescription] =
-    Try(PluginDescription.fromXML(new java.io.FileInputStream(f.jfile)))
+  private[nsc] val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader.URLClassLoader]()
 
   type AnyClass = Class[_]
 
@@ -155,40 +122,26 @@ object Plugin {
     paths: List[List[Path]],
     dirs: List[Path],
     ignoring: List[String],
-    disableClassLoaderCache: Boolean): List[Try[AnyClass]] =
+    findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
   {
-    // List[(jar, Try(descriptor))] in dir
-    def scan(d: Directory) =
-      d.files.toList sortBy (_.name) filter (Jar isJarOrZip _) map (j => (j, loadDescriptionFromJar(j)))
-
     type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
 
-    // scan plugin dirs for jars containing plugins, ignoring dirs with none and other jars
-    val fromDirs: PDResults = dirs filter (_.isDirectory) flatMap { d =>
-      scan(d.toDirectory) collect {
-        case (j, Success(pd)) => Success((pd, loaderFor(Seq(j), disableClassLoaderCache)))
+    val fromLoaders = paths.map {path =>
+      val loader = findPluginClassloader(path)
+      loader.getResource(PluginXML) match {
+        case null => Failure(new MissingPluginException(path))
+        case url =>
+          val inputStream = url.openStream
+          try {
+            Try((PluginDescription.fromXML(inputStream), loader))
+          } finally {
+            inputStream.close()
+          }
       }
-    }
-
-    // scan jar paths for plugins, taking the first plugin you find.
-    // a path element can be either a plugin.jar or an exploded dir.
-    def findDescriptor(ps: List[Path]) = {
-      def loop(qs: List[Path]): Try[PluginDescription] = qs match {
-        case Nil       => Failure(new MissingPluginException(ps))
-        case p :: rest =>
-          if (p.isDirectory) loadDescriptionFromFile(p.toDirectory / PluginXML) orElse loop(rest)
-          else if (p.isFile) loadDescriptionFromJar(p.toFile) orElse loop(rest)
-          else loop(rest)
-      }
-      loop(ps)
-    }
-    val fromPaths: PDResults = paths map (p => (p, findDescriptor(p))) map {
-      case (p, Success(pd)) => Success((pd, loaderFor(p, disableClassLoaderCache)))
-      case (_, Failure(e))  => Failure(e)
     }
 
     val seen = mutable.HashSet[String]()
-    val enabled = (fromPaths ::: fromDirs) map {
+    val enabled = fromLoaders map {
       case Success((pd, loader)) if seen(pd.classname)        =>
         // a nod to scala/bug#7494, take the plugin classes distinctly
         Failure(new PluginLoadException(pd.name, s"Ignoring duplicate plugin ${pd.name} (${pd.classname})"))

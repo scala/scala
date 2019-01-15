@@ -16,7 +16,7 @@ import scala.reflect.internal.util.RangePosition
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.{interactive, Settings}
+import scala.tools.nsc.{interactive, CloseableRegistry, Settings}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
 
@@ -63,10 +63,6 @@ trait PresentationCompilation {
     * You may downcast the `reporter` to `StoreReporter` to access type errors.
     */
   def newPresentationCompiler(): interactive.Global = {
-    def mergedFlatClasspath = {
-      val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings)
-      AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
-    }
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
       s.processArguments(global.settings.recreateArgs, processAll = false)
@@ -75,6 +71,11 @@ trait PresentationCompilation {
     }
     val storeReporter: StoreReporter = new StoreReporter
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
+      def mergedFlatClasspath = {
+        val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings, closeableRegistry)
+        AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
+      }
+
       override lazy val platform: ThisPlatform = {
         new JavaPlatform {
           lazy val global: self.type = self

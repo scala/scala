@@ -27,7 +27,7 @@ trait JavaPlatform extends Platform {
   private[nsc] var currentClassPath: Option[ClassPath] = None
 
   protected[nsc] def classPath: ClassPath = {
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, global.closeableRegistry).result)
     currentClassPath.get
   }
 

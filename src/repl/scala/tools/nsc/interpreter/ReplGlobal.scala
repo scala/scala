@@ -30,16 +30,11 @@ trait ReplGlobal extends Global {
     super.abort(msg)
   }
 
-  override lazy val analyzer = new {
-    val global: ReplGlobal.this.type = ReplGlobal.this
-  } with Analyzer {
-
-    override protected def findMacroClassLoader(): ClassLoader = {
-      val loader = super.findMacroClassLoader
-      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
-      val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get
-      new util.AbstractFileClassLoader(virtualDirectory, loader) {}
-    }
+  override protected[scala] def findMacroClassLoader(): ClassLoader = {
+    val loader = super.findMacroClassLoader
+    analyzer.macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(classPath.asURLs))
+    val virtualDirectory = analyzer.globalSettings.outputDirs.getSingleOutput.get
+    new util.AbstractFileClassLoader(virtualDirectory, loader) {}
   }
 
   override def optimizerClassPath(base: ClassPath): ClassPath = {
@@ -47,7 +42,7 @@ trait ReplGlobal extends Global {
       case None => base
       case Some(out) =>
         // Make bytecode of previous lines available to the inliner
-        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings)
+        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry)
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }

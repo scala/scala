@@ -28,6 +28,7 @@ import scala.tools.nsc.util._
 import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
 import java.net.URL
+import java.io.Closeable
 import scala.tools.util.PathResolver
 import scala.util.{Try => Trying}
 
@@ -63,7 +64,7 @@ import scala.util.{Try => Trying}
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports with PresentationCompilation {
+class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports with PresentationCompilation with Closeable {
   imain =>
 
   def this(initialSettings: Settings) = this(initialSettings, IMain.defaultOut)
@@ -100,7 +101,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
-    else new PathResolver(settings).resultAsURLs  // the compiler's classpath
+    else new PathResolver(settings, global.closeableRegistry).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.
@@ -683,6 +684,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    */
   def close() {
     reporter.flush()
+    if (isInitializeComplete) {
+      global.close()
+    }
   }
 
   /** Here is where we:

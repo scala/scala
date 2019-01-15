@@ -246,6 +246,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
+  val YmacroClasspath = PathSetting       ("-Ymacro-classpath", "The classpath used to reflectively load macro implementations, default is the compilation classpath.", "")
 
   val YaddBackendThreads = IntSetting   ("-Ybackend-parallelism", "maximum worker threads for backend", 1, Some((1,16)), (x: String) => None )
   val YmaxQueue = IntSetting   ("-Ybackend-worker-queue", "backend threads worker queue size", 0, Some((0,1000)), (x: String) => None )
@@ -257,9 +258,10 @@ trait ScalaSettings extends AbsScalaSettings
     def setting(style: String, styleLong: String) = ChoiceSetting(s"-Ycache-$style-class-loader", "policy", s"Policy for caching class loaders for $styleLong that are dynamically loaded.", values.map(_.name), None.name, values.map(_.help))
     object None extends CachePolicy("none", "Don't cache class loader")
     object LastModified extends CachePolicy("last-modified", "Cache class loader, using file last-modified time to invalidate")
+    object Always extends CachePolicy("always", "Cache class loader with no invalidation")
     // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
     // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
-    def values: List[CachePolicy] = List(None, LastModified)
+    def values: List[CachePolicy] = List(None, LastModified, Always)
   }
 
   object optChoices extends MultiChoiceEnumeration {

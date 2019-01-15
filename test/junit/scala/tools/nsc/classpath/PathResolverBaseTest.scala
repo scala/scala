@@ -4,13 +4,15 @@
 package scala.tools.nsc.classpath
 
 import java.io.File
+
 import org.junit.Assert._
 import org.junit._
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.util.PathResolver
 
 @RunWith(classOf[JUnit4])
@@ -57,7 +59,7 @@ class PathResolverBaseTest {
   def deleteTempDir: Unit = tempDir.delete()
 
   private def createFlatClassPath(settings: Settings) =
-    new PathResolver(settings).result
+    new PathResolver(settings, new CloseableRegistry).result
 
   @Test
   def testEntriesFromListOperationAgainstSeparateMethods: Unit = {

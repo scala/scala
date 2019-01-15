@@ -36,7 +36,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
     def platformPhases: List[SubComponent] = Nil
 
-    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings).result
+    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings, new CloseableRegistry).result
 
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
