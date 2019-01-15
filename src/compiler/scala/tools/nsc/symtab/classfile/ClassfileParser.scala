@@ -152,14 +152,21 @@ abstract class ClassfileParser {
   def parse(file: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol): Unit = {
     this.file = file
     pushBusy(clazz) {
-      this.in           = new AbstractFileReader(file)
       this.clazz        = clazz
       this.staticModule = module
       this.isScala      = false
 
-      parseHeader()
-      this.pool = newConstantPool
-      parseClass()
+      this.in = new AbstractFileReader(file)
+      val magic = in.getInt(in.bp)
+      if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
+        currentClass = TermName(clazz.javaClassName)
+        isScala = true
+        unpickler.unpickle(in.buf, 0, clazz, staticModule, file.name)
+      } else {
+        parseHeader()
+        this.pool = newConstantPool
+        parseClass()
+      }
     }
   }
 
