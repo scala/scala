@@ -69,7 +69,8 @@ trait Plugins { global: Global =>
     * @return
     */
   protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
-    val disableCache = settings.YcachePluginClassLoader.value == settings.CachePolicy.None.name
+    val policy = settings.YcachePluginClassLoader.value
+    val disableCache = policy == settings.CachePolicy.None.name
     def newLoader = () => {
       val compilerLoader = classOf[Plugin].getClassLoader
       val urls = classpath map (_.toURL)
@@ -84,11 +85,16 @@ trait Plugins { global: Global =>
     // mitigate the cost of dynamic classloading as it has been
     // measured in https://github.com/scala/scala-dev/issues/458.
 
-    if (disableCache || classpath.exists(!Jar.isJarOrZip(_))) {
-      val loader = newLoader()
-      closeableRegistry.registerClosable(loader)
-      loader
-    } else pluginClassLoadersCache.getOrCreate(classpath.map(_.jfile.toPath()), newLoader, closeableRegistry)
+    val cache = pluginClassLoadersCache
+    val checkStamps = policy == settings.CachePolicy.LastModified.name
+    cache.checkCacheability(classpath.map(_.toURL), checkStamps, disableCache) match {
+      case Left(msg) =>
+        val loader = newLoader()
+        closeableRegistry.registerClosable(loader)
+        loader
+      case Right(paths) =>
+        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
+    }
   }
 
   protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()
@@ -181,29 +187,18 @@ trait Plugins { global: Global =>
       ScalaClassLoader.fromURLs(classpath, getClass.getClassLoader)
     }
 
-    val disableCache = settings.YcacheMacroClassLoader.value == settings.CachePolicy.None.name
-    if (disableCache) newLoader()
-    else {
-      import scala.tools.nsc.io.Jar
-      import scala.reflect.io.{AbstractFile, Path}
-
-      val urlsAndFiles = classpath.map(u => u -> AbstractFile.getURL(u))
-      val hasNullURL = urlsAndFiles.filter(_._2 eq null)
-      if (hasNullURL.nonEmpty) {
-        // TODO if the only null is jrt:// we can still cache
-        // TODO filter out classpath elements pointing to non-existing files before we get here, that's another source of null
-        analyzer.macroLogVerbose(s"macro classloader: caching is disabled because `AbstractFile.getURL` returned `null` for ${hasNullURL.map(_._1).mkString(", ")}.")
-        perRunCaches.recordClassloader(newLoader())
-      } else {
-        val locations = urlsAndFiles.map(t => Path(t._2.file))
-        val nonJarZips = locations.filterNot(Jar.isJarOrZip(_))
-        if (nonJarZips.nonEmpty) {
-          analyzer.macroLogVerbose(s"macro classloader: caching is disabled because the following paths are not supported: ${nonJarZips.mkString(",")}.")
-          perRunCaches.recordClassloader(newLoader())
-        } else {
-          Macros.macroClassLoadersCache.getOrCreate(locations.map(_.jfile.toPath()), newLoader, closeableRegistry)
-        }
-      }
+    val policy = settings.YcacheMacroClassLoader.value
+    val cache = Macros.macroClassLoadersCache
+    val disableCache = policy == settings.CachePolicy.None.name
+    val checkStamps = policy == settings.CachePolicy.LastModified.name
+    cache.checkCacheability(classpath, checkStamps, disableCache) match {
+      case Left(msg) =>
+        analyzer.macroLogVerbose(s"macro classloader: $msg.")
+        val loader = newLoader()
+        closeableRegistry.registerClosable(loader)
+        loader
+      case Right(paths) =>
+        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
     }
   }
 }
