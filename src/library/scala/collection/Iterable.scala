@@ -342,7 +342,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
   @`inline` final def view(from: Int, until: Int): View[A] = view.slice(from, until)
 
-  //TODO Can there be a useful lazy implementation of this method? Otherwise mark it as being always strict
   /** Transposes this $coll of iterable collections into
     *  a $coll of ${coll}s.
     *
@@ -526,7 +525,9 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     drop(1)
   }
 
-  /** The initial part of the collection without its last element. */
+  /** The initial part of the collection without its last element.
+    * $willForceEvaluation
+    */
   def init: C = {
     if (isEmpty) throw new UnsupportedOperationException
     dropRight(1)
@@ -612,6 +613,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *   def occurrences[A](as: Seq[A]): Map[A, Int] =
     *     as.groupMapReduce(identity)(_ => 1)(_ + _)
     * }}}
+    *
+    * $willForceEvaluation
     */
   def groupMapReduce[K, B](key: A => K)(f: A => B)(reduce: (B, B) => B): immutable.Map[K, B] = {
     val m = mutable.Map.empty[K, B]
@@ -646,6 +649,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  The head of the collection is the last cumulative result.
     *  $willNotTerminateInf
     *  $orderDependent
+    *  $willForceEvaluation
     *
     *  Example:
     *  {{{
@@ -817,6 +821,8 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /** Iterates over the inits of this $coll. The first value will be this
     *  $coll and the final one will be an empty $coll, with the intervening
     *  values the results of successive applications of `init`.
+    *
+    *  $willForceEvaluation
     *
     *  @return  an iterator over all the inits of this $coll
     *  @example  `List(1,2,3).inits = Iterator(List(1,2,3), List(1,2), List(1), Nil)`

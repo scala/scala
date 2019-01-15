@@ -225,6 +225,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Returns new $coll with elements in reversed order.
    *
    *  $willNotTerminateInf
+   *  $willForceEvaluation
    *
    *  @return A new $coll with all elements of this $coll in reversed order.
    */
@@ -681,6 +682,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   /** Sorts this $coll according to a comparison function.
     *  $willNotTerminateInf
+    *  $willForceEvaluation
     *
     *  The sort is stable. That is, elements that are equal (as determined by
     *  `lt`) appear in the same order in the sorted sequence as in the original.
@@ -700,6 +702,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   /** Sorts this $coll according to the Ordering which results from transforming
     * an implicitly given Ordering with a transformation function.
     * $willNotTerminateInf
+    * $willForceEvaluation
     *
     * The sort is stable. That is, elements that are equal (as determined by
     * `ord.compare`) appear in the same order in the sorted sequence as in the original.
@@ -724,6 +727,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def sortBy[B](f: A => B)(implicit ord: Ordering[B]): C = sorted(ord on f)
 
   /** Produces the range of all indices of this sequence.
+    * $willForceEvaluation
     *
     *  @return  a `Range` value from `0` to one less than the length of this $coll.
     */

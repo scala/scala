@@ -40,9 +40,6 @@ import scala.collection.mutable.{Builder, ReusableBuilder}
 final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit val ordering: Ordering[K])
   extends AbstractMap[K, V]
     with SortedMap[K, V]
-    with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
-    with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)

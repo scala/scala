@@ -34,8 +34,7 @@ import scala.runtime.Statics.releaseFence
   */
 final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
   extends AbstractSet[A]
-    with SetOps[A, HashSet, HashSet[A]]
-    with StrictOptimizedIterableOps[A, HashSet, HashSet[A]] {
+    with StrictOptimizedSetOps[A, HashSet, HashSet[A]] {
 
   releaseFence()
 

@@ -39,7 +39,6 @@ final class TreeSet[A] private (private[immutable] val tree: RB.Tree[A, Null])(i
   extends AbstractSet[A]
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
-    with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
     with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]] {
 
   if (ordering eq null) throw new NullPointerException("ordering must not be null")

@@ -58,13 +58,6 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
   /*@`inline` final*/ override def - (elem: A): C = excl(elem)
 
-  override def concat(that: collection.IterableOnce[A]): C = {
-    var result: C = coll
-    val it = that.iterator
-    while (it.hasNext) result = result + it.next()
-    result
-  }
-
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
 
@@ -79,6 +72,19 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   /** Alias for removeAll */
   @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
   override /*final*/ def -- (that: IterableOnce[A]): C = removedAll(that)
+}
+
+trait StrictOptimizedSetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
+  extends SetOps[A, CC, C]
+    with collection.StrictOptimizedSetOps[A, CC, C]
+    with StrictOptimizedIterableOps[A, CC, C] {
+
+  override def concat(that: collection.IterableOnce[A]): C = {
+    var result: C = coll
+    val it = that.iterator
+    while (it.hasNext) result = result + it.next()
+    result
+  }
 }
 
 /**
