@@ -21,7 +21,7 @@ trait CompilationUnits { global: Global =>
   /** An object representing a missing compilation unit.
    */
   object NoCompilationUnit extends CompilationUnit(NoSourceFile) {
-    override lazy val isJava = false
+    override val isJava = false
     override def exists = false
     override def toString() = "NoCompilationUnit"
   }
@@ -153,7 +153,7 @@ trait CompilationUnits { global: Global =>
     final def comment(pos: Position, msg: String): Unit = {}
 
     /** Is this about a .java source file? */
-    lazy val isJava = source.file.name.endsWith(".java")
+    val isJava = source.file.name.endsWith(".java")
 
     override def toString() = source.toString()
   }

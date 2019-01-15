@@ -91,7 +91,7 @@ abstract class Pickler extends SubComponent {
       }
     }
 
-    override protected def shouldSkipThisPhaseForJava: Boolean = false //from some -Y ??
+    override protected def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value
   }
 
   private class Pickle(root: Symbol) extends PickleBuffer(new Array[Byte](4096), -1, 0) {
