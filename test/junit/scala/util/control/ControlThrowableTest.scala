@@ -24,9 +24,6 @@ class ControlThrowableTest {
 
   class MyCtl extends ControlThrowable
 
-  @deprecated("Test me, don't use me", since = "forever")
-  class LegacyCtl extends ControlThrowable("legacy", true)
-
   @Test
   def stackless(): Unit = assertThrown[MyCtl]((my: MyCtl) => my.getStackTrace.isEmpty)(throw new MyCtl)
 
@@ -43,11 +40,5 @@ class ControlThrowableTest {
       val e = new MyCtl
       e.addSuppressed(new java.io.IOException)
       throw e
-    }
-
-  @Test
-  def stackful(): Unit =
-    assertThrown[LegacyCtl]((legacy: LegacyCtl) => !legacy.getStackTrace.isEmpty) {
-      throw new LegacyCtl
     }
 }
