@@ -764,6 +764,8 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   def isEmpty: Boolean = size == 0
   def nonEmpty: Boolean = size != 0
 
+  override def knownSize: Int = size
+
   private[this] def advanceToNextBlockIfNecessary(): Unit = {
     if (lo >= display0.length) {
       val newBlockIndex = blockIndex + 32

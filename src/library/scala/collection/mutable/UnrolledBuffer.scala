@@ -47,6 +47,7 @@ import scala.collection.immutable.Nil
   *  @author Aleksandar Prokopec
   *
   */
+@SerialVersionUID(3L)
 sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   extends AbstractBuffer[T]
     with Buffer[T]
@@ -154,6 +155,8 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   def result() = this
 
   def length = sz
+
+  override def knownSize: Int = sz
 
   def apply(idx: Int) =
     if (idx >= 0 && idx < sz) headptr(idx)

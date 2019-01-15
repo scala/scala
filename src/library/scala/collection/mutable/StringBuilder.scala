@@ -82,6 +82,8 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   def length_=(n: Int): Unit = underlying.setLength(n)
 
+  override def knownSize: Int = super[IndexedSeqOps].knownSize
+
   def addOne(x: Char) = { underlying.append(x); this }
 
   def clear() = underlying.setLength(0)

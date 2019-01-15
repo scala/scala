@@ -31,6 +31,8 @@ sealed abstract class ArrayBuilder[T]
 
   def length: Int = size
 
+  override def knownSize: Int = size
+
   protected[this] final def ensureSize(size: Int): Unit = {
     if (capacity < size || capacity == 0) {
       var newsize = if (capacity == 0) 16 else capacity * 2

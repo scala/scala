@@ -70,7 +70,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override final def lengthCompare(len: Int): Int = Integer.compare(length, len)
 
-  final override def knownSize: Int = length
+  override def knownSize: Int = length
 
   override final def sizeCompare(that: Iterable[_]): Int = {
     val res = that.sizeCompare(length)

@@ -23,6 +23,8 @@ trait Buffer[A]
 
   override def iterableFactory: SeqFactory[Buffer] = Buffer
 
+  override def knownSize: Int = super[Seq].knownSize
+
   //TODO Prepend is a logical choice for a readable name of `+=:` but it conflicts with the renaming of `append` to `add`
   /** Prepends a single element at the front of this $coll.
     *

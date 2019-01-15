@@ -496,6 +496,7 @@ object AnyRefMap {
     }
     def clear(): Unit = elems = new AnyRefMap[K, V]
     def result(): AnyRefMap[K, V] = elems
+    override def knownSize: Int = elems.knownSize
   }
 
   /** Creates a new `AnyRefMap` with zero or more key/value pairs. */
