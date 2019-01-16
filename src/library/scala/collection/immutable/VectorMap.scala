@@ -215,10 +215,10 @@ object VectorMap extends MapFactory[VectorMap] {
       else NextOfKin(distance)
   }
 
-  def empty[K, V]: VectorMap[K, V] =
-    new VectorMap[K, V](
-      Vector.empty[K],
-      HashMap.empty[K, (Int, V)])
+  private[this] final val EmptyMap: VectorMap[Nothing, Nothing] =
+    new VectorMap[Nothing, Nothing](Vector.empty[Nothing], HashMap.empty[Nothing, (Int, Nothing)])
+
+  def empty[K, V]: VectorMap[K, V] = EmptyMap.asInstanceOf[VectorMap[K, V]]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): VectorMap[K, V] =
     it match {
