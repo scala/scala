@@ -3075,7 +3075,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val vparamSyms = vparams map { vparam =>
         enterSym(context, vparam)
         if (context.retyping) context.scope enter vparam.symbol
-        vparam.symbol
+        vparam.symbol.tpe
       }
       val vparamsTyped = vparams mapConserve typedValDef
       val bodyTyped = typed(fun.body, bodyPt)
@@ -3089,8 +3089,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case ct: ConstantType if (bodyPt eq WildcardType) || (ct.widen <:< bodyPt) => ct.widen
               case tp                                                                    => tp
             }
-
-          appliedType(funSym, vparamSyms.map(_.tpe) :+ resTp)
+          appliedType(funSym, vparamSyms :+ resTp)
         }
 
       treeCopy.Function(fun, vparamsTyped, bodyTyped) setType funTp
