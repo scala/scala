@@ -94,6 +94,7 @@ class LinkedHashSet[A]
       true
     }
   }
+  def superFilterInPlace(p: A => Boolean): this.type = super.filterInPlace(p)
 
   override def filterInPlace(p: A => Boolean): this.type = {
     if (size > 0) {

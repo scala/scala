@@ -202,6 +202,8 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     }
   }
 
+  def superFilterInPlace(p: A => Boolean): this.type = super.filterInPlace(p)
+
   override def filterInPlace(p: A => Boolean): this.type = {
     if (nonEmpty) {
       var bucket = 0

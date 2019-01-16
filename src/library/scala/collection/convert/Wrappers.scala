@@ -222,6 +222,7 @@ private[collection] trait Wrappers {
       if (underlying.size() > 0) underlying.removeIf(!p(_))
       this
     }
+    def superFilterInPlace(p: A => Boolean): this.type = super.filterInPlace(p)
   }
 
   @SerialVersionUID(3L)
