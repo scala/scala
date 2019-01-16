@@ -42,8 +42,7 @@ import scala.annotation.tailrec
   */
 sealed class ListSet[A]
   extends AbstractSet[A]
-    with SetOps[A, ListSet, ListSet[A]]
-    with StrictOptimizedIterableOps[A, ListSet, ListSet[A]] {
+    with StrictOptimizedSetOps[A, ListSet, ListSet[A]] {
 
   override protected[this] def className: String = "ListSet"
 

@@ -176,8 +176,7 @@ private[immutable] class LongMapKeyIterator[V](it: LongMap[V]) extends LongMapIt
   *  @define willNotTerminateInf
   */
 sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
-  with MapOps[Long, T, Map, LongMap[T]]
-  with StrictOptimizedIterableOps[(Long, T), Iterable, LongMap[T]] {
+  with StrictOptimizedMapOps[Long, T, Map, LongMap[T]] {
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[(Long, T)] @uncheckedVariance): LongMap[T] = {
     //TODO should this be the default implementation of this method in StrictOptimizedIterableOps?

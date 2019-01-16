@@ -20,8 +20,8 @@ import scala.language.higherKinds
   */
 trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   extends Any
-    with StrictOptimizedIterableOps[A, CC, C]
-    with SeqOps[A, CC, C] {
+    with SeqOps[A, CC, C]
+    with StrictOptimizedIterableOps[A, CC, C] {
 
   override def distinctBy[B](f: A => B): C = {
     val builder = newSpecificBuilder

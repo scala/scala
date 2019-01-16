@@ -30,7 +30,6 @@ sealed abstract class BitSet
   extends AbstractSet[Int]
     with SortedSet[Int]
     with SortedSetOps[Int, SortedSet, BitSet]
-    with StrictOptimizedIterableOps[Int, Set, BitSet]
     with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSet
     with collection.BitSetOps[BitSet] {

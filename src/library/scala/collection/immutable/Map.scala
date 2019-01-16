@@ -83,6 +83,8 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   /** Creates a new $coll from this $coll by removing all elements of another
     *  collection.
     *
+    *  $willForceEvaluation
+    *
     *  @param keys   the collection containing the removed elements.
     *  @return a new $coll that contains all elements of the current $coll
     *  except one less occurrence of each of the elements of `elems`.
@@ -143,13 +145,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def transform[W](f: (K, V) => W): CC[K, W] = map { case (k, v) => (k, f(k, v)) }
 
-  override def concat [V1 >: V](that: collection.IterableOnce[(K, V1)]): CC[K, V1] = {
-    var result: CC[K, V1] = coll
-    val it = that.iterator
-    while (it.hasNext) result = result + it.next()
-    result
-  }
-
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
@@ -159,6 +154,20 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   }
 
 }
+
+trait StrictOptimizedMapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
+  extends MapOps[K, V, CC, C]
+    with collection.StrictOptimizedMapOps[K, V, CC, C]
+    with StrictOptimizedIterableOps[(K, V), Iterable, C] {
+
+  override def concat [V1 >: V](that: collection.IterableOnce[(K, V1)]): CC[K, V1] = {
+    var result: CC[K, V1] = coll
+    val it = that.iterator
+    while (it.hasNext) result = result + it.next()
+    result
+  }
+}
+
 
 /**
   * $factoryInfo

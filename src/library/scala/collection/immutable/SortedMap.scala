@@ -51,36 +51,42 @@ trait SortedMap[K, +V]
 }
 
 trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
-  extends MapOps[K, V, Map, C]
-     with collection.SortedMapOps[K, V, CC, C] { self =>
-    protected def coll: C with CC[K, V]
+  extends MapOps[K, V, Map, C] with collection.SortedMapOps[K, V, CC, C] { self =>
 
-    def unsorted: Map[K, V]
+  protected def coll: C with CC[K, V]
 
-    override def keySet: SortedSet[K] = new ImmutableKeySortedSet
+  def unsorted: Map[K, V]
 
-    /** The implementation class of the set returned by `keySet` */
-    protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
-      def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
-        val map = self.rangeImpl(from, until)
-        new map.ImmutableKeySortedSet
-      }
-      def incl(elem: K): SortedSet[K] = fromSpecific(this).incl(elem)
-      def excl(elem: K): SortedSet[K] = fromSpecific(this).excl(elem)
+  override def keySet: SortedSet[K] = new ImmutableKeySortedSet
+
+  /** The implementation class of the set returned by `keySet` */
+  protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
+    def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
+      val map = self.rangeImpl(from, until)
+      new map.ImmutableKeySortedSet
     }
+    def incl(elem: K): SortedSet[K] = fromSpecific(this).incl(elem)
+    def excl(elem: K): SortedSet[K] = fromSpecific(this).excl(elem)
+  }
 
-    // We override these methods to fix their return type (which would be `Map` otherwise)
-    def updated[V1 >: V](key: K, value: V1): CC[K, V1]
-    @`inline` final override def +[V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+  // We override these methods to fix their return type (which would be `Map` otherwise)
+  def updated[V1 >: V](key: K, value: V1): CC[K, V1]
+  @`inline` final override def +[V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
 
-    override def concat[V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = {
-        var result: CC[K, V2] = coll
-        val it = xs.iterator
-        while (it.hasNext) result = result + it.next()
-        result
-    }
+  override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
+}
 
-    override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
+trait StrictOptimizedSortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
+  extends SortedMapOps[K, V, CC, C]
+    with collection.StrictOptimizedSortedMapOps[K, V, CC, C]
+    with StrictOptimizedMapOps[K, V, Map, C] {
+
+  override def concat[V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = {
+    var result: CC[K, V2] = coll
+    val it = xs.iterator
+    while (it.hasNext) result = result + it.next()
+    result
+  }
 }
 
 @SerialVersionUID(3L)

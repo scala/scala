@@ -37,8 +37,7 @@ final class VectorMap[K, +V] private (
     private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
-    with MapOps[K, V, VectorMap, VectorMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, VectorMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]] {
 
   import VectorMap._
 
