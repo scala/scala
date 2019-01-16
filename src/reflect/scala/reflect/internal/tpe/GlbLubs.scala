@@ -58,23 +58,6 @@ private[internal] trait GlbLubs {
     println("** Depth is " + depth + "\n" + formatted)
   }
 
-  /** From a list of types, find any which take type parameters
-    *  where the type parameter bounds contain references to other
-    *  any types in the list (including itself.)
-    *
-    *  @return List of symbol pairs holding the recursive type
-    *    parameter and the parameter which references it.
-    */
-  def findRecursiveBounds(ts: List[Type]): List[(Symbol, Symbol)] = {
-    if (ts.isEmpty) Nil
-    else {
-      val sym = ts.head.typeSymbol
-      require(ts.tail forall (_.typeSymbol == sym), ts)
-      for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
-        p -> in
-    }
-  }
-
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
     * compute its least sorted upwards closed upper bound relative to the following ordering <= between lists of types:
     *
