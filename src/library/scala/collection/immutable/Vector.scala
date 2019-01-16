@@ -632,7 +632,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 
 //TODO: When making this class private, make it final as well.
 @deprecated("This class is not intended for public consumption and will be made private in the future.","2.13.0")
-class VectorIterator[+A](_startIndex: Int, endIndex: Int)
+class VectorIterator[+A](_startIndex: Int, private[this] var endIndex: Int)
   extends AbstractIterator[A]
     with VectorPointer[A @uncheckedVariance] {
 
@@ -659,6 +659,21 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
     }
   }
 
+  override def take(n: Int): Iterator[A] = {
+    if(n <= 0) {
+      _hasNext = false
+      endIndex = 0
+    } else {
+      val dropR = remainingElementCount - n
+      if(dropR > 0) {
+        endIndex -= dropR
+        endLo = Math.min(endIndex - blockIndex, 32)
+        _hasNext = blockIndex + lo < endIndex
+      }
+    }
+    this
+  }
+
   override def drop(n: Int): Iterator[A] = {
     if (n > 0) {
       val longLo = lo.toLong + n
@@ -675,9 +690,19 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
         }
       } else {
         _hasNext = false
+        endIndex = 0
       }
     }
     this
+  }
+
+  override def slice(from: Int, until: Int): Iterator[A] = {
+    val _until =
+      if(from > 0) {
+        drop(from)
+        until - from
+      } else until
+    take(_until)
   }
 
   override def next(): A = {
@@ -711,9 +736,12 @@ class VectorIterator[+A](_startIndex: Int, endIndex: Int)
    *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
    */
   private[collection] def remainingVector: Vector[A] = {
-    val v = new Vector(blockIndex + lo, endIndex, blockIndex + lo)
-    v.initFrom(this)
-    v
+    if(!_hasNext) Vector.empty
+    else {
+      val v = new Vector(blockIndex + lo, endIndex, blockIndex + lo)
+      v.initFrom(this)
+      v
+    }
   }
 }
 
