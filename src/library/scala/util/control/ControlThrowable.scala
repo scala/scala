@@ -34,19 +34,16 @@ package scala.util.control
  *  }}}
  *
  *  Suppression is disabled, because flow control should not suppress
- *  an exceptional condition.
+ *  an exceptional condition. Stack traces are also disabled, allowing
+ *  instances of `ControlThrowable` to be safely reused.
  *
- *  Instances of `ControlThrowable` should not normally have either
- *  a cause or a writable stack trace.
- *
- *  Legacy subclasses may make the stack trace writable by using
- *  the appropriate constructor. A cause may be set using `initCause`.
+ *  Instances of `ControlThrowable` should not normally have a cause.
+ *  Legacy subclasses may set a cause using `initCause`.
  *
  *  @author Miles Sabin
  */
-abstract class ControlThrowable private[this] (message: String, cause: Throwable, writableStackTrace: Boolean) extends Throwable(message, cause, /*enableSuppression=*/ false, writableStackTrace) {
-  def this() = this(message = null, cause = null, writableStackTrace = false)
-  def this(message: String) = this(message = message, cause = null, writableStackTrace = false)
-  @deprecated("Writable stack trace is provided only for compatibility", since = "2.13.0")
-  protected def this(message: String, writableStackTrace: true) = this(message = message, cause = null, writableStackTrace = writableStackTrace)
+abstract class ControlThrowable(message: String) extends Throwable(
+  message, /*cause*/ null, /*enableSuppression=*/ false, /*writableStackTrace*/ false) {
+
+  def this() = this(message = null)
 }
