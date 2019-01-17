@@ -3513,7 +3513,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (mt.isErroneous) duplErrTree
             else if (mode.inPatternMode) {
               // #2064
-              duplErrorTree(WrongNumberOfArgsError(tree, fun))
+              tree match {   //Added this block as part of bug fix #11252
+                case Apply(origFun, _) =>
+                  val funTyped = typed(origFun, mode)
+                  funTyped.tpe match {
+                    case HasUnapply(unapply) => doTypedUnapply(tree, fun0, funTyped, args, mode, pt)
+                    case _ => duplErrorTree(WrongNumberOfArgsError(tree, fun))
+                  }
+                case _ => duplErrorTree(WrongNumberOfArgsError(tree, fun))
+              }
             } else if (lencmp > 0) {
               tryTupleApply orElse duplErrorTree {
                 val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
