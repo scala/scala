@@ -364,7 +364,10 @@ object View extends IterableFactory[View] {
         i += 1
         value
       }
-      def hasNext: Boolean = it.hasNext
+      def hasNext: Boolean =
+        if(it.hasNext) true
+        else if(index >= i) throw new IndexOutOfBoundsException(index.toString)
+        else false
     }
     override def knownSize: Int = underlying.knownSize
     override def isEmpty: Boolean = iterator.isEmpty
