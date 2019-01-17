@@ -38,6 +38,9 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
 
   releaseFence()
 
+  private[this] def newHashSetOrThis(newRootNode: SetNode[A]): HashSet[A] =
+    if (rootNode eq newRootNode) this else new HashSet(newRootNode)
+
   override def iterableFactory: IterableFactory[HashSet] = HashSet
 
   override def knownSize: Int = rootNode.size
@@ -63,22 +66,21 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     val elementUnimprovedHash = element.##
     val elementHash = improve(elementUnimprovedHash)
     val newRootNode = rootNode.updated(element, elementUnimprovedHash, elementHash, 0)
-    if (newRootNode ne rootNode) new HashSet(newRootNode) else this
+    newHashSetOrThis(newRootNode)
   }
 
   def excl(element: A): HashSet[A] = {
     val elementUnimprovedHash = element.##
     val elementHash = improve(elementUnimprovedHash)
     val newRootNode = rootNode.removed(element, elementUnimprovedHash, elementHash, 0)
-    if (rootNode ne newRootNode) new HashSet(newRootNode) else this
+    newHashSetOrThis(newRootNode)
   }
 
-  override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] = {
-    val builder = iterableFactory.newBuilder[A]
-    builder ++= this
-    builder ++= that
-    builder.result()
-  }
+  override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] =
+    that match {
+      case hs: HashSet[A] => newHashSetOrThis(rootNode.concat(hs.rootNode, 0))
+      case _ => super.concat(that)
+    }
 
   override def tail: HashSet[A] = this - head
 
@@ -116,15 +118,10 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     } else {
       that match {
         case hashSet: HashSet[A] =>
-          if (hashSet.isEmpty) {
-            this
-          } else {
+          if (hashSet.isEmpty) this else {
             val newRootNode = rootNode.diff(hashSet.rootNode, 0)
-            if (newRootNode eq rootNode) this
-            else if (newRootNode eq hashSet.rootNode) hashSet
-            else new HashSet(newRootNode)
+            if (newRootNode.size == 0) HashSet.empty else newHashSetOrThis(rootNode.diff(hashSet.rootNode, 0))
           }
-
         case other =>
           val thatKnownSize = other.knownSize
 
@@ -147,7 +144,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
               }
             }
 
-            if (curr eq rootNode) this else new HashSet(curr)
+            newHashSetOrThis(curr)
           } else {
             // TODO: Develop more sophisticated heuristic for which branch to take
             filterNot(other.contains)
@@ -177,7 +174,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
           return HashSet.empty
         }
       }
-      if (curr eq rootNode) this else new HashSet(curr)
+      newHashSetOrThis(curr)
   }
 
   override def partition(p: A => Boolean): (HashSet[A], HashSet[A]) = {
@@ -286,6 +283,9 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
   def filterImpl(pred: A => Boolean, flipped: Boolean): SetNode[A]
 
   def diff(that: SetNode[A], shift: Int): SetNode[A]
+
+  def concat(that: SetNode[A], shift: Int): SetNode[A]
+
 }
 
 private final class BitmapIndexedSetNode[A](
@@ -319,13 +319,11 @@ private final class BitmapIndexedSetNode[A](
   }
   */
 
-  def getPayload(index: Int) =
-    content(TupleLength * index).asInstanceOf[A]
+  def getPayload(index: Int): A = content(TupleLength * index).asInstanceOf[A]
 
   override def getHash(index: Int): Int = originalHashes(index)
 
-  def getNode(index: Int) =
-    content(content.length - 1 - index).asInstanceOf[SetNode[A]]
+  def getNode(index: Int): SetNode[A] = content(content.length - 1 - index).asInstanceOf[SetNode[A]]
 
   def contains(element: A, originalHash: Int, elementHash: Int, shift: Int): Boolean = {
     val mask = maskFrom(elementHash, shift)
@@ -357,9 +355,8 @@ private final class BitmapIndexedSetNode[A](
       } else {
         val element0UnimprovedHash = getHash(index)
         val element0Hash = improve(element0UnimprovedHash)
-        if (element0.equals(element)) {
+        if (originalHash == element0UnimprovedHash && element0.equals(element)) {
           return this
-          //return copyAndSetValue(bitpos, element, originalHash, elementHash)
         } else {
           val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
           return copyAndMigrateFromInlineToNode(bitpos, element0Hash, subNodeNew)
@@ -668,6 +665,11 @@ private final class BitmapIndexedSetNode[A](
 
       // bitmap of nodes which, when filtered, returned a single-element node. These must be migrated to data
       var nodeMigrateToDataTargetMap = 0
+
+      // TODO: When filtering results in a single-elem node, simply `A` should be returned,
+      //  not a singleton (to avoid pointlessly allocating arrays, nodes). This would probably
+      //  involve changing the return type of filterImpl to `Any` which may return at runtime a SetNode[A] or an A
+
       // the queue of single-element, post-filter nodes
       var nodesToMigrateToData: mutable.Queue[SetNode[A]] = null
 
@@ -1013,6 +1015,272 @@ private final class BitmapIndexedSetNode[A](
     }
     new BitmapIndexedSetNode[A](dataMap, nodeMap, contentClone, originalHashes.clone(), size, cachedJavaKeySetHashCode)
   }
+
+  override def concat(that: SetNode[A], shift: Int): SetNode[A] = that match {
+    case bm: BitmapIndexedSetNode[A] =>
+      if (size == 0) return that
+      else if (bm.size == 0 || (bm eq this)) return this
+      else if (bm.size == 1) {
+        val originalHash = bm.getHash(0)
+        return this.updated(bm.getPayload(0), originalHash, improve(originalHash), shift)
+      }
+
+      // if we go through the merge and the result does not differ from `this`, we can just return `this`, to improve sharing
+      // So, `anyChangesMadeSoFar` will be set to `true` as soon as we encounter a difference between the
+      // currently-being-computed result, and `this`
+      var anyChangesMadeSoFar = false
+
+      // bitmap containing `1` in any position that has any descendant in either left or right, either data or node
+      val allMap = dataMap | bm.dataMap | nodeMap | bm.nodeMap
+
+      // minimumIndex is inclusive -- it is the first index for which there is data or nodes
+      val minimumBitPos: Int = Node.bitposFrom(Integer.numberOfTrailingZeros(allMap))
+      // maximumIndex is inclusive -- it is the last index for which there is data or nodes
+      // it could not be exclusive, because then upper bound in worst case (Node.BranchingFactor) would be out-of-bound
+      // of int bitposition representation
+      val maximumBitPos: Int = Node.bitposFrom(Node.BranchingFactor - Integer.numberOfLeadingZeros(allMap) - 1)
+
+      var leftNodeRightNode = 0
+      var leftDataRightNode = 0
+      var leftNodeRightData = 0
+      var leftDataOnly = 0
+      var rightDataOnly = 0
+      var leftNodeOnly = 0
+      var rightNodeOnly = 0
+      var leftDataRightDataMigrateToNode = 0
+      var leftDataRightDataLeftOverwrites = 0
+
+      var dataToNodeMigrationTargets = 0
+
+      {
+        var bitpos = minimumBitPos
+        var leftIdx = 0
+        var rightIdx = 0
+        var finished = false
+
+        while (!finished) {
+
+          if ((bitpos & dataMap) != 0) {
+            if ((bitpos & bm.dataMap) != 0) {
+              if (getHash(leftIdx) == bm.getHash(rightIdx) && getPayload(leftIdx) == bm.getPayload(rightIdx)) {
+                leftDataRightDataLeftOverwrites |= bitpos
+              } else {
+                leftDataRightDataMigrateToNode |= bitpos
+                dataToNodeMigrationTargets |= Node.bitposFrom(Node.maskFrom(improve(getHash(leftIdx)), shift))
+              }
+              rightIdx += 1
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              leftDataRightNode |= bitpos
+            } else {
+              leftDataOnly |= bitpos
+            }
+            leftIdx += 1
+          } else if ((bitpos & nodeMap) != 0) {
+            if ((bitpos & bm.dataMap) != 0) {
+              leftNodeRightData |= bitpos
+              rightIdx += 1
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              leftNodeRightNode |= bitpos
+            } else {
+              leftNodeOnly |= bitpos
+            }
+          } else if ((bitpos & bm.dataMap) != 0) {
+            rightDataOnly |= bitpos
+            rightIdx += 1
+          } else if ((bitpos & bm.nodeMap) != 0) {
+            rightNodeOnly |= bitpos
+          }
+
+          if (bitpos == maximumBitPos) {
+            finished = true
+          } else {
+            bitpos = bitpos << 1
+          }
+        }
+      }
+
+
+      val newDataMap = leftDataOnly | rightDataOnly | leftDataRightDataLeftOverwrites
+
+      val newNodeMap =
+        leftNodeRightNode |
+          leftDataRightNode |
+          leftNodeRightData |
+          leftNodeOnly |
+          rightNodeOnly |
+          dataToNodeMigrationTargets
+
+
+      if ((newDataMap == (leftDataOnly | leftDataRightDataLeftOverwrites)) && (newNodeMap == leftNodeOnly)) {
+        // nothing from `bm` will make it into the result -- return early
+        return this
+      }
+
+      val newDataSize = bitCount(newDataMap)
+      val newContentSize = newDataSize + bitCount(newNodeMap)
+
+      val newContent = new Array[Any](newContentSize)
+      val newOriginalHashes = new Array[Int](newDataSize)
+      var newSize = 0
+      var newCachedHashCode = 0
+
+      {
+        var leftDataIdx = 0
+        var rightDataIdx = 0
+        var leftNodeIdx = 0
+        var rightNodeIdx = 0
+
+        val nextShift = shift + Node.BitPartitionSize
+
+        var compressedDataIdx = 0
+        var compressedNodeIdx = 0
+
+        var bitpos = minimumBitPos
+        var finished = false
+
+        while (!finished) {
+
+          if ((bitpos & leftNodeRightNode) != 0) {
+            val leftNode = getNode(leftNodeIdx)
+            val newNode = leftNode.concat(bm.getNode(rightNodeIdx), nextShift)
+            if (leftNode ne newNode) {
+              anyChangesMadeSoFar = true
+            }
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            leftNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+
+          } else if ((bitpos & leftDataRightNode) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = {
+              val n = bm.getNode(rightNodeIdx)
+              val leftPayload = getPayload(leftDataIdx)
+              val leftOriginalHash = getHash(leftDataIdx)
+              val leftImproved = improve(leftOriginalHash)
+              n.updated(leftPayload, leftOriginalHash, leftImproved, nextShift)
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            leftDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          }
+          else if ((bitpos & leftNodeRightData) != 0) {
+            val newNode = {
+              val rightOriginalHash = bm.getHash(rightDataIdx)
+              val leftNode = getNode(leftNodeIdx)
+              val updated = leftNode.updated(
+                element = bm.getPayload(rightDataIdx),
+                originalHash = bm.getHash(rightDataIdx),
+                hash = improve(rightOriginalHash),
+                shift = nextShift
+              )
+              if (updated ne leftNode) {
+                anyChangesMadeSoFar = true
+              }
+              updated
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftNodeIdx += 1
+            rightDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+
+          } else if ((bitpos & leftDataOnly) != 0) {
+            val originalHash = originalHashes(leftDataIdx)
+            newContent(compressedDataIdx) = getPayload(leftDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            leftDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+          } else if ((bitpos & rightDataOnly) != 0) {
+            anyChangesMadeSoFar = true
+            val originalHash = bm.originalHashes(rightDataIdx)
+            newContent(compressedDataIdx) = bm.getPayload(rightDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            rightDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+          } else if ((bitpos & leftNodeOnly) != 0) {
+            val newNode = getNode(leftNodeIdx)
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & rightNodeOnly) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = bm.getNode(rightNodeIdx)
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            rightNodeIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & leftDataRightDataMigrateToNode) != 0) {
+            anyChangesMadeSoFar = true
+            val newNode = {
+              val leftOriginalHash = getHash(leftDataIdx)
+              val rightOriginalHash = bm.getHash(rightDataIdx)
+
+              bm.mergeTwoKeyValPairs(
+                getPayload(leftDataIdx), leftOriginalHash, improve(leftOriginalHash),
+                bm.getPayload(rightDataIdx), rightOriginalHash, improve(rightOriginalHash),
+                nextShift
+              )
+            }
+
+            newContent(newContentSize - compressedNodeIdx - 1) = newNode
+            compressedNodeIdx += 1
+            leftDataIdx += 1
+            rightDataIdx += 1
+            newSize += newNode.size
+            newCachedHashCode += newNode.cachedJavaKeySetHashCode
+          } else if ((bitpos & leftDataRightDataLeftOverwrites) != 0) {
+            val originalHash = bm.originalHashes(rightDataIdx)
+            newContent(compressedDataIdx) = bm.getPayload(rightDataIdx).asInstanceOf[AnyRef]
+            newOriginalHashes(compressedDataIdx) = originalHash
+
+            compressedDataIdx += 1
+            rightDataIdx += 1
+            newSize += 1
+            newCachedHashCode += improve(originalHash)
+            leftDataIdx += 1
+          }
+
+          if (bitpos == maximumBitPos) {
+            finished = true
+          } else {
+            bitpos = bitpos << 1
+          }
+        }
+      }
+
+      if (anyChangesMadeSoFar)
+        new BitmapIndexedSetNode(
+          dataMap = newDataMap,
+          nodeMap = newNodeMap,
+          content = newContent,
+          originalHashes = newOriginalHashes,
+          size = newSize,
+          cachedJavaKeySetHashCode = newCachedHashCode
+        )
+      else this
+
+    case _ =>
+      // should never happen -- hash collisions are never at the same level as bitmapIndexedSetNodes
+      throw new UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode")
+  }
 }
 
 private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Vector[A]) extends SetNode[A] {
@@ -1081,12 +1349,13 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
   override def cachedJavaKeySetHashCode: Int = size * hash
 
   def subsetOf(that: SetNode[A], shift: Int): Boolean = if (this eq that) true else that match {
-    case node: BitmapIndexedSetNode[A] => false
     case node: HashCollisionSetNode[A] =>
       this.payloadArity <= node.payloadArity && this.content.forall(node.content.contains)
+    case _ =>
+      false
   }
 
-  override def filterImpl(pred: A => Boolean, flipped: Boolean) = {
+  override def filterImpl(pred: A => Boolean, flipped: Boolean): SetNode[A] = {
     val newContent = content.filterImpl(pred, flipped)
     val newContentLength = newContent.length
     if (newContentLength == 0) {
@@ -1097,7 +1366,8 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
     else new HashCollisionSetNode(originalHash, hash, newContent)
   }
 
-  override def diff(that: SetNode[A], shift: Int) = filterImpl(that.contains(_, originalHash, hash, shift), true)
+  override def diff(that: SetNode[A], shift: Int): SetNode[A] =
+    filterImpl(that.contains(_, originalHash, hash, shift), true)
 
   override def equals(that: Any): Boolean =
     that match {
@@ -1105,7 +1375,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
         (this eq node) ||
           (this.hash == node.hash) &&
             (this.content.size == node.content.size) &&
-            (this.content.forall(node.content.contains))
+            this.content.forall(node.content.contains)
       case _ => false
     }
 
@@ -1114,6 +1384,29 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
 
   override def copy() = new HashCollisionSetNode[A](originalHash, hash, content)
 
+  override def concat(that: SetNode[A], shift: Int): SetNode[A] = that match {
+    case hc: HashCollisionSetNode[A] =>
+      if (hc eq this) {
+        this
+      } else {
+        var newContent: VectorBuilder[A] = null
+        val iter = hc.content.iterator
+        while (iter.hasNext) {
+          val nextPayload = iter.next()
+          if (!content.contains(nextPayload)) {
+            if (newContent eq null) {
+              newContent = new VectorBuilder()
+              newContent.addAll(this.content)
+            }
+            newContent.addOne(nextPayload)
+          }
+        }
+        if (newContent eq null) this else new HashCollisionSetNode(originalHash, hash, newContent.result())
+      }
+    case _: BitmapIndexedSetNode[A] =>
+      // should never happen -- hash collisions are never at the same level as bitmapIndexedSetNodes
+      throw new UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode")
+  }
 }
 
 private final class SetIterator[A](rootNode: SetNode[A])
@@ -1134,7 +1427,7 @@ private final class SetIterator[A](rootNode: SetNode[A])
 private final class SetReverseIterator[A](rootNode: SetNode[A])
   extends ChampBaseReverseIterator[SetNode[A]](rootNode) with Iterator[A] {
 
-  def next() = {
+  def next(): A = {
     if (!hasNext)
       throw new NoSuchElementException
 

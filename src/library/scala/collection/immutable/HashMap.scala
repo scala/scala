@@ -117,7 +117,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
         else new HashMap(newRootNode)
       }
     case _ =>
-      mapFactory.newBuilder[K, V1].addAll(this).addAll(that).result()
+      super.concat(that)
   }
 
 
@@ -799,8 +799,13 @@ private final class BitmapIndexedMapNode[K, +V](
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): MapNode[K, V1] = that match {
-    case bm: BitmapIndexedMapNode[K, V] if bm eq this => this
     case bm: BitmapIndexedMapNode[K, V] =>
+      if (size == 0) return that
+      else if (bm.size == 0 || (bm eq this)) return this
+      else if (bm.size == 1) {
+        val originalHash = bm.getHash(0)
+        return this.updated(bm.getKey(0), bm.getValue(0), originalHash, improve(originalHash), shift)
+      }
       // if we go through the merge and the result does not differ from `bm`, we can just return `bm`, to improve sharing
       // So, `anyChangesMadeSoFar` will be set to `true` as soon as we encounter a difference between the
       // currently-being-computed result, and `bm`
@@ -837,11 +842,12 @@ private final class BitmapIndexedMapNode[K, +V](
 
           if ((bitpos & dataMap) != 0) {
             if ((bitpos & bm.dataMap) != 0) {
-              if (getKey(leftIdx) == bm.getKey(rightIdx)) {
+              val leftOriginalHash = getHash(leftIdx)
+              if (leftOriginalHash == bm.getHash(rightIdx) && getKey(leftIdx) == bm.getKey(rightIdx)) {
                 leftDataRightDataRightOverwrites |= bitpos
               } else {
                 leftDataRightDataMigrateToNode |= bitpos
-                dataToNodeMigrationTargets |= Node.bitposFrom(Node.maskFrom(improve(getHash(leftIdx)), shift))
+                dataToNodeMigrationTargets |= Node.bitposFrom(Node.maskFrom(improve(leftOriginalHash), shift))
               }
               rightIdx += 1
             } else if ((bitpos & bm.nodeMap) != 0) {
@@ -1249,7 +1255,7 @@ private final class HashCollisionMapNode[K, +V ](
     -1
   }
 
-  def size = content.length
+  def size: Int = content.length
 
   def apply(key: K, originalHash: Int, hash: Int, shift: Int): V = get(key, originalHash, hash, shift).getOrElse(throw new NoSuchElementException)
 
@@ -1362,7 +1368,7 @@ private final class HashCollisionMapNode[K, +V ](
       case _ => false
     }
 
-  override def concat[V1 >: V](that: MapNode[K, V1], shift: Int) = that match {
+  override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): HashCollisionMapNode[K, V1] = that match {
     case hc: HashCollisionMapNode[K, V1] =>
       if (hc eq this) {
         this

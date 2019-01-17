@@ -1,15 +1,15 @@
 package scala.collection.immutable
 
 import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop.forAll
+import org.scalacheck.Prop._
 import org.scalacheck._
 
 object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSet") {
 
   type K = Int
 
-//  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-//    p.withMinSuccessfulTests(1000)
+  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
+    p.withMinSuccessfulTests(100)
 
   private def doSubtract(one: HashSet[K], two: HashSet[K]) = {
     one.foldLeft(HashSet.empty[K])((result, elem) => if (two contains elem) result else result + elem)
@@ -101,7 +101,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     val intersectNative = oneWithShared.intersect(twoWithShared)
     val intersectDefault = doIntersect(oneWithShared, twoWithShared)
 
-    intersectDefault == intersectNative
+    intersectDefault =? intersectNative
   }
 
   property("intersectIdentityMostlyReference") = forAll { (input: HashSet[K], key: K) =>
@@ -246,10 +246,10 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     b.result == b.addAll(seq).result()
   }
   property("(xs ++ ys).toSet == xs.toSet ++ ys.toSet") = forAll { (xs: Seq[K],ys: Seq[K]) =>
-    (xs ++ ys).toSet == xs.toSet ++ ys.toSet
+    (xs ++ ys).toSet =? xs.toSet ++ ys.toSet
   }
   property("HashSetBuilder produces the same Set as SetBuilder") = forAll { (xs: Seq[K]) =>
-    HashSet.newBuilder[K].addAll(xs).result() == HashSet.newBuilder[K].addAll(xs).result()
+    HashSet.newBuilder[K].addAll(xs).result() =? HashSet.newBuilder[K].addAll(xs).result()
   }
   property("HashSetBuilder does not mutate after releasing") = forAll { (xs: Seq[K], ys: Seq[K], single: K, addSingleFirst: Boolean) =>
     val b = HashSet.newBuilder[K].addAll(xs)
@@ -262,7 +262,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
       b.addAll(ys)
       b.addOne(single)
     }
-    (b.result().size >= hashSetA.size) && hashSetA == cloneOfA
+    Prop(b.result().size >= hashSetA.size) && ((hashSetA: Set[K]) ?= (cloneOfA: Set[K]))
   }
   property("Set does not mutate after releasing") = forAll { (xs: Seq[K], ys: Seq[K], single: K, addSingleFirst: Boolean) =>
     val b = Set.newBuilder[K].addAll(xs)
