@@ -64,6 +64,13 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     size0 = n
   }
 
+  /** Shrinks the ArrayList to one that is adjusted to the current number of elements in it,
+    * which may replace the array by a shorter one. This allows releasing some unused memory. */
+  def shrinkToSize(): Unit = {
+    if (array.length >= 8 && array.length >= size0 / 2)
+      array = RefArrayUtils.reduceSize(array, size0)
+  }
+
   @inline private def checkWithinBounds(lo: Int, hi: Int) = {
     if (lo < 0) throw new IndexOutOfBoundsException(s"$lo is out of bounds (min 0, max ${size0-1})")
     if (hi > size0) throw new IndexOutOfBoundsException(s"$hi is out of bounds (min 0, max ${size0 - 1})")
@@ -231,6 +238,26 @@ final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extend
 
 /** An object used internally by collections backed by an extensible Array[AnyRef] */
 object RefArrayUtils {
+
+  // We chose 8 as a good size for the minimum array
+  private[this] val minimalLength: Long = 8L
+
+  def reduceSize(array: Array[AnyRef], n: Int): Array[AnyRef] = {
+    if (n < 0)
+      throw new Exception(s"Collections can not have a negative size")
+    if (n == Int.MaxValue)
+      throw new Exception(s"Collections can not have more than ${Int.MaxValue} elements")
+    // Use a Long to prevent overflows
+    var newLength: Int = array.length
+    while (newLength >= n && newLength >= 8)
+      newLength = newLength / 2
+
+    if (newLength != array.length){
+      val newArray: Array[AnyRef] = new Array(newLength)
+      Array.copy(array, 0, newArray, 0, n)
+      newArray
+    } else array
+  }
 
   def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
     // Use a Long to prevent overflows
