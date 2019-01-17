@@ -2937,13 +2937,13 @@ self =>
      *  ObjectDef       ::= Id ClassTemplateOpt
      *  }}}
      */
-    def objectDef(start: Offset, mods: Modifiers): ModuleDef = {
+    def objectDef(start: Offset, mods: Modifiers, isPackageObject: Boolean = false): ModuleDef = {
       in.nextToken()
       val nameOffset = in.offset
       val name = ident()
       val tstart = in.offset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
-        val template = templateOpt(mods, name, NoMods, Nil, tstart)
+        val template = templateOpt(mods, if (isPackageObject) nme.PACKAGEkw else name, NoMods, Nil, tstart)
         ModuleDef(mods, name.toTermName, template)
       }
     }
@@ -2960,26 +2960,18 @@ self =>
      *  }}}
      */
     def packageObjectDef(start: Offset): PackageDef = {
-      val defn   = objectDef(in.offset, NoMods)
+      val defn   = objectDef(in.offset, NoMods, isPackageObject = true)
       val pidPos = o2p(defn.pos.start)
       val pkgPos = r2p(start, pidPos.point)
       gen.mkPackageObject(defn, pidPos, pkgPos)
     }
-    def packageOrPackageObject(start: Offset): Tree = (
-      if (in.token == OBJECT)
-        joinComment(packageObjectDef(start) :: Nil).head
+
+    def packageOrPackageObject(start: Offset): Tree =
+      if (in.token == OBJECT) joinComment(packageObjectDef(start) :: Nil).head
       else {
         in.flushDoc
         makePackaging(start, pkgQualId(), inBracesOrNil(topStatSeq()))
       }
-    )
-    // TODO - eliminate this and use "def packageObjectDef" (see call site of this
-    // method for small elaboration.)
-    def makePackageObject(start: Offset, objDef: ModuleDef): PackageDef = objDef match {
-      case ModuleDef(mods, name, impl) =>
-        makePackaging(
-          start, atPos(o2p(objDef.pos.start)){ Ident(name) }, List(ModuleDef(mods, nme.PACKAGEkw, impl)))
-    }
 
     /** {{{
      *  ClassParents       ::= AnnotType {`(` [Exprs] `)`} {with AnnotType}
@@ -3080,6 +3072,11 @@ self =>
       )
       val parentPos = o2p(in.offset)
       val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+
+      // we can't easily check this later, because `gen.mkParents` adds the default AnyRef parent, and we need to warn based on what the user wrote
+      if (name == nme.PACKAGEkw && parents.nonEmpty)
+        deprecationWarning(tstart, s"package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);\n" +
+                                   s"drop the `extends` clause or use a regular object instead", "2.13.0")
 
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
@@ -3328,10 +3325,8 @@ self =>
         if (in.token == PACKAGE) {
           in.nextToken()
           if (in.token == OBJECT) {
-            // TODO - this next line is supposed to be
-            //    ts += packageObjectDef(start)
-            // but this broke a scaladoc test (run/diagrams-filtering.scala) somehow.
-            ts ++= joinComment(List(makePackageObject(start, objectDef(in.offset, NoMods))))
+            // note that joinComment is a hook method for scaladoc that takes a CBN arg -- tested by run/diagrams-filtering.scala
+            ts ++= joinComment(List(packageObjectDef(start)))
             if (in.token != EOF) {
               acceptStatSep()
               ts ++= topStatSeq()

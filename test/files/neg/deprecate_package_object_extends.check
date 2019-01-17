@@ -1,0 +1,11 @@
+deprecate_package_object_extends.scala:3: warning: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+drop the `extends` clause or use a regular object instead
+package object foo extends C
+                   ^
+deprecate_package_object_extends.scala:5: warning: package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);
+drop the `extends` clause or use a regular object instead
+package foo2 { object `package` extends C }
+                                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
