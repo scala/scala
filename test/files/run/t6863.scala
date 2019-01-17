@@ -1,5 +1,3 @@
-/* scalac: -Xsource:3.0 */
-
 /** Make sure that when a variable is captured its initialization expression is handled properly */
 object Test {
   // This is a workaround for x == (())

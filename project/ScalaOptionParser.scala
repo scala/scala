@@ -108,7 +108,7 @@ object ScalaOptionParser {
     "-g" -> List("line", "none", "notailcails", "source", "vars"),
     "-target" -> List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"))
   private def multiChoiceSettingNames = Map[String, List[String]](
-    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "package-object-classes", "stars-align", "constant", "unused"),
+    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "package-object-classes", "stars-align", "constant", "unused", "eta-zero"),
     "-language" -> List("help", "_", "dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros"),
     "-opt" -> List("unreachable-code", "simplify-jumps", "compact-locals", "copy-propagation", "redundant-casts", "box-unbox", "nullness-tracking", "closure-invocations" , "allow-skip-core-module-init", "assume-modules-non-null", "allow-skip-class-loading", "inline", "l:none", "l:default", "l:method", "l:inline", "l:project", "l:classpath"),
     "-Ywarn-unused" -> List("imports", "patvars", "privates", "locals", "explicits", "implicits", "params"),

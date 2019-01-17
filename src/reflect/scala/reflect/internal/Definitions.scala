@@ -728,7 +728,7 @@ trait Definitions extends api.StandardDefinitions {
     // Are we expecting something function-ish? This considers FunctionN / SAM / ProtoType that matches functions
     def isFunctionProto(pt: Type): Boolean =
       (isFunctionType(pt)
-       || (pt match { case pt: ProtoType => pt.expectsFunctionType  case _ => false })
+       || (pt match { case pt: ProtoType => pt.expectsFunctionType  case _ => false }) // TODO: this does not work for Function0
        || samOf(pt).exists
       )
 

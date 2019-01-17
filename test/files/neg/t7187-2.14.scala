@@ -1,12 +1,19 @@
-// scalac: -Xsource:2.14
+// scalac: -Xsource:2.14 -Xlint:eta-zero -Xlint:eta-sam
 //
+trait AcciSamZero { def apply(): Int }
+
+@FunctionalInterface
+trait SamZero { def apply(): Int }
+
 class EtaExpand214 {
   def m1 = 1
   def m2() = 1
   def m3(x: Int) = x
 
   val t1: () => Any  = m1   // error
-  val t2: () => Any  = m2   // error, no eta-expansion of zero-args methods
+  val t2: () => Any  = m2   // eta-expanded with lint warning
+  val t2AcciSam: AcciSamZero = m2   // eta-expanded with lint warning + sam warning
+  val t2Sam: SamZero = m2   // eta-expanded with lint warning
   val t3: Int => Any = m3   // ok
 
   val t4 = m1 // apply

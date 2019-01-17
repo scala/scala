@@ -1,12 +1,12 @@
-t6863.scala:43: warning: comparing values of types Unit and Unit using `==` will always yield true
+t6863.scala:41: warning: comparing values of types Unit and Unit using `==` will always yield true
     assert({ () => x}.apply == u)
                             ^
-t6863.scala:47: warning: comparing values of types Unit and Unit using `==` will always yield true
+t6863.scala:45: warning: comparing values of types Unit and Unit using `==` will always yield true
     assert({ () => x}.apply == u)
                             ^
-t6863.scala:51: warning: comparing values of types Unit and Unit using `==` will always yield true
+t6863.scala:49: warning: comparing values of types Unit and Unit using `==` will always yield true
     assert({ () => x}.apply == u)
                             ^
-t6863.scala:64: warning: comparing values of types Unit and Unit using `==` will always yield true
+t6863.scala:62: warning: comparing values of types Unit and Unit using `==` will always yield true
     assert({ () => x }.apply == u)
                              ^
