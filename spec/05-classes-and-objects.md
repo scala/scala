@@ -824,11 +824,10 @@ Consider the class definition
 
 ```scala
 class LinkedList[A]() {
-  var head = _
-  var tail = null
-  def isEmpty = tail != null
+  var head: A = _
+  var tail: LinkedList[A] = null
   def this(head: A) = { this(); this.head = head }
-  def this(head: A, tail: List[A]) = { this(head); this.tail = tail }
+  def this(head: A, tail: LinkedList[A]) = { this(head); this.tail = tail }
 }
 ```
 
