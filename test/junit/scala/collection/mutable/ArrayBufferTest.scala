@@ -358,4 +358,14 @@ class ArrayBufferTest {
     a.sortInPlace
     assertEquals(List(3,4,5), a)
   }
+
+  @Test def trimToSize: Unit = {
+    val b = ArrayBuffer(1,2,3)
+    assertEquals(8, b.array.length)
+    b ++= (1 to 1000)
+    assertEquals(1024, b.array.length)
+    b.remove(200, 803)
+    b.trimToSize()
+    assertEquals(256, b.array.length)
+  }
 }
