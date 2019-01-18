@@ -287,6 +287,7 @@ private[immutable] final class ListMapBuilder[K, V] extends mutable.Builder[(K, 
           newUnderlying = new ListMap.Node[K, V](next._1, next._2, newUnderlying)
         }
       }
+      underlying = newUnderlying
       this
 
     case _ => super.addAll(xs)
