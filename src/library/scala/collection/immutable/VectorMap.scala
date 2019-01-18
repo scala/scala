@@ -97,10 +97,10 @@ final class VectorMap[K, +V] private (
         key = null.asInstanceOf[K]
       } else {
         field(nextSlot) match {
-          case (-1, _) ⇒
+          case (-1, _) =>
             slot = fieldsLength
             key = null.asInstanceOf[K]
-          case (s, k) ⇒
+          case (s, k) =>
             slot = s
             key = k
         }
@@ -177,7 +177,7 @@ final class VectorMap[K, +V] private (
     fields
       .reverseIterator
       .find(!_.isInstanceOf[Tombstone])
-      .map { f ⇒
+      .map { f =>
         val last = f.asInstanceOf[K]
         (last, underlying(last)._2)
       }

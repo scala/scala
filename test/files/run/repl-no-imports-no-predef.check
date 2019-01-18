@@ -18,17 +18,10 @@ scala>
 scala> { import scala.Predef.ArrowAssoc; 1 -> 2 }
 res5: (Int, Int) = (1,2)
 
-scala> { import scala.Predef.ArrowAssoc; 1 → 2 }
-res6: (Int, Int) = (1,2)
-
 scala> 1 -> 2
          ^
        error: value -> is not a member of Int
        did you mean >>>?
-
-scala> 1 → 2
-         ^
-       error: value → is not a member of Int
 
 scala> 
 
@@ -36,7 +29,7 @@ scala> val answer = 42
 answer: Int = 42
 
 scala> { import scala.StringContext; s"answer: $answer" }
-res9: String = answer: 42
+res7: String = answer: 42
 
 scala> s"answer: $answer"
        ^
@@ -45,7 +38,7 @@ scala> s"answer: $answer"
 scala> 
 
 scala> "abc" + true
-res11: String = abctrue
+res9: String = abctrue
 
 scala> 
 
@@ -72,12 +65,12 @@ scala>
 scala> 2 ; 3
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res13: Int = 3
+res11: Int = 3
 
 scala> { 2 ; 3 }
          ^
        warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-res14: Int = 3
+res12: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
 bippy = {
@@ -95,56 +88,56 @@ bippy = {
 defined object Cow
 defined class Moo
 bippy: Int
-res15: Int = 105
+res13: Int = 105
 
 scala> 
 
 scala> object Bovine { var x: scala.List[_] = null } ; case class Ruminant(x: scala.Int) ; bippy * bippy * bippy
 defined object Bovine
 defined class Ruminant
-res16: Int = 216
+res14: Int = 216
 
 scala> Bovine.x = scala.List(Ruminant(5), Cow, new Moo)
 mutated Bovine.x
 
 scala> Bovine.x
-res17: List[Any] = List(Ruminant(5), Cow, Moooooo)
+res15: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> 
 
 scala> (2)
-res18: Int = 2
+res16: Int = 2
 
 scala> (2 + 2)
-res19: Int = 4
+res17: Int = 4
 
 scala> ((2 + 2))
-res20: Int = 4
+res18: Int = 4
 
 scala>   ((2 + 2))
-res21: Int = 4
+res19: Int = 4
 
 scala>   (  (2 + 2))
-res22: Int = 4
+res20: Int = 4
 
 scala>   (  (2 + 2 )  )
-res23: Int = 4
+res21: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res24: Int = 5
+res22: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-res25: (Int, Int) = (4,4)
+res23: (Int, Int) = (4,4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-res26: (Int, Int, Int) = (4,4,2)
+res24: (Int, Int, Int) = (4,4,2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ scala.Iterator(3)).mkString)
-res27: String = 4423
+res25: String = 4423
 
 scala> 
 
@@ -153,27 +146,27 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res28: (Int, Int, Int) = (1,2,3)
+res26: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                            ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res29: () => Int = <function0>
+res27: () => Int = <function0>
 
 scala> 
 
 scala> () => 5
-res30: () => Int = <function0>
+res28: () => Int = <function0>
 
 scala> 55 ; () => 5
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res31: () => Int = <function0>
+res29: () => Int = <function0>
 
 scala> () => { class X ; new X }
-res32: () => AnyRef = <function0>
+res30: () => AnyRef = <function0>
 
 scala> 
 
@@ -181,12 +174,12 @@ scala> def foo(x: scala.Int)(y: scala.Int)(z: scala.Int) = x+y+z
 foo: (x: Int)(y: Int)(z: Int)Int
 
 scala> foo(5)(10)(15)+foo(5)(10)(15)
-res33: Int = 60
+res31: Int = 60
 
 scala> 
 
 scala> scala.List(1) ++ scala.List('a')
-res34: List[AnyVal] = List(1, a)
+res32: List[AnyVal] = List(1, a)
 
 scala> 
 
@@ -201,7 +194,7 @@ EOF
 defined class C
 
 scala> new C().c
-res35: Int = 42
+res33: Int = 42
 
 scala> :paste <| EOF
 // Entering paste mode (EOF to finish)
@@ -214,7 +207,7 @@ EOF
 defined class D
 
 scala> new D().d
-res36: Int = 42
+res34: Int = 42
 
 scala> 
 
@@ -255,7 +248,7 @@ scala> case class BippyBungus()
 defined class BippyBungus
 
 scala> x1 + x2 + x3
-res37: Int = 6
+res35: Int = 6
 
 scala> :reset
 Resetting interpreter state.
@@ -267,7 +260,6 @@ Forgetting this session history:
 "abc"
 (1, 2)
 { import scala.Predef.ArrowAssoc; 1 -> 2 }
-{ import scala.Predef.ArrowAssoc; 1 → 2 }
 val answer = 42
 { import scala.StringContext; s"answer: $answer" }
 "abc" + true

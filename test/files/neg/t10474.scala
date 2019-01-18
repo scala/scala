@@ -5,8 +5,8 @@ object Test {
   object Bar
 
   def crash[A](): Boolean = Bar match {
-    case Foo.Bar ⇒ true
-    case _ ⇒ false
+    case Foo.Bar => true
+    case _ => false
   }
 }
 

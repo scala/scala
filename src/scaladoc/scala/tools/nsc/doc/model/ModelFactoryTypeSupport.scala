@@ -55,13 +55,13 @@ trait ModelFactoryTypeSupport {
           val args = tp.typeArgs
           nameBuffer append '('
           appendTypes0(args.init, ", ")
-          nameBuffer append ") ⇒ "
+          nameBuffer append ") => "
           appendType0(args.last)
         case tp: TypeRef if definitions.isScalaRepeatedParamType(tp) =>
           appendType0(tp.args.head)
           nameBuffer append '*'
         case tp: TypeRef if definitions.isByNameParamType(tp) =>
-          nameBuffer append "⇒ "
+          nameBuffer append "=> "
           appendType0(tp.args.head)
         case tp: TypeRef if definitions.isTupleTypeDirect(tp) =>
           val args = tp.typeArgs
@@ -195,7 +195,7 @@ trait ModelFactoryTypeSupport {
           }
         /* Eval-by-name types */
         case NullaryMethodType(result) =>
-          nameBuffer append '⇒'
+          nameBuffer append "=>"
           appendType0(result)
 
         /* Polymorphic types */

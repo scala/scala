@@ -628,8 +628,10 @@ trait Scanners extends ScannersCommon {
         case _ =>
           def fetchOther() = {
             if (ch == '\u21D2') {
+              deprecationWarning("The unicode arrow `⇒` is deprecated, use `=>` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
               nextChar(); token = ARROW
             } else if (ch == '\u2190') {
+              deprecationWarning("The unicode arrow `←` is deprecated, use `<-` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.", "2.13.0")
               nextChar(); token = LARROW
             } else if (Character.isUnicodeIdentifierStart(ch)) {
               putChar(ch)

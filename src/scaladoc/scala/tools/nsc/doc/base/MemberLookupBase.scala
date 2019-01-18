@@ -49,8 +49,8 @@ trait MemberLookupBase {
       | - [[scala.collection.immutable.List!.apply class List's apply method]] and
       | - [[scala.collection.immutable.List$.apply object List's apply method]]
       |Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:
-      | - [[[scala.collection.immutable.List$.fill[A](Int)(⇒A):List[A]* Fill with a single parameter]]]
-      | - [[[scala.collection.immutable.List$.fill[A](Int,Int)(⇒A):List[List[A]]* Fill with a two parameters]]]
+      | - [[[scala.collection.immutable.List$.fill[A](Int)(=>A):List[A]* Fill with a single parameter]]]
+      | - [[[scala.collection.immutable.List$.fill[A](Int,Int)(=>A):List[List[A]]* Fill with a two parameters]]]
       |Notes:
       | - you can use any number of matching square brackets to avoid interference with the signature
       | - you can use \\. to escape dots in prefixes (don't forget to use * at the end to match the signature!)
