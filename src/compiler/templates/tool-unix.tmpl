@@ -230,9 +230,10 @@ execCommand \
   $WINDOWS_OPT \
   @properties@ @class@ @toolflags@ "$@@"
 
+# record the exit status lest it be overwritten:
+# then restore IFS, reenable echo and propagate the code.
+scala_exit_status=$?
+
 unset IFS
 
-# record the exit status lest it be overwritten:
-# then reenable echo and propagate the code.
-scala_exit_status=$?
 onExit
