@@ -28,7 +28,7 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * {{{
   * val lines: Try[Seq[String]] =
   *   Using(new BufferedReader(new FileReader("file.txt"))) { reader =>
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
   *   }
   * }}}
   *
@@ -46,7 +46,7 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *
   *   // use your resources here
   *   def lines(reader: BufferedReader): Iterator[String] =
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
   *
   *   lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)
   * }
@@ -59,7 +59,7 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * {{{
   * val lines: Seq[String] =
   *   Using.resource(new BufferedReader(new FileReader("file.txt"))) { reader =>
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()).toList
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
   *   }
   * }}}
   *
