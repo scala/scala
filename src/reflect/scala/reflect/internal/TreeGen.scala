@@ -844,22 +844,19 @@ abstract class TreeGen {
       atPos(rhs.pos)(Apply(Select(rhs, nme.withFilter), visitor :: Nil))
     }
 
-  /** If tree is a variable pattern, return Some("its name and type").
-   *  Otherwise return none */
+  /** If tree is a variable pattern, return Some("its name and type"), otherwise None.
+   *  A varpat is x, x @ _, x @ (_: T), x: T.
+   *  For normal identifiers, backticks don't matter, but as a special case,
+   *  backticked underscore is a variable and not a wildcard.
+   */
   private def matchVarPattern(tree: Tree): Option[(Name, Tree)] = {
-    def wildType(t: Tree): Option[Tree] = t match {
-      case Ident(x) if x.toTermName == nme.WILDCARD             => Some(TypeTree())
-      case Typed(Ident(x), tpt) if x.toTermName == nme.WILDCARD => Some(tpt)
-      case _                                                    => None
-    }
-    (tree match {
-      case Ident(name)             => Some((name, TypeTree()))
-      case Bind(name, body)        => wildType(body) map (x => (name, x))
-      case Typed(Ident(name), tpt) => Some((name, tpt))
-      case _                       => None
-    }).filter {
-      case (nme.WILDCARD, _) => false
-      case _                 => true
+    import nme.{WILDCARD => WC}
+    tree match {
+      case id @ Ident(name) if name.toTermName != WC || id.isBackquoted => Some((name, TypeTree()))
+      case Bind(name, Ident(x)) if x.toTermName == WC                   => Some((name, TypeTree()))
+      case Bind(name, Typed(Ident(x), tpt)) if x.toTermName == WC       => Some((name, tpt))
+      case Typed(id @ Ident(name), tpt) if name.toTermName != WC || id.isBackquoted => Some((name, tpt))
+      case _ => None
     }
   }
 

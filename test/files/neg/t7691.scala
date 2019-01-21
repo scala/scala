@@ -30,3 +30,7 @@ object Test {
     val _ = 17        // was error
   }
 }
+
+class C {
+  val `_` = 42        // was crashola, see t11374
+}
