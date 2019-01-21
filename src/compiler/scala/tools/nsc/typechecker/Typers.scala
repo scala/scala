@@ -309,6 +309,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // to avoid unpositioned type errors.
     )
 
+    // Get rid of any special ProtoTypes, so that implicit search won't have to deal with them
+    private def normalizeProtoForView(proto: Type): Type = proto match {
+      case proto: OverloadedArgProto => proto.underlying
+      case pt                        => pt
+    }
 
     /** Infer an implicit conversion (`view`) between two types.
      *  @param tree             The tree which needs to be converted.
@@ -327,8 +332,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         debuglog(s"Inferring view from $from to $to for $tree (reportAmbiguous= $reportAmbiguous, saveErrors=$saveErrors)")
 
         val fromNoAnnot = from.withoutAnnotations
-        val result = inferImplicitView(fromNoAnnot, to, tree, context, reportAmbiguous, saveErrors) match {
-          case fail if fail.isFailure => inferImplicitView(byNameType(fromNoAnnot), to, tree, context, reportAmbiguous, saveErrors)
+        val toNorm = normalizeProtoForView(to)
+        val result = inferImplicitView(fromNoAnnot, toNorm, tree, context, reportAmbiguous, saveErrors) match {
+          case fail if fail.isFailure => inferImplicitView(byNameType(fromNoAnnot), toNorm, tree, context, reportAmbiguous, saveErrors)
           case ok => ok
         }
 
@@ -1284,7 +1290,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def adaptToArguments(qual: Tree, name: Name, args: List[Tree], pt: Type, reportAmbiguous: Boolean = true, saveErrors: Boolean = true): Tree = {
       def doAdapt(restpe: Type) =
         //util.trace("adaptToArgs "+qual+", name = "+name+", argtpes = "+(args map (_.tpe))+", pt = "+pt+" = ")
-        adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), restpe), reportAmbiguous, saveErrors)
+        adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), normalizeProtoForView(restpe)), reportAmbiguous, saveErrors)
 
       if (pt.isWildcard)
         doAdapt(pt)
