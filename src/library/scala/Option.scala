@@ -63,6 +63,27 @@ object Option {
  *  This allows for sophisticated chaining of $option values without
  *  having to check for the existence of a value.
  *
+ * These are useful helper functions that exist for both $some and $none.
+ *  - [[isDefined]] — True if not empty
+ *  - [[isEmpty]] — True if empty
+ *  - [[nonEmpty]] — True if not empty
+ *  - [[orElse]] — Return default optional value if empty
+ *  - [[getOrElse]] — Return default value if empty
+ *  - [[get]] — Return value, throw exception if empty
+ *  - [[fold]] —  Apply function on optional value, return default if empty
+ *  - [[map]] — Apply a function on the optional value
+ *  - [[flatMap]] — Same as map but function must return an optional value
+ *  - [[foreach]] — Apply a procedure on option value
+ *  - [[collect]] — Apply partial pattern match on optional value
+ *  - [[filter]] — An optional value satisfies predicate
+ *  - [[filterNot]] — An optional value doesn't satisfy predicate
+ *  - [[exists]] — Apply predicate on optional value, or false if empty
+ *  - [[forall]] — Apply predicate on optional value, or true if empty
+ *  - [[contains]] — Checks if value equals optional value, or false if empty
+ *  - [[toList]] — Unary list of optional value, otherwise the empty list
+ *  - [[toRight]] — Sum type for optional value is "Right", otherwise default value is "Left"
+ *  - [[toLeft]] — Sum type for optional value is "Left", otherwise default value is "Right"
+ *
  *  A less-idiomatic way to use $option values is via pattern matching: {{{
  *  val nameMaybe = request getParameter "name"
  *  nameMaybe match {
