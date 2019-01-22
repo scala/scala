@@ -5204,7 +5204,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             inEmptyPackage orElse lookupInRoot(name) match {
               case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
               case sym      => typed1(tree setSymbol sym, mode, pt)
-                }
+            }
           case LookupSucceeded(qual, sym)   =>
             (// this -> Foo.this
             if (sym.isThisSym)
@@ -5231,8 +5231,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedIdentOrWildcard(tree: Ident) = {
         val name = tree.name
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(typedIdentCount)
-        if ((name == nme.WILDCARD && mode.typingPatternNotConstructor) ||
-            (name == tpnme.WILDCARD && mode.inTypeMode))
+        if (!tree.isBackquoted &&
+            ((name == nme.WILDCARD && mode.typingPatternNotConstructor) ||
+             (name == tpnme.WILDCARD && mode.inTypeMode)))
           tree setType makeFullyDefined(pt)
         else
           typedIdent(tree, name)
