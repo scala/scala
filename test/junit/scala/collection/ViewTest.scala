@@ -7,7 +7,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import language.postfixOps
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 @RunWith(classOf[JUnit4])
 class ViewTest {
@@ -89,4 +89,21 @@ class ViewTest {
     assertEquals(lb, Seq(1, 10, -1, 2, 10, -1, 3, 10, -1))
   }
 
+  @Test
+  def updated: Unit = {
+    def checkThrows[U](f: => U) = try { f; assertTrue(false) } catch { case _: IndexOutOfBoundsException => }
+    // View.Updated can update the last element but not the one after:
+    val v1 = new View.Updated(0 until 5, 4, 0)
+    val v2 = new View.Updated(0 until 5, 5, 0)
+    assertEquals(List(0,1,2,3,0), v1.toList)
+    checkThrows(v2.toList)
+    // Seq.updated throws immediately for strict collections:
+    checkThrows(ArrayBuffer.from(0 until 5).updated(5, 0))
+    checkThrows(ArrayBuffer.from(0 until 5).updated(-1, 0))
+    // Negative indices result in an immediate exception even for lazy collections:
+    checkThrows(LazyList.from(0 until 5).updated(-1, 0))
+    // `updated` does not force a LazyList but forcing it afterwards will check the index:
+    val ll = LazyList.from(0 until 5).updated(5, 0)
+    checkThrows(ll.toList)
+  }
 }

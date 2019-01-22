@@ -891,9 +891,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @param  elem   the replacing element
     *  @tparam B        the element type of the returned $coll.
     *  @return a new $coll which is a copy of this $coll with the element at position `index` replaced by `elem`.
-    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`.
+    *  @throws IndexOutOfBoundsException if `index` does not satisfy `0 <= index < length`. In case of a
+    *                                    lazy collection this exception may be thrown at a later time or not at
+    *                                    all (if the end of the collection is never evaluated).
     */
-  def updated[B >: A](index: Int, elem: B): CC[B] = iterableFactory.from(new View.Updated(this, index, elem))
+  def updated[B >: A](index: Int, elem: B): CC[B] = {
+    if(index < 0) throw new IndexOutOfBoundsException(index.toString)
+    val k = knownSize
+    if(k >= 0 && index >= k) throw new IndexOutOfBoundsException(index.toString)
+    iterableFactory.from(new View.Updated(this, index, elem))
+  }
 
   protected[collection] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }

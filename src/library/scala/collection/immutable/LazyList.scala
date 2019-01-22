@@ -676,16 +676,15 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   // overridden just in case a lazy implementation is developed at some point
   override def transpose[B](implicit asIterable: A => collection.Iterable[B]): LazyList[LazyList[B]] = super.transpose
 
-  override def updated[B >: A](index: Int, elem: B): LazyList[B] = {
-    if (index < 0 || lengthIs <= index) throw new IndexOutOfBoundsException(s"$index")
-    updatedImpl(index, elem)
-  }
+  override def updated[B >: A](index: Int, elem: B): LazyList[B] =
+    if (index < 0) throw new IndexOutOfBoundsException(s"$index")
+    else updatedImpl(index, elem, index)
 
-  // index is already known to be in bounds
-  private def updatedImpl[B >: A](index: Int, elem: B): LazyList[B] = {
+  private def updatedImpl[B >: A](index: Int, elem: B, startIndex: Int): LazyList[B] = {
     newLL {
       if (index <= 0) sCons(elem, tail)
-      else sCons(head, tail.updatedImpl(index - 1, elem))
+      else if (tail.isEmpty) throw new IndexOutOfBoundsException(startIndex.toString)
+      else sCons(head, tail.updatedImpl(index - 1, elem, startIndex))
     }
   }
 
