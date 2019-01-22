@@ -1445,7 +1445,8 @@ trait Contexts { self: Analyzer =>
           val found = pre1.decl(name)
           found.filter(qualifies) match {
             case NoSymbol =>
-              val pre2 = companionSymbolOf(pre1.typeSymbol, this).typeOfThis
+              val companionModule = companionSymbolOf(pre1.typeSymbol, this)
+              val pre2 = companionModule.typeOfThis
               val found = pre2.decl(name).filter(qualifies)
               found match {
                 case NoSymbol => NoJavaMemberFound
