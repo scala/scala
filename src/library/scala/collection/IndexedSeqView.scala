@@ -19,6 +19,9 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
 
   override def view: IndexedSeqView[A] = this
 
+  @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
+  override def view(from: Int, until: Int): IndexedSeqView[A] = view.slice(from, until)
+
   override def iterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewIterator(this)
   override def reverseIterator: Iterator[A] = new IndexedSeqView.IndexedSeqViewReverseIterator(this)
 

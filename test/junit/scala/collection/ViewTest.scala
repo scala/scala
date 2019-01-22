@@ -106,4 +106,9 @@ class ViewTest {
     val ll = LazyList.from(0 until 5).updated(5, 0)
     checkThrows(ll.toList)
   }
+
+  def t10103: Unit = {
+    val ints: IndexedSeq[Int] = Vector(1, 2, 3, 4)
+    ints.view(1, 3): scala.collection.IndexedSeqView[Int]
+  }
 }

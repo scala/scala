@@ -43,6 +43,9 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def view: IndexedSeqView[A] = new IndexedSeqView.Id[A](this)
 
+  @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
+  override def view(from: Int, until: Int): IndexedSeqView[A] = view.slice(from, until)
+
   override protected def reversed: Iterable[A] = new IndexedSeqView.Reverse(this)
 
   // Override transformation operations to use more efficient views than the default ones
