@@ -669,6 +669,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
     *  @throws UnsupportedOperationException if this $coll is empty.
     */
+  @deprecated("Use reduceLeft instead", "2.13.0")
   def reduce[B >: A](op: (B, B) => B): B = reduceLeft(op)
 
   /** Reduces the elements of this $coll, if any, using the specified
