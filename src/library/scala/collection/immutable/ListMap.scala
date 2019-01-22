@@ -16,7 +16,7 @@ package immutable
 
 import scala.annotation.tailrec
 
-import scala.collection.mutable.Builder
+import scala.collection.mutable.ReusableBuilder
 import scala.runtime.Statics.releaseFence
 
 /**
@@ -230,10 +230,13 @@ object ListMap extends MapFactory[ListMap] {
     * @tparam K the map key type
     * @tparam V the map value type
     */
-  def newBuilder[K, V]: Builder[(K, V), ListMap[K, V]] = new ListMapBuilder[K, V]
+  def newBuilder[K, V]: ReusableBuilder[(K, V), ListMap[K, V]] = new ListMapBuilder[K, V]
 }
 
-private[immutable] final class ListMapBuilder[K, V] extends mutable.Builder[(K, V), ListMap[K, V]] {
+/** Builder for ListMap.
+  * $multipleResults
+  */
+private[immutable] final class ListMapBuilder[K, V] extends mutable.ReusableBuilder[(K, V), ListMap[K, V]] {
   private[this] var isAliased: Boolean = false
   private[this] var underlying: ListMap[K, V] = ListMap.empty
 

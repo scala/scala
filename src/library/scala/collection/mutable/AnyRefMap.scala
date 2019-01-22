@@ -496,7 +496,7 @@ object AnyRefMap {
   /** Creates a new `AnyRefMap` with zero or more key/value pairs. */
   def apply[K <: AnyRef, V](elems: (K, V)*): AnyRefMap[K, V] = buildFromIterableOnce(elems)
 
-  def newBuilder[K <: AnyRef, V]: Builder[(K, V), AnyRefMap[K, V]] = new AnyRefMapBuilder[K, V]
+  def newBuilder[K <: AnyRef, V]: ReusableBuilder[(K, V), AnyRefMap[K, V]] = new AnyRefMapBuilder[K, V]
 
   private def buildFromIterableOnce[K <: AnyRef, V](elems: IterableOnce[(K, V)]): AnyRefMap[K, V] = {
     var sz = elems.knownSize

@@ -211,7 +211,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         new TreeSet[E](t)
     }
 
-  def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = new ReusableBuilder[A, TreeSet[A]] {
+  def newBuilder[A](implicit ordering: Ordering[A]): ReusableBuilder[A, TreeSet[A]] = new ReusableBuilder[A, TreeSet[A]] {
     private[this] var tree: RB.Tree[A, Any] = null
     def addOne(elem: A): this.type = { tree = RB.update(tree, elem, null, overwrite = false); this }
     override def addAll(xs: IterableOnce[A]): this.type = {

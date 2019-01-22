@@ -16,7 +16,7 @@ package immutable
 
 
 import scala.collection.immutable.Set.Set4
-import scala.collection.mutable.{Builder, ImmutableBuilder}
+import scala.collection.mutable.{Builder, ReusableBuilder, ImmutableBuilder}
 import scala.language.higherKinds
 
 
@@ -258,7 +258,10 @@ object Set extends IterableFactory[Set] {
 abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]
 
 
-private final class SetBuilderImpl[A] extends Builder[A, Set[A]] {
+/** Builder for Set.
+  * $multipleResults
+  */
+private final class SetBuilderImpl[A] extends ReusableBuilder[A, Set[A]] {
   private[this] var elems: Set[A] = Set.empty
   private[this] var switchedToHashSetBuilder: Boolean = false
   private[this] var hashSetBuilder: HashSetBuilder[A] = _
