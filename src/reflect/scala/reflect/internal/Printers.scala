@@ -308,6 +308,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
       if (qual.nonEmpty || (checkSymbol && tree.symbol != NoSymbol)) print(resultName + ".")
       print("super")
       if (mix.nonEmpty) print(s"[$mix]")
+      else if (settings.debug) tree.tpe match {
+        case st: SuperType => print(s"[${st.supertpe}]")
+        case tp: Type => print(s"[$tp]")
+        case _ =>
+      }
     }
 
     protected def printThis(tree: This, resultName: => String) = {

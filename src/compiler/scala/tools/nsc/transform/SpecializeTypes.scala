@@ -259,7 +259,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def target = t
   }
 
-  /** Symbol is a special overload of the super accessor. */
+  /** Symbol is a special overload of the super accessor. Treated like an abstract method with no specialized overload. */
   case class SpecialSuperAccessor(t: Symbol) extends SpecializedInfo {
     def target = t
   }
@@ -763,13 +763,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           // was: new Forward(specMember) {
           //   override def target = m.owner.info.member(specializedName(m, env))
           // }
-        } else if (!sClass.isTrait && m.isMethod && !m.hasAccessorFlag) { // other concrete methods
-          // log("other concrete " + m)
-          forwardToOverload(m)
+        } else if (m.hasFlag(SUPERACCESSOR)) { // basically same as abstract case
+          // we don't emit a specialized overload for the super accessor because we can't jump back and forth
+          // between specialized and non-specialized methods during an invokespecial for the super call,
+          // so, we must jump immediately into the non-specialized world to find our super
+          val specMember = enterMember(cloneInSpecializedClass(m, f => f))
 
-        } else if (!sClass.isTrait && m.isMethod && m.hasFlag(LAZY)) {
-          forwardToOverload(m)
+          // rebindSuper in mixins knows how to rejigger this
+          // (basically it skips this specialized class in the base class seq, and then also never rebinds to a specialized method)
+          specMember.asInstanceOf[TermSymbol].referenced = m.alias
 
+          info(specMember) = SpecialSuperAccessor(specMember)
+        } else if (m.isMethod && !m.hasFlag(DEFERRED) && (!m.hasFlag(ACCESSOR) || m.hasFlag(LAZY))) { // other concrete methods
+          forwardToOverload(m)
         } else if (m.isValue && !m.isMethod) { // concrete value definition
           def mkAccessor(field: Symbol, name: Name) = {
             val newFlags = (SPECIALIZED | m.getterIn(clazz).flags) & ~(LOCAL | CASEACCESSOR | PARAMACCESSOR)
@@ -986,7 +992,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specMember
     }
 
-    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym)) {
+    if (!sym.isMethod || sym.isConstructor || hasUnspecializableAnnotation(sym) || sym.isSuperAccessor) {
       Nil
     } else {
       val stvars = specializedTypeVars(sym)
@@ -1066,6 +1072,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     (clazz.info.decls flatMap { overriding =>
       needsSpecialOverride(overriding) match {
         case (NoSymbol, _)     =>
+          // run/t4996.scala, see the amazing commit message in 9733f56
           if (overriding.isSuperAccessor) {
             val alias = overriding.alias
             debuglog(s"checking special overload for super accessor: ${overriding.fullName}, alias for ${alias.fullName}")
@@ -1762,8 +1769,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               debuglog("abstract: " + targ)
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
 
-            case SpecialSuperAccessor(targ) =>
-              debuglog("special super accessor: " + targ + " for " + tree)
+            case SpecialSuperAccessor(_) => // same as abstract method
+              debuglog(s"special super accessor: $tree with $symbol -> ${symbol.alias} in ${symbol.alias.owner} (in $currentClass)")
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
           }
           }

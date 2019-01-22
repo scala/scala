@@ -103,19 +103,28 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
    */
   private def rebindSuper(base: Symbol, member: Symbol, mixinClass: Symbol): Symbol =
     exitingSpecialize {
-      var bcs = base.info.baseClasses.dropWhile(mixinClass != _).tail
+      // the specialized version T$sp of a trait T will have a super accessor that has the same alias
+      // as the super accessor in trait T; we must rebind super
+      // from the vantage point of the original trait T, not the specialized T$sp
+      // (it's inserted in the base class seq late in the game and doesn't count as a super class in the super-call scheme)
+      val superTargetClass = if (mixinClass.isSpecialized) unspecializedSymbol(mixinClass) else mixinClass
+      var bcs = base.info.baseClasses.dropWhile(superTargetClass != _).tail
       var sym: Symbol = NoSymbol
-      debuglog("starting rebindsuper " + base + " " + member + ":" + member.tpe +
-            " " + mixinClass + " " + base.info.baseClasses + "/" + bcs)
-      while (!bcs.isEmpty && sym == NoSymbol) {
-        if (settings.debug) {
-          val other = bcs.head.info.nonPrivateDecl(member.name)
-          debuglog("rebindsuper " + bcs.head + " " + other + " " + other.tpe +
-              " " + other.isDeferred)
-        }
-        sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE))
+
+      // println(s"starting rebindsuper $base mixing in from $mixinClass: $member:${member.tpe} of ${member.owner} ; looking for super in $bcs (all bases: ${base.info.baseClasses})")
+
+      // don't rebind to specialized members unless we're looking for the super of a specialized member,
+      // since we can't jump back and forth between the unspecialized name and specialized one
+      // (So we jump into the non-specialized world and stay there until we hit our super.)
+      val likeSpecialized = if (member.isSpecialized) 0 else SPECIALIZED
+
+      while (sym == NoSymbol && bcs.nonEmpty) {
+        sym = member.matchingSymbol(bcs.head, base.thisType).suchThat(sym => !sym.hasFlag(DEFERRED | BRIDGE | likeSpecialized))
         bcs = bcs.tail
       }
+
+      // println(s"rebound $base from $mixinClass to $sym in ${sym.owner} ($bcs)")
+
       sym
     }
 
@@ -532,6 +541,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
          */
         def completeSuperAccessor(stat: Tree) = stat match {
           case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
+            debuglog(s"implementing super accessor in $clazz for ${stat.symbol} --> ${stat.symbol.alias.owner} . ${stat.symbol.alias}")
             val body = atPos(stat.pos)(Apply(SuperSelect(clazz, stat.symbol.alias), vparams map (v => Ident(v.symbol))))
             val pt   = stat.symbol.tpe.resultType
 
