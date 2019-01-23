@@ -3128,6 +3128,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
+    override def owner_=(owner: Symbol): Unit = {
+      super.owner_=(owner)
+      tyconCache = null
+      tyconRunId = NoRunId
+      tpeCache = null
+      tpePeriod = NoPeriod
+    }
+
     private def newPrefix = if (this hasFlag EXISTENTIAL | PARAM) NoPrefix else owner.thisType
     private def newTypeRef(targs: List[Type]) = typeRef(newPrefix, this, targs)
 

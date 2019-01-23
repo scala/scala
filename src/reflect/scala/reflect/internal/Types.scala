@@ -4758,7 +4758,6 @@ trait Types
       case _ =>
     }
 
-
   val shorthands = Set(
     "scala.collection.immutable.List",
     "scala.collection.immutable.Nil",
