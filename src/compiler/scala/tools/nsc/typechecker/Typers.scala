@@ -1759,7 +1759,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           checkStablePrefixClassType(parent)
 
           if (psym != superclazz) {
-            if (psym.isTrait) {
+            if (context.unit.isJava && context.unit.isJava && psym.isJavaAnnotation) {
+              // allowed
+            } else if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
                 pending += ParentSuperSubclassError(parent, superclazz, ps.head.typeSymbol, psym)

@@ -13,4 +13,6 @@ public class JavaComments {
 	private class Route {}
  	final java.util.List<Route> routes = null;
 
+	abstract class AnnotImpl implements Annot {}
+
 }
