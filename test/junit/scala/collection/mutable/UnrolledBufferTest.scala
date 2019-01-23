@@ -22,4 +22,12 @@ class UnrolledBufferTestTest {
     b.insert(40, -1)
     assert(b sameElements((1 to 40) ++ Seq(-1) ++ (41 to 100)))
   }
+
+  @Test
+  def test_removal(): Unit = {
+    val b = UnrolledBuffer(1, 2, 3)
+    b -= 2
+    assert(b == (1 :: 3 :: Nil))
+    assert(b.size == 2)
+  }
 }

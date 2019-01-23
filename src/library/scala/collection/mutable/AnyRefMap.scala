@@ -387,7 +387,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     arm
   }
 
-  override def ++[V2 >: V](xs: scala.collection.Iterable[(K, V2)]): AnyRefMap[K, V2] = concat(xs)
+  override def ++[V2 >: V](xs: scala.collection.IterableOnce[(K, V2)]): AnyRefMap[K, V2] = concat(xs)
 
   @deprecated("Use m.clone().addOne(k,v) instead of m.updated(k, v)", "2.13.0")
   override def updated[V1 >: V](key: K, value: V1): AnyRefMap[K, V1] =

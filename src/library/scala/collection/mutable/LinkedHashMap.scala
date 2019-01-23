@@ -77,7 +77,7 @@ class LinkedHashMap[K, V]
   private def newHashTable =
     new HashTable[K, V, Entry] {
       def createNewEntry(key: K, value: V): Entry = {
-        val e = new Entry(key, value.asInstanceOf[V])
+        val e = new Entry(key, value)
         if (firstEntry eq null) firstEntry = e
         else { lastEntry.later = e; e.earlier = lastEntry }
         lastEntry = e

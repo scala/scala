@@ -39,7 +39,8 @@ import java.lang.Integer
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-private[mutable] abstract class HashTable[A, B, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
+// Was an abstract class, but to simplify the upgrade of the parallel collections I’ve made it a trait
+private[collection] /*abstract class*/ trait HashTable[A, B, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
   // Replacing Entry type parameter by abstract type member here allows to not expose to public
   // implementation-specific entry classes such as `DefaultEntry` or `LinkedEntry`.
   // However, I'm afraid it's too late now for such breaking change.
@@ -411,7 +412,7 @@ private[collection] object HashTable {
 /** Class used internally.
   * @since 2.8
   */
-private[mutable] trait HashEntry[A, E <: HashEntry[A, E]] {
+private[collection] trait HashEntry[A, E <: HashEntry[A, E]] {
   val key: A
   var next: E = _
 }

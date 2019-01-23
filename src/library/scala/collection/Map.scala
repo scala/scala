@@ -293,7 +293,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   })
 
   /** Alias for `concat` */
-  /*@`inline` final*/ def ++ [V2 >: V](xs: collection.Iterable[(K, V2)]): CC[K, V2] = concat(xs)
+  /*@`inline` final*/ def ++ [V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = concat(xs)
 
   override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
     iterator.map { case (k, v) => s"$k -> $v" }.addString(sb, start, sep, end)
