@@ -14,7 +14,6 @@ package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.{ ListBuffer, Stack }
-import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
 import scala.util.matching.Regex.Match
 
@@ -33,7 +32,7 @@ abstract class FormatInterpolator {
 
   private def bail(msg: String) = global.abort(msg)
 
-  def interpolate: Tree = c.macroApplication match {
+  def interpolateF: Tree = c.macroApplication match {
     //case q"$_(..$parts).f(..$args)" =>
     case Applied(Select(Apply(_, parts), _), _, argss) =>
       val args = argss.flatten

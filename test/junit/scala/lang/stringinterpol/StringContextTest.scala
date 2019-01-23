@@ -66,10 +66,6 @@ class StringContextTest {
 
   @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
 
-  @Test def t6631_badEscape() = assertThrows[InvalidEscapeException] {
-    s"""\x"""
-  }
-
   // verifying that the standard interpolators can be supplanted
   @Test def antiHijack_?() = {
     object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any) = "!!!!" } }
