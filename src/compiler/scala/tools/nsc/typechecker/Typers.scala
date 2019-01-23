@@ -1845,7 +1845,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
           checkEphemeral(clazz, impl2.body)
 
-        if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
+        if (!clazz.isJavaDefined && (clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
           if (!clazz.owner.isPackageClass)
             context.error(clazz.pos, "inner classes cannot be classfile annotations")
           // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
@@ -2008,7 +2008,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (clazz.isTrait && hasSuperArgs(parents1.head))
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
 
-      if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
+      if (!clazz.isJavaDefined && (clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
         context.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
