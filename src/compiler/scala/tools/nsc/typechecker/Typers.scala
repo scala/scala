@@ -131,7 +131,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (`owner` tells where the type occurs).
      */
     def privates[T <: Tree](typer: Typer, owner: Symbol, tree: T): T =
-      check(typer, owner, EmptyScope, WildcardType, tree)
+      if (owner.isJavaDefined) tree else check(typer, owner, EmptyScope, WildcardType, tree)
 
     private def check[T <: Tree](typer: Typer, owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
       this.owner = owner

@@ -9,4 +9,8 @@ package test.scaladoc;
 public class JavaComments {
 	static @interface Annot {
 	}
+
+	private class Route {}
+ 	final java.util.List<Route> routes = null;
+
 }
