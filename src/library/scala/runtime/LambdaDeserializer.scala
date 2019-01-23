@@ -116,11 +116,4 @@ object LambdaDeserializer {
     val captures = Array.tabulate(serialized.getCapturedArgCount)(n => serialized.getCapturedArg(n))
     factory.invokeWithArguments(captures: _*)
   }
-
-  private[this] val JavaIOSerializable = {
-    // We could actually omit this marker interface as LambdaMetaFactory will add it if
-    // the FLAG_SERIALIZABLE is set and of the provided markers extend it. But the code
-    // is cleaner if we uniformly add a single marker, so I'm leaving it in place.
-    "java.io.Serializable"
-  }
 }
