@@ -553,7 +553,7 @@ trait TypeDiagnostics {
             // Include references to private/local aliases (which might otherwise refer to an enclosing class)
             val isAlias = {
               val td = tp.typeSymbolDirect
-              td.isAliasType && (td.isLocal || td.isPrivate)
+              td.isAliasType && (td.isLocalToBlock || td.isPrivate)
             }
             // Ignore type references to an enclosing class. A reference to C must be outside C to avoid warning.
             if (isAlias || !currentOwner.hasTransOwner(tp.typeSymbol)) tp match {

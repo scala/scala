@@ -1037,10 +1037,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isTopLevel = owner.isPackageClass
 
     /** Is this symbol defined in a block? */
-    @deprecated("use isLocalToBlock instead", "2.11.0")
-    final def isLocal: Boolean = owner.isTerm
-
-    /** Is this symbol defined in a block? */
     final def isLocalToBlock: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
