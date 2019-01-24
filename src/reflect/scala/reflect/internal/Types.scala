@@ -3467,6 +3467,7 @@ trait Types
      */
     protected final def sharesConstraints(other: Type): Boolean = other match {
       case other: TypeVar => constr == other.constr // scala/bug#8237 avoid cycles. Details in pos/t8237.scala
+      case PolyType(_, other: TypeVar) => constr == other.constr
       case _ => false
     }
     private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse

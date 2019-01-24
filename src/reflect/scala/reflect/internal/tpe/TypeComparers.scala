@@ -382,18 +382,14 @@ trait TypeComparers {
   def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
 
     def isSubHKTypeVar(tp1: Type, tp2: Type) = (tp1, tp2) match {
-      case (tv1 @ TypeVar(_, _), tv2 @ TypeVar(_, _)) =>
-        reporter.warning(tv1.typeSymbol.pos,
-          sm"""|compiler bug: Unexpected code path: testing two type variables for subtype relation:
-               |  ${tv1} <:< ${tv2}
-               |Please report bug at https://github.com/scala/bug/issues
-            """.trim)
-        false
-      case (tp1, tv2 @ TypeVar(_, _)) =>
+      case (tv1: TypeVar, tv2: TypeVar) =>
+        devWarning(sm"Unexpected code path: testing two type variables for subtype relation: $tv1 <:< $tv2")
+        tv1 eq tv2
+      case (_, tv2: TypeVar) =>
         val ntp1 = tp1.normalize
         (tv2.params corresponds ntp1.typeParams)(methodHigherOrderTypeParamsSubVariance) &&
         { tv2.addLoBound(ntp1); true }
-      case (tv1 @ TypeVar(_, _), tp2) =>
+      case (tv1: TypeVar, _) =>
         val ntp2 = tp2.normalize
         (ntp2.typeParams corresponds tv1.params)(methodHigherOrderTypeParamsSubVariance) &&
         { tv1.addHiBound(ntp2); true }
