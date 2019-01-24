@@ -1352,9 +1352,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
       val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
-      val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
-      visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable, markers)
+      visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable)
       if (isSerializable) {
         val indy = bc.jmethod.instructions.getLast.asInstanceOf[InvokeDynamicInsnNode]
         addIndyLambdaImplMethod(cnode.name, bc.jmethod, indy, implMethodHandle)
@@ -1364,8 +1363,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
                                         implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type, overriddenMethodTypes: Seq[asm.Type],
-                                        serializable: Boolean, markerInterfaces: Seq[asm.Type]): Unit = {
-    import java.lang.invoke.LambdaMetafactory.{FLAG_BRIDGES, FLAG_MARKERS, FLAG_SERIALIZABLE}
+                                        serializable: Boolean): Unit = {
+    import java.lang.invoke.LambdaMetafactory.{FLAG_BRIDGES, FLAG_SERIALIZABLE}
     // scala/bug#10334: make sure that a lambda object for `T => U` has a method `apply(T)U`, not only the `(Object)Object`
     // version. Using the lambda a structural type `{def apply(t: T): U}` causes a reflective lookup for this method.
     val needsGenericBridge = samMethodType != instantiatedMethodType
@@ -1382,8 +1381,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     val bridgeArgs = if (bridges.nonEmpty) Int.box(bridges.length) +: bridges else Nil
 
     def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
-    val flags = FLAG_MARKERS | flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(bridges.nonEmpty, FLAG_BRIDGES)
-    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags), Int.box(markerInterfaces.length)) ++ markerInterfaces ++ bridgeArgs
+    val flags = flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(bridges.nonEmpty, FLAG_BRIDGES)
+    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags)) ++ bridgeArgs
 
     jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
   }
