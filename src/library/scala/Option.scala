@@ -67,8 +67,8 @@ object Option {
  *  - [[isDefined]] — True if not empty
  *  - [[isEmpty]] — True if empty
  *  - [[nonEmpty]] — True if not empty
- *  - [[orElse]] — Return default optional value if empty
- *  - [[getOrElse]] — Return default value if empty
+ *  - [[orElse]] — Evaluate and return alternate optional value if empty
+ *  - [[getOrElse]] — Evaluate and return alternate value if empty
  *  - [[get]] — Return value, throw exception if empty
  *  - [[fold]] —  Apply function on optional value, return default if empty
  *  - [[map]] — Apply a function on the optional value
