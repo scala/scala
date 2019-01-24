@@ -54,6 +54,13 @@ trait Positions extends api.Positions { self: SymbolTable =>
       while (rest ne Nil) {
         val head = rest.head
         rest = rest.tail
+        
+        // TODO: a tree's range position should cover the positions of all trees it "includes" 
+        // (inclusion mostly refers to subtrees, but also other attributes reached through the tree, such as its annotations/modifiers);
+        // concretely, a MemberDef's position should cover its annotations (scala/bug#11060)
+        // Workaround, which explicitly includes annotations of traversed trees, can be removed when TODO above is resolved:
+        head match { case md: MemberDef => rest = md.mods.annotations ::: rest  case _ => }
+        
         val pos = head.pos
         if (pos.isRange) {
           min = Math.min(min, pos.start)
