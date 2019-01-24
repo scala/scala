@@ -81,8 +81,6 @@ object Option {
  *  - [[forall]] — Apply predicate on optional value, or true if empty
  *  - [[contains]] — Checks if value equals optional value, or false if empty
  *  - [[toList]] — Unary list of optional value, otherwise the empty list
- *  - [[toRight]] — Sum type for optional value is "Right", otherwise default value is "Left"
- *  - [[toLeft]] — Sum type for optional value is "Left", otherwise default value is "Right"
  *
  *  A less-idiomatic way to use $option values is via pattern matching: {{{
  *  val nameMaybe = request getParameter "name"
