@@ -222,23 +222,45 @@ private[internal] trait TypeMaps {
         withVariance(Invariant)(this(info))
       else
         this(info)
+  }
+
+  abstract class TypeFolder extends (Type => Unit) {
+    /** Map this function over given type */
+    def apply(tp: Type): Unit // = if (tp ne null) tp.foldOver(this)
+
+    /** Map this function over given type */
+    def foldOver(syms: List[Symbol]): Unit = syms.foreach( sym => apply(sym.info) )
+
+    def foldOver(scope: Scope): Unit = {
+      val elems = scope.toList
+      val elems1 = foldOver(elems)
     }
+
+    def foldOverAnnotations(annots: List[AnnotationInfo]): Unit =
+      annots foreach foldOver
+
+    def foldOver(annot: AnnotationInfo): Unit = {
+      val AnnotationInfo(atp, args, assocs) = annot
+      atp.foldOver(this)
+      foldOverAnnotArgs(args)
+    }
+
+    def foldOverAnnotArgs(args: List[Tree]): Unit =
+      args foreach foldOver
+
+    def foldOver(tree: Tree): Unit = apply(tree.tpe)
+  }
 
   abstract class TypeTraverser extends TypeMap {
     def traverse(tp: Type): Unit
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
 
-  abstract class TypeTraverserWithResult[T] extends TypeTraverser {
-    def result: T
-    def clear(): Unit
-  }
-
-  abstract class TypeCollector[T](initial: T) extends TypeTraverser {
+  abstract class TypeCollector[T](initial: T) extends TypeFolder {
     var result: T = _
     def collect(tp: Type) = {
       result = initial
-      traverse(tp)
+      apply(tp)
       result
     }
   }
@@ -290,7 +312,7 @@ private[internal] trait TypeMaps {
     private def countOccs(tp: Type) = {
       tp foreach {
         case TypeRef(_, sym, _) =>
-          if (tparams contains sym)
+          if (occurCount contains sym)
             occurCount(sym) += 1
         case _ => ()
       }
@@ -841,10 +863,9 @@ private[internal] trait TypeMaps {
 
   // dependent method types
   object IsDependentCollector extends TypeCollector(false) {
-    def traverse(tp: Type): Unit = {
+    def apply(tp: Type): Unit =
       if (tp.isImmediatelyDependent) result = true
-      else if (!result) tp.dealias.mapOver(this)
-    }
+      else if (!result) tp.dealias.foldOver(this)
   }
 
   object ApproximateDependentMap extends TypeMap {
@@ -994,7 +1015,7 @@ private[internal] trait TypeMaps {
 
     protected def pred(sym: Symbol): Boolean
 
-    def traverse(tp: Type): Unit = {
+    def apply(tp: Type): Unit =
       if (!result) {
         tp match {
           case _: ExistentialType =>
@@ -1003,24 +1024,23 @@ private[internal] trait TypeMaps {
             //
             // We can just map over the components and wait until we see the underlying type before we call
             // normalize.
-            tp.mapOver(this)
+            tp.foldOver(this)
           case TypeRef(_, sym1, _) if pred(sym1) => result = true // catch aliases before normalization
           case _ =>
             tp.normalize match {
               case TypeRef(_, sym1, _) if pred(sym1) => result = true
               case refined: RefinedType =>
-                tp.prefix.mapOver(this) // Assumption is that tp was a TypeRef prior to normalization so we should
+                tp.prefix.foldOver(this) // Assumption is that tp was a TypeRef prior to normalization so we should
                                         // mapOver its prefix
-                refined.mapOver(this)
+                refined.foldOver(this)
               case SingleType(_, sym1) if pred(sym1) => result = true
-              case _ => tp.mapOver(this)
+              case _ => tp.foldOver(this)
             }
         }
       }
-    }
 
     private[this] def inTree(t: Tree): Boolean = {
-      if (pred(t.symbol)) result = true else traverse(t.tpe)
+      if (pred(t.symbol)) result = true else apply(t.tpe)
       result
     }
 
@@ -1032,10 +1052,9 @@ private[internal] trait TypeMaps {
       }
     }
 
-    override def mapOver(arg: Tree) = {
+    override def foldOver(arg: Tree): Unit = {
       if (! result)
         findInTree.collect(arg)
-      arg
     }
   }
 
@@ -1054,9 +1073,9 @@ private[internal] trait TypeMaps {
   class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
     override def collect(tp: Type) = super.collect(tp).reverse
 
-    def traverse(tp: Type): Unit = {
+    override def apply(tp: Type): Unit = {
       if (p(tp)) result ::= tp
-      tp.mapOver(this)
+      tp.foldOver(this)
     }
   }
 
@@ -1064,9 +1083,9 @@ private[internal] trait TypeMaps {
   class CollectTypeCollector[T](pf: PartialFunction[Type, T]) extends TypeCollector[List[T]](Nil) {
     override def collect(tp: Type) = super.collect(tp).reverse
 
-    def traverse(tp: Type): Unit = {
+    override def apply(tp: Type): Unit = {
       if (pf.isDefinedAt(tp)) result ::= pf(tp)
-      tp.mapOver(this)
+      tp.foldOver(this)
     }
   }
 
@@ -1079,17 +1098,17 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `filter` method. */
   class FindTypeCollector(p: Type => Boolean) extends TypeCollector[Option[Type]](None) {
-    def traverse(tp: Type): Unit =
+    def apply(tp: Type): Unit =
       if (result.isEmpty)
-        if (p(tp)) result = Some(tp) else tp.mapOver(this)
+        if (p(tp)) result = Some(tp) else tp.foldOver(this)
   }
 
   object ErroneousCollector extends TypeCollector(false) {
-    def traverse(tp: Type): Unit = {
+    def apply(tp: Type): Unit =
       if (!result) {
-        if (tp.isError) result = true else tp.mapOver(this)
+        result = tp.isError
+        if (!result) tp.foldOver(this)
       }
-    }
   }
 
   object adaptToNewRunMap extends TypeMap {
