@@ -326,15 +326,23 @@ trait Infer extends Checkable {
         (samFun ne NoType) && isCompatible(tp, samFun)
       }
 
-      val tp1 = methodToExpressionTp(tp)
+      // can only compare if both types are repeated or neither is (T* is not actually a first-class type, even though it has a BTS and thus participates in subtyping)
+      (!isRepeatedParamType(tp) || isRepeatedParamType(pt)) && {
+        val tp1 = methodToExpressionTp(tp)
 
-      (    (tp1 weak_<:< pt)
-        || isCoercible(tp1, pt)
-        || isCompatibleByName(tp, pt)
-        || isCompatibleSam(tp, pt)
-      )
+        ((tp1 weak_<:< pt)
+         || isCoercible(tp1, pt)
+         || isCompatibleByName(tp, pt)
+         || isCompatibleSam(tp, pt)
+        )
+      }
     }
-    def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts)(isCompatible)
+
+    def isCompatibleArgs(tps: List[Type], pts: List[Type]) = {
+      val res = (tps corresponds pts)(isCompatible)
+//      println(s"isCompatibleArgs $res : $tps <:< $pts")
+      res
+    }
 
     def isWeaklyCompatible(tp: Type, pt: Type): Boolean = {
       def isCompatibleNoParamsMethod = tp match {
@@ -689,28 +697,33 @@ trait Infer extends Checkable {
     /** The type of an argument list after being coerced to a tuple.
      *  @pre: the argument list is eligible for tuple conversion.
      */
-    private def typeAfterTupleConversion(argtpes: List[Type]): Type = (
+    private def typeAfterTupleConversion(argtpes: List[Type]): Type =
       if (argtpes.isEmpty) UnitTpe                 // aka "Tuple0"
       else tupleType(argtpes map {
         case NamedType(name, tp) => UnitTpe  // not a named arg - only assignments here
         case RepeatedType(tp)    => tp       // but probably shouldn't be tupling a call containing :_*
         case tp                  => tp
       })
-    )
 
     /** If the argument list needs to be tupled for the parameter list,
-     *  a list containing the type of the tuple.  Otherwise, the original
-     *  argument list.
-     */
+      * a list containing the type of the tuple.  Otherwise, the original
+      * argument list.
+      *
+      * NOTE: we have to exclude repeated parameter types for overloading resolution like this:
+      *   def f[T](x: T): T = x
+      *   def f[T](x: T, xs: T*): T = x
+      *
+      * In the process of deciding which ones is more specific, isApplicableToMethod would otherwise try T' = (T, T*)
+      */
     def tupleIfNecessary(formals: List[Type], argtpes: List[Type]): List[Type] = {
-      if (eligibleForTupleConversion(formals, argtpes.size))
+      if (!argtpes.exists(isRepeatedParamType) && eligibleForTupleConversion(formals, argtpes.size))
         typeAfterTupleConversion(argtpes) :: Nil
       else
         argtpes
     }
 
     // This is primarily a duplicte of enhanceBounds in typedAppliedTypeTree
-    // modified to use updateInfo rather than setInfo to avoid wiping out 
+    // modified to use updateInfo rather than setInfo to avoid wiping out
     // type history.
     def enhanceBounds(okparams: List[Symbol], okargs: List[Type], undets: List[Symbol]): Unit =
       undets.foreach { undet =>
@@ -755,12 +768,14 @@ trait Infer extends Checkable {
         case (_, pos, _) if !allArgsArePositional(pos) && !sameLength(formals, mt.params) => false // different length lists and all args not positional
         case (args, pos, _)                                                               => typesCompatible(reorderArgs(args, pos))
       }
-      compareLengths(argtpes0, formals) match {
+      val res = compareLengths(argtpes0, formals) match {
         case 0 if containsNamedType(argtpes0) => reorderedTypesCompatible      // right number of args, wrong order
         case 0                                => typesCompatible(argtpes0)     // fast track if no named arguments are used
         case x if x > 0                       => tryWithArgs(argsTupled)       // too many args, try tupling
         case _                                => tryWithArgs(argsPlusDefaults) // too few args, try adding defaults or tupling
       }
+      // println(s"isApplicableToMethod $res : $mt --> $formals to $argtpes0 for $pt under $undetparams")
+      res
     }
 
     /** Is there an instantiation of free type variables `undetparams` such that
@@ -772,17 +787,20 @@ trait Infer extends Checkable {
      *    type is set to `Unit`, i.e. the corresponding argument is treated as
      *    an assignment expression (@see checkNames).
      */
-    private def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = (
-      ftpe match {
-        case OverloadedType(pre, alts) => alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
-        case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
-        case mt @ MethodType(_, _)     => isApplicableToMethod(undetparams, mt, argtpes0, pt)
-        case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt)
-        case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe)((tps1, res1) => isApplicable(tps1 ::: undetparams, res1, argtpes0, pt))
-        case ErrorType                 => true
-        case _                         => false
-      }
-    )
+    private def isApplicable(undetparams: List[Symbol], ftpe: Type, argtpes0: List[Type], pt: Type): Boolean = {
+      val res =
+        ftpe match {
+          case OverloadedType(pre, alts) => alts exists (alt => isApplicable(undetparams, pre memberType alt, argtpes0, pt))
+          case ExistentialType(_, qtpe)  => isApplicable(undetparams, qtpe, argtpes0, pt)
+          case mt@MethodType(_, _)       => isApplicableToMethod(undetparams, mt, argtpes0, pt)
+          case NullaryMethodType(restpe) => isApplicable(undetparams, restpe, argtpes0, pt)
+          case PolyType(tparams, restpe) => createFromClonedSymbols(tparams, restpe)((tps1, res1) => isApplicable(tps1 ::: undetparams, res1, argtpes0, pt))
+          case ErrorType                 => true
+          case _                         => false
+        }
+//      println(s"isApplicable $res : $ftpe to $argtpes0 for $pt under $undetparams")
+      res
+    }
 
     /**
      * Are arguments of the given types applicable to `ftpe`? Type argument inference
@@ -807,30 +825,38 @@ trait Infer extends Checkable {
      *  @see SLS (sec:overloading-resolution)
      */
     def isAsSpecific(ftpe1: Type, ftpe2: Type): Boolean = {
-      def checkIsApplicable(argtpes: List[Type]) = isApplicable(Nil, ftpe2, argtpes, WildcardType)
-      def bothAreVarargs                         = isVarArgsList(ftpe1.params) && isVarArgsList(ftpe2.params)
-      def onRight = ftpe2 match {
-        case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
-        case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _))
-        case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe)
-        case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res)
-        case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe))
-        case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe))
-        case _                                             => isAsSpecificValueType(ftpe1, ftpe2, Nil, Nil)
+      def checkIsApplicable(mt: MethodType) = {
+        val paramTypes = mt.paramTypes
+        val aligned =
+          if (isRepeatedParamType(paramTypes.last) && isVarArgsList(ftpe2.params)) paramTypes.init :+ repeatedToSingle(paramTypes.last)
+          else paramTypes
+        isApplicable(Nil, ftpe2, aligned, WildcardType)
       }
+
+      val res =
       ftpe1 match {
         case OverloadedType(pre, alts)                                      => alts exists (alt => isAsSpecific(pre memberType alt, ftpe2))
         case et: ExistentialType                                            => isAsSpecific(et.skolemizeExistential, ftpe2)
         case NullaryMethodType(restpe)                                      => isAsSpecific(restpe, ftpe2)
         case mt @ MethodType(_, restpe) if mt.isImplicit                    => isAsSpecific(restpe, ftpe2)
-        case mt @ MethodType(_, _) if bothAreVarargs                        => checkIsApplicable(mt.paramTypes mapConserve repeatedToSingle)
-        case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt.paramTypes)
+        case mt @ MethodType(params, _) if params.nonEmpty                  => checkIsApplicable(mt)
         case PolyType(tparams, NullaryMethodType(restpe))                   => isAsSpecific(PolyType(tparams, restpe), ftpe2)
         case PolyType(tparams, mt @ MethodType(_, restpe)) if mt.isImplicit => isAsSpecific(PolyType(tparams, restpe), ftpe2)
-        case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt.paramTypes)
+        case PolyType(_, mt @ MethodType(params, _)) if params.nonEmpty     => checkIsApplicable(mt)
         case ErrorType                                                      => true
-        case _                                                              => onRight
+        case _                                                              =>
+          ftpe2 match {
+            case OverloadedType(pre, alts)                     => alts forall (alt => isAsSpecific(ftpe1, pre memberType alt))
+            case et: ExistentialType                           => et.withTypeVars(isAsSpecific(ftpe1, _))
+            case mt @ MethodType(_, restpe)                    => !mt.isImplicit || isAsSpecific(ftpe1, restpe)
+            case NullaryMethodType(res)                        => isAsSpecific(ftpe1, res)
+            case PolyType(tparams, NullaryMethodType(restpe))  => isAsSpecific(ftpe1, PolyType(tparams, restpe))
+            case PolyType(tparams, mt @ MethodType(_, restpe)) => !mt.isImplicit || isAsSpecific(ftpe1, PolyType(tparams, restpe))
+            case _                                             => isAsSpecificValueType(ftpe1, ftpe2, Nil, Nil)
+          }
       }
+      // println(s"isAsSpecific $res $ftpe1 - $ftpe2")
+      res
     }
 
     private def isAsSpecificValueType(tpe1: Type, tpe2: Type, undef1: List[Symbol], undef2: List[Symbol]): Boolean = tpe1 match {
@@ -1413,6 +1439,7 @@ trait Infer extends Checkable {
         private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
         private def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
           val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
+          // println(s"bestForExpectedType($argtpes, $pt): $alts -app-> ${alts filter isAltApplicable(pt)} -arity-> $applicable")
           val ranked      = bestAlternatives(applicable)(rankAlternatives)
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous

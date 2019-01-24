@@ -1424,6 +1424,11 @@ trait Definitions extends api.StandardDefinitions {
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): AliasTypeSymbol =
       owner.newAliasType(name) setInfoAndEnter alias
 
+    // TODO: this is an unfortunate trade-off: on the one hand, `T*` is not a first-class type, and it shouldn't be compatible with T.
+    // This matters for overloading resolution, where a vararg method should be seen as less specific than a non-vararg one,
+    // since you can pass a T to a method that expects a T*, but you can't pass a T* to a method that takes a T
+    // (except if you allow converting T* to Seq[T], which should not be done through subtyping but instead using a conversion, IMO.)
+    // On the other hand, inside a method body, an argument of type T* can be treated as a Seq[T].
     private def specialPolyClass(name: TypeName, flags: Long)(parentFn: Symbol => Type): ClassSymbol = {
       val clazz   = enterNewClass(ScalaPackageClass, name, Nil)
       val tparam  = clazz.newSyntheticTypeParam("T0", flags)
