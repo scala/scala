@@ -63,7 +63,7 @@ object Option {
  *  This allows for sophisticated chaining of $option values without
  *  having to check for the existence of a value.
  *
- * These are useful helper functions that exist for both $some and $none.
+ * These are useful methods that exist for both $some and $none.
  *  - [[isDefined]] — True if not empty
  *  - [[isEmpty]] — True if empty
  *  - [[nonEmpty]] — True if not empty
