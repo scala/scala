@@ -1422,8 +1422,8 @@ abstract class RefChecks extends Transform {
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = {
         annots.foreach { ann =>
-          checkTypeRef(ann.tpe, tree, skipBounds = false)
-          checkTypeRefBounds(ann.tpe, tree)
+          checkTypeRef(ann.atp, tree, skipBounds = false)
+          checkTypeRefBounds(ann.atp, tree)
           if (ann.original != null && ann.original.hasExistingSymbol)
             checkUndesiredProperties(ann.original.symbol, tree.pos)
         }

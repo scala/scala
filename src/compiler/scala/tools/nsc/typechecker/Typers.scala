@@ -3781,7 +3781,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val annInfo = typedAnnotation(ann, mode)
-          val annType = annInfo.tpe
+          val annType = annInfo.atp
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
             reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
