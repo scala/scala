@@ -47,13 +47,6 @@ package object reflect {
   @deprecated("use scala.reflect.ClassTag instead", "2.10.0")
   val ClassManifest = ClassManifestFactory
 
-  /** The object `Manifest` defines factory methods for manifests.
-   *  It is intended for use by the compiler and should not be used in client code.
-   */
-  // TODO undeprecated until Scala reflection becomes non-experimental
-  // @deprecated("use scala.reflect.ClassTag (to capture erasures), scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
-  val Manifest = ManifestFactory
-
   def classTag[T](implicit ctag: ClassTag[T]) = ctag
 
   /** Make a java reflection object accessible, if it is not already
