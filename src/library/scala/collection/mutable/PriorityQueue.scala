@@ -248,7 +248,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   /** Removes all elements from the queue. After this operation is completed,
     *  the queue will be empty.
     */
-  def clear(): Unit = { resarr.p_size0 = 1 }
+  def clear(): Unit = {
+    resarr.clear()
+    resarr.p_size0 = 1
+  }
 
   /** Returns an iterator which yields all the elements.
     *
@@ -271,7 +274,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     *
     *  @return   the reversed priority queue.
     */
-  def reverse = {
+  def reverse: PriorityQueue[A] = {
     val revq = new PriorityQueue[A]()(ord.reverse)
     // copy the existing data into the new array backwards
     // this won't put it exactly into the correct order,
