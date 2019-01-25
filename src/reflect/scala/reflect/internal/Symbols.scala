@@ -1036,6 +1036,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass
 
+    // shim for sbt's compiler interface
+    /** Is this symbol defined in a block? */
+    @deprecated("use isLocalToBlock instead", "2.11.0")
+    final def isLocal: Boolean = owner.isTerm
+
     /** Is this symbol defined in a block? */
     final def isLocalToBlock: Boolean = owner.isTerm
 
