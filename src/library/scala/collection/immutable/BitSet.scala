@@ -184,15 +184,15 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
     override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
       val _elems0 = BitSetOps.computeWordForFilter(pred, isFlipped, elems0, 0)
-      val _elems1 = BitSetOps.computeWordForFilter(pred, isFlipped, elems1, 0)
+      val _elems1 = BitSetOps.computeWordForFilter(pred, isFlipped, elems1, 1)
 
       if (_elems1 == 0L) {
         if (_elems0 == 0L) {
           empty
         }
-        new BitSet1(_elems0)
+        else new BitSet1(_elems0)
       }
-      new BitSet2(_elems0, _elems1)
+      else new BitSet2(_elems0, _elems1)
     }
   }
 
