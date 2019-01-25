@@ -206,6 +206,12 @@ object TestImmutable2 {
   println
 }
 
+object TestImmutable3 {
+  import scala.collection.immutable.BitSet
+  BitSet(125).filter{ xi => println(xi); true } // scala/bug#11380
+  println
+}
+
 object Test extends App {
   TestMutable
   TestMutable2
@@ -213,6 +219,7 @@ object Test extends App {
   // TestMutable4
   TestImmutable
   TestImmutable2
+  TestImmutable3
 }
 
 //############################################################################
