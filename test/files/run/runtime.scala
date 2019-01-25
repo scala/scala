@@ -65,7 +65,7 @@ object Test1Test {
     // {System.out.print(12); java.lang}.System.out.println();
     // {System.out.print(13); java.lang.System}.out.println();
     {Console.print(14); Console}.println;
-    {Console.print(15); (() => Console.println):(() => Unit)} apply ();
+    {Console.print(15); (() => Console.println):(() => Unit)}.apply();
     {Console.print(16); Console.println};
 
     {Console.print(20)}; test1.bar.System.out.println();
@@ -73,7 +73,7 @@ object Test1Test {
     // {System.out.print(22); test1.bar}.System.out.println();
     {Console.print(23); test1.bar.System}.out.println();
     {Console.print(24); test1.bar.System.out}.println();
-    {Console.print(25); test1.bar.System.out.println _ : (() => Unit)} apply ();
+    {Console.print(25); test1.bar.System.out.println _ : (() => Unit)}.apply();
     {Console.print(26); test1.bar.System.out.println()};
   }
 

@@ -154,8 +154,8 @@ trait MatchCodeGen extends Interface {
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (res) // a jump to a case label is special-cased in typedApply
-        protected def zero: Tree = nextCase APPLY ()
+        def one(res: Tree): Tree = matchEnd.APPLY(res) // a jump to a case label is special-cased in typedApply
+        protected def zero: Tree = nextCase.APPLY()
 
         // prev: MatchMonad[T]
         // b: T
