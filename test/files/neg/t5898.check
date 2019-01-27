@@ -1,0 +1,11 @@
+t5898.scala:9: warning: match may not be exhaustive.
+It would fail on the following input: C(_)
+  def f() = t match { case x: D => ??? }
+            ^
+t5898.scala:10: warning: match may not be exhaustive.
+It would fail on the following input: C(_)
+  val D(x) = t
+             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

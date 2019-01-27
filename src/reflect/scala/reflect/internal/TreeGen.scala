@@ -769,7 +769,8 @@ abstract class TreeGen {
       //                  ...
       //                  val/var x_N = t$._N
 
-      val rhsUnchecked = mkUnchecked(rhs)
+      val linting = isVarDefWarnable
+      val rhsUnchecked = if (linting) rhs else mkUnchecked(rhs)
 
       // TODO: clean this up -- there is too much information packed into mkPatDef's `pat` argument
       // when it's a simple identifier (case Some((name, tpt)) -- above),
@@ -958,6 +959,9 @@ abstract class TreeGen {
 
   /** Can be overridden to depend on settings.warnUnusedPatvars. */
   def isPatVarWarnable: Boolean = true
+
+  /** Can be overridden to depend on settings.lintValPatterns. */
+  def isVarDefWarnable: Boolean = false
 
   /** Not in for comprehensions, whether to warn unused pat vars depends on flag. */
   object patvarTransformer       extends PatvarTransformer(forFor = false)
