@@ -44,6 +44,21 @@ trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator: Iterator[A]
 
+  /**
+   * @return a [[convert.Stepper]] that can be used to operate on the elements of this collections
+   *         with the java Streams API. TODO reference to more documentation.
+   */
+  def stepper[B >: A, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
+    import convert.impl._
+    val s = (shape.shape: @switch) match {
+      case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongValue   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleValue => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper[B](iterator))
+    }
+    s.asInstanceOf[S]
+  }
+
   /** @return The number of elements in this $coll, if it can be cheaply computed,
     *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
     */
@@ -277,22 +292,6 @@ object IterableOnce {
   *
   */
 trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
-
-  /**
-   * @return a [[convert.Stepper]] that can be used to operate on the elements of this collections
-   *         with the java Streams API. TODO reference to more documentation.
-   */
-  def stepper[B >: A, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
-    import convert.impl._
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
-      case StepperShape.LongValue   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
-      case StepperShape.DoubleValue => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])
-      case _                        => shape.seqUnbox(new AnyIteratorStepper[B](iterator))
-    }
-    s.asInstanceOf[S]
-  }
-
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the
