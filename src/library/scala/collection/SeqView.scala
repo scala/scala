@@ -30,16 +30,38 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(prefix, this)
+
+  override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = {
+    val len = this.length
+    val b = Seq.newBuilder[A]
+    if (len == 1) b ++= toIterable
+    else if (len > 1) {
+      b.sizeHint(len)
+      val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
+      var i = 0
+      for (x <- this) {
+        arr(i) = x.asInstanceOf[AnyRef]
+        i += 1
+      }
+      java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
+      i = 0
+      while (i < arr.length) {
+        b += arr(i).asInstanceOf[A]
+        i += 1
+      }
+    }
+    new SeqView.Id(b.result())
+  }
 }
 
 object SeqView {
 
   /** A `SeqOps` whose collection type and collection type constructor are unknown */
-  type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
+  private type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
 
   /** A view that doesn’t apply any transformation to an underlying sequence */
   @SerialVersionUID(3L)
-  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends AbstractSeqView[A] {
+  class Id[+A](underlying: SomeSeqOps[A]) extends AbstractSeqView[A] {
     def apply(idx: Int): A = underlying.apply(idx)
     def length: Int = underlying.length
     def iterator: Iterator[A] = underlying.iterator
