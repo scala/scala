@@ -267,13 +267,16 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
     */
   def endsWith[B >: A](that: Iterable[B]): Boolean = {
-    val i = iterator.drop(length - that.size)
-    val j = that.iterator
-    while (i.hasNext && j.hasNext)
-      if (i.next() != j.next())
-        return false
+    if (that.isEmpty) true
+    else {
+      val i = iterator.drop(length - that.size)
+      val j = that.iterator
+      while (i.hasNext && j.hasNext)
+        if (i.next() != j.next())
+          return false
 
-    !j.hasNext
+      !j.hasNext
+    }
   }
 
   /** Tests whether this $coll contains given index.

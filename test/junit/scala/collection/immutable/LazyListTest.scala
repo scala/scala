@@ -8,6 +8,7 @@ import org.junit.Assert._
 import scala.collection.Iterator
 import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
+import scala.tools.testing.AssertUtil
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])
@@ -150,28 +151,28 @@ class LazyListTest {
   def testLazyListToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail
-    assertEquals("LazyList(_, ?)", l.toString)
+    assertEquals("LazyList(1, ?)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.head
-    assertEquals("LazyList(_, 2, ?)", l.toString)
+    assertEquals("LazyList(1, 2, ?)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.tail
-    assertEquals("LazyList(_, _, ?)", l.toString)
+    assertEquals("LazyList(1, 2, ?)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.tail.head
-    assertEquals("LazyList(_, _, 3, ?)", l.toString)
+    assertEquals("LazyList(1, 2, 3, ?)", l.toString)
   }
 
   @Test
@@ -359,6 +360,8 @@ class LazyListTest {
     for (i <- lazyList.indices) {
       assertEquals(list.updated(i, -1), lazyList.updated(i, -1))
     }
+
+    AssertUtil.assertThrows[IndexOutOfBoundsException](lazyList.updated(-1, -1))
   }
 
   @Test
@@ -371,9 +374,9 @@ class LazyListTest {
       assertEquals(Vector(1, 2), ll.take(2).to(Vector))
       assertEquals(ListBuffer(1, 2), lb)
       assertEquals(4, ll(3))
-      assertEquals(ListBuffer(1, 2, 4), lb)
-      assertEquals(Vector(1,2,3,4,5), ll.to(Vector))
-      assertEquals(ListBuffer(1, 2, 4, 3, 5), lb)
+      assertEquals(ListBuffer(1, 2, 3, 4), lb)
+      assertEquals(Vector(1, 2, 3, 4, 5), ll.to(Vector))
+      assertEquals(ListBuffer(1, 2, 3, 4, 5), lb)
     }
 
     check(LazyList.from(Iterator(1, 2, 3, 4, 5)))
