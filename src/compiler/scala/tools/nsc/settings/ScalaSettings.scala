@@ -434,11 +434,10 @@ trait ScalaSettings extends AbsScalaSettings
 
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
-  val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
-  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
+  val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm").withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
+  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly()
 
-  val YhotStatistics = BooleanSetting("-Yhot-statistics-enabled", s"Enable `${Ystatistics.name}` to print hot statistics.")
-  override def YhotStatisticsEnabled = YhotStatistics.value
+  val YhotStatisticsEnabled = BooleanSetting("-Yhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
   val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").

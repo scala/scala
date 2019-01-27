@@ -14,18 +14,17 @@ package scala
 package reflect.internal
 package settings
 
-/** A Settings abstraction boiled out of the original highly mutable Settings
- *  class with the intention of creating an ImmutableSettings which can be used
- *  interchangeably.   Except of course without the mutants.
+/** Abstract settings, which is refined for `reflect` and `nsc`.
  */
-
 trait AbsSettings {
-  type Setting <: AbsSettingValue      // Fix to the concrete Setting type
 
+  /** Subclasses should further constrain Setting. */
+  type Setting <: AbsSettingValue
+
+  /** A setting is a value which may have been specified by the user. */
   trait AbsSettingValue {
     type T <: Any
     def value: T
     def isDefault: Boolean
   }
 }
-
