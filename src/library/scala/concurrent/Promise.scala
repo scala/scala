@@ -113,7 +113,7 @@ trait Promise[T] {
   def tryFailure(cause: Throwable): Boolean = tryComplete(Failure(cause))
 }
 
-final object Promise {
+object Promise {
   /** Creates a promise object which can be completed with a value.
    *
    *  @tparam T       the type of the value in the promise
