@@ -80,7 +80,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def diff(that: Seq[_ >: A]): C = {
+  override def diff[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     val b = newSpecificBuilder
     for (x <- this) {
@@ -91,7 +91,7 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
     b.result()
   }
 
-  override def intersect(that: Seq[_ >: A]): C = {
+  override def intersect[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     val b = newSpecificBuilder
     for (x <- this) {

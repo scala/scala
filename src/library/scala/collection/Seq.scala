@@ -840,7 +840,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
     *                part of the result, but any following occurrences will.
     */
-  def diff(that: Seq[_ >: A]): C = {
+  def diff[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     fromSpecific(iterator.filter { x =>
       val ox = occ(x)  // Avoid multiple map lookups
@@ -861,7 +861,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
     *                in the result, but any following occurrences will be omitted.
     */
-  def intersect(that: Seq[_ >: A]): C = {
+  def intersect[B >: A](that: Seq[B]): C = {
     val occ = occCounts(that)
     fromSpecific(iterator.filter { x =>
       val ox = occ(x)  // Avoid multiple map lookups
