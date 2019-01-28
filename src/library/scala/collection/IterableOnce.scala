@@ -295,7 +295,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     */
   def filterNot(pred: A => Boolean): C
 
-  /** Selects first ''n'' elements.
+  /** Selects the first ''n'' elements.
     *  $orderDependent
     *  @param  n    the number of elements to take from this $coll.
     *  @return a $coll consisting only of the first `n` elements of this $coll,

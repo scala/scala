@@ -255,4 +255,35 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     coll
   }
 
+  /** A collection containing the last `n` elements of this collection.
+    * $willForceEvaluation
+    */
+  override def takeRight(n: Int): C = {
+    val b = newSpecificBuilder
+    b.sizeHintBounded(n, toIterable)
+    val lead = iterator drop n
+    val it = iterator
+    while (lead.hasNext) {
+      lead.next()
+      it.next()
+    }
+    while (it.hasNext) b += it.next()
+    b.result()
+  }
+
+  /** The rest of the collection without its `n` last elements. For
+    *  linear, immutable collections this should avoid making a copy.
+    *  $willForceEvaluation
+    */
+  override def dropRight(n: Int): C = {
+    val b = newSpecificBuilder
+    if (n >= 0) b.sizeHint(toIterable, delta = -n)
+    val lead = iterator drop n
+    val it = iterator
+    while (lead.hasNext) {
+      b += it.next()
+      lead.next()
+    }
+    b.result()
+  }
 }
