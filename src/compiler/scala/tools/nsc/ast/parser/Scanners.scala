@@ -975,21 +975,19 @@ trait Scanners extends ScannersCommon {
      *  path, attempts to write base 8 literals except `0` emit a verbose error.
      */
     def intVal(negated: Boolean): Long = {
-      def malformed: Long = {
-        if (base == 8) syntaxError("Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)")
-        else syntaxError("malformed integer number")
-        0
-      }
-      def tooBig: Long = {
-        syntaxError("integer number too large")
-        0
-      }
       def intConvert: Long = {
+        def malformed: Long = { syntaxError("malformed integer number") ; 0 }
+        def tooBig: Long = { syntaxError("integer number too large") ; 0 }
         val len = strVal.length
         if (len == 0) {
           if (base != 8) syntaxError("missing integer number")  // e.g., 0x;
-          0
+          0                                                     // 0 still looks like octal prefix
         } else {
+          if (base == 8) {
+            if (settings.warnOctalLiteral)
+              deprecationWarning("Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)" , since="2.10")
+            base = 10
+          }
           val divider     = if (base == 10) 1 else 2
           val limit: Long = if (token == LONGLIT) Long.MaxValue else Int.MaxValue
           @tailrec def convert(value: Long, i: Int): Long =
@@ -1011,7 +1009,7 @@ trait Scanners extends ScannersCommon {
               }
             }
           val result = convert(0, 0)
-          if (base == 8) malformed else if (negated) -result else result
+          if (negated) -result else result
         }
       }
       if (token == CHARLIT && !negated) charVal.toLong else intConvert
@@ -1096,12 +1094,17 @@ trait Scanners extends ScannersCommon {
         nextChar()
         getFraction()
       }
+      // 1l is an acknowledged bad practice
+      def lintel(): Unit = {
+        val msg = "Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead"
+        if (ch == 'l') deprecationWarning(offset + cbuf.length, msg, since="2.13.0")
+      }
       // after int: 5e7f, 42L, 42.toDouble but not 42b. Repair 0d.
       def restOfNumber(): Unit = {
         ch match {
           case 'e' | 'E' | 'f' | 'F' |
                'd' | 'D' => if (cbuf.isEmpty) putChar('0'); getFraction()
-          case 'l' | 'L' => token = LONGLIT ; setStrVal() ; nextChar()
+          case 'l' | 'L' => lintel() ; token = LONGLIT ; setStrVal() ; nextChar()
           case _         => token = INTLIT  ; setStrVal() ; checkNoLetter()
         }
       }

@@ -55,7 +55,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |
         |  // two box and two unbox operations
         |  def t2(b: Boolean) = {
-        |    val a = if (b) (3l: Any) else 2l
+        |    val a = if (b) (3L: Any) else 2L
         |    a.asInstanceOf[Long] + 1 + a.asInstanceOf[Long]
         |  }
         |
@@ -72,7 +72,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  def t6: Long = {
         |    val y = java.lang.Boolean.valueOf(true)
         |    val i: Integer = if (y) Integer.valueOf(10) else 13
-        |    val j: java.lang.Long = 3l
+        |    val j: java.lang.Long = 3L
         |    j + i
         |  }
         |
@@ -220,7 +220,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |
         |  def t3 = {
-        |    val r = LongRef.create(10l) // eliminated
+        |    val r = LongRef.create(10L) // eliminated
         |    r.elem += 3
         |    r.elem
         |  }
@@ -340,7 +340,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  Int.unbox(Integer.valueOf(1))  // eliminated by box-unbox
         |
         |  b.byteValue                    // replaced by null check
-        |  Long.box(10l).longValue        // eliminated by box-unbox
+        |  Long.box(10L).longValue        // eliminated by box-unbox
         |  this.asInstanceOf[Integer].intValue // replaced by null check, which is then eliminated (this is known to be non-null)
         |  0
         |}""".stripMargin

@@ -2,7 +2,7 @@ misc.scala:46: warning: a pure expression does nothing in statement position; mu
     42;
     ^
 misc.scala:47: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-    42l;
+    42L;
     ^
 misc.scala:48: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     23.5f;

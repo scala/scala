@@ -44,7 +44,7 @@ object Test {
 
   def foobar = {
     42;
-    42l;
+    42L;
     23.5f;
     23.5;
     "Hello";
