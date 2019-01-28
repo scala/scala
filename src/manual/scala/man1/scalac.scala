@@ -233,9 +233,6 @@ object scalac extends Command {
           CmdOption("Xmain-class", Argument("path")),
           "Class for manifest's Main-Class entry (only useful with -d <jar>)."),
         Definition(
-          CmdOption("Xmax-classfile-name", Argument("n")),
-          "Maximum filename length for generated classes."),
-        Definition(
           CmdOptionBound("Xmigration:", Argument("version")),
           "Warn about constructs whose behavior may have changed since" & Argument("version") & "."),
         Definition(
