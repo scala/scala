@@ -17,7 +17,7 @@ import java.lang.Integer.bitCount
 import java.lang.Math.ceil
 import java.lang.System.arraycopy
 
-private[immutable] final object Node {
+private[immutable] object Node {
 
   final val HashCodeLength = 32
 

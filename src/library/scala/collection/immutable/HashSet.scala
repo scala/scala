@@ -242,7 +242,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
   }
 }
 
-private[immutable] final object SetNode {
+private[immutable] object SetNode {
 
   private final val EmptySetNode = new BitmapIndexedSetNode(0, 0, Array.empty, Array.empty, 0, 0)
 

@@ -565,7 +565,7 @@ object Future {
 
   /** A Future which is never completed.
    */
-  final object never extends Future[Nothing] {
+  object never extends Future[Nothing] {
 
     private[this] final val notGoingToHappen = new CountDownLatch(1)
 
@@ -866,7 +866,7 @@ object Future {
   // by just not ever using it itself. scala.concurrent
   // doesn't need to create defaultExecutionContext as
   // a side effect.
-  private[concurrent] final object InternalCallbackExecutor extends ExecutionContext with java.util.concurrent.Executor with BatchingExecutor {
+  private[concurrent] object InternalCallbackExecutor extends ExecutionContext with java.util.concurrent.Executor with BatchingExecutor {
     override protected final def unbatchedExecute(r: Runnable): Unit = r.run()
     override final def reportFailure(t: Throwable): Unit =
       ExecutionContext.defaultReporter(new IllegalStateException("problem in scala.concurrent internal callback", t))

@@ -45,7 +45,7 @@ private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer 
   }
 }
 
-private[concurrent] final object Promise {
+private[concurrent] object Promise {
     /**
      * Link represents a completion dependency between 2 DefaultPromises.
      * As the DefaultPromise referred to by a Link can itself be linked to another promise

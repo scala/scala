@@ -204,7 +204,7 @@ final class VectorMap[K, +V] private (
 object VectorMap extends MapFactory[VectorMap] {
   private[VectorMap] sealed trait Tombstone
   private[VectorMap] object Tombstone {
-    final case object Kinless extends Tombstone {
+    case object Kinless extends Tombstone {
       override def toString = "⤞"
     }
     final case class NextOfKin private[Tombstone] (distance: Int) extends Tombstone {

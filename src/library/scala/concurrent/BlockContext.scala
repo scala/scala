@@ -58,7 +58,7 @@ trait BlockContext {
 }
 
 object BlockContext {
-  private[this] final object DefaultBlockContext extends BlockContext {
+  private[this] object DefaultBlockContext extends BlockContext {
     override final def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = thunk
   }
 
