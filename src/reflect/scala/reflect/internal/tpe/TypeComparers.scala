@@ -381,18 +381,23 @@ trait TypeComparers {
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
   def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
 
+    def hkSubVariance(tparams1: List[Symbol], tparams2: List[Symbol]) =
+      (tparams1 corresponds tparams2)(methodHigherOrderTypeParamsSubVariance)
+
     def isSubHKTypeVar(tp1: Type, tp2: Type) = (tp1, tp2) match {
       case (tv1: TypeVar, tv2: TypeVar) =>
         devWarning(sm"Unexpected code path: testing two type variables for subtype relation: $tv1 <:< $tv2")
         tv1 eq tv2
       case (_, tv2: TypeVar) =>
         val ntp1 = tp1.normalize
-        (tv2.params corresponds ntp1.typeParams)(methodHigherOrderTypeParamsSubVariance) &&
-        { tv2.addLoBound(ntp1); true }
+        val kindsMatch = (ntp1.typeSymbol eq AnyClass) || hkSubVariance(tv2.params, ntp1.typeParams)
+        if (kindsMatch) tv2.addLoBound(ntp1)
+        kindsMatch
       case (tv1: TypeVar, _) =>
         val ntp2 = tp2.normalize
-        (ntp2.typeParams corresponds tv1.params)(methodHigherOrderTypeParamsSubVariance) &&
-        { tv1.addHiBound(ntp2); true }
+        val kindsMatch = (ntp2.typeSymbol eq NothingClass) || hkSubVariance(ntp2.typeParams, tv1.params)
+        if (kindsMatch) tv1.addHiBound(ntp2)
+        kindsMatch
       case _ =>
         false
     }
