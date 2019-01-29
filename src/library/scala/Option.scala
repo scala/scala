@@ -87,6 +87,19 @@ object Option {
  *  }
  *  }}}
  *
+ * Interacting with code that can occasionally return null can be
+ * safely wrapped in $option to become $none and $some otherwise. {{{
+ * val abc = new java.util.HashMap[Int, String]
+ * abc.put(1, "A")
+ * bMaybe = Option(abc.get(2))
+ * bMaybe match {
+ *   case Some(b) =>
+ *     println(s"Found $b")
+ *   case None =>
+ *     println("Not found")
+ * }
+ * }}}
+ *
  *  @note Many of the methods in here are duplicative with those
  *  in the Traversable hierarchy, but they are duplicated for a reason:
  *  the implicit conversion tends to leave one with an Iterable in

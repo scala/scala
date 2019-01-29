@@ -271,42 +271,80 @@ object Test extends ScaladocModelTest {
       assertTableEquals(Table(header, colOpts, rows), comment.body)
     }
 
+    withComment("MissingInitialCellMark") { comment =>
+
+      val colOpts = ColumnOptionLeft :: Nil
+
+      val table1 = Table(r("Unstarted Row"), colOpts, r("r1c1") :: Nil)
+
+      val content = Paragraph(Chain(List(Summary(Text("r2c1|")))))
+
+      val table2 = Table(r("r3c1"), colOpts, Nil)
+
+      val body = Body(table1 :: content :: table2 :: Nil)
+
+      assertBodiesEquals(body, comment.body)
+    }
+
+    withComment("SplitCellContent") { comment =>
+      val header = r("Split")
+      val colOpts = ColumnOptionLeft :: Nil
+
+      val table = Table(header, colOpts, Nil)
+
+      val content = Paragraph(Chain(List(Summary(Text("|Accidental\nnewline|")))))
+
+      val body = Body(table :: content :: Nil)
+
+      assertBodiesEquals(body, comment.body)
+    }
+
+    withComment("SplitInternalCellContent") { comment =>
+      val colOpts = ColumnOptionLeft :: Nil
+
+      val table1 = Table(r("Split"), colOpts, Nil)
+
+      val content = Paragraph(Chain(List(Summary(Text("|Accidental\nnewline|")))))
+
+      val table2 = Table(r("~FIN~"), colOpts, Nil)
+
+      val body = Body(table1 :: content :: table2 :: Nil)
+
+      assertBodiesEquals(body, comment.body)
+    }
+
+    withComment("MixedContentUnspaced") { comment =>
+      val colOpts = ColumnOptionLeft :: Nil
+
+      val table1 = Table(r("Hill Dweller"), colOpts, r("Ant") :: Nil)
+
+      val content1 = Paragraph(Chain(List(Summary(Text("Ants are cool")))))
+
+      val table2 = Table(r("Hive Dweller"), colOpts, r("Bee") :: Nil)
+
+      val content2 = pt("But bees are better.\n")
+
+      val body = Body(table1 :: content1 :: table2 :: content2 :: Nil)
+
+      assertBodiesEquals(body, comment.body)
+    }
+
     /* Deferred Enhancements.
      *
      * When these improvements are made corresponding test updates to any new or
      * changed error messages and parsed content and would be included.
      */
 
-    withComment("MissingInitialCellMark") { comment =>
-
-      val colOpts = ColumnOptionLeft :: Nil
-
-      val table1 = Table(r("Unstarted"), colOpts, r("r1c1") :: Nil)
-      val table2 = Table(r("r3c1"), colOpts, Nil)
-
-      assertTablesEquals(table1 :: table2 :: Nil, comment.body)
-    }
-
-    // TODO: Add assertions for MixedContentUnspaced which is similar to MissingInitialCellMark
-
-    withComment("SplitCellContent") { comment =>
-      val header = r("Split")
-      val colOpts = ColumnOptionLeft :: Nil
-      val rows = r("Accidental\nnewline") :: r("~FIN~") :: Nil
-      assertTableEquals(Table(header, colOpts, rows), comment.body)
-    }
-
-    // TODO: As a later enhancement skip whitespace before table marks to reduce rate of silently incorrect table markdown.
+    // As a later enhancement skip whitespace before table marks to reduce rate of silently ignored intended table markdown.
     /* Confirm current suboptimal behaviour */
-    // TODO: Restore this test by updating the expected value
-    if (false) {
-      withComment("LeadingWhitespaceNotSkipped") { comment =>
-        val colOpts = ColumnOptionLeft :: Nil
-        val table1 = Table(r("Leading"), colOpts, Nil)
-        val table2 = Table(r("whitespace before marks"), colOpts, Nil)
-        val body = Body(table1 :: table2 :: Nil)
-        assertBodiesEquals(body, comment.body)
-      }
+    withComment("LeadingWhitespaceNotSkipped") { comment =>
+      val colOpts = ColumnOptionLeft :: Nil
+      val table = Table(r("Leading"), colOpts, Nil)
+      val text = " |-|\n  |whitespace before marks|\n   |Not Yet Skipped|Maybe TO DO|\n"
+      val content = Paragraph(Chain(List(Summary(Text(text)))))
+
+      val body = Body(table :: content :: Nil)
+      assertBodiesEquals(body, comment.body)
     }
   }
 
@@ -330,7 +368,13 @@ object Test extends ScaladocModelTest {
   }
 
   private def assertBodiesEquals(expectedBody: Body, actualBody: Body): Unit = {
-    assert(expectedBody == actualBody, s"Expected: $expectedBody, Actual: $actualBody")
+    val blocks = expectedBody.blocks zip actualBody.blocks
+    val blockComparisons = blocks.zipWithIndex.collect {
+      case ((expectedBlock, actualBlock), idx) if expectedBlock != actualBlock =>
+        s"Block mismatch at index $idx\nExpected block: $expectedBlock\nActual block  : $actualBlock"
+    }.headOption.getOrElse("")
+
+    assert(expectedBody == actualBody, s"$blockComparisons\n\nExpected: $expectedBody, Actual: $actualBody")
   }
 
   private def multilineFormat(table: Table): String = {

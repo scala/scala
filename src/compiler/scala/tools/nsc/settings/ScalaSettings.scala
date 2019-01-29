@@ -439,7 +439,9 @@ trait ScalaSettings extends AbsScalaSettings
   val YhotStatisticsEnabled = BooleanSetting("-Yhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
-  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").
+  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "Profiling output - specify a file or `-` for console.", "").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+  val YprofileTrace = StringSetting("-Yprofile-trace", "file", "Capture trace of compilation in Chrome Trace format", "profile.trace").
     withPostSetHook( _ => YprofileEnabled.value = true )
   val YprofileExternalTool = PhasesSetting("-Yprofile-external-tool", "Enable profiling for a phase using an external tool hook. Generally only useful for a single phase", "typer").
     withPostSetHook( _ => YprofileEnabled.value = true )

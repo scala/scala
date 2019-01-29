@@ -1693,10 +1693,18 @@ trait Definitions extends api.StandardDefinitions {
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
       private lazy val PolymorphicSignatureClass = MethodHandleClass.companionModule.info.decl(TypeName("PolymorphicSignature"))
+      private val PolymorphicSignatureName = TypeName("java.lang.invoke.MethodHandle$PolymorphicSignature")
 
       def isPolymorphicSignature(sym: Symbol) = sym != null && sym.isJavaDefined && {
         val owner = sym.safeOwner
-        (owner == MethodHandleClass || owner == VarHandleClass) && sym.hasAnnotation(PolymorphicSignatureClass)
+        (owner == MethodHandleClass || owner == VarHandleClass) && {
+          if (PolymorphicSignatureClass eq NoSymbol) {
+            // Hack to find the annotation under `scalac -release 8` on JDK 9+, in which the lookup of `PolymorphicSignatureClass` above fails
+            // We fall back to looking for a stub symbol with the expected flattened name.
+            sym.annotations.exists(_.atp.typeSymbolDirect.name == PolymorphicSignatureName)
+          }
+          else sym.hasAnnotation(PolymorphicSignatureClass)
+        }
       }
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")

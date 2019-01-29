@@ -1,0 +1,4 @@
+implicit-ambiguous-val.scala:16: error: unexpected string
+  meh("")
+     ^
+one error found

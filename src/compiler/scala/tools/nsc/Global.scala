@@ -283,8 +283,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       body
   }
 
-  override def isDeveloper = settings.developer || super.isDeveloper
-
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
@@ -444,8 +442,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         currentRun.informUnitStarting(this, unit)
         val unit0 = currentUnit
         currentRun.currentUnit = unit
+        currentRun.profiler.beforeUnit(phase, unit.source.file)
         try apply(unit)
         finally {
+          currentRun.profiler.afterUnit(phase, unit.source.file)
           currentRun.currentUnit = unit0
           currentRun.advanceUnit()
         }
@@ -1109,6 +1109,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     newUnitParser(newCompilationUnit(code, filename))
 
   def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
+
+  override protected[scala] def currentRunProfilerBeforeCompletion(root: Symbol, associatedFile: AbstractFile): Unit = currentRun.profiler.beforeCompletion(root, associatedFile)
+  override protected[scala] def currentRunProfilerAfterCompletion(root: Symbol, associatedFile: AbstractFile): Unit = currentRun.profiler.afterCompletion(root, associatedFile)
 
   /** A Run is a single execution of the compiler on a set of units.
    */

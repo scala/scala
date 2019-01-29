@@ -99,9 +99,9 @@ trait PatternTypers {
       else if (isOkay)
         fun
       else if (isEmptyType == NoType)
-        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean")
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean`")
       else
-        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean (found: def isEmpty: $isEmptyType)")
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean` (found: `def isEmpty: $isEmptyType`)")
     }
 
     def typedArgsForFormals(args: List[Tree], formals: List[Type], mode: Mode): List[Tree] = {
