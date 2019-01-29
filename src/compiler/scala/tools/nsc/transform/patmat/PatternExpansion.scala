@@ -132,12 +132,16 @@ trait PatternExpansion {
     private def caseCtorParamTypes: Option[List[Type]] =
       if (isUnapply || isUnapplySeq) None else Some(fun.tpe.paramTypes)
 
-    // bug#6130 can't really say what the result type is without referring to the binder we're extracting,
-    // as an unapply's result type could depend on its argument, e.g. crazy stuff like `def unapply(x: T): Option[(x.T, x.U)]`
-    // NOTE: we skip a potential implicit method type here -- could this be another avenue of craziness where the result type depends on the input?
-    private def unapplyResultType(extractedBinder: Symbol = unapplySelector): Type =
-      if (extractedBinder == NoSymbol) fun.tpe.finalResultType
-      else fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder))).finalResultType
+    // scala/bug#6130 scala/bug#11162 unapply's result type may refer to the binder we're extracting,
+    // as well as implicit args. Example: `def unapply(x: T)(implicit ops: Foo): Option[(x.T, ops.U)]`.
+    // Existentially abstract over any unknown values to approximate the type.
+    private def unapplyResultType(extractedBinder: Symbol = unapplySelector): Type = {
+        val appliedToExtractedBinder =
+          if (extractedBinder != NoSymbol) fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder)))
+          else fun.tpe
+
+        packSymbols(appliedToExtractedBinder.paramss.flatten, appliedToExtractedBinder.finalResultType)
+      }
 
     private def resultOfGetInMonad(arg: Symbol = unapplySelector) =
       elementTypeFromGet(unapplyResultType(arg))
