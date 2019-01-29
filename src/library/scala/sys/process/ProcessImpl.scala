@@ -193,7 +193,7 @@ private[process] trait ProcessImpl {
     protected[this] val source = new SyncVar[Option[InputStream]]
     override final def run(): Unit = {
       @tailrec def go(): Unit =
-        source.take match {
+        source.take() match {
           case Some(in) => runloop(in, pipe) ; go()
           case None =>
         }
@@ -216,7 +216,7 @@ private[process] trait ProcessImpl {
     protected[this] val sink = new SyncVar[Option[OutputStream]]
     override def run(): Unit = {
       @tailrec def go(): Unit =
-        sink.take match {
+        sink.take() match {
           case Some(out) => runloop(pipe, out) ; go()
           case None =>
         }
