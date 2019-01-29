@@ -17,6 +17,8 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
+import scala.collection.convert.{Stepper, IntStepper, EfficientSubstep}
+import scala.collection.convert.impl.StepperShape
 
 
 /** Base type of bitsets.
@@ -128,6 +130,13 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       if (hasNext) { val r = current; current += 1; r }
       else Iterator.empty.next()
   }
+
+  def stepper: IntStepper with EfficientSubstep =
+    scala.collection.convert.impl.BitSetStepper.from(this)
+
+  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S =
+    if (shape eq StepperShape.intStepperShape) scala.collection.convert.impl.BitSetStepper.from(this).asInstanceOf[S]
+    else super.stepper(shape)
 
   override def size: Int = {
     var s = 0
