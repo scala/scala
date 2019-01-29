@@ -201,7 +201,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   def + (elem1: A, elem2: A, elems: A*): C = fromSpecific(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   /** Alias for `concat` */
-  @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def ++ (that: collection.IterableOnce[A]): C = concat(that)
 
   /** Computes the union between of set and another set.
     *
