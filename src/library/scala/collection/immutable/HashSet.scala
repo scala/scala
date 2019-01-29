@@ -73,7 +73,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     if (rootNode ne newRootNode) new HashSet(newRootNode) else this
   }
 
-  override def concat(that: IterableOnce[A]): HashSet[A] = {
+  override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] = {
     val builder = iterableFactory.newBuilder[A]
     builder ++= this
     builder ++= that
