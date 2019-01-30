@@ -49,15 +49,6 @@ final class AsyncNames[U <: Names with Singleton](val u: U) {
   private val ifRes: TermNameCache = new TermNameCache("if")
   private val await: TermNameCache = new TermNameCache("await")
 
-  private val result = TermName("result$async")
-  private val completed: TermName = TermName("completed$async")
-  private val apply = TermName("apply")
-  private val stateMachine  = TermName("stateMachine$async")
-  private val stateMachineT = stateMachine.toTypeName
-  private val state: u.TermName = TermName("state$async")
-  private val execContext = TermName("execContext$async")
-  private val tr: u.TermName = TermName("tr$async")
-  private val t: u.TermName = TermName("throwable$async")
 
   final class NameSource[N <: U#Name](cache: NameCache[N]) {
     private val count = new AtomicInteger(0)
@@ -68,15 +59,6 @@ final class AsyncNames[U <: Names with Singleton](val u: U) {
     final val matchRes = new NameSource[U#TermName](self.matchRes)
     final val ifRes = new NameSource[U#TermName](self.ifRes)
     final val await = new NameSource[U#TermName](self.await)
-    final val completed = self.completed
-    final val result = self.result
-    final val apply = self.apply
-    final val stateMachine = self.stateMachine
-    final val stateMachineT = self.stateMachineT
-    final val state: u.TermName = self.state
-    final val execContext = self.execContext
-    final val tr: u.TermName = self.tr
-    final val t: u.TermName = self.t
 
     private val seenPrefixes = mutable.AnyRefMap[Name, AtomicInteger]()
     private val freshened = mutable.HashSet[Name]()

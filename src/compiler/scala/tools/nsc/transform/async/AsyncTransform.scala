@@ -12,152 +12,230 @@
 
 package scala.tools.nsc.transform.async
 
-import user.AsyncBase
-import scala.reflect.internal.{Flags, SymbolTable}
-import scala.tools.nsc.Global
+import user.{AsyncBase, FutureSystem}
+import scala.reflect.internal.Flags
 
-abstract class AsyncTransform(val asyncBase: AsyncBase, val u: SymbolTable) extends AnfTransform with AsyncAnalysis with Lifter with LiveVariables {
+// TODO: check there's no await outside of an async block
+
+abstract class AsyncEarlyExpansion extends AsyncContext {
+  import u._
+
+  // NOTE: this part runs during typer
+  lazy val futureSystem: FutureSystem = asyncBase.futureSystem
+  lazy val futureSystemOps: futureSystem.Ops[u.type] = futureSystem.mkOps(u, false)
+
+  /** Perform async macro expansion during typers to a block that creates the state machine class,
+    * along with supporting definitions, but without the ANF/Async expansion.
+    *
+    * The full expansion of the actual state machine logic (anf & async) is performed by asyncTransform after erasure.
+    * Until then, the state machine's apply method just has the original async macro invocation.
+    *
+    * The goal is to balance compiler performance by delaying tree explosion (due to anf and state machine mechanics) and
+    * complexity arising from deftree synthesis in later phases, which would require
+    * retro-actively running erasure (bridges/types) and explicitouter (add outer arg to state machine ctor)
+    * on the synthetic def trees.
+    *
+    * Synthesizes:
+      {
+        class stateMachine$async extends scala.runtime.AbstractFunction1[scala.util.Try[`resultType`],Unit] with () => Unit {
+          def <init>(): stateMachine$async = {
+            stateMachine$async.super.<init>();
+            ()
+          };
+          private[this] var state$async: Int = 0;
+          private[this] val result$async: scala.concurrent.Promise[`resultType`] = Promise.apply[`resultType`]();
+          <stable> <accessor> def result$async: scala.concurrent.Promise[`resultType`] = stateMachine$async.this.result$async;
+          private[this] val execContext$async: scala.concurrent.ExecutionContext = `execContext`;
+          <stable> <accessor> def execContext$async: scala.concurrent.ExecutionContext = stateMachine$async.this.execContext$async;
+          def apply(): Unit = stateMachine$async.this.apply(null);
+          def apply(tr$async: scala.util.Try[`resultType`]): Unit = {
+            scala.async.async[`resultType`](`asyncBody`)(`execContext`);
+            ()
+          }
+        };
+        val stateMachine$async: stateMachine$async = new stateMachine$async();
+        Future.apply[stateMachine$async](stateMachine$async)(stateMachine$async.execContext$async);
+        stateMachine$async.result$async.future
+      }
+    */
+  def apply(asyncBody: Tree, execContext: Tree, resultType: Type, originalOwner: Symbol) = {
+    val tryResult = futureSystemOps.tryType(resultType)
+
+    val stateMachine: ClassDef = {
+      val parents = {
+        val customParents = futureSystemOps.stateMachineClassParents
+        // prefer extending a class to reduce the class file size of the state machine.
+        // ... unless a custom future system already extends some class
+        val useClass = customParents.forall(_.typeSymbol.asClass.isTrait)
+
+        val fun1Tpe =
+          if (useClass) definitions.abstractFunctionType(tryResult :: Nil, definitions.UnitTpe)
+          else definitions.functionType(tryResult :: Nil, definitions.UnitTpe)
+
+        // We extend () => Unit so we can pass this class as the by-name argument to `Future.apply`.
+        // See SI-1247 for the the optimization that avoids creation.
+        val funParents = List(fun1Tpe, definitions.functionType(Nil, definitions.UnitTpe))
+        (customParents ::: funParents).map(TypeTree(_))
+      }
+
+      val stateVar =
+        ValDef(Modifiers(Flags.MUTABLE | Flags.PRIVATE | Flags.LOCAL), nme.state, TypeTree(definitions.IntTpe), Literal(Constant(StateAssigner.Initial)))
+
+      val resultVal =
+        ValDef(NoMods, nme.result, TypeTree(futureSystemOps.promType(resultType)), futureSystemOps.createProm(resultType))
+
+      val execContextVal =
+        ValDef(NoMods, nme.execContext, TypeTree(execContext.tpe), execContext)
+
+      val apply0Def =
+        DefDef(NoMods, nme.apply, Nil, List(Nil), TypeTree(definitions.UnitTpe), Apply(Ident(nme.apply), Literal(Constant(null)) :: Nil))
+
+      val applyFSM: DefDef = {
+        val applyVParamss = List(List(ValDef(Modifiers(Flags.PARAM), nme.tr, TypeTree(tryResult), EmptyTree)))
+        DefDef(NoMods, nme.apply, Nil, applyVParamss, TypeTree(definitions.UnitTpe), asyncBody).updateAttachment(ChangeOwnerAttachment(originalOwner))
+      }
+
+      atPos(asyncBody.pos)(ClassDef(NoMods, tpnme.stateMachine, Nil,
+                                     gen.mkTemplate(parents, noSelfType, NoMods, List(Nil),
+                                                     List(stateVar, resultVal, execContextVal, apply0Def, applyFSM))))
+    }
+
+    val newStateMachine = ValDef(NoMods, nme.stateMachine, TypeTree(), Apply(Select(New(Ident(tpnme.stateMachine)), nme.CONSTRUCTOR), Nil))
+    // Note the invocation `.apply()` in `scala.concurrent.Future.apply[$resultType](stateMachine$async.apply())(stateMachine$async.execContext$async);`
+    // so that, after uncurry, we get: scala.concurrent.Future.apply[$resultType](stateMachine$async, stateMachine$async.execContext$async());
+    val stateMachineToFuture = futureSystemOps.future(Apply(Select(Ident(nme.stateMachine), nme.apply), Nil), Select(Ident(nme.stateMachine), nme.execContext))
+    val promToFuture = futureSystemOps.promiseToFuture(Select(Ident(nme.stateMachine), nme.result))
+
+    Block(List(stateMachine, newStateMachine, stateMachineToFuture), promToFuture)
+  }
+}
+
+// This was originally a macro -- TODO: complete integration with compiler universe (use global instead of scala.reflect.internal stuff)
+abstract class AsyncTransform(val asyncBase: AsyncBase) extends AnfTransform with AsyncAnalysis with Lifter with LiveVariables {
   import u._
   import typingTransformers.{TypingTransformApi, typingTransform}
 
-  def asyncTransform(body: Tree, execContext: Tree, enclosingOwner: Symbol, asyncPos: Position)(resultType: Type): Tree = {
-    markContainsAwait(body) // TODO AM: is this needed?
-    reportUnsupportedAwaits(body)
+  // synthesize the state machine logic -- explode the apply method's rhs and lift local vals to field defs in the state machine
+  /*
+      class stateMachine$async extends scala.runtime.AbstractFunction1 with Function0$mcV$sp {
+        def <init>(): stateMachine$async = {
+          stateMachine$async.super.<init>();
+          stateMachine$async.super./*Function0*/$init$();
+          ()
+        };
+        private[this] var state$async: Int = 0;
+        private[this] val result$async: scala.concurrent.Promise = Promise.apply();
+        <stable> <accessor> def result$async(): scala.concurrent.Promise = stateMachine$async.this.result$async;
+        private[this] val execContext$async: scala.concurrent.ExecutionContext = `execContext`;
+        <stable> <accessor> def execContext$async(): scala.concurrent.ExecutionContext = stateMachine$async.this.execContext$async;
+        def apply(): Unit = stateMachine$async.this.apply$mcV$sp();
+        def apply(tr$async: scala.util.Try): Unit = { // symbol of this def is `applySym`, symbol of its param named "tr$async" is `trParamSym`
+          scala.async.async(`asyncBody`, `execContext`);
+          ()
+        };
+        <specialized> def apply$mcV$sp(): Unit = stateMachine$async.this.apply(null);
+        <bridge> <artifact> def apply(v1: Object): Object = {
+          stateMachine$async.this.apply(v1.$asInstanceOf[scala.util.Try]());
+          scala.runtime.BoxedUnit.UNIT
+        };
+        <bridge> <artifact> def apply(): Object = {
+          stateMachine$async.this.apply();
+          scala.runtime.BoxedUnit.UNIT
+        }
+      };
+   */
+  def asyncTransform(asyncBody: Tree, applySym: Symbol, trParamSym: Symbol, execContext: Tree): Option[(Tree, List[Tree])] = {
+    val asyncPos = asyncBody.pos
+    val stateMachineClass = applySym.owner
+    val resultType = exitingTyper { futureSystemOps.tryTypeToResult(trParamSym.info) }
+
+    markContainsAwait(asyncBody) // ANF transform also relies on whether something contains await
+    reportUnsupportedAwaits(asyncBody)
 
     // Transform to A-normal form:
     //  - no await calls in qualifiers or arguments,
     //  - if/match only used in statement position.
-    val anfTree0: Block = anfTransform(body, enclosingOwner)
+    val anfTree0: Block = anfTransform(asyncBody, applySym)
 
     val anfTree = futureSystemOps.postAnfTransform(anfTree0)
 
+    // TODO: why redo this?
     cleanupContainsAwaitAttachments(anfTree)
     markContainsAwait(anfTree)
 
-    // We annotate the type of the whole expression as `T @uncheckedBounds` so as not to introduce
-    // warnings about non-conformant LUBs. See SI-7694
-    val resultTypeTag = WeakTypeTag(uncheckedBounds(transformType(resultType)))
+    val asyncBlock = buildAsyncBlock(anfTree, SymLookup(stateMachineClass, trParamSym))
 
-    val applyDefDefDummyBody: DefDef = apply1ToUnitDefDef(tryAny)
+    // generate lean code for the simple case of `async { 1 + 1 }`
+    if (asyncBlock.asyncStates.lengthCompare(1) == 0) None
+    else {
+      val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
 
-    // Create `ClassDef` of state machine with empty method bodies for `resume` and `apply`.
-    // TODO AM: can we only create the symbol for the state machine class for now and then type check the assembled whole later,
-    // instead of splicing stuff in (spliceMethodBodies)?
-    val stateMachine: ClassDef = {
-      val body: List[Tree] = {
-        val stateVar = ValDef(Modifiers(Flags.MUTABLE | Flags.PRIVATE | Flags.LOCAL), name.state, TypeTree(definitions.IntTpe), Literal(Constant(StateAssigner.Initial)))
-        val resultAndAccessors =
-          mkMutableField(transformType(futureSystemOps.promType(uncheckedBounds(resultType))), name.result, futureSystemOps.createProm[Nothing](resultTypeTag).tree)
-        val execContextValDef =
-          mkField(execContext.tpe, name.execContext, execContext)
+      // live variables analysis
+      // the result map indicates in which states a given field should be nulled out
+      val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, liftedFields)
 
-        List(stateVar) ++ resultAndAccessors ++ execContextValDef ++ List(applyDefDefDummyBody, apply0DefDef)
-      }
-
-      val customParents = futureSystemOps.stateMachineClassParents map transformType
-      // prefer extending a class to reduce the class file size of the state machine.
-      // ... unless a custom future system already extends some class
-      val useClass = customParents.forall(_.typeSymbol.asClass.isTrait)
-
-      // We extend () => Unit so we can pass this class as the by-name argument to `Future.apply`.
-      // See SI-1247 for the the optimization that avoids creation.
-      val funParents = List(function1ToUnit(tryAny, useClass), function0ToUnit)
-
-      // TODO AM: after erasure we have to change the order of these parents etc
-      val templ = gen.mkTemplate(transformParentTypes(customParents ::: funParents).map(TypeTree(_)), noSelfType, NoMods, List(Nil), body)
-
-      // TODO AM: can we skip the type checking and just create a symbol?
-      val classSym = enclosingOwner.newClassSymbol(name.stateMachineT, asyncPos, 0)
-      val cd = ClassDef(NoMods, name.stateMachineT, Nil, templ).setSymbol(classSym).asInstanceOf[typingTransformers.global.ClassDef]
-      classSym.setInfo(typingTransformers.callsiteTyper.namer.monoTypeCompleter(cd))
-      typingTransformers.callsiteTyper.typedClassDef(atPos(asyncPos)(cd)).asInstanceOf[ClassDef]
-    }
-
-    val asyncBlock: AsyncBlock = {
-      val symLookup = SymLookup(stateMachine.symbol, applyDefDefDummyBody.vparamss.head.head.symbol)
-      buildAsyncBlock(anfTree, symLookup)
-    }
-
-    val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
-
-    // live variables analysis
-    // the result map indicates in which states a given field should be nulled out
-    val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, liftedFields)
-
-    for ((state, flds) <- assignsOf) {
-      val assigns = flds.map { fld =>
-        val fieldSym = fld.symbol
-        val assign = Assign(gen.mkAttributedStableRef(thisType(fieldSym.owner), fieldSym), mkZero(fieldSym.info, asyncPos))
-        val nulled = nullOut(fieldSym)
-        if (isLiteralUnit(nulled)) assign
-        else Block(nulled :: Nil, assign)
-      }
-      val asyncState = asyncBlock.asyncStates.find(_.state == state).get
-      asyncState.stats = assigns ++ asyncState.stats
-    }
-
-    def startStateMachine: Tree = {
-      val stateMachineSpliced: Tree =
-        spliceMethodBodies(liftedFields, stateMachine, atPos(asyncPos)(asyncBlock.onCompleteHandler(resultTypeTag)), enclosingOwner)
-
-      val applyCtor =
-        typingTransform(Apply(Select(New(Ident(stateMachine.symbol)), nme.CONSTRUCTOR), Nil))((tree, api) => api.typecheck(tree))
-
-      val (stateMachineUsingOuter, newStateMachine) =
-        if (!isPastErasure) (stateMachineSpliced, applyCtor)
-        else {
-          // Since explicit outers has already run (it happens before erasure), we must run it ourselves on the class we're synthesizing.
-          // The state machine class is going to be lifted out by the flatten phase, but expressions contained in it
-          // will likely still need to access the outer class's instance.
-          // Thus, we add the standard outer argument to the constructor and supply it when instantiating the state machine.
-          // Lambdalift will also look for this and transform appropriately.
-          val global: u.type with Global = u.asInstanceOf[u.type with Global]
-
-          stateMachineSpliced foreach {
-            case dt: DefTree if dt.hasExistingSymbol => // TODO AM: why can't we skip symbols that hasTypeAt(currentRun.explicitouterPhase.id)
-              val sym = dt.symbol
-              val classSym = sym.asInstanceOf[global.Symbol]
-              val newInfo = global.explicitOuter.transformInfo(classSym, classSym.info)
-              // we can't go back to explicit outer phase to retro-actively un-erase our current info and then add explicit outers,
-              // we just have to run the explicitOuter info transform now (during erasure) and hope for the best
-              if (newInfo ne sym.info)
-                classSym.setInfo(newInfo)
-            case _ =>
-          }
-
-          val explicitOuters = new global.explicitOuter.ExplicitOuterTransformer(typingTransformers.callsiteTyper.context.unit.asInstanceOf[global.CompilationUnit])
-
-          val stateMachineWithOuters = explicitOuters.transform(stateMachineSpliced.asInstanceOf[global.Tree])
-
-          val newStateMachine = explicitOuters.atOwner(stateMachine.symbol.owner.asInstanceOf[global.Symbol]) {
-            explicitOuters.transform(applyCtor.asInstanceOf[global.Tree])
-          }
-
-          (stateMachineWithOuters, newStateMachine)
+      for ((state, flds) <- assignsOf) {
+        val assigns = flds.map { fld =>
+          val fieldSym = fld.symbol
+          val assign = Assign(gen.mkAttributedStableRef(thisType(fieldSym.owner), fieldSym), mkZero(fieldSym.info, asyncPos))
+          val nulled = nullOut(fieldSym)
+          if (isLiteralUnit(nulled)) assign
+          else Block(nulled :: Nil, assign)
         }
+        val asyncState = asyncBlock.asyncStates.find(_.state == state).get
+        asyncState.stats = assigns ++ asyncState.stats
+      }
 
-      def selectStateMachine(selection: TermName) = Select(Ident(name.stateMachine), selection)
-      def selectStateMachineResult =
-        applyNilAfterUncurry(selectStateMachine(name.result))
+      val liftedSyms = liftedFields.map(_.symbol).toSet
+      liftedSyms.foreach { sym =>
+        if (sym != null) {
+          sym.owner = stateMachineClass
+          if (sym.isModule)
+            sym.asModule.moduleClass.owner = stateMachineClass
+        }
+      }
 
-      Block(List[Tree](
-        stateMachineUsingOuter,
-        ValDef(NoMods, name.stateMachine, TypeTree(), newStateMachine),
-        spawn(Apply(selectStateMachine(name.apply), Nil), selectStateMachine(name.execContext))),
-        promiseToFuture(selectStateMachineResult, resultType))
+      // Replace the ValDefs in the async block with Assigns to the corresponding lifted
+      // fields. Similarly, replace references to them with references to the field.
+      val useFields: (Tree, TypingTransformApi) => Tree = (tree, api) => {
+        def fieldSel =
+          atPos(tree.pos)(Select(This(stateMachineClass).setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
+        tree match {
+          case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) =>
+            if (tree.symbol.asTerm.isLazy) literalUnit
+            else assignUnitType(treeCopy.Assign(tree, fieldSel, api.recur(rhs.changeOwner((tree.symbol, api.currentOwner)))))
+          case _: DefTree if liftedSyms(tree.symbol)           => EmptyTree
+          case Ident(name) if liftedSyms(tree.symbol)          => fieldSel.setType(tree.tpe)
+          case _                                               => api.default(tree)
+        }
+      }
+
+      val liftablesUseFields = liftedFields.map {
+        case vd: ValDef if !vd.symbol.asTerm.isLazy => vd
+        case x                                      => typingTransform(x, stateMachineClass)(useFields)
+      }
+
+      liftablesUseFields.foreach { t =>
+        if (t.symbol != null) {
+          stateMachineClass.info.decls.enter(t.symbol)
+          // TODO AM: refine the resetting of the lazy flag -- this is so that local lazy vals that are lifted to the class
+          // actually get their LazyRef allocated to the var that holds the lazy val's reference
+          t.symbol.resetFlag(Flags.LAZY)
+        }
+      }
+
+      val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler(WeakTypeTag(transformType(resultType))))
+      val applyRhs = typingTransform(applyBody, stateMachineClass)(useFields)
+      if (AsyncUtils.verbose) {
+        val location = try asyncBody.pos.source.path catch {
+          case _: UnsupportedOperationException => asyncBody.pos.toString
+        }
+        logDiagnostics(location, anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
+      }
+      futureSystemOps.dot(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
+
+      Some((cleanupContainsAwaitAttachments(applyRhs), liftablesUseFields))
     }
-
-    val isSimple = asyncBlock.asyncStates.size == 1
-    val result =
-      if (isSimple) spawn(body, execContext) // generate lean code for the simple case of `async { 1 + 1 }`
-      else startStateMachine
-
-    if(AsyncUtils.verbose) {
-      val location = try body.pos.source.path catch { case _: UnsupportedOperationException => body.pos.toString }
-      logDiagnostics(location, anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
-    }
-    futureSystemOps.dot(enclosingOwner, body).foreach(f => f(asyncBlock.toDot))
-    cleanupContainsAwaitAttachments(result)
   }
 
   def logDiagnostics(location: String, anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
@@ -166,91 +244,5 @@ abstract class AsyncTransform(val asyncBase: AsyncBase, val u: SymbolTable) exte
     states foreach (s => AsyncUtils.vprintln(s))
     AsyncUtils.vprintln("===== DOT =====")
     AsyncUtils.vprintln(block.toDot)
-  }
-
-  /**
-   *  Build final `ClassDef` tree of state machine class.
-   *
-   *  @param  liftables  trees of definitions that are lifted to fields of the state machine class
-   *  @param  tree       `ClassDef` tree of the state machine class
-   *  @param  applyBody  tree of onComplete handler (`apply` method)
-   *  @return            transformed `ClassDef` tree of the state machine class
-   */
-  def spliceMethodBodies(liftables: List[Tree], tree: ClassDef, applyBody: Tree, enclosingOwner: Symbol): Tree = {
-    val liftedSyms = liftables.map(_.symbol).toSet
-    val stateMachineClass = tree.symbol
-    liftedSyms.foreach {
-      sym =>
-        if (sym != null) {
-          sym.owner = stateMachineClass
-          if (sym.isModule)
-            sym.asModule.moduleClass.owner = stateMachineClass
-        }
-    }
-    // Replace the ValDefs in the splicee with Assigns to the corresponding lifted
-    // fields. Similarly, replace references to them with references to the field.
-    //
-    // This transform will only be run on the RHS of `def foo`.
-    val useFields: (Tree, TypingTransformApi) => Tree = (tree, api) => tree match {
-      case _ if api.currentOwner == stateMachineClass          =>
-        api.default(tree)
-      case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) =>
-        api.atOwner(api.currentOwner) {
-          val fieldSym = tree.symbol
-          if (fieldSym.asTerm.isLazy) literalUnit
-          else {
-            val lhs = atPos(tree.pos) {
-              gen.mkAttributedStableRef(thisType(fieldSym.owner.asClass), fieldSym)
-            }
-            assignUnitType(treeCopy.Assign(tree, lhs, api.recur(rhs))).changeOwner((fieldSym, api.currentOwner))
-          }
-        }
-      case _: DefTree if liftedSyms(tree.symbol)           =>
-        EmptyTree
-      case Ident(name) if liftedSyms(tree.symbol)          =>
-        val fieldSym = tree.symbol
-        atPos(tree.pos) {
-          gen.mkAttributedStableRef(thisType(fieldSym.owner.asClass), fieldSym).setType(tree.tpe)
-        }
-      case _                                               =>
-        api.default(tree)
-    }
-
-    val liftablesUseFields = liftables.map {
-      case vd: ValDef if !vd.symbol.asTerm.isLazy => vd
-      case x          => typingTransform(x, stateMachineClass)(useFields)
-    }
-
-    tree.children.foreach(_.changeOwner((enclosingOwner, tree.symbol)))
-    val treeSubst = tree
-
-    /* Fixes up DefDef: use lifted fields in `body` */
-    def fixup(dd: DefDef, body: Tree, api: TypingTransformApi): Tree = {
-      val spliceeAnfFixedOwnerSyms = body
-      val newRhs = typingTransform(spliceeAnfFixedOwnerSyms, dd.symbol)(useFields)
-      val newRhsTyped = api.atOwner(dd, dd.symbol)(api.typecheck(newRhs))
-      treeCopy.DefDef(dd, dd.mods, dd.name, dd.tparams, dd.vparamss, dd.tpt, newRhsTyped)
-    }
-
-    liftablesUseFields.foreach(t => if (t.symbol != null) stateMachineClass.info.decls.enter(t.symbol))
-
-    // TODO AM: refine the resetting of the lazy flag -- this is so that local lazy vals that are lifted to the class
-    // actually get their LazyRef allocated to the var that holds the lazy val's reference
-    if (isPastErasure)
-      liftablesUseFields.foreach(t => if (t.symbol != null) t.symbol.resetFlag(Flags.LAZY))
-
-    val result0 = transformAt(treeSubst) {
-      case t@Template(parents, self, stats) =>
-        (api: TypingTransformApi) => {
-          treeCopy.Template(t, parents, self, liftablesUseFields ++ stats)
-        }
-    }
-    val result = transformAt(result0) {
-      case dd@DefDef(_, name.apply, _, List(List(_)), _, _) if dd.symbol.owner == stateMachineClass =>
-        (api: TypingTransformApi) =>
-          val typedTree = fixup(dd, applyBody.changeOwner((enclosingOwner, dd.symbol)), api)
-          typedTree
-    }
-    result
   }
 }

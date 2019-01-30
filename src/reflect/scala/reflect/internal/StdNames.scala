@@ -285,6 +285,9 @@ trait StdNames {
     final val TypeDef: NameType             = "TypeDef"
     final val Quasiquote: NameType          = "Quasiquote"
 
+    // async
+    final val stateMachine: NameType        = "stateMachine$async"
+
     // quasiquote-specific names
     final val QUASIQUOTE_FUNCTION: NameType     = "$quasiquote$function$"
     final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
@@ -829,6 +832,15 @@ trait StdNames {
     val withFilter: NameType           = "withFilter"
     val xml: NameType                  = "xml"
     val zero: NameType                 = "zero"
+
+    // async
+    val result        : NameType       = "result$async"
+    val completed     : NameType       = "completed$async"
+    val stateMachine  : NameType       = "stateMachine$async"
+    val state         : NameType       = "state$async"
+    val execContext   : NameType       = "execContext$async"
+    val tr            : NameType       = "tr$async"
+    val t             : NameType       = "throwable$async"
 
     // quasiquote interpolators:
     val q: NameType  = "q"

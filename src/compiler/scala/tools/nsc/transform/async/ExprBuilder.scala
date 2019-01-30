@@ -28,16 +28,10 @@ trait ExprBuilder extends TransformUtils {
   def nullOut(fieldSym: Symbol): Tree =
     asyncBase.nullOut(u)(Expr[String](Literal(Constant(fieldSym.name.toString))), Expr[Any](Ident(fieldSym))).tree
 
-  def spawn(tree: Tree, execContext: Tree): Tree =
-    futureSystemOps.future(Expr[Unit](tree))(Expr[futureSystem.ExecContext](execContext)).tree
-
-  def promiseToFuture(prom: Tree, resTp: Type): Tree =
-    futureSystemOps.promiseToFuture(Expr[Nothing](prom))(WeakTypeTag(resTp)).tree
-
   def Expr[T: WeakTypeTag](tree: Tree): Expr[T] = u.Expr[T](rootMirror, FixedMirrorTreeCreator(rootMirror, tree))
   def WeakTypeTag[T](tpe: Type): WeakTypeTag[T] = u.WeakTypeTag[T](rootMirror, FixedMirrorTypeCreator(rootMirror, tpe))
 
-  lazy val tryAny= transformType(futureSystemOps.tryType(definitions.AnyTpe))
+  lazy val tryAny = transformType(futureSystemOps.tryType(definitions.AnyTpe))
 
   private val stateAssigner  = new StateAssigner
   private val labelDefStates = collection.mutable.Map[Symbol, Int]()
@@ -106,10 +100,10 @@ trait ExprBuilder extends TransformUtils {
     override def mkHandlerCaseForState[T: WeakTypeTag]: CaseDef = {
       val fun = This(tpnme.EMPTY)
       val callOnComplete = futureSystemOps.onComplete[Any, Unit](Expr[futureSystem.Fut[Any]](awaitable.expr),
-                                                                  Expr[futureSystem.Tryy[Any] => Unit](fun), Expr[futureSystem.ExecContext](Ident(name.execContext))).tree
+                                                                  Expr[futureSystem.Tryy[Any] => Unit](fun), Expr[futureSystem.ExecContext](Ident(nme.execContext))).tree
       val tryGetOrCallOnComplete: List[Tree] =
         if (futureSystemOps.continueCompletedFutureOnSameThread) {
-          val tempName = name.completed
+          val tempName = nme.completed
           val initTemp = ValDef(NoMods, tempName, TypeTree(tryAny), futureSystemOps.getCompleted[Any](Expr[futureSystem.Fut[Any]](awaitable.expr)).tree)
           val null_ne = Select(Literal(Constant(null)), TermName("ne"))
           val ifTree =
@@ -389,7 +383,7 @@ trait ExprBuilder extends TransformUtils {
     def memberRef(name: TermName): Tree =
       gen.mkAttributedRef(stateMachineMember(name))
 
-    def selectResult = applyNilAfterUncurry(memberRef(name.result))
+    def selectResult = applyNilAfterUncurry(memberRef(nme.result))
   }
 
   private lazy val NonFatalClass = rootMirror.staticModule("scala.util.control.NonFatal")
@@ -535,7 +529,6 @@ trait ExprBuilder extends TransformUtils {
        *
        * The resulting tree has the following shape:
        *
-       *     def resume(): Unit = {
        *       try {
        *         state match {
        *           case 0 => {
@@ -547,10 +540,9 @@ trait ExprBuilder extends TransformUtils {
        *       } catch {
        *         case NonFatal(t) => result.failure(t)
        *       }
-       *     }
        */
       private def resumeFunTree[T: WeakTypeTag]: Tree = {
-        val stateMemberRef = symLookup.memberRef(name.state)
+        val stateMemberRef = symLookup.memberRef(nme.state)
         val body =
           Match(stateMemberRef,
                  mkCombinedHandlerCases[T] ++
@@ -563,20 +555,20 @@ trait ExprBuilder extends TransformUtils {
           body1,
           List(
             CaseDef(
-            Bind(name.t, Typed(Ident(nme.WILDCARD), Ident(ThrowableClass))),
+            Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(ThrowableClass))),
             EmptyTree, {
               val branchTrue = {
-                val t = Expr[Throwable](Ident(name.t))
+                val t = Expr[Throwable](Ident(nme.t))
                 val complete = futureSystemOps.completeProm[T](
                                                                 Expr[futureSystem.Prom[T]](symLookup.selectResult), futureSystemOps.tryyFailure[T](t)).tree
                 Block(toList(complete), Return(literalUnit))
               }
-              If(Apply(Ident(NonFatalClass), List(Ident(name.t))), branchTrue, Throw(Ident(name.t)))
+              If(Apply(Ident(NonFatalClass), List(Ident(nme.t))), branchTrue, Throw(Ident(nme.t)))
                 branchTrue
             })), EmptyTree)
       }
 
-      private lazy val stateMemberSymbol = symLookup.stateMachineMember(name.state)
+      private lazy val stateMemberSymbol = symLookup.stateMachineMember(nme.state)
       private val compactStateTransform = new Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case as @ Assign(lhs, Literal(Constant(i: Integer))) if lhs.symbol == stateMemberSymbol =>
@@ -605,20 +597,9 @@ trait ExprBuilder extends TransformUtils {
       }
 
       /**
-       * Builds a `match` expression used as an onComplete handler.
-       *
-       * Assumes `tr: Try[Any]` is in scope. The resulting tree has the following shape:
-       *
-       *     state match {
-       *       case 0 =>
-       *         x11 = tr.get.asInstanceOf[Double]
-       *         state = 1
-       *         resume()
-       *     }
+       * Builds a `match` expression used as an onComplete handler, wrapped in a while(true) loop.
        */
       def onCompleteHandler[T: WeakTypeTag]: Tree = {
-        // TODO AM: this was unused -- don't understand what this does
-        // val onCompletes = initStates.flatMap(_.mkOnCompleteHandler[T])
         forever {
           adaptToUnit(toList(resumeFunTree))
         }
@@ -634,7 +615,7 @@ trait ExprBuilder extends TransformUtils {
   case class Awaitable(expr: Tree, resultName: Symbol, resultType: Type, resultValDef: ValDef)
 
   private def mkStateTree(nextState: Int, symLookup: SymLookup): Tree =
-    Assign(symLookup.memberRef(name.state), Literal(Constant(nextState)))
+    Assign(symLookup.memberRef(nme.state), Literal(Constant(nextState)))
 
   private def mkHandlerCase(num: Int, rhs: List[Tree]): CaseDef =
     mkHandlerCase(num, adaptToUnit(rhs))

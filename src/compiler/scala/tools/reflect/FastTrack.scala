@@ -44,6 +44,9 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
   private def makeWhitebox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
     sym -> new FastTrackEntry(pf, isBlackbox = false)
 
+  private def makeBlackBoxIfExists(sym_pf: (Symbol, PartialFunction[Applied, MacroContext => Tree])) =
+    sym_pf match { case (sym, _) if !sym.exists => Map.empty case (sym, pf) => Map(makeBlackbox(sym)(pf))}
+
   final class FastTrackEntry(pf: PartialFunction[Applied, MacroContext => Tree], val isBlackbox: Boolean) extends (MacroArgs => Any) {
     def validate(tree: Tree) = pf isDefinedAt Applied(tree)
     def apply(margs: MacroArgs): margs.c.Expr[Nothing] = {
@@ -66,8 +69,7 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
       makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
       makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
       makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
-     ) ++ (if (!Async_async.exists) Map.empty else Map(
-      makeBlackbox(Async_async) { case app => c => c.global.analyzer.suppressMacroExpansion(app.tree) } // we'll deal with async much later
-     ))
+     ) ++ makeBlackBoxIfExists(global.async.macroExpansion.fastTrackEntry)
   }
+
 }

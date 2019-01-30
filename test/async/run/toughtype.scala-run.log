@@ -1,0 +1,7 @@
+toughtype.scala.scala:205: error: type mismatch;
+ found   : scala.concurrent.Future[Unit]
+ required: scala.concurrent.Future[W]
+ Note: implicit method Something to do with List is not applicable here because it comes after the application point and it lacks an explicit result type
+            }(SomeExecutionContext)
+             ^
+one error found

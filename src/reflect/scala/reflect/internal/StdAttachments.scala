@@ -119,4 +119,7 @@ trait StdAttachments {
   case object KnownDirectSubclassesCalled extends PlainAttachment
 
   class QualTypeSymAttachment(val sym: Symbol)
+
+  // When typing a Def with this attachment, change the owner of its RHS from origalOwner to the symbol of the Def
+  case class ChangeOwnerAttachment(originalOwner: Symbol)
 }

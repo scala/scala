@@ -25,6 +25,7 @@ import scala.reflect.internal.SymbolTable
  * [[ScalaConcurrentFutureSystem]] for an example of how
  * to implement this.
  */
+// TODO use Tree instead of Expr
 trait FutureSystem {
   /** A container to receive the final value of the computation */
   type Prom[A]
@@ -49,18 +50,19 @@ trait FutureSystem {
 
     def promType(tp: Type): Type
     def tryType(tp: Type): Type
+    def tryTypeToResult(tp: Type): Type
     def stateMachineClassParents: List[Type] = Nil
 
-    /** Create an empty promise */
-    def createProm[A: WeakTypeTag]: Expr[Prom[A]]
+    /** Create an empty promise -- tree should be suitable for use during typer phase. */
+    def createProm(resultType: Type): Tree
 
-    /** Extract a future from the given promise. */
-    def promiseToFuture[A: WeakTypeTag](prom: Expr[Prom[A]]): Expr[Fut[A]]
+    /** Extract a future from the given promise -- tree should be suitable for use during typer phase. */
+    def promiseToFuture(prom: Tree): Tree
 
-    /** Construct a future to asynchronously compute the given expression */
-    def future[A: WeakTypeTag](a: Expr[A])(execContext: Expr[ExecContext]): Expr[Fut[A]]
+    /** Construct a future to asynchronously compute the given expression -- tree shape should take isPastErasure into account */
+    def future(a: Tree, execContext: Tree): Tree
 
-    /** Register an call back to run on completion of the given future */
+    /** Register an call back to run on completion of the given future -- only called when isPastErasure */
     def onComplete[A, B](future: Expr[Fut[A]], fun: Expr[Tryy[A] => B],
                          execContext: Expr[ExecContext]): Expr[Unit]
 
@@ -68,11 +70,13 @@ trait FutureSystem {
 
     /** Return `null` if this future is not yet completed, or `Tryy[A]` with the completed result
       * otherwise
+      *
+      * Only called when isPastErasure
       */
     def getCompleted[A: WeakTypeTag](future: Expr[Fut[A]]): Expr[Tryy[A]] =
       throw new UnsupportedOperationException("getCompleted not supported by this FutureSystem")
 
-    /** Complete a promise with a value */
+    /** Complete a promise with a value -- only called when isPastErasure */
     def completeProm[A](prom: Expr[Prom[A]], value: Expr[Tryy[A]]): Expr[Unit]
     def completeWithSuccess[A: WeakTypeTag](prom: Expr[Prom[A]], value: Expr[A]): Expr[Unit] = completeProm(prom, tryySuccess(value))
 
@@ -111,30 +115,25 @@ object ScalaConcurrentFutureSystem extends FutureSystem {
   class ScalaConcurrentOps[Universe <: SymbolTable](u0: Universe, isPastErasure: Boolean) extends Ops[Universe](u0, isPastErasure) {
     import u._
 
-    def promType(tp: Type): Type = phasedAppliedType(weakTypeOf[Promise[_]], tp)
-    def tryType(tp: Type): Type = phasedAppliedType(weakTypeOf[scala.util.Try[_]], tp)
+    def promType(tp: Type): Type = appliedType(Promise, tp)
+    def tryType(tp: Type): Type = appliedType(TryClass, tp)
+    def tryTypeToResult(tp: Type): Type = tp.baseType(TryClass).typeArgs.headOption.getOrElse(NoType)
 
-    def createProm[A: WeakTypeTag]: Expr[Prom[A]] = {
-      val newProm = reify { Promise[A]() }
-      if (isPastErasure)
-        Expr[Prom[A]](newProm.tree match { // drop type apply
-          case ap@Apply(TypeApply(prom, _), args) => treeCopy.Apply(ap, prom, args)
-        })
-      else newProm
-    }
+    lazy val future = newTermName("future")
+    lazy val Future = rootMirror.getRequiredModule("scala.concurrent.Future")
+    lazy val Promise = rootMirror.requiredClass[scala.concurrent.Promise[_]]
+    lazy val TryClass = rootMirror.requiredClass[scala.util.Try[_]]
 
-    def promiseToFuture[A: WeakTypeTag](prom: Expr[Prom[A]]) = reify {
-      prom.splice.future
-    }
+    // only called to generate a typer-time tree (!isPastErasure)
+    def createProm(resultType: Type): Tree =
+      Apply(TypeApply(gen.mkAttributedStableRef(Promise.companionModule), TypeTree(resultType) :: Nil), Nil)
 
-    def future[A: WeakTypeTag](a: Expr[A])(execContext: Expr[ExecContext]) = {
-      val expr = reify { Future(a.splice)(execContext.splice) }
-      if (isPastErasure)
-        expr.tree match {
-          case ap@Apply(Apply(fut, a), execCtx) => Expr[Future[A]](treeCopy.Apply(ap, fut, a ++ execCtx))
-        }
-      else expr
-    }
+    // only called to generate a typer-time tree (!isPastErasure)
+    def promiseToFuture(prom: Tree) = Select(prom, future)
+
+    def future(a: Tree, execContext: Tree): Tree =
+      if (isPastErasure) Apply(Select(gen.mkAttributedStableRef(Future), nme.apply), List(a, execContext))
+      else Apply(Apply(Select(gen.mkAttributedStableRef(Future), nme.apply), List(a)), List(execContext))
 
     def onComplete[A, B](future: Expr[Fut[A]], fun: Expr[scala.util.Try[A] => B],
                          execContext: Expr[ExecContext]): Expr[Unit] = {
@@ -149,11 +148,20 @@ object ScalaConcurrentFutureSystem extends FutureSystem {
     override def continueCompletedFutureOnSameThread: Boolean = true
 
     override def getCompleted[A: WeakTypeTag](future: Expr[Fut[A]]): Expr[Tryy[A]] = {
-      val valueGet = reify { future.splice.value.get }
+      val valueGet =
+        if (isPastErasure) {
+          val futVal = reify { future.splice.value }
+          val futValGet = reify {
+            Expr[Option[util.Try[A]]](Apply(futVal.tree, Nil)).splice.get
+          }
+          Expr[Tryy[A]](Apply(futValGet.tree, Nil))
+        }
+        else reify { future.splice.value.get }
+
       val isCompleted = reify { future.splice.isCompleted }
       reify {
         if ({ if (isPastErasure) Expr[Boolean](Apply(isCompleted.tree, Nil)) else isCompleted }.splice)
-          { if (isPastErasure) Expr[Tryy[A]](Apply(valueGet.tree, Nil)) else valueGet }.splice else null
+          valueGet.splice else null
       }
     }
 

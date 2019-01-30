@@ -63,6 +63,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
     this.KnownDirectSubclassesCalled
+    this.ChangeOwnerAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

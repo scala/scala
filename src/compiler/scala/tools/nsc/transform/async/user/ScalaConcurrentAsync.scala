@@ -19,9 +19,9 @@ object ScalaConcurrentAsync extends AsyncBase {
   type FS = ScalaConcurrentFutureSystem.type
   val futureSystem: FS = ScalaConcurrentFutureSystem
 
-  override def asyncImpl[T: c.WeakTypeTag](c: Context)
-                                          (body: c.Expr[T])
-                                          (execContext: c.Expr[futureSystem.ExecContext]): c.Expr[Future[T]] = {
-    super.asyncImpl[T](c)(body)(execContext)
-  }
+//  override def asyncImpl[T: c.WeakTypeTag](c: Context)
+//                                          (body: c.Expr[T])
+//                                          (execContext: c.Expr[futureSystem.ExecContext]): c.Expr[Future[T]] = {
+//    super.asyncImpl[T](c)(body)(execContext)
+//  }
 }

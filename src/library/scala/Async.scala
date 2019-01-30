@@ -50,7 +50,7 @@ object async {
    * Run the block of code `body` asynchronously. `body` may contain calls to `await` when the results of
    * a `Future` are needed; this is translated into non-blocking code.
    */
-  def async[T](body: => T)(implicit execContext: ExecutionContext): Future[T] = macro ???
+  def async[T](body: T)(implicit execContext: ExecutionContext): Future[T] = macro ???
 
   /**
    * Non-blocking await the on result of `awaitable`. This may only be used directly within an enclosing `async` block.

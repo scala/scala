@@ -1,0 +1,16 @@
+uncheckedBounds.scala:18: error: object TreeInterrogation is not a member of package async
+import scala.async.TreeInterrogation
+       ^
+uncheckedBounds.scala:22: error: not found: value eval
+    eval( s"""
+    ^
+uncheckedBounds.scala:30: error: not found: value compileOptions
+    """, compileOptions = s"-cp ${toolboxClasspath} ")
+         ^
+uncheckedBounds.scala:34: error: not found: value eval
+    eval( s"""
+    ^
+uncheckedBounds.scala:44: error: not found: value compileOptions
+    """, compileOptions = s"-cp ${toolboxClasspath} ")
+         ^
+5 errors found
