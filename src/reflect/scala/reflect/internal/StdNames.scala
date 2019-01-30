@@ -679,6 +679,8 @@ trait StdNames {
     val asType: NameType               = "asType"
     val asInstanceOf_ : NameType       = "asInstanceOf"
     val asInstanceOf_Ob : NameType     = "$asInstanceOf"
+    val async : NameType               = "async"
+    val await : NameType               = "await"
     val box: NameType                  = "box"
     val bytes: NameType                = "bytes"
     val c: NameType                    = "c"

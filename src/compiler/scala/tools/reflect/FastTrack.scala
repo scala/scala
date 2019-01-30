@@ -66,6 +66,8 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
       makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
       makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
       makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
-    )
+     ) ++ (if (!Async_async.exists) Map.empty else Map(
+      makeBlackbox(Async_async) { case app => c => c.global.analyzer.suppressMacroExpansion(app.tree) } // we'll deal with async much later
+     ))
   }
 }
