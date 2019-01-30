@@ -369,7 +369,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       anonClass addAnnotation SerialVersionUIDAnnotation
       addSerializable(abstractFunctionType(fun.vparams.map(_.symbol.tpe), fun.body.tpe.deconst))
     } else {
-      if (fun.tpe.typeSymbol.isSubClass(JavaSerializableClass))
+      if (fun.tpe.typeSymbol.isSubClass(SerializableClass))
         anonClass addAnnotation SerialVersionUIDAnnotation
       fun.tpe :: Nil
     }
