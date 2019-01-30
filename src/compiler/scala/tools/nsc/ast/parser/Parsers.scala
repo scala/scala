@@ -623,7 +623,7 @@ self =>
 
     /** {{{
      *  semi = nl {nl} | `;`
-     *  nl  = `\n' // where allowed
+     *  nl  = `\n` // where allowed
      *  }}}
      */
     def acceptStatSep(): Unit = in.token match {
@@ -2915,8 +2915,8 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (settings.isScala214) "" else " nor view bounds `<% ...'"
-              syntaxError(s"traits cannot have type parameters with context bounds `: ...'$viewBoundsExist", skipIt = false)
+            val viewBoundsExist = if (settings.isScala214) "" else " nor view bounds `<% ...`"
+              syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
