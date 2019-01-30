@@ -68,7 +68,7 @@ package <empty> {
         <synthetic> val o18: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
         if (o18.isEmpty.unary_!)
           {
-            val xs: Seq[Int] = o18.get.toSeq;
+            val xs: scala.collection.Seq[Int] = o18.get.toSeq;
             matchEnd15(xs)
           }
         else
@@ -90,8 +90,8 @@ package <empty> {
         if (o22.isEmpty.unary_!.&&(o22.get.!=(null).&&(o22.get.lengthCompare(1).>=(0))))
           {
             val x: Int = o22.get.apply(0);
-            val xs: Seq[Int] = o22.get.drop(1);
-            matchEnd15(new (Int, Seq[Int])(x, xs))
+            val xs: scala.collection.Seq[Int] = o22.get.drop(1);
+            matchEnd15(new (Int, scala.collection.Seq[Int])(x, xs))
           }
         else
           case21()
@@ -100,7 +100,7 @@ package <empty> {
         <synthetic> val o24: Some[scala.collection.immutable.ArraySeq[Int]] = B.unapplySeq(x1);
         if (o24.isEmpty.unary_!)
           {
-            val xs: Seq[Int] = o24.get;
+            val xs: scala.collection.Seq[Int] = o24.get;
             matchEnd15(xs)
           }
         else
@@ -122,8 +122,8 @@ package <empty> {
         if (o28.isEmpty.unary_!.&&(o28.get.!=(null).&&(o28.get.lengthCompare(1).>=(0))))
           {
             val x: Int = o28.get.apply(0);
-            val xs: Seq[Int] = o28.get.drop(1);
-            matchEnd15(new (Int, Seq[Int])(x, xs))
+            val xs: scala.collection.Seq[Int] = o28.get.drop(1);
+            matchEnd15(new (Int, scala.collection.Seq[Int])(x, xs))
           }
         else
           case27()
@@ -132,7 +132,7 @@ package <empty> {
         <synthetic> val o30: Foo[Int] = C.unapplySeq(x1);
         if (o30.isEmpty.unary_!)
           {
-            val xs: Seq[Int] = o30.get.toSeq;
+            val xs: scala.collection.Seq[Int] = o30.get.toSeq;
             matchEnd15(xs)
           }
         else
@@ -154,8 +154,8 @@ package <empty> {
         if (o34.isEmpty.unary_!.&&(o34.get.!=(null).&&(scala.math.`package`.signum(o34.get.length.-(1)).>=(0))))
           {
             val x: Int = o34.get.apply(0);
-            val xs: Seq[Int] = o34.get.drop(1);
-            matchEnd15(new (Int, Seq[Int])(x, xs))
+            val xs: scala.collection.Seq[Int] = o34.get.drop(1);
+            matchEnd15(new (Int, scala.collection.Seq[Int])(x, xs))
           }
         else
           case33()
@@ -164,7 +164,7 @@ package <empty> {
         <synthetic> val o36: Some[Foo[Nothing]] = D.unapplySeq[Nothing](x1);
         if (o36.isEmpty.unary_!)
           {
-            val xs: Seq[Nothing] = o36.get.toSeq;
+            val xs: scala.collection.Seq[Nothing] = o36.get.toSeq;
             matchEnd15(xs)
           }
         else
@@ -186,8 +186,8 @@ package <empty> {
         if (o40.isEmpty.unary_!.&&(o40.get.!=(null).&&(scala.math.`package`.signum(o40.get.length.-(1)).>=(0))))
           {
             val x: Nothing = o40.get.apply(0);
-            val xs: Seq[Nothing] = o40.get.drop(1);
-            matchEnd15(new (Nothing, Seq[Nothing])(x, xs))
+            val xs: scala.collection.Seq[Nothing] = o40.get.drop(1);
+            matchEnd15(new (Nothing, scala.collection.Seq[Nothing])(x, xs))
           }
         else
           case39()
@@ -209,14 +209,14 @@ package <empty> {
       A.super.<init>();
       ()
     };
-    def unapplySeq(a: Int): scala.collection.SeqOps = scala.collection.mutable.ArrayBuffer.apply(scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{1, 2, 3})).$asInstanceOf[scala.collection.SeqOps]()
+    def unapplySeq(a: Int): scala.collection.SeqOps = scala.collection.mutable.ArrayBuffer.apply(scala.Predef.wrapIntArray(Array[Int]{1, 2, 3})).$asInstanceOf[scala.collection.SeqOps]()
   };
   object B extends Object {
     def <init>(): B.type = {
       B.super.<init>();
       ()
     };
-    def unapplySeq(a: Int): Some = new Some(scala.collection.immutable.ArraySeq.apply(scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{1, 2, 3}), (ClassTag.Int(): scala.reflect.ClassTag)))
+    def unapplySeq(a: Int): Some = new Some(scala.collection.immutable.ArraySeq.apply(scala.Predef.wrapIntArray(Array[Int]{1, 2, 3}), (ClassTag.Int(): scala.reflect.ClassTag)))
   };
   class Foo extends Object {
     def <init>(): Foo = {
@@ -249,7 +249,7 @@ package <empty> {
       E.super.<init>();
       ()
     };
-    def unapplySeq(a: Int): Object = scala.Array.apply(1, scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{2, 3}))
+    def unapplySeq(a: Int): Object = scala.Array.apply(1, scala.Predef.wrapIntArray(Array[Int]{2, 3}))
   };
   object F extends Object {
     def <init>(): F.type = {
@@ -269,7 +269,7 @@ package <empty> {
         <synthetic> val o18: scala.collection.SeqOps = A.unapplySeq(x1);
         if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o18).unary_!())
           {
-            val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.toSeq$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o18));
+            val xs: scala.collection.Seq = scala.collection.SeqFactory.UnapplySeqWrapper.toSeq$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o18));
             matchEnd15(xs)
           }
         else
@@ -291,7 +291,7 @@ package <empty> {
         if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o22).unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1).>=(0))))
           {
             val x: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 0));
-            val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.drop$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1);
+            val xs: scala.collection.Seq = scala.collection.SeqFactory.UnapplySeqWrapper.drop$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1);
             matchEnd15(new Tuple2(scala.Int.box(x), xs))
           }
         else
@@ -301,7 +301,7 @@ package <empty> {
         <synthetic> val o24: Some = B.unapplySeq(x1);
         if (o24.isEmpty().unary_!())
           {
-            val xs: Seq = o24.get().$asInstanceOf[Seq]();
+            val xs: scala.collection.Seq = o24.get().$asInstanceOf[scala.collection.Seq]();
             matchEnd15(xs)
           }
         else
@@ -323,7 +323,7 @@ package <empty> {
         if (o28.isEmpty().unary_!().&&(o28.get().!=(null).&&(o28.get().$asInstanceOf[collection.IndexedSeqOps]().lengthCompare(1).>=(0))))
           {
             val x: Int = unbox(o28.get().$asInstanceOf[collection.immutable.ArraySeq]().apply(0));
-            val xs: Seq = o28.get().$asInstanceOf[collection.immutable.ArraySeq]().drop(1);
+            val xs: scala.collection.Seq = o28.get().$asInstanceOf[collection.immutable.ArraySeq]().drop(1);
             matchEnd15(new Tuple2(scala.Int.box(x), xs))
           }
         else
@@ -333,7 +333,7 @@ package <empty> {
         <synthetic> val o30: Foo = C.unapplySeq(x1);
         if (o30.isEmpty().unary_!())
           {
-            val xs: Seq = o30.get().toSeq();
+            val xs: scala.collection.Seq = o30.get().toSeq();
             matchEnd15(xs)
           }
         else
@@ -355,7 +355,7 @@ package <empty> {
         if (o34.isEmpty().unary_!().&&(o34.get().!=(null).&&(scala.math.`package`.signum(o34.get().length().-(1)).>=(0))))
           {
             val x: Int = unbox(o34.get().apply(0));
-            val xs: Seq = o34.get().drop(1);
+            val xs: scala.collection.Seq = o34.get().drop(1);
             matchEnd15(new Tuple2(scala.Int.box(x), xs))
           }
         else
@@ -365,7 +365,7 @@ package <empty> {
         <synthetic> val o36: Some = D.unapplySeq(x1);
         if (o36.isEmpty().unary_!())
           {
-            val xs: Seq = o36.get().$asInstanceOf[Foo]().toSeq();
+            val xs: scala.collection.Seq = o36.get().$asInstanceOf[Foo]().toSeq();
             matchEnd15(xs)
           }
         else
@@ -387,7 +387,7 @@ package <empty> {
         if (o40.isEmpty().unary_!().&&(o40.get().!=(null).&&(scala.math.`package`.signum(o40.get().$asInstanceOf[Foo]().length().-(1)).>=(0))))
           {
             val x: Nothing = o40.get().$asInstanceOf[Foo]().apply(0).$asInstanceOf[Nothing]();
-            val xs: Seq = o40.get().$asInstanceOf[Foo]().drop(1);
+            val xs: scala.collection.Seq = o40.get().$asInstanceOf[Foo]().drop(1);
             matchEnd15(new Tuple2(x, xs))
           }
         else

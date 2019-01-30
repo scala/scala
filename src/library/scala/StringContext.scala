@@ -61,7 +61,7 @@ case class StringContext(parts: String*) {
 
   @deprecated("use same-named method on StringContext companion object", "2.13.0")
   def checkLengths(args: scala.collection.Seq[Any]): Unit =
-    StringContext.checkLengths(args, parts)
+    StringContext.checkLengths(args.toSeq, parts.toSeq)
 
   /** The simple string interpolator.
    *
@@ -91,7 +91,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def s(args: Any*): String = standardInterpolator(processEscapes, args, parts)
+  def s(args: Any*): String = standardInterpolator(processEscapes, args, parts.toSeq)
   object s {
     /** The simple string matcher.
      *
@@ -128,7 +128,7 @@ case class StringContext(parts: String*) {
      *  Here, we use the `TimeSplitter` regex within the `s` matcher, further splitting the
      *  matched string "10.50" into its constituent parts
      */
-    def unapplySeq(s: String) = StringContext.glob(parts, s)
+    def unapplySeq(s: String) = StringContext.glob(parts.toSeq, s)
   }
   /** The raw string interpolator.
    *
@@ -152,7 +152,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def raw(args: Any*): String = standardInterpolator(identity, args, parts)
+  def raw(args: Any*): String = standardInterpolator(identity, args, parts.toSeq)
 
   /** Shorthand symbol constructor.
    *
@@ -169,13 +169,13 @@ case class StringContext(parts: String*) {
    *  @param `str` The string to be converted to a symbol.
    */
   def sym(args: String*): Symbol = {
-    Symbol(standardInterpolator(processEscapes, args, parts))
+    Symbol(standardInterpolator(processEscapes, args, parts.toSeq))
   }
 
   object sym {
     def unapplySeq(s: Symbol): Option[Seq[String]] = {
       parts match {
-        case s.name +: Seq() => Some(Seq.empty[String])
+        case s.name +: scala.collection.Seq() => Some(Seq.empty[String])
         case _ +: _ +: _     => // if parts.size > 1
           throw new IllegalArgumentException(
             "Variable interpolation not supported, use '$$' for '$'"

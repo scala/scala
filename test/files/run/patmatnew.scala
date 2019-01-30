@@ -252,7 +252,7 @@ object Test {
         case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
         case _ => Nil
       }
-      assertEquals("res instance" + res.isInstanceOf[Seq[Con] forSome { type Con }] + " res(0)=" + res(0), true, res.isInstanceOf[Seq[Foo] forSome { type Foo }] && res(0) == Foo())
+      assertEquals("res instance" + res.isInstanceOf[scala.collection.Seq[Con] forSome { type Con }] + " res(0)=" + res(0), true, res.isInstanceOf[scala.collection.Seq[Foo] forSome { type Foo }] && res(0) == Foo())
     }
   }
 

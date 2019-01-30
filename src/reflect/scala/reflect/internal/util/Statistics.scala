@@ -75,7 +75,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
   }
 
   /** Create a new counter that shows as `prefix` and is active in given phases */
-  def newCounter(prefix: String, phases: String*) = new Counter(prefix, phases)
+  def newCounter(prefix: String, phases: String*) = new Counter(prefix, phases.toSeq)
 
   /** Create a new relative counter that shows as `prefix` and is active
    *  in the same phases as its base counter. Relative counters print as percentages
@@ -91,7 +91,7 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
   def newSubCounter(prefix: String, ctr: Counter): SubCounter = new SubCounter(prefix, ctr)
 
   /** Create a new counter that shows as `prefix` and is active in given phases */
-  def newTimer(prefix: String, phases: String*): Timer = new Timer(prefix, phases)
+  def newTimer(prefix: String, phases: String*): Timer = new Timer(prefix, phases.toSeq)
 
   /** Create a new subtimer that shows as `prefix` and is active
    *  in the same phases as its base timer. Subtimers can track
@@ -110,15 +110,14 @@ abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSetting
   /** Create a new view that shows as `prefix` and is active in given phases.
    *  The view always reflects the current value of `quant` as a quantity.
    */
-  def newView(prefix: String, phases: String*)(quant: => Any): View = new View(prefix, phases,
-quant)
+  def newView(prefix: String, phases: String*)(quant: => Any): View = new View(prefix, phases.toSeq, quant)
 
   /** Create a new quantity map that shows as `prefix` and is active in given phases.
    */
-  def newQuantMap[K, V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[K, V] = new QuantMap(prefix, phases, initValue)
+  def newQuantMap[K, V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[K, V] = new QuantMap(prefix, phases.toSeq, initValue)
 
   /** Same as newQuantMap, where the key type is fixed to be Class[_] */
-  def newByClass[V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[Class[_], V] = new QuantMap(prefix, phases, initValue)
+  def newByClass[V](prefix: String, phases: String*)(initValue: => V)(implicit ev: V => Ordered[V]): QuantMap[Class[_], V] = new QuantMap(prefix, phases.toSeq, initValue)
 
   /** Create a new timer stack */
   def newTimerStack() = new TimerStack()

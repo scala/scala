@@ -384,7 +384,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @return       A [[scala.util.matching.Regex.MatchIterator]] of matched substrings.
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
-  def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames)
+  def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames.toSeq)
 
   /** Return all non-overlapping matches of this regexp in given character sequence as a
    *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]].
@@ -428,7 +428,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    */
   def findFirstMatchIn(source: CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
-    if (m.find) Some(new Match(source, m, groupNames)) else None
+    if (m.find) Some(new Match(source, m, groupNames.toSeq)) else None
   }
 
   /** Return an optional match of this `Regex` at the beginning of the
@@ -460,7 +460,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    */
   def findPrefixMatchOf(source: CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
-    if (m.lookingAt) Some(new Match(source, m, groupNames)) else None
+    if (m.lookingAt) Some(new Match(source, m, groupNames.toSeq)) else None
   }
 
   /** Returns whether this `Regex` matches the given character sequence.
@@ -508,7 +508,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    * @return            The target string after replacements.
    */
   def replaceAllIn(target: CharSequence, replacer: Match => String): String = {
-    val it = new Regex.MatchIterator(target, this, groupNames).replacementData
+    val it = new Regex.MatchIterator(target, this, groupNames.toSeq).replacementData
     it foreach (md => it replace replacer(md))
     it.replaced
   }
@@ -535,7 +535,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    * @return            The target string after replacements.
    */
   def replaceSomeIn(target: CharSequence, replacer: Match => Option[String]): String = {
-    val it = new Regex.MatchIterator(target, this, groupNames).replacementData
+    val it = new Regex.MatchIterator(target, this, groupNames.toSeq).replacementData
     for (matchdata <- it ; replacement <- replacer(matchdata))
       it replace replacement
 

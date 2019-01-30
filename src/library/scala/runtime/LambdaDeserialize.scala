@@ -16,7 +16,7 @@ import java.lang.invoke._
 import java.util
 
 import scala.annotation.varargs
-import scala.collection.immutable
+import scala.collection.{mutable, immutable}
 
 final class LambdaDeserialize private (lookup: MethodHandles.Lookup, targetMethods: Array[MethodHandle]) {
   private val targetMethodMap: util.HashMap[String, MethodHandle] = new util.HashMap[String, MethodHandle](targetMethods.length)
@@ -35,7 +35,10 @@ final class LambdaDeserialize private (lookup: MethodHandles.Lookup, targetMetho
 object LambdaDeserialize {
   @varargs @throws[Throwable]
   def bootstrap(lookup: MethodHandles.Lookup, invokedName: String, invokedType: MethodType, targetMethods: MethodHandle*): CallSite = {
-    val targetMethodsArray = targetMethods.asInstanceOf[immutable.ArraySeq[_]].unsafeArray.asInstanceOf[Array[MethodHandle]]
+    val targetMethodsArray = targetMethods match {
+      case targetMethods: mutable.ArraySeq[_] => targetMethods.array.asInstanceOf[Array[MethodHandle]]
+      case targetMethods: immutable.ArraySeq[_] => targetMethods.unsafeArray.asInstanceOf[Array[MethodHandle]]
+    }
     val exact = MethodHandleConstants.LAMBDA_DESERIALIZE_DESERIALIZE_LAMBDA.bindTo(new LambdaDeserialize(lookup, targetMethodsArray)).asType(invokedType)
     new ConstantCallSite(exact)
   }

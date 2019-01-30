@@ -1552,9 +1552,9 @@ trait Trees extends api.Trees {
   def Block(stats: Tree*): Block = {
     if (stats.isEmpty) Block(Nil, Literal(Constant(())))
     else stats match {
-      case Seq(b @ Block(_, _)) => b
-      case Seq(stat) => Block(stats.toList, Literal(Constant(())))
-      case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+      case collection.Seq(b @ Block(_, _)) => b
+      case collection.Seq(stat) => Block(stats.toList, Literal(Constant(())))
+      case collection.Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
     }
   }
 

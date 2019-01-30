@@ -25,6 +25,8 @@ trait Definitions extends api.StandardDefinitions {
 
   import rootMirror.{getModuleByName, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageIfDefined, getPackageObjectIfDefined, requiredClass, requiredModule}
 
+  def isImmutableVarargs: Boolean = false //TODO remove after bootstrapping
+
   object definitions extends DefinitionsClass
 
   /** Since both the value parameter types and the result type may
@@ -380,7 +382,7 @@ trait Definitions extends api.StandardDefinitions {
     )
 
     // This is a not the usual lazy val to prevent it from showing up as a separate module in JavaUniverseForce.scala
-    def getWrapVarargsArrayModule        = if(isNewCollections) ScalaRunTimeModule else PredefModule
+    def getWrapVarargsArrayModule        = if(isImmutableVarargs) ScalaRunTimeModule else PredefModule
     def wrapVarargsArrayMethod(tp: Type) = getMemberMethod(getWrapVarargsArrayModule, wrapVarargsArrayMethodName(tp))
 
     /** Specialization.
@@ -460,25 +462,24 @@ trait Definitions extends api.StandardDefinitions {
     lazy val DummyImplicitClass = requiredClass[scala.DummyImplicit]
 
     // collections classes
-    private[this] lazy val isNewCollections = getClassIfDefined("scala.collection.IterableOnce") != NoSymbol
     lazy val ConsClass              = requiredClass[scala.collection.immutable.::[_]]
     lazy val IteratorClass          = requiredClass[scala.collection.Iterator[_]]
     lazy val IterableClass          = requiredClass[scala.collection.Iterable[_]]
     lazy val ListClass              = requiredClass[scala.collection.immutable.List[_]]
              def List_cons              = getMemberMethod(ListClass, nme.CONS)
-    @migration("SeqClass now refers to scala.collection.immutable.Seq", "2.13.0")
-    lazy val SeqClass               = if(isNewCollections) requiredClass[scala.collection.immutable.Seq[_]] else requiredClass[scala.collection.Seq[_]]
+    // SeqClass is the type used for varargs, not necessarily for for scala.Seq!
+    lazy val SeqClass               = if(isImmutableVarargs) requiredClass[scala.collection.immutable.Seq[_]] else requiredClass[scala.collection.Seq[_]]
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
     lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
     lazy val JavaCharSequenceClass  = requiredClass[java.lang.CharSequence]
     @deprecated("Use IterableClass instead of TraversableClass", "2.13.0")
-    lazy val TraversableClass       = if(isNewCollections) IterableClass else requiredClass[scala.collection.Traversable[_]]
+    lazy val TraversableClass       = IterableClass
 
     lazy val ListModule       = requiredModule[scala.collection.immutable.List.type]
          def List_apply       = getMemberMethod(ListModule, nme.apply)
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
-    lazy val SeqModule        = if(isNewCollections) requiredModule[scala.collection.immutable.Seq.type] else requiredModule[scala.collection.Seq.type]
+    lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type] // Unlike SeqClass above, SeqModule does refer to scala.Seq
 
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]

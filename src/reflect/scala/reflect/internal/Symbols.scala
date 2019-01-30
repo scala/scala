@@ -3805,8 +3805,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           fn(sym.sourceModule)
     }
 
-  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = forEachRelevantSymbols(syms, _.markFlagsCompleted(mask))
-  def markAllCompleted(syms: Symbol*): Unit = forEachRelevantSymbols(syms, _.markAllCompleted)
+  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = forEachRelevantSymbols(syms.toSeq, _.markFlagsCompleted(mask))
+  def markAllCompleted(syms: Symbol*): Unit = forEachRelevantSymbols(syms.toSeq, _.markAllCompleted)
 }
 
 trait SymbolsStats {

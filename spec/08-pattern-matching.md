@@ -136,7 +136,7 @@ implicit class XMLinterpolation(s: StringContext) = {
         def apply(exprs: Any*) =
             // parse ‘s’ and build an XML tree with ‘exprs’ 
             //in the holes
-        def unapplySeq(xml: Node): Option[Seq[Node]] =
+        def unapplySeq(xml: Node): Option[scala.collection.Seq[Node]] =
           // match `s’ against `xml’ tree and produce 
           //subtrees in holes
     }
@@ -266,7 +266,7 @@ the following applies:
 
 An `unapplySeq` method in an object $x$ matches the pattern
 $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if it takes exactly one argument
-and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted).
+and its result type is of the form `Option[($T_1 , \ldots , T_m$, scala.collection.Seq[S])]` (if `m = 0`, the type `Option[scala.collection.Seq[S]]` is also accepted).
 This case is further discussed [below](#pattern-sequences).
 
 ###### Example
@@ -300,7 +300,7 @@ SimplePattern ::= StableId ‘(’ [Patterns ‘,’] [varid ‘@’] ‘_’ �
 A _pattern sequence_ $p_1 , \ldots , p_n$ appears in two contexts.
 First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters) of type `S*`.
 Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
-but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
+but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, scala.collection.Seq[S])]` (if `m = 0`, the type `Option[scala.collection.Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
 
 The last pattern in a pattern sequence may be a _sequence wildcard_ `_*`.
 Each element pattern $p_i$ is type-checked with
@@ -352,12 +352,12 @@ expression patterns that cover most scenarios of non-text sequence
 processing.  A _sequence pattern_ is a pattern that stands in a
 position where either (1) a pattern of a type `T` which is
 conforming to
-`Seq[A]` for some `A` is expected, or (2) a case
+`scala.collection.Seq[A]` for some `A` is expected, or (2) a case
 class constructor that has an iterated formal parameter
 `A*`.  A wildcard star pattern `_*` in the
 rightmost position stands for arbitrary long sequences. It can be
 bound to variables using `@`, as usual, in which case the variable will have the
-type `Seq[A]`.
+type `scala.collection.Seq[A]`.
 
 ### Irrefutable Patterns
 

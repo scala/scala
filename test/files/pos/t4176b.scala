@@ -1,5 +1,5 @@
 object Test {
 	 def foo(a: String*) = a
 	 val fooEta = foo _
-	 (foo: Seq[String] => Seq[String])
+	 (foo: scala.collection.Seq[String] => scala.collection.Seq[String])
 }

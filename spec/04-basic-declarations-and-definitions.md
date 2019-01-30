@@ -714,7 +714,7 @@ ParamType          ::=  Type ‘*’
 The last value parameter of a parameter section may be suffixed by
 `'*'`, e.g. `(..., $x$:$T$*)`.  The type of such a
 _repeated_ parameter inside the method is then the sequence type
-`scala.Seq[$T$]`.  Methods with repeated parameters
+`scala.collection.Seq[$T$]`.  Methods with repeated parameters
 `$T$*` take a variable number of arguments of type $T$.
 That is, if a method $m$ with type
 `($p_1:T_1 , \ldots , p_n:T_n, p_s:S$*)$U$` is applied to arguments
@@ -727,7 +727,7 @@ marked to be a _sequence argument_ via a `_*` type
 annotation. If $m$ above is applied to arguments
 `($e_1 , \ldots , e_n, e'$: _*)`, then the type of $m$ in
 that application is taken to be
-`($p_1:T_1, \ldots , p_n:T_n,p_{s}:$scala.Seq[$S$])`.
+`($p_1:T_1, \ldots , p_n:T_n,p_{s}:$scala.collection.Seq[$S$])`.
 
 It is not allowed to define any default arguments in a parameter section
 with a repeated parameter.

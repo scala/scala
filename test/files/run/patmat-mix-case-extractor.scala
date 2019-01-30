@@ -1,6 +1,6 @@
 trait CaseClass
 trait ProdCaseClass extends CaseClass { def x: Int }
-trait SeqCaseClass extends CaseClass { def xs: Seq[Int] }
+trait SeqCaseClass extends CaseClass { def xs: scala.collection.Seq[Int] }
 
 case class CaseClass1() extends CaseClass
 case class CaseClass2(xs: Int*) extends SeqCaseClass
@@ -8,9 +8,9 @@ case class CaseClass3(x: Int) extends ProdCaseClass
 case class CaseClass4(x: Int, xs: Int*) extends ProdCaseClass with SeqCaseClass
 
 object Extractor1 { def unapply(x: CaseClass): Boolean = false }
-object Extractor2 { def unapplySeq(x: SeqCaseClass): Option[Seq[Int]] = Some(x.xs) }
+object Extractor2 { def unapplySeq(x: SeqCaseClass): Option[scala.collection.Seq[Int]] = Some(x.xs) }
 object Extractor3 { def unapply(x: ProdCaseClass): Option[Int] = Some(x.x) }
-object Extractor4 { def unapplySeq(x: ProdCaseClass with SeqCaseClass): Option[(Int, Seq[Int])] = Some(x.x, x.xs) }
+object Extractor4 { def unapplySeq(x: ProdCaseClass with SeqCaseClass): Option[(Int, scala.collection.Seq[Int])] = Some(x.x, x.xs) }
 
 class A {
   def f1(x: Any) = x match {

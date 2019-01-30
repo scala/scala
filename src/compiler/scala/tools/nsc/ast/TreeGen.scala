@@ -130,8 +130,8 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     vparamss.foldLeft(target)((fn, vparams) => Apply(fn, vparams map paramToArg))
 
-  /** Applies a wrapArray call to an array, making it a mutable (old collections) or immutable
-   * (new collections) ArraySeq suitable for Scala varargs. Don't let a reference type parameter be
+  /** Applies a wrapArray call to an array, making it a mutable (RC1) or immutable
+   * (M4) ArraySeq suitable for Scala varargs. Don't let a reference type parameter be
    * inferred, in case it's a singleton: apply the element type directly.
    */
   def mkWrapVarargsArray(tree: Tree, elemtp: Type) = {

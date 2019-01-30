@@ -15,7 +15,7 @@ package tools
 package nsc
 
 import java.io.{FileNotFoundException, IOException}
-import java.net.URL
+import java.net.{URL, URLClassLoader}
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
 
 import scala.collection.{immutable, mutable}
@@ -55,6 +55,21 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     with Positions
     with Reporting
     with Parsing { self =>
+
+  //TODO remove after bootstrapping
+  // sbt uses this compiler to compile its own compiler bridge, therefore we need to use immutable varargs for
+  // compatibility if the library uses them
+  override lazy val isImmutableVarargs: Boolean = try {
+    val cl = new URLClassLoader(classPath.asURLs.toArray, null)
+    val predef = cl.loadClass("scala.Predef$")
+    val printf = predef.getMethods.find(_.getName == "printf").get
+    val varargsClass = printf.getParameters.apply(1).getType.getName
+    //Console.err.println("**** varargs class is: "+varargsClass)
+    varargsClass == "scala.collection.immutable.Seq"
+  } catch { case t: Throwable =>
+    //Console.err.println("Error determining `isImmutableVarargs`, assuming `false`: "+t)
+    false
+  }
 
   // the mirror --------------------------------------------------
 

@@ -13,7 +13,7 @@ class T {
     case A(x, y) => (x, y) // ok
   }
   def t3: Any = 2 match {
-    case A(x, xs@_*) => (x, xs) // type error with call to drop. found: ArrayBuffer, required: Seq.
+    case A(x, xs@_*) => (x, xs) // OK with mutable Seq; used to be: type error with call to drop. found: ArrayBuffer, required: Seq.
   }
   def t4: Any = 2 match {
     case B(xs@_*) => xs // error: toSeq is not a member of Array. no ArrayOps because adaptToMember is disabled after typer.

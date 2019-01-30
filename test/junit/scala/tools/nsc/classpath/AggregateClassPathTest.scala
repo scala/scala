@@ -38,7 +38,7 @@ class AggregateClassPathTest {
 
     override def classes(inPackage: String): Seq[ClassFileEntry] =
       for {
-        entriesWrapper <- classesInPackage if entriesWrapper.inPackage == inPackage
+        entriesWrapper <- classesInPackage.toSeq if entriesWrapper.inPackage == inPackage
         name <- entriesWrapper.names
       } yield classFileEntry(virtualPath, inPackage, name)
 
@@ -52,7 +52,7 @@ class AggregateClassPathTest {
 
     override def sources(inPackage: String): Seq[SourceFileEntry] =
       for {
-        entriesWrapper <- sourcesInPackage if entriesWrapper.inPackage == inPackage
+        entriesWrapper <- sourcesInPackage.toSeq if entriesWrapper.inPackage == inPackage
         name <- entriesWrapper.names
       } yield sourceFileEntry(virtualPath, inPackage, name)
 
@@ -110,7 +110,7 @@ class AggregateClassPathTest {
   def testGettingPackages: Unit = {
     case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
       override def packages(inPackage: String): Seq[PackageEntry] =
-        packagesInPackage.find(_.inPackage == inPackage).map(_.names).getOrElse(Nil) map PackageEntryImpl
+        packagesInPackage.find(_.inPackage == inPackage).map(_.names.toSeq).getOrElse(Nil) map PackageEntryImpl
     }
 
     val partialClassPaths = Seq(ClassPathWithPackages(EntryNamesInPackage(pkg1)("pkg1.a", "pkg1.d", "pkg1.f")),

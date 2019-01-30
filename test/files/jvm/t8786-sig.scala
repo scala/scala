@@ -37,31 +37,31 @@ object Test extends App {
     assert(a == b, s"found: $a\nexpected: $b")
   }
 
-  val sq = classOf[Seq[_]]
+  val sq = classOf[scala.collection.Seq[_]]
   val ob = classOf[Object]
   val ao = classOf[Array[Object]]
   val as = classOf[Array[String]]
   val ai = classOf[Array[Int]]
 
-  check(sig("m1", sq)   , "public java.lang.Object A.m1(scala.collection.immutable.Seq)")
-  check(sig("m2", sq)   , "public java.lang.Object A.m2(scala.collection.immutable.Seq)")
-  check(sig("m3", sq)   , "public java.lang.Object A.m3(scala.collection.immutable.Seq)")
-  check(sig("m4", sq)   , "public int A.m4(scala.collection.immutable.Seq)")
-  check(sig("m5", sq)   , "public java.lang.String A.m5(scala.collection.immutable.Seq)")
-  check(sig("m6", sq)   , "public java.lang.String A.m6(scala.collection.immutable.Seq)")
-  check(sig("m7", sq)   , "public int A.m7(scala.collection.immutable.Seq)")
-  check(sig("m8", sq)   , "public java.lang.Object A.m8(scala.collection.immutable.Seq)")
+  check(sig("m1", sq)   , "public java.lang.Object A.m1(scala.collection.Seq)")
+  check(sig("m2", sq)   , "public java.lang.Object A.m2(scala.collection.Seq)")
+  check(sig("m3", sq)   , "public java.lang.Object A.m3(scala.collection.Seq)")
+  check(sig("m4", sq)   , "public int A.m4(scala.collection.Seq)")
+  check(sig("m5", sq)   , "public java.lang.String A.m5(scala.collection.Seq)")
+  check(sig("m6", sq)   , "public java.lang.String A.m6(scala.collection.Seq)")
+  check(sig("m7", sq)   , "public int A.m7(scala.collection.Seq)")
+  check(sig("m8", sq)   , "public java.lang.Object A.m8(scala.collection.Seq)")
 
-  check(genSig("m1", sq), "public <T> T A.m1(scala.collection.immutable.Seq<T>)")
-  check(genSig("m2", sq), "public <T> T A.m2(scala.collection.immutable.Seq<T>)")
-  check(genSig("m3", sq), "public <T> T A.m3(scala.collection.immutable.Seq<T>)")
+  check(genSig("m1", sq), "public <T> T A.m1(scala.collection.Seq<T>)")
+  check(genSig("m2", sq), "public <T> T A.m2(scala.collection.Seq<T>)")
+  check(genSig("m3", sq), "public <T> T A.m3(scala.collection.Seq<T>)")
   // TODO: the signature for is wrong for T <: Int, scala/bug#9846. The signature should be
-  // `public int A.m4(scala.collection.immutable.Seq<java.lang.Object>)`. This is testing the status quo.
-  check(genSig("m4", sq), "public <T> T A.m4(scala.collection.immutable.Seq<T>)")
-  check(genSig("m5", sq), "public <T> T A.m5(scala.collection.immutable.Seq<T>)")
-  check(genSig("m6", sq), "public java.lang.String A.m6(scala.collection.immutable.Seq<java.lang.String>)")
-  check(genSig("m7", sq), "public int A.m7(scala.collection.immutable.Seq<java.lang.Object>)")
-  check(genSig("m8", sq), "public U A.m8(scala.collection.immutable.Seq<U>)")
+  // `public int A.m4(scala.collection.Seq<java.lang.Object>)`. This is testing the status quo.
+  check(genSig("m4", sq), "public <T> T A.m4(scala.collection.Seq<T>)")
+  check(genSig("m5", sq), "public <T> T A.m5(scala.collection.Seq<T>)")
+  check(genSig("m6", sq), "public java.lang.String A.m6(scala.collection.Seq<java.lang.String>)")
+  check(genSig("m7", sq), "public int A.m7(scala.collection.Seq<java.lang.Object>)")
+  check(genSig("m8", sq), "public U A.m8(scala.collection.Seq<U>)")
 
 
   // varargs forwarder

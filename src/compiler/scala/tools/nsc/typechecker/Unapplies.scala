@@ -134,7 +134,7 @@ trait Unapplies extends ast.TreeDSL {
     val cparams = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
     val resultType = if (!settings.isScala212) TypeTree() else { // fix for scala/bug#6541 under -Xsource:2.12
       def repeatedToSeq(tp: Tree) = tp match {
-        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
+        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.scalaCollectionDot(tpnme.Seq), tps)
         case _                                                                => tp
       }
 
@@ -164,7 +164,7 @@ trait Unapplies extends ast.TreeDSL {
         } getOrElse Select(unapplyParam, caseAccessorName(cdef.symbol, constrParam.name))
 
       constrParam.tpt match {
-        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => Typed(accSel, AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps))
+        case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => Typed(accSel, AppliedTypeTree(gen.scalaCollectionDot(tpnme.Seq), tps))
         case _                                                                => accSel
       }
     }

@@ -368,7 +368,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             extends JavaMethodMirror(symbol, ret) {
       def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
       def bind(newReceiver: Any) = new JavaVanillaMethodMirror(newReceiver, symbol, ret)
-      def apply(args: Any*): Any = jinvoke(args)
+      def apply(args: Any*): Any = jinvoke(args.toSeq)
     }
 
     private class JavaVanillaMethodMirror0(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
@@ -478,14 +478,14 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
         def objReceiver       = receiver.asInstanceOf[AnyRef]
         def objArg0           = args(0).asInstanceOf[AnyRef]
-        def objArgs           = args.asInstanceOf[Seq[AnyRef]]
+        def objArgs           = args.asInstanceOf[scala.collection.Seq[AnyRef]]
         def fail(msg: String) = abort(msg + ", it cannot be invoked with mirrors")
 
         def invokePrimitiveMethod = {
           val jmeths = classOf[BoxesRunTime].getDeclaredMethods.filter(_.getName == nme.primitiveMethodName(symbol.name).toString)
           assert(jmeths.length == 1, jmeths.toList)
           val jmeth = jmeths.head
-          val result = jmeth.invoke(null, (objReceiver +: objArgs).asInstanceOf[Seq[AnyRef]]: _*)
+          val result = jmeth.invoke(null, (objReceiver +: objArgs).asInstanceOf[scala.collection.Seq[AnyRef]].toSeq: _*)
           if (jmeth.getReturnType == java.lang.Void.TYPE) ()
           else result
         }
