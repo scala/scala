@@ -38,6 +38,11 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   def unsorted: Set[A]
 }
 
+trait StrictOptimizedSortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
+  extends SortedSetOps[A, CC, C]
+    with collection.StrictOptimizedSortedSetOps[A, CC, C]
+    with StrictOptimizedSetOps[A, Set, C]
+
 /**
   * $factoryInfo
   * @define coll immutable sorted set
