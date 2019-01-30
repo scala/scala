@@ -254,7 +254,7 @@ abstract class UnCurry extends InfoTransform
           ArrayValue(TypeTree(elemtp), ts) setType arrayType(elemtp)
 
         // when calling into scala varargs, make sure it's a sequence.
-        def arrayToSequence(tree: Tree, elemtp: Type, copy: Boolean) = {
+        def arrayToSequence(tree: Tree, elemtp: Type) = {
           exitingUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
@@ -262,12 +262,7 @@ abstract class UnCurry extends InfoTransform
                 if (tree.tpe <:< pt) tree
                 else gen.mkCastArray(tree, elemtp, pt)
 
-              if(copy) {
-                currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
-                  "Passing an explicit array value to a Scala varargs method is deprecated (since 2.13.0) and will result in a defensive copy; "+
-                    "Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
-                gen.mkMethodCall(PredefModule, nme.copyArrayToImmutableIndexedSeq, List(elemtp), List(adaptedTree))
-              } else gen.mkWrapVarargsArray(adaptedTree, elemtp)
+              gen.mkWrapVarargsArray(adaptedTree, elemtp)
             }
           }
         }
@@ -311,13 +306,13 @@ abstract class UnCurry extends InfoTransform
               else sequenceToArray(tree)
             else
               if (tree.tpe.typeSymbol isSubClass SeqClass) tree
-              else arrayToSequence(tree, varargsElemType, copy = isNewCollections) // existing array, make a defensive copy
+              else arrayToSequence(tree, varargsElemType)
           }
           else {
             def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
             if (javaStyleVarArgs) mkArray
             else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
-            else arrayToSequence(mkArray, varargsElemType, copy = false) // fresh array, no need to copy
+            else arrayToSequence(mkArray, varargsElemType)
           }
 
         exitingUncurry {

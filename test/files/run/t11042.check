@@ -1,6 +1,0 @@
-t11042.scala:6: warning: Passing an explicit array value to a Scala varargs method is deprecated (since 2.13.0) and will result in a defensive copy; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call
-  println(g(Array(1, 2, 3): _*))
-                 ^
-false
-true
-true
