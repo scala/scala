@@ -71,7 +71,13 @@ private[internal] trait GlbLubs {
     *                  (except that type constructors have been applied to their dummyArgs)
     *  @see baseTypeSeq  for a definition of sorted and upwards closed.
     */
-  def lubList(ts: List[Type], depth: Depth): List[Type] = {
+  def lubList(ts: List[Type], depth: Depth): List[Type] = ts match {
+    case Nil => Nil
+    case ty :: Nil => ty.baseTypeSeq.toList
+    case _ => lubList_x(ts, depth)
+  }
+
+  private[this] def lubList_x(ts: List[Type], depth: Depth): List[Type] = {
     var lubListDepth = Depth.Zero
     // This catches some recursive situations which would otherwise
     // befuddle us, e.g. pos/hklub0.scala
@@ -83,68 +89,99 @@ private[internal] trait GlbLubs {
         logResult("Retracting dummies from " + tp + " in lublist")(tp.typeConstructor)
       case _ => tp
     }
-    // pretypes is a tail-recursion-preserving accumulator.
-    @tailrec
-    def loop(pretypes: List[Type], tsBts: List[List[Type]]): List[Type] = {
-      lubListDepth = lubListDepth.incr
 
-      if (tsBts.isEmpty || (tsBts exists typeListIsEmpty)) pretypes.reverse
-      else if (tsBts.tail.isEmpty) pretypes.reverse ++ tsBts.head
-      else {
+    val baseTypeSeqs: Array[BaseTypeSeq] = mapToArray(ts)(_.baseTypeSeq)
+    val ices: Array[Int] = new Array[Int](baseTypeSeqs.length)
+
+    def printLubMatrixAux(depth: Depth): Unit = {
+      val btsMap: Map[Type, List[Type]] = ts.zipWithIndex.map {
+        case (ty, ix) => ty -> baseTypeSeqs(ix).toList.drop(ices(ix))
+      }.toMap
+      printLubMatrix(btsMap, depth)
+    }
+
+    def headOf(ix: Int) = baseTypeSeqs(ix).rawElem(ices(ix))
+
+    val pretypes: mutable.ListBuffer[Type] = mutable.ListBuffer.empty[Type]
+
+    var isFinished = false
+    while (! isFinished && ices(0) < baseTypeSeqs(0).length){
+      lubListDepth = lubListDepth.incr
+      // Step 1: run through the List with these variables:
+      // 1) Is there any empty list? Are they equal or are we taking the smallest?
+      // isFinished: tsBts.exists(typeListIsEmpty)
+      // Is the frontier made up of types with the same symbol?
+      var isUniformFrontier =  true
+      var sym = headOf(0).typeSymbol
+      // var tsYs = tsBts
+      var ix = 0
+      while (! isFinished && ix < baseTypeSeqs.length){
+        if (ices(ix) == baseTypeSeqs(ix).length)
+          isFinished = true
+        else {
+          val btySym = headOf(ix).typeSymbol
+          isUniformFrontier = isUniformFrontier && (sym eq btySym)
+          if (btySym isLess sym)
+            sym = btySym
+        }
+        ix += 1
+      }
+      // Produce a single type for this frontier by merging the prefixes and arguments of those
+      // typerefs that share the same symbol: that symbol is the current maximal symbol for which
+      // the invariant holds, i.e., the one that conveys most information regarding subtyping. Before
+      // merging, strip targs that refer to bound tparams (when we're computing the lub of type
+      // constructors.) Also filter out all types that are a subtype of some other type.
+      if (! isFinished){
         // ts0 is the 1-dimensional frontier of symbols cutting through 2-dimensional tsBts.
         // Invariant: all symbols "under" (closer to the first row) the frontier
         // are smaller (according to _.isLess) than the ones "on and beyond" the frontier
-        val ts0 = tsBts map (_.head)
-
-        // Is the frontier made up of types with the same symbol?
-        val isUniformFrontier = (ts0: @unchecked) match {
-          case t :: ts  => ts forall (_.typeSymbol == t.typeSymbol)
+        val ts0 = {
+          var ys: List[Type] = Nil
+          var kx = baseTypeSeqs.length
+          while (kx > 0){
+            kx -= 1
+            ys = headOf(kx) :: ys
+          }
+          ys
         }
 
-        // Produce a single type for this frontier by merging the prefixes and arguments of those
-        // typerefs that share the same symbol: that symbol is the current maximal symbol for which
-        // the invariant holds, i.e., the one that conveys most information regarding subtyping. Before
-        // merging, strip targs that refer to bound tparams (when we're computing the lub of type
-        // constructors.) Also filter out all types that are a subtype of some other type.
         if (isUniformFrontier) {
-          val tails = tsBts map (_.tail)
           val ts1   = elimSub(ts0, depth) map elimHigherOrderTypeParam
           mergePrefixAndArgs(ts1, Covariant, depth) match {
-            case NoType => loop(pretypes, tails)
-            case tp =>
-              loop(tp :: pretypes, tails)
+            case NoType =>
+            case tp => pretypes += tp
+          }
+          var jx = 0
+          while (jx < baseTypeSeqs.length){
+            ices(jx) += 1
+            jx += 1
           }
         } else {
           // frontier is not uniform yet, move it beyond the current minimal symbol;
           // lather, rinse, repeat
-          val sym    = minSym(ts0)
-          val newtps = tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts)
+          var jx = 0
+          while (jx < baseTypeSeqs.length){
+            if (headOf(jx).typeSymbol == sym)
+              ices(jx) += 1
+            jx += 1
+          }
           if (printLubs) {
-            val str = (newtps.zipWithIndex map { case (tps, idx) =>
-              tps.map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
+            val str = baseTypeSeqs.zipWithIndex.map({ case (tps, idx) =>
+              tps.toList.drop(ices(idx)).map("        " + _ + "\n").mkString("   (" + idx + ")\n", "", "\n")
             }).mkString("")
 
             println("Frontier(\n" + str + ")")
-            printLubMatrix((ts zip tsBts).toMap, lubListDepth)
+            printLubMatrixAux(lubListDepth)
           }
-
-          loop(pretypes, newtps)
         }
       }
     }
 
-    val initialBTSes = ts map (_.baseTypeSeq.toList)
     if (printLubs)
-      printLubMatrix((ts zip initialBTSes).toMap, depth)
+      printLubMatrixAux(depth)
 
-    loop(Nil, initialBTSes)
+    pretypes.toList
   }
-
-  /** The minimal symbol of a list of types (as determined by `Symbol.isLess`). */
-  private def minSym(tps: List[Type]): Symbol =
-    tps.tail.foldLeft(tps.head.typeSymbol){
-      (sym1, tp2) => if (tp2.typeSymbol isLess sym1) tp2.typeSymbol else sym1
-    }
 
   /** A minimal type list which has a given list of types as its base type sequence */
   def spanningTypes(ts: List[Type]): List[Type] = ts match {

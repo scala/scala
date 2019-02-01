@@ -13,6 +13,7 @@
 package scala
 package reflect.internal.util
 
+import scala.reflect.ClassTag
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
@@ -335,6 +336,28 @@ trait Collections {
         res
       }
     }
+
+  final def mapToArray[A, B: ClassTag](xs: List[A])(f: A => B): Array[B] = {
+    val arr = new Array[B](xs.length)
+    var ix = 0
+    var ys = xs
+    while (ix < arr.length){
+      arr(ix) = f(ys.head)
+      ix += 1
+      ys = ys.tail
+    }
+    arr
+  }
+
+  final def mapFromArray[A, B](arr: Array[A])(f: A => B): List[B] = {
+    var ix = arr.length
+    var xs: List[B] = Nil
+    while (ix > 0){
+      ix -= 1
+      xs = f(arr(ix)) :: xs
+    }
+    xs
+  }
 
   // "Opt" suffix or traverse clashes with the various traversers' traverses
   final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
