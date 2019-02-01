@@ -306,7 +306,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>
         // scala/bug#9390 emit lifted methods that don't require a `this` reference as STATIC
         // delambdafy targets are excluded as they are made static by `transformFunction`.
-        if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol)) {
+        // a synchronized method cannot be static (`methodReferencesThis` will not see the implicit this reference due to `this.synchronized`)
+        if (!dd.symbol.hasFlag(STATIC | SYNCHRONIZED) && !methodReferencesThis(dd.symbol)) {
           dd.symbol.setFlag(STATIC)
           dd.symbol.removeAttachment[mixer.NeedStaticImpl.type]
         }

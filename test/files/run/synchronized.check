@@ -4,6 +4,7 @@
     .|...             c1.ff:     OK
     .|.               c1.fl:     OK
     .|...             c1.fo:     OK
+    .|.               c1.fc:     OK
      |..              c1.g1:     OK
      |..              c1.gi:     OK
      |....            c1.gv:     OK
@@ -15,6 +16,7 @@
     .|...             c1.c.fl:   OK
     .|.....           c1.c.fo:   OK
     .|...             c1.c.fn:   OK
+    .|...             c1.c.fc:   OK
      |....            c1.c.g1:   OK
      |....            c1.c.gi:   OK
      |......          c1.c.gv:   OK
@@ -26,6 +28,7 @@
     .|...             c1.O.fl:   OK
     .|.....           c1.O.fo:   OK
     .|...             c1.O.fn:   OK
+    .|...             c1.O.fc:   OK
      |....            c1.O.g1:   OK
      |....            c1.O.gi:   OK
      |......          c1.O.gv:   OK
@@ -36,6 +39,7 @@
     .|...             O1.ff:     OK
     .|.               O1.fl:     OK
     .|...             O1.fo:     OK
+    .|.               O1.fc:     OK
      |..              O1.g1:     OK
      |..              O1.gi:     OK
      |....            O1.gv:     OK
@@ -47,6 +51,7 @@
     .|...             O1.c.fl:   OK
     .|.....           O1.c.fo:   OK
     .|...             O1.c.fn:   OK
+    .|...             O1.c.fc:   OK
      |....            O1.c.g1:   OK
      |....            O1.c.gi:   OK
      |......          O1.c.gv:   OK
@@ -58,6 +63,7 @@
     .|...             O1.O.fl:   OK
     .|.....           O1.O.fo:   OK
     .|...             O1.O.fn:   OK
+    .|...             O1.O.fc:   OK
      |....            O1.O.g1:   OK
      |....            O1.O.gi:   OK
      |......          O1.O.gv:   OK
@@ -68,6 +74,7 @@
     .|......          c2.ff:     OK
     .|....            c2.fl:     OK
     .|......          c2.fo:     OK
+    .|....            c2.fc:     OK
      |......          c2.g1:     OK
      |......          c2.gi:     OK
      |........        c2.gv:     OK
@@ -79,6 +86,7 @@
     .|.......         c2.c.fl:   OK
     .|.........       c2.c.fo:   OK
     .|......          c2.c.fn:   OK
+    .|.......         c2.c.fc:   OK
      |........        c2.c.g1:   OK
      |........        c2.c.gi:   OK
      |..........      c2.c.gv:   OK
@@ -90,6 +98,7 @@
     .|.......         c2.O.fl:   OK
     .|.........       c2.O.fo:   OK
     .|......          c2.O.fn:   OK
+    .|.......         c2.O.fc:   OK
      |........        c2.O.g1:   OK
      |........        c2.O.gi:   OK
      |..........      c2.O.gv:   OK
@@ -100,6 +109,7 @@
     .|......          O2.ff:     OK
     .|....            O2.fl:     OK
     .|......          O2.fo:     OK
+    .|....            O2.fc:     OK
      |......          O2.g1:     OK
      |......          O2.gi:     OK
      |........        O2.gv:     OK
@@ -111,6 +121,7 @@
     .|.......         O2.c.fl:   OK
     .|.........       O2.c.fo:   OK
     .|......          O2.c.fn:   OK
+    .|.......         O2.c.fc:   OK
      |........        O2.c.g1:   OK
      |........        O2.c.gi:   OK
      |..........      O2.c.gv:   OK
@@ -122,6 +133,7 @@
     .|.......         O2.O.fl:   OK
     .|.........       O2.O.fo:   OK
     .|......          O2.O.fn:   OK
+    .|.......         O2.O.fc:   OK
      |........        O2.O.g1:   OK
      |........        O2.O.gi:   OK
      |..........      O2.O.gv:   OK
