@@ -260,12 +260,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawowner = if (initOwner eq null) this else initOwner
     private[this] var _rawflags: Long = _
 
-    def rawowner = _rawowner
-    def rawflags = _rawflags
+    final def rawowner = _rawowner
+    final def rawflags = _rawflags
 
     rawatt = initPos
 
-    val id = nextId() // identity displayed when -uniqid
+    final val id = nextId() // identity displayed when -uniqid
     //assert(id != 3390, initName)
 
     private[this] var _validTo: Period = NoPeriod
@@ -840,7 +840,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDelambdafyTarget  = isArtifact && isMethod && hasAttachment[DelambdafyTarget.type]
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
-    final def needsFlatClasses    = !isMethod && phase.flatClasses && (rawowner ne NoSymbol) && !rawowner.isPackageClass
+    final def needsFlatClasses    = phase.flatClasses && (rawowner ne NoSymbol) && !rawowner.isPackageClass && !isMethod
 
     // TODO introduce a flag for these?
     final def isPatternTypeVariable: Boolean =
