@@ -15,9 +15,13 @@ package collection
 package immutable
 
 import scala.collection.mutable.ReusableBuilder
+import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
+
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
 
 /** $factoryInfo
   * @define Coll `Vector`
@@ -107,6 +111,28 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       initIterator(s)
       s
     }
+  }
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import convert.impl._
+    var depth = -1
+    val displaySource = 
+      if (dirty) iterator.asInstanceOf[VectorIterator[A]]
+      else this
+    val trunk: Array[AnyRef] =
+      if      (endIndex <= (1 <<  5)) { depth = 0; displaySource.display0 }
+      else if (endIndex <= (1 << 10)) { depth = 1; displaySource.display1.asInstanceOf[Array[AnyRef]] }
+      else if (endIndex <= (1 << 15)) { depth = 2; displaySource.display2.asInstanceOf[Array[AnyRef]] }
+      else if (endIndex <= (1 << 20)) { depth = 3; displaySource.display3.asInstanceOf[Array[AnyRef]] }
+      else if (endIndex <= (1 << 25)) { depth = 4; displaySource.display4.asInstanceOf[Array[AnyRef]] }
+      else  /* endIndex <=  1 << 30*/ { depth = 5; displaySource.display5.asInstanceOf[Array[AnyRef]] }
+    val s = (shape.shape: @switch) match {
+      case StepperShape.IntValue    => new IntVectorStepper   (startIndex, endIndex, depth, trunk)
+      case StepperShape.LongValue   => new LongVectorStepper  (startIndex, endIndex, depth, trunk)
+      case StepperShape.DoubleValue => new DoubleVectorStepper(startIndex, endIndex, depth, trunk)
+      case _         => shape.parUnbox(new AnyVectorStepper[B](startIndex, endIndex, depth, trunk))
+    }
+    s.asInstanceOf[S with EfficientSubstep]
   }
 
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
