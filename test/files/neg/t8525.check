@@ -1,4 +1,4 @@
-t8525.scala:9: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+t8525.scala:9: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: X.f(p: (Int, Int)): Int
   given arguments: 3, 4
  after adaptation: X.f((3, 4): (Int, Int))
