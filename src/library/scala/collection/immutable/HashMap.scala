@@ -323,8 +323,6 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
 
   def getPayload(index: Int): (K, V)
 
-  def sizePredicate: Int
-
   def size: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
@@ -524,18 +522,23 @@ private final class BitmapIndexedMapNode[K, +V](
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
       if (subNodeNew eq subNode) return this
-      subNodeNew.sizePredicate match {
-        case SizeOne =>
-          if (this.payloadArity == 0 && this.nodeArity == 1) { // escalate (singleton or empty) result
-            return subNodeNew
-          }
-          else { // inline value (move to front)
-            return copyAndMigrateFromNodeToInline(bitpos, originalHash, keyHash, subNode, subNodeNew)
-          }
 
-        case SizeMoreThanOne =>
-          // modify current node (set replacement node)
-          return copyAndSetNode(bitpos, subNode, subNodeNew)
+      // cache just in case subNodeNew is a hashCollision node, in which in which case a little arithmetic is avoided
+      // in Vector#length
+      val subNodeNewSize = subNodeNew.size
+
+      if (subNodeNewSize == 1) {
+        if (this.size == subNode.size) {
+          // subNode is the only child (no other data or node children of `this` exist)
+          // escalate (singleton or empty) result
+          return subNodeNew
+        } else {
+          // inline value (move to front)
+          return copyAndMigrateFromNodeToInline(bitpos, originalHash, keyHash, subNode, subNodeNew)
+        }
+      } else if (subNodeNewSize > 1) {
+        // modify current node (set replacement node)
+        return copyAndSetNode(bitpos, subNode, subNodeNew)
       }
     }
 
@@ -569,13 +572,6 @@ private final class BitmapIndexedMapNode[K, +V](
       }
     }
   }
-  
-  def sizePredicate: Int =
-    if (nodeArity == 0) payloadArity match {
-      case 0 => SizeEmpty
-      case 1 => SizeOne
-      case _ => SizeMoreThanOne
-    } else SizeMoreThanOne
 
   def hasNodes: Boolean = nodeMap != 0
 
@@ -1324,7 +1320,6 @@ private final class HashCollisionMapNode[K, +V ](
   def getPayload(index: Int): (K, V) = content(index)
 
   override def getHash(index: Int): Int = originalHash
-  def sizePredicate: Int = SizeMoreThanOne
 
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
 
