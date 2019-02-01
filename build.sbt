@@ -516,6 +516,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
+  connectInput in run := true,
   scalacOptions in Compile += "-Ywarn-unused:imports",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
