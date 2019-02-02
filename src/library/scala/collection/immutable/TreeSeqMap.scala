@@ -284,9 +284,9 @@ final class TreeSeqMap[K, +V] private (
 }
 object TreeSeqMap extends MapFactory[TreeSeqMap] {
   sealed trait OrderBy
-  final object OrderBy {
-    final case object Insertion extends OrderBy
-    final case object Modification extends OrderBy
+  object OrderBy {
+    case object Insertion extends OrderBy
+    case object Modification extends OrderBy
   }
 
   val Empty = new TreeSeqMap[Nothing, Nothing](Ordering.empty, HashMap.empty, 0, OrderBy.Insertion)
@@ -351,7 +351,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
   private val Mapping = Map
 
   /* The ordering implementation below is an adapted version of immutable.IntMap. */
-  private[immutable] final object Ordering {
+  private[immutable] object Ordering {
     import scala.collection.generic.BitOperations.Int._
 
     @inline private[immutable] def toBinaryString(i: Int): String = s"$i/${i.toBinaryString}"
@@ -404,7 +404,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
       def empty[V]: Iterator[V] = Empty.asInstanceOf[Iterator[V]]
     }
 
-    final case object Zero extends Ordering[Nothing] {
+    case object Zero extends Ordering[Nothing] {
       // Important! Without this equals method in place, an infinite
       // loop from Map.equals => size => pattern-match-on-Nil => equals
       // develops.  Case objects and custom equality don't mix without

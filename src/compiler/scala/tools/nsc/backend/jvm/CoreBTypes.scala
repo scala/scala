@@ -175,7 +175,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   private[this] lazy val _jlCloneableRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaCloneableClass))        // java/lang/Cloneable
 
   def                     jiSerializableRef         : ClassBType = _jiSerializableRef.get
-  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaSerializableClass))     // java/io/Serializable
+  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(SerializableClass))     // java/io/Serializable
 
   def                     jlClassCastExceptionRef   : ClassBType = _jlClassCastExceptionRef.get
   private[this] lazy val _jlClassCastExceptionRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ClassCastExceptionClass))   // java/lang/ClassCastException

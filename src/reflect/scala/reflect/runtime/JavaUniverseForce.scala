@@ -272,7 +272,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TypeConstraintClass
     definitions.SingletonClass
     definitions.SerializableClass
-    definitions.JavaSerializableClass
     definitions.ComparableClass
     definitions.JavaCloneableClass
     definitions.JavaNumberClass

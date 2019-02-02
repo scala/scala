@@ -176,6 +176,10 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   @deprecated("Use &- with an explicit collection argument instead of - with varargs", "2.13.0")
   def - (elem1: A, elem2: A, elems: A*): C = diff(elems.toSet + elem1 + elem2)
 
+  // The implicit dummy parameter is necessary to avoid erased signature clashes
+  // between this `concat` and the polymorphic one defined in `IterableOps`.
+  // Note that these clashes only happen in Dotty because it adds mixin
+  // forwarders before erasure unlike Scala 2.
   /** Creates a new $coll by adding all elements contained in another collection to this $coll, omitting duplicates.
     *
     * This method takes a collection of elements and adds all elements, omitting duplicates, into $coll.
@@ -189,7 +193,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     *  @param that     the collection containing the elements to add.
     *  @return a new $coll with the given elements added, omitting duplicates.
     */
-  def concat(that: collection.IterableOnce[A]): C = fromSpecific(that match {
+  def concat(that: collection.IterableOnce[A])(implicit dummy: DummyImplicit): C = fromSpecific(that match {
     case that: collection.Iterable[A] => new View.Concat(toIterable, that)
     case _ => iterator.concat(that.iterator)
   })
@@ -201,7 +205,7 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
   def + (elem1: A, elem2: A, elems: A*): C = fromSpecific(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   /** Alias for `concat` */
-  @`inline` final def ++ (that: collection.Iterable[A]): C = concat(that)
+  @`inline` final def ++ (that: collection.IterableOnce[A])(implicit dummy: DummyImplicit): C = concat(that)
 
   /** Computes the union between of set and another set.
     *

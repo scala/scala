@@ -233,7 +233,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     coll.fromBitMaskNoCopy(a)
   }
 
-  override def concat(other: collection.IterableOnce[Int]): C = other match {
+  override def concat(other: collection.IterableOnce[Int])(implicit dummy: DummyImplicit): C = other match {
     case otherBitset: BitSet =>
       val len = coll.nwords max otherBitset.nwords
       val words = new Array[Long](len)

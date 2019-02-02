@@ -12,6 +12,7 @@ import scala.concurrent.{Await, Awaitable, SyncVar, TimeoutException}
 import scala.tools.nsc.settings.ScalaVersion
 import scala.util.Try
 import scala.util.Properties.javaSpecVersion
+import scala.util.control.NonFatal
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
@@ -61,8 +62,14 @@ object AssertUtil {
       fail("Expression did not throw!")
     } catch {
       case e: T if checker(e) => ()
-      case other: T => val ae = new AssertionError(s"Exception failed check: $other") ; ae.addSuppressed(other) ; throw ae
-      case other => val ae = new AssertionError(s"Exception not a ${implicitly[ClassTag[T]]}: $other") ; ae.addSuppressed(other) ; throw ae
+      case failed: T =>
+        val ae = new AssertionError(s"Exception failed check: $failed")
+        ae.addSuppressed(failed)
+        throw ae
+      case NonFatal(other) =>
+        val ae = new AssertionError(s"Exception not a ${implicitly[ClassTag[T]]}: $other")
+        ae.addSuppressed(other)
+        throw ae
     }
 
   /** JUnit-style assertion for `IterableLike.sameElements`.

@@ -79,7 +79,7 @@ trait StrictOptimizedSetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     with collection.StrictOptimizedSetOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C] {
 
-  override def concat(that: collection.IterableOnce[A]): C = {
+  override def concat(that: collection.IterableOnce[A])(implicit dummy: DummyImplicit): C = {
     var result: C = coll
     val it = that.iterator
     while (it.hasNext) result = result + it.next()

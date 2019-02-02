@@ -1,10 +1,10 @@
-t8417.scala:7: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+t8417.scala:7: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: T.f(x: Any)(y: Any): String
   given arguments: "hello", "world"
  after adaptation: T.f(("hello", "world"): (String, String))
   def g = f("hello", "world")("holy", "moly")
            ^
-t8417.scala:7: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+t8417.scala:7: warning: adapted the argument list to the expected 2-tuple: add additional parens instead
         signature: T.f(x: Any)(y: Any): String
   given arguments: "holy", "moly"
  after adaptation: T.f(("holy", "moly"): (String, String))

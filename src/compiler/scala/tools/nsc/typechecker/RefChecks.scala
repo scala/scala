@@ -1008,7 +1008,7 @@ abstract class RefChecks extends Transform {
       def erasedClass(tp: Type) = erasure.javaErasure(tp).typeSymbol
 
       /* Symbols which limit the warnings we can issue since they may be value types */
-      val couldBeAnything = Set[Symbol](ObjectClass, ComparableClass, JavaSerializableClass)
+      val couldBeAnything = Set[Symbol](ObjectClass, ComparableClass, SerializableClass)
       def isMaybeValue(sym: Symbol): Boolean = couldBeAnything(erasedClass(sym.tpe))
 
       // Whether def equals(other: Any) has known behavior: it is the default

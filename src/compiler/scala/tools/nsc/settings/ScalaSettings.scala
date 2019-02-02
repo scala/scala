@@ -107,7 +107,6 @@ trait ScalaSettings extends AbsScalaSettings
   private[this] val version300 = ScalaVersion("3.0.0")
   def isScala300: Boolean = source.value >= version300
 
-
   /**
    * -X "Advanced" settings
    */
