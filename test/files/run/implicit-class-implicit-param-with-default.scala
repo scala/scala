@@ -1,7 +1,7 @@
 object Test {
   implicit class C(self: String)(implicit val foo: String = "default")
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println("".foo)
     println(C("").foo)
     println(new C("").foo)
