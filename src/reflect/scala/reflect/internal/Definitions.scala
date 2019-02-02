@@ -1640,7 +1640,7 @@ trait Definitions extends api.StandardDefinitions {
       // Methods treated specially by implicit search
       lazy val Predef_conforms = getMemberIfDefined(PredefModule, nme.conforms)
       lazy val SubTypeModule   = requiredModule[scala.<:<[_,_]]
-      lazy val SubType_refl    = getMemberIfDefined(PredefModule, nme.refl)
+        lazy val SubType_refl  = getMemberMethod(SubTypeModule, nme.refl)
 
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
