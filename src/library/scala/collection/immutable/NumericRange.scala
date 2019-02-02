@@ -14,6 +14,9 @@ package scala.collection.immutable
 
 import scala.collection.{AbstractIterator, Iterator}
 
+import scala.collection.convert.{Stepper, EfficientSubstep}
+import scala.collection.convert.impl.StepperShape
+
 import java.lang.String
 
 /** `NumericRange` is a more generic version of the
@@ -53,6 +56,17 @@ sealed class NumericRange[T](
     with Serializable { self =>
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
+
+  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import scala.collection.convert._, impl._
+    val s = shape.shape match {
+      case StepperShape.IntValue    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
+      case StepperShape.LongValue   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
+      case _        => shape.parUnbox((new AnyNumericRangeStepper[T](this, 0, length)).asInstanceOf[AnyStepper[B] with EfficientSubstep])
+    }
+    s.asInstanceOf[S with EfficientSubstep]
+  }
+
 
   /** Note that NumericRange must be invariant so that constructs
     *  such as "1L to 10 by 5" do not infer the range type as AnyVal.
