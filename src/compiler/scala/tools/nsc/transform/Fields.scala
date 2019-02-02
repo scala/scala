@@ -443,7 +443,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             if (symbolAnnotationsTargetFieldAndGetter(member))  // this simplifies to member.isGetter, but the full formulation really ties the triage together
               dropFieldAnnotationsFromGetter(clonedAccessor)
 
-            // if we don't cloneInfo, method argument symbols are shared between trait and subclasses --> lambalift proxy crash
+            // if we don't cloneInfo, method argument symbols are shared between trait and subclasses --> lambdalift proxy crash
             // TODO: use derive symbol variant?
 //            println(s"cloning accessor $member to $clazz")
             // start at uncurry so that we preserve that part of the history where an accessor has a NullaryMethodType
