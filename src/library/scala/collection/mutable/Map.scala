@@ -175,9 +175,18 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     * @param p  The test predicate
     */
   def filterInPlace(p: (K, V) => Boolean): this.type = {
-    for ((k, v) <- this.toList) // scala/bug#7269 toList avoids ConcurrentModificationException
-      if (!p(k, v)) this -= k
-
+    if (nonEmpty) {
+      val array = this.toArray[Any] // scala/bug#7269 toArray avoids ConcurrentModificationException
+      val arrayLength = array.length
+      var i = 0
+      while (i < arrayLength) {
+        val (k, v) = array(i).asInstanceOf[(K, V)]
+        if (!p(k, v)) {
+          this -= k
+        }
+        i += 1
+      }
+    }
     this
   }
 
