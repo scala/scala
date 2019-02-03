@@ -17,6 +17,9 @@ import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
 import scala.collection.generic.DefaultSerializationProxy
 
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
+
 /** This class implements mutable sets using a hashtable.
   *
   * @author  Stefan Zeiger
@@ -216,6 +219,16 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   /** Returns an iterator over the nodes stored in this HashSet */
   private[collection] def nodeIterator: Iterator[Node[A]] = new HashSetIterator[Node[A]] {
     override protected[this] def extract(nd: Node[A]): Node[A] = nd
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import convert.impl._
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => new IntMutableHashSetStepper[Node[A]]   (size, table, _.next, _.key.asInstanceOf[Int],    0, table.length)
+      case StepperShape.LongValue   => new LongMutableHashSetStepper[Node[A]]  (size, table, _.next, _.key.asInstanceOf[Long],   0, table.length)
+      case StepperShape.DoubleValue => new DoubleMutableHashSetStepper[Node[A]](size, table, _.next, _.key.asInstanceOf[Double], 0, table.length)
+      case _         => shape.parUnbox(new AnyMutableHashSetStepper[B, Node[A]](size, table, _.next, _.key.asInstanceOf[B],      0, table.length))
+    }
+    s.asInstanceOf[S with EfficientSubstep]    
   }
 
   private[this] def growTable(newlen: Int) = {

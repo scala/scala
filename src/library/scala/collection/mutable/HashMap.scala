@@ -469,7 +469,7 @@ object HashMap extends MapFactory[HashMap] {
     def newBuilder: Builder[(K, V), HashMap[K, V]] = HashMap.newBuilder(tableLength, loadFactor)
   }
 
-  private [collection] final class Node[K, V](_key: K, _hash: Int, private[this] var _value: V, private[this] var _next: Node[K, V]) {
+  private[collection] final class Node[K, V](_key: K, _hash: Int, private[this] var _value: V, private[this] var _next: Node[K, V]) {
     def key: K = _key
     def hash: Int = _hash
     def value: V = _value
