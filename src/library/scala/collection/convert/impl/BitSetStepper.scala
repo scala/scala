@@ -16,18 +16,48 @@ package impl
 import scala.collection.BitSetOps
 
 
-private[collection] class BitSetStepper(
+private[collection] final class BitSetStepper(
   private var underlying: BitSetOps[_], 
   private var cache0: Long, private var cache1: Long, 
   _i0: Int, _iN: Int,
   private var cacheIndex: Int
 )
-extends IndexedStepperBase[IntStepper, BitSetStepper](_i0, _iN)
+extends InOrderStepperBase[IntStepper, BitSetStepper](_i0, _iN)
 with IntStepper {
   import BitSetOps.{WordLength, LogWL}
 
   // When `found` is set, `i0` is an element that exists
-  private var found: Boolean = false
+  protected var found: Boolean = false
+
+  @annotation.tailrec
+  protected def findNext(): Boolean =
+    if (i0 >= iN) false
+    else {
+      val ix = i0 >> LogWL
+      if (ix == cacheIndex || ix == cacheIndex+1) {
+        val i = scanLong(if (ix == cacheIndex) cache0 else cache1, i0 & (WordLength - 1))
+        if (i >= 0) {
+          i0 = (i0 & (WordLength - 1)) | i
+          found = (i0 < iN)
+          found
+        }
+        else {
+          i0 = (i0 & (WordLength - 1)) + WordLength
+          findNext()
+        }
+      }
+      else if (underlying eq null) { 
+        i0 = iN
+        found = false
+        found
+      }
+      else {
+        cacheIndex = ix
+        cache0 = underlying.word(cacheIndex)
+        cache1 = if ((iN - 1) >> LogWL == ix) -1L else underlying.word(cacheIndex+1)
+        findNext()
+      }
+    }
 
   def semiclone(half: Int) =
     if (underlying == null) {
@@ -51,6 +81,7 @@ with IntStepper {
         cache1 = if (((iN - 1) >> LogWL) == ixOld0) -1L else underlying.word(ixOld0+1)
         cacheIndex = ixOld0
         i0 = half
+        found = false
       }
 
       // Return new stepper
@@ -63,40 +94,9 @@ with IntStepper {
     else if ((bits & (1L << from)) != 0) from
     else scanLong(bits, from + 1)
 
-  @annotation.tailrec
-  private[this] def findNext: Boolean =
-    if (i0 >= iN) false
-    else {
-      val ix = i0 >> LogWL
-      if (ix == cacheIndex || ix == cacheIndex+1) {
-        val i = scanLong(if (ix == cacheIndex) cache0 else cache1, i0 & (WordLength - 1))
-        if (i >= 0) {
-          i0 = (i0 & (WordLength - 1)) | i
-          found = (i0 < iN)
-          found
-        }
-        else {
-          i0 = (i0 & (WordLength - 1)) + WordLength
-          findNext
-        }
-      }
-      else if (underlying eq null) { 
-        i0 = iN
-        found = false
-        found
-      }
-      else {
-        cacheIndex = ix
-        cache0 = underlying.word(cacheIndex)
-        cache1 = if ((iN - 1) >> LogWL == ix) -1L else underlying.word(cacheIndex+1)
-        findNext
-      }
-    }
-
-  override def hasNext: Boolean = found || findNext
 
   def nextInt() = 
-    if (hasNext) { 
+    if (found || findNext()) { 
       found = false
       val ans = i0
       i0 += 1
