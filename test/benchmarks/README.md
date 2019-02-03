@@ -138,7 +138,7 @@ $ ./launchUI.sh -Djitwatch.config.file=/Users/jz/code/scala/test/benchmarks/targ
 
 
 
-Select the generated `hotspot.log`, `start`, and then browse the the benchmark to start gleaning insights!
+Select the generated `hotspot.log`, `start`, and then browse the benchmark to start gleaning insights!
 
 ## Useful reading
 * [OpenJDK advice on microbenchmarks](https://wiki.openjdk.java.net/display/HotSpot/MicroBenchmarks)

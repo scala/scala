@@ -132,7 +132,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
             this
           } else if (thatKnownSize <= size) {
             /* this branch intentionally includes the case of thatKnownSize == -1. We know that HashSets are quite fast at look-up, so
-            we're likely to be the faster of the the two at that. */
+            we're likely to be the faster of the two at that. */
             val iter = other.iterator
             var curr = rootNode
             while(iter.hasNext) {
