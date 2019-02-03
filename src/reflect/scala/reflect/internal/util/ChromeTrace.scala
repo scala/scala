@@ -13,7 +13,6 @@
 package scala.reflect.internal.util
 
 import java.io.Closeable
-import java.lang.management.ManagementFactory
 import java.nio.file.{Files, Path}
 import java.util
 import java.util.concurrent.TimeUnit
@@ -52,7 +51,17 @@ final class ChromeTrace(f: Path) extends Closeable {
   arrStart()
   traceWriter.newLine()
 
-  private val pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "")
+  private val pid: String = try {
+    // Using reflection to avoid a hard-dependency on non-compact1 profile parts of the Java library from scala-reflect
+    val getRuntimeMXBean = Class.forName("java.lang.management.ManagementFactory").getMethod("getRuntimeMXBean")
+    val runtimeMXBean = getRuntimeMXBean.invoke(null)
+    val getName = Class.forName("java.lang.management.RuntimeMXBean").getMethod("getName")
+    val name = getName.invoke(runtimeMXBean).asInstanceOf[String]
+    name.replaceAll("@.*", "")
+  } catch {
+    case _: Throwable =>
+      "0"
+  }
 
   override def close(): Unit = {
     arrEnd()
