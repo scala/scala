@@ -15,7 +15,7 @@ package scala.concurrent
 import java.util.concurrent.Executor
 import java.util.Objects
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 
 /**
  * Marker trait to indicate that a Runnable is Batchable by BatchingExecutors
@@ -24,7 +24,7 @@ trait Batchable {
   self: Runnable =>
 }
 
-private[concurrent] final object BatchingExecutorStatics {
+private[concurrent] object BatchingExecutorStatics {
   final val emptyBatchArray: Array[Runnable] = new Array[Runnable](0)
   final val marker = ""
   final object MissingParentBlockContext extends BlockContext {
@@ -111,21 +111,23 @@ private[concurrent] trait BatchingExecutor extends Executor {
       this.size = sz + 1
     }
 
-    final def pop(): Runnable = {
-      val sz = this.size
-      if (sz < 2) {
-        val ret = this.first
-        this.first = null
-        this.size = 0
-        ret
-      } else {
-        val o = this.other
-        val ret = o(sz - 2)
-        o(sz - 2) = null
-        this.size = sz - 1
-        ret
-      }
-    }
+    private[this] final def runNext(): Boolean =
+      (this.size: @switch) match {
+        case 0 => false
+        case 1 =>
+          val next = this.first
+          this.first = null
+          this.size = 0
+          next.run()
+          this.size > 0// Could have changed during next.run()
+        case sz =>
+          val o = this.other
+          val next = o(sz - 2)
+          o(sz - 2) = null
+          this.size = sz - 1// Important to update prior to `r.run()`
+          next.run()
+          this.size > 0// Could have changed during next.run()
+        }
 
     // This method runs in the delegate ExecutionContext's thread
     override final def run(): Unit = {
@@ -135,7 +137,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
         if (resubmitOnBlock) BlockContext.usingBlockContext(this)(this)
         else runWithoutResubmit(runUntilFailureOrDone())
 
-      _tasksLocal.remove()
+      _tasksLocal.set(BatchingExecutorStatics.marker)
       if (failure != null)
         throw handleRunFailure(failure)
     }
@@ -155,8 +157,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
 
     private[this] final def runUntilFailureOrDone(): Throwable =
       try {
-        while(size > 0)
-          pop().run()
+        while(runNext()) {}
 
         null
       } catch {
@@ -201,16 +202,15 @@ private[concurrent] trait BatchingExecutor extends Executor {
   */
   protected def reportFailure(throwable: Throwable): Unit
 
-  override final def execute(runnable: Runnable): Unit =
+  override final def execute(runnable: Runnable): Unit = {
+    Objects.requireNonNull(runnable, "runnable is null")
     if (isAsync) {
       if (batchable(runnable)) {
-        // We don't check if `runnable` is null here because if it is, it will be sent to `submitAsync` which will check that in the implementation(s)
         val b = _tasksLocal.get
         if (b.isInstanceOf[Batch]) b.asInstanceOf[Batch].push(runnable)
         else submitAsync(new Batch(runnable, resubmitOnBlock = true))
       } else submitAsync(runnable)
     } else {
-      Objects.requireNonNull(runnable, "runnable is null")
       val b = _tasksLocal.get
       if (b.isInstanceOf[Batch]) b.asInstanceOf[Batch].push(runnable)
       else if (b == null) {                             // If there is null in _tasksLocal, set a marker and run, inflate the Batch only if needed
@@ -219,4 +219,5 @@ private[concurrent] trait BatchingExecutor extends Executor {
         _tasksLocal.remove()                            // Since we are executing synchronously, we can clear this at the end of execution
       } else new Batch(runnable, resubmitOnBlock = false).run()
     }
+  }
 }

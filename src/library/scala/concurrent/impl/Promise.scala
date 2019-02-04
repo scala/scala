@@ -101,7 +101,7 @@ private[concurrent] object Promise {
       }
 
   // Left non-final to enable addition of extra fields by Java/Scala converters in scala-java8-compat.
-  class DefaultPromise[T] private[this] (initial: AnyRef) extends AtomicReference[AnyRef](initial) with scala.concurrent.Promise[T] with scala.concurrent.Future[T] {
+  class DefaultPromise[T] private[this] (initial: AnyRef) extends AtomicReference[AnyRef](initial) with scala.concurrent.Promise[T] with scala.concurrent.Future[T] with (Try[T] => Unit) {
     /**
      * Constructs a new, completed, Promise.
      */
@@ -111,6 +111,13 @@ private[concurrent] object Promise {
      * Constructs a new, un-completed, Promise.
      */
     final def this() = this(Noop: AnyRef)
+
+    /**
+     * WARNING: the `resolved` value needs to have been pre-resolved using `resolve()`
+     * INTERNAL API
+     */
+    override final def apply(resolved: Try[T]): Unit =
+      tryComplete0(get(), resolved)
 
     /**
      * Returns the associated `Future` with this `Promise`
@@ -248,11 +255,13 @@ private[concurrent] object Promise {
       } else /* if(state.isInstanceOf[Try[T]]) */ false
 
     override final def completeWith(other: Future[T]): this.type = {
-      val state = get()
-      if ((other ne this) && !state.isInstanceOf[Try[T]]) {
-        val resolved = if (other.isInstanceOf[DefaultPromise[T]]) other.asInstanceOf[DefaultPromise[T]].value0 else null
-        if (resolved ne null) tryComplete0(state, resolved)
-        else super.completeWith(other)
+      if (other ne this) {
+        val state = get()
+        if (!state.isInstanceOf[Try[T]]) {
+          val resolved = if (other.isInstanceOf[DefaultPromise[T]]) other.asInstanceOf[DefaultPromise[T]].value0 else other.value.orNull
+          if (resolved ne null) tryComplete0(state, resolved)
+          else other.onComplete(this)(InternalCallbackExecutor)
+        }
       }
 
       this
@@ -362,10 +371,11 @@ private[concurrent] object Promise {
    **/
   final class Transformation[-F, T] private[this] (
     private[this] final var _fun: Any => Any,
-    private[this] final var _arg: AnyRef,
+    private[this] final var _ec: ExecutionContext,
+    private[this] final var _arg: Try[F],
     private[this] final val _xform: Byte
   ) extends DefaultPromise[T]() with Callbacks[F] with Runnable with Batchable with OnCompleteRunnable {
-    final def this(xform: Int, f: _ => _, ec: ExecutionContext) = this(f.asInstanceOf[Any => Any], ec.prepare(): AnyRef, xform.toByte)
+    final def this(xform: Int, f: _ => _, ec: ExecutionContext) = this(f.asInstanceOf[Any => Any], ec.prepare(), null, xform.toByte)
 
     final def benefitsFromBatching: Boolean = _xform != Xform_onComplete && _xform != Xform_foreach
 
@@ -374,9 +384,9 @@ private[concurrent] object Promise {
     // Invariant: _arg is `ExecutionContext`, and non-null. `this` ne Noop.
     // requireNonNull(resolved) will hold as guarded by `resolve`
     final def submitWithValue(resolved: Try[F]): this.type = {
-      val e = _arg.asInstanceOf[ExecutionContext]
       _arg = resolved
-      try e.execute(this) /* Safe publication of _arg and _fun */
+      val e = _ec
+      try e.execute(this) /* Safe publication of _arg, _fun, _ec */
       catch {
         case t: Throwable => handleFailure(t, e)
       }
@@ -387,81 +397,77 @@ private[concurrent] object Promise {
     private[this] final def handleFailure(t: Throwable, e: ExecutionContext): Unit = {
       _fun = null // allow to GC
       _arg = null // see above
+      _ec  = null // see above again
       val wasInterrupted = t.isInstanceOf[InterruptedException]
       if (wasInterrupted || NonFatal(t)) {
         val completed = tryComplete0(get(), resolve(Failure(t)))
         if (completed && wasInterrupted) Thread.currentThread.interrupt()
-        if (!completed && (e ne null)) e.reportFailure(t)
+
+        // Report or rethrow failures which are unlikely to otherwise be noticed
+        if (_xform == Xform_foreach || _xform == Xform_onComplete || !completed)
+          e.reportFailure(t)
       } else throw t
     }
 
-    // Gets invoked by the ExecutionContext, when we have a value to transform.
-    // Invariant: if (_arg.isInstanceOf[Try[F]] && (_fun ne null))
-    override final def run(): Unit =
-      try {
-        val v = _arg.asInstanceOf[Try[F]]
-        (_xform.toInt: @switch) match {
-          case Xform_noop          => doAbort(v)
-          case Xform_map           => doMap(v)
-          case Xform_flatMap       => doFlatMap(v)
-          case Xform_transform     => doTransform(v)
-          case Xform_transformWith => doTransformWith(v)
-          case Xform_foreach       => v.foreach(_fun)
-          case Xform_onComplete    => _fun(v)
-          case Xform_recover       => doRecover(v)
-          case Xform_recoverWith   => doRecoverWith(v)
-          case Xform_filter        => doFilter(v)
-          case Xform_collect       => doCollect(v)
-          case _                   => doAbort(v)
-        }
-        _fun = null // allow to GC
-        _arg = null // see above
-      } catch {
-        case t: Throwable => handleFailure(t, null)
-      }
+    @inline private[this] final def completeWithLink(f: Future[T]): Try[T] = {
+      if (f.isInstanceOf[DefaultPromise[T]])
+        f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null)
+      else
+        completeWith(f)
 
-    private[this] final def doMap(v: Try[F]): Unit = { tryComplete0(get(), resolve(v.map(_fun.asInstanceOf[F => T]))) }
-
-    private[this] final def doFlatMap(v: Try[F]): Unit =
-      if (v.isInstanceOf[Success[F]]) {
-        val f = _fun(v.asInstanceOf[Success[F]].value)
-        if(f.isInstanceOf[DefaultPromise[T]]) f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null)
-        else completeWith(f.asInstanceOf[Future[T]])
-      } else tryComplete0(get(), v.asInstanceOf[Try[T]]) // Already resolved
-
-    private[this] final def doTransform(v: Try[F]): Unit = tryComplete0(get(), resolve(_fun(v).asInstanceOf[Try[T]]))
-
-    private[this] final def doTransformWith(v: Try[F]): Unit = {
-      val f = _fun(v)
-      if(f.isInstanceOf[DefaultPromise[T]]) f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null)
-      else completeWith(f.asInstanceOf[Future[T]])
+      null
     }
 
-    private[this] final def doRecover(v: Try[F]): Unit =
-      tryComplete0(get(), resolve(v.recover(_fun.asInstanceOf[PartialFunction[Throwable, F]]).asInstanceOf[Try[T]])) //recover F=:=T
-
-    private[this] final def doRecoverWith(v: Try[F]): Unit = //recoverWith F=:=T
-      if (v.isInstanceOf[Failure[F]]) {
-        val f = _fun.asInstanceOf[PartialFunction[Throwable, Future[T]]].applyOrElse(v.asInstanceOf[Failure[F]].exception, Future.recoverWithFailed)
-        if (f ne Future.recoverWithFailedMarker) {
-           if(f.isInstanceOf[DefaultPromise[T]]) f.asInstanceOf[DefaultPromise[T]].linkRootOf(this, null)
-           else completeWith(f)
-        } else tryComplete0(get(), v.asInstanceOf[Failure[T]])
-      } else tryComplete0(get(), v.asInstanceOf[Try[T]])
-
-    private[this] final def doFilter(v: Try[F]): Unit =
-      tryComplete0(get(),
-        if (v.isInstanceOf[Failure[F]] || _fun.asInstanceOf[F => Boolean](v.asInstanceOf[Success[F]].value)) v.asInstanceOf[Try[T]]
-        else Future.filterFailure // Safe for unresolved completes
-      )
-
-    private[this] final def doCollect(v: Try[F]): Unit =
-      tryComplete0(get(),
-        if (v.isInstanceOf[Success[F]]) Success(_fun.asInstanceOf[PartialFunction[F, T]].applyOrElse(v.asInstanceOf[Success[F]].value, Future.collectFailed))
-        else v.asInstanceOf[Try[T]] // Already resolved
-      )
-
-    private[this] final def doAbort(v: Try[F]): Unit =
-      tryComplete0(get(), Failure(new IllegalStateException("BUG: encountered transformation promise with illegal type: " + _xform)))
+    // Gets invoked by the ExecutionContext, when we have a value to transform.
+    override final def run(): Unit = {
+      val v   = _arg
+      val fun = _fun
+      val ec  = _ec
+      try {
+        val resolvedResult: Try[T] =
+          (_xform.toInt: @switch) match {
+            case Xform_noop          =>
+              null
+            case Xform_map           =>
+              if (v.isInstanceOf[Success[F]]) Success(fun(v.asInstanceOf[Success[F]].value).asInstanceOf[T]) else v.asInstanceOf[Failure[T]]
+            case Xform_flatMap       =>
+              if (v.isInstanceOf[Success[F]]) completeWithLink(fun(v.asInstanceOf[Success[F]].value).asInstanceOf[Future[T]])
+              else v.asInstanceOf[Failure[T]] // Already resolved
+            case Xform_transform     =>
+              resolve(fun(v).asInstanceOf[Try[T]])
+            case Xform_transformWith =>
+              completeWithLink(fun(v).asInstanceOf[Future[T]])
+            case Xform_foreach       =>
+              if (v.isInstanceOf[Success[F]]) fun(v.asInstanceOf[Success[F]].value)
+              null
+            case Xform_onComplete    =>
+              fun(v)
+              null
+            case Xform_recover       =>
+              resolve(v.recover(fun.asInstanceOf[PartialFunction[Throwable, F]]).asInstanceOf[Try[T]]) //recover F=:=T
+            case Xform_recoverWith   =>
+              if (v.isInstanceOf[Failure[F]]) {
+                val f = fun.asInstanceOf[PartialFunction[Throwable, Future[T]]].applyOrElse(v.asInstanceOf[Failure[F]].exception, Future.recoverWithFailed)
+                if (f ne Future.recoverWithFailedMarker) completeWithLink(f)
+                else v.asInstanceOf[Failure[T]]
+              } else v.asInstanceOf[Success[T]]
+            case Xform_filter        =>
+              if (v.isInstanceOf[Failure[F]] || fun.asInstanceOf[F => Boolean](v.asInstanceOf[Success[F]].value)) v.asInstanceOf[Try[T]]
+              else Future.filterFailure // Safe for unresolved completes
+            case Xform_collect       =>
+              if (v.isInstanceOf[Success[F]]) Success(fun.asInstanceOf[PartialFunction[F, T]].applyOrElse(v.asInstanceOf[Success[F]].value, Future.collectFailed))
+              else v.asInstanceOf[Failure[T]] // Already resolved
+            case _                   =>
+              Failure(new IllegalStateException("BUG: encountered transformation promise with illegal type: " + _xform))
+          }
+        if (resolvedResult ne null)
+          tryComplete0(get(), resolvedResult)
+        _fun = null // allow to GC
+        _arg = null // see above
+        _ec  = null // see above
+      } catch {
+        case t: Throwable => handleFailure(t, ec)
+      }
+    }
   }
 }

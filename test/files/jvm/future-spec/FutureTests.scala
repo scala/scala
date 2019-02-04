@@ -37,7 +37,7 @@ class FutureTests extends MinimalScalaTest {
   "A future with custom ExecutionContext" should {
     "shouldHandleThrowables" in {
       val ms = new concurrent.TrieMap[Throwable, Unit]
-      implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(), {
+      implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(1), {
         t =>
         ms.addOne((t, ()))
       })
@@ -57,28 +57,23 @@ class FutureTests extends MinimalScalaTest {
         Await.ready(latch, 5 seconds)
         "success"
       }
-      val f3 = f2 map { s => s.toUpperCase }
 
       f2 foreach { _ => throw new ThrowableTest("dispatcher foreach") }
-      f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher receive"); case _ => }
+      f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher onComplete"); case _ => }
 
       latch.open()
 
       Await.result(f2, defaultTimeout) mustBe ("success")
 
       f2 foreach { _ => throw new ThrowableTest("current thread foreach") }
-      f2 onComplete { case Success(_) => throw new ThrowableTest("current thread receive"); case _ => }
+      f2 onComplete { case Success(_) => throw new ThrowableTest("current thread onComplete"); case _ => }
 
-      Await.result(f3, defaultTimeout) mustBe ("SUCCESS")
+      Await.result(f2 map { s => s.toUpperCase }, defaultTimeout) mustBe ("SUCCESS")
 
-      val waiting = Future {
-        Thread.sleep(1000)
-      }
-      Await.ready(waiting, 4000 millis)
-
-      if (ms.size != 4)
-        assert(ms.size != 4, "Expected 4 throwables, found: " + ms)
-      //FIXME should check
+      ms.size mustBe 4
+      val msgs = ms.keysIterator.map(_.getMessage).toSet
+      val expectedMsgs = Set("dispatcher foreach", "dispatcher onComplete", "current thread foreach", "current thread onComplete")
+      msgs mustBe expectedMsgs
     }
   }
 
