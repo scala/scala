@@ -964,12 +964,11 @@ abstract class ClassfileParser {
             param.resetFlag(SYNTHETIC)
             param.name = name
         }
-        if (isDeveloper && !sameLength(paramNames.toList, params)) {
+        devWarningIf(!sameLength(paramNames.toList, params)) {
           // there's not anything we can do, but it's slightly worrisome
-          devWarning(
-            sm"""MethodParameters length mismatch while parsing $sym:
-                |  rawInfo.params: ${sym.rawInfo.params}
-                |  MethodParameters: ${paramNames.toList}""")
+          sm"""MethodParameters length mismatch while parsing $sym:
+              |  rawInfo.params: ${sym.rawInfo.params}
+              |  MethodParameters: ${paramNames.toList}"""
         }
       }
     // begin parseAttributes
@@ -1284,9 +1283,10 @@ abstract class ClassfileParser {
     def entries              = inners.values
 
     def add(entry: InnerClassEntry): Unit = {
-      inners get entry.externalName foreach (existing =>
-        devWarning(s"Overwriting inner class entry! Was $existing, now $entry")
-      )
+      devWarningIf(inners contains entry.externalName) {
+        val existing = inners(entry.externalName)
+        s"Overwriting inner class entry! Was $existing, now $entry"
+      }
       inners(entry.externalName) = entry
     }
     def innerSymbol(externalName: Name): Symbol = this getEntry externalName match {

@@ -40,7 +40,7 @@ trait ScalaSettings extends AbsScalaSettings
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.exists(_.isHelping)
@@ -138,7 +138,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xprint             = PhasesSetting       ("-Xprint", "Print out program after")
   val Xprintpos          = BooleanSetting      ("-Xprint-pos", "Print tree positions, as offsets.")
   val printtypes         = BooleanSetting      ("-Xprint-types", "Print tree types (debugging option).")
-  val printArgs          = BooleanSetting      ("-Xprint-args", "Print all compiler arguments and exit.")
+  val printArgs          = StringSetting       ("-Xprint-args", "file", "Print all compiler arguments to the specified location. Use - to echo to the reporter.", "-")
   val prompt             = BooleanSetting      ("-Xprompt", "Display a prompt after each error (debugging option).")
   val resident           = BooleanSetting      ("-Xresident", "Compiler stays resident: read source filenames from standard input.")
   val script             = StringSetting       ("-Xscript", "object", "Treat the source file as a script and wrap it in a main method.", "")
@@ -438,7 +438,9 @@ trait ScalaSettings extends AbsScalaSettings
   val YhotStatisticsEnabled = BooleanSetting("-Yhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
-  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").
+  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "Profiling output - specify a file or `-` for console.", "").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+  val YprofileTrace = StringSetting("-Yprofile-trace", "file", "Capture trace of compilation in Chrome Trace format", "profile.trace").
     withPostSetHook( _ => YprofileEnabled.value = true )
   val YprofileExternalTool = PhasesSetting("-Yprofile-external-tool", "Enable profiling for a phase using an external tool hook. Generally only useful for a single phase", "typer").
     withPostSetHook( _ => YprofileEnabled.value = true )

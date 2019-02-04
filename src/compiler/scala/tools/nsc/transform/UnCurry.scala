@@ -627,8 +627,9 @@ abstract class UnCurry extends InfoTransform
             flatdd
 
         case tree: Try =>
-          if (tree.catches exists (cd => !treeInfo.isCatchCase(cd)))
-            devWarning("VPM BUG - illegal try/catch " + tree.catches)
+          devWarningIf(tree.catches exists (!treeInfo.isCatchCase(_))) {
+            "VPM BUG - illegal try/catch " + tree.catches
+          }
           tree
 
         case Apply(Apply(fn, args), args1) =>

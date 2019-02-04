@@ -393,7 +393,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           case VOLATILE =>
             addAnnot(VolatileAttr)
             in.nextToken()
-          case SYNCHRONIZED | STRICTFP =>
+          case STRICTFP =>
+            addAnnot(ScalaStrictFPAttr)
+            in.nextToken()
+          case SYNCHRONIZED =>
             in.nextToken()
           case _ =>
             val privateWithin: TypeName =

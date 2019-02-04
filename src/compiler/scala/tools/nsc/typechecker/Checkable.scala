@@ -90,10 +90,11 @@ trait Checkable {
     bases foreach { bc =>
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
-      if (tps1.size != tps2.size)
-        devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
+      devWarningIf(!sameLength(tps1, tps2)) {
+        s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)"
+      }
 
-      tps1.lazyZip(tps2).foreach(_ =:= _)
+      foreach2(tps1, tps2)(_ =:= _)
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
       // figure it out. It seems there is more work to do if I

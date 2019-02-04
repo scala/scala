@@ -283,8 +283,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       body
   }
 
-  override def isDeveloper = settings.developer || super.isDeveloper
-
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
@@ -444,8 +442,10 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         currentRun.informUnitStarting(this, unit)
         val unit0 = currentUnit
         currentRun.currentUnit = unit
+        currentRun.profiler.beforeUnit(phase, unit.source.file)
         try apply(unit)
         finally {
+          currentRun.profiler.afterUnit(phase, unit.source.file)
           currentRun.currentUnit = unit0
           currentRun.advanceUnit()
         }
@@ -1110,6 +1110,11 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
   def newJavaUnitParser(unit: CompilationUnit): JavaUnitParser = new JavaUnitParser(unit)
 
+  override protected[scala] def currentRunProfilerBeforeCompletion(root: Symbol, associatedFile: AbstractFile): Unit =
+    curRun.profiler.beforeCompletion(root, associatedFile)
+  override protected[scala] def currentRunProfilerAfterCompletion(root: Symbol, associatedFile: AbstractFile): Unit =
+    curRun.profiler.afterCompletion(root, associatedFile)
+
   /** A Run is a single execution of the compiler on a set of units.
    */
   class Run extends RunContextApi with RunReporting with RunParsing {
@@ -1438,11 +1443,27 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     /** Caching member symbols that are def-s in Definitions because they might change from Run to Run. */
     val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
 
+    private def printArgs(sources: List[SourceFile]): Unit = {
+      if (settings.printArgs.isSetByUser) {
+        val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString())).mkString("", "\n", "\n")
+        settings.printArgs.value match {
+          case "-" =>
+            reporter.echo(argsFile)
+          case pathString =>
+            import java.nio.file._
+            val path = Paths.get(pathString)
+            Files.write(path, argsFile.getBytes(Charset.forName("UTF-8")))
+            reporter.echo("Compiler arguments written to: " + path)
+        }
+      }
+    }
+
     /** Compile list of source files,
      *  unless there is a problem already,
      *  such as a plugin was passed a bad option.
      */
     def compileSources(sources: List[SourceFile]): Unit = if (!reporter.hasErrors) {
+      printArgs(sources)
 
       def checkDeprecations() = {
         warnDeprecatedAndConflictingSettings()

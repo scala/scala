@@ -238,6 +238,13 @@ trait MethodSynthesis {
       val methDef = factoryMeth(classDef.mods & (AccessFlags | FINAL) | METHOD | IMPLICIT | SYNTHETIC, classDef.name.toTermName, classDef)
       val methSym = enterInScope(assignMemberSymbol(methDef))
       context.unit.synthetics(methSym) = methDef
+
+      treeInfo.firstConstructor(classDef.impl.body) match {
+        case primaryConstructor: DefDef =>
+          if (mexists(primaryConstructor.vparamss)(_.mods.hasDefault))
+            enterDefaultGetters(methSym, primaryConstructor, primaryConstructor.vparamss, primaryConstructor.tparams)
+        case _ =>
+      }
       methSym setInfo implicitFactoryMethodCompleter(methDef, classDef.symbol)
     }
 

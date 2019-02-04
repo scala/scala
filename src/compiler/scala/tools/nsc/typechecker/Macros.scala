@@ -698,7 +698,13 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     // By default, use the current typer's fresh name creator in macros. The compiler option
     // allows people to opt in to the old behaviour of Scala 2.12, which used a global fresh creator.
     if (!settings.YmacroFresh.value) currentFreshNameCreator = typer.fresh
-    pluginsMacroExpand(typer, expandee, mode, pt)
+    val macroSym = expandee.symbol
+    currentRun.profiler.beforeMacroExpansion(macroSym)
+    try {
+      pluginsMacroExpand(typer, expandee, mode, pt)
+    } finally {
+      currentRun.profiler.afterMacroExpansion(macroSym)
+    }
   }
 
   /** Default implementation of `macroExpand`.
