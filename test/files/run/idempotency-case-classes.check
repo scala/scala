@@ -49,7 +49,7 @@ C(2,3)
     };
     final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
-    case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
+    case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.eq(null))
       scala.None
     else
       Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y))

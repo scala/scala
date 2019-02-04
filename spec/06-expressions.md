@@ -1481,7 +1481,9 @@ question: given
 
 - A parameterized method $m$ of type `($p_1:T_1, \ldots , p_n:T_n$)$U$` is
   _as specific as_ some other member $m'$ of type $S$ if $m'$ is [applicable](#function-applications)
-  to arguments `($p_1 , \ldots , p_n$)` of types $T_1 , \ldots , T_n$.
+  to arguments `($p_1 , \ldots , p_n$)` of types $T_1 , \ldots , Tlast$;
+  if $T_n$ denotes a repeated parameter (it has shape $T*$), and so does $m'$'s last parameter,
+  $Tlast$ is taken as $T$, otherwise is $T_n$ used directly.
 - A polymorphic method of type `[$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$` is
   as specific as some other member of type $S$ if $T$ is as specific as $S$
   under the assumption that for $i = 1 , \ldots , n$ each $a_i$ is an abstract type name

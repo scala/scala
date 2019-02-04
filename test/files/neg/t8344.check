@@ -1,0 +1,7 @@
+t8344.scala:7: error: ambiguous reference to overloaded definition,
+both method f in object t of type (x: String*)Int
+and  method f in object t of type (x: Object)Int
+match argument types (String)
+  t.f("")
+    ^
+one error found
