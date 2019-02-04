@@ -1059,7 +1059,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (!isThisTypeResult && !explicitlyUnit(tree)) context.warning(tree.pos, "discarded non-Unit value")
+            @inline def excluded = isThisTypeResult || explicitlyUnit(tree)
+            if (settings.warnValueDiscardStrict || !excluded) context.warning(tree.pos, "discarded non-Unit value")
           }
           @inline def warnNumericWiden(): Unit =
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")

@@ -38,6 +38,7 @@ trait Warnings {
   )
   val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
   val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
+  val warnValueDiscardStrict = BooleanSetting("-Ywarn-value-discard-strict", "Warn when any non-Unit expression results are unused.").enabling(warnValueDiscard :: Nil)
   val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
   val warnOctalLiteral     = BooleanSetting("-Ywarn-octal-literal", "Warn on obsolete octal syntax.")
 

@@ -1,0 +1,12 @@
+discard-strict.scala:8: warning: discarded non-Unit value
+  def f(a: A): Unit = g += a
+                        ^
+discard-strict.scala:11: warning: discarded non-Unit value
+    42: Unit
+    ^
+discard-strict.scala:13: warning: discarded non-Unit value
+    17: Unit
+    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
