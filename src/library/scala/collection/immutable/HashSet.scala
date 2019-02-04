@@ -33,7 +33,7 @@ import scala.runtime.Statics.releaseFence
   *  @define Coll `immutable.HashSet`
   *  @define coll immutable champ hash set
   */
-final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
+final class HashSet[A] private[immutable](private[immutable] val rootNode: BitmapIndexedSetNode[A])
   extends AbstractSet[A]
     with StrictOptimizedSetOps[A, HashSet, HashSet[A]]
     with DefaultSerializable {
@@ -76,10 +76,27 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
   }
 
   override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] = {
-    val builder = iterableFactory.newBuilder[A]
-    builder ++= this
-    builder ++= that
-    builder.result()
+    val iter = that.iterator
+    var current = rootNode
+    while (iter.hasNext) {
+      val element = iter.next()
+      val originalHash = element.##
+      val improved = improve(originalHash)
+      current = current.updated(element, originalHash, improved, 0)
+
+      if (current ne rootNode) {
+        assert(current.content ne rootNode.content)
+        var shallowlyMutableNodeMap = 0
+        while (iter.hasNext) {
+          val element = iter.next()
+          val originalHash = element.##
+          val improved = improve(originalHash)
+          shallowlyMutableNodeMap = current.updateWithShallowMutations(element, originalHash, improved, 0, shallowlyMutableNodeMap)
+        }
+        return new HashSet(current)
+      }
+    }
+    this
   }
 
   override def tail: HashSet[A] = this - head
@@ -135,21 +152,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
           } else if (thatKnownSize <= size) {
             /* this branch intentionally includes the case of thatKnownSize == -1. We know that HashSets are quite fast at look-up, so
             we're likely to be the faster of the two at that. */
-            val iter = other.iterator
-            var curr = rootNode
-            while(iter.hasNext) {
-              // TODO: add mutable.hashSet#contains(elem, hashCode)
-              // in order to avoid rehashing elements
-              val next = iter.next()
-              val originalHash = next.##
-              val improved = improve(originalHash)
-              curr = curr.removed(next, originalHash, improved, 0)
-              if (curr.size <= 0) {
-                return HashSet.empty
-              }
-            }
-
-            if (curr eq rootNode) this else new HashSet(curr)
+            removedAllWithShallowMutations(other)
           } else {
             // TODO: Develop more sophisticated heuristic for which branch to take
             filterNot(other.contains)
@@ -157,6 +160,39 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
       }
 
     }
+  }
+
+  /** Immutably removes all elements of `that` from this HashSet
+    *
+    * Mutation is used internally, but only on root SetNodes which this method itself creates.
+    */
+  private[this] def removedAllWithShallowMutations(that: IterableOnce[A]): HashSet[A] = {
+    val iter = that.iterator
+    var curr = rootNode
+    while (iter.hasNext) {
+      val next = iter.next()
+      val originalHash = next.##
+      val improved = improve(originalHash)
+      curr = curr.removed(next, originalHash, improved, 0)
+      if (curr ne rootNode) {
+        if (curr.size == 0) {
+          return HashSet.empty
+        }
+        while (iter.hasNext) {
+          val next = iter.next()
+          val originalHash = next.##
+          val improved = improve(originalHash)
+
+          curr.removeWithShallowMutations(next, originalHash, improved)
+
+          if (curr.size == 0) {
+            return HashSet.empty
+          }
+        }
+        return new HashSet(curr)
+      }
+    }
+    this
   }
 
   override def removedAll(that: IterableOnce[A]): HashSet[A] = that match {
@@ -168,18 +204,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
       }
 
     case _ =>
-      val iter = that.iterator
-      var curr = rootNode
-      while (iter.hasNext) {
-        val next = iter.next()
-        val originalHash = next.##
-        val improved = improve(originalHash)
-        curr = curr.removed(next, originalHash, improved, 0)
-        if (curr.size <= 0) {
-          return HashSet.empty
-        }
-      }
-      if (curr eq rootNode) this else new HashSet(curr)
+      removedAllWithShallowMutations(that)
   }
 
   override def partition(p: A => Boolean): (HashSet[A], HashSet[A]) = {
@@ -248,8 +273,7 @@ private[immutable] object SetNode {
 
   private final val EmptySetNode = new BitmapIndexedSetNode(0, 0, Array.empty, Array.empty, 0, 0)
 
-  def empty[A]: SetNode[A] =
-    EmptySetNode.asInstanceOf[SetNode[A]]
+  def empty[A]: BitmapIndexedSetNode[A] = EmptySetNode.asInstanceOf[BitmapIndexedSetNode[A]]
 
   final val TupleLength = 1
 
@@ -344,7 +368,7 @@ private final class BitmapIndexedSetNode[A](
     false
   }
 
-  def updated(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+  def updated(element: A, originalHash: Int, elementHash: Int, shift: Int): BitmapIndexedSetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -366,7 +390,6 @@ private final class BitmapIndexedSetNode[A](
         }
       }
     }
-
     if ((nodeMap & bitpos) != 0) {
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
@@ -381,8 +404,94 @@ private final class BitmapIndexedSetNode[A](
 
     copyAndInsertValue(bitpos, element, originalHash, elementHash)
   }
+  /** A variant of `updated` which performs shallow mutations on the root (`this`), and if possible, on immediately
+    * descendant child nodes (only one level beneath `this`)
+    *
+    * The caller should pass a bitmap of child nodes of this node, which this method may mutate.
+    * If this method may mutate a child node, then if the updated value is located in that child node, it will
+    * be shallowly mutated (its children will not be mutated).
+    *
+    * If instead this method may not mutate the child node in which the to-be-updated value is located, then
+    * that child will be updated immutably, but the result will be mutably re-inserted as a child of this node.
+    *
+    * @param key the key to update
+    * @param originalHash key.##
+    * @param keyHash the improved hash
+    * @param shallowlyMutableNodeMap bitmap of child nodes of this node, which can be shallowly mutated
+    *                                during the call to this method
+    *
+    * @return Int which is the bitwise OR of shallowlyMutableNodeMap and any freshly created nodes, which will be
+    *         available for mutations in subsequent calls.
+    */
+  def updateWithShallowMutations(element: A, originalHash: Int, elementHash: Int, shift: Int, shallowlyMutableNodeMap: Int): Int = {
+    val mask = maskFrom(elementHash, shift)
+    val bitpos = bitposFrom(mask)
 
-  def removed(element: A, originalHash: Int, elementHash: Int, shift: Int): SetNode[A] = {
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val element0 = getPayload(index)
+      val element0UnimprovedHash = getHash(index)
+      if (element0UnimprovedHash == originalHash && element0 == element) {
+        return shallowlyMutableNodeMap
+      } else {
+        val element0Hash = improve(element0UnimprovedHash)
+        val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
+        migrateFromInlineToNodeInPlace(bitpos, element0Hash, subNodeNew)
+        return shallowlyMutableNodeMap | bitpos
+      }
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      val subNode = this.getNode(index)
+      val subNodeSize = subNode.size
+      val subNodeCachedJavaKeySetHashCode = subNode.cachedJavaKeySetHashCode
+
+      var returnShallowlyMutableNodeMap = shallowlyMutableNodeMap
+
+      val subNodeNew: SetNode[A] = subNode match {
+        case subNodeBm: BitmapIndexedSetNode[A] if (bitpos & shallowlyMutableNodeMap) != 0 =>
+          subNodeBm.updateWithShallowMutations(element, originalHash, elementHash, shift + BitPartitionSize, 0)
+          subNodeBm
+        case _ =>
+          val result = subNode.updated(element, originalHash, elementHash, shift + BitPartitionSize)
+          if (result ne subNode) {
+            returnShallowlyMutableNodeMap |= bitpos
+          }
+          result
+      }
+
+      this.content(this.content.length - 1 - this.nodeIndex(bitpos)) = subNodeNew
+      this.size = this.size - subNodeSize + subNodeNew.size
+      this.cachedJavaKeySetHashCode = this.cachedJavaKeySetHashCode - subNodeCachedJavaKeySetHashCode + subNodeNew.cachedJavaKeySetHashCode
+      return returnShallowlyMutableNodeMap
+    }
+
+    {
+      val dataIx = dataIndex(bitpos)
+      val idx = dataIx
+
+      val src = this.content
+      val dst = new Array[Any](src.length + TupleLength)
+
+      // copy 'src' and insert 2 element(s) at position 'idx'
+      arraycopy(src, 0, dst, 0, idx)
+      dst(idx) = element
+      arraycopy(src, idx, dst, idx + TupleLength, src.length - idx)
+
+      val dstHashes = insertElement(originalHashes, dataIx, originalHash)
+
+      this.dataMap |= bitpos
+      this.content = dst
+      this.originalHashes = dstHashes
+      this.size += 1
+      this.cachedJavaKeySetHashCode += elementHash
+    }
+    shallowlyMutableNodeMap
+  }
+
+
+  def removed(element: A, originalHash: Int, elementHash: Int, shift: Int): BitmapIndexedSetNode[A] = {
     val mask = maskFrom(elementHash, shift)
     val bitpos = bitposFrom(mask)
 
@@ -410,7 +519,7 @@ private final class BitmapIndexedSetNode[A](
       val index = indexFrom(nodeMap, mask, bitpos)
       val subNode = this.getNode(index)
 
-      val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
+      val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize).asInstanceOf[BitmapIndexedSetNode[A]]
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
       // cache just in case subNodeNew is a hashCollision node, in which in which case a little arithmetic is avoided
@@ -429,6 +538,101 @@ private final class BitmapIndexedSetNode[A](
       } else if (subNodeNewSize > 1) {
         // modify current node (set replacement node)
         return copyAndSetNode(bitpos, subNode, subNodeNew)
+      }
+    }
+
+    this
+  }
+  /** Variant of `removed` which will perform mutation on only the top-level node (`this`), rather than return a new
+    * node
+    *
+    * Should only be called on root nodes, because shift is assumed to be 0
+    *
+    * @param element the element to remove
+    * @param originalHash the original hash of `element`
+    * @param elementHash the improved hash of `element`
+    */
+  def removeWithShallowMutations(element: A, originalHash: Int, elementHash: Int): this.type = {
+    val mask = maskFrom(elementHash, 0)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val element0 = this.getPayload(index)
+
+      if (element0 == element) {
+        if (this.payloadArity == 2 && this.nodeArity == 0) {
+          val newDataMap = dataMap ^ bitpos
+          if (index == 0) {
+            val newContent = Array[Any](getPayload(1))
+            val newOriginalHashes = Array(originalHashes(1))
+            val newCachedJavaKeySetHashCode = improve(getHash(1))
+            this.content = newContent
+            this.originalHashes = newOriginalHashes
+            this.cachedJavaKeySetHashCode = newCachedJavaKeySetHashCode
+          } else {
+            val newContent = Array[Any](getPayload(0))
+            val newOriginalHashes = Array(originalHashes(0))
+            val newCachedJavaKeySetHashCode = improve(getHash(0))
+            this.content = newContent
+            this.originalHashes = newOriginalHashes
+            this.cachedJavaKeySetHashCode = newCachedJavaKeySetHashCode
+          }
+          this.dataMap = newDataMap
+          this.nodeMap = 0
+          this.size = 1
+          return this
+        }
+        else {
+          val dataIx = dataIndex(bitpos)
+          val idx = TupleLength * dataIx
+
+          val src = this.content
+          val dst = new Array[Any](src.length - TupleLength)
+
+          arraycopy(src, 0, dst, 0, idx)
+          arraycopy(src, idx + TupleLength, dst, idx, src.length - idx - TupleLength)
+
+          val dstHashes = removeElement(originalHashes, dataIx)
+
+          this.dataMap = this.dataMap ^ bitpos
+          this.content = dst
+          this.originalHashes = dstHashes
+          this.size -= 1
+          this.cachedJavaKeySetHashCode -= elementHash
+          return this
+        }
+      } else return this
+    }
+
+    if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      val subNode = this.getNode(index)
+
+      val subNodeNew = subNode.removed(element, originalHash, elementHash, BitPartitionSize).asInstanceOf[BitmapIndexedSetNode[A]]
+
+      if (subNodeNew eq subNode) return this
+
+      if (subNodeNew.size == 1) {
+        if (this.payloadArity == 0 && this.nodeArity == 1) {
+          this.dataMap = subNodeNew.dataMap
+          this.nodeMap = subNodeNew.nodeMap
+          this.content = subNodeNew.content
+          this.originalHashes = subNodeNew.originalHashes
+          this.size = subNodeNew.size
+          this.cachedJavaKeySetHashCode = subNodeNew.cachedJavaKeySetHashCode
+          return this
+        }
+        else {
+          migrateFromNodeToInlineInPlace(bitpos, originalHash, elementHash, subNode, subNodeNew)
+          return this
+        }
+      } else {
+        // size must be > 1
+        this.content(this.content.length - 1 - this.nodeIndex(bitpos)) = subNodeNew
+        this.size -= 1
+        this.cachedJavaKeySetHashCode = this.cachedJavaKeySetHashCode - subNode.cachedJavaKeySetHashCode + subNodeNew.cachedJavaKeySetHashCode
+        return this
       }
     }
 
@@ -563,6 +767,38 @@ private final class BitmapIndexedSetNode[A](
       cachedJavaKeySetHashCode = cachedJavaKeySetHashCode - elementHash + node.cachedJavaKeySetHashCode
     )
   }
+  /** Variant of `copyAndMigrateFromInlineToNode` which mutates `this` rather than returning a new node.
+    *
+    * @param bitpos the bit position of the data to migrate to node
+    * @param keyHash the improved hash of the element currently at `bitpos`
+    * @param node the node to place at `bitpos`
+    */
+  def migrateFromInlineToNodeInPlace(bitpos: Int, keyHash: Int, node: SetNode[A]): this.type = {
+    val dataIx = dataIndex(bitpos)
+    val idxOld = TupleLength * dataIx
+    val idxNew = this.content.length - TupleLength - nodeIndex(bitpos)
+
+    val src = this.content
+    val dst = new Array[Any](src.length - TupleLength + 1)
+
+    // copy 'src' and remove 2 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld <= idxNew)
+    arraycopy(src, 0, dst, 0, idxOld)
+    arraycopy(src, idxOld + TupleLength, dst, idxOld, idxNew - idxOld)
+    dst(idxNew) = node
+    arraycopy(src, idxNew + TupleLength, dst, idxNew + 1, src.length - idxNew - TupleLength)
+
+    val dstHashes = removeElement(originalHashes, dataIx)
+
+    this.dataMap = this.dataMap ^ bitpos
+    this.nodeMap = this.nodeMap | bitpos
+    this.content = dst
+    this.originalHashes = dstHashes
+    this.size = this.size - 1 + node.size
+    this.cachedJavaKeySetHashCode = this.cachedJavaKeySetHashCode - keyHash + node.cachedJavaKeySetHashCode
+    this
+  }
 
   def copyAndMigrateFromNodeToInline(bitpos: Int, elementHash: Int, oldNode: SetNode[A], node: SetNode[A]) = {
     val idxOld = this.content.length - 1 - nodeIndex(bitpos)
@@ -589,6 +825,39 @@ private final class BitmapIndexedSetNode[A](
       size = size - oldNode.size + 1,
       cachedJavaKeySetHashCode = cachedJavaKeySetHashCode - oldNode.cachedJavaKeySetHashCode + node.cachedJavaKeySetHashCode
     )
+  }
+
+  /** Variant of `copyAndMigrateFromNodeToInline` which mutates `this` rather than returning a new node.
+    *
+    * @param bitpos the bit position of the node to migrate inline
+    * @param oldNode the node currently stored at position `bitpos`
+    * @param node the node containing the single element to migrate inline
+    */
+  def migrateFromNodeToInlineInPlace(bitpos: Int, originalHash: Int, elementHash: Int, oldNode: SetNode[A], node: SetNode[A]): Unit = {
+    val idxOld = this.content.length - 1 - nodeIndex(bitpos)
+    val dataIxNew = dataIndex(bitpos)
+    val idxNew = TupleLength * dataIxNew
+
+    val element = node.getPayload(0)
+    val src = this.content
+    val dst = new Array[Any](src.length - 1 + TupleLength)
+
+    // copy 'src' and remove 1 element(s) at position 'idxOld' and
+    // insert 1 element(s) at position 'idxNew'
+    // assert(idxOld >= idxNew)
+    arraycopy(src, 0, dst, 0, idxNew)
+    dst(idxNew) = element
+    arraycopy(src, idxNew, dst, idxNew + TupleLength, idxOld - idxNew)
+    arraycopy(src, idxOld + 1, dst, idxOld + TupleLength, src.length - idxOld - 1)
+    val hash = node.getHash(0)
+    val dstHashes = insertElement(originalHashes, dataIxNew, hash)
+
+    this.dataMap = this.dataMap | bitpos
+    this.nodeMap = this.nodeMap ^ bitpos
+    this.content = dst
+    this.originalHashes = dstHashes
+    this.size = this.size - oldNode.size + 1
+    this.cachedJavaKeySetHashCode = this.cachedJavaKeySetHashCode - oldNode.cachedJavaKeySetHashCode + node.cachedJavaKeySetHashCode
   }
 
   def foreach[U](f: A => U): Unit = {
@@ -651,7 +920,7 @@ private final class BitmapIndexedSetNode[A](
       isValidSubset
   }
 
-  override def filterImpl(pred: A => Boolean, flipped: Boolean): SetNode[A] = {
+  override def filterImpl(pred: A => Boolean, flipped: Boolean): BitmapIndexedSetNode[A] = {
     if (size == 0) this
     else if (size == 1) {
       if (pred(getPayload(0)) != flipped) this else SetNode.empty
@@ -751,7 +1020,7 @@ private final class BitmapIndexedSetNode[A](
     }
   }
 
-  override def diff(that: SetNode[A], shift: Int): SetNode[A] = that match {
+  override def diff(that: SetNode[A], shift: Int): BitmapIndexedSetNode[A] = that match {
     case bm: BitmapIndexedSetNode[A] =>
       if (size == 0) this
       else if (size == 1) {
@@ -863,16 +1132,10 @@ private final class BitmapIndexedSetNode[A](
           newCachedHashCode = newCachedHashCode
         )
       }
-    case hashCollisionSetNode: HashCollisionSetNode[A] =>
+    case _: HashCollisionSetNode[A] =>
       // this branch should never happen, because HashCollisionSetNodes and BitMapIndexedSetNodes do not occur at the
       // same depth
-      var curr: SetNode[A] = this
-      val iter = hashCollisionSetNode.content.iterator
-      while(curr.size > 0 && iter.hasNext) {
-        val next = iter.next()
-        curr = curr.removed(next, hashCollisionSetNode.originalHash, hashCollisionSetNode.hash, shift)
-      }
-      curr
+      throw new RuntimeException("BitmapIndexedSetNode diff HashCollisionSetNode")
   }
 
   /** Utility method only for use in `diff` and `filterImpl`
@@ -904,7 +1167,7 @@ private final class BitmapIndexedSetNode[A](
     nodesToMigrateToData: mutable.Queue[SetNode[A]],
     mapOfNewNodes: Int,
     newNodes: mutable.Queue[SetNode[A]],
-    newCachedHashCode: Int): SetNode[A] = {
+    newCachedHashCode: Int): BitmapIndexedSetNode[A] = {
     if (newSize == 0) {
       SetNode.empty
     } else if (newSize == size) {
@@ -1165,9 +1428,6 @@ private final class SetHashIterator[A](rootNode: SetNode[A])
 @SerialVersionUID(3L)
 object HashSet extends IterableFactory[HashSet] {
 
-  private[HashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int) =
-    new HashSet[A](rootNode)
-
   @transient
   private final val EmptySet = new HashSet(SetNode.empty)
 
@@ -1204,7 +1464,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
   private def isAliased: Boolean = aliased != null
 
   /** The root node of the partially build hashmap */
-  private var rootNode: SetNode[A] = newEmptyRootNode
+  private var rootNode: BitmapIndexedSetNode[A] = newEmptyRootNode
 
   /** Inserts element `elem` into array `as` at index `ix`, shifting right the trailing elems */
   private def insertElement(as: Array[Int], ix: Int, elem: Int): Array[Int] = {
@@ -1355,7 +1615,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
     ensureUnaliased()
     xs match {
       case hm: HashSet[A] =>
-        new ChampBaseIterator(hm.rootNode) {
+        new ChampBaseIterator[SetNode[A]](hm.rootNode) {
           while(hasNext) {
             val originalHash = currentValueNode.getHash(currentValueCursor)
             update(

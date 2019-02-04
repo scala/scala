@@ -1,15 +1,12 @@
 package scala.collection.immutable
 
 import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop.forAll
+import org.scalacheck.Prop._
 import org.scalacheck._
 
-object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSet") {
+object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
 
   type K = Int
-
-//  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-//    p.withMinSuccessfulTests(1000)
 
   private def doSubtract(one: HashSet[K], two: HashSet[K]) = {
     one.foldLeft(HashSet.empty[K])((result, elem) => if (two contains elem) result else result + elem)
@@ -296,5 +293,37 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   property("xs -- range == xs -- range.toSet") = forAll { (xs: Set[Int], rangeMax: Int) =>
     val range = 1 to (rangeMax % 10000)
     xs -- range == xs -- range.toSet
+  }
+
+  property("xs ++ list == list.foldLeft(xs)(_ + _)") = forAll { (xs: HashSet[Int], list: List[Int]) =>
+    xs.concat(list) ?= list.foldLeft(xs)(_ + _)
+  }
+
+
+  property("hs.concat(list) does not mutate hs") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val asList = hs.toList
+    val clone = hs.to(List).to(HashSet)
+    hs.concat(l)
+    hs ?= clone
+  }
+  property("hs.union(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.union(hs2)
+    hs ?= clone
+  }
+  property("hs.removedAll(list) does not mutate hs") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.removedAll(l)
+    hs ?= clone
+  }
+  property("hs.diff(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.diff(hs2)
+    hs ?= clone
+  }
+  property("hs.removedAll(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.removedAll(hs2)
+    hs ?= clone
   }
 }
