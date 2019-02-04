@@ -1,18 +1,16 @@
-import scala.{ specialized => spec }
-
-trait EqProductFoo[@spec(Int) A] {
-  def eqv(x0: A): Boolean = true
+trait Top[@specialized(Int) A] {
+  def foo(x: A): Boolean = true
 }
 
-trait OrderProductFoo[@spec(Int) A] extends EqProductFoo[A] {
-  override def eqv(x0: A): Boolean = super.eqv(x0)
+trait Mid[@specialized(Int) A] extends Top[A] {
+  override def foo(x: A): Boolean = super.foo(x)
 }
 
-class C extends OrderProductFoo[Int]
+class C extends Mid[Int]
 
 object Test {
   def main(args: Array[String]): Unit = {
     val c = new C
-    println(c.eqv(42))
+    println(c.foo(42))
   }
 }
