@@ -213,7 +213,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
       Objects.requireNonNull(runnable, "runnable is null")
       val b = _tasksLocal.get
       if (b.isInstanceOf[Batch]) b.asInstanceOf[Batch].push(runnable)
-      else if (b != null) {
+      else if (b == null) {                             // If there is null in _tasksLocal, set a marker and run, inflate the Batch only if needed
         _tasksLocal.set(BatchingExecutorStatics.marker) // Set a marker to indicate that we are submitting synchronously
         runnable.run()                                  // If we observe a non-null task which isn't a batch here, then allocate a batch
         _tasksLocal.remove()                            // Since we are executing synchronously, we can clear this at the end of execution
