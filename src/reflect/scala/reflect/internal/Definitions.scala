@@ -1577,6 +1577,10 @@ trait Definitions extends api.StandardDefinitions {
 
     /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runDefinitions` */
     final class RunDefinitions {
+      // until we bootstrap and they are implemented as `macro ???` to trigger fasttrack directly
+      def treatLikeMacro(sym: Symbol) =
+        sym.isMethod && ((sym.name == nme.s || sym.name == nme.raw_) && sym.owner == StringContextClass) && (sym == StringContext_s || sym == StringContext_raw)
+
       // The given symbol represents String.+
       // TODO: this misses Predef.any2stringadd
       def isStringAddition(sym: Symbol) = sym == String_+

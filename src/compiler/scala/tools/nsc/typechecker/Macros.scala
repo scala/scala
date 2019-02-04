@@ -784,9 +784,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             val result = atPos(enclosingMacroPosition.focus)(expanded)
             Success(result)
           }
+          val isTermMacro = expandee.symbol.isTermMacro || currentRun.runDefinitions.treatLikeMacro(expandee.symbol)
           expanded match {
-            case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
-            case expanded: Tree if expandee.symbol.isTermMacro => validateResultingTree(expanded)
+            case expanded: Expr[_] if isTermMacro => validateResultingTree(expanded.tree)
+            case expanded: Tree if isTermMacro => validateResultingTree(expanded)
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
