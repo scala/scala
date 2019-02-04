@@ -1176,7 +1176,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           inferExprAlternative(tree, pt)
           adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
-          adapt(tree setType restpe, mode, pt, original)
+          val resTpDeconst =
+            if (isPastTyper || (tree.symbol.isAccessor && tree.symbol.hasFlag(STABLE) && treeInfo.isExprSafeToInline(tree))) restpe
+            else restpe.deconst
+          adapt(tree setType resTpDeconst, mode, pt, original)
         case TypeRef(_, ByNameParamClass, arg :: Nil) if mode.inExprMode => // (2)
           adapt(tree setType arg, mode, pt, original)
         case tp if mode.typingExprNotLhs && isExistentialType(tp) && !isSyntheticAccessor(context.owner) =>
@@ -3108,7 +3111,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (phase.erasedTypes) funSym.tpe
         else {
           val resTp =
-            packedType(bodyTyped, fun.symbol).deconst.resultType match {
+            packedType(bodyTyped, fun.symbol).resultType.deconst match {
               case ct: ConstantType if (bodyPt eq WildcardType) || (ct.widen <:< bodyPt) => ct.widen
               case tp                                                                    => tp
             }
@@ -3681,8 +3684,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && currentRun.runDefinitions.isListApply(fun))
                   atPos(tree.pos)(gen.mkNil setType restpe)
-                else
-                  constfold(treeCopy.Apply(tree, fun, args2) setType ifPatternSkipFormals(restpe) setPos pos2)
+                else {
+                  val resTp = ifPatternSkipFormals(if (isPastTyper) restpe else restpe.deconst) // annoying issue with classOf that shouldn't be deconsted after typers (during fields phase)
+                  constfold(treeCopy.Apply(tree, fun, args2) setType resTp setPos pos2)
+                }
               }
               if (settings.warnDeadCode) {
                 val sym = fun.symbol
