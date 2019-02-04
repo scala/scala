@@ -79,7 +79,7 @@ TypeRef(
     )
     TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]]
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]] with DefaultSerializable
 
       )
       args = List(
@@ -147,7 +147,7 @@ TypeRef(
       args = List(
         TypeRef(
           TypeSymbol(
-            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]]
+            sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]] with DefaultSerializable
 
           )
           args = List(
@@ -181,7 +181,7 @@ PolyType(
           args = List(
             TypeRef(
               TypeSymbol(
-                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]]
+                sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]] with DefaultSerializable
 
               )
               args = List(TypeParamTypeRef(TypeParam(T <: AnyVal)))
@@ -204,7 +204,7 @@ PolyType(
     params = List(TermSymbol(x: T), TermSymbol(y: List[U]))
     resultType = TypeRef(
       TypeSymbol(
-        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]]
+        sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A,List,List[A]] with StrictOptimizedLinearSeqOps[A,List,List[A]] with StrictOptimizedSeqOps[A,List,List[A]] with DefaultSerializable
 
       )
       args = List(TypeParamTypeRef(TypeParam(U >: T)))

@@ -18,6 +18,8 @@ import collection.mutable.{RedBlackTree => RB}
 
 import java.lang.String
 
+import scala.collection.generic.DefaultSerializable
+
 /**
   * A mutable sorted set implemented using a mutable red-black tree as underlying data structure.
   *
@@ -36,7 +38,8 @@ sealed class TreeSet[A] private (tree: RB.Tree[A, Null])(implicit val ordering: 
     with SortedSet[A]
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
-    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]] {
+    with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
+    with DefaultSerializable {
 
   if (ordering eq null)
     throw new NullPointerException("ordering must not be null")

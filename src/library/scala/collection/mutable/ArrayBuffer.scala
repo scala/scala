@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.collection.generic.DefaultSerializable
+
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
   *  access take constant time (amortized time). Prepends and removes are
@@ -39,7 +41,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   extends AbstractBuffer[A]
     with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
-    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]] {
+    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with DefaultSerializable {
 
   def this() = this(new Array[AnyRef](16), 0)
 

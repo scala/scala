@@ -41,7 +41,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
     with StrictOptimizedIterableOps[Int, Set, BitSet]
     with StrictOptimizedSortedSetOps[Int, SortedSet, BitSet]
     with collection.BitSet
-    with collection.BitSetOps[BitSet] {
+    with collection.BitSetOps[BitSet]
+    with Serializable {
 
   def this(initSize: Int) = this(new Array[Long](math.max((initSize + 63) >> 6, 1)))
 
@@ -171,7 +172,7 @@ class BitSet(protected[collection] final var elems: Array[Long])
   override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
     super.zip(that)
 
-  override protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
+  protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 
   override def diff(that: collection.Set[Int]): BitSet = that match {
     case bs: collection.BitSet =>

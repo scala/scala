@@ -14,7 +14,7 @@ package scala
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.generic.DefaultSerializationProxy
+import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
@@ -58,8 +58,6 @@ trait Map[K, +V]
   }
 
   override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
-
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(mapFactory.mapFactory[K, V], this)
 
   // These two methods are not in MapOps so that MapView is not forced to implement them
   @deprecated("Use - or remove on an immutable Map", "2.13.0")
@@ -152,7 +150,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   /** The implementation class of the set returned by `keySet`.
     */
-  protected class KeySet extends AbstractSet[K] with GenKeySet {
+  protected class KeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
     def diff(that: Set[K]): Set[K] = fromSpecific(view.filterNot(that))
   }
 
@@ -332,10 +330,11 @@ object MapOps {
     *
     * @define coll map collection
     */
+  @SerialVersionUID(3L)
   class WithFilter[K, +V, +IterableCC[_], +CC[_, _] <: IterableOps[_, AnyConstr, _]](
     self: MapOps[K, V, CC, _] with IterableOps[(K, V), IterableCC, _],
     p: ((K, V)) => Boolean
-  ) extends IterableOps.WithFilter[(K, V), IterableCC](self, p) {
+  ) extends IterableOps.WithFilter[(K, V), IterableCC](self, p) with Serializable {
 
     def map[K2, V2](f: ((K, V)) => (K2, V2)): CC[K2, V2] =
       self.mapFactory.from(new View.Map(filtered, f))

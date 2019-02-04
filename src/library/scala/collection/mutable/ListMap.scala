@@ -14,6 +14,7 @@ package scala.collection
 package mutable
 
 import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.List
 
 /** A simple mutable map backed by a list, so it preserves insertion order.
@@ -33,7 +34,8 @@ class ListMap[K, V]
   extends AbstractMap[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
-    with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
+    with DefaultSerializable {
 
   override def mapFactory: MapFactory[ListMap] = ListMap
 

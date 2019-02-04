@@ -19,6 +19,7 @@ import java.util
 
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
 
 /** $factoryInfo
@@ -82,7 +83,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
     with StrictOptimizedSeqOps[A, Vector, Vector[A]]
-    with VectorPointer[A @uncheckedVariance] { self =>
+    with VectorPointer[A @uncheckedVariance]
+    with DefaultSerializable { self =>
 
   override def iterableFactory: SeqFactory[Vector] = Vector
 

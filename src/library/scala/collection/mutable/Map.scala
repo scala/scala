@@ -211,9 +211,10 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
 @SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](HashMap) {
 
+  @SerialVersionUID(3L)
   class WithDefault[K, V](val underlying: Map[K, V], val defaultValue: K => V)
     extends AbstractMap[K, V]
-      with MapOps[K, V, Map, WithDefault[K, V]] {
+      with MapOps[K, V, Map, WithDefault[K, V]] with Serializable {
 
     override def default(key: K): V = defaultValue(key)
 

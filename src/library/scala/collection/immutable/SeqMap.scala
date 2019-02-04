@@ -51,7 +51,7 @@ object SeqMap extends MapFactory[SeqMap] {
   def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = VectorMap.newBuilder
 
   @SerialVersionUID(3L)
-  private object EmptyLinkedMap extends SeqMap[Any, Nothing] {
+  private object EmptyLinkedMap extends SeqMap[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def knownSize: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)

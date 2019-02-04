@@ -197,7 +197,7 @@ import scala.language.implicitConversions
   */
 @SerialVersionUID(3L)
 final class LazyList[+A] private(private[this] var lazyState: () => LazyList.State[A])
-  extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A, LazyList, LazyList[A]] {
+  extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A, LazyList, LazyList[A]] with Serializable {
   import LazyList._
 
   @volatile private[this] var stateEvaluated: Boolean = false
@@ -282,7 +282,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     else tail.foldLeft(op(z, head))(op)
 
   // State.Empty doesn't use the SerializationProxy
-  override protected[this] def writeReplace(): AnyRef =
+  protected[this] def writeReplace(): AnyRef =
     if (knownNonEmpty) new LazyList.SerializationProxy[A](this) else this
 
   override protected[this] def className = "LazyList"

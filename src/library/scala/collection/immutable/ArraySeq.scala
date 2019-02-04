@@ -37,7 +37,8 @@ sealed abstract class ArraySeq[+A]
   extends AbstractSeq[A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArraySeq, ArraySeq[A]]
-    with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]] {
+    with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]]
+    with Serializable {
 
   /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
@@ -156,8 +157,6 @@ sealed abstract class ArraySeq[+A]
     }
     copied
   }
-
-  override protected[this] def writeReplace(): AnyRef = this
 
   override protected final def applyPreferredMaxLength: Int = Int.MaxValue
 

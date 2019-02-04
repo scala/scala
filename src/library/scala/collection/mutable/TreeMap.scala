@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import collection.mutable.{RedBlackTree => RB}
+import scala.collection.generic.DefaultSerializable
 
 /**
   * A mutable sorted map implemented using a mutable red-black tree as underlying data structure.
@@ -35,7 +36,8 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with SortedMapOps[K, V, TreeMap, TreeMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
     with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
-    with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]] {
+    with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]]
+    with DefaultSerializable {
 
   override def sortedMapFactory = TreeMap
 

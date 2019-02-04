@@ -21,6 +21,8 @@ import scala.collection.{Iterator, StrictOptimizedSeqOps}
 import java.lang.Math
 import java.util.NoSuchElementException
 
+import scala.collection.generic.DefaultSerializable
+
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer
   *  Append, prepend, removeFirst, removeLast and random-access (indexed-lookup and indexed-replacement)
   *  take amortized constant time. In general, removals and insertions at i-th index are O(min(i, n-i))
@@ -47,7 +49,8 @@ class ArrayDeque[A] protected (
 ) extends AbstractBuffer[A]
     with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayDeque, ArrayDeque[A]]
-    with StrictOptimizedSeqOps[A, ArrayDeque, ArrayDeque[A]] {
+    with StrictOptimizedSeqOps[A, ArrayDeque, ArrayDeque[A]]
+    with DefaultSerializable {
 
   reset(array, start, end)
 

@@ -18,6 +18,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.atomic._
 
 import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.GrowableBuilder
 import scala.util.hashing.Hashing
@@ -683,7 +684,8 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
   extends scala.collection.mutable.AbstractMap[K, V]
     with scala.collection.concurrent.Map[K, V]
-    with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]] {
+    with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]]
+    with DefaultSerializable {
 
   private[this] var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
   private[this] var equalityobj = ef

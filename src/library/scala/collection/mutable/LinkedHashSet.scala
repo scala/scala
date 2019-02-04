@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.collection.generic.DefaultSerializable
+
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
@@ -35,7 +37,8 @@ package mutable
 class LinkedHashSet[A]
   extends AbstractSet[A]
     with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
-    with StrictOptimizedIterableOps[A, LinkedHashSet, LinkedHashSet[A]] {
+    with StrictOptimizedIterableOps[A, LinkedHashSet, LinkedHashSet[A]]
+    with DefaultSerializable  {
 
   override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet
 

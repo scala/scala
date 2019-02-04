@@ -316,8 +316,6 @@ abstract class Enumeration (initial: Int) extends Serializable {
       super[SortedSet].zip[B](that)
     override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): SortedIterableCC[B] =
       super[SortedSet].collect[B](pf)
-
-    override protected[this] def writeReplace(): AnyRef = this
   }
 
   /** A factory object for value sets */

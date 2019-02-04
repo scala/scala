@@ -15,6 +15,7 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{Builder, ListBuffer}
 
 /** `Queue` objects implement data structures that allow to
@@ -44,7 +45,8 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     with LinearSeq[A]
     with LinearSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedLinearSeqOps[A, Queue, Queue[A]]
-    with StrictOptimizedSeqOps[A, Queue, Queue[A]] {
+    with StrictOptimizedSeqOps[A, Queue, Queue[A]]
+    with DefaultSerializable {
 
   override def iterableFactory: SeqFactory[Queue] = Queue
 

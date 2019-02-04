@@ -22,7 +22,8 @@ import scala.language.higherKinds
   *
   * @define coll collection
   */
-abstract class WithFilter[+A, +CC[_]] {
+@SerialVersionUID(3L)
+abstract class WithFilter[+A, +CC[_]] extends Serializable {
 
   /** Builds a new collection by applying a function to all elements of the
     * `filtered` outer $coll.

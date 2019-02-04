@@ -17,6 +17,7 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
@@ -148,7 +149,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   override def keySet: Set[K] = new ImmutableKeySet
 
   /** The implementation class of the set returned by `keySet` */
-  protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet {
+  protected class ImmutableKeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
     def incl(elem: K): Set[K] = if (this(elem)) this else empty ++ this + elem
     def excl(elem: K): Set[K] = if (this(elem)) empty ++ this - elem else this
   }
@@ -177,9 +178,10 @@ trait StrictOptimizedMapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapO
 @SerialVersionUID(3L)
 object Map extends MapFactory[Map] {
 
+  @SerialVersionUID(3L)
   class WithDefault[K, +V](val underlying: Map[K, V], val defaultValue: K => V)
     extends AbstractMap[K, V]
-      with MapOps[K, V, Map, WithDefault[K, V]] {
+      with MapOps[K, V, Map, WithDefault[K, V]] with Serializable {
 
     def get(key: K): Option[V] = underlying.get(key)
 
@@ -221,7 +223,8 @@ object Map extends MapFactory[Map] {
 
   def newBuilder[K, V]: Builder[(K, V), Map[K, V]] = new MapBuilderImpl
 
-  private object EmptyMap extends AbstractMap[Any, Nothing] {
+  @SerialVersionUID(3L)
+  private object EmptyMap extends AbstractMap[Any, Nothing] with Serializable {
     override def size: Int = 0
     override def knownSize: Int = 0
     override def isEmpty: Boolean = true
@@ -234,7 +237,8 @@ object Map extends MapFactory[Map] {
     def removed(key: Any): Map[Any, Nothing] = this
   }
 
-  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  @SerialVersionUID(3L)
+  final class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] with Serializable {
     override def size: Int = 1
     override def knownSize: Int = 1
     override def isEmpty: Boolean = false
@@ -257,7 +261,8 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  @SerialVersionUID(3L)
+  final class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] with Serializable {
     override def size: Int = 2
     override def knownSize: Int = 2
     override def isEmpty: Boolean = false
@@ -311,7 +316,8 @@ object Map extends MapFactory[Map] {
     }
   }
 
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+  @SerialVersionUID(3L)
+  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] with Serializable {
     override def size: Int = 3
     override def knownSize: Int = 3
     override def isEmpty: Boolean = false
@@ -371,8 +377,9 @@ object Map extends MapFactory[Map] {
     }
   }
 
+  @SerialVersionUID(3L)
   final class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V)
-    extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] {
+    extends AbstractMap[K, V] with StrictOptimizedIterableOps[(K, V), Iterable, Map[K, V]] with Serializable {
 
     override def size: Int = 4
     override def knownSize: Int = 4

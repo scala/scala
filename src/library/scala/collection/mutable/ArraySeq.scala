@@ -40,7 +40,8 @@ sealed abstract class ArraySeq[T]
   extends AbstractSeq[T]
     with IndexedSeq[T]
     with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
-    with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]] {
+    with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]]
+    with Serializable {
 
   override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
@@ -80,8 +81,6 @@ sealed abstract class ArraySeq[T]
     }
     copied
   }
-
-  override protected[this] def writeReplace(): AnyRef = this
 
   override def equals(other: Any): Boolean = other match {
     case that: ArraySeq[_] if this.array.length != that.array.length =>

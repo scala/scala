@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.collection.generic.DefaultSerializable
+
 
 /** $factoryInfo
  *  @define Coll `LinkedHashMap`
@@ -61,7 +63,8 @@ class LinkedHashMap[K, V]
     with SeqMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
-    with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
+    with DefaultSerializable {
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 

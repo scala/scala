@@ -110,7 +110,8 @@ object Set extends IterableFactory[Set] {
   def newBuilder[A]: Builder[A, Set[A]] = new SetBuilderImpl[A]
 
   /** An optimized representation for immutable empty sets */
-  private object EmptySet extends AbstractSet[Any] {
+  @SerialVersionUID(3L)
+  private object EmptySet extends AbstractSet[Any] with Serializable {
     override def size: Int = 0
     override def isEmpty = true
     override def knownSize: Int = size
@@ -123,7 +124,8 @@ object Set extends IterableFactory[Set] {
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
   /** An optimized representation for immutable sets of size 1 */
-  final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+  @SerialVersionUID(3L)
+  final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
     override def size: Int = 1
     override def isEmpty = false
     override def knownSize: Int = size
@@ -146,7 +148,8 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 2 */
-  final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+  @SerialVersionUID(3L)
+  final class Set2[A] private[collection] (elem1: A, elem2: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
     override def size: Int = 2
     override def isEmpty = false
     override def knownSize: Int = size
@@ -178,7 +181,8 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 3 */
-  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+  @SerialVersionUID(3L)
+  final class Set3[A] private[collection] (elem1: A, elem2: A, elem3: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
     override def size: Int = 3
     override def isEmpty = false
     override def knownSize: Int = size
@@ -213,7 +217,8 @@ object Set extends IterableFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 4 */
-  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] {
+  @SerialVersionUID(3L)
+  final class Set4[A] private[collection] (elem1: A, elem2: A, elem3: A, elem4: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
     override def size: Int = 4
     override def isEmpty = false
     override def knownSize: Int = size

@@ -45,7 +45,8 @@ import scala.collection.generic.DefaultSerializationProxy
 class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[K, V]
     with MapOps[K, V, Map, AnyRefMap[K, V]]
-    with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]] {
+    with StrictOptimizedIterableOps[(K, V), Iterable, AnyRefMap[K, V]]
+    with Serializable {
 
   import AnyRefMap._
   def this() = this(AnyRefMap.exceptionDefault, 16, true)
@@ -463,7 +464,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   def collect[K2 <: AnyRef, V2](pf: PartialFunction[(K, V), (K2, V2)])(implicit dummy: DummyImplicit): AnyRefMap[K2, V2] =
     strictOptimizedCollect(AnyRefMap.newBuilder[K2, V2], pf)
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
 
   override protected[this] def stringPrefix = "AnyRefMap"
 }

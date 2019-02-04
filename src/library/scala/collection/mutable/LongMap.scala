@@ -41,7 +41,8 @@ import scala.collection.generic.DefaultSerializationProxy
 final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBufferSize: Int, initBlank: Boolean)
   extends AbstractMap[Long, V]
     with MapOps[Long, V, Map, LongMap[V]]
-    with StrictOptimizedIterableOps[(Long, V), Iterable, LongMap[V]] {
+    with StrictOptimizedIterableOps[(Long, V), Iterable, LongMap[V]]
+    with Serializable {
   import LongMap._
 
   def this() = this(LongMap.exceptionDefault, 16, true)
@@ -552,7 +553,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   def collect[V2](pf: PartialFunction[(Long, V), (Long, V2)]): LongMap[V2] =
     strictOptimizedCollect(LongMap.newBuilder[V2], pf)
 
-  override protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[V](LongMap), this)
+  protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(LongMap.toFactory[V](LongMap), this)
 
   override protected[this] def className = "LongMap"
 }

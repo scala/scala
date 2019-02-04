@@ -18,6 +18,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializable
 
 /**
   * This class implements immutable sets using a list-based data structure. List set iterators and
@@ -42,7 +43,8 @@ import scala.annotation.tailrec
   */
 sealed class ListSet[A]
   extends AbstractSet[A]
-    with StrictOptimizedSetOps[A, ListSet, ListSet[A]] {
+    with StrictOptimizedSetOps[A, ListSet, ListSet[A]]
+    with DefaultSerializable {
 
   override protected[this] def className: String = "ListSet"
 

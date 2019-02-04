@@ -32,7 +32,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
+  case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next()
     def hasMoreElements = underlying.hasNext
@@ -45,29 +45,29 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] {
+  case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasNext
     def next() = underlying.next
   }
 
   @SerialVersionUID(3L)
-  case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] {
+  case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] with Serializable {
     def hasNext = underlying.hasMoreElements
     def next() = underlying.nextElement
   }
 
   @SerialVersionUID(3L)
-  case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] { }
+  case class IterableWrapper[A](underlying: Iterable[A]) extends ju.AbstractCollection[A] with IterableWrapperTrait[A] with Serializable { }
 
   @SerialVersionUID(3L)
-  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] {
+  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Serializable{
     def iterator = underlying.iterator.asScala
     override def iterableFactory = mutable.ArrayBuffer
     override def isEmpty: Boolean = !underlying.iterator().hasNext
   }
 
   @SerialVersionUID(3L)
-  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] {
+  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] with Serializable {
     def iterator = underlying.iterator.asScala
     override def size = underlying.size
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
@@ -76,12 +76,12 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class SeqWrapper[A](underlying: Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
+  case class SeqWrapper[A](underlying: Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
   }
 
   @SerialVersionUID(3L)
-  case class MutableSeqWrapper[A](underlying: mutable.Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
+  case class MutableSeqWrapper[A](underlying: mutable.Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
     override def set(i: Int, elem: A) = {
       val p = underlying(i)
@@ -91,7 +91,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class MutableBufferWrapper[A](underlying: mutable.Buffer[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
+  case class MutableBufferWrapper[A](underlying: mutable.Buffer[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] with Serializable {
     def get(i: Int) = underlying(i)
     override def set(i: Int, elem: A) = { val p = underlying(i); underlying(i) = elem; p }
     override def add(elem: A) = { underlying += elem; true }
@@ -99,7 +99,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] {
+  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] with Serializable {
     def length = underlying.size
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def isEmpty = underlying.isEmpty
@@ -179,7 +179,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class MutableSetWrapper[A](underlying: mutable.Set[A]) extends SetWrapper[A](underlying) {
+  case class MutableSetWrapper[A](underlying: mutable.Set[A]) extends SetWrapper[A](underlying) with Serializable {
     override def add(elem: A) = {
       val sz = underlying.size
       underlying += elem
@@ -192,7 +192,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] {
+  case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] with Serializable {
 
     override def size = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty
@@ -311,7 +311,7 @@ private[collection] trait Wrappers {
   @SerialVersionUID(3L)
   abstract class AbstractJMapWrapper[K, V]
     extends mutable.AbstractMap[K, V]
-      with JMapWrapperLike[K, V, mutable.Map, mutable.Map[K, V]]
+      with JMapWrapperLike[K, V, mutable.Map, mutable.Map[K, V]] with Serializable
 
   trait JMapWrapperLike[K, V, +CC[X, Y] <: mutable.MapOps[X, Y, CC, _], +C <: mutable.MapOps[K, V, CC, C]]
     extends mutable.MapOps[K, V, CC, C] {
@@ -358,7 +358,7 @@ private[collection] trait Wrappers {
     */
   @SerialVersionUID(3L)
   class JMapWrapper[K, V](val underlying : ju.Map[K, V])
-    extends AbstractJMapWrapper[K, V] {
+    extends AbstractJMapWrapper[K, V] with Serializable {
 
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
@@ -414,7 +414,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class DictionaryWrapper[K, V](underlying: mutable.Map[K, V]) extends ju.Dictionary[K, V] {
+  case class DictionaryWrapper[K, V](underlying: mutable.Map[K, V]) extends ju.Dictionary[K, V] with Serializable {
     def size: Int = underlying.size
     def isEmpty: Boolean = underlying.isEmpty
     def keys: ju.Enumeration[K] = asJavaEnumeration(underlying.keysIterator)
@@ -442,7 +442,7 @@ private[collection] trait Wrappers {
   }
 
   @SerialVersionUID(3L)
-  case class JDictionaryWrapper[K, V](underlying: ju.Dictionary[K, V]) extends mutable.AbstractMap[K, V] {
+  case class JDictionaryWrapper[K, V](underlying: ju.Dictionary[K, V]) extends mutable.AbstractMap[K, V] with Serializable {
     override def size: Int = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
@@ -466,7 +466,7 @@ private[collection] trait Wrappers {
 
   @SerialVersionUID(3L)
   case class JPropertiesWrapper(underlying: ju.Properties) extends mutable.AbstractMap[String, String]
-            with mutable.MapOps[String, String, mutable.Map, mutable.Map[String, String]] {
+            with mutable.MapOps[String, String, mutable.Map, mutable.Map[String, String]] with Serializable {
 
     override def size = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty

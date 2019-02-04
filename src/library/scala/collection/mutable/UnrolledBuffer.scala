@@ -16,6 +16,7 @@ package mutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializable
 import scala.reflect.ClassTag
 import scala.collection.immutable.Nil
 
@@ -52,7 +53,8 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     with Seq[T]
     with SeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
     with StrictOptimizedSeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
-    with Builder[T, UnrolledBuffer[T]] {
+    with Builder[T, UnrolledBuffer[T]]
+    with DefaultSerializable {
 
   import UnrolledBuffer.Unrolled
 

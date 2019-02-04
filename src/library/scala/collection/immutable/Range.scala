@@ -64,7 +64,8 @@ sealed abstract class Range(
   extends AbstractSeq[Int]
     with IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
-    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]] { range =>
+    with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
+    with Serializable { range =>
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
@@ -435,8 +436,6 @@ sealed abstract class Range(
     val prefix = if (isEmpty) "empty " else if (!isExact) "inexact " else ""
     s"${prefix}Range $start $preposition $end$stepped"
   }
-
-  final override protected[this] def writeReplace(): AnyRef = this
 
   override protected[this] def className = "Range"
 

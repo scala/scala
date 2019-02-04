@@ -19,6 +19,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}
+import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
 
 /** A class for immutable linked lists representing ordered collections
@@ -86,7 +87,8 @@ sealed abstract class List[+A]
     with LinearSeq[A]
     with LinearSeqOps[A, List, List[A]]
     with StrictOptimizedLinearSeqOps[A, List, List[A]]
-    with StrictOptimizedSeqOps[A, List, List[A]] {
+    with StrictOptimizedSeqOps[A, List, List[A]]
+    with DefaultSerializable {
 
   override def iterableFactory: SeqFactory[List] = List
 
