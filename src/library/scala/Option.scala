@@ -345,7 +345,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
     *  @return       a pair of Options, containing, respectively, the first and second half
     *                of the element pair of this Option.
     */
-  final def unzip[A1, A2](implicit asPair: A => (A1, A2)): (Option[A1], Option[A2]) = {
+  final def unzip[A1, A2](implicit asPair: A <:< (A1, A2)): (Option[A1], Option[A2]) = {
     if (isEmpty)
       (None, None)
     else {
@@ -364,7 +364,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
     *  @return         a triple of Options, containing, respectively, the first, second, and third
     *                  elements from the element triple of this Option.
     */
-  final def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (Option[A1], Option[A2], Option[A3]) = {
+  final def unzip3[A1, A2, A3](implicit asTriple: A <:< (A1, A2, A3)): (Option[A1], Option[A2], Option[A3]) = {
     if (isEmpty)
       (None, None, None)
     else {
