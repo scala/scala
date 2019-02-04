@@ -1,0 +1,27 @@
+deprecated.scala:5: warning: Specify both message and version: @deprecated("message", since = "1.0")
+  @deprecated def f = ???
+   ^
+deprecated.scala:9: warning: Specify both message and version: @deprecated("message", since = "1.0")
+  @deprecated("Don't use it."/*, forRemoval=true*/) def stale = ???
+   ^
+deprecated.scala:21: warning: method f in trait T is deprecated
+  t.f
+    ^
+deprecated.scala:22: warning: method g in trait T is deprecated (since 1.0): Don't use it.
+  t.g
+    ^
+deprecated.scala:23: warning: method stale in trait T is deprecated: Don't use it.
+  t.stale
+    ^
+deprecated.scala:24: warning: method gross in trait T is deprecated (since 1.0): Don't use it.
+  t.gross
+    ^
+deprecated.scala:26: warning: method innie in trait T is deprecated (since 1.0): Don't use it.
+  t.innie   // warn because API will be removed
+    ^
+deprecated.scala:27: warning: method keeper in trait T is deprecated (since 1.0): Prefer toString instead.
+  t.keeper  // don't warn because it's an inlined forwarder? maybe just warn.
+    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+8 warnings found
+one error found
