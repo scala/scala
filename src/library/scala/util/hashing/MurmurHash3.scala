@@ -96,7 +96,7 @@ private[hashing] class MurmurHash3 {
       val h = x.##
       a += h
       b ^= h
-      if (h != 0) c *= h
+      c *= h | 1
       n += 1
     }
     var h = seed
