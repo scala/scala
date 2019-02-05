@@ -1084,7 +1084,7 @@ trait Implicits {
           result
         }
 
-        if (settings.isScala213) matches
+        if (currentRun.isScala213) matches
         else {
           // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
           // compilation order variation in whether a search succeeds or diverges.
@@ -1130,7 +1130,7 @@ trait Implicits {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
             }
           }
-          if (typedFirstPending.isFailure && settings.isScala213)
+          if (typedFirstPending.isFailure && currentRun.isScala213)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
@@ -1231,7 +1231,7 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
-      val isScala213 = settings.isScala213
+      val isScala213 = currentRun.isScala213
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.

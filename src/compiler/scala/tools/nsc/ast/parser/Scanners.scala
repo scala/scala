@@ -577,7 +577,7 @@ trait Scanners extends ScannersCommon {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
-                if (isEmptyCharLit && settings.isScala213)
+                if (isEmptyCharLit && currentRun.isScala213)
                   syntaxError("empty character literal (use '\\'' for single quote)")
                 else {
                   if (isEmptyCharLit)

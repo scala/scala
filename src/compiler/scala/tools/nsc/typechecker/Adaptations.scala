@@ -92,7 +92,7 @@ trait Adaptations {
         true // keep adaptation
       }
       if (args.isEmpty) {
-        if (settings.isScala300) noAdaptation else deprecatedAdaptation
+        if (currentRun.isScala300) noAdaptation else deprecatedAdaptation
       } else
         warnAdaptation
     }

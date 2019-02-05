@@ -1468,7 +1468,7 @@ abstract class RefChecks extends Transform {
           reporter.error(sym.pos, s"${sym.name}: Only concrete methods can be marked @elidable.$rest")
         }
       }
-      if (settings.isScala213) checkIsElidable(tree.symbol)
+      if (currentRun.isScala213) checkIsElidable(tree.symbol)
 
       tree match {
         case m: MemberDef =>

@@ -1029,13 +1029,13 @@ trait Contexts { self: Analyzer =>
       sym.isImplicit &&
       isAccessible(sym, pre) &&
       !(
-        // [eed3si9n] ideally I'd like to do this: val fd = settings.isScala214 && sym.isDeprecated
+        // [eed3si9n] ideally I'd like to do this: val fd = currentRun.isScala214 && sym.isDeprecated
         // but implicit caching currently does not report sym.isDeprecated correctly.
-        settings.isScala214 && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
+        currentRun.isScala214 && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
       ) &&
       !(imported && {
         val e = scope.lookupEntry(name)
-        (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
+        (e ne null) && (e.owner == scope) && (!currentRun.isScala212 || e.sym.exists)
       })
 
     /** Do something with the symbols with name `name` imported via the import in `imp`,

@@ -61,5 +61,5 @@ private[reflect] class Settings extends MutableSettings {
 
   val Yrecursion        = new IntSetting(0)
   def isScala212        = true
-  private[scala] def isScala213 = false
+  private[scala] def isScala213 = true
 }
