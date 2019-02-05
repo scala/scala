@@ -1,24 +1,30 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package reflect.internal
 package settings
 
-/** A Settings abstraction boiled out of the original highly mutable Settings
- *  class with the intention of creating an ImmutableSettings which can be used
- *  interchangeably.   Except of course without the mutants.
+/** Abstract settings, which is refined for `reflect` and `nsc`.
  */
-
 trait AbsSettings {
-  type Setting <: AbsSettingValue      // Fix to the concrete Setting type
 
+  /** Subclasses should further constrain Setting. */
+  type Setting <: AbsSettingValue
+
+  /** A setting is a value which may have been specified by the user. */
   trait AbsSettingValue {
     type T <: Any
     def value: T
     def isDefault: Boolean
   }
 }
-

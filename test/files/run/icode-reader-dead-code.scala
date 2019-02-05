@@ -30,13 +30,13 @@ object Test extends DirectTest {
         |}
       """.stripMargin
 
-    compileString(newCompiler("-usejavacp"))(aCode)
+    compileString(newCompiler(s"-usejavacp", "-cp", testOutput.path))(aCode)
 
     addDeadCode()
 
     // If inlining fails, the compiler will issue an inliner warning that is not present in the
     // check file
-    compileString(newCompiler("-usejavacp", "-opt:l:inline", "-opt-inline-from:**"))(bCode)
+    compileString(newCompiler("-usejavacp", "-cp", testOutput.path, "-opt:l:inline", "-opt-inline-from:**"))(bCode)
   }
 
   def readClass(file: String) = {
@@ -57,7 +57,7 @@ object Test extends DirectTest {
     os.close()
   }
 
-  def addDeadCode() {
+  def addDeadCode(): Unit = {
     val file = (testOutput / "p" / "A.class").path
     val cnode = readClass(file)
     val method = cnode.methods.asScala.find(_.name == "f").head
@@ -65,7 +65,7 @@ object Test extends DirectTest {
     AsmUtils.traceMethod(method)
 
     val insns = method.instructions
-    val it = insns.iterator()
+    val it = insns.iterator
     while (it.hasNext) {
       val in = it.next()
       if (in.getOpcode == Opcodes.IRETURN) {

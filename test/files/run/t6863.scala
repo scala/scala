@@ -1,5 +1,10 @@
+/* scalac: -Xsource:3.0 */
+
 /** Make sure that when a variable is captured its initialization expression is handled properly */
 object Test {
+  // This is a workaround for x == (())
+  val u = ()
+
   def lazyVal() = {
   	// internally lazy vals become vars which are initialized with "_", so they need to be tested just like vars do
   	lazy val x = "42"
@@ -35,15 +40,15 @@ object Test {
   def assign() = {
     var y = 1
     var x = y = 42
-    assert({ () => x}.apply == ())
+    assert({ () => x}.apply == u)
   }
   def valDef() = {
     var x = {val y = 42}
-    assert({ () => x}.apply == ())
+    assert({ () => x}.apply == u)
   }
   def `return`(): String = {
     var x = if (true) return "42" else ()
-    assert({ () => x}.apply == ())
+    assert({ () => x}.apply == u)
     "42"
   }
   def tryFinally() = {
@@ -56,7 +61,7 @@ object Test {
   }
   def `if`() = {
   	var x = if (true) ()
-    assert({ () => x }.apply == ())
+    assert({ () => x }.apply == u)
   }
   def ifElse() = {
     var x = if(true) "42" else "43"
@@ -90,7 +95,7 @@ object Test {
     }
     assert({ () => x }.apply == "42")
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
   	lazyVal()
     ident()
     apply()

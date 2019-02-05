@@ -7,7 +7,6 @@ package scala.man1
 
 /**
  *  @author Lex Spoon
- *  @version 1.0
  */
 object fsc extends Command {
   import _root_.scala.tools.docutil.ManPage._

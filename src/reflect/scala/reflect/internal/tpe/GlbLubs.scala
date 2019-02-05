@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -15,12 +27,11 @@ private[internal] trait GlbLubs {
   import statistics._
 
   private final val printLubs = System.getProperty("scalac.debug.lub") != null
-  private final val strictInference = settings.strictInference
 
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
-  private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Depth) {
+  private def printLubMatrix(btsMap: Map[Type, List[Type]], depth: Depth): Unit = {
     import util.TableDef
     import TableDef.Column
     def str(tp: Type) = {
@@ -47,43 +58,6 @@ private[internal] trait GlbLubs {
     println("** Depth is " + depth + "\n" + formatted)
   }
 
-  /** From a list of types, find any which take type parameters
-    *  where the type parameter bounds contain references to other
-    *  any types in the list (including itself.)
-    *
-    *  @return List of symbol pairs holding the recursive type
-    *    parameter and the parameter which references it.
-    */
-  def findRecursiveBounds(ts: List[Type]): List[(Symbol, Symbol)] = {
-    if (ts.isEmpty) Nil
-    else {
-      val sym = ts.head.typeSymbol
-      require(ts.tail forall (_.typeSymbol == sym), ts)
-      for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
-        p -> in
-    }
-  }
-
-  // only called when strictInference
-  private def willViolateRecursiveBounds(tp: Type, ts: List[Type], tsElimSub: List[Type]) = {
-    val typeSym     = ts.head.typeSymbol // we're uniform, the `.head` is as good as any.
-    def fbounds     = findRecursiveBounds(ts) map (_._2)
-    def isRecursive = typeSym.typeParams exists fbounds.contains
-
-    isRecursive && (transposeSafe(tsElimSub map (_.normalize.typeArgs)) match {
-      case Some(arggsTransposed) =>
-        val mergedTypeArgs = (tp match { case et: ExistentialType => et.underlying; case _ => tp}).typeArgs
-        exists3(typeSym.typeParams, mergedTypeArgs, arggsTransposed) {
-          (param, arg, lubbedArgs) =>
-            val isExistential = arg.typeSymbol.isExistentiallyBound
-            val isInFBound    = fbounds contains param
-            val wasLubbed     = !lubbedArgs.exists(_ =:= arg)
-            (!isExistential && isInFBound && wasLubbed)
-        }
-      case None => false
-    })
-  }
-
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
     * compute its least sorted upwards closed upper bound relative to the following ordering <= between lists of types:
     *
@@ -101,7 +75,8 @@ private[internal] trait GlbLubs {
     var lubListDepth = Depth.Zero
     // This catches some recursive situations which would otherwise
     // befuddle us, e.g. pos/hklub0.scala
-    def isHotForTs(xs: List[Type]) = ts exists (_.typeParams == xs.map(_.typeSymbol))
+    def isHotForT(tyPar: Symbol, x: Type): Boolean = tyPar eq x.typeSymbol
+    def isHotForTs(xs: List[Type]) = ts.exists(_.typeParams.corresponds(xs)(isHotForT(_,_)))
 
     def elimHigherOrderTypeParam(tp: Type) = tp match {
       case TypeRef(_, _, args) if args.nonEmpty && isHotForTs(args) =>
@@ -136,9 +111,6 @@ private[internal] trait GlbLubs {
           val ts1   = elimSub(ts0, depth) map elimHigherOrderTypeParam
           mergePrefixAndArgs(ts1, Covariant, depth) match {
             case NoType => loop(pretypes, tails)
-            case tp if strictInference && willViolateRecursiveBounds(tp, ts0, ts1) =>
-              log(s"Breaking recursion in lublist, advancing frontier and discarding merged prefix/args from $tp")
-              loop(pretypes, tails)
             case tp =>
               loop(tp :: pretypes, tails)
           }
@@ -170,7 +142,7 @@ private[internal] trait GlbLubs {
 
   /** The minimal symbol of a list of types (as determined by `Symbol.isLess`). */
   private def minSym(tps: List[Type]): Symbol =
-    (tps.head.typeSymbol /: tps.tail) {
+    tps.tail.foldLeft(tps.head.typeSymbol){
       (sym1, tp2) => if (tp2.typeSymbol isLess sym1) tp2.typeSymbol else sym1
     }
 
@@ -182,31 +154,37 @@ private[internal] trait GlbLubs {
         rest filter (t => !first.typeSymbol.isSubClass(t.typeSymbol)))
   }
 
+  /** From a list of types, retain only maximal types as determined by the partial order `po`. */
+  private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
+    def loop(ts: List[Type]): List[Type] = ts match {
+      case t :: ts1 =>
+        val ts2 = loop(ts1.filterNot(po(_, t)))
+        if (ts2.exists(po(t, _))) ts2 else t :: ts2
+      case Nil => Nil
+    }
+
+    // The order here matters because type variables and
+    // wildcards can act both as subtypes and supertypes.
+    val (ts2, ts1) = ts.partition(_ exists {
+      case tv: TypeVar => !tv.isGround
+      case t => t.isWildcard
+    })
+
+    loop(ts1 ::: ts2)
+  }
+
   /** Eliminate from list of types all elements which are a supertype
     *  of some other element of the list. */
-  private def elimSuper(ts: List[Type]): List[Type] = ts match {
-    case List() | List(_) => ts
-    case t :: ts1 =>
-      val rest = elimSuper(ts1 filter (t1 => !(t <:< t1)))
-      if (rest exists (t1 => t1 <:< t)) rest else t :: rest
-  }
+  private def elimSuper(ts: List[Type]): List[Type] =
+    maxTypes(ts)((t1, t2) => t2 <:< t1)
 
   /** Eliminate from list of types all elements which are a subtype
     *  of some other element of the list. */
-  private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
-    def elimSub0(ts: List[Type]): List[Type] = ts match {
-      case List() => ts
-      case List(t) => ts
-      case t :: ts1 =>
-        val rest = elimSub0(ts1 filter (t1 => !isSubType(t1, t, depth.decr)))
-        if (rest exists (t1 => isSubType(t, t1, depth.decr))) rest else t :: rest
-    }
-    val ts0 = elimSub0(ts)
-    if (ts0.isEmpty || ts0.tail.isEmpty) ts0
-    else {
-      val ts1 = ts0 mapConserve (t => elimAnonymousClass(t.dealiasWiden))
-      if (ts1 eq ts0) ts0
-      else elimSub(ts1, depth)
+  @tailrec private def elimSub(ts: List[Type], depth: Depth): List[Type] = {
+    val ts1 = maxTypes(ts)(isSubType(_, _, depth.decr))
+    if (ts1.lengthCompare(1) <= 0) ts1 else {
+      val ts2 = ts1.mapConserve(t => elimAnonymousClass(t.dealiasWiden))
+      if (ts1 eq ts2) ts1 else elimSub(ts2, depth)
     }
   }
 
@@ -248,10 +226,10 @@ private[internal] trait GlbLubs {
       else if (isNumericSubType(t2, t1)) t1.dealiasWiden
       else IntTpe)
 
-  private val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _lubResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def lubResults = _lubResults
 
-  private val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
+  private[this] val _glbResults = new mutable.HashMap[(Depth, List[Type]), Type]
   def glbResults = _glbResults
 
   def lub(ts: List[Type]): Type = ts match {
@@ -267,12 +245,12 @@ private[internal] trait GlbLubs {
         // the type constructor of the calculated lub instead.  This
         // is because lubbing type constructors tends to result in types
         // which have been applied to dummies or Nothing.
-        ts.map(_.typeParams.size).distinct match {
-          case x :: Nil if res.typeParams.size != x =>
-            logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
-          case _                                    =>
-            res
-        }
+        val rtps = res.typeParams.size
+        val hs = ts.head.typeParams.size
+        if (hs != rtps && ts.forall(_.typeParams.size == hs))
+          logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
+        else
+          res
       }
       finally {
         lubResults.clear()
@@ -286,16 +264,14 @@ private[internal] trait GlbLubs {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingTpe
       case List(t) => t
-      case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
-          tparam.cloneSymbol.setInfo(glb(bounds, depth)))
-        PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
+      case (pt @ PolyType(_, _)) :: rest =>
+        polyTypeMatch(pt, rest, depth, glb, lub0)
       case ts @ (mt @ MethodType(params, _)) :: rest =>
         MethodType(params, lub0(matchingRestypes(ts, mt.paramTypes)))
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
+        TypeBounds(glb(ts map (_.lowerBound), depth), lub(ts map (_.upperBound), depth))
       case ts @ AnnotatedType(annots, tpe) :: rest =>
         annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
@@ -346,10 +322,12 @@ private[internal] trait GlbLubs {
               else if (symtypes.tail forall (symtypes.head =:= _))
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
-                def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                  TypeBounds(glb(bnds map (_.lo), depth.decr), lub(bnds map (_.hi), depth.decr))
+                val lubBs = TypeBounds(
+                  glb(symtypes.map(_.lowerBound), depth.decr),
+                  lub(symtypes.map(_.upperBound), depth.decr)
+                )
                 lubRefined.typeSymbol.newAbstractType(proto.name.toTypeName, proto.pos)
-                  .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
+                  .setInfoOwnerAdjusted(lubBs)
               }
             }
           }
@@ -375,7 +353,7 @@ private[internal] trait GlbLubs {
             // In theory this should not be necessary, but higher-order type
             // parameters are not handled correctly.
             val ok = ts forall { t =>
-              isSubType(t, lubRefined, depth) || {
+              isSubType(t, lubRefined, depth.decr) || {
                 if (settings.debug || printLubs) {
                   Console.println(
                     "Malformed lub: " + lubRefined + "\n" +
@@ -417,7 +395,7 @@ private[internal] trait GlbLubs {
     *  The counter breaks this recursion after two calls.
     *  If the recursion is broken, no member is added to the glb.
     */
-  private var globalGlbDepth = Depth.Zero
+  private[this] var globalGlbDepth = Depth.Zero
   private final val globalGlbLimit = Depth(2)
 
   /** The greatest lower bound of a list of types (as determined by `<:<`). */
@@ -448,16 +426,14 @@ private[internal] trait GlbLubs {
     def glb0(ts0: List[Type]): Type = ts0 match {
       case List() => AnyTpe
       case List(t) => t
-      case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
-          tparam.cloneSymbol.setInfo(lub(bounds, depth)))
-        PolyType(tparams1, glbNorm(matchingInstTypes(ts, tparams1), depth))
+      case (pt @ PolyType(_, _)) :: rest =>
+        polyTypeMatch(pt, rest, depth, lub, glb0)
       case ts @ (mt @ MethodType(params, _)) :: rest =>
         MethodType(params, glbNorm(matchingRestypes(ts, mt.paramTypes), depth))
       case ts @ NullaryMethodType(_) :: rest =>
         NullaryMethodType(glbNorm(matchingRestypes(ts, Nil), depth))
       case ts @ TypeBounds(_, _) :: rest =>
-        TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
+        TypeBounds(lub(ts map (_.lowerBound), depth), glb(ts map (_.upperBound), depth))
       case ts =>
         glbResults get ((depth, ts)) match {
           case Some(glbType) =>
@@ -506,8 +482,8 @@ private[internal] trait GlbLubs {
                     case _ => false
                   }
                   def glbBounds(bnds: List[Type]): TypeBounds = {
-                    val lo = lub(bnds map (_.bounds.lo), depth.decr)
-                    val hi = glb(bnds map (_.bounds.hi), depth.decr)
+                    val lo = lub(bnds map (_.lowerBound), depth.decr)
+                    val hi = glb(bnds map (_.upperBound), depth.decr)
                     if (lo <:< hi) TypeBounds(lo, hi)
                     else throw GlbFailure
                   }
@@ -556,31 +532,42 @@ private[internal] trait GlbLubs {
     *  Returns list of list of bounds infos, where corresponding type
     *  parameters are renamed to tparams.
     */
-  private def matchingBounds(tps: List[Type], tparams: List[Symbol]): List[List[Type]] = {
-    def getBounds(tp: Type): List[Type] = tp match {
-      case PolyType(tparams1, _) if sameLength(tparams1, tparams) =>
-        tparams1 map (tparam => tparam.info.substSym(tparams1, tparams))
-      case tp =>
-        if (tp ne tp.normalize) getBounds(tp.normalize)
-        else throw new NoCommonType(tps)
-    }
-    tps map getBounds
-  }
+  private def polyTypeMatch(
+    ptHead: PolyType,
+    ptRest: List[Type],
+    depth: Depth,
+    infoBoundTop: (List[Type], Depth) => Type,
+    resultTypeBottom: List[Type] => Type
+  ): PolyType = {
+    val tparamsHead: List[Symbol] = ptHead.typeParams
 
-  /** All types in list must be polytypes with type parameter lists of
-    *  same length as tparams.
-    *  Returns list of instance types, where corresponding type
-    *  parameters are renamed to tparams.
-    */
-  private def matchingInstTypes(tps: List[Type], tparams: List[Symbol]): List[Type] = {
-    def transformResultType(tp: Type): Type = tp match {
-      case PolyType(tparams1, restpe) if sameLength(tparams1, tparams) =>
-        restpe.substSym(tparams1, tparams)
+    @tailrec
+    def normalizeIter(ty: Type): PolyType = ty match {
+      case pt @ PolyType(tparams1, _) if sameLength(tparams1, tparamsHead) => pt
       case tp =>
-        if (tp ne tp.normalize) transformResultType(tp.normalize)
-        else throw new NoCommonType(tps)
+        val tpn = tp.normalize
+        if (tp ne tpn) normalizeIter(tpn) else throw new NoCommonType(ptHead :: ptRest)
     }
-    tps map transformResultType
+
+    // Since ptHead = PolyType(tparamsHead, _), no need to normalize it or unify tpaams
+    val ntps: List[PolyType]   = ptHead :: ptRest.map(normalizeIter)
+
+    val tparams1: List[Symbol] = {
+      def unifyBounds(ntp: PolyType): List[Type] = {
+        val tparams1 = ntp.typeParams
+        tparams1 map (tparam => tparam.info.substSym(tparams1, tparamsHead))
+      }
+      val boundsTts : List[List[Type]] = ntps.tail.map(unifyBounds).transpose
+      map2(tparamsHead, boundsTts){ (tparam, bounds) =>
+        tparam.cloneSymbol.setInfo(infoBoundTop(tparam.info :: bounds, depth))
+      }
+    }
+    // Do we also need to apply substSym(typeParams, tparams1) to ptHead.resultType ??
+    val matchingInstTypes: List[Type] = ntps.map { ntp =>
+      ntp.resultType.substSym(ntp.typeParams, tparams1)
+    }
+
+    PolyType(tparams1, resultTypeBottom(matchingInstTypes))
   }
 
   /** All types in list must be method types with equal parameter types.

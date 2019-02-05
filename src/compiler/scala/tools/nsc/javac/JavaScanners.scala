@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -12,6 +19,7 @@ import scala.reflect.internal.Chars._
 import JavaTokens._
 import scala.annotation.{ switch, tailrec }
 import scala.language.implicitConversions
+import scala.collection.immutable.ArraySeq
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {
@@ -154,54 +162,54 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       case STRINGLIT  => "string literal"
       case EOF        => "eof"
       case ERROR      => "something"
-      case AMP        => "`&'"
-      case AMPAMP     => "`&&'"
-      case AMPEQ      => "`&='"
-      case ASTERISK   => "`*'"
-      case ASTERISKEQ => "`*='"
-      case AT         => "`@'"
-      case BANG       => "`!'"
-      case BANGEQ     => "`!='"
-      case BAR        => "`|'"
-      case BARBAR     => "`||'"
-      case BAREQ      => "`|='"
-      case COLON      => "`:'"
-      case COMMA      => "`,'"
-      case DOT        => "`.'"
-      case DOTDOTDOT  => "`...'"
-      case EQEQ       => "`=='"
-      case EQUALS     => "`='"
-      case GT         => "`>'"
-      case GTEQ       => "`>='"
-      case GTGT       => "`>>'"
-      case GTGTEQ     => "`>>='"
-      case GTGTGT     => "`>>>'"
-      case GTGTGTEQ   => "`>>>='"
-      case HAT        => "`^'"
-      case HATEQ      => "`^='"
-      case LBRACE     => "`{'"
-      case LBRACKET   => "`['"
-      case LPAREN     => "`('"
-      case LT         => "`<'"
-      case LTEQ       => "`<='"
-      case LTLT       => "`<<'"
-      case LTLTEQ     => "`<<='"
-      case MINUS      => "`-'"
-      case MINUSEQ    => "`-='"
-      case MINUSMINUS => "`--'"
-      case PERCENT    => "`%'"
-      case PERCENTEQ  => "`%='"
-      case PLUS       => "`+'"
-      case PLUSEQ     => "`+='"
-      case PLUSPLUS   => "`++'"
-      case QMARK      => "`?'"
-      case RBRACE     => "`}'"
-      case RBRACKET   => "`]'"
-      case RPAREN     => "`)'"
-      case SEMI       => "`;'"
-      case SLASH      => "`/'"
-      case SLASHEQ    => "`/='"
-      case TILDE      => "`~'"
+      case AMP        => "`&`"
+      case AMPAMP     => "`&&`"
+      case AMPEQ      => "`&=`"
+      case ASTERISK   => "`*`"
+      case ASTERISKEQ => "`*=`"
+      case AT         => "`@`"
+      case BANG       => "`!`"
+      case BANGEQ     => "`!=`"
+      case BAR        => "`|`"
+      case BARBAR     => "`||`"
+      case BAREQ      => "`|=`"
+      case COLON      => "`:`"
+      case COMMA      => "`,`"
+      case DOT        => "`.`"
+      case DOTDOTDOT  => "`...`"
+      case EQEQ       => "`==`"
+      case EQUALS     => "`=`"
+      case GT         => "`>`"
+      case GTEQ       => "`>=`"
+      case GTGT       => "`>>`"
+      case GTGTEQ     => "`>>=`"
+      case GTGTGT     => "`>>>`"
+      case GTGTGTEQ   => "`>>>=`"
+      case HAT        => "`^`"
+      case HATEQ      => "`^=`"
+      case LBRACE     => "`{`"
+      case LBRACKET   => "`[`"
+      case LPAREN     => "`(`"
+      case LT         => "`<`"
+      case LTEQ       => "`<=`"
+      case LTLT       => "`<<`"
+      case LTLTEQ     => "`<<=`"
+      case MINUS      => "`-`"
+      case MINUSEQ    => "`-=`"
+      case MINUSMINUS => "`--`"
+      case PERCENT    => "`%`"
+      case PERCENTEQ  => "`%=`"
+      case PLUS       => "`+`"
+      case PLUSEQ     => "`+=`"
+      case PLUSPLUS   => "`++`"
+      case QMARK      => "`?`"
+      case RBRACE     => "`}`"
+      case RBRACKET   => "`]`"
+      case RPAREN     => "`)`"
+      case SEMI       => "`;`"
+      case SLASH      => "`/`"
+      case SLASHEQ    => "`/=`"
+      case TILDE      => "`~`"
       case _ =>
         try ("`" + tokenName(token) + "'")
         catch {
@@ -229,10 +237,10 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** append Unicode character to "lit" buffer
     */
-    protected def putChar(c: Char) { cbuf.append(c) }
+    protected def putChar(c: Char): Unit = { cbuf.append(c) }
 
     /** Clear buffer and set name */
-    private def setName() {
+    private def setName(): Unit = {
       name = newTermName(cbuf.toString())
       cbuf.setLength(0)
     }
@@ -246,7 +254,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
 // Get next token ------------------------------------------------------------
 
-    def nextToken() {
+    def nextToken(): Unit = {
       if (next.token == EMPTY) {
         fetchToken()
       }
@@ -267,7 +275,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** read next token
      */
-    private def fetchToken() {
+    private def fetchToken(): Unit = {
       if (token == EOF) return
       lastPos = in.cpos - 1
       while (true) {
@@ -512,7 +520,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                   if (in.ch == '.') {
                     in.next()
                     token = DOTDOTDOT
-                  } else syntaxError("`.' character expected")
+                  } else syntaxError("`.` character expected")
                 }
                 return
 
@@ -611,7 +619,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getIdentRest() {
+    private def getIdentRest(): Unit = {
       while (true) {
         (in.ch: @switch) match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -697,7 +705,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction() {
+    protected def getFraction(): Unit = {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
         putChar(in.ch)
@@ -786,7 +794,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     }
     /** read a number into name and set base
     */
-    protected def getNumber() {
+    protected def getNumber(): Unit = {
       while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
         in.next()
@@ -826,17 +834,17 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** generate an error at the given position
     */
-    def syntaxError(pos: Int, msg: String) {
+    def syntaxError(pos: Int, msg: String): Unit = {
       error(pos, msg)
       token = ERROR
     }
 
     /** generate an error at the current token position
     */
-    def syntaxError(msg: String) { syntaxError(pos, msg) }
+    def syntaxError(msg: String): Unit = { syntaxError(pos, msg) }
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String) {
+    def incompleteInputError(msg: String): Unit = {
       incompleteInputError(pos, msg)
       token = EOF
     }
@@ -866,14 +874,14 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** INIT: read lookahead character and token.
      */
-    def init() {
+    def init(): Unit = {
       in.next()
       nextToken()
     }
   }
 
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
-    in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
+    in = new JavaCharArrayReader(new ArraySeq.ofChar(unit.source.content), !settings.nouescape.value, syntaxError)
     init()
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)

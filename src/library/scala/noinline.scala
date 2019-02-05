@@ -1,18 +1,27 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
 /**
- * An annotation on methods that forbids the compiler to inline the method, no matter how safe the
- * inlining appears to be. The annotation can be used at definition site or at callsite.
+ * An annotation for methods that the optimizer should not inline.
+ *
+ * Note that by default, the Scala optimizer is disabled and no callsites are inlined. See
+ * `-opt:help` for information how to enable the optimizer and inliner.
+ *
+ * When inlining is enabled, the inliner will never inline methods or callsites annotated
+ * `@noinline`.
+ *
+ * Examples:
  *
  * {{{
  * @inline   final def f1(x: Int) = x
@@ -21,7 +30,7 @@ package scala
  *
  *  def t1 = f1(1)              // inlined if possible
  *  def t2 = f2(1)              // not inlined
- *  def t3 = f3(1)              // may be inlined (heuristics)
+ *  def t3 = f3(1)              // may be inlined (the inliner heuristics can select the callsite)
  *  def t4 = f1(1): @noinline   // not inlined (override at callsite)
  *  def t5 = f2(1): @inline     // inlined if possible (override at callsite)
  *  def t6 = f3(1): @inline     // inlined if possible
@@ -37,7 +46,5 @@ package scala
  * }}}
  *
  * @author Lex Spoon
- * @version 1.0, 2007-5-21
- * @since 2.5
  */
-class noinline extends scala.annotation.StaticAnnotation
+final class noinline extends scala.annotation.StaticAnnotation

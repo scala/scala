@@ -153,7 +153,7 @@ trait Trait[-A, +B, C] {
 
 trait Trait2[-A, +B, C] {
   // trait Inner[-D <: C, +E >: C, F] {
-  def method[D <: A, E >: B, F]() {
+  def method[D <: A, E >: B, F](): Unit = {
     def f0(x: A): Unit = ()
     def f1(x: B): Unit = ()
     def f2(x: C): Unit = ()

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package typechecker
 
@@ -20,7 +32,7 @@ trait StdAttachments {
 
   /** Loads underlying MacroExpanderAttachment from a macro expandee or returns a default value for that attachment.
    */
- def macroExpanderAttachment(tree: Tree): MacroExpanderAttachment =
+  def macroExpanderAttachment(tree: Tree): MacroExpanderAttachment =
     tree.attachments.get[MacroExpanderAttachment] getOrElse {
       tree match {
         case Apply(fn, _) if tree.isInstanceOf[ApplyToImplicitArgs] => macroExpanderAttachment(fn)
@@ -145,12 +157,13 @@ trait StdAttachments {
    *  typechecks to be a macro application. Then we need to unmark it, expand it and try to treat
    *  its expansion as a macro impl reference.
    */
-  def unmarkMacroImplRef(tree: Tree): Tree = tree.removeAttachment[MacroImplRefAttachment.type]
+  def unmarkMacroImplRef(tree: Tree): Tree = tree.removeAttachment[MacroImplRefAttachment.type](MacroImplRefAttachmentTag)
 
   /** Determines whether a tree should or should not be adapted,
    *  because someone has put MacroImplRefAttachment on it.
    */
-  def isMacroImplRef(tree: Tree): Boolean = tree.hasAttachment[MacroImplRefAttachment.type]
+  def isMacroImplRef(tree: Tree): Boolean = tree.hasAttachment[MacroImplRefAttachment.type](MacroImplRefAttachmentTag)
+  private[this] val MacroImplRefAttachmentTag: reflect.ClassTag[MacroImplRefAttachment.type] = reflect.classTag[MacroImplRefAttachment.type]
 
   /** Since mkInvoke, the applyDynamic/selectDynamic/etc desugarer, is disconnected
    *  from typedNamedApply, the applyDynamicNamed argument rewriter, the latter
@@ -163,8 +176,9 @@ trait StdAttachments {
    */
   case object DynamicRewriteAttachment
   def markDynamicRewrite(tree: Tree): Tree = tree.updateAttachment(DynamicRewriteAttachment)
-  def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type]
-  def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type].isDefined
+  def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type](DynamicRewriteAttachmentTag)
+  def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type](DynamicRewriteAttachmentTag).isDefined
+  private[this] val DynamicRewriteAttachmentTag: reflect.ClassTag[DynamicRewriteAttachment.type] = reflect.classTag[DynamicRewriteAttachment.type]
 
   /**
    * Marks a tree that has been adapted by typer and sets the original tree that was in place before.
@@ -183,5 +197,103 @@ trait StdAttachments {
    */
   case class OriginalTreeAttachment(original: Tree)
 
-  case class StabilizingDefinition(vdef: ValDef)
+  /** Marks a Typed tree with Unit tpt. */
+  case object TypedExpectingUnitAttachment
+
+  case class StabilizingDefinitions(vdefs: List[ValDef])
+  private[this] val StabilizingDefinitionsTag: reflect.ClassTag[StabilizingDefinitions] = reflect.classTag[StabilizingDefinitions]
+
+  def addStabilizingDefinition(tree: Tree, vdef: ValDef): Tree = {
+    tree.updateAttachment(StabilizingDefinitions(
+      tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
+        case Some(StabilizingDefinitions(vdefs)) => vdef :: vdefs
+        case _ => List(vdef)
+      }
+    ))(StabilizingDefinitionsTag)
+  }
+
+  def stabilizingDefinitions(tree: Tree): List[ValDef] =
+    tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
+      case Some(StabilizingDefinitions(vdefs)) => vdefs
+      case _ => Nil
+    }
+
+  def removeStabilizingDefinitions(tree: Tree): Tree =
+    tree.removeAttachment[StabilizingDefinitions](StabilizingDefinitionsTag)
+}
+
+
+// imported from scalamacros/paradise
+trait MacroAnnotationAttachments {
+  self: Analyzer =>
+
+  import global._
+  import scala.collection.mutable
+
+  case object WeakSymbolAttachment
+  def markWeak(sym: Symbol) = if (sym != null && sym != NoSymbol) sym.updateAttachment(WeakSymbolAttachment) else sym
+  def unmarkWeak(sym: Symbol) = if (sym != null && sym != NoSymbol) sym.removeAttachment[WeakSymbolAttachment.type] else sym
+  def isWeak(sym: Symbol) = sym == null || sym == NoSymbol || sym.attachments.get[WeakSymbolAttachment.type].isDefined
+
+  case class SymbolCompleterAttachment(info: Type)
+  def backupCompleter(sym: Symbol): Symbol = {
+    if (sym != null && sym != NoSymbol) {
+      assert(sym.rawInfo.isInstanceOf[LazyType], s"${sym.accurateKindString} ${sym.rawname}#${sym.id} with ${sym.rawInfo.kind}")
+      sym.updateAttachment(SymbolCompleterAttachment(sym.rawInfo))
+    } else sym
+  }
+  def restoreCompleter(sym: Symbol): Unit = {
+    if (sym != null && sym != NoSymbol) {
+      val oldCompleter = sym.attachments.get[SymbolCompleterAttachment].get.info
+      sym setInfo oldCompleter
+      sym.attachments.remove[SymbolCompleterAttachment]
+    } else ()
+  }
+
+  // here we should really store and retrieve duplicates of trees in order to avoid leakage through tree attributes
+  case class SymbolSourceAttachment(source: Tree)
+  def attachSource(sym: Symbol, tree: Tree): Symbol = if (sym != null && sym != NoSymbol) sym.updateAttachment(SymbolSourceAttachment(duplicateAndKeepPositions(tree))) else sym
+  def attachedSource(sym: Symbol): Tree = if (sym != null && sym != NoSymbol) sym.attachments.get[SymbolSourceAttachment].map(att => duplicateAndKeepPositions(att.source)).getOrElse(EmptyTree) else EmptyTree
+
+  // unfortunately we cannot duplicate here, because that would dissociate the symbol from its derived symbols
+  // that's because attachExpansion(tree) happens prior to enterSym(tree), so if we duplicate the assigned symbol never makes it into the att
+  // in its turn, that would mean that we won't be able to handle recursive expansions in typedTemplate
+  // because by the time typedTemplate gets activated, everything's already expanded by templateSig
+  // so we need to go from original trees/symbols to recursively expanded ones and that requires links to derived symbols
+  // TODO: should be a better solution
+  case class SymbolExpansionAttachment(expansion: List[Tree])
+  def hasAttachedExpansion(sym: Symbol) = sym.attachments.get[SymbolExpansionAttachment].isDefined
+  def attachExpansion(sym: Symbol, trees: List[Tree]): Symbol = if (sym != null && sym != NoSymbol) sym.updateAttachment(SymbolExpansionAttachment(trees/*.map(tree => duplicateAndKeepPositions(tree))*/)) else sym
+  def attachedExpansion(sym: Symbol): Option[List[Tree]] = if (sym != null && sym != NoSymbol) sym.attachments.get[SymbolExpansionAttachment].map(_.expansion/*.map(tree => duplicateAndKeepPositions(tree))*/) else None
+
+  import SymbolExpansionStatus._
+  private def checkExpansionStatus(sym: Symbol, p: SymbolExpansionStatus => Boolean) = sym.attachments.get[SymbolExpansionStatus].map(p).getOrElse(false)
+  def isMaybeExpandee(sym: Symbol): Boolean = checkExpansionStatus(sym, _.isUnknown)
+  def isExpanded(sym: Symbol): Boolean = checkExpansionStatus(sym, _.isExpanded)
+  def isNotExpandable(sym: Symbol): Boolean = checkExpansionStatus(sym, _.isNotExpandable)
+  def markMaybeExpandee(sym: Symbol): Symbol = if (sym != null && sym != NoSymbol) sym.updateAttachment(Unknown) else sym
+  def markExpanded(sym: Symbol): Symbol = if (sym != null && sym != NoSymbol) sym.updateAttachment(Expanded) else sym
+  def markNotExpandable(sym: Symbol): Symbol = if (sym != null && sym != NoSymbol) sym.updateAttachment(NotExpandable) else sym
+  def unmarkExpanded(sym: Symbol): Symbol = if (sym != null && sym != NoSymbol) sym.removeAttachment[SymbolExpansionStatus] else sym
+
+  case class CacheAttachment(cache: mutable.Map[String, Any])
+  implicit class RichTree(tree: Tree) {
+    def cached[T](key: String, op: => T): T = {
+      val cache = tree.attachments.get[CacheAttachment].map(_.cache).getOrElse(mutable.Map[String, Any]())
+      val result = cache.getOrElseUpdate(key, op).asInstanceOf[T]
+      tree.updateAttachment(CacheAttachment(cache))
+      result
+    }
+  }
+
+  private final class SymbolExpansionStatus private (val value: Int) { //extends AnyVal {
+    def isUnknown = this == SymbolExpansionStatus.Unknown
+    def isExpanded = this == SymbolExpansionStatus.Expanded
+    def isNotExpandable = this == SymbolExpansionStatus.NotExpandable
+  }
+  private object SymbolExpansionStatus {
+    val Unknown = new SymbolExpansionStatus(0)
+    val Expanded = new SymbolExpansionStatus(1)
+    val NotExpandable = new SymbolExpansionStatus(2)
+  }
 }

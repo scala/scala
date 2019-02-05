@@ -1,10 +1,19 @@
-t10097.scala:2: error: case classes must have a non-implicit parameter list; try 'case class C()(...)'
+t10097.scala:4: error: case classes must have a non-implicit parameter list; try 'case class C()(...)'
 case class C(implicit val c: Int)
             ^
-t10097.scala:4: error: case classes must have a non-implicit parameter list; try 'case class D()(...)(...)'
+t10097.scala:6: error: case classes must have a non-implicit parameter list; try 'case class D()(...)(...)'
 case class D(implicit c: Int)(s: String)
             ^
-t10097.scala:4: error: an implicit parameter section must be last
+t10097.scala:6: error: an implicit parameter section must be last
 case class D(implicit c: Int)(s: String)
              ^
-three errors found
+t10097.scala:8: error: case classes must have a non-implicit parameter list; try 'case class *()(...)'
+case class *(implicit c: Int)
+            ^
+t10097.scala:11: error: identifier expected but 'import' found.
+import collection._
+^
+t10097.scala:11: error: case classes must have a parameter list; try 'case class C()' or 'case object C'
+import collection._
+                   ^
+6 errors found

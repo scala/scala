@@ -1,0 +1,4 @@
+u000a.scala:11: error: expected class or object definition
+// \u000a foo
+          ^
+one error found

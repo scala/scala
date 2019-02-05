@@ -1,5 +1,5 @@
 trait Builder[C[_], T] {
-  def +=(x: T)
+  def +=(x: T): Unit
   def finalise: C[T]
 }
 

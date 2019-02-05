@@ -1,5 +1,5 @@
 object Test {
-  def testC {
+  def testC: Unit = {
     val f1 = (c: C) => c.value
     val f2 = (x: Int) => new C(x)
     val f3 = (c1: C) => (c2: C) => (c1, c2)
@@ -10,7 +10,7 @@ object Test {
     assert(result == 2)
   }
 
-  def testD {
+  def testD: Unit = {
     val f1 = (c: D) => c.value
     val f2 = (x: String) => new D(x)
     val f3 = (c1: D) => (c2: D) => (c1, c2)
@@ -21,7 +21,7 @@ object Test {
     assert(result == "2")
   }
 
-  def testE {
+  def testE: Unit = {
     val f1 = (c: E[Int]) => c.value
     val f2 = (x: Int) => new E(x)
     val f3 = (c1: E[Int]) => (c2: E[Int]) => (c1, c2)
@@ -32,7 +32,7 @@ object Test {
     assert(result == 2)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     testC
     testD
     testE

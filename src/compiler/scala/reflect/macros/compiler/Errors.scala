@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.macros
 package compiler
 
@@ -48,7 +60,7 @@ trait Errors extends Traces {
       "macro [<macro bundle>].<method name>[[<type args>]]")
 
     def MacroImplWrongNumberOfTypeArgumentsError() = {
-      val diagnostic = if (macroImpl.typeParams.length > targs.length) "has too few type arguments" else "has too many arguments"
+      val diagnostic = if (macroImpl.typeParams.sizeCompare(targs) > 0) "has too few type arguments" else "has too many arguments"
       implRefError(s"macro implementation reference $diagnostic for " + treeSymTypeMsg(macroImplRef))
     }
 

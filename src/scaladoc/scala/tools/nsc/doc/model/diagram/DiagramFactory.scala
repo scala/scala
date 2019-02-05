@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.doc
 package model
 package diagram
@@ -19,7 +31,6 @@ trait DiagramFactory extends DiagramDirectiveParser {
   this: ModelFactory with ModelFactoryTypeSupport with DiagramFactory with CommentFactory with TreeFactory =>
 
   import this.global.definitions._
-  import this.global._
 
   // the following can used for hardcoding different relations into the diagram, for bootstrapping purposes
   def aggregationNode(text: String) =

@@ -8,7 +8,7 @@ object Test extends DirectTest {
     case class C(x: Int, y: Int)
   """.trim
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     import global._
     import analyzer._

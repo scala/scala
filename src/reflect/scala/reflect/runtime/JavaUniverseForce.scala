@@ -1,9 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // Generated Code, validated by run/t6240-universe-code-gen.scala
 package scala.reflect
 package runtime
 
 trait JavaUniverseForce { self: runtime.JavaUniverse  =>
-  def force() {
+  def force(): Unit = {
     Literal(Constant(42)).duplicate
     nme.flattenedName()
     nme.raw
@@ -40,7 +52,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SAMFunction
     this.DelambdafyTarget
     this.BackquotedIdentifierAttachment
-    this.AtBoundIdentifierAttachment
+    this.NoWarnAttachment
+    this.PatVarDefAttachment
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
@@ -50,9 +63,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UseInvokeSpecial
     this.TypeParamVarargsAttachment
     this.KnownDirectSubclassesCalled
+    this.ConstructorNeedsFence
     this.noPrint
     this.typeDebug
-    this.Range
     // inaccessible: this.posAssigner
     this.ConsoleWriter
     this.RefTree
@@ -84,6 +97,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.Throw
     this.New
     this.Typed
+    this.MethodValue
     this.TypeApply
     this.Apply
     this.ApplyDynamic
@@ -141,6 +155,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ErrorType
     this.WildcardType
     this.BoundedWildcardType
+    this.OverloadedArgFunProto
     this.NoType
     this.NoPrefix
     this.ThisType
@@ -220,7 +235,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SerializableTpe
     definitions.StringTpe
     definitions.ThrowableTpe
-    definitions.SymbolTpe
     definitions.ConstantTrue
     definitions.ConstantFalse
     definitions.ConstantNull
@@ -253,13 +267,11 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SpecializableModule
     definitions.ScalaRunTimeModule
     definitions.SymbolModule
-    definitions.StringAddClass
     definitions.ScalaNumberClass
     definitions.DelayedInitClass
     definitions.TypeConstraintClass
     definitions.SingletonClass
     definitions.SerializableClass
-    definitions.JavaSerializableClass
     definitions.ComparableClass
     definitions.JavaCloneableClass
     definitions.JavaNumberClass
@@ -269,6 +281,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ByNameParamClass
     definitions.JavaRepeatedParamClass
     definitions.RepeatedParamClass
+    definitions.SubTypeClass
+    definitions.SameTypeClass
+    definitions.DummyImplicitClass
     definitions.ConsClass
     definitions.IteratorClass
     definitions.IterableClass
@@ -320,6 +335,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.WhiteboxContextClass
     definitions.MacroImplAnnotation
     definitions.StringContextClass
+    definitions.StringContextModule
     definitions.ValueOfClass
     definitions.QuasiquoteClass
     definitions.QuasiquoteClass_api
@@ -334,6 +350,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SomeClass
     definitions.NoneModule
     definitions.SomeModule
+    definitions.ModuleSerializationProxyClass
     definitions.VarArityClass
     definitions.ProductClass
     definitions.TupleClass
@@ -382,6 +399,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StaticAnnotationClass
     definitions.AnnotationRetentionAttr
     definitions.AnnotationRetentionPolicyAttr
+    definitions.AnnotationRepeatableAttr
     definitions.ElidableMethodClass
     definitions.ImplicitNotFoundClass
     definitions.ImplicitAmbiguousClass
@@ -410,6 +428,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.UncheckedClass
     definitions.UncheckedBoundsClass
     definitions.UnspecializedClass
+    definitions.UnusedClass
     definitions.VolatileAttr
     definitions.FunctionalInterfaceClass
     definitions.BeanGetterTargetClass
@@ -422,6 +441,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ClassTargetClass
     definitions.MethodTargetClass
     definitions.LanguageFeatureAnnot
+    definitions.InheritedAttr
     definitions.JUnitAnnotations
     definitions.languageFeatureModule
     definitions.metaAnnotations
@@ -464,6 +484,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaNumericValueClasses
     definitions.ScalaValueClassesNoUnit
     definitions.ScalaValueClasses
+    definitions.ScalaValueClassesSet
+    definitions.ScalaNumericValueClassesSet
 
     uncurry.VarargsSymbolAttachment
     uncurry.DesugaredParameterType

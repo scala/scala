@@ -16,11 +16,24 @@ class BytecodeTest extends BytecodeTesting {
   import compiler._
 
   @Test
+  def t10812(): Unit = {
+    val code =
+      """ A { def f: Object = null }
+        |object B extends A { override def f: String = "b" }
+      """.stripMargin
+    for (base <- List("trait", "class")) {
+      val List(a, bMirror, bModule) = compileClasses(base + code)
+      assertEquals(bMirror.name, "B")
+      assertEquals(bMirror.methods.asScala.filter(_.name == "f").map(m => m.name + m.desc).toList, List("f()Ljava/lang/String;"))
+    }
+  }
+
+  @Test
   def t6288bJumpPosition(): Unit = {
     val code =
       """object Case3 {                                 // 01
         | def unapply(z: Any): Option[Int] = Some(-1)   // 02
-        | def main(args: Array[String]) {               // 03
+        | def main(args: Array[String]): Unit = {       // 03
         |    ("": Any) match {                          // 04
         |      case x : String =>                       // 05
         |        println("case 0")                      // 06 println and jump at 6
@@ -216,9 +229,47 @@ class BytecodeTest extends BytecodeTesting {
       assertEquals(pm.methods.asScala.map(_.name).toList,
         // after typer, `"$lessinit$greater$default$1"` is next to `<init>`, but the constructor phase
         // and code gen change module constructors around. the second `apply` is a bridge, created in erasure.
-        List("<clinit>", "$lessinit$greater$default$1", "toString", "apply", "apply$default$1", "unapply", "readResolve", "apply", "<init>"))
+        List("<clinit>", "$lessinit$greater$default$1", "toString", "apply", "apply$default$1", "unapply", "writeReplace", "apply", "<init>"))
     }
     check(s"$main\n$person")
     check(s"$person\n$main")
+  }
+
+  @Test
+  def t11127(): Unit = {
+    val code =
+      """abstract class C {
+        |  def b: Boolean
+        |
+        |  // no need to lift the `try` to a separate method if it's in the receiver expression
+        |  def t1 = (try { Console } catch { case _: ClassCastException => Console }).println()
+        |
+        |  // no need to lift the `try`
+        |  def t2 = !(try b catch { case _: ClassCastException => b })
+        |
+        |  def t3 = b || (try b catch { case _: ClassCastException => b })
+        |
+        |  def t4 = (try b catch { case _: ClassCastException => b }) || b
+        |
+        |  def t5 = b && (try b catch { case _: ClassCastException => b })
+        |
+        |  def t6 = (try b catch { case _: ClassCastException => b }) && b
+        |
+        |  def t7 = (try b catch { case _: ClassCastException => b }) && b || b && (try b catch { case _: ClassCastException => b || (try b catch { case _: ClassCastException => b }) })
+        |}
+      """.stripMargin
+    val c = compileClass(code)
+    def check(m: String, invoked: List[String]) = {
+      val meth = getMethod(c, m)
+      assert(meth.handlers.nonEmpty, meth.handlers)
+      assertInvokedMethods(meth, invoked)
+    }
+    check("t1", List("scala/Console$.println"))
+    check("t2", List("C.b", "C.b"))
+    check("t3", List("C.b", "C.b", "C.b"))
+    check("t4", List("C.b", "C.b", "C.b"))
+    check("t5", List("C.b", "C.b", "C.b"))
+    check("t6", List("C.b", "C.b", "C.b"))
+    check("t7", List("C.b", "C.b", "C.b", "C.b", "C.b", "C.b", "C.b", "C.b"))
   }
 }

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -100,13 +107,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       if (debug) "\n" + global.phaseFlagDescriptions else ""
     )
     else if (genPhaseGraph.isSetByUser) {
-      val components = global.phaseNames  // global.phaseDescriptors // one initializes
+      val components = global.phaseNames // global.phaseDescriptors // one initializes
       s"Phase graph of ${components.size} components output to ${genPhaseGraph.value}*.dot."
-    } else if (printArgs.value) {
-      s"""
-         |${recreateArgs.mkString("\n")}
-         |${files.mkString("\n")}
-        """.stripMargin
     }
     else allSettings.filter(_.isHelping).map(_.help).mkString("\n\n")
   }

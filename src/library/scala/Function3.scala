@@ -1,10 +1,15 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // GENERATED CODE: DO NOT EDIT. See scala.Function0 for timestamp.
 
 package scala
@@ -31,8 +36,8 @@ trait Function3[-T1, -T2, -T3, +R] extends AnyRef { self =>
    *  @return   a function `f` such that `f((x1, x2, x3)) == f(Tuple3(x1, x2, x3)) == apply(x1, x2, x3)`
    */
 
-  @annotation.unspecialized def tupled: Tuple3[T1, T2, T3] => R = {
-    case Tuple3(x1, x2, x3) => apply(x1, x2, x3)
+  @annotation.unspecialized def tupled: ((T1, T2, T3)) => R = {
+    case ((x1, x2, x3)) => apply(x1, x2, x3)
   }
-  override def toString() = "<function3>"
+  override def toString(): String = "<function3>"
 }

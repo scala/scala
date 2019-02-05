@@ -1,4 +1,4 @@
-t4302.scala:2: warning: abstract type T is unchecked since it is eliminated by erasure
+t4302.scala:4: warning: abstract type T is unchecked since it is eliminated by erasure
   def hasMatch[T](x: AnyRef) = x.isInstanceOf[T]
                                              ^
 error: No warnings can be incurred under -Xfatal-warnings.

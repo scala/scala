@@ -29,20 +29,20 @@ class VectorTest {
   )
 
   @Test
-  def vectorCat() {
+  def vectorCat(): Unit = {
     val cats = vecs.map(a => vecs.map(a ++ _))
     assert( cats == ans )
   }
 
   @Test
-  def iteratorCat() {
+  def iteratorCat(): Unit = {
     def its = vecs.map(_.toList.toIterator)
-    val cats = vecs.map(a => its.map(a ++ _))
+    val cats = vecs.map(a => its.map(x => a ++ x.toList))
     assert( cats == ans )
   }
 
   @Test
-  def arrayCat() {
+  def arrayCat(): Unit = {
     val ars = vecs.map(_.toArray)
     val cats = vecs.map(a => ars.map(a ++ _))
     assert( cats == ans )

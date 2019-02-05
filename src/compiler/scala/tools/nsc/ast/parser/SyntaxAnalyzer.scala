@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -67,7 +74,7 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
 
     def onMember(md: MemberDef) = println(outputFn(md))
     // It recognizes "sed" and "anything else".
-    def show(style: String) {
+    def show(style: String): Unit = {
       if (style == "sed") {
         outputFn = outputForSed
         traverse(unit.body)
@@ -91,15 +98,12 @@ abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParse
     override val checkable = false
     override val keepsTypeParams = false
 
-    def apply(unit: CompilationUnit) {
+    def apply(unit: CompilationUnit): Unit = {
       informProgress("parsing " + unit)
       // if the body is already filled in, don't overwrite it
       // otherwise compileLate is going to overwrite bodies of synthetic source files
       if (unit.body == EmptyTree)
         unit.body = initialUnitBody(unit)
-
-      if (settings.Yrangepos && !reporter.hasErrors)
-        validatePositions(unit.body)
 
       if (settings.Ymemberpos.isSetByUser)
         new MemberPosReporter(unit) show (style = settings.Ymemberpos.value)

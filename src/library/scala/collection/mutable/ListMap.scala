@@ -1,81 +1,81 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
-
-
-package scala
-package collection
+package scala.collection
 package mutable
 
-import generic._
-import annotation.tailrec
+import scala.annotation.tailrec
+import scala.collection.generic.DefaultSerializable
+import scala.collection.immutable.List
 
 /** A simple mutable map backed by a list, so it preserves insertion order.
- *
- *  @tparam A    the type of the keys contained in this list map.
- *  @tparam B    the type of the values assigned to keys in this list map.
- *
- *  @define Coll `mutable.ListMap`
- *  @define coll mutable list map
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `ListMap[A, B]` if the elements contained in the resulting collection are
- *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[ListMap, (A, B), ListMap[A, B]]`
- *    is defined in object `ListMap`. Otherwise, `That` resolves to the most specific type that doesn't have
- *    to contain pairs of type `(A, B)`, which is `Iterable`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `ListMap`.
- *  @define mayNotTerminateInf
- *  @define willNotTerminateInf
- *  @define orderDependent
- *  @define orderDependentFold
- */
-class ListMap[A, B]
-extends AbstractMap[A, B]
-   with Map[A, B]
-   with MapLike[A, B, ListMap[A, B]]
-   with Serializable {
+  *
+  *  @tparam K    the type of the keys contained in this list map.
+  *  @tparam V    the type of the values assigned to keys in this list map.
+  *
+  *  @define Coll `mutable.ListMap`
+  *  @define coll mutable list map
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  *  @define orderDependent
+  *  @define orderDependentFold
+  */
+@deprecated("Use an immutable.ListMap assigned to a var instead of mutable.ListMap", "2.13.0")
+class ListMap[K, V]
+  extends AbstractMap[K, V]
+    with MapOps[K, V, ListMap, ListMap[K, V]]
+    with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
+    with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
+    with DefaultSerializable {
 
-  override def empty = ListMap.empty[A, B]
+  override def mapFactory: MapFactory[ListMap] = ListMap
 
-  private var elems: List[(A, B)] = List()
-  private var siz: Int = 0
+  private[this] var elems: List[(K, V)] = List()
+  private[this] var siz: Int = 0
 
-  def get(key: A): Option[B] = elems find (_._1 == key) map (_._2)
-  def iterator: Iterator[(A, B)] = elems.iterator
+  def get(key: K): Option[V] = elems find (_._1 == key) map (_._2)
+  def iterator: Iterator[(K, V)] = elems.iterator
 
-  @deprecatedOverriding("No sensible way to override += as private remove is used in multiple places internally.", "2.11.0")
-  def += (kv: (A, B)) = { elems = remove(kv._1, elems, List()); elems = kv :: elems; siz += 1; this }
+  final override def addOne(kv: (K, V)) = {
+    val (e, key0) = remove(kv._1, elems, List())
+    elems = (key0, kv._2) :: e
+    siz += 1; this
+  }
 
-  @deprecatedOverriding("No sensible way to override -= as private remove is used in multiple places internally.", "2.11.0")
-  def -= (key: A) = { elems = remove(key, elems, List()); this }
+  final override def subtractOne(key: K) = { elems = remove(key, elems, List())._1; this }
 
   @tailrec
-  private def remove(key: A, elems: List[(A, B)], acc: List[(A, B)]): List[(A, B)] = {
-    if (elems.isEmpty) acc
-    else if (elems.head._1 == key) { siz -= 1; acc ::: elems.tail }
+  private def remove(key: K, elems: List[(K, V)], acc: List[(K, V)]): (List[(K, V)], K) = {
+    if (elems.isEmpty) (acc, key)
+    else if (elems.head._1 == key) { siz -= 1; (acc ::: elems.tail, elems.head._1) }
     else remove(key, elems.tail, elems.head :: acc)
   }
 
+  final override def clear(): Unit = { elems = List(); siz = 0 }
 
-  @deprecatedOverriding("No sensible way to override as this functionality relies upon access to private methods.", "2.11.0")
-  override def clear() = { elems = List(); siz = 0 }
-
-  @deprecatedOverriding("No sensible way to override as this functionality relies upon access to private methods.", "2.11.0")
-  override def size: Int = siz
+  final override def size: Int = siz
+  override def knownSize: Int = size
+  override def isEmpty: Boolean = size == 0
+  override protected[this] def stringPrefix = "ListMap"
 }
 
 /** $factoryInfo
- *  @define Coll `mutable.ListMap`
- *  @define coll mutable list map
- */
-object ListMap extends MutableMapFactory[ListMap] {
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] = new MapCanBuildFrom[A, B]
-  def empty[A, B]: ListMap[A, B] = new ListMap[A, B]
+  *  @define Coll `mutable.ListMap`
+  *  @define coll mutable list map
+  */
+@SerialVersionUID(3L)
+@deprecated("Use an immutable.ListMap assigned to a var instead of mutable.ListMap", "2.13.0")
+object ListMap extends MapFactory[ListMap] {
+  def empty[K, V]: ListMap[K, V] = new ListMap[K, V]
+  def from[K, V](it: IterableOnce[(K, V)]): ListMap[K,V] = Growable.from(empty[K, V], it)
+  def newBuilder[K, V]: Builder[(K, V), ListMap[K,V]] = new GrowableBuilder(empty[K, V])
 }

@@ -1,1 +1,0 @@
--feature -language:-higherKinds,_ -Xfatal-warnings

@@ -12,6 +12,6 @@ object Test extends App {
   println(typeOf[List[Null]])
   println(typeOf[List[Nothing]])
   println(typeOf[{def foo(x: Int): Int}])
-  println(typeOf[(Int*) => Unit])
+  //println(typeOf[(Int*) => Unit])
   println(typeOf[(=> Int) => Unit])
 }

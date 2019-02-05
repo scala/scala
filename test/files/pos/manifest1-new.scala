@@ -1,7 +1,7 @@
 import scala.reflect.runtime.universe._
 
 object Test {
-  def foo[T](x: T)(implicit m: TypeTag[T]) {
+  def foo[T](x: T)(implicit m: TypeTag[T]): Unit = {
     foo(List(x))
   }
   foo(1)

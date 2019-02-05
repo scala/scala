@@ -1,4 +1,9 @@
+import scala.collection.immutable.SortedSet
+import scala.math.Ordering.Double.TotalOrdering
+import scala.math.Ordering.Implicits._
+
 object Test extends App {
+
   def test[T](t1 : T, t2 : T)(implicit ord : Ordering[T]) = {
     val cmp = ord.compare(t1, t2);
     val cmp2 = ord.compare(t2, t1);
@@ -24,8 +29,10 @@ object Test extends App {
   testAll(1, 2);
   testAll(1.0, 2.0);
   testAll(None, Some(1));
-  testAll[Iterable[Int]](List(1), List(1, 2));
-  testAll[Iterable[Int]](List(1, 2), List(2));
+  testAll[Seq[Int]](List(1), List(1, 2));
+  testAll[Seq[Int]](List(1, 2), List(2));
+  testAll[SortedSet[Int]](SortedSet(1), SortedSet(1, 2))
+  testAll[SortedSet[Int]](SortedSet(1, 2), SortedSet(2))
   testAll((1, "bar"), (1, "foo"))
   testAll((1, "foo"), (2, "bar"))
 

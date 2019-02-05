@@ -122,7 +122,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
   }
 
   def plotLine(x1: Double, y1: Double, x2: Double, y2: Double): Unit = {
-    Console.println(round(x1) + " " + round(y1) + " m " +
+    Console.println(round(x1).toString + " " + round(y1) + " m " +
                     round(x2) + " " + round(y2) + " l");
   }
 
@@ -132,7 +132,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
   Console.println("%%BoundingBox: 0 0 " + mm2ps(psWidth) + " " + mm2ps(psHeight));
   Console.println("%%EndComments\n");
   Console.println("/m {moveto} bind def\n/l {lineto} bind def\n");
-  Console.println(mm2ps(line_thickness) + " setlinewidth\nnewpath");
+  Console.println(mm2ps(line_thickness).toString + " setlinewidth\nnewpath");
 
   /** Terminate the PS document and close the file stream. */
   def close : Unit = {

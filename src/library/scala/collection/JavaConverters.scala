@@ -1,13 +1,16 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2016, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
-package scala
-package collection
+package scala.collection
 
 import convert._
 
@@ -59,7 +62,7 @@ import convert._
  *    vs: java.util.List[String] = [hi, bye]
  *
  *    scala> val ss = asScalaIterator(vs.iterator)
- *    ss: Iterator[String] = non-empty iterator
+ *    ss: Iterator[String] = <iterator>
  *
  *    scala> .toList
  *    res0: List[String] = List(hi, bye)

@@ -1,0 +1,4 @@
+C_2.scala:5: error: not found: value println
+  def greet() = println("hello, world!")
+                ^
+one error found

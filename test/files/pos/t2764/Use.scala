@@ -2,5 +2,5 @@ package bippy
 
 class Use {
   @Ann(Enum.VALUE)
-  def foo {}
+  def foo: Unit = {}
 }

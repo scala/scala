@@ -1,5 +1,5 @@
 object test {
-  def method() {
+  def method(): Unit = {
     class Foo extends AnyRef {
       object Color {
         object Blue

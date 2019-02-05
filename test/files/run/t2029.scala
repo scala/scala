@@ -1,5 +1,5 @@
 object Test{
-  def main(args : Array[String]){
+  def main(args : Array[String]): Unit ={
     import scala.collection.immutable.TreeSet;
 
     val mainSet = TreeSet(1 to 5 :_*)

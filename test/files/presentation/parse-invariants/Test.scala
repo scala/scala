@@ -5,20 +5,25 @@ import scala.tools.nsc.interactive.Response
 object Test extends InteractiveTest {
 
   override def execute(): Unit = {
-    val sf = sourceFiles.find(_.file.name == "A.scala").head
-    noNewSymbols(sf)
-    uniqueParseTree(sf)
-    unattributedParseTree(sf)
-    neverModifyParseTree(sf)
-    shouldAlwaysReturnParseTree(sf)
+    def test(fileName: String): Unit = {
+      val sf = sourceFiles.find(_.file.name == fileName).head
+      noNewSymbols(sf)
+      uniqueParseTree(sf)
+      unattributedParseTree(sf)
+      neverModifyParseTree(sf)
+      shouldAlwaysReturnParseTree(sf)
+    }
+    test("A.scala")
+    test("A.java")
   }
 
   /**
    * Asking for a parseTree should not enter any new symbols.
    */
-  private def noNewSymbols(sf: SourceFile) {
+  private def noNewSymbols(sf: SourceFile): Unit = {
     def nextId() = compiler.NoSymbol.newTermSymbol(compiler.TermName("dummy"), compiler.NoPosition, compiler.NoFlags).id
     val id = nextId()
+    println("parseTree")
     val tree = compiler.parseTree(sf)
     val id2 = nextId()
     if (id2 == id + 1) {
@@ -31,7 +36,7 @@ object Test extends InteractiveTest {
   /**
    * Asking twice for a parseTree on the same source should always return a new tree
    */
-  private def uniqueParseTree(sf: SourceFile) {
+  private def uniqueParseTree(sf: SourceFile): Unit = {
     val parseTree1 = compiler.parseTree(sf)
     val parseTree2 = compiler.parseTree(sf)
     if (parseTree1 != parseTree2) {
@@ -44,7 +49,7 @@ object Test extends InteractiveTest {
   /**
    * A parseTree should never contain any symbols or types
    */
-  private def unattributedParseTree(sf: SourceFile) {
+  private def unattributedParseTree(sf: SourceFile): Unit = {
     if (noSymbolsOrTypes(compiler.parseTree(sf))) {
       reporter.println("Unattributed OK")
     } else {
@@ -55,7 +60,7 @@ object Test extends InteractiveTest {
   /**
    * Once you have obtained a parseTree it should never change
    */
-  private def neverModifyParseTree(sf: SourceFile) {
+  private def neverModifyParseTree(sf: SourceFile): Unit = {
     val parsedTree = compiler.parseTree(sf)
     loadSourceAndWaitUntilTypechecked(sf)
     if (noSymbolsOrTypes(parsedTree)) {
@@ -68,7 +73,7 @@ object Test extends InteractiveTest {
   /**
    * Should always return a parse tree
    */
-   private def shouldAlwaysReturnParseTree(sf: SourceFile) {
+   private def shouldAlwaysReturnParseTree(sf: SourceFile): Unit = {
      loadSourceAndWaitUntilTypechecked(sf)
      if (noSymbolsOrTypes(compiler.parseTree(sf))) {
        reporter.println("AlwaysParseTree OK")

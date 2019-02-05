@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.concurrent.duration
 
@@ -16,7 +20,7 @@ object Duration {
    * Construct a Duration from the given length and unit. Observe that nanosecond precision may be lost if
    *
    *  - the unit is NANOSECONDS
-   *  - and the length has an absolute value greater than 2^53
+   *  - and the length has an absolute value greater than `2^53`
    *
    * Infinite inputs (and NaN) are converted into [[Duration.Inf]], [[Duration.MinusInf]] and [[Duration.Undefined]], respectively.
    *
@@ -45,16 +49,18 @@ object Duration {
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
    * whitespace is allowed before, between and after the parts. Infinities are
-   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"` and `"-Inf"` or `"MinusInf"`.
+   * designated by `"Inf"`, `"PlusInf"`, `"+Inf"`, `"Duration.Inf"` and `"-Inf"`, `"MinusInf"` or `"Duration.MinusInf"`.
+   * Undefined is designated by `"Duration.Undefined"`.
    *
    * @throws NumberFormatException if format is not parsable
    */
   def apply(s: String): Duration = {
     val s1: String = s filterNot (_.isWhitespace)
     s1 match {
-      case "Inf" | "PlusInf" | "+Inf" => Inf
-      case "MinusInf" | "-Inf"        => MinusInf
-      case _                          =>
+      case "Inf" | "PlusInf" | "+Inf" | "Duration.Inf" => Inf
+      case "MinusInf" | "-Inf" | "Duration.MinusInf"   => MinusInf
+      case "Duration.Undefined"                        => Undefined
+      case _                                           =>
         val unitName = s1.reverse.takeWhile(_.isLetter).reverse
         timeUnit get unitName match {
           case Some(unit) =>
@@ -85,7 +91,7 @@ object Duration {
 
   // TimeUnit => standard label
   protected[duration] val timeUnitName: Map[TimeUnit, String] =
-    timeUnitLabels.toMap.mapValues(s => words(s).last).toMap
+    timeUnitLabels.toMap.view.mapValues(s => words(s).last).toMap
 
   // Label => TimeUnit
   protected[duration] val timeUnit: Map[String, TimeUnit] =
@@ -102,7 +108,7 @@ object Duration {
    * Extract length and time unit out of a duration, if it is finite.
    */
   def unapply(d: Duration): Option[(Long, TimeUnit)] =
-    if (d.isFinite()) Some((d.length, d.unit)) else None
+    if (d.isFinite) Some((d.length, d.unit)) else None
 
   /**
    * Construct a possibly infinite or undefined Duration from the given number of nanoseconds.
@@ -128,12 +134,12 @@ object Duration {
       fromNanos(nanos.round)
   }
 
-  private[this] final val  µs_per_ns = 1000L
-  private[this] final val  ms_per_ns =  µs_per_ns * 1000
-  private[this] final val   s_per_ns =  ms_per_ns * 1000
-  private[this] final val min_per_ns =   s_per_ns * 60
-  private[this] final val   h_per_ns = min_per_ns * 60
-  private[this] final val   d_per_ns =   h_per_ns * 24
+  private[this] final val ns_per_µs  = 1000L
+  private[this] final val ns_per_ms  = ns_per_µs  * 1000
+  private[this] final val ns_per_s   = ns_per_ms  * 1000
+  private[this] final val ns_per_min = ns_per_s   * 60
+  private[this] final val ns_per_h   = ns_per_min * 60
+  private[this] final val ns_per_d   = ns_per_h   * 24
 
   /**
    * Construct a finite duration from the given number of nanoseconds. The
@@ -143,12 +149,12 @@ object Duration {
    * @throws IllegalArgumentException for `Long.MinValue` since that would lead to inconsistent behavior afterwards (cannot be negated)
    */
   def fromNanos(nanos: Long): FiniteDuration = {
-         if (nanos %   d_per_ns == 0) Duration(nanos /   d_per_ns, DAYS)
-    else if (nanos %   h_per_ns == 0) Duration(nanos /   h_per_ns, HOURS)
-    else if (nanos % min_per_ns == 0) Duration(nanos / min_per_ns, MINUTES)
-    else if (nanos %   s_per_ns == 0) Duration(nanos /   s_per_ns, SECONDS)
-    else if (nanos %  ms_per_ns == 0) Duration(nanos /  ms_per_ns, MILLISECONDS)
-    else if (nanos %  µs_per_ns == 0) Duration(nanos /  µs_per_ns, MICROSECONDS)
+         if (nanos % ns_per_d   == 0) Duration(nanos / ns_per_d  , DAYS)
+    else if (nanos % ns_per_h   == 0) Duration(nanos / ns_per_h  , HOURS)
+    else if (nanos % ns_per_min == 0) Duration(nanos / ns_per_min, MINUTES)
+    else if (nanos % ns_per_s   == 0) Duration(nanos / ns_per_s  , SECONDS)
+    else if (nanos % ns_per_ms  == 0) Duration(nanos / ns_per_ms , MILLISECONDS)
+    else if (nanos % ns_per_µs  == 0) Duration(nanos / ns_per_µs , MICROSECONDS)
     else Duration(nanos, NANOSECONDS)
   }
 
@@ -167,17 +173,17 @@ object Duration {
    *
    * The particular comparison semantics mirror those of Double.NaN.
    *
-   * '''''Use `eq` when checking an input of a method against this value.'''''
+   * '''''Use [[eq]] when checking an input of a method against this value.'''''
    */
   val Undefined: Infinite = new Infinite {
     override def toString = "Duration.Undefined"
-    override def equals(other: Any) = false
+    override def equals(other: Any): Boolean  = false
     override def +(other: Duration): Duration = this
     override def -(other: Duration): Duration = this
     override def *(factor: Double): Duration  = this
     override def /(factor: Double): Duration  = this
     override def /(other: Duration): Double   = Double.NaN
-    def compare(other: Duration) = if (other eq this) 0 else 1
+    def compare(other: Duration): Int         = if (other eq this) 0 else 1
     def unary_- : Duration = this
     def toUnit(unit: TimeUnit): Double = Double.NaN
     private def readResolve(): AnyRef = Undefined      // Instructs deserialization to use this same instance
@@ -208,7 +214,7 @@ object Duration {
       case x           => Double.PositiveInfinity * (if ((this > Zero) ^ (divisor >= Zero)) -1 else 1)
     }
 
-    final def isFinite() = false
+    final def isFinite = false
 
     private[this] def fail(what: String) = throw new IllegalArgumentException(s"$what not allowed on infinite Durations")
     final def length: Long    = fail("length")
@@ -230,15 +236,15 @@ object Duration {
    * matching its semantics in arithmetic operations.
    */
   val Inf: Infinite = new Infinite  {
-    override def toString = "Duration.Inf"
-    def compare(other: Duration) = other match {
+    override def toString: String      = "Duration.Inf"
+    def compare(other: Duration): Int  = other match {
       case x if x eq Undefined => -1 // Undefined != Undefined
       case x if x eq this      => 0  // `case Inf` will include null checks in the byte code
       case _                   => 1
     }
-    def unary_- : Duration = MinusInf
+    def unary_- : Duration             = MinusInf
     def toUnit(unit: TimeUnit): Double = Double.PositiveInfinity
-    private def readResolve(): AnyRef = Inf            // Instructs deserialization to use this same instance
+    private def readResolve(): AnyRef  = Inf            // Instructs deserialization to use this same instance
   }
 
   /**
@@ -247,11 +253,11 @@ object Duration {
    * matching its semantics in arithmetic operations.
    */
   val MinusInf: Infinite = new Infinite {
-    override def toString = "Duration.MinusInf"
-    def compare(other: Duration) = if (other eq this) 0 else -1
+    override def toString: String      = "Duration.MinusInf"
+    def compare(other: Duration): Int  = if (other eq this) 0 else -1
     def unary_- : Duration = Inf
     def toUnit(unit: TimeUnit): Double = Double.NegativeInfinity
-    private def readResolve(): AnyRef = MinusInf    // Instructs deserialization to use this same instance
+    private def readResolve(): AnyRef  = MinusInf    // Instructs deserialization to use this same instance
   }
 
   // Java Factories
@@ -265,7 +271,7 @@ object Duration {
    * Construct a Duration from the given length and unit. Observe that nanosecond precision may be lost if
    *
    *  - the unit is NANOSECONDS
-   *  - and the length has an absolute value greater than 2^53
+   *  - and the length has an absolute value greater than `2^53`
    *
    * Infinite inputs (and NaN) are converted into [[Duration.Inf]], [[Duration.MinusInf]] and [[Duration.Undefined]], respectively.
    *
@@ -293,7 +299,7 @@ object Duration {
    * The natural ordering of durations matches the natural ordering for Double, including non-finite values.
    */
   implicit object DurationIsOrdered extends Ordering[Duration] {
-    def compare(a: Duration, b: Duration) = a compare b
+    def compare(a: Duration, b: Duration): Int = a compare b
   }
 }
 
@@ -362,7 +368,7 @@ object Duration {
  *
  * @define exc @throws IllegalArgumentException when invoked on a non-finite duration
  *
- * @define ovf @throws IllegalArgumentException in case of a finite overflow: the range of a finite duration is +-(2^63-1)ns, and no conversion to infinite durations takes place.
+ * @define ovf @throws IllegalArgumentException in case of a finite overflow: the range of a finite duration is `+-(2^63-1)`ns, and no conversion to infinite durations takes place.
  */
 sealed abstract class Duration extends Serializable with Ordered[Duration] {
   /**
@@ -470,7 +476,7 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    * This method returns whether this duration is finite, which is not the same as
    * `!isInfinite` for Double because this method also returns `false` for [[Duration.Undefined]].
    */
-  def isFinite(): Boolean
+  def isFinite: Boolean
   /**
    * Return the smaller of this and that duration as determined by the natural ordering.
    */
@@ -488,41 +494,41 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
    *
    * $ovf
    */
-  def div(divisor: Double)    = this / divisor
+  def div(divisor: Double): Duration = this / divisor
   /**
    * Return the quotient of this and that duration as floating-point number. The semantics are
    * determined by Double as if calculating the quotient of the nanosecond lengths of both factors.
    */
-  def div(other: Duration)   = this / other
-  def gt(other: Duration)    = this > other
-  def gteq(other: Duration)  = this >= other
-  def lt(other: Duration)    = this < other
-  def lteq(other: Duration)  = this <= other
+  def div(other: Duration): Double   = this / other
+  def gt(other: Duration): Boolean   = this > other
+  def gteq(other: Duration): Boolean = this >= other
+  def lt(other: Duration): Boolean   = this < other
+  def lteq(other: Duration): Boolean = this <= other
   /**
    * Return the difference of that duration and this. When involving non-finite summands the semantics match those
    * of Double.
    *
    * $ovf
    */
-  def minus(other: Duration) = this - other
+  def minus(other: Duration): Duration = this - other
   /**
    * Return this duration multiplied by the scalar factor. When involving non-finite factors the semantics match those
    * of Double.
    *
    * $ovf
    */
-  def mul(factor: Double)    = this * factor
+  def mul(factor: Double): Duration    = this * factor
   /**
    * Negate this duration. The only two values which are mapped to themselves are [[Duration.Zero]] and [[Duration.Undefined]].
    */
-  def neg()                  = -this
+  def neg(): Duration                  = -this
   /**
    * Return the sum of that duration and this. When involving non-finite summands the semantics match those
    * of Double.
    *
    * $ovf
    */
-  def plus(other: Duration)  = this + other
+  def plus(other: Duration): Duration  = this + other
   /**
    * Return duration which is equal to this duration but with a coarsest Unit, or self in case it is already the coarsest Unit
    * <p/>
@@ -540,11 +546,11 @@ sealed abstract class Duration extends Serializable with Ordered[Duration] {
 object FiniteDuration {
 
   implicit object FiniteDurationIsOrdered extends Ordering[FiniteDuration] {
-    def compare(a: FiniteDuration, b: FiniteDuration) = a compare b
+    def compare(a: FiniteDuration, b: FiniteDuration): Int = a compare b
   }
 
-  def apply(length: Long, unit: TimeUnit) = new FiniteDuration(length, unit)
-  def apply(length: Long, unit: String)   = new FiniteDuration(length, Duration.timeUnit(unit))
+  def apply(length: Long, unit: TimeUnit): FiniteDuration  = new FiniteDuration(length, unit)
+  def apply(length: Long, unit: String): FiniteDuration    = new FiniteDuration(length, Duration.timeUnit(unit))
 
   // limit on abs. value of durations in their units
   private final val max_ns = Long.MaxValue
@@ -558,7 +564,7 @@ object FiniteDuration {
 
 /**
  * This class represents a finite duration. Its addition and subtraction operators are overloaded to retain
- * this guarantee statically. The range of this class is limited to +-(2^63-1)ns, which is roughly 292 years.
+ * this guarantee statically. The range of this class is limited to `+-(2^63-1)`ns, which is roughly 292  years.
  */
 final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import FiniteDuration._
@@ -570,36 +576,36 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
       /*
        * enforce the 2^63-1 ns limit, must be pos/neg symmetrical because of unary_-
        */
-      case NANOSECONDS  ⇒ bounded(max_ns)
-      case MICROSECONDS ⇒ bounded(max_µs)
-      case MILLISECONDS ⇒ bounded(max_ms)
-      case SECONDS      ⇒ bounded(max_s)
-      case MINUTES      ⇒ bounded(max_min)
-      case HOURS        ⇒ bounded(max_h)
-      case DAYS         ⇒ bounded(max_d)
-      case _ ⇒
+      case NANOSECONDS  => bounded(max_ns)
+      case MICROSECONDS => bounded(max_µs)
+      case MILLISECONDS => bounded(max_ms)
+      case SECONDS      => bounded(max_s)
+      case MINUTES      => bounded(max_min)
+      case HOURS        => bounded(max_h)
+      case DAYS         => bounded(max_d)
+      case _ =>
         val v = DAYS.convert(length, unit)
         -max_d <= v && v <= max_d
     }, "Duration is limited to +-(2^63-1)ns (ca. 292 years)")
 
-  def toNanos   = unit.toNanos(length)
-  def toMicros  = unit.toMicros(length)
-  def toMillis  = unit.toMillis(length)
-  def toSeconds = unit.toSeconds(length)
-  def toMinutes = unit.toMinutes(length)
-  def toHours   = unit.toHours(length)
-  def toDays    = unit.toDays(length)
-  def toUnit(u: TimeUnit) = toNanos.toDouble / NANOSECONDS.convert(1, u)
+  def toNanos: Long               = unit.toNanos(length)
+  def toMicros: Long              = unit.toMicros(length)
+  def toMillis: Long              = unit.toMillis(length)
+  def toSeconds: Long             = unit.toSeconds(length)
+  def toMinutes: Long             = unit.toMinutes(length)
+  def toHours: Long               = unit.toHours(length)
+  def toDays: Long                = unit.toDays(length)
+  def toUnit(u: TimeUnit): Double = toNanos.toDouble / NANOSECONDS.convert(1, u)
 
   /**
    * Construct a [[Deadline]] from this duration by adding it to the current instant `Deadline.now`.
    */
   def fromNow: Deadline = Deadline.now + this
 
-  private[this] def unitString = timeUnitName(unit) + ( if (length == 1) "" else "s" )
-  override def toString = "" + length + " " + unitString
+  private[this] def unitString  = timeUnitName(unit) + ( if (length == 1) "" else "s" )
+  override def toString: String     = "" + length + " " + unitString
 
-  def compare(other: Duration) = other match {
+  def compare(other: Duration): Int = other match {
     case x: FiniteDuration => toNanos compare x.toNanos
     case _                 => -(other compare this)
   }
@@ -616,22 +622,22 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     new FiniteDuration(totalLength, commonUnit)
   }
 
-  def +(other: Duration) = other match {
+  def +(other: Duration): Duration = other match {
     case x: FiniteDuration => add(x.length, x.unit)
     case _                 => other
   }
-  def -(other: Duration) = other match {
+  def -(other: Duration): Duration = other match {
     case x: FiniteDuration => add(-x.length, x.unit)
     case _                 => -other
   }
 
-  def *(factor: Double) =
+  def *(factor: Double): Duration  =
     if (!factor.isInfinite) fromNanos(toNanos * factor)
     else if (JDouble.isNaN(factor)) Undefined
     else if ((factor > 0) ^ (this < Zero)) Inf
     else MinusInf
 
-  def /(divisor: Double) =
+  def /(divisor: Double): Duration =
     if (!divisor.isInfinite) fromNanos(toNanos / divisor)
     else if (JDouble.isNaN(divisor)) Undefined
     else Zero
@@ -639,18 +645,18 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   // if this is made a constant, then scalac will elide the conditional and always return +0.0, scala/bug#6331
   private[this] def minusZero = -0d
   def /(divisor: Duration): Double =
-    if (divisor.isFinite()) toNanos.toDouble / divisor.toNanos
+    if (divisor.isFinite) toNanos.toDouble / divisor.toNanos
     else if (divisor eq Undefined) Double.NaN
     else if ((length < 0) ^ (divisor > Zero)) 0d
     else minusZero
 
   // overloaded methods taking FiniteDurations, so that you can calculate while statically staying finite
-  def +(other: FiniteDuration) = add(other.length, other.unit)
-  def -(other: FiniteDuration) = add(-other.length, other.unit)
-  def plus(other: FiniteDuration) = this + other
-  def minus(other: FiniteDuration) = this - other
-  def min(other: FiniteDuration) = if (this < other) this else other
-  def max(other: FiniteDuration) = if (this > other) this else other
+  def +(other: FiniteDuration): FiniteDuration     = add(other.length, other.unit)
+  def -(other: FiniteDuration): FiniteDuration     = add(-other.length, other.unit)
+  def plus(other: FiniteDuration): FiniteDuration  = this + other
+  def minus(other: FiniteDuration): FiniteDuration = this - other
+  def min(other: FiniteDuration): FiniteDuration   = if (this < other) this else other
+  def max(other: FiniteDuration): FiniteDuration   = if (this > other) this else other
 
   // overloaded methods taking Long so that you can calculate while statically staying finite
 
@@ -659,14 +665,14 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    *
    * @throws ArithmeticException if the factor is 0
    */
-  def /(divisor: Long) = fromNanos(toNanos / divisor)
+  def /(divisor: Long): FiniteDuration = fromNanos(toNanos / divisor)
 
   /**
    * Return the product of this duration and the given integer factor.
    *
    * @throws IllegalArgumentException if the result would overflow the range of FiniteDuration
    */
-  def *(factor: Long) = new FiniteDuration(safeMul(length, factor), unit)
+  def *(factor: Long): FiniteDuration  = new FiniteDuration(safeMul(length, factor), unit)
 
   /*
    * This method avoids the use of Long division, which saves 95% of the time spent,
@@ -693,22 +699,22 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
    *
    * @throws ArithmeticException if the factor is 0
    */
- def div(divisor: Long) = this / divisor
+  def div(divisor: Long): FiniteDuration = this / divisor
 
   /**
    * Return the product of this duration and the given integer factor.
    *
    * @throws IllegalArgumentException if the result would overflow the range of FiniteDuration
    */
-  def mul(factor: Long) = this * factor
+  def mul(factor: Long): FiniteDuration  = this * factor
 
   def unary_- = Duration(-length, unit)
 
-  final def isFinite() = true
+  final def isFinite = true
 
   final override def toCoarsest: FiniteDuration = {
     def loop(length: Long, unit: TimeUnit): FiniteDuration = {
-      def coarserOrThis(coarser: TimeUnit, divider: Int) =
+      def coarserOrThis(coarser: TimeUnit, divider: Int): FiniteDuration =
         if (length % divider == 0) loop(length / divider, coarser)
         else if (unit == this.unit) this
         else FiniteDuration(length, unit)
@@ -728,9 +734,9 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
     else loop(length, unit)
   }
 
-  override def equals(other: Any) = other match {
+  override def equals(other: Any): Boolean = other match {
     case x: FiniteDuration => toNanos == x.toNanos
     case _                 => super.equals(other)
   }
-  override def hashCode = toNanos.toInt
+  override def hashCode: Int = toNanos.toInt
 }

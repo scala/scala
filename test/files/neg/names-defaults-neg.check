@@ -1,90 +1,90 @@
-names-defaults-neg.scala:5: error: type mismatch;
+names-defaults-neg.scala:7: error: type mismatch;
  found   : String("#")
  required: Int
   test1(b = 2, a = "#")
                    ^
-names-defaults-neg.scala:5: error: type mismatch;
+names-defaults-neg.scala:7: error: type mismatch;
  found   : Int(2)
  required: String
   test1(b = 2, a = "#")
             ^
-names-defaults-neg.scala:8: error: positional after named argument.
+names-defaults-neg.scala:10: error: positional after named argument.
   test1(b = "(*", 23)
                   ^
-names-defaults-neg.scala:13: warning: a pure expression does nothing in statement position
+names-defaults-neg.scala:15: warning: a pure expression does nothing in statement position
   test2(x = 1)
             ^
-names-defaults-neg.scala:14: error: unknown parameter name: y
+names-defaults-neg.scala:16: error: unknown parameter name: y
   test2(y = 1)
           ^
-names-defaults-neg.scala:15: error: unknown parameter name: c
+names-defaults-neg.scala:17: error: unknown parameter name: c
   test1(c = 0, b = "joke")
           ^
-names-defaults-neg.scala:16: error: not found: value m
+names-defaults-neg.scala:18: error: not found: value m
   test7((m = 1))  // named arguments must be top-level assignments
          ^
-names-defaults-neg.scala:17: error: not found: value m
+names-defaults-neg.scala:19: error: not found: value m
   test7({m = 1})
          ^
-names-defaults-neg.scala:18: error: not found: value m
+names-defaults-neg.scala:20: error: not found: value m
   test7 { m = 1 } // no named arguments in argument block
           ^
-names-defaults-neg.scala:22: error: parameter 'a' is already specified at parameter position 1
+names-defaults-neg.scala:24: error: parameter 'a' is already specified at parameter position 1
   test1(1, a = 2)
              ^
-names-defaults-neg.scala:23: error: parameter 'b' is already specified at parameter position 1
+names-defaults-neg.scala:25: error: parameter 'b' is already specified at parameter position 1
   test1(b = 1, b = "2")
                  ^
-names-defaults-neg.scala:26: error: Int does not take parameters
+names-defaults-neg.scala:28: error: Int does not take parameters
   test3(b = 3, a = 1)(3)
                      ^
-names-defaults-neg.scala:35: error: ambiguous reference to overloaded definition,
+names-defaults-neg.scala:37: error: ambiguous reference to overloaded definition,
 both method f in object t1 of type (b: String, a: Int)String
 and  method f in object t1 of type (a: Int, b: String)String
 match argument types (b: String,a: Int)
   t1.f(b = "dkljf", a = 1)
      ^
-names-defaults-neg.scala:42: error: ambiguous reference to overloaded definition,
+names-defaults-neg.scala:44: error: ambiguous reference to overloaded definition,
 both method f in object t3 of type (a2: Int)(b: Int)String
 and  method f in object t3 of type (a1: Int)String
 match argument types (Int)
   t3.f(1)
      ^
-names-defaults-neg.scala:43: error: ambiguous reference to overloaded definition,
+names-defaults-neg.scala:45: error: ambiguous reference to overloaded definition,
 both method f in object t3 of type (a2: Int)(b: Int)String
 and  method f in object t3 of type (a1: Int)String
 match argument types (Int)
   t3.f(1)(2)
      ^
-names-defaults-neg.scala:49: error: ambiguous reference to overloaded definition,
+names-defaults-neg.scala:51: error: ambiguous reference to overloaded definition,
 both method g in object t7 of type (a: B)String
 and  method g in object t7 of type (a: C, b: Int*)String
 match argument types (C)
   t7.g(new C()) // ambiguous reference
      ^
-names-defaults-neg.scala:53: error: parameter 'b' is already specified at parameter position 2
+names-defaults-neg.scala:55: error: parameter 'b' is already specified at parameter position 2
   test5(a = 1, b = "dkjl", b = "dkj")
                              ^
-names-defaults-neg.scala:54: error: parameter 'b' is already specified at parameter position 2
+names-defaults-neg.scala:56: error: parameter 'b' is already specified at parameter position 2
   test5(1, "2", b = 3)
                   ^
-names-defaults-neg.scala:55: error: when using named arguments, the vararg parameter has to be specified exactly once
+names-defaults-neg.scala:57: error: when using named arguments, the vararg parameter has to be specified exactly once
   test5(b = "dlkj")
        ^
-names-defaults-neg.scala:61: error: ambiguous reference to overloaded definition,
+names-defaults-neg.scala:63: error: ambiguous reference to overloaded definition,
 both method f in object t8 of type (b: String, a: Int)String
 and  method f in object t8 of type (a: Int, b: Object)String
 match argument types (a: Int,b: String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambiguous reference
              ^
-names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
+names-defaults-neg.scala:67: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
 Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
                 ^
-names-defaults-neg.scala:69: error: wrong number of arguments for pattern A1(x: Int,y: String)
+names-defaults-neg.scala:71: error: wrong number of arguments for pattern A1(x: Int, y: String)
   A1() match { case A1(_) => () }
                       ^
-names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])
+names-defaults-neg.scala:78: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[Int]
@@ -92,64 +92,61 @@ argument expression's type is not compatible with formal parameter type;
 Error occurred in an application involving default arguments.
   test4()
   ^
-names-defaults-neg.scala:79: error: type mismatch;
+names-defaults-neg.scala:81: error: type mismatch;
  found   : List[Int]
  required: List[List[?]]
   def test6[T](x: List[List[T]] = List(1,2)) = x
                                       ^
-names-defaults-neg.scala:82: error: type mismatch;
+names-defaults-neg.scala:84: error: type mismatch;
  found   : 1
  required: String
 Error occurred in an application involving default arguments.
   new A2[String]()
   ^
-names-defaults-neg.scala:86: error: module extending its companion class cannot use default constructor arguments
+names-defaults-neg.scala:88: error: module extending its companion class cannot use default constructor arguments
     object C extends C()
                      ^
-names-defaults-neg.scala:90: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
-  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
-                                           ^
-names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
-  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
-                                              ^
-names-defaults-neg.scala:93: warning: the parameter name y is deprecated: use b instead
+names-defaults-neg.scala:92: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
+  def deprNam1(x: Int, @deprecatedName("x") y: String) = 0
+                                            ^
+names-defaults-neg.scala:93: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
+  def deprNam2(a: String)(@deprecatedName("a") b: Int) = 1
+                                               ^
+names-defaults-neg.scala:95: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
-names-defaults-neg.scala:93: error: parameter 'b' is already specified at parameter position 1
+names-defaults-neg.scala:95: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg.scala:96: warning: naming parameter deprNam4Arg is deprecated.
+names-defaults-neg.scala:98: warning: naming parameter deprNam4Arg is deprecated.
   deprNam4(deprNam4Arg = null)
                        ^
-names-defaults-neg.scala:98: warning: naming parameter deprNam5Arg is deprecated.
+names-defaults-neg.scala:100: warning: naming parameter deprNam5Arg is deprecated.
   deprNam5(deprNam5Arg = null)
                        ^
-names-defaults-neg.scala:102: error: unknown parameter name: m
+names-defaults-neg.scala:104: warning: the parameter name foo is deprecated: use deprNam6Arg instead
+  deprNam6(foo = null)
+               ^
+names-defaults-neg.scala:106: warning: the parameter name bar is deprecated (since 2.12.0): use deprNam7Arg instead
+  deprNam7(bar = null)
+               ^
+names-defaults-neg.scala:110: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
-names-defaults-neg.scala:135: warning: a pure expression does nothing in statement position
+names-defaults-neg.scala:143: warning: a pure expression does nothing in statement position
   delay(var2 = 40)
                ^
-names-defaults-neg.scala:138: error: missing parameter type for expanded function ((x$1: <error>) => a = x$1)
+names-defaults-neg.scala:146: error: missing parameter type for expanded function ((<x$1: error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:138: error: not found: value a
-  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
-                                     ^
-names-defaults-neg.scala:138: error: not found: value get
+names-defaults-neg.scala:146: error: not found: value get
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                                 ^
-names-defaults-neg.scala:139: error: parameter 'a' is already specified at parameter position 1
+names-defaults-neg.scala:147: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$3: <error>) => testAnnFun(x$3, ((x$4) => b = x$4)))
-  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                               ^
-names-defaults-neg.scala:140: error: missing parameter type for expanded function ((x$4: <error>) => b = x$4)
+names-defaults-neg.scala:148: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-names-defaults-neg.scala:140: error: not found: value b
-  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
-                                                  ^
-5 warnings found
-36 errors found
+7 warnings found
+33 errors found

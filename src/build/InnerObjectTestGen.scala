@@ -127,7 +127,7 @@ object Test {
                trigger: String,   // the code that needs to be invoked to run the test so far
                nested: List[Contexts.Value],  // the path from the innermost to the outermost context
                p: List[Contexts.Value] => Boolean,  // a predicate for filtering problematic cases
-               privateObj: Boolean = false) {  // are we using a private object?
+               privateObj: Boolean = false): Unit = {  // are we using a private object?
 
     def shouldBeTopLevel =
       ((depth == 1)
@@ -259,7 +259,7 @@ object Test {
     structure.contains(LazyVal)
 
 
-  def usage() {
+  def usage(): Unit = {
     val help =
 """
   Usage: TestGen <nr of levels>
@@ -285,7 +285,7 @@ object Test {
     System.exit(1)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     if (args.isEmpty || args.contains("-help")) usage()
 
     val depth = if (args.length < 1) 2 else args(0).toInt

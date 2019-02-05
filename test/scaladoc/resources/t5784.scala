@@ -15,7 +15,7 @@ package test.templates {
     type T <: Foo
     val T: FooExtractor
     trait Foo { def foo: Int }
-    trait FooExtractor { def apply(foo: Int); def unapply(t: Foo): Option[Int] }
+    trait FooExtractor { def apply(foo: Int): Unit; def unapply(t: Foo): Option[Int] }
   }
 
   /** @contentDiagram */

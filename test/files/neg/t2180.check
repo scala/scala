@@ -1,6 +1,11 @@
-t2180.scala:3: error: type mismatch;
- found   : List[Any]
- required: List[Mxml]
-    children.toList.flatMap ( e => {
-                            ^
-one error found
+t2180.scala:5: error: type mismatch;
+ found   : Iterable[_]
+ required: scala.collection.IterableOnce[Mxml]
+        case s: scala.collection.Iterable[_] => s
+                                                ^
+t2180.scala:6: error: type mismatch;
+ found   : Any
+ required: Mxml
+        case a => List(a)
+                       ^
+two errors found

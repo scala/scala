@@ -21,7 +21,7 @@ class Foo {
   val scalaHome: Setting[Option[String]] = null
   val scalaVersion: Setting[String] = null
 
-  def testPatternMatch(s: Setting[_]) {
+  def testPatternMatch(s: Setting[_]): Unit = {
     s.key match {
       case ScopedKey1(scalaHome.key | scalaVersion.key) => ()
     }

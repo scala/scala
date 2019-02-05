@@ -1,11 +1,20 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package reflect.internal.util
 
 import scala.collection.mutable
+import scala.collection.immutable.ArraySeq
 import scala.reflect.io.AbstractFile
 import java.net.{ URL, URLConnection, URLStreamHandler }
 import java.security.cert.Certificate
@@ -39,7 +48,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     else s"${name.replace('.', '/')}.class"
 
   protected def findAbstractFile(name: String): AbstractFile = {
-    AbstractFileClassLoader.lookupPath(root)(name split '/', directory = false)
+    AbstractFileClassLoader.lookupPath(root)(ArraySeq.unsafeWrapArray(name split '/'), directory = false)
   }
 
   protected def dirNameToPath(name: String): String =

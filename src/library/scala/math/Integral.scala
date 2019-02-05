@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package math
@@ -18,7 +22,7 @@ trait Integral[T] extends Numeric[T] {
   def quot(x: T, y: T): T
   def rem(x: T, y: T): T
 
-  class IntegralOps(lhs: T) extends Ops(lhs) {
+  class IntegralOps(lhs: T) extends NumericOps(lhs) {
     def /(rhs: T) = quot(lhs, rhs)
     def %(rhs: T) = rem(lhs, rhs)
     def /%(rhs: T) = (quot(lhs, rhs), rem(lhs, rhs))

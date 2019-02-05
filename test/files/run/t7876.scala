@@ -6,7 +6,7 @@ object Test extends DirectTest {
 
   def code = ""
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     new global.Run()
     import global._, definitions._

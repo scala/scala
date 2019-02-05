@@ -12,13 +12,13 @@ object Test {
     var seen: Set[Symbol] = Set()
     def id(s: Symbol): Int = s.asInstanceOf[{ def id: Int }].id
 
-    def check(s: Symbol) {
+    def check(s: Symbol): Unit = {
       if (!seen(s)) {
         seen += s
         if (s.name.toString == name) buf ::= s
       }
     }
-    def loop(t: Type) {
+    def loop(t: Type): Unit = {
       t match {
         case TypeRef(pre, sym, args)    => loop(pre) ; check(sym) ; args foreach loop
         case PolyType(tparams, restpe)  => tparams foreach { tp => check(tp) ; check(tp.owner) ; loop(tp.info) } ; loop(restpe)
@@ -28,7 +28,7 @@ object Test {
     }
     loop(m)
 
-    buf.reverse.distinct map (s => s.name + "#" + id(s))
+    buf.reverse.distinct map (s => s"${s.name}#${id(s)}")
   }
 
   def main(args: Array[String]): Unit = {

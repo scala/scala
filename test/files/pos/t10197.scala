@@ -1,3 +1,5 @@
+
+// scalac: -Xsource:2.13
 import scala.language.higherKinds
 
 final case class Getter[S, A](get: S => A)

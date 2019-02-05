@@ -10,14 +10,13 @@ class ScriptRunnerTest {
   @Test
   def testEmptyScriptSucceeds: Unit = {
     val s = new GenericRunnerSettings(s => ())
-    s.nc.value = true
     s.usejavacp.value = true
 
-    // scala -nc -e ''
-    assertTrue(ScriptRunner.runCommand(s, "", Nil))
+    // scala -e ''
+    assertTrue(ScriptRunner(s).runScriptText("", Nil).isEmpty)
 
-    // scala -nc -save -e ''
+    // scala -save -e ''
     s.save.value = true
-    assertTrue(ScriptRunner.runCommand(s, "", Nil))
+    assertTrue(ScriptRunner(s).runScriptText("", Nil).isEmpty)
   }
 }

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package macros
@@ -25,7 +37,7 @@ trait Typers {
 
   /** Represents mode of operations of the typechecker underlying `c.typecheck` calls.
    *  Is necessary since the shape of the typechecked tree alone is not enough to guess how it should be typechecked.
-   *  Can be EXPRmode (typecheck as a term), TYPEmode (typecheck as a type) or PATTERNmode (typecheck as a pattern).
+   *  Can be TERMmode (typecheck as a term), TYPEmode (typecheck as a type) or PATTERNmode (typecheck as a pattern).
    */
   // I'd very much like to make use of https://github.com/dsl-paradise/dsl-paradise here!
   type TypecheckMode
@@ -58,7 +70,7 @@ trait Typers {
     typecheck(tree, TERMmode, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
 
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context
-   *  under typechecking mode specified in `mode` with [[EXPRmode]] being default.
+   *  under typechecking mode specified in `mode` with [[TERMmode]] being default.
    *  This populates symbols and types of the tree and possibly transforms it to reflect certain desugarings.
    *
    *  If `silent` is false, `TypecheckException` will be thrown in case of a typecheck error.

@@ -1,0 +1,11 @@
+
+scala> '\060'
+        ^
+       error: octal escape literals are unsupported: use \u0030 instead
+
+scala> def foo() { }
+                 ^
+       warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `foo`'s return type
+foo: ()Unit
+
+scala> :quit

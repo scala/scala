@@ -1,13 +1,18 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
 package backend.jvm
 package opt
-
-import java.util.concurrent.atomic.AtomicLong
 
 import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
@@ -16,13 +21,14 @@ import scala.tools.asm.Attribute
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting._
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 /**
  * The ByteCodeRepository provides utilities to read the bytecode of classfiles from the compilation
  * classpath. Parsed classes are cached in the `classes` map.
  */
-abstract class ByteCodeRepository {
+abstract class ByteCodeRepository extends PerRunInit {
   val postProcessor: PostProcessor
 
   import postProcessor.{bTypes, bTypesFromClassfile}
@@ -54,12 +60,7 @@ abstract class ByteCodeRepository {
    * Contains the internal names of all classes that are defined in Java source files of the current
    * compilation run (mixed compilation). Used for more detailed error reporting.
    */
-  val javaDefinedClasses: mutable.Set[InternalName] = recordPerRunCache(mutable.Set.empty)
-
-
-  def initialize(): Unit = {
-    javaDefinedClasses ++= frontendAccess.javaDefinedClasses
-  }
+  private lazy val javaDefinedClasses = perRunLazy(this)(frontendAccess.javaDefinedClasses)
 
   def add(classNode: ClassNode, sourceFilePath: Option[String]) = sourceFilePath match {
     case Some(path) if path != "<no file>" => compilingClasses(classNode.name) = (classNode, path)
@@ -169,10 +170,10 @@ abstract class ByteCodeRepository {
     def findInSuperClasses(owner: ClassNode, publicInstanceOnly: Boolean = false): Either[ClassNotFound, Option[(MethodNode, InternalName)]] = {
       findMethod(owner) match {
         case Some(m) if !publicInstanceOnly || (isPublicMethod(m) && !isStaticMethod(m)) => Right(Some((m, owner.name)))
-        case None =>
+        case _ =>
           if (isSignaturePolymorphic(owner.name)) Right(Some((owner.methods.asScala.find(_.name == name).get, owner.name)))
           else if (owner.superName == null) Right(None)
-          else classNode(owner.superName).flatMap(findInSuperClasses(_, isInterface(owner)))
+          else classNode(owner.superName).flatMap(findInSuperClasses(_, publicInstanceOnly = isInterface(owner)))
       }
     }
 
@@ -250,10 +251,31 @@ abstract class ByteCodeRepository {
     }
   }
 
+  private def removeLineNumbersAndAddLMFImplMethods(classNode: ClassNode): Unit = {
+    for (m <- classNode.methods.asScala) {
+      val iter = m.instructions.iterator
+      while (iter.hasNext) {
+        val insn = iter.next()
+        insn.getType match {
+          case AbstractInsnNode.LINE =>
+            iter.remove()
+          case AbstractInsnNode.INVOKE_DYNAMIC_INSN => insn match {
+            case LambdaMetaFactoryCall(indy, _, implMethod, _, _) =>
+              postProcessor.backendUtils.addIndyLambdaImplMethod(classNode.name, m, indy, implMethod)
+            case _ =>
+          }
+          case _ =>
+        }
+      }
+
+    }
+  }
+
+
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
     backendClassPath.findClassFile(fullName) map { classFile =>
-      val classNode = new asm.tree.ClassNode()
+      val classNode = new ClassNode1
       val classReader = new asm.ClassReader(classFile.toByteArray)
 
       // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`
@@ -269,11 +291,11 @@ abstract class ByteCodeRepository {
       // attribute that contains JSR-45 data that encodes debugging info.
       //   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
       //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
-      removeLineNumberNodes(classNode)
+      removeLineNumbersAndAddLMFImplMethods(classNode)
       classNode
     } match {
       case Some(node) => Right(node)
-      case None       => Left(ClassNotFound(internalName, javaDefinedClasses(internalName)))
+      case None       => Left(ClassNotFound(internalName, javaDefinedClasses.get(internalName)))
     }
   }
 }

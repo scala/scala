@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Burak Emir
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -100,7 +107,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     attrs: Tree,
     scope: Tree,
     empty: Boolean,
-    children: Seq[Tree]): Tree =
+    children: scala.collection.Seq[Tree]): Tree =
   {
     def starArgs =
       if (children.isEmpty) Nil
@@ -138,7 +145,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   protected def ProcInstr(target: Tree, txt: Tree)  = New(_scala_xml_ProcInstr, LL(target, txt))
 
   /** @todo: attributes */
-  def makeXMLpat(pos: Position, n: String, args: Seq[Tree]): Tree = {
+  def makeXMLpat(pos: Position, n: String, args: scala.collection.Seq[Tree]): Tree = {
     val (prepat, labpat) = splitPrefix(n) match {
       case (Some(pre), rest)  => (const(pre), const(rest))
       case _                  => (wild, const(n))
@@ -150,7 +157,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     case _: Literal => makeTextPat(t)
     case _          => t
   }
-  protected def convertToTextPat(buf: Seq[Tree]): List[Tree] =
+  protected def convertToTextPat(buf: scala.collection.Seq[Tree]): List[Tree] =
     (buf map convertToTextPat).toList
 
   def parseAttribute(pos: Position, s: String): Tree = {
@@ -169,7 +176,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   }
 
   /** could optimize if args.length == 0, args.length == 1 AND args(0) is <: Node. */
-  def makeXMLseq(pos: Position, args: Seq[Tree]) = {
+  def makeXMLseq(pos: Position, args: scala.collection.Seq[Tree]) = {
     val buffer = ValDef(NoMods, _buf, TypeTree(), New(_scala_xml_NodeBuffer, ListOfNil))
     val applies = args filterNot isEmptyText map (t => Apply(Select(Ident(_buf), _plus), List(t)))
 
@@ -183,13 +190,13 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   }
 
   /** Various node constructions. */
-  def group(pos: Position, args: Seq[Tree]): Tree =
+  def group(pos: Position, args: scala.collection.Seq[Tree]): Tree =
     atPos(pos)( New(_scala_xml_Group, LL(makeXMLseq(pos, args))) )
 
   def unparsed(pos: Position, str: String): Tree =
     atPos(pos)( New(_scala_xml_Unparsed, LL(const(str))) )
 
-  def element(pos: Position, qname: String, attrMap: mutable.Map[String, Tree], empty: Boolean, args: Seq[Tree]): Tree = {
+  def element(pos: Position, qname: String, attrMap: mutable.Map[String, Tree], empty: Boolean, args: scala.collection.Seq[Tree]): Tree = {
     def handleNamespaceBinding(pre: String, z: String): Tree = {
       def mkAssign(t: Tree): Tree = Assign(
         Ident(_tmpscope),

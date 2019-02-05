@@ -31,7 +31,7 @@ object eqeq extends testing.Benchmark {
   val obj1 = new Object
   val obj2 = new Object
 
-  def run() {
+  def run(): Unit = {
     var sum = 0
     sum += eqeqtest(x => if (x == 0) obj1 else obj2, 2000)
     sum += eqeqtest(x => x, 1000)

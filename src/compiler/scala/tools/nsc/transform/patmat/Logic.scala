@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -9,6 +15,7 @@ package tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 import scala.collection.mutable
+import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
 
 trait Logic extends Debugging  {
@@ -150,7 +157,7 @@ trait Logic extends Debugging  {
         val newSym = new Sym(variable, const)
         (uniques findEntryOrUpdate newSym)
       }
-      def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      def nextSymId = {_symId += 1; _symId}; private[this] var _symId = 0
       implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
@@ -173,18 +180,70 @@ trait Logic extends Debugging  {
      */
     def simplify(f: Prop): Prop = {
 
-      // limit size to avoid blow up
-      def hasImpureAtom(ops: Seq[Prop]): Boolean = ops.size < 10 &&
-        ops.combinations(2).exists {
-          case Seq(a, Not(b)) if a == b => true
-          case Seq(Not(a), b) if a == b => true
-          case _                        => false
+      def hasImpureAtom(ops0: collection.Iterable[Prop]): Boolean = {
+        // HOT method, imperative rewrite of:
+        // ops.combinations(2).exists {
+        //   case Seq(a, Not(b)) if a == b => true
+        //   case Seq(Not(a), b) if a == b => true
+        //   case _                        => false
+        // }
+
+        def checkPair(a: Prop, b: Prop): Boolean = {
+          b match {
+            case Not(b) if a == b => true
+            case _ =>
+              a match {
+                case Not(a) if a == b => true
+                case _ => false
+              }
+          }
         }
+        val size = ops0.size
+        if (size > 10) false // limit size to avoid blow up
+        else if (size < 2) false // no combinations
+        else if (size == 2) { // Specialized versions for size 2+3
+          val it = ops0.iterator
+          val result = checkPair(it.next(), it.next())
+          assert(!it.hasNext)
+          result
+        } else if (size == 3) {
+          val it = ops0.iterator
+          val a = it.next()
+          val b = it.next()
+          val c = it.next()
+          assert(!it.hasNext)
+          checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
+        } else {
+          val ops = new Array[Prop](size)
+          ops0.copyToArray(ops)
+          var i = 0
+          val len = ops.length
+          while (i < len - 1) {
+            var j = i + 1
+            while (j < len) {
+              if (checkPair(ops(i), ops(j))) return true
+              j += 1
+            }
+            i += 1
+          }
+          false
+        }
+      }
+
+      def mapConserve[A <: AnyRef](s: Set[A])(f: A => A): Set[A] = {
+        var changed = false
+        val s1 = s.map {a =>
+          val a1 = f(a)
+          if (a1 ne a) changed = true
+          a1
+        }
+        if (changed) s1 else s
+      }
 
       // push negation inside formula
       def negationNormalFormNot(p: Prop): Prop = p match {
-        case And(ops) => Or(ops.map(negationNormalFormNot)) // De Morgan
-        case Or(ops)  => And(ops.map(negationNormalFormNot)) // De Morgan
+        case And(ops) => Or(mapConserve(ops)(negationNormalFormNot)) // De Morgan
+        case Or(ops)  => And(mapConserve(ops)(negationNormalFormNot)) // De Morgan
         case Not(p)   => negationNormalForm(p)
         case True     => False
         case False    => True
@@ -192,8 +251,12 @@ trait Logic extends Debugging  {
       }
 
       def negationNormalForm(p: Prop): Prop = p match {
-        case And(ops)     => And(ops.map(negationNormalForm))
-        case Or(ops)      => Or(ops.map(negationNormalForm))
+        case And(ops)     =>
+          val ops1 = mapConserve(ops)(negationNormalForm)
+          if (ops1 eq ops) p else And(ops1)
+        case Or(ops)      =>
+          val ops1 = mapConserve(ops)(negationNormalForm)
+          if (ops1 eq ops) p else Or(ops1)
         case Not(negated) => negationNormalFormNot(negated)
         case True
              | False
@@ -204,39 +267,50 @@ trait Logic extends Debugging  {
       def simplifyProp(p: Prop): Prop = p match {
         case And(fv)     =>
           // recurse for nested And (pulls all Ands up)
-          val ops = fv.map(simplifyProp) - True // ignore `True`
-
           // build up Set in order to remove duplicates
-          val opsFlattened = ops.flatMap {
-            case And(fv) => fv
-            case f       => Set(f)
-          }.toSeq
+          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
+          for (prop <- fv) {
+            val simplified = simplifyProp(prop)
+            if (simplified != True) { // ignore `True`
+              simplified match {
+                case And(fv) => fv.foreach(opsFlattenedBuilder += _)
+                case f => opsFlattenedBuilder += f
+              }
+            }
+          }
+          val opsFlattened = opsFlattenedBuilder.result()
 
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(False)) {
+          if (opsFlattened.contains(False) || hasImpureAtom(opsFlattened)) {
             False
           } else {
-            opsFlattened match {
-              case Seq()  => True
-              case Seq(f) => f
-              case ops    => And(ops: _*)
+            opsFlattened.size match {
+              case 0 => True
+              case 1 => opsFlattened.head
+              case _ => new And(opsFlattened)
             }
           }
         case Or(fv)      =>
           // recurse for nested Or (pulls all Ors up)
-          val ops = fv.map(simplifyProp) - False // ignore `False`
+          // build up Set in order to remove duplicates
+          val opsFlattenedBuilder = collection.immutable.Set.newBuilder[Prop]
+          for (prop <- fv) {
+            val simplified = simplifyProp(prop)
+            if (simplified != False) { // ignore `False`
+              simplified match {
+                case Or(fv) => fv.foreach(opsFlattenedBuilder += _)
+                case f => opsFlattenedBuilder += f
+              }
+            }
+          }
+          val opsFlattened = opsFlattenedBuilder.result()
 
-          val opsFlattened = ops.flatMap {
-            case Or(fv) => fv
-            case f      => Set(f)
-          }.toSeq
-
-          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(True)) {
+          if (opsFlattened.contains(True) || hasImpureAtom(opsFlattened)) {
             True
           } else {
-            opsFlattened match {
-              case Seq()  => False
-              case Seq(f) => f
-              case ops    => Or(ops: _*)
+            opsFlattened.size match {
+              case 0 => False
+              case 1 => opsFlattened.head
+              case _ => new Or(opsFlattened)
             }
           }
         case Not(Not(a)) =>
@@ -266,20 +340,20 @@ trait Logic extends Debugging  {
       def applySymbol(x: Sym): Unit = {}
     }
 
-    def gatherVariables(p: Prop): Set[Var] = {
+    def gatherVariables(p: Prop): collection.Set[Var] = {
       val vars = new mutable.HashSet[Var]()
       (new PropTraverser {
         override def applyVar(v: Var) = vars += v
       })(p)
-      vars.toSet
+      vars
     }
 
-    def gatherSymbols(p: Prop): Set[Sym] = {
+    def gatherSymbols(p: Prop): collection.Set[Sym] = {
       val syms = new mutable.HashSet[Sym]()
       (new PropTraverser {
         override def applySymbol(s: Sym) = syms += s
       })(p)
-      syms.toSet
+      syms
     }
 
     trait PropMap {
@@ -356,7 +430,7 @@ trait Logic extends Debugging  {
 
       val pure = props map (p => rewriteEqualsToProp(p))
 
-      val eqAxioms = mutable.ArrayBuffer[Prop]()
+      val eqAxioms = ArraySeq.newBuilder[Prop]
       @inline def addAxiom(p: Prop) = eqAxioms += p
 
       debug.patmat("removeVarEq vars: "+ vars)
@@ -398,12 +472,13 @@ trait Logic extends Debugging  {
         }
       }
 
-      debug.patmat(s"eqAxioms:\n${eqAxioms.mkString("\n")}")
+      val eqAxiomsSeq = eqAxioms.result()
+      debug.patmat(s"eqAxioms:\n${eqAxiomsSeq.mkString("\n")}")
       debug.patmat(s"pure:${pure.mkString("\n")}")
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaVarEq, start)
 
-      (And(eqAxioms: _*), pure)
+      (And(eqAxiomsSeq: _*), pure)
     }
 
     type Solvable
@@ -437,7 +512,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     def prepareNewAnalysis(): Unit = { Var.resetUniques(); Const.resetUniques() }
 
     object Var extends VarExtractor {
-      private var _nextId = 0
+      private[this] var _nextId = 0
       def nextId = {_nextId += 1; _nextId}
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
@@ -653,10 +728,10 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     object Const {
       def resetUniques() = {_nextTypeId = 0; _nextValueId = 0; uniques.clear() ; trees.clear()}
 
-      private var _nextTypeId = 0
+      private[this] var _nextTypeId = 0
       def nextTypeId = {_nextTypeId += 1; _nextTypeId}
 
-      private var _nextValueId = 0
+      private[this] var _nextValueId = 0
       def nextValueId = {_nextValueId += 1; _nextValueId}
 
       private val uniques = new mutable.HashMap[Type, Const]

@@ -1,35 +1,49 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-package scala
-package util.control
-
-/** A marker trait indicating that the `Throwable` it is mixed into is
- *  intended for flow control.
+/*
+ * Scala (https://www.scala-lang.org)
  *
- *  Note that `Throwable` subclasses which extend this trait may extend any
- *  other `Throwable` subclass (eg. `RuntimeException`) and are not required
- *  to extend `Throwable` directly.
+ * Copyright EPFL and Lightbend, Inc.
  *
- *  Instances of `Throwable` subclasses marked in this way should not normally
- *  be caught. Where catch-all behaviour is required `ControlThrowable`
- *  should be propagated, for example:
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
+package scala.util.control
+
+/** A parent class for throwable objects intended for flow control.
+ *
+ *  Instances of `ControlThrowable` should not normally be caught.
+ *
+ *  As a convenience, `NonFatal` does not match `ControlThrowable`.
+ *
  *  {{{
- *  import scala.util.control.ControlThrowable
+ *  import scala.util.control.{Breaks, NonFatal}, Breaks.{break, breakable}
  *
- *  try {
- *    // Body might throw arbitrarily
- *  } catch {
- *    case c: ControlThrowable => throw c // propagate
- *    case t: Exception        => log(t)  // log and suppress
+ *  breakable {
+ *    for (v <- values) {
+ *      try {
+ *        if (p(v)) break
+ *        else ???
+ *      } catch {
+ *        case NonFatal(t) => log(t)  // can't catch a break
+ *      }
+ *    }
  *  }
  *  }}}
  *
+ *  Suppression is disabled, because flow control should not suppress
+ *  an exceptional condition. Stack traces are also disabled, allowing
+ *  instances of `ControlThrowable` to be safely reused.
+ *
+ *  Instances of `ControlThrowable` should not normally have a cause.
+ *  Legacy subclasses may set a cause using `initCause`.
+ *
  *  @author Miles Sabin
  */
-trait ControlThrowable extends Throwable with NoStackTrace
+abstract class ControlThrowable(message: String) extends Throwable(
+  message, /*cause*/ null, /*enableSuppression=*/ false, /*writableStackTrace*/ false) {
+
+  def this() = this(message = null)
+}

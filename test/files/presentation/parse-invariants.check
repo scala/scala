@@ -1,3 +1,10 @@
+parseTree
+NoNewSymbolsEntered OK
+Unique OK
+Unattributed OK
+NeverModify OK
+AlwaysParseTree OK
+parseTree
 NoNewSymbolsEntered OK
 Unique OK
 Unattributed OK

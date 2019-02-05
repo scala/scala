@@ -18,10 +18,15 @@ C(2,3)
     <synthetic> def productElement(x$1: Int): Any = x$1 match {
       case 0 => C.this.x
       case 1 => C.this.y
-      case _ => throw new IndexOutOfBoundsException(x$1.toString())
+      case _ => scala.runtime.Statics.ioobe[Any](x$1)
     };
     override <synthetic> def productIterator: Iterator[Any] = scala.runtime.ScalaRunTime.typedProductIterator[Any](C.this);
     <synthetic> def canEqual(x$1: Any): Boolean = x$1.$isInstanceOf[C]();
+    override <synthetic> def productElementName(x$1: Int): String = x$1 match {
+      case 0 => "x"
+      case 1 => "y"
+      case _ => scala.runtime.Statics.ioobe[String](x$1)
+    };
     override <synthetic> def hashCode(): Int = {
       <synthetic> var acc: Int = -889275714;
       acc = scala.runtime.Statics.mix(acc, x);
@@ -37,14 +42,14 @@ C(2,3)
       C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
     }))
   };
-  <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with Serializable {
+  <synthetic> object C extends scala.runtime.AbstractFunction2[Int,Int,C] with java.io.Serializable {
     def <init>(): C.type = {
       C.super.<init>();
       ()
     };
     final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
-    case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
+    case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.eq(null))
       scala.None
     else
       Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y))

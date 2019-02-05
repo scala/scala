@@ -74,7 +74,7 @@ package extest {
 }
   """
 
-  override def check(source: String, unit: global.CompilationUnit) {
+  override def check(source: String, unit: global.CompilationUnit): Unit = {
     getPackage(TermName("extest")).moduleClass.info.decls.toList.filter(_.isType).map(_.initialize).sortBy(_.name.toString) foreach { clazz =>
       exitingTyper {
         clazz.info

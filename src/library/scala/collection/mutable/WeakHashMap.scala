@@ -1,24 +1,27 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
 package mutable
 
-import generic._
 import convert.Wrappers._
 
 /** A hash map with references to entries which are weakly reachable. Entries are
  *  removed from this map when the key is no longer (strongly) referenced. This class wraps
  *  `java.util.WeakHashMap`.
  *
- *  @tparam A      type of keys contained in this map
- *  @tparam B      type of values associated with the keys
+ *  @tparam K      type of keys contained in this map
+ *  @tparam V      type of values associated with the keys
  *
  *  @since 2.8
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#weak-hash-maps "Scala's Collection Library overview"]]
@@ -26,29 +29,25 @@ import convert.Wrappers._
  *
  *  @define Coll `WeakHashMap`
  *  @define coll weak hash map
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `WeakHashMap[A, B]` if the elements contained in the resulting collection are
- *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[WeakHashMap, (A, B), WeakHashMap[A, B]]`
- *    is defined in object `WeakHashMap`. Otherwise, `That` resolves to the most specific type that doesn't have
- *    to contain pairs of type `(A, B)`, which is `Iterable`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `WeakHashMap`.
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
-			   with JMapWrapperLike[A, B, WeakHashMap[A, B]] {
-  override def empty = new WeakHashMap[A, B]
+@SerialVersionUID(3L)
+class WeakHashMap[K, V] extends JMapWrapper[K, V](new java.util.WeakHashMap)
+    with JMapWrapperLike[K, V, WeakHashMap, WeakHashMap[K, V]] {
+  override def empty = new WeakHashMap[K, V]
+  override def mapFactory: MapFactory[WeakHashMap] = WeakHashMap
+  override protected[this] def stringPrefix = "WeakHashMap"
 }
 
 /** $factoryInfo
  *  @define Coll `WeakHashMap`
  *  @define coll weak hash map
  */
-object WeakHashMap extends MutableMapFactory[WeakHashMap] {
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), WeakHashMap[A, B]] = new MapCanBuildFrom[A, B]
-  def empty[A, B]: WeakHashMap[A, B] = new WeakHashMap[A, B]
+@SerialVersionUID(3L)
+object WeakHashMap extends MapFactory[WeakHashMap] {
+  def empty[K, V]: WeakHashMap[K,V] = new WeakHashMap[K, V]
+  def from[K, V](it: collection.IterableOnce[(K, V)]): WeakHashMap[K,V] = Growable.from(empty[K, V], it)
+  def newBuilder[K, V]: Builder[(K, V), WeakHashMap[K,V]] = new GrowableBuilder(WeakHashMap.empty[K, V])
 }
 

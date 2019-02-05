@@ -5,6 +5,6 @@ import scala.reflect.runtime.universe._
  */
 class C {
 
-  def f[T: TypeTag, S: TypeTag](x: T, y: S)(implicit p: C) { }
+  def f[T: TypeTag, S: TypeTag](x: T, y: S)(implicit p: C): Unit = { }
 
 }

@@ -81,14 +81,14 @@ object TestMutable2 {
   println("m2_i1 = " + (t1 == b1))
   println("m2_i2 = " + (t2 == b2))
   println("m2_i3 = " + (t3 == b3))
-  println("m2_f0 = " + (t0.from(42) == b0.from(42)))
-  println("m2_f1 = " + (t1.from(42) == b1.from(42)))
-  println("m2_f2 = " + (t2.from(42) == b2.from(42)))
-  println("m2_f3 = " + (t3.from(42) == b3.from(42)))
-  println("m2_t0 = " + (t0.to(195) == b0.to(195)))
-  println("m2_t1 = " + (t1.to(195) == b1.to(195)))
-  println("m2_t2 = " + (t2.to(195) == b2.to(195)))
-  println("m2_t3 = " + (t3.to(195) == b3.to(195)))
+  println("m2_f0 = " + (t0.rangeFrom(42) == b0.rangeFrom(42)))
+  println("m2_f1 = " + (t1.rangeFrom(42) == b1.rangeFrom(42)))
+  println("m2_f2 = " + (t2.rangeFrom(42) == b2.rangeFrom(42)))
+  println("m2_f3 = " + (t3.rangeFrom(42) == b3.rangeFrom(42)))
+  println("m2_t0 = " + (t0.rangeTo(195) == b0.rangeTo(195)))
+  println("m2_t1 = " + (t1.rangeTo(195) == b1.rangeTo(195)))
+  println("m2_t2 = " + (t2.rangeTo(195) == b2.rangeTo(195)))
+  println("m2_t3 = " + (t3.rangeTo(195) == b3.rangeTo(195)))
   println("m2_r0 = " + (t0.range(43,194) == b0.range(43,194)))
   println("m2_r1 = " + (t1.range(43,194) == b1.range(43,194)))
   println("m2_r2 = " + (t2.range(43,194) == b2.range(43,194)))
@@ -191,18 +191,24 @@ object TestImmutable2 {
   println("i2_i1 = " + (t1 == b1))
   println("i2_i2 = " + (t2 == b2))
   println("i2_i3 = " + (t3 == b3))
-  println("i2_f0 = " + (t0.from(42) == b0.from(42)))
-  println("i2_f1 = " + (t1.from(42) == b1.from(42)))
-  println("i2_f2 = " + (t2.from(42) == b2.from(42)))
-  println("i2_f3 = " + (t3.from(42) == b3.from(42)))
-  println("i2_t0 = " + (t0.to(195) == b0.to(195)))
-  println("i2_t1 = " + (t1.to(195) == b1.to(195)))
-  println("i2_t2 = " + (t2.to(195) == b2.to(195)))
-  println("i2_t3 = " + (t3.to(195) == b3.to(195)))
+  println("i2_f0 = " + (t0.rangeFrom(42) == b0.rangeFrom(42)))
+  println("i2_f1 = " + (t1.rangeFrom(42) == b1.rangeFrom(42)))
+  println("i2_f2 = " + (t2.rangeFrom(42) == b2.rangeFrom(42)))
+  println("i2_f3 = " + (t3.rangeFrom(42) == b3.rangeFrom(42)))
+  println("i2_t0 = " + (t0.rangeTo(195) == b0.rangeTo(195)))
+  println("i2_t1 = " + (t1.rangeTo(195) == b1.rangeTo(195)))
+  println("i2_t2 = " + (t2.rangeTo(195) == b2.rangeTo(195)))
+  println("i2_t3 = " + (t3.rangeTo(195) == b3.rangeTo(195)))
   println("i2_r0 = " + (t0.range(77,194) == b0.range(77,194)))
   println("i2_r1 = " + (t1.range(77,194) == b1.range(77,194)))
   println("i2_r2 = " + (t2.range(77,194) == b2.range(77,194)))
   println("i2_r3 = " + (t3.range(77,194) == b3.range(77,194)))
+  println
+}
+
+object TestImmutable3 {
+  import scala.collection.immutable.BitSet
+  BitSet(125).filter{ xi => println(xi); true } // scala/bug#11380
   println
 }
 
@@ -213,6 +219,7 @@ object Test extends App {
   // TestMutable4
   TestImmutable
   TestImmutable2
+  TestImmutable3
 }
 
 //############################################################################

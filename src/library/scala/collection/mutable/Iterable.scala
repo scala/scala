@@ -1,38 +1,34 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-package scala
-package collection
-package mutable
-
-import generic._
-
-/** A base trait for iterable collections that can be mutated.
- *  $iterableInfo
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-trait Iterable[A] extends Traversable[A]
-//                     with GenIterable[A]
-                     with scala.collection.Iterable[A]
-                     with GenericTraversableTemplate[A, Iterable]
-                     with IterableLike[A, Iterable[A]]
-{
-  override def companion: GenericCompanion[Iterable] = Iterable
-  override def seq: Iterable[A] = this
+
+package scala.collection.mutable
+
+import scala.collection.IterableFactory
+
+trait Iterable[A]
+  extends collection.Iterable[A]
+    with collection.IterableOps[A, Iterable, Iterable[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
-/** $factoryInfo
- *  The current default implementation of a $Coll is an `ArrayBuffer`.
- *  @define coll mutable iterable collection
- *  @define Coll `mutable.Iterable`
- */
-object Iterable extends TraversableFactory[Iterable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
-}
+/**
+  * $factoryInfo
+  * @define coll mutable collection
+  * @define Coll `mutable.Iterable`
+  */
+@SerialVersionUID(3L)
+object Iterable extends IterableFactory.Delegate[Iterable](ArrayBuffer)
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]

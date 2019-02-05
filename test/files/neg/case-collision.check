@@ -1,12 +1,27 @@
-case-collision.scala:5: warning: Class foo.BIPPY differs only in case from foo.Bippy. Such classes will overwrite one another on case-insensitive filesystems.
+case-collision.scala:7: warning: Generated class foo.BIPPY differs only in case from foo.Bippy.
+  Such classes will overwrite one another on case-insensitive filesystems.
 class BIPPY
       ^
-case-collision.scala:8: warning: Class foo.DINGO$ differs only in case from foo.Dingo$. Such classes will overwrite one another on case-insensitive filesystems.
+case-collision.scala:10: warning: Generated class foo.DINGO$ differs only in case from foo.Dingo$.
+  Such classes will overwrite one another on case-insensitive filesystems.
 object DINGO
        ^
-case-collision.scala:11: warning: Class foo.HyRaX$ differs only in case from foo.Hyrax$. Such classes will overwrite one another on case-insensitive filesystems.
+case-collision.scala:10: warning: Generated class foo.DINGO differs only in case from foo.Dingo.
+  Such classes will overwrite one another on case-insensitive filesystems.
+object DINGO
+       ^
+case-collision.scala:13: warning: Generated class foo.HyRaX$ differs only in case from foo.Hyrax$.
+  Such classes will overwrite one another on case-insensitive filesystems.
 object HyRaX
        ^
+case-collision.scala:13: warning: Generated class foo.HyRaX differs only in case from foo.Hyrax.
+  Such classes will overwrite one another on case-insensitive filesystems.
+object HyRaX
+       ^
+case-collision.scala:16: warning: Generated class foo.wackO differs only in case from foo.Wacko.
+  Such classes will overwrite one another on case-insensitive filesystems.
+object wackO
+       ^
 error: No warnings can be incurred under -Xfatal-warnings.
-three warnings found
+6 warnings found
 one error found

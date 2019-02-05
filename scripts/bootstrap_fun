@@ -1,0 +1,218 @@
+# Bootstrap procedure
+#  - determine scala version
+#  - optionally build a fresh "starr", publish to BOOTSTRAP_REPO_DIR
+#  - build minimal core (aka "locker") of Scala, publish to BOOTSTRAP_REPO_DIR
+#  - build Scala (aka "quick") using locker, publish to scala-integration (or sonatype for releases)
+#  - run tests
+
+
+# Specifying the Scala version:
+#  - To build a release (enables publishing to sonatype):
+#    - Specify SCALA_VER_BASE and optionally SCALA_VER_SUFFIX. The version is SCALA_VER=$SCALA_VER_BASE$SCALA_VER_SUFFIX.
+#    - After building a release, the jenkins job provides an updated versions.properties file as artifact.
+#      Put this file in the Scala repo and create a pull request, also update `baseVersion in Global` in build.sbt.
+#
+# - Otherwise, an integration build is performed:
+#    - version number is read from the build.sbt, extended with -[bin|pre]-$sha
+
+
+# Credentials
+#  - `PRIVATE_REPO_PASS` password for `scala-ci` user on scala-ci.typesafe.com/artifactory
+#  - `SONA_USER` / `SONA_PASS` for sonatype
+
+
+publishPrivateTask=${publishPrivateTask-"publish"}
+publishSonatypeTaskCore=${publishSonatypeTaskCore-"publishSigned"}
+
+clean="clean" # TESTING leave empty to speed up testing (on jenkins/locally; on travis it's a fresh machine every time)
+
+## BUILD STEPS:
+
+determineScalaVersion() {
+  cd $WORKSPACE
+  parseScalaProperties "versions.properties"
+
+  # each of the branches below defines the following vars: SCALA_VER_BASE, SCALA_VER_SUFFIX, publishToSonatype
+  if [ -z "$SCALA_VER_BASE" ]; then
+    echo "No SCALA_VER_BASE specified."
+
+    travis_fold_start determineScalaVersion "Determining Scala version"
+    $SBT_CMD $sbtArgs 'set baseVersionSuffix in Global := "SHA"' generateBuildCharacterPropertiesFile
+    travis_fold_end determineScalaVersion
+    parseScalaProperties "buildcharacter.properties"
+    SCALA_VER_BASE="$maven_version_base"
+    SCALA_VER_SUFFIX="$maven_version_suffix"
+    publishToSonatype="no"
+  else
+    publishToSonatype=${publishToSonatype-"yes"} # unless forced previously, publish
+  fi
+
+  SCALA_VER="$SCALA_VER_BASE$SCALA_VER_SUFFIX"
+
+  echo "version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
+  echo "sbtDistVersionOverride=-Dproject.version=$SCALA_VER" >> $WORKSPACE/jenkins.properties
+
+  echo "Building Scala $SCALA_VER."
+}
+
+createNetrcFile() {
+  local netrcFile=$HOME/`basename $1`-netrc
+  grep 'host=' $1 | sed 's/host=\(.*\)/machine \1/'          >  $netrcFile
+  grep 'user=' $1 | sed 's/user=\(.*\)/login \1/'            >> $netrcFile
+  grep 'password=' $1 | sed 's/password=\(.*\)/password \1/' >> $netrcFile
+}
+
+# deletes existing artifacts matching the $SCALA_VER from the repository passed as argument
+removeExistingBuilds() {
+  local repoUrl=$1
+  local repoPrefix="https://scala-ci.typesafe.com/artifactory/"
+  if [[ $repoUrl == "$repoPrefix"* ]]; then
+    local repoId=${1#$repoPrefix}
+    local storageApiUrl="${repoPrefix}api/storage/$repoId"
+
+    createNetrcFile "$HOME/.credentials-private-repo"
+    local netrcFile="$HOME/.credentials-private-repo-netrc"
+
+    # "module" is not a scala module, but an artifact of a bootstrap build. the variable
+    # contains: "org/scala-lang/modules", "org/scala-lang/scala-compiler", "org/scala-lang/scala-library", ...
+    local scalaLangModules=`curl -s $storageApiUrl/org/scala-lang | jq -r '.children | .[] | "org/scala-lang" + .uri' | grep -v actors-migration`
+
+    for module in $scalaLangModules; do
+      local artifacts=`curl -s $storageApiUrl/$module | jq -r ".children | .[] | select(.uri | endswith(\"$SCALA_VER\")) | .uri"`
+      for artifact in $artifacts; do
+        echo "Deleting $repoUrl$module$artifact"
+        curl -s --netrc-file $netrcFile -X DELETE $repoUrl$module$artifact
+      done
+    done
+  else
+    echo "Unknown repo, not deleting anything: $repoUrl"
+  fi
+}
+
+pollForStagingReposClosed() {
+  OK=false
+
+  for i in $(seq 1 10); do
+    OK=true
+    for repo in $1; do
+      if [[ "$(st_stagingRepoStatus $repo)" != "closed" ]]; then
+        echo "Staging repo $repo not yet closed, waiting 30 seconds ($i / 10)"
+        OK=false
+        break
+      fi
+    done
+    if [ "$OK" = "true" ]; then break; fi
+    sleep 30s
+  done
+
+  if [ "$OK" = "false" ]; then
+    echo "Failed to close staging repos in 5 minutes: $1"
+    exit 1
+  fi
+}
+
+closeStagingRepos() {
+  if [ "$publishToSonatype" = "yes" ]; then
+      open=$(st_stagingReposOpen)
+      allOpenUrls=$(echo $open | jq  '.repositoryURI' | tr -d \")
+      allOpen=$(echo $open | jq  '.repositoryId' | tr -d \")
+
+      echo "Closing open repos: $allOpen"
+      for repo in $allOpen; do st_stagingRepoClose $repo; done
+
+      # ensure the release is available on sonatype staging before triggering scala-dist
+      pollForStagingReposClosed "$allOpen"
+
+      echo "Closed sonatype staging repos: $allOpenUrls."
+  fi
+}
+
+#### STARR (optional)
+
+buildStarr() {
+  clearIvyCache
+  cd $WORKSPACE
+
+  STARR_DIR=./scala-starr
+  STARR_VER_SUFFIX="-starr-$(git rev-parse --short $STARR_REF)"
+  STARR_VER=$SCALA_VER$STARR_VER_SUFFIX
+  rm -rf "$STARR_DIR"
+  (
+    git clone "file://$(pwd)" $STARR_DIR
+    cd $STARR_DIR
+    git checkout $STARR_REF
+    travis_fold_start starr "Building starr"
+    $SBT_CMD -no-colors $sbtArgs "setupBootstrapStarr \"$BOOTSTRAP_REPO_DIR\" $STARR_VER" $clean publish
+    travis_fold_end starr
+  )
+  SET_STARR=-Dstarr.version=$STARR_VER
+}
+
+#### LOCKER
+
+# Publish core for bootstrapping.
+# TODO: now that we no longer build modules, we can use a version number with a `-locker` suffix.
+# Before that was not possible because the module artifacts had a pom dependency on that version.
+buildLocker() {
+  clearIvyCache
+  cd $WORKSPACE
+
+  travis_fold_start locker "Building locker"
+  $SBT_CMD -no-colors $sbtArgs \
+    $SET_STARR \
+    "setupBootstrapLocker \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
+    $clean publish
+  travis_fold_end locker
+}
+
+#### QUICK
+
+invokeQuickInternal() {
+  cd $WORKSPACE
+  setupCmd="$1"
+  shift
+
+  travis_fold_start quick "Building bootstrapped"
+  $SBT_CMD $sbtArgs \
+      -Dstarr.version=$SCALA_VER \
+      "$setupCmd" \
+      "$@"
+  travis_fold_end quick
+}
+
+invokeQuick() {
+  invokeQuickInternal \
+    "setupBootstrapQuick $integrationRepoUrl $SCALA_VER \"$BOOTSTRAP_REPO_DIR\"" \
+    "$@"
+}
+
+buildQuick() {
+  clearIvyCache
+  if [ "$publishToSonatype" = "yes" ]; then
+    invokeQuickInternal \
+      'set pgpSigningKey in Global := Some(new java.math.BigInteger("C03EF1D7D692BCFF", 16).longValue)' \
+      'set pgpPassphrase in Global := Some(Array.empty)' \
+      "setupBootstrapPublish \"$BOOTSTRAP_REPO_DIR\" $SCALA_VER" \
+      $clean $publishSonatypeTaskCore
+  else
+    invokeQuick $clean publish
+  fi
+
+  closeStagingRepos
+}
+
+testStability() {
+  # Run stability tests using the just built version as "quick" and a new version as "strap"
+  travis_fold_start stab "Testing stability"
+  cd $WORKSPACE
+
+  mv build/quick quick1
+  rm -rf build/
+
+  invokeQuick $clean library/compile reflect/compile compiler/compile
+
+  mv build/quick build/strap
+  mv quick1 build/quick
+  scripts/stability-test.sh
+  travis_fold_end stab
+}

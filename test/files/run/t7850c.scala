@@ -4,7 +4,7 @@ class Casey1() extends T[Boolean, String]
 object Casey1 { def unapply(a: Casey1) = a }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val c @ Casey1(x) = new Casey1()
     assert(x == c.get)
   }

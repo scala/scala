@@ -1,3 +1,6 @@
+
+// scalac: -Yrecursion 1
+//
 object ProjTest {
   trait MInt { type Type }
   trait _0 extends MInt { type Type = Boolean }

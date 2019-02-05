@@ -3,7 +3,7 @@ import scala.tools.partest.DirectTest
 object Test extends DirectTest {
 
   override def extraSettings: String =
-    s"-usejavacp -d ${testOutput.path}"
+    s"-usejavacp -d ${testOutput.path} -cp ${testOutput.path} -d ${testOutput.path}"
 
   override def code = """
 object O extends C {

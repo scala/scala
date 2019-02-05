@@ -21,7 +21,7 @@ object Test {
   def todo2[@sp(Int) A, B <: AnyRef](a: A, b: String)      = { val c = caller; print(""); c }
   def todo3[B <: List[A], @specialized(Int) A](a: A, b: B) = { val c = caller; print(""); c }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val s = ""
     val result =
       s"""|- Unspecialized type args

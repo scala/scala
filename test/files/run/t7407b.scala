@@ -1,6 +1,6 @@
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(foo(true))
     println(foo(false))
   }

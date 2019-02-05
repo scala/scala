@@ -1,64 +1,38 @@
-# This is for forcibly stopping the job from a subshell (see test
-# below).
-trap "exit 1" TERM
-export TOP_PID=$$
 set -e
 
-# Known problems : does not fare well with interrupted, partial
-# compilations. We should perhaps have a multi-dependency version
-# of do_i_have below
+# The scala/scala checkout directory (set by Jenkins, or `/home/travis/build/scala/scala` on travis)
+WORKSPACE="${WORKSPACE-`pwd`}"
 
-LOGGINGDIR="$WORKSPACE/logs"
-mkdir -p $LOGGINGDIR
+# On Jenkins, each job needs its own ivy2 cache to avoid conflicts between jobs. On travis, it's ~/.ivy2.
+if [ "$TRAVIS" = "true" ]; then
+  IVY2_DIR="$HOME/.ivy2"
+else
+  IVY2_DIR="$WORKSPACE/.ivy2"
+fi
 
-unset SBT_HOME
-SBT_HOME="$WORKSPACE/.sbt"
-mkdir -p $SBT_HOME
-IVY_CACHE="$WORKSPACE/.ivy2"
-mkdir -p $IVY_CACHE
-rm -rf $IVY_CACHE/cache/org.scala-lang
+SBT_CMD=${SBT_CMD-sbt}
+SBT_CMD="$SBT_CMD -sbt-version 1.2.7"
 
-SBT_CMD=${sbtCmd-sbt}
-SBT_CMD="$SBT_CMD -sbt-version 0.13.16"
+# repo to publish builds
+integrationRepoUrl=${integrationRepoUrl-"https://scala-ci.typesafe.com/artifactory/scala-integration/"}
 
-# temp dir where all 'non-build' operation are performed
+# only used on jenkins
+sbtRepositoryConfig="$WORKSPACE/scripts/sbt-repositories-config"
+jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
+
+# used by `checkAvailability`
 TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
 TMP_DIR="${TMP_ROOT_DIR}/tmp"
 mkdir "${TMP_DIR}"
 
+# Used for publishing starr and locker
+BOOTSTRAP_REPO_DIR="${TMP_ROOT_DIR}/bootstrap-repo"
+mkdir "${BOOTSTRAP_REPO_DIR}"
 
-# detect sed version and how to enable extended regexes
-SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
+addIntegrationResolver="set resolvers in Global += \"scala-pr\" at \"$integrationRepoUrl\""
+addBootstrapResolver="set resolvers in Global += \"scala-bootstrap\" at \"file://$BOOTSTRAP_REPO_DIR\""
 
-
-
-# :docstring test:
-# Usage: test <argument ..>
-# Executes <argument ..>, logging the launch of the command to the
-# main log file, and kills global script execution with the TERM
-# signal if the commands ends up failing.
-# DO NOT USE ON FUNCTIONS THAT DECLARE VARIABLES,
-# AS YOU'LL BE RUNNING IN A SUBSHELL AND VARIABLE DECLARATIONS WILL BE LOST
-# :end docstring:
-
-function test() {
-    echo "### $@"
-    "$@"
-    status=$?
-    if [ $status -ne 0 ]; then
-        say "### ERROR with $1"
-        kill -s TERM $TOP_PID
-    fi
-}
-
-# :docstring say:
-# Usage: say <argument ..>
-# Prints <argument ..> to both console and the main log file.
-# :end docstring:
-
-function say(){
-    (echo "$@") | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-}
+stApi="https://oss.sonatype.org/service/local"
 
 # General debug logging
 # $* - message
@@ -67,12 +41,12 @@ function debug () {
 }
 
 function parseScalaProperties(){
-  propFile="$baseDir/$1"
+  propFile="$WORKSPACE/$1"
   if [ ! -f $propFile ]; then
     echo "Property file $propFile not found."
     exit 1
   else
-    awk -f "$scriptsDir/readproperties.awk" "$propFile" > "$propFile.sh"
+    awk -f "scripts/readproperties.awk" "$propFile" > "$propFile.sh"
     . "$propFile.sh" # yeah yeah, not that secure, improvements welcome (I tried, but bash made me cry again)
   fi
 }
@@ -88,59 +62,9 @@ function parseScalaProperties(){
 function checkAvailability () {
   pushd "${TMP_DIR}"
   rm -rf *
-
-# pom file for the test project
-  cat > pom.xml << EOF
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.typesafe</groupId>
-  <artifactId>typesafeDummy</artifactId>
-  <packaging>war</packaging>
-  <version>1.0-SNAPSHOT</version>
-  <name>Dummy</name>
-  <url>http://127.0.0.1</url>
-  <dependencies>
-    <dependency>
-      <groupId>$1</groupId>
-      <artifactId>$2</artifactId>
-      <version>$3</version>
-    </dependency>
-  </dependencies>
-  <repositories>
-    <repository>
-      <id>sonatype.snapshot</id>
-      <name>Sonatype maven snapshot repository</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-      <snapshots>
-        <updatePolicy>daily</updatePolicy>
-      </snapshots>
-    </repository>
-EOF
-
-  if [ -n "$4" ]
-  then
-# adds the extra repository
-    cat >> pom.xml << EOF
-    <repository>
-      <id>extrarepo</id>
-      <name>extra repository</name>
-      <url>$4</url>
-    </repository>
-EOF
-  fi
-
-  cat >> pom.xml << EOF
-  </repositories>
-</project>
-EOF
-
   set +e
-  mvn "${MAVEN_ARGS[@]}" compile &> "${TMP_DIR}/mvn.log"
+  mvn -q "${MAVEN_ARGS[@]}" -DremoteRepositories="$4" -DgroupId="$1" -DartifactId="$2" -Dversion="$3" -Dtransitive=false dependency:get
   RES=$?
-  # Quiet the maven, but allow diagnosing problems.
-  grep -i downloading "${TMP_DIR}/mvn.log"
-  grep -i exception "${TMP_DIR}/mvn.log"
-  grep -i error "${TMP_DIR}/mvn.log"
   set -e
 
 # log the result
@@ -155,23 +79,115 @@ EOF
   popd
 }
 
+# Only used on Jenkins
 # Generate a repositories file with all allowed repositories in our build environment.
 # Takes a variable number of additional repositories as argument.
-# See http://www.scala-sbt.org/0.13/docs/Proxy-Repositories.html
+# See https://www.scala-sbt.org/1.x/docs/Proxy-Repositories.html
 function generateRepositoriesConfig() {
-  jcenterCacheUrl=${jcenterCacheUrl-"https://scala-ci.typesafe.com/artifactory/jcenter/"}
-  sbtRepositoryConfig="$scriptsDir/sbt-repositories-config"
   echo > "$sbtRepositoryConfig" '[repositories]'
   if [[ $# -gt 0 ]]; then
     for i in $(seq 1 $#); do
       echo >> "$sbtRepositoryConfig" "  script-repo-$i: ${!i}"
     done
   fi
+
   cat >> "$sbtRepositoryConfig" << EOF
   jcenter-cache: $jcenterCacheUrl
-  typesafe-ivy-releases: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
-  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-  maven-central
   local
+  maven-central
+  typesafe-ivy-releases-boot: https://repo.lightbend.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
+  typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
+  sbt-plugin-releases: https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
 EOF
+}
+
+
+# https://github.com/travis-ci/docs-travis-ci-com/issues/949
+travis_fold_start() {
+  echo ""
+  echo -e "travis_fold:start:$1\033[33;1m$2\033[0m"
+}
+
+travis_fold_end() {
+  echo -e "\ntravis_fold:end:$1\r"
+  echo ""
+}
+
+
+##### git
+gfxd() {
+  git clean -fxd # TESTING
+}
+
+update() {
+  [[ -d $WORKSPACE ]] || mkdir -p $WORKSPACE
+  cd $WORKSPACE
+
+  if [ ! -d $WORKSPACE/$2 ]; then git clone "https://github.com/$1/$2.git"; fi
+
+  cd $2
+
+  git fetch --tags "https://github.com/$1/$2.git"
+  (git fetch "https://github.com/$1/$2.git" $3 && git checkout -fq FETCH_HEAD) #|| git checkout -fq $3 # || fallback is for local testing on tag
+  git reset --hard
+}
+
+##### sonatype interface
+
+st_curl(){
+  curl -H "Content-Type: application/json" -H "accept: application/json,application/vnd.siesta-error-v1+json,application/vnd.siesta-validation-errors-v1+json"  -K ~/.sonatype-curl -s -o - $@
+}
+
+st_stagingRepos() {
+ st_curl "$stApi/staging/profile_repositories" | jq '.data[] | select(.profileName == "org.scala-lang")'
+}
+
+st_stagingReposOpen() {
+ st_stagingRepos | jq 'select(.type == "open")'
+}
+
+st_stagingRepoStatus() {
+  st_stagingRepos | jq -r "select(.repositoryId == \"$1\") | .type"
+}
+
+st_stagingRepoDrop() {
+  repo=$1
+  message=$2
+  echo "{\"data\":{\"description\":\"$message\",\"stagedRepositoryIds\":[\"$repo\"]}}" | st_curl -X POST -d @- "$stApi/staging/bulk/drop"
+}
+
+st_stagingRepoClose() {
+  repo=$1
+  message=$2
+  echo "{\"data\":{\"description\":\"$message\",\"stagedRepositoryIds\":[\"$repo\"]}}" | st_curl -X POST -d @- "$stApi/staging/bulk/close"
+}
+
+#### sbt tools
+
+clearIvyCache() {
+  travis_fold_start clearIvy "Clearing ivy cache"
+  rm -fv $IVY2_DIR/exclude_classifiers $IVY2_DIR/exclude_classifiers.lock
+  if [ -d $IVY2_DIR ]; then find $IVY2_DIR -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
+  if [ -d $HOME/.sbt ]; then find $HOME/.sbt -name "*compiler-interface*$SCALA_VER*" | xargs rm -rfv; fi
+  travis_fold_end clearIvy
+}
+
+#### travis
+
+triggerScalaDist() {
+  local jsonTemplate='{ "request": { "branch": "%s", "message": "Scala Dist %s", "config": { "before_install": "export version=%s mode=release scala_sha=%s" } } }'
+  local json=$(printf "$jsonTemplate" "$TRAVIS_BRANCH" "$SCALA_VER" "$SCALA_VER" "$TRAVIS_COMMIT")
+
+  local curlStatus=$(curl \
+    -s -o /dev/null -w "%{http_code}" \
+    -H "Travis-API-Version: 3" \
+    -H "Authorization: token $TRAVIS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$json" \
+    https://api.travis-ci.org/repo/scala%2Fscala-dist/requests)
+
+  [[ "$curlStatus" == "202" ]] || {
+    echo "failed to start job"
+    exit 1
+  }
 }

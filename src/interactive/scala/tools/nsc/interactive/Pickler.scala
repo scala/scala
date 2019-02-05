@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.interactive
 
 import Lexer._
@@ -33,7 +45,7 @@ abstract class Pickler[T] {
    *  @param  wr   the writer to which pickled form is written
    *  @param  x    the value to write
    */
-  def pickle(wr: Writer, x: T)
+  def pickle(wr: Writer, x: T): Unit
 
   /** Reads value from pickled form.
    *
@@ -237,11 +249,11 @@ object Pickler {
   /** A pickler the handles instances of classes that have an empty constructor.
    *  It represents than as `$new ( <name of class> )`.
    *  When unpickling, a new instance of the class is created using the empty
-   *  constructor of the class via `Class.forName(<name of class>).newInstance()`.
+   *  constructor of the class via `Class.forName(<name of class>).getConstructor().newInstance()`.
    */
   def javaInstancePickler[T <: AnyRef]: Pickler[T] =
     (stringPickler labelled "$new")
-      .wrapped { name => Class.forName(name).newInstance().asInstanceOf[T] } { _.getClass.getName }
+      .wrapped { name => Class.forName(name).getConstructor().newInstance().asInstanceOf[T] } { _.getClass.getName }
 
   /** A picklers that handles iterators. It pickles all values
    *  returned by an iterator separated by commas.
@@ -258,7 +270,7 @@ object Pickler {
    */
   implicit def iterPickler[T: Pickler]: Pickler[Iterator[T]] = new Pickler[Iterator[T]] {
     lazy val p = pkl[T]
-    def pickle(wr: Writer, xs: Iterator[T]) {
+    def pickle(wr: Writer, xs: Iterator[T]): Unit = {
       var first = true
       for (x <- xs) {
         if (first) first = false else wr.write(',')
@@ -311,7 +323,7 @@ object Pickler {
 
   /** A pickler for values of type `Unit`, represented by the empty character string */
   implicit val unitPickler: Pickler[Unit] = new Pickler[Unit] {
-    def pickle(wr: Writer, x: Unit) {}
+    def pickle(wr: Writer, x: Unit): Unit = ()
     def unpickle(rd: Lexer): Unpickled[Unit] = UnpickleSuccess(())
   }
 

@@ -1,11 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2015, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -49,7 +52,7 @@ private[scala] trait PropertiesTrait {
 
   def propIsSet(name: String)                   = System.getProperty(name) != null
   def propIsSetTo(name: String, value: String)  = propOrNull(name) == value
-  def propOrElse(name: String, alt: String)     = System.getProperty(name, alt)
+  def propOrElse(name: String, alt: => String)     = Option(System.getProperty(name)).getOrElse(alt)
   def propOrEmpty(name: String)                 = propOrElse(name, "")
   def propOrNull(name: String)                  = propOrElse(name, null)
   def propOrNone(name: String)                  = Option(propOrNull(name))
@@ -57,13 +60,13 @@ private[scala] trait PropertiesTrait {
   def setProp(name: String, value: String)      = System.setProperty(name, value)
   def clearProp(name: String)                   = System.clearProperty(name)
 
-  def envOrElse(name: String, alt: String)      = Option(System getenv name) getOrElse alt
+  def envOrElse(name: String, alt: => String)      = Option(System getenv name) getOrElse alt
   def envOrNone(name: String)                   = Option(System getenv name)
 
-  def envOrSome(name: String, alt: Option[String])       = envOrNone(name) orElse alt
+  def envOrSome(name: String, alt: => Option[String])       = envOrNone(name) orElse alt
 
   // for values based on propFilename, falling back to System properties
-  def scalaPropOrElse(name: String, alt: String): String = scalaPropOrNone(name).getOrElse(alt)
+  def scalaPropOrElse(name: String, alt: => String): String = scalaPropOrNone(name).getOrElse(alt)
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
   def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name)).orElse(propOrNone("scala." + name))
 
@@ -228,7 +231,7 @@ private[scala] trait PropertiesTrait {
   def isJavaAtLeast(version: Int): Boolean = isJavaAtLeast(math.max(version, 0).toString)
 
   // provide a main method so version info can be obtained by running this
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val writer = new PrintWriter(Console.err, true)
     writer println versionMsg
   }

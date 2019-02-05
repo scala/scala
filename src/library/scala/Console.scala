@@ -1,15 +1,19 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2016, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
 import java.io.{ BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader }
-import scala.io.{ AnsiColor, StdIn }
+import scala.io.AnsiColor
 import scala.util.DynamicVariable
 
 /** Implements functionality for printing Scala values on the terminal. For reading values
@@ -106,7 +110,7 @@ import scala.util.DynamicVariable
  *  </table>
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 03/09/2003
+ *  @since   1.0
  *
  *  @groupname console-output Console Output
  *  @groupprio console-output 30
@@ -123,9 +127,9 @@ import scala.util.DynamicVariable
  *
  */
 object Console extends AnsiColor {
-  private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
-  private val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
-  private val inVar  = new DynamicVariable[BufferedReader](
+  private[this] val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
+  private[this] val errVar = new DynamicVariable[PrintStream](java.lang.System.err)
+  private[this] val inVar  = new DynamicVariable[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
   protected def setOutDirect(out: PrintStream): Unit  = outVar.value = out
@@ -243,7 +247,7 @@ object Console extends AnsiColor {
    *  @param obj the object to print; may be null.
    *  @group console-output
    */
-  def print(obj: Any) {
+  def print(obj: Any): Unit = {
     out.print(if (null == obj) "null" else obj.toString())
   }
 
@@ -252,19 +256,19 @@ object Console extends AnsiColor {
    *  to be made visible on the terminal.
     * @group console-output
    */
-  def flush() { out.flush() }
+  def flush(): Unit = { out.flush() }
 
   /** Prints a newline character on the default output.
     * @group console-output
    */
-  def println() { out.println() }
+  def println(): Unit = { out.println() }
 
   /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
    *  @group console-output
    */
-  def println(x: Any) { out.println(x) }
+  def println(x: Any): Unit = { out.println(x) }
 
   /** Prints its arguments as a formatted string to the default output,
    *  based on a string pattern (in a fashion similar to printf in C).
@@ -276,5 +280,5 @@ object Console extends AnsiColor {
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *  @group console-output
    */
-  def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
+  def printf(text: String, args: Any*): Unit = { out.print(text format (args : _*)) }
 }

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -14,7 +18,8 @@ object Option {
 
   /** An implicit conversion that converts an option to an iterable value
    */
-  implicit def option2Iterable[A](xo: Option[A]): Iterable[A] = xo.toList
+  implicit def option2Iterable[A](xo: Option[A]): Iterable[A] =
+    if (xo.isEmpty) Iterable.empty else Iterable.single(xo.get)
 
   /** An Option factory which creates Some(x) if the argument is not null,
    *  and None if it is null.
@@ -82,6 +87,19 @@ object Option {
  *  }
  *  }}}
  *
+ * Interacting with code that can occasionally return null can be
+ * safely wrapped in $option to become $none and $some otherwise. {{{
+ * val abc = new java.util.HashMap[Int, String]
+ * abc.put(1, "A")
+ * bMaybe = Option(abc.get(2))
+ * bMaybe match {
+ *   case Some(b) =>
+ *     println(s"Found $b")
+ *   case None =>
+ *     println("Not found")
+ * }
+ * }}}
+ *
  *  @note Many of the methods in here are duplicative with those
  *  in the Traversable hierarchy, but they are duplicated for a reason:
  *  the implicit conversion tends to leave one with an Iterable in
@@ -89,7 +107,7 @@ object Option {
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
- *  @version 1.1, 16/01/2007
+ *  @since   1.1
  *  @define none `None`
  *  @define some [[scala.Some]]
  *  @define option [[scala.Option]]
@@ -103,9 +121,6 @@ object Option {
  *  @define willNotTerminateInf
  *  @define collectExample
  *  @define undefinedorder
- *  @define thatinfo the class of the returned collection. In the standard library configuration, `That` is `Iterable[B]`
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the result class `That` from the current
- *    representation type `Repr` and the new element type `B`.
  */
 @SerialVersionUID(-114498752079829388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 sealed abstract class Option[+A] extends Product with Serializable {
@@ -266,7 +281,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  @see map
    *  @see flatMap
    */
-  @inline final def foreach[U](f: A => U) {
+  @inline final def foreach[U](f: A => U): Unit = {
     if (!isEmpty) f(this.get)
   }
 
@@ -300,6 +315,63 @@ sealed abstract class Option[+A] extends Product with Serializable {
    */
   @inline final def orElse[B >: A](alternative: => Option[B]): Option[B] =
     if (isEmpty) alternative else this
+
+  /** Returns a $some formed from this option and another option
+   *  by combining the corresponding elements in a pair.
+   *  If either of the two options is empty, $none is returned.
+   *
+   *  @example {{{
+   *  // Returns Option(("foo", "bar")) because both options are nonempty.
+   *  Some("foo") zip Some("bar")
+   *
+   *  // Returns None because `that` option is empty.
+   *  Some("foo") zip None
+   *
+   *  // Returns None because `this` option is empty.
+   *  None zip Some("bar")
+   *  }}}
+   *
+   *  @param  that   the options which is going to be zipped
+   */
+  final def zip[A1 >: A, B](that: Option[B]): Option[(A1, B)] =
+    if (isEmpty || that.isEmpty) None else Some((this.get, that.get))
+
+  /** Converts an Option of a pair into an Option of the first element and an Option of the second element.
+    *
+    *  @tparam A1    the type of the first half of the element pair
+    *  @tparam A2    the type of the second half of the element pair
+    *  @param asPair an implicit conversion which asserts that the element type
+    *                of this Option is a pair.
+    *  @return       a pair of Options, containing, respectively, the first and second half
+    *                of the element pair of this Option.
+    */
+  final def unzip[A1, A2](implicit asPair: A => (A1, A2)): (Option[A1], Option[A2]) = {
+    if (isEmpty)
+      (None, None)
+    else {
+      val e = asPair(this.get)
+      (Some(e._1), Some(e._2))
+    }
+  }
+
+  /** Converts an Option of a triple into three Options, one containing the element from each position of the triple.
+    *
+    *  @tparam A1      the type of the first of three elements in the triple
+    *  @tparam A2      the type of the second of three elements in the triple
+    *  @tparam A3      the type of the third of three elements in the triple
+    *  @param asTriple an implicit conversion which asserts that the element type
+    *                  of this Option is a triple.
+    *  @return         a triple of Options, containing, respectively, the first, second, and third
+    *                  elements from the element triple of this Option.
+    */
+  final def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (Option[A1], Option[A2], Option[A3]) = {
+    if (isEmpty)
+      (None, None, None)
+    else {
+      val e = asTriple(this.get)
+      (Some(e._1), Some(e._2), Some(e._3))
+    }
+  }
 
   /** Returns a singleton iterator returning the $option's value
    * if it is nonempty, or an empty iterator if the option is empty.
@@ -340,7 +412,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
  *  `A`.
  *
  *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class Some[+A](value: A) extends Option[A] {
@@ -352,7 +424,7 @@ final case class Some[+A](value: A) extends Option[A] {
 /** This case object represents non-existent values.
  *
  *  @author  Martin Odersky
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 @SerialVersionUID(5066590221178148012L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 case object None extends Option[Nothing] {

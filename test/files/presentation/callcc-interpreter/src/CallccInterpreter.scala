@@ -82,7 +82,7 @@ object callccInterpreter {
   val term1 = App(Con(1), Con(2))
   val term2 = Add(Con(1), Ccc("k", Add(Con(2), App(Var("k"), Con(4)))))
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(test(term0))
     println(test(term1))
     println(test(term2))

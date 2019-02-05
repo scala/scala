@@ -16,7 +16,7 @@ package p2 {
     object Baz { def unapply(x: Any): Option[Quux] = None }
   }
   trait Reifiers {
-    def f() {
+    def f(): Unit = {
       val u2: Other = null
       (null: Any) match { case u2.Baz(x) => println(x) } //: u2.Quux) }
       // The underlying error was: type mismatch;

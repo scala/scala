@@ -36,7 +36,7 @@ class CrashTest2 {
 class CrashTest3 {
   def foo = ()
 
-  def meth() {
+  def meth(): Unit = {
     trait CrashTestTable {
       def cols = foo
     }

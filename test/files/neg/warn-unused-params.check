@@ -1,18 +1,33 @@
-warn-unused-params.scala:9: warning: parameter value b in method f is never used
+warn-unused-params.scala:11: warning: parameter value b in method f is never used
         b: String,               // warn
         ^
-warn-unused-params.scala:32: warning: parameter value s in method i is never used
+warn-unused-params.scala:34: warning: parameter value s in method i is never used
   def i(implicit s: String) = 42           // yes, warn
                  ^
-warn-unused-params.scala:49: warning: parameter value u in class Unusing is never used
+warn-unused-params.scala:51: warning: parameter value u in class Unusing is never used
 class Unusing(u: Int) {       // warn
               ^
-warn-unused-params.scala:59: warning: parameter value s in class CaseyAtTheBat is never used
+warn-unused-params.scala:61: warning: parameter value s in class CaseyAtTheBat is never used
 case class CaseyAtTheBat(k: Int)(s: String)        // warn
                                  ^
-warn-unused-params.scala:62: warning: parameter value readResolve in method f is never used
+warn-unused-params.scala:64: warning: parameter value readResolve in method f is never used
   def f(readResolve: Int) = 42           // warn
         ^
+warn-unused-params.scala:79: warning: parameter value dummy in method g is never used
+  def g(dummy: DummyImplicit) = 42
+        ^
+warn-unused-params.scala:84: warning: parameter value ev in method f2 is never used
+  def f2[A, B](ev: A =:= B) = 42
+               ^
+warn-unused-params.scala:85: warning: parameter value ev in method g2 is never used
+  def g2[A, B](ev: A <:< B) = 42
+               ^
+warn-unused-params.scala:89: warning: parameter value i in anonymous function is never used
+  def f = (i: Int) => 42      // warn
+            ^
+warn-unused-params.scala:95: warning: parameter value i in anonymous function is never used
+  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
+               ^
 error: No warnings can be incurred under -Xfatal-warnings.
-5 warnings found
+10 warnings found
 one error found

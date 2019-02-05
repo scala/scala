@@ -7,17 +7,17 @@ class Bar1 extends Any      // fail
 anyval-anyref-parent.scala:6: error: value class parameter must be a val and not be private[this]
 class Bar2(x: Int) extends AnyVal // fail
            ^
-anyval-anyref-parent.scala:10: error: illegal inheritance; superclass Any
+anyval-anyref-parent.scala:11: error: illegal inheritance; superclass Any
  is not a subclass of the superclass Object
- of the mixin trait Immutable
-trait Foo4 extends Any with Immutable // fail
+ of the mixin trait Reffy
+trait Foo4 extends Any with Reffy // fail
                             ^
-anyval-anyref-parent.scala:11: error: illegal inheritance; superclass AnyVal
+anyval-anyref-parent.scala:12: error: illegal inheritance; superclass AnyVal
  is not a subclass of the superclass Object
- of the mixin trait Immutable
-trait Foo5 extends AnyVal with Immutable   // fail
+ of the mixin trait Reffy
+trait Foo5 extends AnyVal with Reffy  // fail
                                ^
-anyval-anyref-parent.scala:11: error: only classes (not traits) are allowed to extend AnyVal
-trait Foo5 extends AnyVal with Immutable   // fail
+anyval-anyref-parent.scala:12: error: only classes (not traits) are allowed to extend AnyVal
+trait Foo5 extends AnyVal with Reffy  // fail
       ^
 6 errors found

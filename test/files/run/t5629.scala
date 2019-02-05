@@ -28,7 +28,7 @@ class AnyChild extends Parent[Any] {
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new IntChild().foo(33)
     new AnyChild().foo(33)
   }

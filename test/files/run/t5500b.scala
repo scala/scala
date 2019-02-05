@@ -16,7 +16,7 @@ class C1C[
 ](v:A, w:B)
 
 object Test {
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     println(new C1A[String, Int].getClass.getName)
     println(new C1A[String, Double].getClass.getName)
     println(new C1A[String, String].getClass.getName)

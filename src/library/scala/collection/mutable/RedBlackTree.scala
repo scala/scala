@@ -1,7 +1,21 @@
-package scala.collection.mutable
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
+package scala
+package collection.mutable
 
 import scala.annotation.tailrec
-import scala.collection.Iterator
+import collection.{AbstractIterator, Iterator}
+import java.lang.String
 
 /**
  * An object containing the red-black tree implementation used by mutable `TreeMaps`.
@@ -9,7 +23,6 @@ import scala.collection.Iterator
  * The trees implemented in this object are *not* thread safe.
  *
  * @author Rui Gonçalves
- * @version 2.12
  * @since 2.12
  */
 private[collection] object RedBlackTree {
@@ -21,12 +34,10 @@ private[collection] object RedBlackTree {
   // Therefore, while obtaining the size of the whole tree is O(1), knowing the number of entries inside a range is O(n)
   // on the size of the range.
 
-  @SerialVersionUID(21575944040195605L)
-  final class Tree[A, B](var root: Node[A, B], var size: Int) extends Serializable
+  final class Tree[A, B](var root: Node[A, B], var size: Int)
 
-  @SerialVersionUID(1950599696441054720L)
   final class Node[A, B](var key: A, var value: B, var red: Boolean,
-                         var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) extends Serializable {
+                         var left: Node[A, B], var right: Node[A, B], var parent: Node[A, B]) {
 
     override def toString: String = "Node(" + key + ", " + value + ", " + red + ", " + left + ", " + right + ")"
   }
@@ -37,11 +48,11 @@ private[collection] object RedBlackTree {
 
   object Node {
 
-    @inline def apply[A, B](key: A, value: B, red: Boolean,
+    @`inline` def apply[A, B](key: A, value: B, red: Boolean,
                             left: Node[A, B], right: Node[A, B], parent: Node[A, B]): Node[A, B] =
       new Node(key, value, red, left, right, parent)
 
-    @inline def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B]): Node[A, B] =
+    @`inline` def leaf[A, B](key: A, value: B, red: Boolean, parent: Node[A, B]): Node[A, B] =
       new Node(key, value, red, null, null, parent)
 
     def unapply[A, B](t: Node[A, B]) = Some((t.key, t.value, t.left, t.right, t.parent))
@@ -75,7 +86,7 @@ private[collection] object RedBlackTree {
       else node
     }
 
-  def contains[A: Ordering](tree: Tree[A, _], key: A) = getNode(tree.root, key) ne null
+  def contains[A: Ordering](tree: Tree[A, _], key: A): Boolean = getNode(tree.root, key) ne null
 
   def min[A, B](tree: Tree[A, B]): Option[(A, B)] = minNode(tree.root) match {
     case null => None
@@ -465,12 +476,13 @@ private[collection] object RedBlackTree {
     new ValuesIterator(tree, start, end)
 
   private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B], start: Option[A], end: Option[A])
-                                                    (implicit ord: Ordering[A]) extends Iterator[R] {
+                                                    (implicit ord: Ordering[A]) extends AbstractIterator[R] {
 
-    protected[this] def nextResult(node: Node[A, B]): R
+    protected def nextResult(node: Node[A, B]): R
 
     def hasNext: Boolean = nextNode ne null
 
+    @throws[NoSuchElementException]
     def next(): R = nextNode match {
       case null => throw new NoSuchElementException("next on empty iterator")
       case node =>

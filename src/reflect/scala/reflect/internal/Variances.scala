@@ -1,6 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -20,10 +27,10 @@ trait Variances {
    *  TODO - eliminate duplication with varianceInType
    */
   class VarianceValidator extends InternalTraverser {
-    private val escapedLocals = mutable.HashSet[Symbol]()
+    private[this] val escapedLocals = mutable.HashSet[Symbol]()
     // A flag for when we're in a refinement, meaning method parameter types
     // need to be checked.
-    private var inRefinement = false
+    private[this] var inRefinement = false
     @inline private def withinRefinement(body: => Type): Type = {
       val saved = inRefinement
       inRefinement = true
@@ -35,7 +42,7 @@ trait Variances {
      *  escaped locals.
      *  @pre  sym.isLocalToThis
      */
-    @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
+    @tailrec final def checkForEscape(sym: Symbol, site: Symbol): Unit = {
       if (site == sym.owner || site == sym.owner.moduleClass || site.hasPackageFlag) () // done
       else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
       else escapedLocals += sym
@@ -56,8 +63,8 @@ trait Variances {
       && !escapedLocals(sym)
     )
 
-    private object ValidateVarianceMap extends TypeMap(trackVariance = true) {
-      private var base: Symbol = _
+    private object ValidateVarianceMap extends VariancedTypeMap {
+      private[this] var base: Symbol = _
 
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
@@ -94,7 +101,7 @@ trait Variances {
         case _                           => false
       }
 
-      private def checkVarianceOfSymbol(sym: Symbol) {
+      private def checkVarianceOfSymbol(sym: Symbol): Unit = {
         val relative = relativeVariance(sym)
         val required = relative * variance
         if (!relative.isBivariant) {
@@ -142,7 +149,7 @@ trait Variances {
         // As such, we need to expand references to them to retain soundness. Example: neg/t8079a.scala
         sym.isAliasType && isExemptFromVariance(sym)
       }
-      def validateDefinition(base: Symbol) {
+      def validateDefinition(base: Symbol): Unit = {
         val saved = this.base
         this.base = base
         try apply(base.info)
@@ -151,11 +158,11 @@ trait Variances {
     }
 
     /** Validate variance of info of symbol `base` */
-    private def validateVariance(base: Symbol) {
+    private def validateVariance(base: Symbol): Unit = {
       ValidateVarianceMap validateDefinition base
     }
 
-    override def traverse(tree: Tree) {
+    override def traverse(tree: Tree): Unit = {
       def sym = tree.symbol
       // No variance check for object-private/protected methods/values.
       // Or constructors, or case class factory or extractor.
@@ -209,10 +216,10 @@ trait Variances {
 
     def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
     def inType(tp: Type): Variance   = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
+      case pt: ProtoType                                => inType(pt.toVariantType)
+      case ErrorType | NoType | NoPrefix                => Bivariant
       case ThisType(_) | ConstantType(_)                => Bivariant
       case TypeRef(_, `tparam`, _)                      => Covariant
-      case BoundedWildcardType(bounds)                  => inType(bounds)
       case NullaryMethodType(restpe)                    => inType(restpe)
       case SingleType(pre, sym)                         => inType(pre)
       case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)                 // a type constructor cannot occur in tp's args

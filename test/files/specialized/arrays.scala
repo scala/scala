@@ -16,7 +16,7 @@ class Spec[@specialized(AnyRef) T](a: Array[T]) {
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val len = 50
 
     testSpec(new Array[String](len))

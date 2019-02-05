@@ -55,7 +55,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |
         |  // two box and two unbox operations
         |  def t2(b: Boolean) = {
-        |    val a = if (b) (3l: Any) else 2l
+        |    val a = if (b) (3L: Any) else 2L
         |    a.asInstanceOf[Long] + 1 + a.asInstanceOf[Long]
         |  }
         |
@@ -70,9 +70,9 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |
         |  def t6: Long = {
-        |    val y = new java.lang.Boolean(true)
-        |    val i: Integer = if (y) new Integer(10) else 13
-        |    val j: java.lang.Long = 3l
+        |    val y = java.lang.Boolean.valueOf(true)
+        |    val i: Integer = if (y) Integer.valueOf(10) else 13
+        |    val j: java.lang.Long = 3L
         |    j + i
         |  }
         |
@@ -220,7 +220,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |
         |  def t3 = {
-        |    val r = LongRef.create(10l) // eliminated
+        |    val r = LongRef.create(10L) // eliminated
         |    r.elem += 3
         |    r.elem
         |  }
@@ -273,7 +273,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |
         |  def t3 = {
         |    // boxed before tuple creation, a non-specialized tuple is created
-        |    val t = (new Integer(3), Integer.valueOf(4))
+        |    val t = (Integer.valueOf(3), Integer.valueOf(4))
         |    t._1 + t._2 // invokes the generic `_1` / `_2` getters, both values unboxed by Integer2int
         |  }
         |
@@ -329,4 +329,27 @@ class BoxUnboxTest extends BytecodeTesting {
     assertNoInvoke(getMethod(c, "t9"))
   }
 
+  @Test
+  def unboxKeepCCE(): Unit = {
+    val code =
+      """def f(b: java.lang.Byte) = {
+        |  Int.unbox(new Object)
+        |  Long.unbox("")
+        |  Byte.unbox(b)                  // eliminated: push-pop replaces it by a checkcast, which is then eliminated
+        |  Int.unbox(null)                // eliminated by box-unbox
+        |  Int.unbox(Integer.valueOf(1))  // eliminated by box-unbox
+        |
+        |  b.byteValue                    // replaced by null check
+        |  Long.box(10L).longValue        // eliminated by box-unbox
+        |  this.asInstanceOf[Integer].intValue // replaced by null check, which is then eliminated (this is known to be non-null)
+        |  0
+        |}""".stripMargin
+    val m = compileMethod(code)
+    assertSameCode(m, List(
+      TypeOp(NEW, "java/lang/Object"), Op(DUP), Invoke(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
+      Ldc(LDC, ""), TypeOp(CHECKCAST, "java/lang/Long"), Op(POP),
+      VarOp(ALOAD, 1), Jump(IFNONNULL, Label(18)), Op(ACONST_NULL), Op(ATHROW), Label(18),
+      VarOp(ALOAD, 0), TypeOp(CHECKCAST, "java/lang/Integer"), Op(POP),
+      Op(ICONST_0), Op(IRETURN)))
+  }
 }

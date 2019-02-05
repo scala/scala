@@ -5,7 +5,7 @@ object Test extends App {
   def foo[C, L](c: C)(implicit iso: FundepMaterialization[C, L]): L = iso.to(c)
   locally {
     val equiv = foo(Foo(23, "foo", true))
-    def typed[T](t: => T) {}
+    def typed[T](t: => T): Unit = {}
     typed[(Int, String, Boolean)](equiv)
     println(equiv)
   }

@@ -1,8 +1,20 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
 
 package scala.tools.nsc.interpreter
 
-import java.io.{PrintStream, PrintWriter, StringWriter}
+import java.io.{PrintWriter, StringWriter, Closeable}
 import java.net.URL
 
 import PartialFunction.cond
@@ -13,10 +25,10 @@ import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPha
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
 import scala.reflect.internal.util.{AbstractFileClassLoader, BatchSourceFile, ListOfNil, Position, SourceFile}
-import scala.tools.nsc.{ConsoleWriter, Global, NewLinePrintWriter, Settings}
+import scala.tools.nsc.{Global, Settings}
 import scala.tools.nsc.interpreter.StdReplTags.tagOfStdReplVals
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.reporters.{Reporter, StoreReporter}
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.util.PathResolver
@@ -60,7 +72,7 @@ import scala.util.control.NonFatal
   *  @author Lex Spoon
   */
 class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoader], compilerSettings: Settings, val reporter: ReplReporter)
-  extends Repl with Imports with PresentationCompilation {
+  extends Repl with Imports with PresentationCompilation with Closeable {
 
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
@@ -82,19 +94,16 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (_initializeComplete) global.classPath.asURLs
-    else new PathResolver(settings).resultAsURLs  // the compiler's classpath
+    else new PathResolver(settings, global.closeableRegistry).resultAsURLs  // the compiler's classpath
     )
 
-
   // Run the code body with the given boolean settings flipped to true.
-  def withoutWarnings[T](body: => T): T = reporter.withoutPrintingResults {
-    val saved = settings.nowarn.value
-    if (!saved)
-      settings.nowarn.value = true
+  def withoutWarnings[T](body: => T): T =
+    reporter.withoutPrintingResults(IMain.withSuppressedSettings(settings, global)(body))
 
-    try body
-    finally if (!saved) settings.nowarn.value = false
-  }
+  def withSuppressedSettings(body: => Unit): Unit =
+    IMain.withSuppressedSettings(settings, global)(body)
+
   // Apply a temporary label for compilation (for example, script name)
   override def withLabel[A](temp: String)(body: => A): A = {
     val saved = label
@@ -137,10 +146,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     val compiler = new Global(compilerSettings, startupReporter) with ReplGlobal
 
     try {
-      // if this crashes, REPL will hang its head in shame
       val run = new compiler.Run()
       assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
-      run compileSources List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+      IMain.withSuppressedSettings(compilerSettings, compiler) {
+        run compileSources List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+      }
 
       // there shouldn't be any errors yet; just in case, print them if we're debugging
       if (reporter.isDebug)
@@ -263,7 +273,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     _classLoader = null
     ensureClassLoader()
   }
-  final def ensureClassLoader() {
+  final def ensureClassLoader(): Unit = {
     if (_classLoader == null)
       _classLoader = makeClassLoader()
   }
@@ -336,7 +346,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
-      case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
+      case null if _initializeComplete => translateSimpleResource(name).map(super.findAbstractFile).orNull
       case file => file
     }
   }
@@ -346,11 +356,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       _runtimeClassLoader
     })
 
-  // Set the current Java "context" class loader to this interpreter's class loader
-  override def setContextClassLoader() = classLoader.setAsContext()
-
   def allDefinedNames: List[Name]  = exitingTyper(replScope.toList.map(_.name).sorted)
-  def unqualifiedIds: List[String] = allDefinedNames map (_.decode) sorted
+  def unqualifiedIds: List[String] = allDefinedNames.map(_.decode).sorted
 
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {
@@ -366,8 +373,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   private val logScope = scala.sys.props contains "scala.repl.scope"
   private def scopelog(msg: String) = if (logScope) Console.err.println(msg)
 
-  private def updateReplScope(sym: Symbol, isDefined: Boolean) {
-    def log(what: String) {
+  private def updateReplScope(sym: Symbol, isDefined: Boolean): Unit = {
+    def log(what: String): Unit = {
       val mark = if (sym.isType) "t " else "v "
       val name = exitingTyper(sym.nameString)
       val info = cleanTypeAfterTyper(sym)
@@ -410,7 +417,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
   }
 
-  private[nsc] def replwarn(msg: => String) {
+  private[nsc] def replwarn(msg: => String): Unit = {
     if (!settings.nowarnings)
       reporter.printMessage(msg)
   }
@@ -434,21 +441,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     */
   override def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
-
-
-  private def safePos(t: Tree, alt: Int): Int =
-    try t.pos.start
-    catch { case _: UnsupportedOperationException => alt }
-
-  // Given an expression like 10 * 10 * 10 we receive the parent tree positioned
-  // at a '*'.  So look at each subtree and find the earliest of all positions.
-  private def earliestPosition(tree: Tree): Int = {
-    var pos = Int.MaxValue
-    tree foreach { t =>
-      pos = math.min(pos, safePos(t, Int.MaxValue))
-    }
-    pos
-  }
 
   override def requestDefining(name: String): Option[Request] = {
     val sym = symbolOfIdent(name)
@@ -562,7 +554,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def bind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = bind((name, value))
 
   /** Reset this interpreter, forgetting all user-specified requests. */
-  override def reset() {
+  override def reset(): Unit = {
     clearExecutionWrapper()
     resetClassLoader()
     resetAllCreators()
@@ -574,8 +566,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   /** This instance is no longer needed, so release any resources
     *  it is using.  The reporter's output gets flushed.
     */
-  override def close() {
+  override def close(): Unit = {
     reporter.flush()
+    if (initializeComplete) {
+      global.close()
+    }
   }
 
   override lazy val power = new Power(this, new StdReplVals(this))(tagOfStdReplVals, classTag[StdReplVals])
@@ -606,11 +601,12 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val unwrapped = rootCause(t)
 
       // Example input: $line3.$read$$iw$$iw$
-      val classNameRegex = (lineRegex + ".*").r
-      def isWrapperInit(x: StackTraceElement) = cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
+      val classNameRegex = s"$lineRegex.*".r
+      def isWrapperCode(x: StackTraceElement) = cond(x.getClassName) {
+        case classNameRegex() =>
+          x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName
       }
-      val stackTrace = unwrapped stackTracePrefixString (!isWrapperInit(_))
+      val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
 
       withLastExceptionLock[String]({
         directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
@@ -675,7 +671,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** We get a bunch of repeated warnings for reasons I haven't
       *  entirely figured out yet.  For now, squash.
       */
-    private def updateRecentWarnings(run: Run) {
+    private def updateRecentWarnings(run: Run): Unit = {
       def loop(xs: List[(Position, String)]): List[(Position, String)] = xs match {
         case Nil                  => Nil
         case ((pos, msg)) :: rest =>
@@ -864,25 +860,27 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       // The symbol defined by the last member handler
       val resValSym = value
 
-      val extractionCode =
-        lineRep.packaged(stringFromWriter { code =>
-          // first line evaluates object to make sure constructor is run
-          // initial "" so later code can uniformly be: + etc
-          code.println(s"""
-             |object ${lineRep.evalName} {
-             |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
-             |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
-             |    $fullAccessPath
-             |    ( "" """.stripMargin) // the result extraction code will emit code to append strings to this initial ""
-
-          contributors map (_.resultExtractionCode(this)) foreach code.println
-
-          code.println("""
-             |    )
-             |  }
-             |}
-             """.stripMargin)
-        })
+      val extractionCode = stringFromWriter { code =>
+        code.println(s"""
+           |${lineRep.packageDecl} {
+           |object ${lineRep.evalName} {
+           |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
+           |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
+           |    $fullAccessPath
+           |""".stripMargin)
+        if (contributors.lengthCompare(1) > 0) {
+          code.println("val sb = new _root_.scala.StringBuilder")
+          contributors foreach (x => code.println(s"""sb.append("" ${x.resultExtractionCode(this)})"""))
+          code.println("sb.toString")
+        } else {
+          code.print(""""" """) // start with empty string
+          contributors foreach (x => code.print(x.resultExtractionCode(this)))
+          code.println()
+        }
+        code.println(s"""
+           |  }
+           |}}""".stripMargin)
+        }
 
       showCode(extractionCode)
 
@@ -1098,14 +1096,16 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def parse(line: String): Either[Result, (List[Tree], Position)] = {
     var isIncomplete = false
     currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {
-      withoutWarnings {
-        reporter.reset()
-        val unit = newCompilationUnit(line, label)
-        val trees = newUnitParser(unit).parseStats()
-        if (reporter.hasErrors) Left(Error)
-        else if (isIncomplete) Left(Incomplete)
-        else Right((trees, unit.firstXmlPos))
+      reporter.reset()
+      val unit = newCompilationUnit(line, label)
+      val trees = newUnitParser(unit).parseStats()
+      if (reporter.hasErrors) Left(Error)
+      else if (reporter.hasWarnings && settings.fatalWarnings) {
+        currentRun.reporting.summarizeErrors()
+        Left(Error)
       }
+      else if (isIncomplete) Left(Incomplete)
+      else Right((trees, unit.firstXmlPos))
     }
   }
 
@@ -1279,7 +1279,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def namedDefinedTerms: List[String] = definedTerms filterNot (x => isUserVarName("" + x) || directlyBoundNames(x)) map (_.toString)
 
   private var _replScope: Scope = _
-  private def resetReplScope() {
+  private def resetReplScope(): Unit = {
     _replScope = newScope
   }
   def replScope = {
@@ -1315,16 +1315,37 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
 /** Utility methods for the Interpreter. */
 object IMain {
-  /** Dummy identifier fragment inserted at the cursor before presentation compilation. Needed to support completion of `global.def<TAB>` */
+  /** Dummy identifier fragment inserted at the cursor before presentation compilation.
+   *  Needed to support completion of `global.def<TAB>`.
+   */
   final val DummyCursorFragment = "_CURSOR_"
 
-  // The two name forms this is catching are the two sides of this assignment:
-  //
-  // $line3.$read.$iw.$iw.Bippy =
-  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-//  private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
-//  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
-//  def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
-
+  /** Temporarily suppress some noisy settings.
+   */
+  private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
+    import settings.{reporter => _, _}
+    val wasWarning = !nowarn
+    val noisy = List(Xprint, Ytyperdebug, browse)
+    val current = (Xprint.value, Ytyperdebug.value, browse.value)
+    val noisesome = wasWarning || noisy.exists(!_.isDefault)
+    if (/*isDebug ||*/ !noisesome) body
+    else {
+      Xprint.value = List.empty
+      browse.value = List.empty
+      Ytyperdebug.value = false
+      if (wasWarning) nowarn.value = true
+      try body
+      finally {
+        Xprint.value       = current._1
+        Ytyperdebug.value  = current._2
+        browse.value       = current._3
+        if (wasWarning) nowarn.value = false
+        // ctl-D in repl can result in no compiler
+        val g = global
+        if (g != null) {
+          g.printTypings = current._2
+        }
+      }
+    }
+  }
 }
-

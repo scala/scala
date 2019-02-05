@@ -1,16 +1,16 @@
-warn-inferred-any.scala:8: warning: a type was inferred to be `Any`; this may indicate a programming error.
+warn-inferred-any.scala:10: warning: a type was inferred to be `Any`; this may indicate a programming error.
   { List(1, 2, 3) contains "a" }  // only this warns
                   ^
-warn-inferred-any.scala:16: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
-  { 1l to 5l contains 5 }
+warn-inferred-any.scala:18: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  { 1L to 5L contains 5 }
              ^
-warn-inferred-any.scala:17: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
-  { 1l to 5l contains 5d }
+warn-inferred-any.scala:19: warning: a type was inferred to be `AnyVal`; this may indicate a programming error.
+  { 1L to 5L contains 5d }
              ^
-warn-inferred-any.scala:25: warning: a type was inferred to be `Any`; this may indicate a programming error.
+warn-inferred-any.scala:27: warning: a type was inferred to be `Any`; this may indicate a programming error.
   def za = f(1, "one")
            ^
-warn-inferred-any.scala:35: warning: a type was inferred to be `Object`; this may indicate a programming error.
+warn-inferred-any.scala:37: warning: a type was inferred to be `Object`; this may indicate a programming error.
   cs.contains(new C2) // warns
      ^
 error: No warnings can be incurred under -Xfatal-warnings.

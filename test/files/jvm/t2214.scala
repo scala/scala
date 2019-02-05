@@ -25,7 +25,7 @@ object Test {
     }
   }
 
-  def foreach(os: java.io.ObjectInputStream)(f: Object => Unit) {
+  def foreach(os: java.io.ObjectInputStream)(f: Object => Unit): Unit = {
     try {
       val obj = os.readObject
       if (obj != null) {

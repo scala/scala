@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -10,6 +17,7 @@ package transform
 package patmat
 
 import scala.tools.nsc.typechecker.Contexts
+import scala.reflect.internal.util
 
 /** An 'extractor' can be a case class or an unapply or unapplySeq method.
   *
@@ -112,10 +120,8 @@ trait PatternExpansion {
         else tps.map(_.substSym(List(unapplySelector), List(extractedBinder)))
 
       val withoutStar = productTypes ::: List.fill(elementArity)(elementType)
-      replaceUnapplySelector(if (isStar) withoutStar :+ sequenceType else withoutStar)
+      replaceUnapplySelector(if (isStar) withoutStar :+ seqType(elementType) else withoutStar)
     }
-
-    def lengthCompareSym = sequenceType member nme.lengthCompare
 
     // rest is private
     private val isUnapply        = fun.symbol.name == nme.unapply
@@ -126,12 +132,16 @@ trait PatternExpansion {
     private def caseCtorParamTypes: Option[List[Type]] =
       if (isUnapply || isUnapplySeq) None else Some(fun.tpe.paramTypes)
 
-    // bug#6130 can't really say what the result type is without referring to the binder we're extracting,
-    // as an unapply's result type could depend on its argument, e.g. crazy stuff like `def unapply(x: T): Option[(x.T, x.U)]`
-    // NOTE: we skip a potential implicit method type here -- could this be another avenue of craziness where the result type depends on the input?
-    private def unapplyResultType(extractedBinder: Symbol = unapplySelector): Type =
-      if (extractedBinder == NoSymbol) fun.tpe.finalResultType
-      else fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder))).finalResultType
+    // scala/bug#6130 scala/bug#11162 unapply's result type may refer to the binder we're extracting,
+    // as well as implicit args. Example: `def unapply(x: T)(implicit ops: Foo): Option[(x.T, ops.U)]`.
+    // Existentially abstract over any unknown values to approximate the type.
+    private def unapplyResultType(extractedBinder: Symbol = unapplySelector): Type = {
+        val appliedToExtractedBinder =
+          if (extractedBinder != NoSymbol) fun.tpe.resultType(List(SingleType(NoPrefix, extractedBinder)))
+          else fun.tpe
+
+        packSymbols(appliedToExtractedBinder.paramss.flatten, appliedToExtractedBinder.finalResultType)
+      }
 
     private def resultOfGetInMonad(arg: Symbol = unapplySelector) =
       elementTypeFromGet(unapplyResultType(arg))
@@ -157,7 +167,7 @@ trait PatternExpansion {
       else None
     }
 
-    private def booleanUnapply = if (isBooleanUnapply) Some(Nil) else None
+    private def booleanUnapply = if (isBooleanUnapply) util.SomeOfNil else None
 
     // In terms of the (equivalent -- if we're dealing with an unapply) case class, what are the constructor's parameter types?
     private val equivConstrParamTypes =
@@ -190,23 +200,19 @@ trait PatternExpansion {
       }
       else equivConstrParamTypes
 
-    private def notRepeated = (NoType, NoType, NoType)
-    private val (elementType, sequenceType, repeatedType) =
+    private def notRepeated = (NoType, NoType)
+    private val (elementType, repeatedType) =
       // case class C() is deprecated, but still need to defend against equivConstrParamTypes.isEmpty
       if (isUnapply || equivConstrParamTypes.isEmpty) notRepeated
       else {
         val lastParamTp = equivConstrParamTypes.last
         if (isUnapplySeq) {
-          val elementTp =
-            elementTypeFromHead(lastParamTp) orElse
-            elementTypeFromApply(lastParamTp) orElse
-            definitions.elementType(ArrayClass, lastParamTp)
-
-          (elementTp, lastParamTp, scalaRepeatedType(elementTp))
+          val elementTp = elementTypeFromApply(lastParamTp)
+          (elementTp, scalaRepeatedType(elementTp))
         } else {
           definitions.elementType(RepeatedParamClass, lastParamTp) match {
             case NoType => notRepeated
-            case elementTp => (elementTp, seqType(elementTp), lastParamTp)
+            case elementTp => (elementTp, lastParamTp)
           }
         }
       }
@@ -228,7 +234,7 @@ trait PatternExpansion {
       }
 
     private def arityError(mismatch: String) = {
-      val isErroneous = (productTypes contains NoType) && !(isSeq && (sequenceType ne NoType))
+      val isErroneous = (productTypes contains NoType) && !(isSeq && (elementType ne NoType))
 
       val offeringString = if (isErroneous) "<error>" else productTypes match {
         case tps if isSeq => (tps.map(_.toString) :+ s"${elementType}*").mkString("(", ", ", ")")

@@ -13,7 +13,7 @@ class Test {
     class Bippy extends T with U { def z() = x() + x1() }
     new Bippy
   }
-  def b() {
+  def b(): Unit = {
     trait T {
       def y() = 3
       trait T2 {
@@ -29,7 +29,7 @@ class Test {
     class Bippy extends T with U { def z() = y() + y1() + (1 to (new T2 { }).yy()).map(_ + 1).sum }
     (new Bippy).z()
   }
-  def c() {
+  def c(): Unit = {
     trait T {
       def z() = 5
     }

@@ -27,7 +27,7 @@ object MutablePriorityQueueTest extends Properties("PriorityQueue") {
   }
 
   property("to[PriorityQueue]") = forAll { list: List[E] =>
-    val pq = list.to[PriorityQueue]
+    val pq = list.to(PriorityQueue)
     checkInvariant(pq) &&
     pq.dequeueAll == list.sorted.reverse
   }

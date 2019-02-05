@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 // Test case added to show the behaviour of functions with
 // by-name parameters.  The evaluation behaviour was already correct.
 //

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.concurrent
 
@@ -15,11 +19,11 @@ import java.util.concurrent.TimeUnit
  *
  *  @tparam A type of the contained value
  *  @author  Martin Odersky
- *  @version 1.0, 10/03/2003
  */
+@deprecated("Use `java.util.concurrent.LinkedBlockingQueue with capacity 1` instead.", since = "2.13.0")
 class SyncVar[A] {
-  private var isDefined: Boolean = false
-  private var value: A = _
+  private[this] var isDefined: Boolean = false
+  private[this] var value: A = _
 
   /**
    * Wait for this SyncVar to become defined and then get
@@ -87,14 +91,6 @@ class SyncVar[A] {
     finally unsetVal()
   }
 
-  // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration
-  // whether or not the SyncVar is already defined. So, set has been
-  // deprecated in order to eventually be able to make "setting" private
-  @deprecated("use `put` to ensure a value cannot be overwritten without a corresponding `take`", "2.10.0")
-  // NOTE: Used by sbt 0.13.0-M2 and below
-  def set(x: A): Unit = setVal(x)
-
   /** Place a value in the SyncVar. If the SyncVar already has a stored value,
    * wait until another thread takes it. */
   def put(x: A): Unit = synchronized {
@@ -105,18 +101,6 @@ class SyncVar[A] {
   /** Check whether a value is stored in the synchronized variable. */
   def isSet: Boolean = synchronized {
     isDefined
-  }
-
-  // TODO: this method should be private
-  // [Heather] the reason why: it doesn't take into consideration
-  // whether or not the SyncVar is already defined. So, unset has been
-  // deprecated in order to eventually be able to make "unsetting" private
-  @deprecated("use `take` to ensure a value is never discarded", "2.10.0")
-  // NOTE: Used by sbt 0.13.0-M2 and below
-  def unset(): Unit = synchronized {
-    isDefined = false
-    value = null.asInstanceOf[A]
-    notifyAll()
   }
 
   // `setVal` exists so as to retroactively deprecate `set` without

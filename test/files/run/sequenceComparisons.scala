@@ -13,7 +13,6 @@ object Test {
     mutable.ArrayBuffer(_: _*),
     // mutable.ArrayStack(_: _*),
     mutable.Buffer(_: _*),
-    mutable.LinearSeq(_: _*),
     // null on Nil
     // mutable.LinkedList(_: _*),
     mutable.ListBuffer(_: _*),
@@ -22,12 +21,11 @@ object Test {
     // mutable.Queue(_: _*),
     immutable.Seq(_: _*),
     mutable.Seq(_: _*),
-    immutable.Stack(_: _*),
     // mutable.Stack(_: _*),
     immutable.IndexedSeq(_: _*), // was Vector
     //mutable.Vector(_: _*),
     immutable.List(_: _*),
-    immutable.Stream(_: _*)
+    immutable.LazyList(_: _*)
   )
 
   abstract class Data[T] {
@@ -89,7 +87,7 @@ object Test {
   val failures = new mutable.ListBuffer[String]
   var testCount = 0
 
-  def assertOne(op1: Any, op2: Any, res: Boolean, str: String) {
+  def assertOne(op1: Any, op2: Any, res: Boolean, str: String): Unit = {
     testCount += 1
     val resStr = str.format(op1, op2)
     // println(resStr)
@@ -113,7 +111,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     runSeqs()
 
     assert(failures.isEmpty, failures mkString "\n")

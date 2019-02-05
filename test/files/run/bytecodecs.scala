@@ -1,29 +1,30 @@
+import scala.tools.partest.Util.ArrayDeep
 import scala.reflect.internal.pickling.ByteCodecs._
 
 object Test {
 
-  def test8to7(xs: Array[Byte]) {
+  def test8to7(xs: Array[Byte]): Unit = {
     val ys = encode8to7(xs)
     decode7to8(ys, ys.length)
     assert(ys.take(xs.length).deep == xs.deep,
            "test8to7("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
   }
 
-  def testAll(xs: Array[Byte]) {
+  def testAll(xs: Array[Byte]): Unit = {
     val ys = encode(xs)
     decode(ys)
     assert(ys.take(xs.length).deep == xs.deep,
            "testAll("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
   }
 
-  def test(inputs: Array[Byte]*) {
+  def test(inputs: Array[Byte]*): Unit = {
     for (input <- inputs) {
       test8to7(input)
       testAll(input)
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test(
       Array(1, 2, 3),
       Array(1, 2, 3, 4, 5, 6, 7),

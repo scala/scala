@@ -1,39 +1,101 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
 
-import generic._
-import mutable.Builder
+import scala.annotation.tailrec
+import scala.language.higherKinds
+import scala.math.Ordering
+import Searching.{SearchResult, Found, InsertionPoint}
 
-/** A base trait for indexed sequences.
- *  $indexedSeqInfo
- */
-trait IndexedSeq[+A] extends Seq[A]
-                    with GenericTraversableTemplate[A, IndexedSeq]
-                    with IndexedSeqLike[A, IndexedSeq[A]] {
-  override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
-  override def seq: IndexedSeq[A] = this
+/** Base trait for indexed sequences that have efficient `apply` and `length` */
+trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+  override protected[this] def stringPrefix: String = "IndexedSeq"
 }
 
-/** $factoryInfo
- *  The current default implementation of a $Coll is a `Vector`.
- *  @define coll indexed sequence
- *  @define Coll `IndexedSeq`
- */
-object IndexedSeq extends IndexedSeqFactory[IndexedSeq] {
-  // A single CBF which can be checked against to identify
-  // an indexed collection type.
-  override val ReusableCBF: GenericCanBuildFrom[Nothing] = new GenericCanBuildFrom[Nothing] {
-    override def apply() = newBuilder[Nothing]
+@SerialVersionUID(3L)
+object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
+
+/** Base trait for indexed Seq operations */
+trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
+
+  def iterator: Iterator[A] = view.iterator
+
+  override def reverseIterator: Iterator[A] = new AbstractIterator[A] {
+    private[this] var i = self.length
+    def hasNext: Boolean = 0 < i
+    def next(): A =
+      if (0 < i) {
+        i -= 1
+        self(i)
+      } else Iterator.empty.next()
   }
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
-    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+
+  override def view: IndexedSeqView[A] = new IndexedSeqView.Id[A](this)
+
+  @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
+  override def view(from: Int, until: Int): IndexedSeqView[A] = view.slice(from, until)
+
+  override protected def reversed: Iterable[A] = new IndexedSeqView.Reverse(this)
+
+  // Override transformation operations to use more efficient views than the default ones
+  override def prepended[B >: A](elem: B): CC[B] = iterableFactory.from(new IndexedSeqView.Prepended(elem, this))
+
+  override def take(n: Int): C = fromSpecific(new IndexedSeqView.Take(this, n))
+
+  override def takeRight(n: Int): C = fromSpecific(new IndexedSeqView.TakeRight(this, n))
+
+  override def drop(n: Int): C = fromSpecific(new IndexedSeqView.Drop(this, n))
+
+  override def dropRight(n: Int): C = fromSpecific(new IndexedSeqView.DropRight(this, n))
+
+  override def map[B](f: A => B): CC[B] = iterableFactory.from(new IndexedSeqView.Map(this, f))
+
+  override def reverse: C = fromSpecific(new IndexedSeqView.Reverse(this))
+
+  override def slice(from: Int, until: Int): C = fromSpecific(new IndexedSeqView.Slice(this, from, until))
+
+  override def last: A = apply(length - 1)
+
+  override final def lengthCompare(len: Int): Int = Integer.compare(length, len)
+
+  final override def knownSize: Int = length
+
+  override final def sizeCompare(that: Iterable[_]): Int = {
+    val res = that.sizeCompare(length)
+    // can't just invert the result, because `-Int.MinValue == Int.MinValue`
+    if (res == Int.MinValue) 1 else -res
+  }
+
+  override def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
+    binarySearch(elem, 0, length)(ord)
+
+  override def search[B >: A](elem: B, from: Int, to: Int)(implicit ord: Ordering[B]): SearchResult =
+    binarySearch(elem, from, to)(ord)
+
+  @tailrec
+  private[this] def binarySearch[B >: A](elem: B, from: Int, to: Int)
+                                        (implicit ord: Ordering[B]): SearchResult = {
+    if (from < 0) binarySearch(elem, 0, to)
+    else if (to > length) binarySearch(elem, from, length)
+    else if (to <= from) InsertionPoint(from)
+    else {
+      val idx = from + (to - from - 1) / 2
+      math.signum(ord.compare(elem, apply(idx))) match {
+        case -1 => binarySearch(elem, from, idx)(ord)
+        case  1 => binarySearch(elem, idx + 1, to)(ord)
+        case  _ => Found(idx)
+      }
+    }
+  }
 }

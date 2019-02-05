@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 // Developer note:
 //   scala -J-Dscala.process.debug
@@ -25,7 +29,7 @@ package scala.sys {
     *
     * {{{
     * import scala.sys.process._
-    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lineStream
+    * "ls" #| "grep .scala" #&& Seq("sh", "-c", "scalac *.scala") #|| "echo nothing found" lazyLines
     * }}}
     *
     * We describe below the general concepts and architecture of the package,
@@ -84,7 +88,7 @@ package scala.sys {
     *
     * To further control what how the process will be run, such as specifying
     * the directory in which it will be run, see the factories on
-    * [[scala.sys.process.Process]]'s object companion.
+    * [[scala.sys.process.Process]]'s companion object.
     *
     * Once the desired `ProcessBuilder` is available, it can be executed in
     * different ways, depending on how one desires to control its I/O, and what
@@ -92,7 +96,7 @@ package scala.sys {
     *
     *   - Return status of the process (`!` methods)
     *   - Output of the process as a `String` (`!!` methods)
-    *   - Continuous output of the process as a `Stream[String]` (`lineStream` methods)
+    *   - Continuous output of the process as a `LazyList[String]` (`lazyLines` methods)
     *   - The `Process` representing it (`run` methods)
     *
     * Some simple examples of these methods:
@@ -106,10 +110,10 @@ package scala.sys {
     * val dirContents = "ls".!!
     *
     * // This "fire-and-forgets" the method, which can be lazily read through
-    * // a Stream[String]
-    * def sourceFilesAt(baseDir: String): Stream[String] = {
+    * // a LazyList[String]
+    * def sourceFilesAt(baseDir: String): LazyList[String] = {
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   cmd.lineStream
+    *   cmd.lazyLines
     * }
     * }}}
     *
@@ -140,7 +144,7 @@ package scala.sys {
     *
     *   - [[scala.sys.process.ProcessIO]]: provides the low level abstraction.
     *   - [[scala.sys.process.ProcessLogger]]: provides a higher level abstraction
-    *   for output, and can be created through its object companion
+    *   for output, and can be created through its companion object.
     *   - [[scala.sys.process.BasicIO]]: a library of helper methods for the
     *   creation of `ProcessIO`.
     *   - This package object itself, with a few implicit conversions.
@@ -163,12 +167,12 @@ package scala.sys {
     * }
     *
     * // This "fire-and-forgets" the method, which can be lazily read through
-    * // a Stream[String], and accumulates all errors on a StringBuffer
-    * def sourceFilesAt(baseDir: String): (Stream[String], StringBuffer) = {
+    * // a LazyList[String], and accumulates all errors on a StringBuffer
+    * def sourceFilesAt(baseDir: String): (LazyList[String], StringBuffer) = {
     *   val buffer = new StringBuffer()
     *   val cmd = Seq("find", baseDir, "-name", "*.scala", "-type", "f")
-    *   val lineStream = cmd lineStream_! ProcessLogger(buffer append _)
-    *   (lineStream, buffer)
+    *   val lazyLines = cmd lazyLines_! ProcessLogger(buffer append _)
+    *   (lazyLines, buffer)
     * }
     * }}}
     *
@@ -227,7 +231,6 @@ package scala.sys {
       type InputStream            = java.io.InputStream
       type JProcess               = java.lang.Process
       type JProcessBuilder        = java.lang.ProcessBuilder
-      type LinkedBlockingQueue[T] = java.util.concurrent.LinkedBlockingQueue[T]
       type OutputStream           = java.io.OutputStream
       type SyncVar[T]             = scala.concurrent.SyncVar[T]
       type URL                    = java.net.URL

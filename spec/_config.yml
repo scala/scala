@@ -1,4 +1,7 @@
 baseurl: /files/archive/spec/2.13
+latestScalaVersion: 2.12
+thisScalaVersion: 2.13
+versionCompareMessage: "an upcoming"
 safe: true
 lsi: false
 highlighter: false

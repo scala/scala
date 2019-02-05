@@ -5,8 +5,6 @@ object Test extends CompilerTest {
   import global._
 
   override lazy val units: List[CompilationUnit] = {
-    global.settings.Xexperimental.value = true
-
     // This test itself does not depend on JDK8.
     javaCompilationUnits(global)(samSource) ++
     compilationUnits(global)(useSamSource)

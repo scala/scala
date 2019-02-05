@@ -1,0 +1,80 @@
+sortedImplicitNotFound.scala:10: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ms.map(_ => o)
+        ^
+sortedImplicitNotFound.scala:13: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ms.flatMap(_ => List(o))
+            ^
+sortedImplicitNotFound.scala:16: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ms.zip(List(o))
+        ^
+sortedImplicitNotFound.scala:19: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ms.collect{case _ => o}
+            ^
+sortedImplicitNotFound.scala:24: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  is.map(_ => o)
+        ^
+sortedImplicitNotFound.scala:27: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  is.flatMap(_ => List(o))
+            ^
+sortedImplicitNotFound.scala:30: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  is.zip(List(o))
+        ^
+sortedImplicitNotFound.scala:33: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  is.collect{case _ => o}
+            ^
+sortedImplicitNotFound.scala:39: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  mb.map(_ => o)
+        ^
+sortedImplicitNotFound.scala:43: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  mb.flatMap(_ => List(o))
+            ^
+sortedImplicitNotFound.scala:47: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  mb.zip(List(o))
+        ^
+sortedImplicitNotFound.scala:51: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  mb.collect{case _ => o}
+            ^
+sortedImplicitNotFound.scala:57: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ib.map(_ => o)
+        ^
+sortedImplicitNotFound.scala:61: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ib.flatMap(_ => List(o))
+            ^
+sortedImplicitNotFound.scala:65: error: No implicit Ordering[Object] found to build a SortedSet[(Int, Object)]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ib.zip(List(o))
+        ^
+sortedImplicitNotFound.scala:69: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Int] first by calling `unsorted`.
+  ib.collect{case _ => o}
+            ^
+sortedImplicitNotFound.scala:74: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+  es.map(_ => o)
+        ^
+sortedImplicitNotFound.scala:77: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+  es.flatMap(_ => List(o))
+            ^
+sortedImplicitNotFound.scala:80: error: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
+starting with method orderingToOrdered in object Ordered
+  es.zip(List(o)) // ah well...: diverging implicit expansion for type Ordering[(WeekDay.Value, Object)]
+        ^
+sortedImplicitNotFound.scala:83: error: No implicit Ordering[Object] found to build a SortedSet[Object]. You may want to upcast to a Set[Value] first by calling `unsorted`.
+  es.collect{case _ => o}
+            ^
+sortedImplicitNotFound.scala:88: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  mm.map(_ => (o, o))
+        ^
+sortedImplicitNotFound.scala:91: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  mm.flatMap(_ => List((o, o)))
+            ^
+sortedImplicitNotFound.scala:94: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  mm.collect{case _ => (o, o)}
+            ^
+sortedImplicitNotFound.scala:99: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  im.map(_ => (o, o))
+        ^
+sortedImplicitNotFound.scala:102: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  im.flatMap(_ => List((o, o)))
+            ^
+sortedImplicitNotFound.scala:105: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
+  im.collect{case _ => (o, o)}
+            ^
+26 errors found

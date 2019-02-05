@@ -24,10 +24,10 @@ object Test extends ScaladocModelTest {
          *  - [[scala.NoLink]] Not linking :)
          */
         object Test {
-          def foo(param: Any) {}
-          def barr(l: scala.collection.immutable.List[Any]) {}
-          def bar(l: List[String]) {}   // TODO: Should be able to link to type aliases
-          def baz(d: java.util.Date) {} // Should not be resolved
+          def foo(param: Any): Unit = {}
+          def barr(l: scala.collection.immutable.List[Any]): Unit = {}
+          def bar(l: List[String]): Unit = {}   // TODO: Should be able to link to type aliases
+          def baz(d: java.util.Date): Unit = {} // Should not be resolved
         }
     """
 
@@ -44,11 +44,11 @@ object Test extends ScaladocModelTest {
     s"-no-link-warnings -doc-external-doc $scalaLibPath#$scalaURL"
   }
 
-  def testModel(rootPackage: Package) {
+  def testModel(rootPackage: Package): Unit = {
     import access._
     val test = rootPackage._object("Test")
 
-    def check(memberDef: Def, expected: Int) {
+    def check(memberDef: Def, expected: Int): Unit = {
       val externals = memberDef.valueParams(0)(0).resultType.refEntity collect {
         case (_, (LinkToExternalTpl(name, url, _), _)) => assert(url.contains(scalaURL)); name
       }
@@ -85,6 +85,6 @@ object Test extends ScaladocModelTest {
     }
 
     assert(countLinks(test.comment.get, isExpectedExternalLink) == 8,
-           countLinks(test.comment.get, isExpectedExternalLink) + " == 8")
+            "${countLinks(test.comment.get, isExpectedExternalLink)} == 8")
   }
 }

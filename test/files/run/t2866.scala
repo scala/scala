@@ -27,7 +27,7 @@ object Test extends App {
   }
 
   locally {
-    import A.one // warning: imported `one' is permanently hidden by definition of value one.
+    import A.one // warning: imported `one` is permanently hidden by definition of value one.
                  // !!! Really?
     //assert(implicitly[Int] == 1)
     implicit val one = 2

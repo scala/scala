@@ -1,4 +1,4 @@
-Map(abc -> 55)
+HashMap(abc -> 55)
 (a,0)
 (b,1)
 (c,2)

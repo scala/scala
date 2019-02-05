@@ -1,4 +1,14 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package tools.nsc
@@ -9,7 +19,6 @@ import base.comment._
 import diagram._
 
 import scala.collection._
-import scala.tools.nsc.doc.html.page.diagram.{DotRunner}
 import scala.util.matching.Regex
 import scala.reflect.macros.internal.macroImpl
 import symtab.Flags
@@ -28,7 +37,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, AnnotationClass }
   import rootMirror.{ RootPackage, EmptyPackage }
   import ModelFactory._
 
@@ -43,7 +52,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       thisFactory.universe = thisUniverse
       val settings = thisFactory.settings
       val rootPackage = modelCreation.createRootPackage
-      lazy val dotRunner = new DotRunner(settings)
     }
     _modelFinished = true
     // complete the links between model entities, everything that couldn't have been done before
@@ -78,7 +86,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def inTemplate: TemplateImpl = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
-    def annotations = sym.annotations.filterNot(_.tpe =:= typeOf[macroImpl]).map(makeAnnotation)
+    def annotations = sym.annotations.filterNot(_.atp =:= typeOf[macroImpl]).map(makeAnnotation)
     def inPackageObject: Boolean = sym.owner.isModuleClass && sym.owner.sourceModule.isPackageObject
     def isType = sym.name.isTypeName
   }
@@ -292,13 +300,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val assumedSourceRoot  = fixPath(settings.sourcepath.value) stripSuffix "/"
 
       if (!settings.docsourceurl.isDefault)
-        inSource map { case (file, _) =>
-          val filePath = fixPath(file.path).replaceFirst("^" + assumedSourceRoot, "").stripSuffix(".scala")
+        inSource map { case (file, line) =>
+          val filePathExt = fixPath(file.path).replaceFirst("^" + assumedSourceRoot, "")
+          val (filePath, fileExt) = filePathExt.splitAt(filePathExt.indexOf(".", filePathExt.lastIndexOf("/")))
           val tplOwner = this.inTemplate.qualifiedName
           val tplName = this.name
-          val patches = new Regex("""€\{(FILE_PATH|TPL_OWNER|TPL_NAME)\}""")
+          val patches = new Regex("""€\{(FILE_PATH|FILE_EXT|FILE_PATH_EXT|FILE_LINE|TPL_OWNER|TPL_NAME)\}""")
           def substitute(name: String): String = name match {
             case "FILE_PATH" => filePath
+            case "FILE_EXT" => fileExt
+            case "FILE_PATH_EXT" => filePathExt
+            case "FILE_LINE" => line.toString
             case "TPL_OWNER" => tplOwner
             case "TPL_NAME" => tplName
           }
@@ -635,6 +647,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           new DocTemplateImpl(bSym, inTpl) with Object {}
         else if (bSym.isTrait)
           new DocTemplateImpl(bSym, inTpl) with Trait {}
+        else if (bSym.isClass && bSym.asClass.baseClasses.contains(AnnotationClass))
+          new DocTemplateImpl(bSym, inTpl) with model.AnnotationClass {}
         else if (bSym.isClass || bSym == AnyRefClass)
           new DocTemplateImpl(bSym, inTpl) with Class {}
         else
@@ -995,10 +1009,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     (!sym.isModule || sym.moduleClass.isInitialized) &&
     // documenting only public and protected members
     localShouldDocument(sym) &&
-    // Only this class's constructors are part of its members, inherited constructors are not.
-    (!sym.isConstructor || sym.owner == inTpl.sym) &&
-    // If the @bridge annotation overrides a normal member, show it
-    !isPureBridge(sym)
+    // Only this class's constructors are part of its members; inherited constructors are not.
+    (!sym.isConstructor || sym.owner == inTpl.sym)
   }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean =
@@ -1007,9 +1019,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   def localShouldDocument(aSym: Symbol): Boolean =
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
-
-  /** Filter '@bridge' methods only if *they don't override non-bridge methods*. See scala/bug#5373 for details */
-  def isPureBridge(sym: Symbol) = sym.isBridge && sym.allOverriddenSymbols.forall(_.isBridge)
 
   // the classes that are excluded from the index should also be excluded from the diagrams
   def classExcluded(clazz: TemplateEntity): Boolean = settings.hardcoded.isExcluded(clazz.qualifiedName)

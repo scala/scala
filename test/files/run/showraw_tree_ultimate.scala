@@ -3,7 +3,7 @@ import scala.tools.reflect.ToolBox
 
 object Test extends App {
   val tb = runtimeMirror(getClass.getClassLoader).mkToolBox()
-  val tree1 = reify(new collection.immutable.HashMap[String, String])
+  val tree1 = reify(new collection.immutable.ArraySeq.ofRef[String](Array()))
   val tree2 = reify(new collection.mutable.HashMap[String, String])
   def stabilize(s: String) = """#\d+""".r.replaceAllIn(s, "#<id>")
   println(stabilize(showRaw(tb.typecheck(tree1.tree), printIds = true, printKinds = true, printTypes = true)))

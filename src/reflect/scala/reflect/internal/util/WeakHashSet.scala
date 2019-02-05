@@ -1,8 +1,22 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect.internal.util
 
-import java.lang.ref.{WeakReference, ReferenceQueue}
+import java.lang.ref.{ReferenceQueue, WeakReference}
+
 import scala.annotation.tailrec
+import scala.collection.{AbstractIndexedSeqView, IndexedSeqView}
 import scala.collection.mutable.{Set => MSet}
 
 /**
@@ -15,7 +29,7 @@ import scala.collection.mutable.{Set => MSet}
  * This set implementation is not in general thread safe without external concurrency control. However it behaves
  * properly when GC concurrently collects elements in this set.
  */
-final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends Set[A] with Function1[A, Boolean] with MSet[A] {
+final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends MSet[A] {
 
   import WeakHashSet._
 
@@ -60,6 +74,8 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   private[this] def computeThreshold: Int = (table.size * loadFactor).ceil.toInt
 
+  def get(elem: A): Option[A] = Option(findEntry(elem))
+
   /**
    * find the bucket associated with an element's hash code
    */
@@ -82,7 +98,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   /**
    * remove a single entry from a linked list in a given bucket
    */
-  private[this] def remove(bucket: Int, prevEntry: Entry[A], entry: Entry[A]) {
+  private[this] def remove(bucket: Int, prevEntry: Entry[A], entry: Entry[A]): Unit = {
     prevEntry match {
       case null => table(bucket) = entry.tail
       case _ => prevEntry.tail = entry.tail
@@ -93,7 +109,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   /**
    * remove entries associated with elements that have been gc'ed
    */
-  private[this] def removeStaleEntries() {
+  private[this] def removeStaleEntries(): Unit = {
     def poll(): Entry[A] = queue.poll().asInstanceOf[Entry[A]]
 
     @tailrec
@@ -118,7 +134,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   /**
    * Double the size of the internal table
    */
-  private[this] def resize() {
+  private[this] def resize(): Unit = {
     val oldTable = table
     table = new Array[Entry[A]](oldTable.size * 2)
     threshold = computeThreshold
@@ -143,8 +159,10 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     tableLoop(0)
   }
 
+  def contains(elem: A): Boolean = findEntry(elem) ne null
+
   // from scala.reflect.internal.Set, find an element or null if it isn't contained
-  override def findEntry(elem: A): A = elem match {
+  def findEntry(elem: A): A = elem match {
     case null => throw new NullPointerException("WeakHashSet cannot hold nulls")
     case _    => {
       removeStaleEntries()
@@ -195,7 +213,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   }
 
   // add an element to this set unless it's already in there and return this set
-  override def +(elem: A): this.type = elem match {
+  override def addOne (elem: A): this.type = elem match {
     case null => throw new NullPointerException("WeakHashSet cannot hold nulls")
     case _    => {
       removeStaleEntries()
@@ -203,7 +221,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
       val bucket = bucketFor(hash)
       val oldHead = table(bucket)
 
-      def add() {
+      def add(): Unit = {
         table(bucket) = new Entry(elem, hash, oldHead, queue)
         count += 1
         if (count > threshold) resize()
@@ -221,13 +239,8 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     }
   }
 
-  def +=(elem: A) = this + elem
-
-  // from scala.reflect.internal.Set
-  override def addEntry(x: A) { this += x }
-
   // remove an element from this set and return this set
-  override def -(elem: A): this.type = elem match {
+  override def subtractOne(elem: A): this.type = elem match {
     case null => this
     case _ => {
       removeStaleEntries()
@@ -247,7 +260,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     }
   }
 
-  def -=(elem: A) = this - elem
+  override def -(elem: A) = subtractOne(elem)
 
   // empty this set
   override def clear(): Unit = {
@@ -269,8 +282,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     count
   }
 
-  override def apply(x: A): Boolean = this contains x
-
+  override def isEmpty: Boolean = size == 0
   override def foreach[U](f: A => U): Unit = iterator foreach f
 
   // It has the `()` because iterator runs `removeStaleEntries()`
@@ -280,7 +292,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   override def iterator: Iterator[A] = {
     removeStaleEntries()
 
-    new Iterator[A] {
+    new collection.AbstractIterator[A] {
 
       /**
        * the bucket currently being examined. Initially it's set past the last bucket and will be decremented
@@ -339,7 +351,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      * the entries must be stable. If any are garbage collected during validation
      * then an assertion may inappropriately fire.
      */
-    def fullyValidate: Unit = {
+    def fullyValidate(): Unit = {
       var computedCount = 0
       var bucket = 0
       while (bucket < table.size) {
@@ -365,7 +377,17 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
     /**
      *  Produces a diagnostic dump of the table that underlies this hash set.
      */
-    def dump = table.deep
+    def dump = {
+      def deep[T](a: Array[T]): IndexedSeqView[Any] = new AbstractIndexedSeqView[Any] {
+        def length = a.length
+        def apply(idx: Int): Any = a(idx) match {
+          case x: AnyRef if x.getClass.isArray => deep(x.asInstanceOf[Array[_]])
+          case x => x
+        }
+        override def className = "Array"
+      }
+      deep(table)
+    }
 
     /**
      * Number of buckets that hold collisions. Useful for diagnosing performance issues.

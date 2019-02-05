@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author Anders Bach Nielsen
- * @version 1.0
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -69,7 +75,7 @@ trait PhaseAssembly {
      * Also add the edge object to the set of edges, and to the dependency
      * list of the nodes
      */
-    def softConnectNodes(frm: Node, to: Node) {
+    def softConnectNodes(frm: Node, to: Node): Unit = {
       val e = Edge(frm, to, false)
       this.edges += e
 
@@ -81,7 +87,7 @@ trait PhaseAssembly {
      * Also add the edge object to the set of edges, and to the dependency
      * list of the nodes
      */
-    def hardConnectNodes(frm: Node, to: Node) {
+    def hardConnectNodes(frm: Node, to: Node): Unit = {
       val e = Edge(frm, to, true)
       this.edges += e
 
@@ -98,7 +104,7 @@ trait PhaseAssembly {
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
      */
-    def collapseHardLinksAndLevels(node: Node, lvl: Int) {
+    def collapseHardLinksAndLevels(node: Node, lvl: Int): Unit = {
       if (node.visited) {
         dump("phase-cycle")
         throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
@@ -130,7 +136,7 @@ trait PhaseAssembly {
      * need to check that it's the only dependency. If not, then we will promote the
      * other dependencies down
      */
-    def validateAndEnforceHardlinks() {
+    def validateAndEnforceHardlinks(): Unit = {
       var hardlinks = edges.filter(_.hard)
       for (hl <- hardlinks) {
         if (hl.frm.after.size > 1) {
@@ -147,7 +153,7 @@ trait PhaseAssembly {
           val sanity = Nil ++ hl.to.before.filter(_.hard)
           if (sanity.length == 0) {
             throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-          } else if (sanity.length > 1) {
+          } else if (sanity.lengthIs > 1) {
             dump("phase-order")
             val following = (sanity map (_.frm.phasename)).sorted mkString ","
             throw new FatalError(s"Multiple phases want to run right after ${sanity.head.to.phasename}; followers: $following; created phase-order.dot")
@@ -174,7 +180,7 @@ trait PhaseAssembly {
      *  `Inform` with warnings, if an external phase has a
      *  dependency on something that is dropped.
      */
-    def removeDanglingNodes() {
+    def removeDanglingNodes(): Unit = {
       for (node <- nodes.values filter (_.phaseobj.isEmpty)) {
         val msg = "dropping dependency on node with no phase object: "+node.phasename
         informProgress(msg)
@@ -269,7 +275,7 @@ trait PhaseAssembly {
    * file showing its structure.
    * Plug-in supplied phases are marked as green nodes and hard links are marked as blue edges.
    */
-  private def graphToDotFile(graph: DependencyGraph, filename: String) {
+  private def graphToDotFile(graph: DependencyGraph, filename: String): Unit = {
     val sbuf = new StringBuilder
     val extnodes = new mutable.HashSet[graph.Node]()
     val fatnodes = new mutable.HashSet[graph.Node]()

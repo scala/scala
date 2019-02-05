@@ -1,5 +1,7 @@
 package t1
 
+import scala.reflect.ClassManifest
+
 trait Element[T] {
 }
 

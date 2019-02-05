@@ -1,6 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -47,7 +54,7 @@ trait Kinds {
       }
     }
     private def kindMessage(a: Symbol, p: Symbol)(f: (String, String) => String): String =
-      f(a+qualify(a,p), p+qualify(p,a))
+      f(a.toString+qualify(a,p), p.toString+qualify(p,a))
 
     // Normally it's nicer to print nothing rather than '>: Nothing <: Any' all over
     // the place, but here we need it for the message to make sense.
@@ -74,7 +81,7 @@ trait Kinds {
     )
 
     def errorMessage(targ: Type, tparam: Symbol): String = (
-        (targ+"'s type parameters do not match "+tparam+"'s expected parameters:")
+        (s"${targ}'s type parameters do not match ${tparam}'s expected parameters:")
       + buildMessage(arity, arityMessage)
       + buildMessage(variance, varianceMessage)
       + buildMessage(strictness, strictnessMessage)
@@ -140,7 +147,7 @@ trait Kinds {
       // have very different type parameters
       val hkparams = param.typeParams
 
-      def kindCheck(cond: Boolean, f: KindErrors => KindErrors) {
+      def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit = {
         if (!cond)
           kindErrors = f(kindErrors)
       }
@@ -305,7 +312,7 @@ trait Kinds {
           case Head(o, _, _) => o
           case _             => 0
         }).max
-        StringState((tokens /: (0 to maxOrder)) { (ts: Seq[ScalaNotation], o: Int) =>
+        StringState((0 to maxOrder).foldLeft(tokens){ (ts: Seq[ScalaNotation], o: Int) =>
           if (countByOrder(o) <= 1)
             ts map {
               case Head(`o`, _, a) => Head(o, None, a)
@@ -335,7 +342,7 @@ trait Kinds {
     private[internal] def buildState(sym: Symbol, v: Variance)(s: StringState): StringState = {
       s.append(v.symbolicString).appendHead(order, sym).append(bounds.scalaNotation(_.toString))
     }
-    def scalaNotation: String = Kind.Head(order, None, None) + bounds.scalaNotation(_.toString)
+    def scalaNotation: String = Kind.Head(order, None, None).toString + bounds.scalaNotation(_.toString)
     def starNotation: String = "*" + bounds.starNotation(_.toString)
   }
   object ProperTypeKind {

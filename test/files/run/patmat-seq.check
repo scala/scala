@@ -1,0 +1,405 @@
+newSource1.scala:35: warning: unreachable code
+    case B(x, y)       => (x, y)
+                          ^
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty> {
+  object A extends scala.AnyRef {
+    def <init>(): A.type = {
+      A.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): collection.SeqFactory.UnapplySeqWrapper[Int] = new collection.SeqFactory.UnapplySeqWrapper[Int](scala.collection.mutable.ArrayBuffer.apply[Int](1, 2, 3))
+  };
+  object B extends scala.AnyRef {
+    def <init>(): B.type = {
+      B.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Some[scala.collection.immutable.ArraySeq[Int]] = new Some[scala.collection.immutable.ArraySeq[Int]](scala.collection.immutable.ArraySeq.apply[Int](1, 2, 3)((ClassTag.Int: scala.reflect.ClassTag[Int])))
+  };
+  class Foo[T] extends scala.AnyRef {
+    def <init>(): Foo[T] = {
+      Foo.super.<init>();
+      ()
+    };
+    def isEmpty: Boolean = false;
+    def get: Foo[T] = this;
+    def apply(i: Int): T = scala.Predef.???;
+    def length: Int = 2;
+    def drop(n: Int): Seq[T] = scala.Predef.???;
+    def toSeq: Seq[T] = scala.Predef.???
+  };
+  object C extends scala.AnyRef {
+    def <init>(): C.type = {
+      C.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Foo[Int] = new Foo[Int]()
+  };
+  object D extends scala.AnyRef {
+    def <init>(): D.type = {
+      D.super.<init>();
+      ()
+    };
+    def unapplySeq[T](a: Int): Some[Foo[T]] = new Some[Foo[T]](new Foo[T]())
+  };
+  object E extends scala.AnyRef {
+    def <init>(): E.type = {
+      E.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Array.UnapplySeqWrapper[Int] = new Array.UnapplySeqWrapper[Int](scala.Array.apply(1, 2, 3))
+  };
+  object F extends scala.AnyRef {
+    def <init>(): F.type = {
+      F.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Some[String] = new Some[String]("123")
+  };
+  class T extends scala.AnyRef {
+    def <init>(): T = {
+      T.super.<init>();
+      ()
+    };
+    def t: Any = {
+      case <synthetic> val x1: Int = 2;
+      case16(){
+        <synthetic> val o18: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
+        if (o18.isEmpty.unary_!)
+          {
+            val xs: Seq[Int] = o18.get.toSeq;
+            matchEnd15(xs)
+          }
+        else
+          case17()
+      };
+      case17(){
+        <synthetic> val o20: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
+        if (o20.isEmpty.unary_!.&&(o20.get.!=(null).&&(o20.get.lengthCompare(2).==(0))))
+          {
+            val x: Int = o20.get.apply(0);
+            val y: Int = o20.get.apply(1);
+            matchEnd15(new (Int, Int)(x, y))
+          }
+        else
+          case19()
+      };
+      case19(){
+        <synthetic> val o22: collection.SeqFactory.UnapplySeqWrapper[Int] = A.unapplySeq(x1);
+        if (o22.isEmpty.unary_!.&&(o22.get.!=(null).&&(o22.get.lengthCompare(1).>=(0))))
+          {
+            val x: Int = o22.get.apply(0);
+            val xs: Seq[Int] = o22.get.drop(1);
+            matchEnd15(new (Int, Seq[Int])(x, xs))
+          }
+        else
+          case21()
+      };
+      case21(){
+        <synthetic> val o24: Some[scala.collection.immutable.ArraySeq[Int]] = B.unapplySeq(x1);
+        if (o24.isEmpty.unary_!)
+          {
+            val xs: Seq[Int] = o24.get;
+            matchEnd15(xs)
+          }
+        else
+          case23()
+      };
+      case23(){
+        <synthetic> val o26: Some[scala.collection.immutable.ArraySeq[Int]] = B.unapplySeq(x1);
+        if (o26.isEmpty.unary_!.&&(o26.get.!=(null).&&(o26.get.lengthCompare(2).==(0))))
+          {
+            val x: Int = o26.get.apply(0);
+            val y: Int = o26.get.apply(1);
+            matchEnd15(new (Int, Int)(x, y))
+          }
+        else
+          case25()
+      };
+      case25(){
+        <synthetic> val o28: Some[scala.collection.immutable.ArraySeq[Int]] = B.unapplySeq(x1);
+        if (o28.isEmpty.unary_!.&&(o28.get.!=(null).&&(o28.get.lengthCompare(1).>=(0))))
+          {
+            val x: Int = o28.get.apply(0);
+            val xs: Seq[Int] = o28.get.drop(1);
+            matchEnd15(new (Int, Seq[Int])(x, xs))
+          }
+        else
+          case27()
+      };
+      case27(){
+        <synthetic> val o30: Foo[Int] = C.unapplySeq(x1);
+        if (o30.isEmpty.unary_!)
+          {
+            val xs: Seq[Int] = o30.get.toSeq;
+            matchEnd15(xs)
+          }
+        else
+          case29()
+      };
+      case29(){
+        <synthetic> val o32: Foo[Int] = C.unapplySeq(x1);
+        if (o32.isEmpty.unary_!.&&(o32.get.!=(null).&&(scala.math.`package`.signum(o32.get.length.-(2)).==(0))))
+          {
+            val x: Int = o32.get.apply(0);
+            val y: Int = o32.get.apply(1);
+            matchEnd15(new (Int, Int)(x, y))
+          }
+        else
+          case31()
+      };
+      case31(){
+        <synthetic> val o34: Foo[Int] = C.unapplySeq(x1);
+        if (o34.isEmpty.unary_!.&&(o34.get.!=(null).&&(scala.math.`package`.signum(o34.get.length.-(1)).>=(0))))
+          {
+            val x: Int = o34.get.apply(0);
+            val xs: Seq[Int] = o34.get.drop(1);
+            matchEnd15(new (Int, Seq[Int])(x, xs))
+          }
+        else
+          case33()
+      };
+      case33(){
+        <synthetic> val o36: Some[Foo[Nothing]] = D.unapplySeq[Nothing](x1);
+        if (o36.isEmpty.unary_!)
+          {
+            val xs: Seq[Nothing] = o36.get.toSeq;
+            matchEnd15(xs)
+          }
+        else
+          case35()
+      };
+      case35(){
+        <synthetic> val o38: Some[Foo[Nothing]] = D.unapplySeq[Nothing](x1);
+        if (o38.isEmpty.unary_!.&&(o38.get.!=(null).&&(scala.math.`package`.signum(o38.get.length.-(2)).==(0))))
+          {
+            val x: Nothing = o38.get.apply(0);
+            val y: Nothing = o38.get.apply(1);
+            matchEnd15(new (Nothing, Nothing)(x, y))
+          }
+        else
+          case37()
+      };
+      case37(){
+        <synthetic> val o40: Some[Foo[Nothing]] = D.unapplySeq[Nothing](x1);
+        if (o40.isEmpty.unary_!.&&(o40.get.!=(null).&&(scala.math.`package`.signum(o40.get.length.-(1)).>=(0))))
+          {
+            val x: Nothing = o40.get.apply(0);
+            val xs: Seq[Nothing] = o40.get.drop(1);
+            matchEnd15(new (Nothing, Seq[Nothing])(x, xs))
+          }
+        else
+          case39()
+      };
+      case39(){
+        matchEnd15(throw new MatchError(x1))
+      };
+      matchEnd15(x: Any){
+        x
+      }
+    }
+  }
+}
+
+[[syntax trees at end of               posterasure]] // newSource1.scala
+package <empty> {
+  object A extends Object {
+    def <init>(): A.type = {
+      A.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): scala.collection.SeqOps = scala.collection.mutable.ArrayBuffer.apply(scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{1, 2, 3})).$asInstanceOf[scala.collection.SeqOps]()
+  };
+  object B extends Object {
+    def <init>(): B.type = {
+      B.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Some = new Some(scala.collection.immutable.ArraySeq.apply(scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{1, 2, 3}), (ClassTag.Int(): scala.reflect.ClassTag)))
+  };
+  class Foo extends Object {
+    def <init>(): Foo = {
+      Foo.super.<init>();
+      ()
+    };
+    def isEmpty(): Boolean = false;
+    def get(): Foo = this;
+    def apply(i: Int): Object = scala.Predef.???();
+    def length(): Int = 2;
+    def drop(n: Int): Seq = scala.Predef.???();
+    def toSeq(): Seq = scala.Predef.???()
+  };
+  object C extends Object {
+    def <init>(): C.type = {
+      C.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Foo = new Foo()
+  };
+  object D extends Object {
+    def <init>(): D.type = {
+      D.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Some = new Some(new Foo())
+  };
+  object E extends Object {
+    def <init>(): E.type = {
+      E.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Object = scala.Array.apply(1, scala.runtime.ScalaRunTime.wrapIntArray(Array[Int]{2, 3}))
+  };
+  object F extends Object {
+    def <init>(): F.type = {
+      F.super.<init>();
+      ()
+    };
+    def unapplySeq(a: Int): Some = new Some("123")
+  };
+  class T extends Object {
+    def <init>(): T = {
+      T.super.<init>();
+      ()
+    };
+    def t(): Object = {
+      case <synthetic> val x1: Int = 2;
+      case16(){
+        <synthetic> val o18: scala.collection.SeqOps = A.unapplySeq(x1);
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o18).unary_!())
+          {
+            val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.toSeq$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o18));
+            matchEnd15(xs)
+          }
+        else
+          case17()
+      };
+      case17(){
+        <synthetic> val o20: scala.collection.SeqOps = A.unapplySeq(x1);
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o20).unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 2).==(0))))
+          {
+            val x: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 0));
+            val y: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o20), 1));
+            matchEnd15(new Tuple2$mcII$sp(x, y))
+          }
+        else
+          case19()
+      };
+      case19(){
+        <synthetic> val o22: scala.collection.SeqOps = A.unapplySeq(x1);
+        if (scala.collection.SeqFactory.UnapplySeqWrapper.isEmpty$extension(o22).unary_!().&&(new collection.SeqFactory.UnapplySeqWrapper(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22)).!=(null).&&(scala.collection.SeqFactory.UnapplySeqWrapper.lengthCompare$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1).>=(0))))
+          {
+            val x: Int = unbox(scala.collection.SeqFactory.UnapplySeqWrapper.apply$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 0));
+            val xs: Seq = scala.collection.SeqFactory.UnapplySeqWrapper.drop$extension(scala.collection.SeqFactory.UnapplySeqWrapper.get$extension(o22), 1);
+            matchEnd15(new Tuple2(scala.Int.box(x), xs))
+          }
+        else
+          case21()
+      };
+      case21(){
+        <synthetic> val o24: Some = B.unapplySeq(x1);
+        if (o24.isEmpty().unary_!())
+          {
+            val xs: Seq = o24.get().$asInstanceOf[Seq]();
+            matchEnd15(xs)
+          }
+        else
+          case23()
+      };
+      case23(){
+        <synthetic> val o26: Some = B.unapplySeq(x1);
+        if (o26.isEmpty().unary_!().&&(o26.get().!=(null).&&(o26.get().$asInstanceOf[collection.IndexedSeqOps]().lengthCompare(2).==(0))))
+          {
+            val x: Int = unbox(o26.get().$asInstanceOf[collection.immutable.ArraySeq]().apply(0));
+            val y: Int = unbox(o26.get().$asInstanceOf[collection.immutable.ArraySeq]().apply(1));
+            matchEnd15(new Tuple2$mcII$sp(x, y))
+          }
+        else
+          case25()
+      };
+      case25(){
+        <synthetic> val o28: Some = B.unapplySeq(x1);
+        if (o28.isEmpty().unary_!().&&(o28.get().!=(null).&&(o28.get().$asInstanceOf[collection.IndexedSeqOps]().lengthCompare(1).>=(0))))
+          {
+            val x: Int = unbox(o28.get().$asInstanceOf[collection.immutable.ArraySeq]().apply(0));
+            val xs: Seq = o28.get().$asInstanceOf[collection.immutable.ArraySeq]().drop(1);
+            matchEnd15(new Tuple2(scala.Int.box(x), xs))
+          }
+        else
+          case27()
+      };
+      case27(){
+        <synthetic> val o30: Foo = C.unapplySeq(x1);
+        if (o30.isEmpty().unary_!())
+          {
+            val xs: Seq = o30.get().toSeq();
+            matchEnd15(xs)
+          }
+        else
+          case29()
+      };
+      case29(){
+        <synthetic> val o32: Foo = C.unapplySeq(x1);
+        if (o32.isEmpty().unary_!().&&(o32.get().!=(null).&&(scala.math.`package`.signum(o32.get().length().-(2)).==(0))))
+          {
+            val x: Int = unbox(o32.get().apply(0));
+            val y: Int = unbox(o32.get().apply(1));
+            matchEnd15(new Tuple2$mcII$sp(x, y))
+          }
+        else
+          case31()
+      };
+      case31(){
+        <synthetic> val o34: Foo = C.unapplySeq(x1);
+        if (o34.isEmpty().unary_!().&&(o34.get().!=(null).&&(scala.math.`package`.signum(o34.get().length().-(1)).>=(0))))
+          {
+            val x: Int = unbox(o34.get().apply(0));
+            val xs: Seq = o34.get().drop(1);
+            matchEnd15(new Tuple2(scala.Int.box(x), xs))
+          }
+        else
+          case33()
+      };
+      case33(){
+        <synthetic> val o36: Some = D.unapplySeq(x1);
+        if (o36.isEmpty().unary_!())
+          {
+            val xs: Seq = o36.get().$asInstanceOf[Foo]().toSeq();
+            matchEnd15(xs)
+          }
+        else
+          case35()
+      };
+      case35(){
+        <synthetic> val o38: Some = D.unapplySeq(x1);
+        if (o38.isEmpty().unary_!().&&(o38.get().!=(null).&&(scala.math.`package`.signum(o38.get().$asInstanceOf[Foo]().length().-(2)).==(0))))
+          {
+            val x: Nothing = o38.get().$asInstanceOf[Foo]().apply(0).$asInstanceOf[Nothing]();
+            val y: Nothing = o38.get().$asInstanceOf[Foo]().apply(1).$asInstanceOf[Nothing]();
+            matchEnd15(new Tuple2(x, y))
+          }
+        else
+          case37()
+      };
+      case37(){
+        <synthetic> val o40: Some = D.unapplySeq(x1);
+        if (o40.isEmpty().unary_!().&&(o40.get().!=(null).&&(scala.math.`package`.signum(o40.get().$asInstanceOf[Foo]().length().-(1)).>=(0))))
+          {
+            val x: Nothing = o40.get().$asInstanceOf[Foo]().apply(0).$asInstanceOf[Nothing]();
+            val xs: Seq = o40.get().$asInstanceOf[Foo]().drop(1);
+            matchEnd15(new Tuple2(x, xs))
+          }
+        else
+          case39()
+      };
+      case39(){
+        matchEnd15(throw new MatchError(scala.Int.box(x1)))
+      };
+      matchEnd15(x: Object){
+        x
+      }
+    }
+  }
+}
+

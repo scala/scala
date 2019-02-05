@@ -71,7 +71,7 @@ trait Transactional {
       null
     }
 
-  def getter(thisTrans: Transaction) {
+  def getter(thisTrans: Transaction): Unit = {
     if (writer == thisTrans) return
     var r = readers
     while (r != null && r.head.status != Transaction.Running) { r = r.next; readers = r }
@@ -91,7 +91,7 @@ trait Transactional {
     }
   }
 
-  def setter(thisTrans: Transaction) {
+  def setter(thisTrans: Transaction): Unit = {
     if (writer == thisTrans) return
     synchronized {
       val w = currentWriter()

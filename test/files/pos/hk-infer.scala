@@ -16,7 +16,7 @@ object DoesWork {
 
 // Testing the not giving of explicit Booper[M] arguments.
 object ShouldWorkHK {
-  class Booper[M[_]](xs: Seq[M[_]]) extends collection.generic.SeqForwarder[M[_]] {
+  class Booper[M[_]](xs: Seq[M[_]]) {
     def underlying = xs
     def BOOP(ys: Seq[M[_]]) = new Booper(xs ++ ys)
   }
@@ -26,7 +26,7 @@ object ShouldWorkHK {
 }
 
 object DoesWorkHK {
-  class Booper[M[_]](xs: Seq[M[_]]) extends collection.generic.SeqForwarder[M[_]] {
+  class Booper[M[_]](xs: Seq[M[_]]) {
     def underlying = xs
     def BOOP(ys: Seq[M[_]]) = new Booper[M](xs ++ ys)
   }

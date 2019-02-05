@@ -10,10 +10,10 @@ object Test extends App {
 
   def charObject(a: java.lang.Character, b: java.lang.Object) = assert(a == b)
 
-  numNum(new Integer(1), new Integer(1))
-  numChar(new Integer(97), new Character('a'))
-  numObject(new Integer(1), new Integer(1))
-  numObject(new Integer(97), new Character('a'))
+  numNum(Integer.valueOf(1), Integer.valueOf(1))
+  numChar(Integer.valueOf(97), Character.valueOf('a'))
+  numObject(Integer.valueOf(1), Integer.valueOf(1))
+  numObject(Integer.valueOf(97), Character.valueOf('a'))
 
-  charObject(new Character('a'), new Integer(97))
+  charObject(Character.valueOf('a'), Integer.valueOf(97))
 }

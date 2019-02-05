@@ -2,8 +2,8 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import reporters.{Reporter => CompilerReporter}
 import scala.tools.nsc.interactive.InteractiveReporter
+import scala.reflect.internal.{Reporter => CompilerReporter}
 import scala.reflect.internal.util.SourceFile
 
 /** Deterministically interrupts typechecking of `code` when a definition named
@@ -21,9 +21,9 @@ abstract class IdempotencyTest { self =>
   }
 
   object compiler extends Global(settings, compilerReporter) {
-    override def checkForMoreWork(pos: Position) {
+    override def checkForMoreWork(pos: Position): Unit = {
     }
-    override def signalDone(context: Context, old: Tree, result: Tree) {
+    override def signalDone(context: Context, old: Tree, result: Tree): Unit = {
       // println("signalDone: " + old.toString.take(50).replaceAll("\n", "\\n"))
       if (!interrupted && lockedCount == 0 && interruptsEnabled && shouldInterrupt(result)) {
         interrupted = true
@@ -35,7 +35,7 @@ abstract class IdempotencyTest { self =>
     }
 
     // we're driving manually using our own thread, disable the check here.
-    override def assertCorrectThread() {}
+    override def assertCorrectThread(): Unit = {}
   }
 
   import compiler._
@@ -53,12 +53,12 @@ abstract class IdempotencyTest { self =>
   private val source: SourceFile = newSourceFile(code)
   private def markerPosition: Position = source.position(code.indexOf("/*?*/"))
 
-  def assertNoProblems() {
+  def assertNoProblems(): Unit = {
     val problems = getUnit(source).get.problems
     assert(problems.isEmpty, problems.mkString("\n"))
   }
 
-  def show() {
+  def show(): Unit = {
     reloadSource(source)
     try {
       typedTree(source, true)
@@ -69,5 +69,5 @@ abstract class IdempotencyTest { self =>
     assertNoProblems()
   }
 
-  def main(args: Array[String]) { show() }
+  def main(args: Array[String]): Unit = { show() }
 }

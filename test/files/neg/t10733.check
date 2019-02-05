@@ -1,0 +1,13 @@
+t10733.scala:6: error: unbound wildcard type
+  val a: T[_ <: _] = null
+                ^
+t10733.scala:7: error: unbound wildcard type
+  val b: T[_ >: _] = null
+                ^
+t10733.scala:9: error: unbound wildcard type
+  def x[Y <: _] = null
+             ^
+t10733.scala:10: error: unbound wildcard type
+  def y[X >: _ <: Int] = null
+             ^
+four errors found

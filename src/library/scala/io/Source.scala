@@ -1,15 +1,19 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package io
 
-import scala.collection.AbstractIterator
+import scala.collection.{AbstractIterator, BufferedIterator}
 import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
 import java.net.{ URI, URL }
 
@@ -17,7 +21,6 @@ import java.net.{ URI, URL }
  *  representation of a source file.
  *
  *  @author  Burak Emir, Paul Phillips
- *  @version 1.0, 19/08/2004
  */
 object Source {
   val DefaultBufSize = 2048
@@ -228,7 +231,7 @@ abstract class Source extends Iterator[Char] with Closeable {
       }
     }
     def hasNext = iter.hasNext
-    def next = {
+    def next() = {
       sb.clear()
       while (getc()) { }
       sb.toString
@@ -301,7 +304,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   def reportError(
     pos: Int,
     msg: String,
-    out: PrintStream = Console.err)
+    out: PrintStream = Console.err): Unit =
   {
     nerrors += 1
     report(pos, msg, out)
@@ -313,7 +316,7 @@ abstract class Source extends Iterator[Char] with Closeable {
    *  @param msg the error message to report
    *  @param out PrintStream to use
    */
-  def report(pos: Int, msg: String, out: PrintStream) {
+  def report(pos: Int, msg: String, out: PrintStream): Unit = {
     val line  = Position line pos
     val col   = Position column pos
 
@@ -328,7 +331,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   def reportWarning(
     pos: Int,
     msg: String,
-    out: PrintStream = Console.out)
+    out: PrintStream = Console.out): Unit =
   {
     nwarnings += 1
     report(pos, "warning! " + msg, out)
@@ -361,7 +364,7 @@ abstract class Source extends Iterator[Char] with Closeable {
   }
 
   /** The close() method closes the underlying resource. */
-  def close() {
+  def close(): Unit = {
     if (closeFunction != null) closeFunction()
   }
 

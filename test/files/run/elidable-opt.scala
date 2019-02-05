@@ -1,3 +1,5 @@
+// scalac: -Xelide-below 900 -deprecation
+//
 import annotation._
 import elidable._
 
@@ -5,27 +7,27 @@ trait T {
   @elidable(FINEST) def f1(): Unit = ???
   @elidable(SEVERE) def f2(): Unit = ???
   @elidable(FINEST) def f3() = assert(false, "Should have been elided.")
-  def f4()
+  def f4(): Unit
 }
 
 class C extends T {
   override def f1() = println("Good for me, I was not elided. C.f1")
   override def f2() = println("Good for me, I was not elided. C.f2")
-  @elidable(FINEST) def f4() = assert(false, "Should have been elided.")
+  @elidable(FINEST) def f4(): Unit = assert(false, "Should have been elided.")
 }
 
 object O {
   @elidable(FINEST) def f1() = assert(false, "Should have been elided.")
   @elidable(INFO) def f2() = assert(false, "Should have been elided.")
   @elidable(SEVERE) def f3() = println("Good for me, I was not elided. O.f3")
-  @elidable(INFO) def f4 = assert(false, "Should have been elided (no parens).")
+  @elidable(INFO) def f4: Unit = assert(false, "Should have been elided (no parens).")
 }
 
 object Test {
   @elidable(FINEST) def f1() = assert(false, "Should have been elided.")
   @elidable(INFO) def f2() = assert(false, "Should have been elided.")
   @elidable(SEVERE) def f3() = println("Good for me, I was not elided. Test.f3")
-  @elidable(INFO) def f4 = assert(false, "Should have been elided (no parens).")
+  @elidable(INFO) def f4: Unit = assert(false, "Should have been elided (no parens).")
 
   @elidable(FINEST) def f5() = {}
   @elidable(FINEST) def f6() = true
@@ -33,7 +35,7 @@ object Test {
   @elidable(FINEST) def f8() = 1:Short
   @elidable(FINEST) def f9() = 1:Char
   @elidable(FINEST) def fa() = 1
-  @elidable(FINEST) def fb() = 1l
+  @elidable(FINEST) def fb() = 1L
   @elidable(FINEST) def fc() = 1.0f
   @elidable(FINEST) def fd() = 1.0
   @elidable(FINEST) def fe() = "s"

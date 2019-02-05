@@ -11,7 +11,7 @@ import scala.collection.mutable
 class TreeMapTest {
 
   @Test
-  def rangeMkString() {
+  def rangeMkString(): Unit = {
 
     val map = mutable.TreeMap[String, String]()
 

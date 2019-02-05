@@ -1,16 +1,24 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-
 
 package scala
 package reflect
 package io
 
-import java.io.{ IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
-import java.io.{ File => JFile }
+import java.io.{BufferedOutputStream, ByteArrayOutputStream, IOException, InputStream, OutputStream}
+import java.io.{File => JFile}
 import java.net.URL
+
+import scala.collection.AbstractIterable
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
@@ -30,7 +38,7 @@ object AbstractFile {
    * abstract regular file backed by it. Otherwise, returns `null`.
    */
   def getFile(file: File): AbstractFile =
-    if (file.isFile) new PlainFile(file) else null
+    if (!file.isDirectory) new PlainFile(file) else null
 
   /** Returns "getDirectory(new File(path))". */
   def getDirectory(path: Path): AbstractFile = getDirectory(path.toFile)
@@ -52,7 +60,7 @@ object AbstractFile {
    */
   def getURL(url: URL): AbstractFile =
     if (url.getProtocol == "file") {
-      val f = new java.io.File(url.getPath)
+      val f = new java.io.File(url.toURI)
       if (f.isDirectory) getDirectory(f)
       else getFile(f)
     } else null
@@ -86,7 +94,7 @@ object AbstractFile {
  *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
-abstract class AbstractFile extends Iterable[AbstractFile] {
+abstract class AbstractFile extends AbstractIterable[AbstractFile] {
 
   /** Returns the name of this abstract file. */
   def name: String
@@ -189,7 +197,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]
-
+  override def isEmpty: Boolean = iterator.isEmpty
   /** Returns the abstract file in this abstract directory with the specified
    *  name. If there is no such file, returns `null`. The argument
    *  `directory` tells whether to look for a directory or

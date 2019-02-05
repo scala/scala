@@ -1,16 +1,9 @@
+// scalac: -deprecation -Xfatal-warnings
+//
 object Test extends App {
-  def cm1[T: ClassManifest] = ???
-  def cm2[T](implicit evidence$1: ClassManifest[T]) = ???
-  val cm3: ClassManifest[Int] = null
-
   def rcm1[T: scala.reflect.ClassManifest] = ???
   def rcm2[T](implicit evidence$1: scala.reflect.ClassManifest[T]) = ???
   val rcm3: scala.reflect.ClassManifest[Int] = null
-
-  type CM[T] = ClassManifest[T]
-  def acm1[T: CM] = ???
-  def acm2[T](implicit evidence$1: CM[T]) = ???
-  val acm3: CM[Int] = null
 
   type RCM[T] = scala.reflect.ClassManifest[T]
   def arcm1[T: RCM] = ???

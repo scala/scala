@@ -1,0 +1,30 @@
+iterableonce-deprecations.scala:10: warning: method to in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(factory) instead
+    i.to(List)
+      ^
+iterableonce-deprecations.scala:12: warning: method toBuffer in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(ArrayBuffer) instead
+    i.toBuffer
+      ^
+iterableonce-deprecations.scala:13: warning: method toArray in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.toArray
+    i.toArray
+      ^
+iterableonce-deprecations.scala:14: warning: method toList in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(List) instead
+    i.toList
+      ^
+iterableonce-deprecations.scala:15: warning: method toSet in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Set) instead
+    i.toSet
+      ^
+iterableonce-deprecations.scala:16: warning: method toIterable in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Iterable) instead
+    i.toIterable
+      ^
+iterableonce-deprecations.scala:17: warning: method toSeq in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Seq) instead
+    i.toSeq
+      ^
+iterableonce-deprecations.scala:18: warning: method toStream in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(LazyList) instead
+    i.toStream
+      ^
+iterableonce-deprecations.scala:19: warning: method toVector in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Vector) instead
+    i.toVector
+      ^
+iterableonce-deprecations.scala:23: warning: method toMap in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Map) instead
+    ti.toMap
+       ^

@@ -1,5 +1,5 @@
 package test
 
 object Ob {
-  protected[test] def f {}
+  protected[test] def f: Unit = {}
 }

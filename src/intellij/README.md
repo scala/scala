@@ -17,7 +17,7 @@ are ignored.
 
 ## Dependencies
 
-For every module in the IntelliJ project there is a corresponding `-deps` library, for example `compiler-deps` provides `ant.jar` for the compiler codebase.
+For every module in the IntelliJ project there is a corresponding `-deps` library, for example `compiler-deps` provides JARs for the compiler codebase.
 The `.jar` files in these `-deps` libraries can be easily kept up-to-date by running `sbt intellij` again.
 This is necessary whenever the dependencies in the sbt build change, for example when the `starr` version is updated.
 
@@ -43,7 +43,7 @@ compiler, etc). Note that compilation IntelliJ is performed in a single pass (no
 bootstrap), like the sbt build.
 
 Note that the output directory when compiling in IntelliJ is the same as for the
-sbt and (deprecated) ant builds. This allows building incrementally in IntelliJ
+sbt build. This allows building incrementally in IntelliJ
 and directly use the changes using the command-line scripts in `build/quick/bin/`.
 
 ## Running JUnit Tests
@@ -75,7 +75,7 @@ To run the REPL create an "Application" configuration with
   - Main class: `scala.tools.nsc.MainGenericRunner`
   - Program arguments: `-usejavacp`
   - Working directory: the path of your checkout
-  - Use classpath of module: `repl`
+  - Use classpath of module: `repl-frontend`
 
 ## Updating the `.SAMPLE` files
 

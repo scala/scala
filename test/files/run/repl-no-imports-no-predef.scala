@@ -17,9 +17,7 @@ object Test extends scala.tools.partest.ReplTest {
 (1, 2)
 
 { import scala.Predef.ArrowAssoc; 1 -> 2 }
-{ import scala.Predef.ArrowAssoc; 1 → 2 }
 1 -> 2
-1 → 2
 
 val answer = 42
 { import scala.StringContext; s"answer: $answer" }
@@ -27,7 +25,6 @@ s"answer: $answer"
 
 "abc" + true
 
-{ import scala.Predef.any2stringadd; true + "abc" }
 true + "abc"
 
 var x = 10

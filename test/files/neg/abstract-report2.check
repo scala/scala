@@ -62,38 +62,19 @@ it has 13 unimplemented members.
 class Baz[T] extends Collection[T]
       ^
 abstract-report2.scala:15: error: class Dingus needs to be abstract, since:
-it has 24 unimplemented members.
+it has 7 unimplemented members.
 /** As seen from class Dingus, the missing signatures are as follows.
  *  For convenience, these are usable as stub implementations.
  */
-  // Members declared in java.util.Collection
-  def add(x$1: String): Boolean = ???
-  def addAll(x$1: java.util.Collection[_ <: String]): Boolean = ???
-  def clear(): Unit = ???
-  def contains(x$1: Any): Boolean = ???
-  def containsAll(x$1: java.util.Collection[_]): Boolean = ???
-  def iterator(): java.util.Iterator[String] = ???
-  def remove(x$1: Any): Boolean = ???
-  def removeAll(x$1: java.util.Collection[_]): Boolean = ???
-  def retainAll(x$1: java.util.Collection[_]): Boolean = ???
-  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
-  def toArray(): Array[Object] = ???
+  // Members declared in scala.collection.IterableOnce
+  def iterator: Iterator[(Set[Int], String)] = ???
 
-  // Members declared in scala.collection.GenTraversableOnce
-  def foreach[U](f: ((Set[Int], String)) => U): Unit = ???
-  def hasDefiniteSize: Boolean = ???
-  def isEmpty: Boolean = ???
-  def isTraversableAgain: Boolean = ???
-  def toIterator: Iterator[(Set[Int], String)] = ???
-  def toStream: Stream[(Set[Int], String)] = ???
-
-  // Members declared in scala.collection.TraversableOnce
-  def copyToArray[B >: (Set[Int], String)](xs: Array[B],start: Int,len: Int): Unit = ???
-  def exists(p: ((Set[Int], String)) => Boolean): Boolean = ???
-  def find(p: ((Set[Int], String)) => Boolean): Option[(Set[Int], String)] = ???
-  def forall(p: ((Set[Int], String)) => Boolean): Boolean = ???
-  def seq: scala.collection.TraversableOnce[(Set[Int], String)] = ???
-  def toTraversable: Traversable[(Set[Int], String)] = ???
+  // Members declared in scala.collection.IterableOps
+  protected def coll: List[(Set[Int], String)] = ???
+  protected def fromSpecific(coll: scala.collection.IterableOnce[(Set[Int], String)]): List[(Set[Int], String)] = ???
+  def iterableFactory: scala.collection.IterableFactory[[X]List[X]] = ???
+  protected def newSpecificBuilder: scala.collection.mutable.Builder[(Set[Int], String),List[(Set[Int], String)]] = ???
+  def toIterable: Iterable[(Set[Int], String)] = ???
 
   // Members declared in Xyz
   def foo(x: List[Int]): Boolean = ???

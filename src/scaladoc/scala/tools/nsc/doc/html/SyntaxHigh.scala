@@ -1,13 +1,19 @@
-/* NSC -- new Scala compiler
- * Copyright 2010-2013 LAMP/EPFL
- * @author  Stephane Micheloud
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package tools.nsc.doc.html
 
-import scala.xml.NodeSeq
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 
 /** Highlight the syntax of Scala code appearing in a `{{{` wiki block
   * (see method `HtmlPage.blockToHtml`).
@@ -16,6 +22,7 @@ import scala.annotation.tailrec
   * @version 1.0
   */
 private[html] object SyntaxHigh {
+  import HtmlTags.{Elems, Raw, NoElems}
 
   /** Reserved words, sorted alphabetically
     * (see [[scala.reflect.internal.StdNames]]) */
@@ -30,14 +37,16 @@ private[html] object SyntaxHigh {
 
   /** Annotations, sorted alphabetically */
   val annotations = Array(
-    "BeanProperty", "SerialVersionUID",
-    "beanGetter", "beanSetter", "bridge",
+    "BeanProperty", "BooleanBeanProperty", "SerialVersionUID",
+    "beanGetter", "beanSetter",
+    "companionClass", "companionMethod", "companionObject", "compileTimeOnly",
     "deprecated", "deprecatedName", "deprecatedOverriding", "deprecatedInheritance",
-    "elidable", "field", "getter", "inline",
+    "elidable", "field", "getter", "implicitAmbiguous", "implicitNotFound", "inline",
+    "languageFeature",
     "migration", "native", "noinline", "param",
-    "setter", "specialized", "strictfp", "switch",
+    "setter", "showAsInfix", "specialized", "strictfp", "switch",
     "tailrec", "throws", "transient",
-    "unchecked", "uncheckedStable", "uncheckedVariance",
+    "unchecked", "uncheckedStable", "uncheckedVariance", "unspecialized",
     "varargs", "volatile").sorted
 
   /** Standard library classes/objects, sorted alphabetically */
@@ -51,7 +60,7 @@ private[html] object SyntaxHigh {
     "Seq", "Set", "Short", "Some", "String", "Symbol",
     "TypeTag", "Unit", "WeakTypeTag").sorted
 
-  def apply(data: String): NodeSeq = {
+  def apply(data: String): Elems = {
     val buf = data.toCharArray
     val out = new StringBuilder
 
@@ -145,21 +154,43 @@ private[html] object SyntaxHigh {
     }
 
     def strlit(i: Int): String = {
-      val out = new StringBuilder("\"")
-      def strlit0(i: Int, bslash: Boolean): Int = {
-        if (i == buf.length) return i
+      val out = new StringBuilder()
+
+      @tailrec def rawstrlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
+        val ch = buf(i)
+        out.append(ch)
+        ch match {
+          case '\\' =>
+            rawstrlit0(i+1, bslash = true)
+          case '"' if !bslash && buf.slice(i+1, i+3).toString == "\"\"" =>
+            out.append("\"\"")
+          case _ =>
+            rawstrlit0(i+1, bslash = false)
+        }
+      }
+
+      @tailrec def strlit0(i: Int, bslash: Boolean): Unit = {
+        if (i == buf.length) return
         val ch = buf(i)
         out append ch
         ch match {
           case '\\' =>
             strlit0(i+1, bslash = true)
           case '"' if !bslash =>
-            i
           case _ =>
             strlit0(i+1, bslash = false)
         }
       }
-      strlit0(i, bslash = false)
+
+      buf.slice(i, i+3) match {
+        case Array('"','"','"') =>
+          out append "\"\"\""
+          rawstrlit0(i+3, bslash = false)
+        case _ =>
+          out append "\""
+          strlit0(i+1, bslash = false)
+      }
       out.toString
     }
 
@@ -211,6 +242,28 @@ private[html] object SyntaxHigh {
       out.toString
     }
 
+    def escape(str: String): String = {
+      val array = str.toCharArray
+      val len = array.length
+      val buf = new java.lang.StringBuilder(len)
+      @tailrec def loop(i: Int): String = {
+        if (i < len) {
+          (array(i): @switch) match {
+            case '<' =>
+              buf append "&lt;"
+            case '>' =>
+              buf append "&gt;"
+            case c =>
+              buf append c
+          }
+          loop(i + 1)
+        } else {
+          buf.toString
+        }
+      }
+      loop(0)
+    }
+
     @tailrec def parse(pre: String, i: Int): Unit = {
       out append pre
       if (i == buf.length) return
@@ -240,7 +293,8 @@ private[html] object SyntaxHigh {
         case '/' =>
           if (i+1 < buf.length && (buf(i+1) == '/' || buf(i+1) == '*')) {
             val c = comment(i+1)
-            parse("<span class=\"cmt\">"+c+"</span>", i+c.length)
+            val escaped = escape(c)
+            parse("<span class=\"cmt\">"+escaped+"</span>", i+c.length)
           } else
             parse(buf(i).toString, i+1)
         case '\'' =>
@@ -250,8 +304,9 @@ private[html] object SyntaxHigh {
           else
             parse(buf(i).toString, i+1)
         case '"' =>
-          val s = strlit(i+1)
-          parse("<span class=\"lit\">"+s+"</span>", i+s.length)
+          val s = strlit(i)
+          val escaped = escape(s)
+          parse("<span class=\"lit\">"+escaped+"</span>", i+s.length)
         case '@' =>
           val k = lookup(annotations, i+1)
           if (k >= 0)
@@ -282,6 +337,6 @@ private[html] object SyntaxHigh {
     }
 
     parse("", 0)
-    scala.xml.Unparsed(out.toString)
+    Raw(out.toString) :: NoElems
   }
 }

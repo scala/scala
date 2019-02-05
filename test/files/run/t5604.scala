@@ -29,7 +29,7 @@ package foo {
   }
   package bar {
     object Main {
-      def main(args:Array[String]) {
+      def main(args:Array[String]): Unit = {
         duh(33L)
         duh(3.0d)
         foo.bar.duh(33L)

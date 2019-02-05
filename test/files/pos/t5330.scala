@@ -1,9 +1,9 @@
 trait FM[A] {
-  def map(f: A => Any)
+  def map(f: A => Any): Unit
 }
 
 trait M[A] extends FM[A] {
-  def map(f: A => Any)
+  def map(f: A => Any): Unit
 }
 
 trait N[A] extends FM[A]

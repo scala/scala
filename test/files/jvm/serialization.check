@@ -1,6 +1,3 @@
-warning: there were two deprecation warnings (since 2.11.0)
-warning: there was one deprecation warning (since 2.12.0)
-warning: there were three deprecation warnings in total; re-run with -deprecation for details
 a1 = Array[1,2,3]
 _a1 = Array[1,2,3]
 arrayEquals(a1, _a1): true
@@ -75,12 +72,12 @@ x = BitSet(2, 3)
 y = BitSet(2, 3)
 x equals y: true, y equals x: true
 
-x = Map(1 -> A, 2 -> B, 3 -> C)
-y = Map(1 -> A, 2 -> B, 3 -> C)
+x = HashMap(1 -> A, 2 -> B, 3 -> C)
+y = HashMap(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
-x = Set(1, 2)
-y = Set(1, 2)
+x = HashSet(1, 2)
+y = HashSet(1, 2)
 x equals y: true, y equals x: true
 
 x = List((buffers,20), (layers,2), (title,3))
@@ -107,24 +104,20 @@ x = NumericRange 0 until 10
 y = NumericRange 0 until 10
 x equals y: true, y equals x: true
 
-x = Map(1 -> A, 2 -> B, 3 -> C)
-y = Map(1 -> A, 2 -> B, 3 -> C)
+x = TreeMap(1 -> A, 2 -> B, 3 -> C)
+y = TreeMap(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
 x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = Stack(c, b, a)
-y = Stack(c, b, a)
+x = LazyList(?)
+y = LazyList(?)
 x equals y: true, y equals x: true
 
-x = Stream(0, ?)
-y = Stream(0, ?)
-x equals y: true, y equals x: true
-
-x = Map(42 -> FortyTwo)
-y = Map(42 -> FortyTwo)
+x = TreeMap(42 -> FortyTwo)
+y = TreeMap(42 -> FortyTwo)
 x equals y: true, y equals x: true
 
 x = TreeSet(0, 2)
@@ -151,47 +144,43 @@ x = ArraySeq(1, 2, 3)
 y = ArraySeq(1, 2, 3)
 x equals y: true, y equals x: true
 
-x = ArrayStack(3, 2, 20)
-y = ArrayStack(3, 2, 20)
+x = Stack(20, 2, 3)
+y = Stack(20, 2, 3)
 x equals y: true, y equals x: true
 
 x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(A -> 1, C -> 3, B -> 2)
-y = Map(A -> 1, C -> 3, B -> 2)
+x = HashMap(A -> 1, B -> 2, C -> 3)
+y = HashMap(A -> 1, B -> 2, C -> 3)
 x equals y: true, y equals x: true
 
-x = Set(buffers, title, layers)
-y = Set(buffers, title, layers)
+x = HashSet(buffers, layers, title)
+y = HashSet(buffers, layers, title)
 x equals y: true, y equals x: true
 
-x = History()
-y = History()
+x = LinkedHashMap(Linked -> 1, Hash -> 2, Map -> 3)
+y = LinkedHashMap(Linked -> 1, Hash -> 2, Map -> 3)
 x equals y: true, y equals x: true
 
-x = Map(Linked -> 1, Hash -> 2, Map -> 3)
-y = Map(Linked -> 1, Hash -> 2, Map -> 3)
-x equals y: true, y equals x: true
-
-x = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
-y = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
-x equals y: true, y equals x: true
-
-x = ArrayBuffer((Linked,1), (Hash,2), (Map,3))
+x = List((Linked,1), (Hash,2), (Map,3))
 y = List((Linked,1), (Hash,2), (Map,3))
 x equals y: true, y equals x: true
 
-x = Set(layers, buffers, title)
-y = Set(layers, buffers, title)
+x = List((Linked,1), (Hash,2), (Map,3))
+y = List((Linked,1), (Hash,2), (Map,3))
 x equals y: true, y equals x: true
 
-x = ArrayBuffer(layers, buffers, title)
-y = ArrayBuffer(layers, buffers, title)
+x = LinkedHashSet(layers, buffers, title)
+y = LinkedHashSet(layers, buffers, title)
 x equals y: true, y equals x: true
 
-x = ArrayBuffer(layers, buffers, title)
+x = List(layers, buffers, title)
+y = List(layers, buffers, title)
+x equals y: true, y equals x: true
+
+x = List(layers, buffers, title)
 y = List(layers, buffers, title)
 x equals y: true, y equals x: true
 
@@ -209,10 +198,6 @@ x equals y: true, y equals x: true
 
 x = abc
 y = abc
-x equals y: true, y equals x: true
-
-x = WrappedArray(1, 2, 3)
-y = WrappedArray(1, 2, 3)
 x equals y: true, y equals x: true
 
 x = TreeSet(1, 2, 3)

@@ -31,7 +31,7 @@ object Test extends StoreReporterDirectTest {
     assert(storeReporter.infos.isEmpty, storeReporter.infos.mkString("\n")) // Included a MissingRequirementError before.
   }
 
-  def deleteClass(name: String) {
+  def deleteClass(name: String): Unit = {
     val classFile = new File(testOutput.path, name + ".class")
     assert(classFile.exists)
     assert(classFile.delete())  

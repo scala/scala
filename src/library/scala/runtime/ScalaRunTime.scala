@@ -1,22 +1,26 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package runtime
 
-import scala.collection.{ TraversableView, AbstractIterator, GenIterable }
-import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ StringLike, NumericRange }
-import scala.collection.generic.{ Sorted, IsTraversableLike }
-import scala.reflect.{ ClassTag, classTag }
-import java.lang.{ Class => jClass }
+import scala.collection.{AbstractIterator, AnyConstr, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View}
+import scala.collection.immutable.{ArraySeq, NumericRange}
+import scala.collection.mutable.StringBuilder
+import scala.reflect.{ClassTag, classTag}
+import java.lang.{Class => jClass}
+import java.lang.reflect.{Method => JMethod}
 
-import java.lang.reflect.{ Method => JMethod }
+import scala.collection.generic.IsIterable
 
 /** The object ScalaRunTime provides support methods required by
  *  the scala runtime.  All these methods should be considered
@@ -30,8 +34,8 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   // A helper method to make my life in the pattern matcher a lot easier.
-  def drop[Repr](coll: Repr, num: Int)(implicit traversable: IsTraversableLike[Repr]): Repr =
-    traversable conversion coll drop num
+  def drop[Repr](coll: Repr, num: Int)(implicit iterable: IsIterable[Repr] { type C <: Repr }): Repr =
+    iterable(coll) drop num
 
   /** Return the class object representing an array with element class `clazz`.
    */
@@ -83,20 +87,10 @@ object ScalaRunTime {
   }
 
   /** Get generic array length */
-  def array_length(xs: AnyRef): Int = xs match {
-    case x: Array[AnyRef]  => x.length
-    case x: Array[Int]     => x.length
-    case x: Array[Double]  => x.length
-    case x: Array[Long]    => x.length
-    case x: Array[Float]   => x.length
-    case x: Array[Char]    => x.length
-    case x: Array[Byte]    => x.length
-    case x: Array[Short]   => x.length
-    case x: Array[Boolean] => x.length
-    case x: Array[Unit]    => x.length
-    case null => throw new NullPointerException
-  }
+  @inline def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
 
+  // TODO: bytecode Object.clone() will in fact work here and avoids
+  // the type switch. See Array_clone comment in BCodeBodyBuilder.
   def array_clone(xs: AnyRef): AnyRef = xs match {
     case x: Array[AnyRef]  => x.clone()
     case x: Array[Int]     => x.clone()
@@ -107,7 +101,6 @@ object ScalaRunTime {
     case x: Array[Byte]    => x.clone()
     case x: Array[Short]   => x.clone()
     case x: Array[Boolean] => x.clone()
-    case x: Array[Unit]    => x
     case null => throw new NullPointerException
   }
 
@@ -147,8 +140,8 @@ object ScalaRunTime {
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {
     new AbstractIterator[T] {
-      private var c: Int = 0
-      private val cmax = x.productArity
+      private[this] var c: Int = 0
+      private[this] val cmax = x.productArity
       def hasNext = c < cmax
       def next() = {
         val result = x.productElement(c)
@@ -199,17 +192,17 @@ object ScalaRunTime {
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
-      case _: Sorted[_, _]  => true
+      case _: SortedOps[_, _]  => true
       // StringBuilder(a, b, c) and similar not so attractive
-      case _: StringLike[_] => true
+      case _: StringView | _: StringOps | _: StringBuilder => true
       // Don't want to evaluate any elements in a view
-      case _: TraversableView[_, _] => true
+      case _: View[_] => true
       // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
       // -> catch those by isXmlNode and isXmlMetaData.
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
       // collections which may have useful toString methods - ticket #3710
       // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
-      case x: Traversable[_] => !x.hasDefiniteSize || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
+      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[_, AnyConstr, _]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
       // Otherwise, nothing could possibly go wrong
       case _ => false
     }
@@ -225,7 +218,7 @@ object ScalaRunTime {
       if (x.getClass.getComponentType == classOf[BoxedUnit])
         0 until (array_length(x) min maxElements) map (_ => "()") mkString ("Array(", ", ", ")")
       else
-        WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
+        x.asInstanceOf[Array[_]].iterator.take(maxElements).map(inner).mkString("Array(", ", ", ")")
     }
 
     // The recursively applied attempt to prettify Array printing.
@@ -238,9 +231,8 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: scala.collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: GenIterable[_]            => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
-      case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: scala.collection.Map[_, _] => x.iterator take maxElements map mapInner mkString (x.collectionClassName + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.collectionClassName + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
       case x                            => x.toString
@@ -255,10 +247,29 @@ object ScalaRunTime {
   }
 
   /** stringOf formatted for use in a repl result. */
-  def replStringOf(arg: Any, maxElements: Int): String = {
-    val s  = stringOf(arg, maxElements)
-    val nl = if (s contains "\n") "\n" else ""
+  def replStringOf(arg: Any, maxElements: Int): String =
+    stringOf(arg, maxElements) match {
+      case null => "null toString"
+      case s if s.indexOf('\n') >= 0 => "\n" + s + "\n"
+      case s => s + "\n"
+    }
 
-    nl + s + "\n"
+  // Convert arrays to immutable.ArraySeq for use with Java varargs:
+  def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =
+    if (xs eq null) null
+    else ArraySeq.unsafeWrapArray(xs)
+  def wrapRefArray[T <: AnyRef](xs: Array[T]): ArraySeq[T] = {
+    if (xs eq null) null
+    else if (xs.length == 0) ArraySeq.empty[AnyRef].asInstanceOf[ArraySeq[T]]
+    else new ArraySeq.ofRef[T](xs)
   }
+  def wrapIntArray(xs: Array[Int]): ArraySeq[Int] = if (xs ne null) new ArraySeq.ofInt(xs) else null
+  def wrapDoubleArray(xs: Array[Double]): ArraySeq[Double] = if (xs ne null) new ArraySeq.ofDouble(xs) else null
+  def wrapLongArray(xs: Array[Long]): ArraySeq[Long] = if (xs ne null) new ArraySeq.ofLong(xs) else null
+  def wrapFloatArray(xs: Array[Float]): ArraySeq[Float] = if (xs ne null) new ArraySeq.ofFloat(xs) else null
+  def wrapCharArray(xs: Array[Char]): ArraySeq[Char] = if (xs ne null) new ArraySeq.ofChar(xs) else null
+  def wrapByteArray(xs: Array[Byte]): ArraySeq[Byte] = if (xs ne null) new ArraySeq.ofByte(xs) else null
+  def wrapShortArray(xs: Array[Short]): ArraySeq[Short] = if (xs ne null) new ArraySeq.ofShort(xs) else null
+  def wrapBooleanArray(xs: Array[Boolean]): ArraySeq[Boolean] = if (xs ne null) new ArraySeq.ofBoolean(xs) else null
+  def wrapUnitArray(xs: Array[Unit]): ArraySeq[Unit] = if (xs ne null) new ArraySeq.ofUnit(xs) else null
 }

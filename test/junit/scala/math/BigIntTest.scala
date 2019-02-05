@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 class BigIntTest {
 
   @Test
-  def testIsComparable() {
+  def testIsComparable(): Unit = {
     assert(BigInt(1).isInstanceOf[java.lang.Comparable[_]])
   }
 }

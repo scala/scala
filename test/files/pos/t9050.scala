@@ -1,5 +1,5 @@
 final class Mu[F](val value: Any) extends AnyVal {
-  def cata(f: F) {
+  def cata(f: F): Unit = {
     // crash
     ((y: Mu[F]) => y.cata(f))
     // crash

@@ -1,3 +1,5 @@
+// scalac: -deprecation -Xlint -Xfatal-warnings
+//
 trait T {
   val traitVal = ""
 }
@@ -26,7 +28,7 @@ object Client {
 // Delayed init usage pattern from Specs2
 // See: https://groups.google.com/d/msg/scala-sips/wP6dL8nIAQs/ogjoPE-MSVAJ
 trait Before extends DelayedInit {
-  def before()
+  def before(): Unit
   override def delayedInit(x: => Unit): Unit = { before; x }
 }
 object Spec {

@@ -8,84 +8,12 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
-import scala.collection.convert.ImplicitConversions._
 import scala.collection.{concurrent, mutable}
 
 // scala/bug#9113: tests to insure that wrappers return null instead of wrapping it as a collection
 
 @RunWith(classOf[JUnit4])
 class NullSafetyToScalaTest {
-  @Test def testIteratorWrapping(): Unit = {
-    val nullJIterator: ju.Iterator[AnyRef] = null
-    val iterator: Iterator[AnyRef] = nullJIterator
-
-    assert(iterator == null)
-  }
-
-  @Test def testEnumerationWrapping(): Unit = {
-    val nullJEnumeration: ju.Enumeration[AnyRef] = null
-    val enumeration: Iterator[AnyRef] = nullJEnumeration
-
-    assert(enumeration == null)
-  }
-
-  @Test def testIterableWrapping(): Unit = {
-    val nullJIterable: jl.Iterable[AnyRef] = null
-    val iterable: Iterable[AnyRef] = nullJIterable
-
-    assert(iterable == null)
-  }
-
-  @Test def testCollectionWrapping(): Unit = {
-    val nullJCollection: ju.Collection[AnyRef] = null
-    val collection: Iterable[AnyRef] = nullJCollection
-
-    assert(collection == null)
-  }
-
-  @Test def testBufferWrapping(): Unit = {
-    val nullJList: ju.List[AnyRef] = null
-    val buffer: mutable.Buffer[AnyRef] = nullJList
-
-    assert(buffer == null)
-  }
-
-  @Test def testSetWrapping(): Unit = {
-    val nullJSet: ju.Set[AnyRef] = null
-    val set: mutable.Set[AnyRef] = nullJSet
-
-    assert(set == null)
-  }
-
-  @Test def testMapWrapping(): Unit = {
-    val nullJMap: ju.Map[AnyRef, AnyRef] = null
-    val map: mutable.Map[AnyRef, AnyRef] = nullJMap
-
-    assert(map == null)
-  }
-
-  @Test def testConcurrentMapWrapping(): Unit = {
-    val nullJConMap: juc.ConcurrentMap[AnyRef, AnyRef] = null
-    val conMap: concurrent.Map[AnyRef, AnyRef] = nullJConMap
-
-    assert(conMap == null)
-  }
-
-  @Test def testDictionaryWrapping(): Unit = {
-    val nullJDict: ju.Dictionary[AnyRef, AnyRef] = null
-    val dict: mutable.Map[AnyRef, AnyRef] = nullJDict
-
-    assert(dict == null)
-  }
-
-
-  @Test def testPropertyWrapping(): Unit = {
-    val nullJProps: ju.Properties = null
-    val props: mutable.Map[String, String] = nullJProps
-
-    assert(props == null)
-  }
-
   @Test def testIteratorDecoration(): Unit = {
     val nullJIterator: ju.Iterator[AnyRef] = null
 

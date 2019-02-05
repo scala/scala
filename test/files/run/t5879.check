@@ -1,8 +1,8 @@
-Map(1 -> 1)
+HashMap(1 -> 1)
 1
 (1,1)
-Map(1 -> 1)
+HashMap(1 -> 1)
 1
 (1,2)
-Map(1 -> 2)
+HashMap(1 -> 2)
 2

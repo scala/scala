@@ -2,6 +2,8 @@ class Order[t](less:(t,t) => Boolean,equal:(t,t) => Boolean) {}
 
 trait Map[A, B] extends scala.collection.Map[A, B] {
   val factory:MapFactory[A]
+  def -(key1: A, key2: A, keys: A*): Map[A, B] = null
+  def -(key: A): Map[A, B] = null
 }
 abstract class MapFactory[A] {
   def Empty[B]:Map[A,B];

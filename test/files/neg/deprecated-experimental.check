@@ -1,0 +1,6 @@
+warning: -Xexperimental is deprecated: In 2.13 all options previously enabled by -Xexperimental are enabled by default or removed.
+deprecated-experimental.scala:3: error: expected class or object definition
+wibble
+^
+one warning found
+one error found

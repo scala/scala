@@ -1,4 +1,4 @@
 object Test extends App {
   @Hello
-  def foo() { }
+  def foo(): Unit = { }
 }

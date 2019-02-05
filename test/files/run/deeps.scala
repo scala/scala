@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 //############################################################################
 // deepEquals / deep.toString
 //############################################################################
@@ -6,28 +8,28 @@
 // need to revisit array equality
 object Test {
 
-  def testEquals1 {
+  def testEquals1: Unit = {
     println(Array(1) == Array(1))
     println(Array(1) equals Array(1))
     println(Array(1).deep == Array(1).deep)
     println
   }
 
-  def testEquals2 {
+  def testEquals2: Unit = {
     println(Array(Array(1), Array(2)) == Array(Array(1), Array(2)))
     println(Array(Array(1), Array(2)) equals Array(Array(1), Array(2)))
     println(Array(Array(1), Array(2)).deep equals Array(Array(1), Array(2)).deep)
     println
   }
 
-  def testEquals3 {
+  def testEquals3: Unit = {
     val a1 = Array(1)
     val b1 = Array(1)
     val a2 = Array(a1, b1)
     val b2 = Array(a1, b1)
     val a3 = Array(a2, b2)
     val b3 = Array(a2, b2)
-    def test[T](x: Array[T], y: Array[T]) {
+    def test[T](x: Array[T], y: Array[T]): Unit = {
       println("x=" + x.deep.toString)
       println("y=" + y.deep.toString)
       println(x == y)
@@ -40,7 +42,7 @@ object Test {
     test(a3, b3)
   }
 
-  def testEquals4 {
+  def testEquals4: Unit = {
     println("boo:and:foo".split(':') == "boo:and:foo".split(':'))
     println("boo:and:foo".split(':') equals "boo:and:foo".split(':'))
     println("boo:and:foo".split(':').deep == "boo:and:foo".split(':').deep)
@@ -52,13 +54,13 @@ object Test {
     println(xs.toArray.deep == ys.toArray.deep)
   }
 
-  def testToString1 {
+  def testToString1: Unit = {
     def sweep(s: String) = (
       s.replaceAll("D@[0-9a-fA-F]+", "D@0000000")
        .replaceAll("Z@[0-9a-fA-F]+", "Z@0000000")
        .replaceAll(";@[0-9a-fA-F]+", ";@0000000")
     )
-    def test[T](a: Array[T]) {
+    def test[T](a: Array[T]): Unit = {
       println(sweep(a.deep.toString))
       println(a.deep.toString)
       println(a.deep.mkString("[", ";", "]"))
@@ -88,14 +90,14 @@ object Test {
     test(sa3)
   }
 
-  def testToString2 {
+  def testToString2: Unit = {
     println(Array(Array(true, false), Array(false)).deep.mkString("[", "; ", "]"))
     println(Array(Array('1', '2'), Array('3')).deep.mkString("[", "; ", "]"))
     println(Array(Array(1, 2), Array(3)).deep.mkString("[", "; ", "]"))
     println
   }
 
-  def testToString3 {
+  def testToString3: Unit = {
     println("boo:and:foo".split(':').deep.toString)
 
     val xs = new java.util.ArrayList[String](); xs.add("a")

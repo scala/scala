@@ -2,7 +2,6 @@ package scala.build
 
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
-import java.util.Properties
 import java.util.jar.Attributes
 import sbt._
 import sbt.Keys._
@@ -31,7 +30,7 @@ object Osgi {
         "Bundle-SymbolicName" -> bundleSymbolicName.value,
         "ver" -> v,
         "Export-Package" -> "*;version=${ver};-split-package:=merge-first",
-        "Import-Package" -> "scala.*;version=\"${range;[==,=+);${ver}}\",*",
+        "Import-Package" -> raw"""scala.*;version="$${range;[==,=+);$${ver}}",*""",
         "Bundle-Version" -> v,
         "Bundle-RequiredExecutionEnvironment" -> "JavaSE-1.8",
         "-eclipse" -> "false"

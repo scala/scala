@@ -32,7 +32,7 @@ trait E {
   /**
    * @inheritdoc
    */
-  def whereDidThisComeFrom
+  def whereDidThisComeFrom: Unit
 }
 
 // TEST3: Invalid inherit, but other parents present
@@ -40,7 +40,7 @@ trait F extends E {
   /**
    * @inheritdoc
    */
-  def howAboutThis
+  def howAboutThis: Unit
 }
 
 

@@ -3,7 +3,7 @@ class A2 extends A1 {
 }
 
 object Test extends A2 {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(Seq(classOf[A1], classOf[A2]).flatMap(_.getDeclaredMethods.map(_.toString).sorted).mkString("\n"))
   }
 }

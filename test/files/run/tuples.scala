@@ -8,7 +8,7 @@ object Test extends App {
     case (1, "abc", true) => Console.println("OK")
     case _ => ???
   }
-  def func(x: Int, y: String, z: Double) {
+  def func(x: Int, y: String, z: Double): Unit = {
     Console.println("x = " + x + "; y = " + y + "; z = " + z);
   }
 

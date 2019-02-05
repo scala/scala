@@ -14,7 +14,7 @@ import org.junit.Assert._
 class NewBuilderTest {
 
   @Test
-  def mapPreservesCollectionType() {
+  def mapPreservesCollectionType(): Unit = {
     def test[T: ClassTag](mapped: Any): Unit = {
       val expected = reflect.classTag[T].runtimeClass
       val isInstance = reflect.classTag[T].runtimeClass.isInstance(mapped)
@@ -38,20 +38,20 @@ class NewBuilderTest {
 
     test[scm.Traversable[_]     ]((scm.Traversable(1):      sc.GenTraversable[Int]).map(x => x))
     test[scm.Iterable[_]        ]((scm.Iterable(1):         sc.GenTraversable[Int]).map(x => x))
-    test[scm.LinearSeq[_]       ]((scm.LinearSeq(1):        sc.GenTraversable[Int]).map(x => x))
-    test[scm.LinearSeq[_]       ]((scm.LinearSeq(1):        sc.Seq[Int]           ).map(x => x))
-    test[scm.MutableList[_]     ]((scm.MutableList(1):      sc.GenTraversable[Int]).map(x => x))
-    test[scm.MutableList[_]     ]((scm.MutableList(1):      sc.Seq[Int]           ).map(x => x))
+    //test[scm.LinearSeq[_]       ]((scm.LinearSeq(1):        sc.GenTraversable[Int]).map(x => x))
+    //test[scm.LinearSeq[_]       ]((scm.LinearSeq(1):        sc.Seq[Int]           ).map(x => x))
+    //test[scm.MutableList[_]     ]((scm.MutableList(1):      sc.GenTraversable[Int]).map(x => x))
+    //test[scm.MutableList[_]     ]((scm.MutableList(1):      sc.Seq[Int]           ).map(x => x))
     test[scm.Queue[_]           ]((scm.Queue(1):            sc.GenTraversable[Int]).map(x => x))
     test[scm.Queue[_]           ]((scm.Queue(1):            sc.Seq[Int]           ).map(x => x))
-    test[scm.DoubleLinkedList[_]]((scm.DoubleLinkedList(1): sc.GenTraversable[Int]).map(x => x))
-    test[scm.DoubleLinkedList[_]]((scm.DoubleLinkedList(1): sc.Seq[Int]           ).map(x => x))
-    test[scm.LinkedList[_]      ]((scm.LinkedList(1):       sc.GenTraversable[Int]).map(x => x))
-    test[scm.LinkedList[_]      ]((scm.LinkedList(1):       sc.Seq[Int]           ).map(x => x))
-    test[scm.ArrayStack[_]      ]((scm.ArrayStack(1):       sc.GenTraversable[Int]).map(x => x))
-    test[scm.ArrayStack[_]      ]((scm.ArrayStack(1):       sc.Seq[Int]           ).map(x => x))
-    test[scm.Stack[_]           ]((scm.Stack(1):            sc.GenTraversable[Int]).map(x => x))
-    test[scm.Stack[_]           ]((scm.Stack(1):            sc.Seq[Int]           ).map(x => x))
+    //test[scm.DoubleLinkedList[_]]((scm.DoubleLinkedList(1): sc.GenTraversable[Int]).map(x => x))
+    //test[scm.DoubleLinkedList[_]]((scm.DoubleLinkedList(1): sc.Seq[Int]           ).map(x => x))
+    //test[scm.LinkedList[_]      ]((scm.LinkedList(1):       sc.GenTraversable[Int]).map(x => x))
+    //test[scm.LinkedList[_]      ]((scm.LinkedList(1):       sc.Seq[Int]           ).map(x => x))
+    //test[scm.ArrayStack[_]      ]((scm.ArrayStack(1):       sc.GenTraversable[Int]).map(x => x))
+    //test[scm.ArrayStack[_]      ]((scm.ArrayStack(1):       sc.Seq[Int]           ).map(x => x))
+    //test[scm.Stack[_]           ]((scm.Stack(1):            sc.GenTraversable[Int]).map(x => x))
+    //test[scm.Stack[_]           ]((scm.Stack(1):            sc.Seq[Int]           ).map(x => x))
     test[scm.ArraySeq[_]        ]((scm.ArraySeq(1):         sc.GenTraversable[Int]).map(x => x))
     test[scm.ArraySeq[_]        ]((scm.ArraySeq(1):         sc.Seq[Int]           ).map(x => x))
 
@@ -65,8 +65,8 @@ class NewBuilderTest {
     test[scm.ListBuffer[_]      ]((scm.ListBuffer(1):       sc.Seq[Int]           ).map(x => x))
     test[scm.Seq[_]             ]((scm.Seq(1):              sc.GenTraversable[Int]).map(x => x))
     test[scm.Seq[_]             ]((scm.Seq(1):              sc.Seq[Int]           ).map(x => x))
-    test[scm.ResizableArray[_]  ]((scm.ResizableArray(1):   sc.GenTraversable[Int]).map(x => x))
-    test[scm.ResizableArray[_]  ]((scm.ResizableArray(1):   sc.Seq[Int]           ).map(x => x))
+    //test[scm.ResizableArray[_]  ]((scm.ResizableArray(1):   sc.GenTraversable[Int]).map(x => x))
+    //test[scm.ResizableArray[_]  ]((scm.ResizableArray(1):   sc.Seq[Int]           ).map(x => x))
     test[scm.Set[_]             ]((scm.Set(1):              sc.GenTraversable[Int]).map(x => x))
     test[scm.Set[_]             ]((scm.Set(1):              sc.Set[Int]           ).map(x => x))
     test[scm.HashSet[_]         ]((scm.HashSet(1):          sc.GenTraversable[Int]).map(x => x))
@@ -82,10 +82,10 @@ class NewBuilderTest {
     test[sci.List[_]            ]((sci.List(1):             sc.Seq[Int]           ).map(x => x))
     test[sci.Stream[_]          ]((sci.Stream(1):           sc.GenTraversable[Int]).map(x => x))
     test[sci.Stream[_]          ]((sci.Stream(1):           sc.Seq[Int]           ).map(x => x))
-    test[sci.Stack[_]           ]((sci.Stack(1):            sc.GenTraversable[Int]).map(x => x))
-    test[sci.Stack[_]           ]((sci.Stack(1):            sc.Seq[Int]           ).map(x => x))
-    test[sci.Queue[_]           ]((sci.Queue(1):            sc.GenTraversable[Int]).map(x => x))
-    test[sci.Queue[_]           ]((sci.Queue(1):            sc.Seq[Int]           ).map(x => x))
+    //test[sci.Stack[_]           ]((sci.Stack(1):            sc.GenTraversable[Int]).map(x => x))
+    //test[sci.Stack[_]           ]((sci.Stack(1):            sc.Seq[Int]           ).map(x => x))
+    //test[sci.Queue[_]           ]((sci.Queue(1):            sc.GenTraversable[Int]).map(x => x))
+    //test[sci.Queue[_]           ]((sci.Queue(1):            sc.Seq[Int]           ).map(x => x))
     test[sci.IndexedSeq[_]      ]((sci.IndexedSeq(1):       sc.GenTraversable[Int]).map(x => x))
     test[sci.IndexedSeq[_]      ]((sci.IndexedSeq(1):       sc.Seq[Int]           ).map(x => x))
     test[sci.Vector[_]          ]((sci.Vector(1):           sc.GenTraversable[Int]).map(x => x))

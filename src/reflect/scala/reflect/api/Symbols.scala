@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package api
@@ -324,7 +336,7 @@ trait Symbols { self: Universe =>
      *
      *  This method always returns signatures in the most generic way possible, even if the underlying symbol is obtained from an
      *  instantiation of a generic type. For example, signature
-     *  of the method `def map[B](f: (A) ⇒ B): List[B]`, which refers to the type parameter `A` of the declaring class `List[A]`,
+     *  of the method `def map[B](f: (A) => B): List[B]`, which refers to the type parameter `A` of the declaring class `List[A]`,
      *  will always feature `A`, regardless of whether `map` is loaded from the `List[_]` or from `List[Int]`. To get a signature
      *  with type parameters appropriately instantiated, one should use `infoIn`.
      *

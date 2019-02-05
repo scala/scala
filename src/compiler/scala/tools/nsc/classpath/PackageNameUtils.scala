@@ -1,6 +1,15 @@
 /*
- * Copyright (c) 2014 Contributor. All rights reserved.
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.classpath
 
 import scala.tools.nsc.util.ClassPath.RootPackage
@@ -14,7 +23,7 @@ object PackageNameUtils {
    * @param fullClassName full class name with package
    * @return (package, simple class name)
    */
-  def separatePkgAndClassNames(fullClassName: String): (String, String) = {
+  @inline def separatePkgAndClassNames(fullClassName: String): (String, String) = {
     val lastDotIndex = fullClassName.lastIndexOf('.')
     if (lastDotIndex == -1)
       (RootPackage, fullClassName)
@@ -23,4 +32,15 @@ object PackageNameUtils {
   }
 
   def packagePrefix(inPackage: String): String = if (inPackage == RootPackage) "" else inPackage + "."
+
+  /**
+   * `true` if `packageDottedName` is a package directly nested in `inPackage`, for example:
+   *   - `packageContains("scala", "scala.collection")`
+   *   - `packageContains("", "scala")`
+   */
+  def packageContains(inPackage: String, packageDottedName: String) = {
+    if (packageDottedName.contains("."))
+      packageDottedName.startsWith(inPackage) && packageDottedName.lastIndexOf('.') == inPackage.length
+    else inPackage == ""
+  }
 }

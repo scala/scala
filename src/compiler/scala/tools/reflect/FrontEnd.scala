@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools
 package reflect
 
@@ -25,7 +37,7 @@ trait FrontEnd {
   val infos = new scala.collection.mutable.LinkedHashSet[Info]
 
   /** Handles incoming info */
-  def log(pos: Position, msg: String, severity: Severity) {
+  def log(pos: Position, msg: String, severity: Severity): Unit = {
     infos += Info(pos, msg, severity)
     severity.count += 1
     display(infos.last)

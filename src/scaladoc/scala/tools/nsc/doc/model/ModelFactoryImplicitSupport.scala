@@ -1,9 +1,13 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2013 LAMP/EPFL
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.
+ * Copyright EPFL and Lightbend, Inc.
  *
- * @author Vlad Ureche
- * @author Adriaan Moors
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -159,7 +163,7 @@ trait ModelFactoryImplicitSupport {
       val (viewSimplifiedType, viewImplicitTypes) = removeImplicitParameters(viewFullType)
 
       // TODO: Isolate this corner case :) - Predef.<%< and put it in the testsuite
-      if (viewSimplifiedType.params.length != 1) {
+      if (viewSimplifiedType.params.lengthIs != 1) {
         // This is known to be caused by the `<%<` object in Predef:
         // {{{
         //    sealed abstract class <%<[-From, +To] extends (From => To) with Serializable
@@ -369,7 +373,7 @@ trait ModelFactoryImplicitSupport {
       convertorOwner match {
         case doc: DocTemplateImpl =>
           val convertors = members.collect { case m: MemberImpl if m.sym == convSym => m }
-          if (convertors.length == 1)
+          if (convertors.lengthIs == 1)
             convertor = convertors.head
         case _ =>
       }
@@ -435,7 +439,7 @@ trait ModelFactoryImplicitSupport {
 
     val shadowingTable = mutable.Map[MemberEntity, ImplicitMemberShadowing]()
     val membersByName: Map[Name, List[MemberImpl]] = members.groupBy(_.sym.name)
-    val convsByMember = (Map.empty[MemberImpl, ImplicitConversionImpl] /: convs) {
+    val convsByMember = convs.foldLeft(Map.empty[MemberImpl, ImplicitConversionImpl]){
       case (map, conv) => map ++ conv.memberImpls.map (_ -> conv)
     }
 

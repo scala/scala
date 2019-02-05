@@ -43,7 +43,7 @@ class BTypesFromClassfileTest extends BytecodeTesting {
 
   def sameBTypes(fromSyms: Iterable[ClassBType], fromClassfiles: Iterable[ClassBType], checked: Set[InternalName]): Set[InternalName] = {
     assert(fromSyms.size == fromClassfiles.size, s"\n$fromSyms\n$fromClassfiles")
-    (fromSyms, fromClassfiles).zipped.foldLeft(checked) {
+    fromSyms.lazyZip(fromClassfiles).foldLeft(checked) {
       case (chk, (fromSym, fromClassfile)) => sameBType(fromSym, fromClassfile, chk)
     }
   }

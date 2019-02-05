@@ -18,19 +18,19 @@ case class Var extends callccInterpreter.Term with Product with Serializable
 case object Wrong
 def +(other: String): String
 def ->[B](y: B): (callccInterpreter.type, B)
-def add(a: callccInterpreter.Value,b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]
-def apply(a: callccInterpreter.Value,b: callccInterpreter.Value): callccInterpreter.M[callccInterpreter.Value]
+def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with callccInterpreter.Value with java.io.Serializable]
+def apply(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[callccInterpreter.Value]
 def callCC[A](h: (A => callccInterpreter.M[A]) => callccInterpreter.M[A]): callccInterpreter.M[A]
 def ensuring(cond: Boolean): callccInterpreter.type
-def ensuring(cond: Boolean,msg: => Any): callccInterpreter.type
+def ensuring(cond: Boolean, msg: => Any): callccInterpreter.type
 def ensuring(cond: callccInterpreter.type => Boolean): callccInterpreter.type
-def ensuring(cond: callccInterpreter.type => Boolean,msg: => Any): callccInterpreter.type
+def ensuring(cond: callccInterpreter.type => Boolean, msg: => Any): callccInterpreter.type
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def id[A]: A => A
-def interp(t: callccInterpreter.Term,e: callccInterpreter.Environment): callccInterpreter.M[callccInterpreter.Value]
-def lookup(x: callccInterpreter.Name,e: callccInterpreter.Environment): callccInterpreter.M[callccInterpreter.Value]
+def interp(t: callccInterpreter.Term, e: callccInterpreter.Environment): callccInterpreter.M[callccInterpreter.Value]
+def lookup(x: callccInterpreter.Name, e: callccInterpreter.Environment): callccInterpreter.M[callccInterpreter.Value]
 def main(args: Array[String]): Unit
 def showM(m: callccInterpreter.M[callccInterpreter.Value]): String
 def test(t: callccInterpreter.Term): String
@@ -49,7 +49,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 object Add
 object App
 object Ccc
@@ -90,7 +90,7 @@ def showM(m: callccInterpreter.M[callccInterpreter.Value]): String = m.in.apply(
 askType at CallccInterpreter.scala(50,30)
 ================================================================================
 [response] askTypeAt (50,30)
-def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value] = scala.Tuple2.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
+def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with callccInterpreter.Value with java.io.Serializable] = scala.Tuple2.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
   case (_1: callccInterpreter.Value, _2: callccInterpreter.Value)(callccInterpreter.Value, callccInterpreter.Value)((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
   case _ => callccInterpreter.this.unitM[callccInterpreter.Wrong.type](callccInterpreter.this.Wrong)
 }

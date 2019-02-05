@@ -1,0 +1,37 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+[0:201]package [0:0]<empty> {
+  [0:201]object Test extends [12:201][201]scala.AnyRef {
+    [201]def <init>(): [12]Test.type = [201]{
+      [201][201][201]Test.super.<init>();
+      [12]()
+    };
+    [20:43]private[this] val n: [38]Int = [42:43]1;
+    [51:60]{
+      [53:60]<53:60><53:60>C.foo_:[[53]Nothing]([51]1)
+    };
+    [67:81]{
+      [69:81]<69:81><69:81>C.foo_:[[75:78]<type: [75:78]scala.Any>]([67]1)
+    };
+    [89:98]{
+      [89:98]<91:98><91:98>C.foo_:[[91]Nothing]([89:90][89]Test.this.n)
+    };
+    [105:119]{
+      [105:119]<107:119><107:119>C.foo_:[[113:116]<type: [113:116]scala.Any>]([105:106][105]Test.this.n)
+    };
+    [127:136]{
+      [129:136]<129:136><129:136>C.bar_:[[129]Nothing]([127]1)
+    };
+    [143:157]{
+      [145:157]<145:157><145:157>C.bar_:[[151:154]<type: [151:154]scala.Any>]([143]1)
+    };
+    [165:174]{
+      [165:166]final <synthetic> <artifact> val rassoc$7: [165]Int = [165:166][165]Test.this.n;
+      [167:174]<167:174><167:174>C.bar_:[[167]Nothing]([165]rassoc$7)
+    };
+    [181:195]{
+      [181:182]final <synthetic> <artifact> val rassoc$8: [181]Int = [181:182][181]Test.this.n;
+      [183:195]<183:195><183:195>C.bar_:[[189:192]<type: [189:192]scala.Any>]([181]rassoc$8)
+    }
+  }
+}
+

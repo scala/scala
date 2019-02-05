@@ -1,7 +1,7 @@
 import scala.reflect.{ClassTag, classTag}
 
 object Test extends App {
-  def test[T: ClassTag](x: T) {
+  def test[T: ClassTag](x: T): Unit = {
     println(s"Checking if ${x.getClass} matches ${classTag[T].runtimeClass}")
     println(classTag[T].unapply(x))
   }

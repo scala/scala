@@ -1,3 +1,5 @@
+// scalac: -opt:l:none
+//
 object Ex {
   def unapply(t: Throwable): Option[Throwable] = Some(t)
 }

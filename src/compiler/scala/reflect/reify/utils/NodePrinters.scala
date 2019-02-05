@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.reflect.reify
 package utils
 
@@ -42,16 +50,16 @@ trait NodePrinters {
 
           val annotations = m.group(3)
           if (buf.nonEmpty || annotations != "")
-            buf.append("List(" + annotations + ")")
+            buf += s"List($annotations)"
 
           val privateWithin = "" + m.group(2)
           if (buf.nonEmpty || privateWithin != "")
-            buf.append("TypeName(\"" + privateWithin + "\")")
+            buf += {"TypeName(\"" + privateWithin + "\")"}
 
           val bits = m.group(1)
           if (buf.nonEmpty || bits != "0L") {
             flagsAreUsed = true
-            buf.append(show(bits.toLong))
+            buf += show(bits.toLong)
           }
 
           val replacement = "Modifiers(" + buf.reverse.mkString(", ")  + ")"

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 class Test {
   object severity extends Enumeration
   class Severity(val id: Int) extends severity.Value

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -30,7 +42,7 @@ trait CapturedVariables { self: SymbolTable =>
     def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
       if (isPrimitiveValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
       else if (erasedTypes) objectRefClass.tpe
-      else appliedType(objectRefClass, tpe1)
+      else appliedType(objectRefClass, tpe1 :: Nil)
     if (vble.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
     else refType(refClass, ObjectRefClass)
   }

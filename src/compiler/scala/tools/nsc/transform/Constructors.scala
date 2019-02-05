@@ -1,6 +1,13 @@
-/*  NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -31,7 +38,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
      * Inspect for obvious out-of-order initialization; concrete, eager vals or vars, declared in this class,
      * for which a reference to the member precedes its definition.
      */
-    private def checkUninitializedReads(cd: ClassDef) {
+    private def checkUninitializedReads(cd: ClassDef): Unit = {
       val stats = cd.impl.body
       val clazz = cd.symbol
 
@@ -250,7 +257,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       methodSym setInfoAndEnter MethodType(Nil, UnitTpe)
 
       // changeOwner needed because the `stats` contained in the DefDef were owned by the template, not long ago.
-      val blk       = Block(stats, gen.mkZero(UnitTpe)).changeOwner(impl.symbol -> methodSym)
+      val blk       = Block(stats, gen.mkZero(UnitTpe)).changeOwner(impl.symbol, methodSym)
       val delayedDD = localTyper typed { DefDef(methodSym, Nil, blk) }
 
       delayedDD.asInstanceOf[DefDef]
@@ -504,7 +511,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       private def isStationaryParamRef(sym: Symbol) = (
         isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
-        !sym.isSetter
+        !sym.isSetter &&
+        !sym.isVariable
       )
 
       /*
@@ -549,7 +557,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       // Move tree into constructor, take care of changing owner from `oldOwner` to `newOwner` (the primary constructor symbol)
       def apply(oldOwner: Symbol, newOwner: Symbol)(tree: Tree) =
         if (tree eq EmptyTree) tree
-        else transform(tree.changeOwner(oldOwner -> newOwner))
+        else transform(tree.changeOwner(oldOwner, newOwner))
     }
 
     // Assign `rhs` to class field / trait setter `assignSym`
@@ -731,18 +739,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         copyParam(accSetter, parameter(acc))
       }
 
-      // Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest)
-      def splitAtSuper(stats: List[Tree]) = {
-        def isConstr(tree: Tree): Boolean = tree match {
-          case Block(_, expr) => isConstr(expr) // scala/bug#6481 account for named argument blocks
-          case _              => (tree.symbol ne null) && tree.symbol.isConstructor
-        }
-        val (pre, rest0)       = stats span (!isConstr(_))
-        val (supercalls, rest) = rest0 span (isConstr(_))
-        (pre ::: supercalls, rest)
-      }
-
-      val (uptoSuperStats, remainingConstrStats) = splitAtSuper(constructorStats)
+      val (uptoSuperStats, remainingConstrStats) = treeInfo.splitAtSuper(constructorStats, classOnly = false)
 
       /* TODO: XXX This condition (`isDelayedInitSubclass && remainingConstrStats.nonEmpty`) is not correct:
       * remainingConstrStats.nonEmpty excludes too much,
@@ -756,11 +753,16 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) delayedInitDefsAndConstrStats(defs, remainingConstrStats)
         else (Nil, remainingConstrStats)
 
+      val fence = if (clazz.primaryConstructor.hasAttachment[ConstructorNeedsFence.type]) {
+        val tree = localTyper.typedPos(clazz.primaryConstructor.pos)(gen.mkMethodCall(RuntimeStaticsModule, nme.releaseFence, Nil))
+        tree :: Nil
+      } else Nil
+
       // Assemble final constructor
       val primaryConstructor = deriveDefDef(primaryConstr)(_ => {
         treeCopy.Block(
           primaryConstrBody,
-          paramInits ::: constructorPrefix ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStatsDelayedInit),
+          paramInits ::: constructorPrefix ::: uptoSuperStats ::: guardSpecializedInitializer(remainingConstrStatsDelayedInit) ::: fence,
           primaryConstrBody.expr)
       })
 

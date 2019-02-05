@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -11,11 +18,13 @@ import java.util.regex.Pattern
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{AbstractInsnNode, MethodInsnNode, MethodNode}
+import scala.collection.mutable
+import scala.tools.asm.Type
+import scala.tools.asm.tree.MethodNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.BackendReporting.{CalleeNotFinal, OptimizerWarning}
-import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineSourceMatcher
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
+import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics._
 
 abstract class InlinerHeuristics extends PerRunInit {
   val postProcessor: PostProcessor
@@ -27,12 +36,52 @@ abstract class InlinerHeuristics extends PerRunInit {
 
   lazy val inlineSourceMatcher: LazyVar[InlineSourceMatcher] = perRunLazy(this)(new InlineSourceMatcher(compilerSettings.optInlineFrom))
 
-  final case class InlineRequest(callsite: Callsite, post: List[InlineRequest], reason: String) {
-    // invariant: all post inline requests denote callsites in the callee of the main callsite
-    for (pr <- post) assert(pr.callsite.callsiteMethod == callsite.callee.get.callee, s"Callsite method mismatch: main $callsite - post ${pr.callsite}")
+  final case class InlineRequest(callsite: Callsite, reason: InlineReason) {
+    // non-null if `-Yopt-log-inline` is active, it explains why the callsite was selected for inlining
+    def logText: String =
+      if (compilerSettings.optLogInline.isEmpty) null
+      else if (compilerSettings.optInlineHeuristics == "everything") "-Yopt-inline-heuristics:everything is enabled"
+      else {
+        val callee = callsite.callee.get
+        reason match {
+          case AnnotatedInline =>
+            val what = if (callee.annotatedInline) "callee" else "callsite"
+            s"the $what is annotated `@inline`"
+          case HigherOrderWithLiteral | HigherOrderWithForwardedParam =>
+            val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
+            def param(i: Int) = {
+              def syn = s"<param $i>"
+              paramNames.fold(syn)(v => v.applyOrElse(i, (_: Int) => syn))
+            }
+            def samInfo(i: Int, sam: String, arg: String) = s"the argument for parameter (${param(i)}: $sam) is a $arg"
+            val argInfos = for ((i, sam) <- callee.samParamTypes; info <- callsite.argInfos.get(i).iterator) yield {
+              val argKind = info match {
+                case FunctionLiteral => "function literal"
+                case ForwardedParam(_) => "parameter of the callsite method"
+                case StaticallyKnownArray => "" // should not happen, just included to avoid potential crash
+              }
+              samInfo(i, sam.internalName.split('/').last, argKind)
+            }
+            s"the callee is a higher-order method, ${argInfos.mkString(", ")}"
+          case SyntheticForwarder =>
+            "the callee is a synthetic forwarder method"
+          case TrivialMethod =>
+            "the callee is a small trivial method"
+          case FactoryMethod =>
+            "the callee is a factory method"
+          case BoxingForwarder =>
+            "the callee is a forwarder method with boxing adaptation"
+          case GenericForwarder =>
+            "the callee is a forwarder or alias method"
+          case RefParam =>
+            "the callee has a Ref type parameter"
+          case KnownArrayOp =>
+            "ScalaRuntime.array_apply and array_update are inlined if the array has a statically knonw type"
+        }
+      }
   }
 
-  def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName) = {
+  def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName): Boolean = {
     compilerSettings.optLClasspath ||
       compilerSettings.optLProject && sourceFilePath.isDefined ||
       inlineSourceMatcher.get.allowFromSources && sourceFilePath.isDefined ||
@@ -57,7 +106,7 @@ abstract class InlinerHeuristics extends PerRunInit {
       var requests = Set.empty[InlineRequest]
       callGraph.callsites(methodNode).valuesIterator foreach {
         case callsite @ Callsite(_, _, _, Right(Callee(callee, _, _, _, _, _, _, callsiteWarning)), _, _, _, pos, _, _) =>
-          inlineRequest(callsite, requests) match {
+          inlineRequest(callsite) match {
             case Some(Right(req)) => requests += req
 
             case Some(Left(w)) =>
@@ -78,64 +127,54 @@ abstract class InlinerHeuristics extends PerRunInit {
     }).filterNot(_._2.isEmpty).toMap
   }
 
-  private def findSingleCall(method: MethodNode, such: MethodInsnNode => Boolean): Option[MethodInsnNode] = {
-    @tailrec def noMoreInvoke(insn: AbstractInsnNode): Boolean = {
-      insn == null || (!insn.isInstanceOf[MethodInsnNode] && noMoreInvoke(insn.getNext))
-    }
-    @tailrec def find(insn: AbstractInsnNode): Option[MethodInsnNode] = {
-      if (insn == null) None
-      else insn match {
-        case mi: MethodInsnNode =>
-          if (such(mi) && noMoreInvoke(insn.getNext)) Some(mi)
-          else None
-        case _ =>
-          find(insn.getNext)
+  val maxSize = 3000
+  val mediumSize = 2000
+  val smallSize = 1000
+
+  def selectRequestsForMethodSize(method: MethodNode, requests: List[InlineRequest], methodSizes: mutable.Map[MethodNode, Int]): List[InlineRequest] = {
+    val byReason = requests.groupBy(_.reason)
+    var size = method.instructions.size
+    var res = mutable.ListBuffer.empty[InlineRequest]
+    def include(kind: InlineReason, limit: Int): Unit = {
+      var rs = byReason.getOrElse(kind, Nil)
+      while (rs.nonEmpty && size < limit) {
+        val r = rs.head
+        rs = rs.tail
+        val callee = r.callsite.callee.get.callee
+        val cSize = methodSizes.getOrElse(callee, callee.instructions.size)
+        if (size + cSize < limit) {
+          res += r
+          size += cSize
+        }
       }
     }
-    find(method.instructions.getFirst)
+    include(AnnotatedInline, maxSize)
+    include(SyntheticForwarder, maxSize)
+    include(KnownArrayOp, maxSize)
+    include(HigherOrderWithLiteral, maxSize)
+    include(HigherOrderWithForwardedParam, mediumSize)
+    include(RefParam, mediumSize)
+    include(BoxingForwarder, mediumSize)
+    include(FactoryMethod, mediumSize)
+    include(GenericForwarder, smallSize)
+    include(TrivialMethod, smallSize)
+    methodSizes(method) = size
+    res.toList
   }
-
-  private def traitStaticSuperAccessorName(s: String) = s + "$"
-
-  private def traitMethodInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && traitStaticSuperAccessorName(mi.name) == method.name)
-
-  private def superAccessorInvocation(method: MethodNode): Option[MethodInsnNode] =
-    findSingleCall(method, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESTATIC && mi.name == traitStaticSuperAccessorName(method.name))
-
-  private def isTraitSuperAccessor(method: MethodNode, owner: ClassBType): Boolean = {
-    owner.isInterface == Right(true) &&
-      BytecodeUtils.isStaticMethod(method) &&
-      traitMethodInvocation(method).nonEmpty
-  }
-
-  private def isMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
-    owner.isInterface == Right(false) &&
-      !BytecodeUtils.isStaticMethod(method) &&
-      superAccessorInvocation(method).nonEmpty
-  }
-
-  private def isTraitSuperAccessorOrMixinForwarder(method: MethodNode, owner: ClassBType): Boolean = {
-    isTraitSuperAccessor(method, owner) || isMixinForwarder(method, owner)
-  }
-
 
   /**
    * Returns the inline request for a callsite if the callsite should be inlined according to the
    * current heuristics (`-Yopt-inline-heuristics`).
    *
-   * The resulting inline request may contain post-inlining requests of callsites that in turn are
-   * also selected as individual inlining requests.
-   *
    * @return `None` if this callsite should not be inlined according to the active heuristic
-   *         `Some(Left)` if the callsite cannot be inlined (for example because that would cause
-   *           an IllegalAccessError) but should be according to the heuristic
-   *           TODO: what if a downstream inline request would cause an IAE and we don't create an
-   *           InlineRequest for the original callsite? new subclass of OptimizerWarning.
-   *         `Some(Right)` if the callsite should be and can be inlined
+   *         `Some(Left)` if the callsite should be inlined according to the heuristic, but cannot
+   *           be inlined according to an early, incomplete check (see earlyCanInlineCheck)
+   *         `Some(Right)` if the callsite should be inlined (it's still possible that the callsite
+   *           cannot be inlined in the end, for example if it contains instructions that would
+   *           cause an IllegalAccessError in the new class; this is checked in the inliner)
    */
-  def inlineRequest(callsite: Callsite, selectedRequestsForCallee: Set[InlineRequest]): Option[Either[OptimizerWarning, InlineRequest]] = {
-    def requestIfCanInline(callsite: Callsite, reason: String): Option[Either[OptimizerWarning, InlineRequest]] = {
+  def inlineRequest(callsite: Callsite): Option[Either[OptimizerWarning, InlineRequest]] = {
+    def requestIfCanInline(callsite: Callsite, reason: InlineReason): Option[Either[OptimizerWarning, InlineRequest]] = {
       val callee = callsite.callee.get
       if (!callee.safeToInline) {
         if (callsite.isInlineAnnotated && callee.canInlineFromSource) {
@@ -151,72 +190,83 @@ abstract class InlinerHeuristics extends PerRunInit {
             callsite.isInlineAnnotated)))
         } else None
       } else inliner.earlyCanInlineCheck(callsite) match {
-        case Some(w) => Some(Left(w))
+        case Some(w) =>
+          Some(Left(w))
         case None =>
-          val postInlineRequest: List[InlineRequest] = {
-            val postCall =
-              if (isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)) {
-                // scala-dev#259: when inlining a trait super accessor, also inline the callsite to the default method
-                val implName = callee.callee.name.dropRight(1)
-                findSingleCall(callee.callee, mi => mi.itf && mi.getOpcode == Opcodes.INVOKESPECIAL && mi.name == implName)
-              } else {
-                // scala-dev#259: when inlining a mixin forwarder, also inline the callsite to the static super accessor
-                superAccessorInvocation(callee.callee)
-              }
-            postCall.flatMap(call => {
-              callGraph.addIfMissing(callee.callee, callee.calleeDeclarationClass)
-              val maybeCallsite = callGraph.findCallSite(callee.callee, call)
-              maybeCallsite.flatMap(requestIfCanInline(_, reason).flatMap(_.right.toOption))
-            }).toList
-          }
-          Some(Right(InlineRequest(callsite, postInlineRequest, reason)))
+          Some(Right(InlineRequest(callsite, reason)))
       }
     }
 
-    // scala-dev#259: don't inline into static accessors and mixin forwarders
-    if (isTraitSuperAccessorOrMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass)) None
+    // don't inline into synthetic forwarders (anonfun-adapted methods, bridges, etc). the heuristics
+    // will instead inline such methods at callsite. however, *do* inline into user-written forwarders
+    // or aliases, because otherwise it's too confusing for users looking at generated code, they will
+    // write a small test method and think the inliner doesn't work correctly.
+    val isGeneratedForwarder =
+      BytecodeUtils.isSyntheticMethod(callsite.callsiteMethod) && backendUtils.looksLikeForwarderOrFactoryOrTrivial(callsite.callsiteMethod, callsite.callsiteClass.internalName, allowPrivateCalls = true) > 0 ||
+        backendUtils.isMixinForwarder(callsite.callsiteMethod, callsite.callsiteClass) // seems mixin forwarders are not synthetic...
+
+    if (isGeneratedForwarder) None
     else {
       val callee = callsite.callee.get
       compilerSettings.optInlineHeuristics match {
         case "everything" =>
-          val reason = if (compilerSettings.optLogInline.isDefined) "the inline strategy is \"everything\"" else null
-          requestIfCanInline(callsite, reason)
+          requestIfCanInline(callsite, AnnotatedInline)
 
         case "at-inline-annotated" =>
-          def reason = if (!compilerSettings.optLogInline.isDefined) null else {
-            val what = if (callee.annotatedInline) "callee" else "callsite"
-            s"the $what is annotated `@inline`"
-          }
-          if (callsite.isInlineAnnotated && !callsite.isNoInlineAnnotated) requestIfCanInline(callsite, reason)
+          if (callsite.isInlineAnnotated && !callsite.isNoInlineAnnotated) requestIfCanInline(callsite, AnnotatedInline)
           else None
 
         case "default" =>
-          def reason = if (!compilerSettings.optLogInline.isDefined) null else {
-            if (callsite.isInlineAnnotated) {
-              val what = if (callee.annotatedInline) "callee" else "callsite"
-              s"the $what is annotated `@inline`"
-            } else {
-              val paramNames = Option(callee.callee.parameters).map(_.asScala.map(_.name).toVector)
-              def param(i: Int) = {
-                def syn = s"<param $i>"
-                paramNames.fold(syn)(v => v.applyOrElse(i, (_: Int) => syn))
+          def shouldInlineAnnotated = if (callsite.isInlineAnnotated) Some(AnnotatedInline) else None
+
+          def shouldInlineHO = Option {
+            if (callee.samParamTypes.isEmpty) null
+            else {
+              val samArgs = callee.samParamTypes flatMap {
+                case (index, _) => Option.option2Iterable(callsite.argInfos.get(index))
               }
-              def samInfo(i: Int, sam: String, arg: String) = s"the argument for parameter (${param(i)}: $sam) is a $arg"
-              val argInfos = for ((i, sam) <- callee.samParamTypes; info <- callsite.argInfos.get(i)) yield {
-                val argKind = info match {
-                  case FunctionLiteral => "function literal"
-                  case ForwardedParam(_) => "parameter of the callsite method"
-                }
-                samInfo(i, sam.internalName.split('/').last, argKind)
-              }
-              s"the callee is a higher-order method, ${argInfos.mkString(", ")}"
+              if (samArgs.isEmpty) null
+              else if (samArgs.exists(_ == FunctionLiteral)) HigherOrderWithLiteral
+              else HigherOrderWithForwardedParam
             }
           }
-          def shouldInlineHO = callee.samParamTypes.nonEmpty && (callee.samParamTypes exists {
-            case (index, _) => callsite.argInfos.contains(index)
-          })
-          if (!callsite.isNoInlineAnnotated && (callsite.isInlineAnnotated || shouldInlineHO)) requestIfCanInline(callsite, reason)
-          else None
+
+          def shouldInlineRefParam =
+            if (Type.getArgumentTypes(callee.callee.desc).exists(tp => coreBTypes.srRefCreateMethods.contains(tp.getInternalName))) Some(RefParam)
+            else None
+
+          def shouldInlineArrayOp =
+            if (BackendUtils.isRuntimeArrayLoadOrUpdate(callsite.callsiteInstruction) && callsite.argInfos.get(1).contains(StaticallyKnownArray)) Some(KnownArrayOp)
+            else None
+
+          def shouldInlineForwarder = Option {
+            // trait super accessors are excluded here because they contain an `invokespecial` of the default method in the trait.
+            // this instruction would have different semantics if inlined into some other class.
+            // we *do* inline trait super accessors if selected by a different heuristic. in this case, the `invokespcial` is then
+            // inlined in turn (chosen by the same heuristic), or the code is rolled back. but we don't inline them just because
+            // they are forwarders.
+            val isTraitSuperAccessor = backendUtils.isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)
+            if (isTraitSuperAccessor) null
+            else {
+              val forwarderKind = backendUtils.looksLikeForwarderOrFactoryOrTrivial(callee.callee, callee.calleeDeclarationClass.internalName, allowPrivateCalls = false)
+              if (forwarderKind < 0)
+                null
+              else if (BytecodeUtils.isSyntheticMethod(callee.callee) || backendUtils.isMixinForwarder(callee.callee, callee.calleeDeclarationClass))
+                SyntheticForwarder
+              else forwarderKind match {
+                case 1 => TrivialMethod
+                case 2 => FactoryMethod
+                case 3 => BoxingForwarder
+                case 4 => GenericForwarder
+              }
+            }
+          }
+
+          if (callsite.isNoInlineAnnotated) None
+          else {
+            val reason = shouldInlineAnnotated orElse shouldInlineHO orElse shouldInlineRefParam orElse shouldInlineArrayOp orElse shouldInlineForwarder
+            reason.flatMap(r => requestIfCanInline(callsite, r))
+          }
       }
     }
   }
@@ -355,6 +405,18 @@ abstract class InlinerHeuristics extends PerRunInit {
 }
 
 object InlinerHeuristics {
+  sealed trait InlineReason
+  case object AnnotatedInline extends InlineReason
+  case object SyntheticForwarder extends InlineReason
+  case object TrivialMethod extends InlineReason
+  case object FactoryMethod extends InlineReason
+  case object BoxingForwarder extends InlineReason
+  case object GenericForwarder extends InlineReason
+  case object RefParam extends InlineReason
+  case object KnownArrayOp extends InlineReason
+  case object HigherOrderWithLiteral extends InlineReason
+  case object HigherOrderWithForwardedParam extends InlineReason
+
   class InlineSourceMatcher(inlineFromSetting: List[String]) {
     // `terminal` is true if all remaining entries are of the same negation as this one
     case class Entry(pattern: Pattern, negated: Boolean, terminal: Boolean) {

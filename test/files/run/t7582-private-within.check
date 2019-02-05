@@ -1,6 +1,6 @@
 private[package pack] class JavaPackagePrivate
-private[package pack] module JavaPackagePrivate
-private[package pack] module class JavaPackagePrivate
+private[package pack] Java module JavaPackagePrivate
+private[package pack] Java module class JavaPackagePrivate
 private[package pack] field field
 private[package pack] primary constructor <init>
 private[package pack] method meth

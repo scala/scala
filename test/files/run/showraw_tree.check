@@ -1,2 +1,2 @@
-Apply(Select(New(AppliedTypeTree(Ident(scala.collection.immutable.HashMap), List(Select(Ident(scala.Predef), TypeName("String")), Select(Ident(scala.Predef), TypeName("String"))))), termNames.CONSTRUCTOR), List())
+Apply(Select(New(AppliedTypeTree(Select(Ident(scala.collection.immutable.ArraySeq), TypeName("ofRef")), List(Select(Ident(scala.Predef), TypeName("String"))))), termNames.CONSTRUCTOR), List(Apply(Apply(Select(Ident(scala.Array), TermName("apply")), List()), List(Select(Ident(scala.Predef), TermName("implicitly"))))))
 Apply(Select(New(AppliedTypeTree(Ident(scala.collection.mutable.HashMap), List(Select(Ident(scala.Predef), TypeName("String")), Select(Ident(scala.Predef), TypeName("String"))))), termNames.CONSTRUCTOR), List())

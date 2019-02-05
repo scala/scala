@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.concurrent.duration
 
@@ -60,7 +64,7 @@ case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
   /**
    * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
    */
-  def compare(other: Deadline) = time compare other.time
+  def compare(other: Deadline): Int = time compare other.time
 }
 
 object Deadline {
@@ -75,7 +79,7 @@ object Deadline {
    * The natural ordering for deadline is determined by the natural order of the underlying (finite) duration.
    */
   implicit object DeadlineIsOrdered extends Ordering[Deadline] {
-    def compare(a: Deadline, b: Deadline) = a compare b
+    def compare(a: Deadline, b: Deadline): Int = a compare b
   }
 
 }

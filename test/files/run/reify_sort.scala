@@ -7,13 +7,13 @@ object Test extends App {
      *  visible in their scope (including local variables or
      *  arguments of enclosing methods).
      */
-    def sort(a: Array[Int]) {
+    def sort(a: Array[Int]): Unit = {
 
-      def swap(i: Int, j: Int) {
+      def swap(i: Int, j: Int): Unit = {
         val t = a(i); a(i) = a(j); a(j) = t
       }
 
-      def sort1(l: Int, r: Int) {
+      def sort1(l: Int, r: Int): Unit = {
         val pivot = a((l + r) / 2)
         var i = l
         var j = r
@@ -34,7 +34,7 @@ object Test extends App {
         sort1(0, a.length - 1)
     }
 
-    def println(ar: Array[Int]) {
+    def println(ar: Array[Int]): Unit = {
       def print1 = {
         def iter(i: Int): String =
           ar(i) + (if (i < ar.length-1) "," + iter(i+1) else "")

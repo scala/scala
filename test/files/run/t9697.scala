@@ -66,7 +66,7 @@ package t4683b {
     
     protected def EntityField[T <: Entity: reflect.ClassTag] = new Field
     
-    def find[T <: Entity: reflect.ClassTag] {
+    def find[T <: Entity: reflect.ClassTag]: Unit = {
       Nil.map(dbo => {
         class EntityHolder extends Entity {
           val entity = EntityField[T]

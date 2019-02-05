@@ -11,7 +11,7 @@ object B1 {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import B1.B2.q
     val res = 5 match { case q(x) => x }
     println(res)

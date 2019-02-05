@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package sys
@@ -25,12 +29,10 @@ import scala.language.implicitConversions
  *  @define coll mutable map
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 class SystemProperties
-extends mutable.AbstractMap[String, String]
-   with mutable.Map[String, String] {
+extends mutable.AbstractMap[String, String] {
 
   override def empty = mutable.Map[String, String]()
   override def default(key: String): String = null
@@ -40,6 +42,7 @@ extends mutable.AbstractMap[String, String]
     names map (k => (k, ps getProperty k)) filter (_._2 ne null)
   } getOrElse Iterator.empty
 
+  override def isEmpty: Boolean = iterator.isEmpty
   def names: Iterator[String] = wrapAccess (
     System.getProperties().stringPropertyNames().asScala.iterator
   ) getOrElse Iterator.empty
@@ -49,8 +52,9 @@ extends mutable.AbstractMap[String, String]
   override def contains(key: String) =
     wrapAccess(super.contains(key)) exists (x => x)
 
-  def -= (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
-  def += (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
+  override def clear(): Unit = wrapAccess(System.getProperties().clear())
+  def subtractOne (key: String): this.type = { wrapAccess(System.clearProperty(key)) ; this }
+  def addOne (kv: (String, String)): this.type = { wrapAccess(System.setProperty(kv._1, kv._2)) ; this }
 
   def wrapAccess[T](body: => T): Option[T] =
     try Some(body) catch { case _: AccessControlException => None }
@@ -87,7 +91,5 @@ object SystemProperties {
   lazy val preferIPv4Stack: BooleanProp     = BooleanProp.keyExists(PreferIPv4StackKey)
   lazy val preferIPv6Addresses: BooleanProp = BooleanProp.keyExists(PreferIPv6AddressesKey)
   lazy val noTraceSuppression: BooleanProp  = BooleanProp.valueIsTrue(NoTraceSuppressionKey)
-  @deprecated("use noTraceSuppression", "2.12.0")
-  def noTraceSupression        = noTraceSuppression
 }
 

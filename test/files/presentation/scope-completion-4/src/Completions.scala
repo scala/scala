@@ -4,11 +4,11 @@ package test
 
 class Completion1 {
 
-  def f {
+  def f: Unit = {
     
-    def ff {
+    def ff: Unit = {
       
-      def fff {
+      def fff: Unit = {
         /*_*/
       }
       
@@ -25,7 +25,7 @@ class Completion1 {
     
     class fc {
       
-      def fcf {
+      def fcf: Unit = {
         /*_*/
       } 
       
@@ -53,7 +53,7 @@ class Completion1 {
       
       /*_*/
       
-      def ccf {
+      def ccf: Unit = {
         /*_*/
       }
 
@@ -62,7 +62,7 @@ class Completion1 {
     
     /*_*/
     
-    def cf {
+    def cf: Unit = {
       
       class cfc {
         /*_*/
@@ -70,7 +70,7 @@ class Completion1 {
       
       /*_*/
       
-      def cff {
+      def cff: Unit = {
         /*_*/
       }
       

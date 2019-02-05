@@ -1,7 +1,9 @@
+// scalac: -Xfatal-warnings
+//
 object Test {
   def ==(p: Phase): Int = 0
 
-  def foo {
+  def foo: Unit = {
     ==(new Phase())
   }
 }

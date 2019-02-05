@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 // $Id$
 
 package scala
@@ -36,11 +44,8 @@ abstract class MutableSettings extends AbsSettings {
     def valueSetByUser: Option[T] = if (isSetByUser) Some(value) else None
   }
 
-  def Xexperimental: BooleanSetting
-  def XfullLubs: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def Xprintpos: BooleanSetting
-  def strictInference: BooleanSetting
   def Yposdebug: BooleanSetting
   def Yrangepos: BooleanSetting
   def Yshowsymowners: BooleanSetting
@@ -49,20 +54,14 @@ abstract class MutableSettings extends AbsSettings {
   def debug: BooleanSetting
   def developer: BooleanSetting
   def explaintypes: BooleanSetting
-  def overrideObjects: BooleanSetting
   def printtypes: BooleanSetting
   def uniqid: BooleanSetting
   def verbose: BooleanSetting
-  def YpartialUnification: BooleanSetting
-  def Yvirtpatmat: BooleanSetting
 
-  // Define them returning a `Boolean` to avoid breaking bincompat change
-  // TODO: Add these fields typed as `BooleanSetting` for 2.13.x
-  def YhotStatisticsEnabled: Boolean = false
-  def YstatisticsEnabled: Boolean = false
+  def YhotStatisticsEnabled: BooleanSetting
+  def YstatisticsEnabled: BooleanSetting
 
   def Yrecursion: IntSetting
-  def maxClassfileName: IntSetting
 
   def isScala211: Boolean
   def isScala212: Boolean

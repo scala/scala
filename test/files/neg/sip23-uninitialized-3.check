@@ -1,4 +1,4 @@
-sip23-uninitialized-3.scala:2: warning: variable f3 in object Test does nothing other than call itself recursively
+sip23-uninitialized-3.scala:4: warning: variable f3 in object Test does nothing other than call itself recursively
   var f3: 1 = f3   // warning: recursive
               ^
 error: No warnings can be incurred under -Xfatal-warnings.

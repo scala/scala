@@ -18,7 +18,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withIntegerBitCount(bh: Blackhole) {
+  @Benchmark def withIntegerBitCount(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withIntegerBitCount(v)
       // assert (leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")
@@ -30,7 +30,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withIntegerNumberOfLeadingZeros(bh: Blackhole) {
+  @Benchmark def withIntegerNumberOfLeadingZeros(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withIntegerNumberOfLeadingZeros(v)
       // assert (leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")
@@ -42,7 +42,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withLoop(bh: Blackhole) {
+  @Benchmark def withLoop(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withLoop(v)
       bh.consume(leadingZeros)
@@ -61,7 +61,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withMatch(bh: Blackhole) {
+  @Benchmark def withMatch(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withMatch(v)
       // assert (leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")
@@ -106,7 +106,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def with2DeBruijn(bh: Blackhole) {
+  @Benchmark def with2DeBruijn(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = with2DeBruijn(v)
       // assert (leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")
@@ -122,7 +122,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withBinSearch(bh: Blackhole) {
+  @Benchmark def withBinSearch(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withBinSearch(v)
       // assert (leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")
@@ -150,7 +150,7 @@ class BitManipulationBenchmark {
 
   //////////////////////////////////////////////
 
-  @Benchmark def withSumBinSearch(bh: Blackhole) {
+  @Benchmark def withSumBinSearch(bh: Blackhole): Unit = {
     for (v <- powersOfTwo) {
       val leadingZeros = withSumBinSearch(v)
       // assert(leadingZeros == withLoop(v), s"$leadingZeros != ${withLoop(v)} ($v)")

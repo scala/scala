@@ -1,0 +1,16 @@
+newSource:9: warning: Fixing missing delimiter row
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: ::-
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: -:-
+  /**
+  ^
+newSource:19: warning: Fixing invalid column alignment: ??
+  /**
+  ^
+newSource:26: warning: Fixing invalid column alignment: List(Paragraph(Italic(Text(---))))
+  /**
+  ^
+Done.

@@ -1,26 +1,26 @@
-Stream()
-Stream()
+LazyList()
+LazyList()
 true
 true
 true
 
 Array(1)
-Stream(1, ?)
-Stream(1, ?)
-Stream()
-Stream()
-Stream(1)
-Stream()
+LazyList(?)
+LazyList(?)
+LazyList(?)
+LazyList(?)
+LazyList(1)
+LazyList(?)
 true
 true
 true
 true
 
 Array(1, 2)
-Stream(2)
-Stream()
-Stream(1, 2)
-Stream()
+LazyList(?)
+LazyList(?)
+LazyList(1, 2)
+LazyList(?)
 true
 true
 true
@@ -30,8 +30,8 @@ true
 999
 512
 100000
-Stream(100001, ?)
-Stream(100001, ?)
+LazyList(?)
+LazyList(?)
 true
 true
 705082704

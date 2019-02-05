@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 class C extends A{
 
   val a = 10
@@ -28,7 +30,7 @@ class Impl extends T
 
 
 object Test {
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         println(new B().bb)
         println(new C().bb)
     }

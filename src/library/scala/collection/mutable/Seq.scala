@@ -1,48 +1,68 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
-package scala
-package collection
-package mutable
-
-import generic._
-
-
-/** A subtrait of `collection.Seq` which represents sequences
- *  that can be mutated.
+/*
+ * Scala (https://www.scala-lang.org)
  *
- *  $seqInfo
+ * Copyright EPFL and Lightbend, Inc.
  *
- *  The class adds an `update` method to `collection.Seq`.
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
  *
- *  @define Coll `mutable.Seq`
- *  @define coll mutable sequence
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-trait Seq[A] extends Iterable[A]
-//                with GenSeq[A]
-                with scala.collection.Seq[A]
-                with GenericTraversableTemplate[A, Seq]
-                with SeqLike[A, Seq[A]] {
-  override def companion: GenericCompanion[Seq] = Seq
-  override def seq: Seq[A] = this
+
+package scala.collection.mutable
+
+import scala.collection.SeqFactory
+import scala.language.higherKinds
+
+trait Seq[A]
+  extends Iterable[A]
+    with collection.Seq[A]
+    with SeqOps[A, Seq, Seq[A]] {
+
+  override def iterableFactory: SeqFactory[IterableCC] = Seq
 }
 
-/** $factoryInfo
- *  The current default implementation of a $Coll is an `ArrayBuffer`.
- *  @define coll mutable sequence
- *  @define Coll `mutable.Seq`
- */
-object Seq extends SeqFactory[Seq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
+/**
+  * $factoryInfo
+  * @define coll mutable sequence
+  * @define Coll `mutable.Seq`
+  */
+@SerialVersionUID(3L)
+object Seq extends SeqFactory.Delegate[Seq](ArrayBuffer)
+
+/**
+  * @define coll mutable sequence
+  * @define Coll `mutable.Seq`
+  */
+trait SeqOps[A, +CC[_], +C <: AnyRef]
+  extends collection.SeqOps[A, CC, C]
+    with Cloneable[C] {
+
+  override def clone(): C = {
+    val b = newSpecificBuilder
+    b ++= toIterable
+    b.result()
+  }
+
+  /** Replaces element at given index with a new value.
+    *
+    *  @param idx      the index of the element to replace.
+    *  @param elem     the new value.
+    *  @throws   IndexOutOfBoundsException if the index is not valid.
+    */
+  @throws[IndexOutOfBoundsException]
+  def update(idx: Int, elem: A): Unit
+
+  @deprecated("Use `mapInPlace` on an `IndexedSeq` instead", "2.13.0")
+  @`inline`final def transform(f: A => A): this.type = {
+    var i = 0
+    val siz = size
+    while (i < siz) { this(i) = f(this(i)); i += 1 }
+    this
+  }
 }
 
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+@SerialVersionUID(3L)
 abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]

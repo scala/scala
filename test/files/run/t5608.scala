@@ -1,5 +1,5 @@
 object Test {
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     val ns = Array(3L, 3L, 3L)
     val a1: A = new A(ns(0))
     val a2: A = new A(ns(0))

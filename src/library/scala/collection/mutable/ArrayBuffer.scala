@@ -1,192 +1,265 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
 package mutable
 
-import generic._
+import scala.collection.generic.DefaultSerializable
 
 /** An implementation of the `Buffer` class using an array to
- *  represent the assembled sequence internally. Append, update and random
- *  access take constant time (amortized time). Prepends and removes are
- *  linear in the buffer size.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   1
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
- *  section on `Array Buffers` for more information.
+  *  represent the assembled sequence internally. Append, update and random
+  *  access take constant time (amortized time). Prepends and removes are
+  *  linear in the buffer size.
+  *
+  *  @author  Matthias Zenger
+  *  @author  Martin Odersky
+  *  @since   1
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
+  *  section on `Array Buffers` for more information.
 
- *
- *  @tparam A    the type of this arraybuffer's elements.
- *
- *  @define Coll `mutable.ArrayBuffer`
- *  @define coll array buffer
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `ArrayBuffer[B]` because an implicit of type `CanBuildFrom[ArrayBuffer, B, ArrayBuffer[B]]`
- *    is defined in object `ArrayBuffer`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `ArrayBuffer`.
- *  @define orderDependent
- *  @define orderDependentFold
- *  @define mayNotTerminateInf
- *  @define willNotTerminateInf
- */
-@SerialVersionUID(1529165946227428979L)
-class ArrayBuffer[A](override protected val initialSize: Int)
+  *
+  *  @tparam A    the type of this arraybuffer's elements.
+  *
+  *  @define Coll `mutable.ArrayBuffer`
+  *  @define coll array buffer
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  */
+class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   extends AbstractBuffer[A]
-     with Buffer[A]
-     with GenericTraversableTemplate[A, ArrayBuffer]
-     with BufferLike[A, ArrayBuffer[A]]
-     with IndexedSeqOptimized[A, ArrayBuffer[A]]
-     with Builder[A, ArrayBuffer[A]]
-     with ResizableArray[A]
-     with Serializable {
+    with IndexedBuffer[A]
+    with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with DefaultSerializable {
 
-  override def companion: GenericCompanion[ArrayBuffer] = ArrayBuffer
+  def this() = this(new Array[AnyRef](16), 0)
 
-  import scala.collection.Traversable
+  def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
 
-  def this() = this(16)
+  protected[collection] var array: Array[AnyRef] = initialElements
+  protected var size0 = initialSize
 
-  def clear() { reduceToSize(0) }
+  /** Ensure that the internal array has at least `n` cells. */
+  protected def ensureSize(n: Int): Unit =
+    array = RefArrayUtils.ensureSize(array, size0, n)
 
-  override def sizeHint(len: Int) {
-    if (len > size && len >= 1) {
-      val newarray = new Array[AnyRef](len)
-      java.lang.System.arraycopy(array, 0, newarray, 0, size0)
-      array = newarray
+  def sizeHint(size: Int): Unit =
+    if(size > length && size >= 1) ensureSize(size)
+
+  /** Reduce length to `n`, nulling out all dropped elements */
+  private def reduceToSize(n: Int): Unit = {
+    RefArrayUtils.nullElems(array, n, size0)
+    size0 = n
+  }
+
+  @inline private def checkWithinBounds(lo: Int, hi: Int) = {
+    if (lo < 0) throw new IndexOutOfBoundsException(s"$lo is out of bounds (min 0, max ${size0-1})")
+    if (hi > size0) throw new IndexOutOfBoundsException(s"$hi is out of bounds (min 0, max ${size0 - 1})")
+  }
+
+  def apply(n: Int) = {
+    checkWithinBounds(n, n + 1)
+    array(n).asInstanceOf[A]
+  }
+
+  def update(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
+    checkWithinBounds(index, index + 1)
+    array(index) = elem.asInstanceOf[AnyRef]
+  }
+
+  def length = size0
+
+  override def view: ArrayBufferView[A] = new ArrayBufferView(array, size0)
+
+  override def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
+
+  def clear(): Unit = reduceToSize(0)
+
+  def addOne(elem: A): this.type = {
+    val i = size0
+    ensureSize(size0 + 1)
+    size0 += 1
+    this(i) = elem
+    this
+  }
+
+  // Overridden to use array copying for efficiency where possible.
+  override def addAll(elems: IterableOnce[A]): this.type = {
+    elems match {
+      case elems: ArrayBuffer[_] =>
+        ensureSize(length + elems.length)
+        Array.copy(elems.array, 0, array, length, elems.length)
+        size0 = length + elems.length
+      case _ => super.addAll(elems)
+    }
+    this
+  }
+
+  def insert(@deprecatedName("n", "2.13.0") index: Int, elem: A): Unit = {
+    checkWithinBounds(index, index)
+    ensureSize(size0 + 1)
+    Array.copy(array, index, array, index + 1, size0 - index)
+    size0 += 1
+    this(index) = elem
+  }
+
+  def prepend(elem: A): this.type = {
+    insert(0, elem)
+    this
+  }
+
+  def insertAll(@deprecatedName("n", "2.13.0") index: Int, elems: IterableOnce[A]): Unit = {
+    checkWithinBounds(index, index)
+    elems match {
+      case elems: collection.Iterable[A] =>
+        val elemsLength = elems.size
+        ensureSize(length + elemsLength)
+        Array.copy(array, index, array, index + elemsLength, size0 - index)
+        size0 = size0 + elemsLength
+        elems match {
+          case elems: ArrayBuffer[_] =>
+            Array.copy(elems.array, 0, array, index, elemsLength)
+          case _ =>
+            var i = 0
+            val it = elems.iterator
+            while (i < elemsLength) {
+              this(index + i) = it.next()
+              i += 1
+            }
+        }
+      case _ =>
+        insertAll(index, ArrayBuffer.from(elems))
     }
   }
 
-  /** Appends a single element to this buffer and returns
-   *  the identity of the buffer. It takes constant amortized time.
-   *
-   *  @param elem  the element to append.
-   *  @return      the updated buffer.
-   */
-  def +=(elem: A): this.type = {
-    ensureSize(size0 + 1)
-    array(size0) = elem.asInstanceOf[AnyRef]
-    size0 += 1
+  def remove(@deprecatedName("n", "2.13.0") index: Int): A = {
+    checkWithinBounds(index, index + 1)
+    val res = this(index)
+    Array.copy(array, index + 1, array, index, size0 - (index + 1))
+    reduceToSize(size0 - 1)
+    res
+  }
+
+  def remove(@deprecatedName("n", "2.13.0") index: Int, count: Int): Unit =
+    if (count > 0) {
+      checkWithinBounds(index, index + count)
+      Array.copy(array, index + count, array, index, size0 - (index + count))
+      reduceToSize(size0 - count)
+    } else if (count < 0) {
+      throw new IllegalArgumentException("removing negative number of elements: " + count)
+    }
+
+  @deprecated("Use 'this' instance instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def result(): this.type = this
+
+  @deprecated("Use 'new GrowableBuilder(this).mapResult(f)' instead", "2.13.0")
+  @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
+  @inline def mapResult[NewTo](f: (ArrayBuffer[A]) => NewTo): Builder[A, NewTo] = new GrowableBuilder(this).mapResult(f)
+
+  override protected[this] def stringPrefix = "ArrayBuffer"
+
+  override def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray[B](xs, start, length)
+
+  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
+    if(copied > 0) {
+      Array.copy(array, 0, xs, start, copied)
+    }
+    copied
+  }
+
+  /** Sorts this $coll in place according to an Ordering.
+    *
+    * @see [[scala.collection.mutable.IndexedSeqOps.sortInPlace]]
+    * @param  ord the ordering to be used to compare elements.
+    * @return modified input $coll sorted according to the ordering `ord`.
+    */
+  override def sortInPlace[B >: A]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
     this
   }
-
-  /** Appends a number of elements provided by a traversable object.
-   *  The identity of the buffer is returned.
-   *
-   *  @param xs    the traversable object.
-   *  @return      the updated buffer.
-   */
-  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
-    case v: scala.collection.IndexedSeqLike[_, _] =>
-      val n = v.length
-      ensureSize(size0 + n)
-      v.copyToArray(array.asInstanceOf[scala.Array[Any]], size0, n)
-      size0 += n
-      this
-    case _ =>
-      super.++=(xs)
-  }
-
-  /** Prepends a single element to this buffer and returns
-   *  the identity of the buffer. It takes time linear in
-   *  the buffer size.
-   *
-   *  @param elem  the element to prepend.
-   *  @return      the updated buffer.
-   */
-  def +=:(elem: A): this.type = {
-    ensureSize(size0 + 1)
-    copy(0, 1, size0)
-    array(0) = elem.asInstanceOf[AnyRef]
-    size0 += 1
-    this
-  }
-
-  /** Prepends a number of elements provided by a traversable object.
-   *  The identity of the buffer is returned.
-   *
-   *  @param xs    the traversable object.
-   *  @return      the updated buffer.
-   */
-  override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
-
-  /** Inserts new elements at the index `n`. Opposed to method
-   *  `update`, this method will not replace an element with a new
-   *  one. Instead, it will insert a new element at index `n`.
-   *
-   *  @param n     the index where a new element will be inserted.
-   *  @param seq   the traversable object providing all elements to insert.
-   *  @throws IndexOutOfBoundsException if `n` is out of bounds.
-   */
-  def insertAll(n: Int, seq: Traversable[A]) {
-    if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
-    val len = seq.size
-    val newSize = size0 + len
-    ensureSize(newSize)
-
-    copy(n, n + len, size0 - n)
-    seq.copyToArray(array.asInstanceOf[Array[Any]], n)
-    size0 = newSize
-  }
-
-  /** Removes the element on a given index position. It takes time linear in
-   *  the buffer size.
-   *
-   *  @param n       the index which refers to the first element to remove.
-   *  @param count   the number of elements to remove.
-   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
-   *            `0 <= n <= length - count` (with `count > 0`).
-   *  @throws   IllegalArgumentException if `count < 0`.
-   */
-  override def remove(n: Int, count: Int) {
-    if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
-    else if (count == 0) return  // Did nothing
-    if (n < 0 || n > size0 - count) throw new IndexOutOfBoundsException("at " + n.toString + " deleting " + count.toString)
-    copy(n + count, n, size0 - (n + count))
-    reduceToSize(size0 - count)
-  }
-
-  /** Removes the element at a given index position.
-   *
-   *  @param n  the index which refers to the element to delete.
-   *  @return   the element that was formerly at position `n`.
-   */
-  def remove(n: Int): A = {
-    val result = apply(n)
-    remove(n, 1)
-    result
-  }
-
-  def result: ArrayBuffer[A] = this
-
-  /** Defines the prefix of the string representation.
-   */
-  override def stringPrefix: String = "ArrayBuffer"
-
 }
 
-/** Factory object for the `ArrayBuffer` class.
- *
- *  $factoryInfo
- *  @define coll array buffer
- *  @define Coll `ArrayBuffer`
- */
-object ArrayBuffer extends SeqFactory[ArrayBuffer] {
-  /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayBuffer[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
+/**
+  * Factory object for the `ArrayBuffer` class.
+  *
+  * $factoryInfo
+  *
+  * @define coll array buffer
+  * @define Coll `mutable.ArrayBuffer`
+  */
+@SerialVersionUID(3L)
+object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
+
+  // Avoid reallocation of buffer if length is known.
+  def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
+    if (coll.knownSize >= 0) {
+      val array = new Array[AnyRef](coll.knownSize)
+      val it = coll.iterator
+      for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
+      new ArrayBuffer[B](array, array.length)
+    }
+    else new ArrayBuffer[B] ++= coll
+
+  def newBuilder[A]: Builder[A, ArrayBuffer[A]] =
+    new GrowableBuilder[A, ArrayBuffer[A]](empty) {
+      override def sizeHint(size: Int): Unit = elems.ensureSize(size)
+    }
+
+  def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 }
 
+final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
+  @throws[ArrayIndexOutOfBoundsException]
+  def apply(n: Int) = if (n < length) array(n).asInstanceOf[A] else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${length - 1})")
+  override protected[this] def className = "ArrayBufferView"
+}
+
+/** An object used internally by collections backed by an extensible Array[AnyRef] */
+object RefArrayUtils {
+
+  def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
+    // Use a Long to prevent overflows
+    val arrayLength: Long = array.length
+    def growArray = {
+      var newSize: Long = math.max(arrayLength * 2, 8)
+      while (n > newSize)
+        newSize = newSize * 2
+      // Clamp newSize to Int.MaxValue
+      if (newSize > Int.MaxValue) {
+        if (end == Int.MaxValue) throw new Exception(s"Collections can not have more than ${Int.MaxValue} elements")
+        newSize = Int.MaxValue
+      }
+
+      val newArray: Array[AnyRef] = new Array(newSize.toInt)
+      Array.copy(array, 0, newArray, 0, end)
+      newArray
+    }
+    if (n <= arrayLength) array else growArray
+  }
+
+  /** Remove elements of this array at indices after `sz`.
+   */
+  def nullElems(array: Array[AnyRef], start: Int, end: Int): Unit = {
+    // Maybe use `fill` instead?
+    var i = start
+    while (i < end) {
+      array(i) = null
+      i += 1
+    }
+  }
+
+}

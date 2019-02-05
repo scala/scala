@@ -1,4 +1,4 @@
-interop_abstypetags_arenot_classmanifests.scala:5: error: No ClassManifest available for T.
-    println(classManifest[T])
-                         ^
+interop_abstypetags_arenot_classmanifests.scala:6: error: No ClassManifest available for T.
+    println(implicitly[ClassManifest[T]])
+                      ^
 one error found

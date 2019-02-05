@@ -1,0 +1,7 @@
+t11374b.scala:3: error: not found: value _
+  val Some(`_`) = Option(42)  // was crashola
+           ^
+t11374b.scala:6: error: not found: value _
+    val Some(`_`) = Option(42)  // was crashola
+             ^
+two errors found

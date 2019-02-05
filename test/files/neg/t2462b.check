@@ -1,11 +1,20 @@
-t2462b.scala:6: warning: Invalid implicitNotFound message for trait Meh in package test:
+t2462b.scala:8: warning: Invalid implicitNotFound message for trait Meh in package test:
 The type parameters Too, Elem referenced in the message of the @implicitNotFound annotation are not defined by trait Meh.
 trait Meh[-From, +To]
       ^
-t2462b.scala:9: warning: Invalid implicitNotFound message for trait Meh2 in package test:
+t2462b.scala:11: warning: Invalid implicitNotFound message for trait Meh2 in package test:
 The type parameter Elem referenced in the message of the @implicitNotFound annotation is not defined by trait Meh2.
 trait Meh2[-From, +To]
       ^
+t2462b.scala:15: warning: Invalid implicitNotFound message for value theC:
+The type parameter Uuh referenced in the message of the @implicitNotFound annotation is not in scope.
+  def m[Aaa](implicit @implicitNotFound("I see no C[${Uuh}]") theC: C[Aaa]) = ???
+                                                              ^
+t2462b.scala:21: warning: Invalid implicitNotFound message for value i:
+The type parameters XX, ZZ, Nix referenced in the message of the @implicitNotFound annotation are not in scope.
+    def m[S](implicit @implicitNotFound("${X} ${Y} ${ Z } ${R} ${S} -- ${XX} ${ZZ} ${ Nix }") i: Int) = ???
+                                                                                              ^
+warning: there were two feature warnings; re-run with -feature for details
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+5 warnings found
 one error found

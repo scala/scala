@@ -1,17 +1,94 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
 package immutable
 
-import generic._
 import scala.annotation.tailrec
+
+import scala.collection.mutable.ReusableBuilder
+import scala.collection.generic.DefaultSerializable
+import scala.runtime.Statics.releaseFence
+
+/**
+  * This class implements immutable maps using a list-based data structure. List map iterators and
+  * traversal methods visit key-value pairs in the order they were first inserted.
+  *
+  * Entries are stored internally in reversed insertion order, which means the newest key is at the
+  * head of the list. As such, methods such as `head` and `tail` are O(n), while `last` and `init`
+  * are O(1). Other operations, such as inserting or removing entries, are also O(n), which makes
+  * this collection suitable only for a small number of elements.
+  *
+  * Instances of `ListMap` represent empty maps; they can be either created by calling the
+  * constructor directly, or by applying the function `ListMap.empty`.
+  *
+  * @tparam K the type of the keys contained in this list map
+  * @tparam V the type of the values associated with the keys
+  *
+  * @author Matthias Zenger
+  * @author Martin Odersky
+  * @since 1
+  * @define Coll ListMap
+  * @define coll list map
+  * @define mayNotTerminateInf
+  * @define willNotTerminateInf
+  */
+sealed class ListMap[K, +V]
+  extends AbstractMap[K, V]
+    with SeqMap[K, V]
+    with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
+    with DefaultSerializable {
+
+  override def mapFactory: MapFactory[ListMap] = ListMap
+
+  override def size: Int = 0
+
+  override def isEmpty: Boolean = true
+
+  override def knownSize: Int = 0
+  def get(key: K): Option[V] = None
+
+  def updated[V1 >: V](key: K, value: V1): ListMap[K, V1] = new ListMap.Node[K, V1](key, value, this)
+
+  def removed(key: K): ListMap[K, V] = this
+
+  def iterator: Iterator[(K, V)] = {
+    var curr: ListMap[K, V] = this
+    var res: List[(K, V)] = Nil
+    while (curr.nonEmpty) {
+      res = (curr.key, curr.value) :: res
+      curr = curr.next
+    }
+    res.iterator
+  }
+
+  override def keys: Iterable[K] = {
+    var curr: ListMap[K, V] = this
+    var res: List[K] = Nil
+    while (curr.nonEmpty) {
+      res = curr.key :: res
+      curr = curr.next
+    }
+    res
+  }
+
+  private[immutable] def key: K = throw new NoSuchElementException("key of empty map")
+  private[immutable] def value: V = throw new NoSuchElementException("value of empty map")
+  private[immutable] def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
+
+  override protected[this] def className = "ListMap"
+
+}
 
 /**
   * $factoryInfo
@@ -26,141 +103,198 @@ import scala.annotation.tailrec
   * @define Coll ListMap
   * @define coll list map
   */
-object ListMap extends ImmutableMapFactory[ListMap] {
-
-  /**
-    * $mapCanBuildFromInfo
-    */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] =
-    new MapCanBuildFrom[A, B]
-
-  def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
-
-  @SerialVersionUID(-8256686706655863282L)
-  private object EmptyListMap extends ListMap[Any, Nothing]
-}
-
-/**
-  * This class implements immutable maps using a list-based data structure. List map iterators and
-  * traversal methods visit key-value pairs in the order whey were first inserted.
-  *
-  * Entries are stored internally in reversed insertion order, which means the newest key is at the
-  * head of the list. As such, methods such as `head` and `tail` are O(n), while `last` and `init`
-  * are O(1). Other operations, such as inserting or removing entries, are also O(n), which makes
-  * this collection suitable only for a small number of elements.
-  *
-  * Instances of `ListMap` represent empty maps; they can be either created by calling the
-  * constructor directly, or by applying the function `ListMap.empty`.
-  *
-  * @tparam A the type of the keys contained in this list map
-  * @tparam B the type of the values associated with the keys
-  *
-  * @author Matthias Zenger
-  * @author Martin Odersky
-  * @version 2.0, 01/01/2007
-  * @since 1
-  * @define Coll ListMap
-  * @define coll list map
-  * @define mayNotTerminateInf
-  * @define willNotTerminateInf
-  */
-@SerialVersionUID(301002838095710379L)
-sealed class ListMap[A, +B] extends AbstractMap[A, B]
-  with Map[A, B]
-  with MapLike[A, B, ListMap[A, B]]
-  with Serializable {
-
-  override def empty = ListMap.empty
-
-  override def size: Int = 0
-  override def isEmpty: Boolean = true
-
-  def get(key: A): Option[B] = None
-
-  override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
-
-  def +[B1 >: B](kv: (A, B1)): ListMap[A, B1] = new Node[B1](kv._1, kv._2)
-  def -(key: A): ListMap[A, B] = this
-
-  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): ListMap[A, B1] =
-    if (xs.isEmpty) this
-    else ((repr: ListMap[A, B1]) /: xs) (_ + _)
-
-  def iterator: Iterator[(A, B)] = {
-    def reverseList = {
-      var curr: ListMap[A, B] = this
-      var res: List[(A, B)] = Nil
-      while (!curr.isEmpty) {
-        res = (curr.key, curr.value) :: res
-        curr = curr.next
-      }
-      res
-    }
-    reverseList.iterator
-  }
-
-  protected def key: A = throw new NoSuchElementException("key of empty map")
-  protected def value: B = throw new NoSuchElementException("value of empty map")
-  protected def next: ListMap[A, B] = throw new NoSuchElementException("next of empty map")
-
-  override def stringPrefix = "ListMap"
-
+@SerialVersionUID(3L)
+object ListMap extends MapFactory[ListMap] {
   /**
     * Represents an entry in the `ListMap`.
     */
-  @SerialVersionUID(-6453056603889598734L)
-  protected class Node[B1 >: B](override protected val key: A,
-                                override protected val value: B1) extends ListMap[A, B1] with Serializable {
+  private[immutable] final class Node[K, V](
+    override private[immutable] val key: K,
+    private[immutable] var _value: V,
+    private[immutable] var _init: ListMap[K, V]
+  ) extends ListMap[K, V] {
+
+    releaseFence()
+
+    override private[immutable] def value: V = _value
 
     override def size: Int = sizeInternal(this, 0)
 
-    @tailrec private[this] def sizeInternal(cur: ListMap[A, B1], acc: Int): Int =
+    @tailrec private[this] def sizeInternal(cur: ListMap[K, V], acc: Int): Int =
       if (cur.isEmpty) acc
       else sizeInternal(cur.next, acc + 1)
 
     override def isEmpty: Boolean = false
 
-    override def apply(k: A): B1 = applyInternal(this, k)
+    override def knownSize: Int = -1
 
-    @tailrec private[this] def applyInternal(cur: ListMap[A, B1], k: A): B1 =
+    @throws[NoSuchElementException]
+    override def apply(k: K): V = applyInternal(this, k)
+
+    @tailrec private[this] def applyInternal(cur: ListMap[K, V], k: K): V =
       if (cur.isEmpty) throw new NoSuchElementException("key not found: " + k)
       else if (k == cur.key) cur.value
       else applyInternal(cur.next, k)
 
-    override def get(k: A): Option[B1] = getInternal(this, k)
+    override def get(k: K): Option[V] = getInternal(this, k)
 
-    @tailrec private[this] def getInternal(cur: ListMap[A, B1], k: A): Option[B1] =
+    @tailrec private[this] def getInternal(cur: ListMap[K, V], k: K): Option[V] =
       if (cur.isEmpty) None
       else if (k == cur.key) Some(cur.value)
       else getInternal(cur.next, k)
 
-    override def contains(k: A): Boolean = containsInternal(this, k)
+    override def contains(k: K): Boolean = containsInternal(this, k)
 
-    @tailrec private[this] def containsInternal(cur: ListMap[A, B1], k: A): Boolean =
-      if(cur.isEmpty) false
+    @tailrec private[this] def containsInternal(cur: ListMap[K, V], k: K): Boolean =
+      if (cur.isEmpty) false
       else if (k == cur.key) true
       else containsInternal(cur.next, k)
 
-    override def updated[B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
-      val m = this - k
-      new m.Node[B2](k, v)
+    override def updated[V1 >: V](k: K, v: V1): ListMap[K, V1] = {
+
+      var index = -1 // the index (in reverse) where the key to update exists, if it is found
+      var found = false // true if the key is found int he map
+      var isDifferent = false // true if the key was found and the values are different
+
+      {
+        var curr: ListMap[K, V] = this
+
+        while (curr.nonEmpty && !found) {
+          if (k == curr.key) {
+            found = true
+            isDifferent = v.asInstanceOf[AnyRef] ne curr.value.asInstanceOf[AnyRef]
+          }
+          index += 1
+          curr = curr.init
+        }
+      }
+
+      if (found) {
+        if (isDifferent) {
+          var newHead: ListMap.Node[K, V1] = null
+          var prev: ListMap.Node[K, V1] = null
+          var curr: ListMap[K, V1] = this
+          var i = 0
+          while (i < index) {
+            val temp = new ListMap.Node(curr.key, curr.value, null)
+            if (prev ne null) {
+              prev._init = temp
+            }
+            prev = temp
+            curr = curr.init
+            if (newHead eq null) {
+              newHead = prev
+            }
+            i += 1
+          }
+          val newNode = new ListMap.Node(curr.key, v, curr.init)
+          if (prev ne null) {
+            prev._init = newNode
+          }
+          releaseFence()
+          if (newHead eq null) newNode else newHead
+        } else {
+          this
+        }
+      } else {
+        new ListMap.Node(k, v, this)
+      }
     }
 
-    override def +[B2 >: B1](kv: (A, B2)): ListMap[A, B2] = {
-      val m = this - kv._1
-      new m.Node[B2](kv._1, kv._2)
-    }
-
-    override def -(k: A): ListMap[A, B1] = removeInternal(k, this, Nil)
-
-    @tailrec private[this] def removeInternal(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]]): ListMap[A, B1] =
+    @tailrec private[this] def removeInternal(k: K, cur: ListMap[K, V], acc: List[ListMap[K, V]]): ListMap[K, V] =
       if (cur.isEmpty) acc.last
-      else if (k == cur.key) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
+      else if (k == cur.key) acc.foldLeft(cur.next) { (t, h) => new Node(h.key, h.value, t) }
       else removeInternal(k, cur.next, cur :: acc)
 
-    override protected def next: ListMap[A, B1] = ListMap.this
+    override def removed(k: K): ListMap[K, V] = removeInternal(k, this, Nil)
 
-    override def last: (A, B1) = (key, value)
-    override def init: ListMap[A, B1] = next
+    override private[immutable] def next: ListMap[K, V] = _init
+
+    override def last: (K, V) = (key, value)
+    override def init: ListMap[K, V] = next
+
+  }
+
+  def empty[K, V]: ListMap[K, V] = EmptyListMap.asInstanceOf[ListMap[K, V]]
+
+  private object EmptyListMap extends ListMap[Any, Nothing]
+
+  def from[K, V](it: collection.IterableOnce[(K, V)]): ListMap[K, V] =
+    it match {
+      case lm: ListMap[K, V] => lm
+      case _ => (newBuilder[K, V] ++= it).result()
+    }
+
+  /** Returns a new ListMap builder
+    *
+    * The implementation safely handles additions after `result()` without calling `clear()`
+    *
+    * @tparam K the map key type
+    * @tparam V the map value type
+    */
+  def newBuilder[K, V]: ReusableBuilder[(K, V), ListMap[K, V]] = new ListMapBuilder[K, V]
+}
+
+/** Builder for ListMap.
+  * $multipleResults
+  */
+private[immutable] final class ListMapBuilder[K, V] extends mutable.ReusableBuilder[(K, V), ListMap[K, V]] {
+  private[this] var isAliased: Boolean = false
+  private[this] var underlying: ListMap[K, V] = ListMap.empty
+
+  override def clear(): Unit = {
+    underlying = ListMap.empty
+    isAliased = false
+  }
+
+  override def result(): ListMap[K, V] = {
+    isAliased = true
+    releaseFence()
+    underlying
+  }
+
+  override def addOne(elem: (K, V)): this.type = addOne(elem._1, elem._2)
+
+  @tailrec
+  private[this] def insertValueAtKeyReturnFound(m: ListMap[K, V], key: K, value: V): Boolean = m match {
+    case n: ListMap.Node[K, V] =>
+      if (n.key == key) {
+        n._value = value
+        true
+      } else {
+        insertValueAtKeyReturnFound(n.init, key, value)
+      }
+    case _ => false
+  }
+
+  def addOne(key: K, value: V): this.type = {
+    if (isAliased) {
+      underlying = underlying.updated(key, value)
+    } else {
+      if (!insertValueAtKeyReturnFound(underlying, key, value)) {
+        underlying = new ListMap.Node(key, value, underlying)
+      }
+    }
+    this
+  }
+
+  override def addAll(xs: IterableOnce[(K, V)]): this.type = xs match {
+    case m: collection.Map[K, V] =>
+      // if it is a map, then its keys will not collide with themselves.
+      // therefor we only need to check the already-existing elements for collisions.
+      // No need to check the entire list
+
+      val iter = m.iterator
+      var newUnderlying = underlying
+      while (iter.hasNext) {
+        val next = iter.next()
+        if (!insertValueAtKeyReturnFound(underlying, next._1, next._2)) {
+          newUnderlying = new ListMap.Node[K, V](next._1, next._2, newUnderlying)
+        }
+      }
+      underlying = newUnderlying
+      this
+
+    case _ => super.addAll(xs)
   }
 }

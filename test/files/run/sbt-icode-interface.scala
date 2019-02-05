@@ -8,7 +8,7 @@ object Test extends DirectTest {
     object O
   """.trim
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler("-usejavacp")
     import global._
     val r = new Run
@@ -23,7 +23,7 @@ object Test extends DirectTest {
       val sourceFile = unit.source.file.file
       for (iclass <- unit.icode) {
         val sym = iclass.symbol
-        def addGenerated(separatorRequired: Boolean) {
+        def addGenerated(separatorRequired: Boolean): Unit = {
           results += (separatorRequired -> sym.fullName)
         }
         if (sym.isModuleClass && !sym.isImplClass) {

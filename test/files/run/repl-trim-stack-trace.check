@@ -23,4 +23,9 @@ java.lang.Exception
   at .f(<console>:1)
   ... ??? elided
 
+scala> null.asInstanceOf
+java.lang.NullPointerException
+  at .$print$lzycompute(<synthetic>:8)
+  ... ??? elided
+
 scala> :quit

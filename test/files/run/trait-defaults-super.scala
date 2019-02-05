@@ -9,7 +9,7 @@ trait T extends java.lang.Iterable[String] {
     super[Iterable].spliterator
     super.spliterator
   }
-  def iterator(): java.util.Iterator[String] = java.util.Collections.emptyList().iterator()
+  def iterator: java.util.Iterator[String] = java.util.Collections.emptyList().iterator()
 }
 class C extends T with java.lang.Iterable[String] // super accessor is okay with Iterable as a direct parent
 object Test {

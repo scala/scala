@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -69,7 +76,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",
-    s"A URL pattern used to link to the source file; the following variables are available: €{TPL_NAME}, €{TPL_OWNER} and respectively €{FILE_PATH}. For example, for `scala.collection.Seq`, the variables will be expanded to `Seq`, `scala.collection` and respectively `scala/collection/Seq` (without the backquotes). To obtain a relative path for €{FILE_PATH} instead of an absolute one, use the ${sourcepath.name} setting.",
+    s"A URL pattern used to link to the source file, with some variables supported: For example, for `scala.collection.Seq` €{TPL_NAME} gives `Seq`, €{TPL_OWNER} gives `scala.collection`, €{FILE_PATH} gives `scala/collection/Seq`, €{FILE_EXT} gives `.scala`, €{FILE_PATH_EXT} gives `scala/collection/Seq.scala`, and €{FILE_LINE} gives `25` (without the backquotes). To obtain a relative path for €{FILE_PATH} and €{FILE_PATH_EXT} instead of an absolute one, use the ${sourcepath.name} setting.",
     ""
   )
 
@@ -223,7 +230,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
     docNoPrefixes, docNoLinkWarnings, docRawOutput, docSkipPackages,
     docExpandAllTypes, docGroups, docNoJavaComments
-  )
+  ).map(s => s.withAbbreviation("-" + s.name))
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 
   override def isScaladoc = true

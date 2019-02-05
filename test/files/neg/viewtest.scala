@@ -4,8 +4,8 @@ package test
  */
 trait Ordered[+a] {
 
-  /** Result of comparing `this' with operand `that'.
-   *  returns `x' where
+  /** Result of comparing `this` with operand `that`.
+   *  returns `x` where
    *  x < 0    iff    this < that
    *  x == 0   iff    this == that
    *  x > 0    iff    this > that

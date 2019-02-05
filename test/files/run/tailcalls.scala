@@ -280,7 +280,7 @@ class NonTailCall {
 // Test code
 
 object Test {
-  def check_success(name: String, closure: => Int, expected: Int) {
+  def check_success(name: String, closure: => Int, expected: Int): Unit = {
     print("test " + name)
     try {
       val actual: Int = closure
@@ -297,7 +297,7 @@ object Test {
     println
   }
 
-  def check_success_b(name: String, closure: => Boolean, expected: Boolean) {
+  def check_success_b(name: String, closure: => Boolean, expected: Boolean): Unit = {
     print("test " + name)
     try {
       val actual: Boolean = closure
@@ -314,12 +314,12 @@ object Test {
     println
   }
 
-  def check_overflow(name: String, closure: => Int) {
+  def check_overflow(name: String, closure: => Int): Unit = {
     print("test " + name)
     try {
       val actual: Int = closure;
     } catch {
-      case exception: compat.Platform.StackOverflowError =>
+      case exception: StackOverflowError =>
         println(" was successful")
       case exception: Throwable => {
         print(" raised exception " + exception)
@@ -338,13 +338,13 @@ object Test {
         if (n >= Int.MaxValue / 2) sys.error("calibration failure");
         n = 2 * n;
       } catch {
-        case exception: compat.Platform.StackOverflowError => stop = true
+        case exception: StackOverflowError => stop = true
       }
     }
     4 * n
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // compute min and max iteration number
     val min = 16;
     val max = if (scala.tools.partest.utils.Properties.isAvian) 10000 else calibrate

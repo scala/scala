@@ -1,14 +1,7 @@
-
-
-
-
 import collection.mutable.UnrolledBuffer
 
-
-
 object Test {
-
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val u1 = new UnrolledBuffer[Int]
     assert(u1.isEmpty)
     assert(u1.size == 0)
@@ -107,7 +100,7 @@ object Test {
     assertCorrect(u1)
   }
 
-  def assertCorrect(u1: UnrolledBuffer[Int]) {
+  def assertCorrect(u1: UnrolledBuffer[Int]): Unit = {
     val sz = u1.size
     val store = new Array[Int](sz)
     for (i <- 0 until sz) {
@@ -121,5 +114,4 @@ object Test {
     assert((u1 map { x => x }) == u1)
     assert(u1.iterator.toSeq.size == u1.size)
   }
-
 }

@@ -16,7 +16,7 @@ class Subopt[@specialized B](override val data: Option[B]) extends Base[B] {
 
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val ss = new Suba[String](Array(""))
     val si = new Suba[Int](Array(0))
     new Subopt[Int](Some(0))

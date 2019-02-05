@@ -4,7 +4,7 @@ object Test {
     java.util.Arrays.asList(Array(1,2,3):_*)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(test())
   }
 

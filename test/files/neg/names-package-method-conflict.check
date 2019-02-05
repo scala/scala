@@ -1,0 +1,4 @@
+names-package-method-conflict.scala:7: error: There is name conflict between the foo.bar and the package foo.bar.
+	package bar{
+                ^
+one error found

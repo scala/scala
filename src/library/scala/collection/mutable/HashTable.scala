@@ -1,19 +1,24 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
-package collection
-package mutable
+package collection.mutable
+
+import collection.{AbstractIterator, Iterator}
 
 import java.lang.Integer.{numberOfLeadingZeros, rotateRight}
 import scala.util.hashing.byteswap32
+
+import java.lang.Integer
 
 /** This class can be used to construct data structures that are based
  *  on hashtables. Class `HashTable[A]` implements a hashtable
@@ -30,36 +35,38 @@ import scala.util.hashing.byteswap32
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.0, 31/12/2006
  *  @since   1
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
+// Was an abstract class, but to simplify the upgrade of the parallel collections I’ve made it a trait
+private[collection] /*abstract class*/ trait HashTable[A, B, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
   // Replacing Entry type parameter by abstract type member here allows to not expose to public
   // implementation-specific entry classes such as `DefaultEntry` or `LinkedEntry`.
   // However, I'm afraid it's too late now for such breaking change.
   import HashTable._
 
-  @transient protected var _loadFactor = defaultLoadFactor
+  protected var _loadFactor = defaultLoadFactor
 
   /** The actual hash table.
    */
-  @transient protected var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
+  protected[collection] var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  @transient protected var tableSize: Int = 0
+  protected[collection] var tableSize: Int = 0
+
+  final def size: Int = tableSize
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  @transient protected var threshold: Int = initialThreshold(_loadFactor)
+  protected[collection] var threshold: Int = initialThreshold(_loadFactor)
 
   /** The array keeping track of the number of elements in 32 element blocks.
    */
-  @transient protected var sizemap: Array[Int] = null
+  protected var sizemap: Array[Int] = null
 
-  @transient protected var seedvalue: Int = tableSizeSeed
+  protected var seedvalue: Int = tableSizeSeed
 
   protected def tableSizeSeed = Integer.bitCount(table.length - 1)
 
@@ -85,9 +92,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    * Initializes the collection from the input stream. `readEntry` will be called for each
    * entry to be read from the input stream.
    */
-  private[collection] def init(in: java.io.ObjectInputStream, readEntry: => Entry) {
-    in.defaultReadObject
-
+  private[collection] def init(in: java.io.ObjectInputStream, readEntry: => Entry): Unit = {
     _loadFactor = in.readInt()
     assert(_loadFactor > 0)
 
@@ -118,8 +123,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    * `foreachEntry` determines the order in which the key/value pairs are saved to the stream. To
    * deserialize, `init` should be used.
    */
-  private[collection] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit) {
-    out.defaultWriteObject
+  private[collection] def serializeTo(out: java.io.ObjectOutputStream, writeEntry: Entry => Unit): Unit = {
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
     out.writeInt(seedvalue)
@@ -130,11 +134,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Find entry with given key in table, null if not found.
    */
-  @deprecatedOverriding("No sensible way to override findEntry as private findEntry0 is used in multiple places internally.", "2.11.0")
-  protected def findEntry(key: A): Entry =
+  final def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
-  protected[this] final def findEntry0(key: A, h: Int): Entry = {
+  protected[collection] final def findEntry0(key: A, h: Int): Entry = {
     var e = table(h).asInstanceOf[Entry]
     while (e != null && !elemEquals(e.key, key)) e = e.next
     e
@@ -143,12 +146,11 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   /** Add entry to table
    *  pre: no entry with same key exists
    */
-  @deprecatedOverriding("No sensible way to override addEntry as private addEntry0 is used in multiple places internally.", "2.11.0")
-  protected def addEntry(e: Entry) {
+  protected[collection] final def addEntry(e: Entry): Unit = {
     addEntry0(e, index(elemHashCode(e.key)))
   }
 
-  protected[this] final def addEntry0(e: Entry, h: Int) {
+  protected[collection] final def addEntry0(e: Entry, h: Int): Unit = {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
@@ -163,7 +165,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  Returns entry found in table or null.
    *  New entries are created by calling `createNewEntry` method.
    */
-  protected def findOrAddEntry[B](key: A, value: B): Entry = {
+  def findOrAddEntry(key: A, value: B): Entry = {
     val h = index(elemHashCode(key))
     val e = findEntry0(key, h)
     if (e ne null) e else { addEntry0(createNewEntry(key, value), h); null }
@@ -173,12 +175,11 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    *  This method is guaranteed to be called only once and in case that the entry
    *  will be added. In other words, an implementation may be side-effecting.
    */
-  protected def createNewEntry[B](key: A, value: B): Entry
+  def createNewEntry(key: A, value: B): Entry
 
   /** Remove entry from table if present.
    */
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def removeEntry(key: A) : Entry = {
+  final def removeEntry(key: A) : Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
     if (e != null) {
@@ -208,7 +209,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** An iterator returning all entries.
    */
-  protected def entriesIterator: Iterator[Entry] = new AbstractIterator[Entry] {
+  def entriesIterator: Iterator[Entry] = new AbstractIterator[Entry] {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -226,7 +227,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   /** Avoid iterator for a 2x faster traversal. */
-  protected def foreachEntry[U](f: Entry => U) {
+  def foreachEntry[U](f: Entry => U): Unit = {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)
@@ -245,14 +246,14 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Remove all entries from table
    */
-  protected def clearTable() {
+  def clearTable(): Unit = {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0
     nnSizeMapReset(0)
   }
 
-  private def resize(newSize: Int) {
+  private def resize(newSize: Int): Unit = {
     val oldTable = table
     table = new Array(newSize)
     nnSizeMapReset(table.length)
@@ -291,18 +292,15 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    * is converted into a parallel hash table, the size map is initialized, as it will be needed
    * there.
    */
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
+  protected final def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
     sizemap(h >> sizeMapBucketBitSize) += 1
   }
 
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
+  protected final def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
     sizemap(h >> sizeMapBucketBitSize) -= 1
   }
 
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
+  protected final def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
     val nsize = calcSizeMapSize(tableLength)
     if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
     else java.util.Arrays.fill(sizemap, 0)
@@ -310,17 +308,15 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
 
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
+  protected final def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
   // discards the previous sizemap and only allocates a new one
-  protected def sizeMapInit(tableLength: Int) {
+  protected def sizeMapInit(tableLength: Int): Unit = {
     sizemap = new Array[Int](calcSizeMapSize(tableLength))
   }
 
   // discards the previous sizemap and populates the new one
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def sizeMapInitAndRebuild() {
+  protected final def sizeMapInitAndRebuild() = {
     sizeMapInit(table.length)
 
     // go through the buckets, count elements
@@ -346,15 +342,13 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     }
   }
 
-  private[collection] def printSizeMap() {
-    println(sizemap.toList)
+  private[collection] def printSizeMap() = {
+    println(sizemap.to(collection.immutable.List))
   }
 
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def sizeMapDisable() = sizemap = null
+  protected final def sizeMapDisable() = sizemap = null
 
-  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
-  protected def isSizeMapDefined = sizemap ne null
+  protected final def isSizeMapDefined = sizemap ne null
 
   // override to automatically initialize the size map
   protected def alwaysInitSizeMap = false
@@ -367,32 +361,11 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     * Note: we take the most significant bits of the hashcode, not the lower ones
     * this is of crucial importance when populating the table in parallel
     */
-  protected final def index(hcode: Int): Int = {
+  protected[collection] final def index(hcode: Int): Int = {
     val ones = table.length - 1
     val exponent = Integer.numberOfLeadingZeros(ones)
     (improve(hcode, seedvalue) >>> exponent) & ones
   }
-
-  protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
-    if (c != null) {
-      _loadFactor = c.loadFactor
-      table = c.table
-      tableSize = c.tableSize
-      threshold = c.threshold
-      seedvalue = c.seedvalue
-      sizemap = c.sizemap
-    }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
-  }
-
-  private[collection] def hashTableContents = new HashTable.Contents(
-    _loadFactor,
-    table,
-    tableSize,
-    threshold,
-    seedvalue,
-    sizemap
-  )
 }
 
 private[collection] object HashTable {
@@ -412,7 +385,7 @@ private[collection] object HashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(key: KeyType) = key.##
+    protected[collection] def elemHashCode(key: KeyType) = key.##
 
     /**
       * Defer to a high-quality hash in [[scala.util.hashing]].
@@ -425,7 +398,7 @@ private[collection] object HashTable {
       * h = h + (h << 4)
       * h ^ (h >>> 10)
       * }}}
-      * the rest of the computation is due to scala/bug#5293
+      * the rest of the computation is due to SI-5293
       */
     protected final def improve(hcode: Int, seed: Int): Int = rotateRight(byteswap32(hcode), seed)
   }
@@ -434,27 +407,12 @@ private[collection] object HashTable {
    * Returns a power of two >= `target`.
    */
   private[collection] def nextPositivePowerOfTwo(target: Int): Int = 1 << -numberOfLeadingZeros(target - 1)
+}
 
-  class Contents[A, Entry >: Null <: HashEntry[A, Entry]](
-    val loadFactor: Int,
-    val table: Array[HashEntry[A, Entry]],
-    val tableSize: Int,
-    val threshold: Int,
-    val seedvalue: Int,
-    val sizemap: Array[Int]
-  ) {
-    import scala.collection.DebugUtils._
-    private[collection] def debugInformation = buildString {
-      append =>
-      append("Hash table contents")
-      append("-------------------")
-      append("Table: [" + arrayString(table, 0, table.length) + "]")
-      append("Table size: " + tableSize)
-      append("Load factor: " + loadFactor)
-      append("Seedvalue: " + seedvalue)
-      append("Threshold: " + threshold)
-      append("Sizemap: [" + arrayString(sizemap, 0, sizemap.length) + "]")
-    }
-  }
-
+/** Class used internally.
+  * @since 2.8
+  */
+private[collection] trait HashEntry[A, E <: HashEntry[A, E]] {
+  val key: A
+  var next: E = _
 }

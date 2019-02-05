@@ -1,6 +1,6 @@
 package p1 {
   object InlineHolder {
-    @inline def inlinable = p1.PackageProtectedJava_1.protectedMethod() + 1
+    @inline def inlinable = (p1.PackageProtectedJava_1.protectedMethod(): @noinline) + 1
   }
 }
 
@@ -10,7 +10,7 @@ object O {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(O.x)
   }
 }

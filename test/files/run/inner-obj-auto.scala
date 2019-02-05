@@ -19,7 +19,7 @@ class Class2_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -29,10 +29,10 @@ class Class2_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class1_2).run }
+  def run: Unit = { (new Class1_2).run }
 }
 
 
@@ -48,7 +48,7 @@ object Object3_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -58,10 +58,10 @@ object Object3_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class1_2).run } // trigger
+  def run: Unit = { (new Class1_2).run } // trigger
 }
 
 
@@ -77,7 +77,7 @@ trait Trait4_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -87,10 +87,10 @@ trait Trait4_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class1_2).run }
+  def run: Unit = { (new Class1_2).run }
 }
 
 
@@ -106,7 +106,7 @@ class Class6_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -116,10 +116,10 @@ class Class6_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object5_2.run }
+  def run: Unit = { Object5_2.run }
 }
 
 
@@ -135,7 +135,7 @@ object Object7_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -145,10 +145,10 @@ object Object7_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object5_2.run } // trigger
+  def run: Unit = { Object5_2.run } // trigger
 }
 
 
@@ -164,7 +164,7 @@ trait Trait8_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -174,10 +174,10 @@ trait Trait8_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object5_2.run }
+  def run: Unit = { Object5_2.run }
 }
 
 
@@ -193,7 +193,7 @@ class Class10_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -203,10 +203,10 @@ class Class10_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait9_2 {}).run }
+  def run: Unit = { (new Trait9_2 {}).run }
 }
 
 
@@ -222,7 +222,7 @@ object Object11_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -232,10 +232,10 @@ object Object11_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait9_2 {}).run } // trigger
+  def run: Unit = { (new Trait9_2 {}).run } // trigger
 }
 
 
@@ -251,7 +251,7 @@ trait Trait12_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -261,16 +261,16 @@ trait Trait12_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait9_2 {}).run }
+  def run: Unit = { (new Trait9_2 {}).run }
 }
 
 
 class Class14_1 {
 
-  def method13_2 {
+  def method13_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -280,7 +280,7 @@ class Class14_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -293,13 +293,13 @@ class Class14_1 {
     runTest // trigger
   }
 
-  def run { method13_2 }
+  def run: Unit = { method13_2 }
 }
 
 
 object Object15_1 {
 
-  def method13_2 {
+  def method13_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -309,7 +309,7 @@ object Object15_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -322,13 +322,13 @@ object Object15_1 {
     runTest // trigger
   }
 
-  def run { method13_2 } // trigger
+  def run: Unit = { method13_2 } // trigger
 }
 
 
 trait Trait16_1 {
 
-  def method13_2 {
+  def method13_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -338,7 +338,7 @@ trait Trait16_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -351,13 +351,13 @@ trait Trait16_1 {
     runTest // trigger
   }
 
-  def run { method13_2 }
+  def run: Unit = { method13_2 }
 }
 
 
 class Class18_1 {
 
-  private def method17_2 {
+  private def method17_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -367,7 +367,7 @@ class Class18_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -380,13 +380,13 @@ class Class18_1 {
     runTest // trigger
   }
 
-  def run { method17_2 }
+  def run: Unit = { method17_2 }
 }
 
 
 object Object19_1 {
 
-  private def method17_2 {
+  private def method17_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -396,7 +396,7 @@ object Object19_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -409,13 +409,13 @@ object Object19_1 {
     runTest // trigger
   }
 
-  def run { method17_2 } // trigger
+  def run: Unit = { method17_2 } // trigger
 }
 
 
 trait Trait20_1 {
 
-  private def method17_2 {
+  private def method17_2: Unit = {
     var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
@@ -425,7 +425,7 @@ trait Trait20_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -438,7 +438,7 @@ trait Trait20_1 {
     runTest // trigger
   }
 
-  def run { method17_2 }
+  def run: Unit = { method17_2 }
 }
 
 
@@ -454,7 +454,7 @@ class Class22_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -467,7 +467,7 @@ class Class22_1 {
     runTest // trigger
   }
 
-  def run { fun21_2() }
+  def run: Unit = { fun21_2() }
 }
 
 
@@ -483,7 +483,7 @@ object Object23_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -496,7 +496,7 @@ object Object23_1 {
     runTest // trigger
   }
 
-  def run { fun21_2() } // trigger
+  def run: Unit = { fun21_2() } // trigger
 }
 
 
@@ -512,7 +512,7 @@ trait Trait24_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -525,7 +525,7 @@ trait Trait24_1 {
     runTest // trigger
   }
 
-  def run { fun21_2() }
+  def run: Unit = { fun21_2() }
 }
 
 
@@ -542,7 +542,7 @@ class Class26_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -556,7 +556,7 @@ class Class26_1 {
     }
   }
 
-  def run { (new Class25_2) }
+  def run: Unit = { (new Class25_2) }
 }
 
 
@@ -573,7 +573,7 @@ object Object27_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -587,7 +587,7 @@ object Object27_1 {
     }
   }
 
-  def run { (new Class25_2) } // trigger
+  def run: Unit = { (new Class25_2) } // trigger
 }
 
 
@@ -604,7 +604,7 @@ trait Trait28_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -618,7 +618,7 @@ trait Trait28_1 {
     }
   }
 
-  def run { (new Class25_2) }
+  def run: Unit = { (new Class25_2) }
 }
 
 
@@ -635,7 +635,7 @@ class Class30_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -649,7 +649,7 @@ class Class30_1 {
     }
   }
 
-  def run { (new Trait29_2 {}) }
+  def run: Unit = { (new Trait29_2 {}) }
 }
 
 
@@ -666,7 +666,7 @@ object Object31_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -680,7 +680,7 @@ object Object31_1 {
     }
   }
 
-  def run { (new Trait29_2 {}) } // trigger
+  def run: Unit = { (new Trait29_2 {}) } // trigger
 }
 
 
@@ -697,7 +697,7 @@ trait Trait32_1 {
         x == Obj
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           assert(singleThreadedAccess(Obj))
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -711,7 +711,7 @@ trait Trait32_1 {
     }
   }
 
-  def run { (new Trait29_2 {}) }
+  def run: Unit = { (new Trait29_2 {}) }
 }
 
 
@@ -727,7 +727,7 @@ class Class34_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -740,7 +740,7 @@ class Class34_1 {
     runTest // trigger
   }
 
-  def run { lzvalue33_2 }
+  def run: Unit = { lzvalue33_2 }
 }
 
 
@@ -756,7 +756,7 @@ object Object35_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -769,7 +769,7 @@ object Object35_1 {
     runTest // trigger
   }
 
-  def run { lzvalue33_2 } // trigger
+  def run: Unit = { lzvalue33_2 } // trigger
 }
 
 
@@ -785,7 +785,7 @@ trait Trait36_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -798,7 +798,7 @@ trait Trait36_1 {
     runTest // trigger
   }
 
-  def run { lzvalue33_2 }
+  def run: Unit = { lzvalue33_2 }
 }
 
 
@@ -814,7 +814,7 @@ class Class38_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -827,7 +827,7 @@ class Class38_1 {
     runTest // trigger
   }
 
-  def run { value37_2 }
+  def run: Unit = { value37_2 }
 }
 
 
@@ -843,7 +843,7 @@ object Object39_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -856,7 +856,7 @@ object Object39_1 {
     runTest // trigger
   }
 
-  def run { value37_2 } // trigger
+  def run: Unit = { value37_2 } // trigger
 }
 
 
@@ -872,7 +872,7 @@ trait Trait40_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -885,7 +885,7 @@ trait Trait40_1 {
     runTest // trigger
   }
 
-  def run { value37_2 }
+  def run: Unit = { value37_2 }
 }
 
 
@@ -901,7 +901,7 @@ class Class42_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -911,10 +911,10 @@ class Class42_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class41_2).run }
+  def run: Unit = { (new Class41_2).run }
 }
 
 
@@ -930,7 +930,7 @@ object Object43_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -940,10 +940,10 @@ object Object43_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class41_2).run } // trigger
+  def run: Unit = { (new Class41_2).run } // trigger
 }
 
 
@@ -959,7 +959,7 @@ trait Trait44_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -969,10 +969,10 @@ trait Trait44_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class41_2).run }
+  def run: Unit = { (new Class41_2).run }
 }
 
 
@@ -988,7 +988,7 @@ class Class46_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -998,10 +998,10 @@ class Class46_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object45_2.run }
+  def run: Unit = { Object45_2.run }
 }
 
 
@@ -1017,7 +1017,7 @@ object Object47_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1027,10 +1027,10 @@ object Object47_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object45_2.run } // trigger
+  def run: Unit = { Object45_2.run } // trigger
 }
 
 
@@ -1046,7 +1046,7 @@ trait Trait48_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1056,10 +1056,10 @@ trait Trait48_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object45_2.run }
+  def run: Unit = { Object45_2.run }
 }
 
 
@@ -1075,7 +1075,7 @@ class Class50_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1085,10 +1085,10 @@ class Class50_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait49_2 {}).run }
+  def run: Unit = { (new Trait49_2 {}).run }
 }
 
 
@@ -1104,7 +1104,7 @@ object Object51_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1114,10 +1114,10 @@ object Object51_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait49_2 {}).run } // trigger
+  def run: Unit = { (new Trait49_2 {}).run } // trigger
 }
 
 
@@ -1133,7 +1133,7 @@ trait Trait52_1 {
       x == Obj
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         assert(singleThreadedAccess(Obj))
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1143,10 +1143,10 @@ trait Trait52_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait49_2 {}).run }
+  def run: Unit = { (new Trait49_2 {}).run }
 }
 
 
@@ -1157,7 +1157,7 @@ class Class54_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1166,7 +1166,7 @@ class Class54_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1176,10 +1176,10 @@ class Class54_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class53_2).run }
+  def run: Unit = { (new Class53_2).run }
 }
 
 
@@ -1190,7 +1190,7 @@ object Object55_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1199,7 +1199,7 @@ object Object55_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1209,10 +1209,10 @@ object Object55_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class53_2).run } // trigger
+  def run: Unit = { (new Class53_2).run } // trigger
 }
 
 
@@ -1223,7 +1223,7 @@ trait Trait56_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1232,7 +1232,7 @@ trait Trait56_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1242,10 +1242,10 @@ trait Trait56_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Class53_2).run }
+  def run: Unit = { (new Class53_2).run }
 }
 
 
@@ -1256,7 +1256,7 @@ class Class58_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1265,7 +1265,7 @@ class Class58_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1275,10 +1275,10 @@ class Class58_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object57_2.run }
+  def run: Unit = { Object57_2.run }
 }
 
 
@@ -1289,7 +1289,7 @@ object Object59_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1298,7 +1298,7 @@ object Object59_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1308,10 +1308,10 @@ object Object59_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object57_2.run } // trigger
+  def run: Unit = { Object57_2.run } // trigger
 }
 
 
@@ -1322,7 +1322,7 @@ trait Trait60_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1331,7 +1331,7 @@ trait Trait60_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1341,10 +1341,10 @@ trait Trait60_1 {
       }
     }
 
-    def run { runTest } // trigger
+    def run: Unit = { runTest } // trigger
   }
 
-  def run { Object57_2.run }
+  def run: Unit = { Object57_2.run }
 }
 
 
@@ -1355,7 +1355,7 @@ class Class62_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1364,7 +1364,7 @@ class Class62_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1374,10 +1374,10 @@ class Class62_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait61_2 {}).run }
+  def run: Unit = { (new Trait61_2 {}).run }
 }
 
 
@@ -1388,7 +1388,7 @@ object Object63_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1397,7 +1397,7 @@ object Object63_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1407,10 +1407,10 @@ object Object63_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait61_2 {}).run } // trigger
+  def run: Unit = { (new Trait61_2 {}).run } // trigger
 }
 
 
@@ -1421,7 +1421,7 @@ trait Trait64_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1430,7 +1430,7 @@ trait Trait64_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1440,21 +1440,21 @@ trait Trait64_1 {
       }
     }
 
-    def run { runTest }
+    def run: Unit = { runTest }
   }
 
-  def run { (new Trait61_2 {}).run }
+  def run: Unit = { (new Trait61_2 {}).run }
 }
 
 
 class Class66_1 {
 
-  def method65_2 {
+  def method65_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1463,7 +1463,7 @@ class Class66_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1476,18 +1476,18 @@ class Class66_1 {
     runTest // trigger
   }
 
-  def run { method65_2 }
+  def run: Unit = { method65_2 }
 }
 
 
 object Object67_1 {
 
-  def method65_2 {
+  def method65_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1496,7 +1496,7 @@ object Object67_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1509,18 +1509,18 @@ object Object67_1 {
     runTest // trigger
   }
 
-  def run { method65_2 } // trigger
+  def run: Unit = { method65_2 } // trigger
 }
 
 
 trait Trait68_1 {
 
-  def method65_2 {
+  def method65_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1529,7 +1529,7 @@ trait Trait68_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1542,18 +1542,18 @@ trait Trait68_1 {
     runTest // trigger
   }
 
-  def run { method65_2 }
+  def run: Unit = { method65_2 }
 }
 
 
 class Class70_1 {
 
-  private def method69_2 {
+  private def method69_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1562,7 +1562,7 @@ class Class70_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1575,18 +1575,18 @@ class Class70_1 {
     runTest // trigger
   }
 
-  def run { method69_2 }
+  def run: Unit = { method69_2 }
 }
 
 
 object Object71_1 {
 
-  private def method69_2 {
+  private def method69_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1595,7 +1595,7 @@ object Object71_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1608,18 +1608,18 @@ object Object71_1 {
     runTest // trigger
   }
 
-  def run { method69_2 } // trigger
+  def run: Unit = { method69_2 } // trigger
 }
 
 
 trait Trait72_1 {
 
-  private def method69_2 {
+  private def method69_2: Unit = {
     @volatile var ObjCounter = 0
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1628,7 +1628,7 @@ trait Trait72_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1641,7 +1641,7 @@ trait Trait72_1 {
     runTest // trigger
   }
 
-  def run { method69_2 }
+  def run: Unit = { method69_2 }
 }
 
 
@@ -1652,7 +1652,7 @@ class Class74_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1661,7 +1661,7 @@ class Class74_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1674,7 +1674,7 @@ class Class74_1 {
     runTest // trigger
   }
 
-  def run { fun73_2() }
+  def run: Unit = { fun73_2() }
 }
 
 
@@ -1685,7 +1685,7 @@ object Object75_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1694,7 +1694,7 @@ object Object75_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1707,7 +1707,7 @@ object Object75_1 {
     runTest // trigger
   }
 
-  def run { fun73_2() } // trigger
+  def run: Unit = { fun73_2() } // trigger
 }
 
 
@@ -1718,7 +1718,7 @@ trait Trait76_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1727,7 +1727,7 @@ trait Trait76_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1740,7 +1740,7 @@ trait Trait76_1 {
     runTest // trigger
   }
 
-  def run { fun73_2() }
+  def run: Unit = { fun73_2() }
 }
 
 
@@ -1752,7 +1752,7 @@ class Class78_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1761,7 +1761,7 @@ class Class78_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1775,7 +1775,7 @@ class Class78_1 {
     }
   }
 
-  def run { (new Class77_2) }
+  def run: Unit = { (new Class77_2) }
 }
 
 
@@ -1787,7 +1787,7 @@ object Object79_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1796,7 +1796,7 @@ object Object79_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1810,7 +1810,7 @@ object Object79_1 {
     }
   }
 
-  def run { (new Class77_2) } // trigger
+  def run: Unit = { (new Class77_2) } // trigger
 }
 
 
@@ -1822,7 +1822,7 @@ trait Trait80_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1831,7 +1831,7 @@ trait Trait80_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1845,7 +1845,7 @@ trait Trait80_1 {
     }
   }
 
-  def run { (new Class77_2) }
+  def run: Unit = { (new Class77_2) }
 }
 
 
@@ -1857,7 +1857,7 @@ class Class82_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1866,7 +1866,7 @@ class Class82_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1880,7 +1880,7 @@ class Class82_1 {
     }
   }
 
-  def run { (new Trait81_2 {}) }
+  def run: Unit = { (new Trait81_2 {}) }
 }
 
 
@@ -1892,7 +1892,7 @@ object Object83_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1901,7 +1901,7 @@ object Object83_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1915,7 +1915,7 @@ object Object83_1 {
     }
   }
 
-  def run { (new Trait81_2 {}) } // trigger
+  def run: Unit = { (new Trait81_2 {}) } // trigger
 }
 
 
@@ -1927,7 +1927,7 @@ trait Trait84_1 {
 
       object Obj  { ObjCounter += 1}
 
-      def multiThreadedAccess() {
+      def multiThreadedAccess(): Unit = {
         val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
           def run = Obj
         })
@@ -1936,7 +1936,7 @@ trait Trait84_1 {
         threads foreach (_.join())
       }
 
-      def runTest {
+      def runTest: Unit = {
         try {
           multiThreadedAccess()
           assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1950,7 +1950,7 @@ trait Trait84_1 {
     }
   }
 
-  def run { (new Trait81_2 {}) }
+  def run: Unit = { (new Trait81_2 {}) }
 }
 
 
@@ -1961,7 +1961,7 @@ class Class90_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -1970,7 +1970,7 @@ class Class90_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -1983,7 +1983,7 @@ class Class90_1 {
     runTest // trigger
   }
 
-  def run { value89_2 }
+  def run: Unit = { value89_2 }
 }
 
 
@@ -1994,7 +1994,7 @@ trait Trait92_1 {
 
     object Obj  { ObjCounter += 1}
 
-    def multiThreadedAccess() {
+    def multiThreadedAccess(): Unit = {
       val threads = for (i <- 1 to 5) yield new Thread(new Runnable {
         def run = Obj
       })
@@ -2003,7 +2003,7 @@ trait Trait92_1 {
       threads foreach (_.join())
     }
 
-    def runTest {
+    def runTest: Unit = {
       try {
         multiThreadedAccess()
         assert(ObjCounter == 1, "multiple instances: " + ObjCounter)
@@ -2016,12 +2016,12 @@ trait Trait92_1 {
     runTest // trigger
   }
 
-  def run { value89_2 }
+  def run: Unit = { value89_2 }
 }
 
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new Class2_1).run
     Object3_1.run
     (new Trait4_1 {}).run

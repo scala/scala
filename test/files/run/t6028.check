@@ -16,15 +16,15 @@ package <empty> {
     };
     def bar(barParam: Int): Object = {
       lazy <artifact> val MethodLocalObject$module: scala.runtime.LazyRef = new scala.runtime.LazyRef();
-      T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
+      T.this.MethodLocalObject$2(MethodLocalObject$module, barParam)
     };
     def tryy(tryyParam: Int): Function0 = {
       var tryyLocal: runtime.IntRef = scala.runtime.IntRef.create(0);
       {
-        (new <$anon: Function0>(T.this, tryyParam, tryyLocal): Function0)
+        (new <$anon: Function0>(T.this, tryyLocal, tryyParam): Function0)
       }
     };
-    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$foo$1 extends scala.runtime.AbstractFunction0$mcI$sp with Serializable {
+    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$foo$1 extends scala.runtime.AbstractFunction0$mcI$sp with java.io.Serializable {
       def <init>($outer: T, methodParam$1: Int, methodLocal$1: Int): <$anon: Function0> = {
         $anonfun$foo$1.super.<init>();
         ()
@@ -44,26 +44,26 @@ package <empty> {
       scala.Predef.print(scala.Int.box(barParam$1));
       <synthetic> <stable> <artifact> def $outer(): T
     };
-    object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
-      def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$2.type = {
-        MethodLocalObject$2.super.<init>();
-        MethodLocalObject$2.super./*MethodLocalTrait$1*/$init$(barParam$1);
+    object MethodLocalObject$1 extends Object with T#MethodLocalTrait$1 {
+      def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$1.type = {
+        MethodLocalObject$1.super.<init>();
+        MethodLocalObject$1.super./*MethodLocalTrait$1*/$init$(barParam$1);
         ()
       };
       <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
-      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer;
-      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer
+      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$1.this.$outer;
+      <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$1.this.$outer
     };
-    final <artifact> private[this] def MethodLocalObject$lzycompute$1(barParam$1: Int, MethodLocalObject$module$1: scala.runtime.LazyRef): T#MethodLocalObject$2.type = MethodLocalObject$module$1.synchronized[T#MethodLocalObject$2.type](if (MethodLocalObject$module$1.initialized())
-      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$2.type]()
+    final <artifact> private[this] def MethodLocalObject$lzycompute$1(MethodLocalObject$module$1: scala.runtime.LazyRef, barParam$1: Int): T#MethodLocalObject$1.type = MethodLocalObject$module$1.synchronized[T#MethodLocalObject$1.type](if (MethodLocalObject$module$1.initialized())
+      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$1.type]()
     else
-      MethodLocalObject$module$1.initialize(new T#MethodLocalObject$2.type(T.this, barParam$1)).$asInstanceOf[T#MethodLocalObject$2.type]());
-    final private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: scala.runtime.LazyRef): T#MethodLocalObject$2.type = if (MethodLocalObject$module$1.initialized())
-      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$2.type]()
+      MethodLocalObject$module$1.initialize(new T#MethodLocalObject$1.type(T.this, barParam$1)).$asInstanceOf[T#MethodLocalObject$1.type]());
+    final private[this] def MethodLocalObject$2(MethodLocalObject$module$1: scala.runtime.LazyRef, barParam$1: Int): T#MethodLocalObject$1.type = if (MethodLocalObject$module$1.initialized())
+      MethodLocalObject$module$1.value().$asInstanceOf[T#MethodLocalObject$1.type]()
     else
-      T.this.MethodLocalObject$lzycompute$1(barParam$1, MethodLocalObject$module$1);
-    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
-      def <init>($outer: T, tryyParam$1: Int, tryyLocal$1: runtime.IntRef): <$anon: Function0> = {
+      T.this.MethodLocalObject$lzycompute$1(MethodLocalObject$module$1, barParam$1);
+    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with java.io.Serializable {
+      def <init>($outer: T, tryyLocal$1: runtime.IntRef, tryyParam$1: Int): <$anon: Function0> = {
         $anonfun$tryy$1.super.<init>();
         ()
       };
@@ -77,8 +77,8 @@ package <empty> {
         $anonfun$tryy$1.this.apply();
         scala.runtime.BoxedUnit.UNIT
       };
-      <synthetic> <paramaccessor> private[this] val tryyParam$1: Int = _;
-      <synthetic> <paramaccessor> private[this] val tryyLocal$1: runtime.IntRef = _
+      <synthetic> <paramaccessor> private[this] val tryyLocal$1: runtime.IntRef = _;
+      <synthetic> <paramaccessor> private[this] val tryyParam$1: Int = _
     }
   }
 }

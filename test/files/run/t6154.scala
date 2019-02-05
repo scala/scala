@@ -1,5 +1,5 @@
 object Test {
-  def foo(a: Int) {
+  def foo(a: Int): Unit = {
     var bar: Int = 0
     bar = try { 0 } catch { case ex: Throwable => 0 }
     new { foo(bar) }

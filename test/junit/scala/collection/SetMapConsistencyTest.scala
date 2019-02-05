@@ -32,7 +32,7 @@ class SetMapConsistencyTest {
     var m = m0
     def title = title0
     def adders = 5
-    def add(n: Int, a: A, v: Int) { n match {
+    def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m += ((a, v))
       case 1 => m(a) = v
       case 2 => m.put(a, v)
@@ -41,9 +41,9 @@ class SetMapConsistencyTest {
       case _ => oor("add", n)
     }}
     def subbers: Int = 3
-    def sub(n: Int, a: A) { n match {
+    def sub(n: Int, a: A): Unit = { n match {
       case 0 => m -= a
-      case 1 => m = (m - a).asInstanceOf[M]
+      case 1 => m = m.clone().asInstanceOf[M]; m -= a // no `-` any more for mutable Maps
       case 2 => m = m.filter(_._1 != a).asInstanceOf[M]
       case _ => oor("sub", n)
     }}
@@ -55,7 +55,7 @@ class SetMapConsistencyTest {
       case _ => oor("get", n)
     }
     def fiddlers: Int = 0
-    def fiddle(n: Int) { oor("fiddle", n) }
+    def fiddle(n: Int): Unit = { oor("fiddle", n) }
     def keys = m.keysIterator
     def has(a: A) = m contains a
     override def toString = m.toString
@@ -82,7 +82,7 @@ class SetMapConsistencyTest {
       case _ => oor("get", n)
     }
     override def fiddlers = 2
-    override def fiddle(n: Int) { n match {
+    override def fiddle(n: Int): Unit = { n match {
       case 0 => m = arm.clone
       case 1 => arm.repack
       case _ => oor("fiddle", n)
@@ -102,7 +102,7 @@ class SetMapConsistencyTest {
       case _ => oor("get", n)
     }
     override def fiddlers = 2
-    override def fiddle(n: Int) { n match {
+    override def fiddle(n: Int): Unit = { n match {
       case 0 => m = lm.clone
       case 1 => lm.repack
       case _ => oor("fiddle", n)
@@ -121,13 +121,13 @@ class SetMapConsistencyTest {
     var m = m0
     def title = title0
     def adders = 2
-    def add(n: Int, a: A, v: Int) { n match {
+    def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m = (m + ((a, v))).asInstanceOf[M]
       case 1 => m = (m ++ List((a, v))).asInstanceOf[M]
       case _ => oor("add", n)
     }}
     def subbers: Int = 2
-    def sub(n: Int, a: A) { n match {
+    def sub(n: Int, a: A): Unit = { n match {
       case 0 => m = (m - a).asInstanceOf[M]
       case 1 => m = m.filter(_._1 != a).asInstanceOf[M]
       case _ => oor("sub", n)
@@ -140,13 +140,13 @@ class SetMapConsistencyTest {
       case _ => oor("get", n)
     }
     def fiddlers: Int = 0
-    def fiddle(n: Int) { oor("fiddle", n) }
+    def fiddle(n: Int): Unit = { oor("fiddle", n) }
     def keys = m.keysIterator
     def has(a: A) = m contains a
     override def toString = m.toString
   }
   
-  def boxIhm[A] = new BoxImmutableMap[A, ci.HashMap[A,Int]](new ci.HashMap[A, Int], "immutable.HashMap")
+  def boxIhm[A] = new BoxImmutableMap[A, ci.HashMap[A,Int]](ci.HashMap.empty[A, Int], "immutable.HashMap")
   
   def boxIim = new BoxImmutableMap[Int, ci.IntMap[Int]](ci.IntMap.empty[Int], "immutable.IntMap")
   
@@ -163,7 +163,7 @@ class SetMapConsistencyTest {
     protected var m = s0
     def title = title0
     def adders = 5
-    def add(n: Int, a: A, v: Int) { n match {
+    def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m += a
       case 1 => m(a) = true
       case 2 => m add a
@@ -172,16 +172,16 @@ class SetMapConsistencyTest {
       case _ => oor("add", n)
     }}
     def subbers: Int = 3
-    def sub(n: Int, a: A) { n match {
+    def sub(n: Int, a: A): Unit = { n match {
       case 0 => m -= a
-      case 1 => m = (m - a).asInstanceOf[M]
+      case 1 => m = (m &~ Set(a)).asInstanceOf[M]
       case 2 => m = m.filter(_ != a).asInstanceOf[M]
       case _ => oor("sub", n)
     }}
     def getters: Int = 1
     def get(n: Int, a: A) = if (m(a)) 0 else -1
     def fiddlers: Int = 0
-    def fiddle(n: Int) { oor("fiddle", n) }
+    def fiddle(n: Int): Unit = { oor("fiddle", n) }
     def keys = m.iterator
     def has(a: A) = m(a)
     override def toString = m.toString
@@ -205,13 +205,13 @@ class SetMapConsistencyTest {
     protected var m = s0
     def title = title0
     def adders = 2
-    def add(n: Int, a: A, v: Int) { n match {
+    def add(n: Int, a: A, v: Int): Unit = { n match {
       case 0 => m = (m + a).asInstanceOf[M]
       case 1 => m = (m ++ List(a)).asInstanceOf[M]
       case _ => oor("add", n)
     }}
     def subbers: Int = 2
-    def sub(n: Int, a: A) { n match {
+    def sub(n: Int, a: A): Unit = { n match {
       case 0 => m = (m - a).asInstanceOf[M]
       case 1 => m = m.filter(_ != a).asInstanceOf[M]
       case _ => oor("sub", n)
@@ -219,7 +219,7 @@ class SetMapConsistencyTest {
     def getters: Int = 1
     def get(n: Int, a: A) = if (m(a)) 0 else -1
     def fiddlers: Int = 0
-    def fiddle(n: Int) { oor("fiddle", n) }
+    def fiddle(n: Int): Unit = { oor("fiddle", n) }
     def keys = m.iterator
     def has(a: A) = m(a)
     override def toString = m.toString
@@ -244,14 +244,14 @@ class SetMapConsistencyTest {
       if (!check) {
         val temp = map2 match {
           case b: BoxImmutableMap[_, _] => b.m match {
-            case hx: ci.HashMap.HashTrieMap[_,_] =>
-              val h = hx.asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              Some((h.bitmap.toHexString, h.elems.mkString, h.size))
+            case hx: ci.HashMap[_,_] =>
+              val h = hx.asInstanceOf[ci.HashMap[A, Int]]
+              Some((h.mkString, h.size))
             case _ => None
           }
           case _ => None
         }
-        throw new Exception(s"Disagreement after ${what.result} between ${map1.title} and ${map2.title} because ${map1.keys.map(map2 has _).mkString(",")} ${map2.keys.map(map1 has _).mkString(",")} at step $i:\n$map1\n$map2\n$temp")
+        throw new Exception(s"Disagreement after ${what.result()} between ${map1.title} and ${map2.title} because ${map1.keys.map(map2 has _).mkString(",")} ${map2.keys.map(map1 has _).mkString(",")} at step $i:\n$map1\n$map2\n$temp")
       }
       what ++= " (%d) ".format(i)
       if (rn.nextInt(10)==0) {
@@ -294,10 +294,9 @@ class SetMapConsistencyTest {
       if (g1 != g2) {
         val temp = map2 match {
           case b: BoxImmutableMap[_, _] => b.m match {
-            case hx: ci.HashMap.HashTrieMap[_,_] =>
-              val h = hx.asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              val y = (ci.HashMap.empty[A, Int] ++ h).asInstanceOf[ci.HashMap.HashTrieMap[A, Int]]
-              Some(((h.bitmap.toHexString, h.elems.mkString, h.size),(y.bitmap.toHexString, y.elems.mkString, y.size)))
+            case hx: ci.HashMap[_,_] =>
+              val y = ci.HashMap.empty[A, Int] ++ hx
+              Some(((hx.mkString, hx.size),(y.mkString, y.size)))
             case _ => None
           }
           case _ => None
@@ -317,7 +316,7 @@ class SetMapConsistencyTest {
   val anyKeys = stringKeys.filter(_ != null) ++ Array(0L) ++ Array(true) ++ Array(math.Pi)
 
   @Test
-  def churnIntMaps() {
+  def churnIntMaps(): Unit = {
     val maps = Array[() => MapBox[Int]](
       () => boxMlm[Int], () => boxMhm[Int], () => boxMohm[Int], () => boxMtm[Int], () => boxJavaM[Int],
       () => boxIim, () => boxIhm[Int], () => boxIlm[Int], () => boxItm[Int]
@@ -326,7 +325,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def churnLongMaps() {
+  def churnLongMaps(): Unit = {
     val maps = Array[() => MapBox[Long]](
       () => boxMjm, () => boxIjm, () => boxJavaM[Long],
       () => boxMlm[Long], () => boxMhm[Long], () => boxMtm[Long], () => boxMohm[Long], () => boxIhm[Long], () => boxIlm[Long]
@@ -335,7 +334,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def churnStringMaps() {
+  def churnStringMaps(): Unit = {
     // Note: OpenHashMap and TreeMap won't store null, so skip strings
     val maps = Array[() => MapBox[String]](
       () => boxMlm[String], () => boxMhm[String], () => boxMarm[String], () => boxJavaM[String],
@@ -345,7 +344,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def churnAnyMaps() {
+  def churnAnyMaps(): Unit = {
     val maps = Array[() => MapBox[Any]](
       () => boxMlm[Any], () => boxMhm[Any], () => boxMohm[Any], () => boxJavaM[Any], () => boxIhm[Any], () => boxIlm[Any]
     )
@@ -353,7 +352,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def churnIntSets() {
+  def churnIntSets(): Unit = {
     val sets = Array[() => MapBox[Int]](
       () => boxMhm[Int], () => boxIhm[Int], () => boxJavaS[Int],
       () => boxMbs, () => boxMhs[Int], () => boxMts[Int], () => boxIbs, () => boxIhs[Int], () => boxIls[Int], () => boxIts[Int]
@@ -362,7 +361,7 @@ class SetMapConsistencyTest {
   }
   
   @Test 
-  def churnAnySets() {
+  def churnAnySets(): Unit = {
     val sets = Array[() => MapBox[Any]](
       () => boxMhm[Any], () => boxIhm[Any], () => boxJavaS[Any],
       () => boxMhs[Any], () => boxIhs[Any], () => boxIls[Any]
@@ -371,7 +370,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def extraMutableLongMapTests() {
+  def extraMutableLongMapTests(): Unit = {
     import cm.{LongMap, HashMap}
     var lm = LongMap.empty[Long]
     longKeys.zipWithIndex.foreach{ case (k,i) => lm(k) = i }
@@ -409,11 +408,11 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def extraMutableAnyRefMapTests() {
+  def extraMutableAnyRefMapTests(): Unit = {
     import cm.{AnyRefMap, HashMap}
     var arm = AnyRefMap.empty[String, Int]
     stringKeys.zipWithIndex.foreach{ case (k,i) => arm(k) = i }
-    
+
     assert{ arm.map{ case (k,v) => (if (k==null) "" else k+k) -> v.toString }.getClass == arm.getClass }
     
     assert {
@@ -456,7 +455,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def extraFilterTests() {
+  def extraFilterTests(): Unit = {
     type M = scala.collection.Map[Int, Boolean]
     val manyKVs = (0 to 1000).map(i => i*i*i).map(x => x -> ((x*x*x) < 0))
     val rn = new scala.util.Random(42)
@@ -482,7 +481,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def testSI8213() {
+  def testSI8213(): Unit = {
     val am = new scala.collection.mutable.AnyRefMap[String, Int]
     for (i <- 0 until 1024) am += i.toString -> i
     am.getOrElseUpdate("1024", { am.clear; -1 })
@@ -496,7 +495,7 @@ class SetMapConsistencyTest {
   // Mutating when an iterator is in the wild shouldn't produce random junk in the iterator
   // Todo: test all sets/maps this way
   @Test
-  def testSI8154() {
+  def testSI8154(): Unit = {
     def f() = {
       val xs = scala.collection.mutable.AnyRefMap[String, Int]("a" -> 1)
       val it = xs.iterator
@@ -513,14 +512,14 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def testSI8264() {
-    val hs = Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
+  def testSI8264(): Unit = {
+    val hs = immutable.Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
     assert( hs.toList.toSet == hs )
     assert( hs == hs.toList.toSet )
   }
 
   @Test
-  def testSI8815() {
+  def testSI8815(): Unit = {
     val lm = new scala.collection.mutable.LongMap[String]
     lm += (Long.MinValue, "min")
     lm += (-1, "neg-one")
@@ -535,13 +534,16 @@ class SetMapConsistencyTest {
   }
 
   @Test
-  def test_SI8727() {
+  def test_SI8727(): Unit = {
     import scala.tools.testing.AssertUtil._
     type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
-    val m = map.filterKeys(i => if (map contains i) true else throw new NSEE)
+    val m = map.view.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
     assert{ (m contains 0) && (m get 0).nonEmpty }
-    assertThrows[NSEE]{ m contains 2 }
-    assertThrows[NSEE]{ m get 2 }
+    // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
+    // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions
+    // would have thrown a NSEE:
+    m contains 2
+    m get 2
   }
 }

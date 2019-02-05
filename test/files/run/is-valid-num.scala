@@ -49,9 +49,9 @@ object Test {
     testNaNs()
   }
 
-  def testBigInts() {
+  def testBigInts(): Unit = {
     def biExp2(e: Int) = BigInt(1) << e
-    def checkBigInt2(bi: BigInt) { checkBigInt(-bi); checkBigInt(bi) }
+    def checkBigInt2(bi: BigInt): Unit = { checkBigInt(-bi); checkBigInt(bi) }
 
     val pf = 24
     val pd = 53
@@ -136,7 +136,7 @@ object Test {
     checkBigInt2(biExp2(1024))
   }
 
-  def testNonWholeDoubles() {
+  def testNonWholeDoubles(): Unit = {
     checkNonWholeDouble(0.5)
     checkNonWholeDouble(-math.E)
     checkNonWholeDouble((1L << 51).toDouble + 0.5)
@@ -145,7 +145,7 @@ object Test {
     checkNonWholeDouble(Double.NegativeInfinity)
   }
 
-  def testNaNs() {
+  def testNaNs(): Unit = {
     assert(!Double.NaN.isWhole, Double.NaN)
 //    assert(!Double.NaN.isValidDouble, Double.NaN)
 //    assert(!Double.NaN.isValidFloat, Double.NaN)
@@ -165,7 +165,7 @@ object Test {
     assert(!Float.NaN.isValidByte, Float.NaN)
   }
 
-  def checkNonWholeDouble(d: Double) {
+  def checkNonWholeDouble(d: Double): Unit = {
     val f = d.toFloat
     val isFloat = f == d
 
@@ -202,7 +202,7 @@ object Test {
     }
   }
 
-  def checkBigInt(bi: BigInt) {
+  def checkBigInt(bi: BigInt): Unit = {
     val bd = BigDecimal(bi, java.math.MathContext.UNLIMITED)
     val isByte = bi >= Byte.MinValue && bi <= Byte.MaxValue
     val isShort = bi >= Short.MinValue && bi <= Short.MaxValue

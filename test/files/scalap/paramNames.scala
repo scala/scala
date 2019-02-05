@@ -1,3 +1,3 @@
 class ParamNames {
-  def foo (s: => Seq[Int], s2: => Seq[Any]) {}
+  def foo (s: => Seq[Int], s2: => Seq[Any]): Unit = {}
 }

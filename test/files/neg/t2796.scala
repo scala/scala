@@ -1,3 +1,6 @@
+//
+// scalac: -deprecation -Xfatal-warnings
+//
 trait Base {
   val abstractVal: String
   final val useAbstractVal = abstractVal
@@ -16,7 +19,7 @@ class C1 extends {
 } with Base
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     assert(new C1 ().useAbstractVal == "C1.abstractVal")
     // This currently fails. a more ambitious approach to this ticket would add $earlyinit$
     // to traits and call it from the right places in the right order.

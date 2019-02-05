@@ -6,5 +6,5 @@ trait Impls {
 }
 
 object Macros extends Impls {
-    def foo(x: Any) = macro impl
+    def foo(x: Any): Any = macro impl
 }

@@ -1,1 +1,7 @@
+t9387b.scala:2: warning: a pure expression does nothing in statement position
+  val f: Unit = () => ()
+                   ^
+t9387b.scala:8: warning: a pure expression does nothing in statement position
+  f[Unit](() => ())
+             ^
 ()

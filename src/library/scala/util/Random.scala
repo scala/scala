@@ -1,17 +1,22 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
 
+import scala.annotation.migration
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable.{ List, Stream }
+import scala.collection.BuildFrom
+import scala.collection.immutable.{ List, LazyList }
 import scala.language.{implicitConversions, higherKinds}
 
 /**
@@ -36,8 +41,15 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
   /** Generates random bytes and places them into a user-supplied byte
    *  array.
    */
-  def nextBytes(bytes: Array[Byte]) { self.nextBytes(bytes) }
-
+  def nextBytes(bytes: Array[Byte]): Unit = { self.nextBytes(bytes) }
+  
+  /** Generates `n` random bytes and returns them in a new array. */
+  def nextBytes(n: Int): Array[Byte] = {
+    val bytes = new Array[Byte](0 max n)
+    self.nextBytes(bytes)
+    bytes
+  }
+  
   /** Returns the next pseudorandom, uniformly distributed double value
    *  between 0.0 and 1.0 from this random number generator's sequence.
    */
@@ -197,16 +209,16 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
     (self.nextInt(high - low) + low).toChar
   }
 
-  def setSeed(seed: Long) { self.setSeed(seed) }
+  def setSeed(seed: Long): Unit = { self.setSeed(seed) }
 
   /** Returns a new collection of the same type in a randomly chosen order.
    *
    *  @return         the shuffled collection
    */
-  def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+  def shuffle[T, C](xs: IterableOnce[T])(implicit bf: BuildFrom[xs.type, T, C]): C = {
     val buf = new ArrayBuffer[T] ++= xs
 
-    def swap(i1: Int, i2: Int) {
+    def swap(i1: Int, i2: Int): Unit = {
       val tmp = buf(i1)
       buf(i1) = buf(i2)
       buf(i2) = tmp
@@ -217,21 +229,22 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       swap(n - 1, k)
     }
 
-    (bf(xs) ++= buf).result()
+    (bf.newBuilder(xs) ++= buf).result()
   }
 
-  /** Returns a Stream of pseudorandomly chosen alphanumeric characters,
+  /** Returns a LazyList of pseudorandomly chosen alphanumeric characters,
    *  equally chosen from A-Z, a-z, and 0-9.
    *
    *  @since 2.8
    */
-  def alphanumeric: Stream[Char] = {
+  @migration("`alphanumeric` returns a LazyList instead of a Stream", "2.13.0")
+  def alphanumeric: LazyList[Char] = {
     def nextAlphaNum: Char = {
       val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
       chars charAt (self nextInt chars.length)
     }
 
-    Stream continually nextAlphaNum
+    LazyList continually nextAlphaNum
   }
 
 }

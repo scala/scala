@@ -1,42 +1,42 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
-
-package scala
-package collection
-package immutable
-
-import generic._
-import mutable.Builder
-
-/** A base trait for iterable collections that are guaranteed immutable.
- *  $iterableInfo
+/*
+ * Scala (https://www.scala-lang.org)
  *
- *  @define Coll `immutable.Iterable`
- *  @define coll immutable iterable collection
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-trait Iterable[+A] extends Traversable[A]
-//                      with GenIterable[A]
-                      with scala.collection.Iterable[A]
-                      with GenericTraversableTemplate[A, Iterable]
-                      with IterableLike[A, Iterable[A]]
-{
-  override def companion: GenericCompanion[Iterable] = Iterable
-  override def seq: Iterable[A] = this
+
+package scala.collection.immutable
+
+import scala.collection.IterableFactory
+
+/** A trait for collections that are guaranteed immutable.
+  *
+  * @tparam A the element type of the collection
+  *
+  * @define usesMutableState
+  *
+  *   Note: Despite being an immutable collection, the implementation uses mutable state internally during
+  *   construction. These state changes are invisible in single-threaded code but can lead to race conditions
+  *   in some multi-threaded scenarios. The state of a new collection instance may not have been "published"
+  *   (in the sense of the Java Memory Model specification), so that an unsynchronized non-volatile read from
+  *   another thread may observe the object in an invalid state (see
+  *   [[https://github.com/scala/bug/issues/7838 scala/bug#7838]] for details). Note that such a read is not
+  *   guaranteed to ''ever'' see the written object at all, and should therefore not be used, regardless
+  *   of this issue. The easiest workaround is to exchange values between threads through a volatile var.
+  *
+  * @define coll immutable collection
+  * @define Coll `immutable.Iterable`
+  */
+trait Iterable[+A] extends collection.Iterable[A]
+                      with collection.IterableOps[A, Iterable, Iterable[A]] {
+
+  override def iterableFactory: IterableFactory[IterableCC] = Iterable
 }
 
-/** $factoryInfo
- *  The current default implementation of a $Coll is a `List`.
- *  @define Coll `immutable.Iterable`
- *  @define coll immutable iterable collection
- */
-object Iterable extends TraversableFactory[Iterable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, Iterable[A]] = new mutable.ListBuffer
-}
+@SerialVersionUID(3L)
+object Iterable extends IterableFactory.Delegate[Iterable](List)

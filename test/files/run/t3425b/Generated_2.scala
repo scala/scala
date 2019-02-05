@@ -3,7 +3,7 @@ import scala.language._
 
 object Test {
   def whatis[T: TypeTag](x: T) = typeOf[T]
-  def sshow(label: String, xs: Traversable[Any]) {
+  def sshow(label: String, xs: Iterable[Any]): Unit = {
     println("==== " + label + " ====\n")
     xs.toList.map("" + _).sorted foreach println
     println("\n")
@@ -876,7 +876,7 @@ object Test {
     f143
   )
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     sshow("Direct Calls", fcalls collect { case (false, n) => n })
     sshow("Reflective Calls", fcalls collect { case (true, n) => n })
     // For a good time try printing this - have to fix bugs in

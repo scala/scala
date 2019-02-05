@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.macros
 package compiler
 
@@ -21,7 +33,7 @@ trait Validators {
 
     private def sanityCheck() = {
       if (!macroImpl.isMethod) MacroImplReferenceWrongShapeError()
-      if (macroImpl.typeParams.length != targs.length) MacroImplWrongNumberOfTypeArgumentsError()
+      if (macroImpl.typeParams.sizeCompare(targs) != 0) MacroImplWrongNumberOfTypeArgumentsError()
       if (!macroImpl.isPublic) MacroImplNotPublicError()
       if (macroImpl.isOverloaded) MacroImplOverloadedError()
       val implicitParams = aparamss.flatten filter (_.isImplicit)
@@ -38,10 +50,10 @@ trait Validators {
 
       // we only check strict correspondence between value parameterss
       // type parameters of macro defs and macro impls don't have to coincide with each other
-      if (aparamss.length != rparamss.length) MacroImplParamssMismatchError()
+      if (aparamss.sizeCompare(rparamss) != 0) MacroImplParamssMismatchError()
       map2(aparamss, rparamss)((aparams, rparams) => {
-        if (aparams.length < rparams.length) MacroImplMissingParamsError(aparams, rparams)
-        if (rparams.length < aparams.length) MacroImplExtraParamsError(aparams, rparams)
+        if (aparams.sizeCompare(rparams) < 0) MacroImplMissingParamsError(aparams, rparams)
+        if (rparams.sizeCompare(aparams) < 0) MacroImplExtraParamsError(aparams, rparams)
       })
 
       try {
@@ -156,7 +168,7 @@ trait Validators {
           else mmap(macroDdef.vparamss)(param)
         val macroDefRet =
           if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
-          else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef) orElse AnyTpe
+          else AnyTpe
         val implReturnType = sigma(increaseMetalevel(ctxPrefix, macroDefRet))
 
         object SigmaTypeMap extends TypeMap {
@@ -171,7 +183,7 @@ trait Validators {
           def apply(tp: Type): Type = tp match {
             case TypeRef(pre, sym, args) =>
               val pre1  = mapPrefix(pre)
-              val args1 = mapOverArgs(args, sym.typeParams)
+              val args1 = args mapConserve this
               if ((pre eq pre1) && (args eq args1)) tp
               else typeRef(pre1, sym, args1)
             case _ =>

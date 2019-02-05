@@ -26,7 +26,7 @@ class Y extends Base
 
 
 object Example {
- def test1() {
+ def test1(): Unit = {
    new CurveTemplate(new Curve).access1(10)
 
    new CurveTemplate(new Curve).access2
@@ -41,7 +41,7 @@ object Example {
 
  }
 
- def test2() {
+ def test2(): Unit = {
    new CurveTemplate(new Curve).access1(10).withReadModifiers(1)
 
    new CurveTemplate(new Curve).access2.withReadModifiers(1)

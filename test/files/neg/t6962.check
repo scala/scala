@@ -1,0 +1,4 @@
+t6962.scala:5: error: Bar is not an enclosing class
+  protected[Bar] def crashes(withDefaultParam: Boolean = true): Int = 42
+                     ^
+one error found

@@ -12,7 +12,7 @@ class C {
 }
 
 class M extends App {
-  def foo {
+  def foo: Unit = {
     lazy val a = {
         lazy val b = 1
         lazy val c = 2

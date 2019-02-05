@@ -1,3 +1,6 @@
+//
+// scalac: -deprecation -Ywarn-unused -Xfatal-warnings
+//
 class Bippy(a: Int, b: Int) {
   private def this(c: Int) = this(c, c)           // warn
   private def bippy(x: Int): Int      = bippy(x)  // TODO: could warn
@@ -19,6 +22,8 @@ class B1(msg: String) extends A(msg)
 class B2(msg0: String) extends A(msg0)
 class B3(msg0: String) extends A("msg")
 
+trait Bing
+
 /*** Early defs warnings disabled primarily due to scala/bug#6595.
  *   The test case is here to assure we aren't issuing false positives;
  *   the ones labelled "warn" don't warn.
@@ -31,7 +36,7 @@ class Boppy extends {
   final val himinline     = him
   private val hum: String = "jkl"       // warn
   final val ding = hmm.length
-} with Mutable {
+} with Bing {
   val dinger = hom
   private val hummer = "def" // warn
 
@@ -133,9 +138,9 @@ trait Underwarn {
 }
 
 class OtherNames {
-  private def x_=(i: Int): Unit = ???
+  private def x_=(i: Int): Unit = ()
   private def x: Int = 42
-  private def y_=(i: Int): Unit = ???
+  private def y_=(i: Int): Unit = ()
   private def y: Int = 42
 
   def f = y
@@ -167,7 +172,7 @@ trait Boundings {
     17
   }
   def w() = {
-    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+    val D(x @ _) = d                      // no warn
     17
   }
 
@@ -185,7 +190,7 @@ trait Forever {
     val t = Option((17, 42))
     for {
       ns <- t
-      (i, j) = ns                        // warn, fixme
+      (i, j) = ns                        // no warn
     } yield 42                           // val emitted only if needed, hence nothing unused
   }
 }
@@ -222,5 +227,24 @@ class `no warn in patmat anonfun isDefinedAt` {
   def f(pf: PartialFunction[String, Int]) = pf("42")
   def g = f {
     case s => s.length        // no warn (used to warn case s => true in isDefinedAt)
+  }
+}
+
+// this is the ordinary case, as AnyRef is an alias of Object
+class `nonprivate alias is enclosing` {
+  class C
+  type C2 = C
+  private class D extends C2   // warn
+}
+
+object `classof something` {
+  private class intrinsically
+  def f = classOf[intrinsically].toString()
+}
+
+trait `short comings` {
+  def f: Int = {
+    val x = 42
+    17
   }
 }

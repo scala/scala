@@ -1,5 +1,7 @@
+// scalac: -Xfatal-warnings
+//
 object Test {
-  def foo() {
+  def foo(): Unit = {
     try {
       for (i <- 1 until 5) return
     } catch {

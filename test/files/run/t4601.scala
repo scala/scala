@@ -3,13 +3,13 @@ class A
 trait B {
   self: A =>
 
-  def test {
+  def test: Unit = {
     println('blubber)
   }
 }
 
 object Test extends A with B {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test
   }
 }

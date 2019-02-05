@@ -1,3 +1,4 @@
+warning: there were 18 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 new test starting with List()
 10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -13,11 +14,11 @@ new test starting with Stream()
 9: Stream(2, 3, 4, 5, 6, 7, 8, 9, 10)
 1
 Stream(1, ?)
-new test starting with WrappedArray()
-10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)
+new test starting with ArraySeq()
+10: ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+9: ArraySeq(2, 3, 4, 5, 6, 7, 8, 9, 10)
 1
-ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 new test starting with ArrayBuffer()
 10: ArrayBuffer(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: ArrayBuffer(2, 3, 4, 5, 6, 7, 8, 9, 10)

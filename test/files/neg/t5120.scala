@@ -23,7 +23,7 @@ object Test2 {
   val str = new Holder("t1", "t2")
   val num = new Holder(1, 2)
   List(str, num).foreach(h => h.f1 = new Thread())
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(str.f1)
   }
 }

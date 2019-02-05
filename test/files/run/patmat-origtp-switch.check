@@ -1,0 +1,18 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty>{<empty>.type} {
+  class C extends scala.AnyRef {
+    def <init>(): C = {
+      C.super{C.super.type}.<init>{()Object}(){Object};
+      (){Unit}
+    }{Unit};
+    def foo[A](a: A, b: A with C, i: Int): A = {
+      case <synthetic> val x1: Int = i{Int};
+      x1{Int} match {
+        case 0{Int(0)} => a{A}
+        case 1{Int(1)} => b{A with C}
+        case _{Int} => throw new MatchError{MatchError}{(obj: Any)MatchError}(x1{Int}){MatchError}{Nothing}
+      }{A}
+    }{A}
+  }
+}
+

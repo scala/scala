@@ -21,7 +21,7 @@ object Test extends ScaladocModelTest {
     def checkTemplateOwner(d: DocTemplateEntity) =
       for (mbr <- List("Symbol", "TypeSymbol", "TermSymbol", "MethodSymbol")) {
         val tpl = d._absTypeTpl(mbr).inTemplate
-        assert(tpl == X, tpl + " == X")
+        assert(tpl == X, tpl.toString + " == X")
       }
 
     for (tpl <- List(X, Y, Z, T))

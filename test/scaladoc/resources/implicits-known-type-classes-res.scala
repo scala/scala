@@ -3,6 +3,8 @@
  *  the type class in src/compiler/scala/tools/nsc/doc/Settings.scala
  *  in the knownTypeClasses map. Thank you! */
 package scala.test.scaladoc.implicits.typeclasses {
+  import scala.reflect.ClassManifest
+
   class A[T]
   object A {
     import language.implicitConversions

@@ -17,7 +17,7 @@ trait SuperG[T] {
 class BaseG[T](val arr: Array[T]) extends SuperG[T] { }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new BaseS(new Array[String](1)): SuperS[String]).foo
     println(arrayApplyCount)
     (new BaseS(new Array[String](1)): SuperS[String]).bar(new Array[String](1))

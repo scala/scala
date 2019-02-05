@@ -10,7 +10,7 @@ The Scala standard library consists of the package `scala` with a
 number of classes and modules. Some of these classes are described in
 the following.
 
-![Class hierarchy of Scala](public/images/classhierarchy.pdf)
+![Class hierarchy of Scala](public/images/classhierarchy.png)
 
 ## Root Classes
 
@@ -427,13 +427,13 @@ operations on an array `xs`:
 
 Two implicit conversions exist in `Predef` that are frequently applied to arrays:
 a conversion to `scala.collection.mutable.ArrayOps` and a conversion to
-`scala.collection.mutable.WrappedArray` (a subtype of `scala.collection.Seq`).
+`scala.collection.mutable.ArraySeq` (a subtype of `scala.collection.Seq`).
 
 Both types make many of the standard operations found in the Scala
 collections API available. The conversion to `ArrayOps` is temporary, as all operations
-defined on `ArrayOps` return a value of type `Array`, while the conversion to `WrappedArray`
-is permanent as all operations return a value of type `WrappedArray`.
-The conversion to `ArrayOps` takes priority over the conversion to `WrappedArray`.
+defined on `ArrayOps` return a value of type `Array`, while the conversion to `ArraySeq`
+is permanent as all operations return a value of type `ArraySeq`.
+The conversion to `ArrayOps` takes priority over the conversion to `ArraySeq`.
 
 Because of the tension between parametrized types in Scala and the ad-hoc
 implementation of arrays in the host-languages, some subtle points
@@ -624,9 +624,10 @@ trait Node {
 ## The `Predef` Object
 
 The `Predef` object defines standard functions and type aliases
-for Scala programs. It is always implicitly imported, so that all its
-defined members are available without qualification. Its definition
-for the JVM environment conforms to the following signature:
+for Scala programs. It is implicitly imported, as described in
+[the chapter on name binding](02-identifiers-names-and-scopes.html),
+so that all its defined members are available without qualification.
+Its definition for the JVM environment conforms to the following signature:
 
 ```scala
 package scala
@@ -739,9 +740,9 @@ The available low-priority implicits include definitions falling into the follow
     can be implicitly converted to instances of class `runtime.RichInt`.
 
 1.  For every array type with elements of primitive type, a wrapper that
-    takes the arrays of that type to instances of a `runtime.WrappedArray` class. For instance, values of type `Array[Float]` can be implicitly converted to instances of class `runtime.WrappedArray[Float]`.
+    takes the arrays of that type to instances of a `ArraySeq` class. For instance, values of type `Array[Float]` can be implicitly converted to instances of class `ArraySeq[Float]`.
     There are also generic array wrappers that take elements
-    of type `Array[T]` for arbitrary `T` to `WrappedArray`s.
+    of type `Array[T]` for arbitrary `T` to `ArraySeq`s.
 
 1.  An implicit conversion from `String` to `WrappedString`.
 

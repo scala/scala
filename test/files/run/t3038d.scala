@@ -1,15 +1,17 @@
+// scalac: -Xcheckinit
+//
 trait Foo {
   @transient protected var load = 1
   @transient protected var a = 12
 
-  protected def init[B](in: java.io.ObjectInputStream) {
+  protected def init[B](in: java.io.ObjectInputStream): Unit = {
     in.defaultReadObject
     load = in.readInt
     val sizea = in.readInt
     a = 12
   }
 
-  protected def serializeTo(out: java.io.ObjectOutputStream) {
+  protected def serializeTo(out: java.io.ObjectOutputStream): Unit = {
     out.defaultWriteObject
     out.writeInt(load)
     out.writeInt(a)
@@ -21,13 +23,13 @@ class Bar extends Foo with Serializable {
   def size = a
   @transient var second: Any = null
 
-  def checkMember { if (first == null) print("") }
+  def checkMember: Unit = { if (first == null) print("") }
 
-  private def writeObject(out: java.io.ObjectOutputStream) {
+  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
     serializeTo(out)
   }
 
-  private def readObject(in: java.io.ObjectInputStream) {
+  private def readObject(in: java.io.ObjectInputStream): Unit = {
     first = null
     init(in)
   }
@@ -48,7 +50,7 @@ object Test {
   }
 
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a1 = new Bar()
     val serialized:Array[Byte] = toBytes(a1)
     val deserialized: Bar = toObject(serialized)

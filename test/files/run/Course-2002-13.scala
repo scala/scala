@@ -123,36 +123,36 @@ object Programs {
       lhs.toString() + " :- " + rhs.mkString("", ",", "") + ".";
   }
 
-  def list2stream[a](xs: List[a]): Stream[a] = xs match {
-    case List() => Stream.empty
-    case x :: xs1 => Stream.cons(x, list2stream(xs1))
+  def list2stream[a](xs: List[a]): LazyList[a] = xs match {
+    case List() => LazyList.empty
+    case x :: xs1 => LazyList.cons(x, list2stream(xs1))
   }
-  def option2stream[a](xo: Option[a]): Stream[a] = xo match {
-    case None => Stream.empty
-    case Some(x) => Stream.cons(x, Stream.empty)
+  def option2stream[a](xo: Option[a]): LazyList[a] = xo match {
+    case None => LazyList.empty
+    case Some(x) => LazyList.cons(x, LazyList.empty)
   }
 
-  def solve(query: List[Term], clauses: List[Clause]): Stream[Subst] = {
+  def solve(query: List[Term], clauses: List[Clause]): LazyList[Subst] = {
 
-    def solve2(query: List[Term], s: Subst): Stream[Subst] = query match {
+    def solve2(query: List[Term], s: Subst): LazyList[Subst] = query match {
       case List() =>
-	Stream.cons(s, Stream.empty)
+	LazyList.cons(s, LazyList.empty)
       case Con("not", qs) :: query1 =>
-	if (solve1(qs, s).isEmpty) Stream.cons(s, Stream.empty)
-	else Stream.empty
+	if (solve1(qs, s).isEmpty) LazyList.cons(s, LazyList.empty)
+	else LazyList.empty
       case q :: query1 =>
 	for (clause <- list2stream(clauses);
 	     s1 <- tryClause(clause.newInstance, q, s);
 	     s2 <- solve1(query1, s1)) yield s2
     }
 
-    def solve1(query: List[Term], s: Subst): Stream[Subst] = {
+    def solve1(query: List[Term], s: Subst): LazyList[Subst] = {
       val ss = solve2(query, s);
       if (debug) Console.println("solved " + query + " = " + ss);
       ss
     }
 
-    def tryClause(c: Clause, q: Term, s: Subst): Stream[Subst] = {
+    def tryClause(c: Clause, q: Term, s: Subst): LazyList[Subst] = {
       if (debug) Console.println("trying " + c);
       for (s1 <- option2stream(unify(q, c.lhs, s)); s2 <- solve1(c.rhs, s1)) yield s2;
     }
@@ -182,7 +182,7 @@ class Parser(s: String) {
 	if (token equals "(") {
 	  token = it.next;
 	  val ts: List[Term] = if (token equals ")") List() else rep(term);
-	  if (token equals ")") token = it.next else syntaxError("`)' expected");
+	  if (token equals ")") token = it.next else syntaxError("`)` expected");
 	  ts
 	} else List())
   }
@@ -204,7 +204,7 @@ class Parser(s: String) {
           constructor,
           if (token equals ":-") { token = it.next; rep(constructor) } else List())
       }
-    if (token equals ".") token = it.next else syntaxError("`.' expected");
+    if (token equals ".") token = it.next else syntaxError("`.` expected");
     result
   }
 
@@ -215,7 +215,7 @@ object Prolog {
 
   def processor: String => Unit = {
     var program: List[Clause] = List();
-    var solutions: Stream[Subst] = Stream.empty;
+    var solutions: LazyList[Subst] = LazyList.empty;
     var tvs: List[String] = List();
     { input =>
       new Parser(input).all foreach { c =>

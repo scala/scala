@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -89,13 +96,11 @@ trait Mirrors extends api.Mirrors {
 
     /************************ loaders of class symbols ************************/
 
-    private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
-      var result = sym
-      result match {
+    private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol =
+      sym match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
       }
-    }
 
     def getClassByName(fullname: Name): ClassSymbol =
       ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toTypeName))
@@ -211,7 +216,7 @@ trait Mirrors extends api.Mirrors {
       try body
       catch { case _: MissingRequirementError => NoSymbol }
 
-    def init() {
+    def init(): Unit = {
       if (initialized) return
       // Still fiddling with whether it's cleaner to do some of this setup here
       // or from constructors.  The latter approach tends to invite init order issues.

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -32,14 +39,14 @@ abstract class Flatten extends InfoTransform {
     if (old.nonEmpty) debuglog(s"In scope of ${sym.owner}, unlinked $old_s")
   }
 
-  private def liftClass(sym: Symbol) {
+  private def liftClass(sym: Symbol): Unit = {
     if (!sym.isLifted) {
       sym setFlag LIFTED
       debuglog("re-enter " + sym.fullLocationString)
       replaceSymbolInCurrentScope(sym)
     }
   }
-  private def liftSymbol(sym: Symbol) {
+  private def liftSymbol(sym: Symbol): Unit = {
     liftClass(sym)
   }
   // This is a short-term measure partially working around objects being

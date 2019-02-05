@@ -1,0 +1,4 @@
+t10731.scala:3: error: stable identifier required, but C.this.eq found.
+  val eq.a = 1
+      ^
+one error found

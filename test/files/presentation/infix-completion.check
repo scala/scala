@@ -3,12 +3,11 @@ reload: Snippet.scala
 askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
-retrieved 192 members
-[inaccessible] protected def integralNum: math.Numeric.DoubleAsIfIntegral.type
-[inaccessible] protected def num: math.Numeric.DoubleIsFractional.type
-[inaccessible] protected def ord: math.Ordering.Double.type
+retrieved 201 members
+[inaccessible] protected def num: Fractional[Double]
+[inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
-[inaccessible] protected def unifiedPrimitiveHashcode(): Int
+[inaccessible] protected def unifiedPrimitiveHashcode: Int
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def !=(x: Byte): Boolean
@@ -109,16 +108,22 @@ def ^(x: Short): Int
 def byteValue(): Byte
 def ceil: Double
 def compare(y: Double): Int
+def compare(y: Float): Int
+def compare(y: Int): Int
 def compare(y: Long): Int
 def compareTo(that: Double): Int
+def compareTo(that: Float): Int
+def compareTo(that: Int): Int
 def compareTo(that: Long): Int
 def compareTo(x$1: Double): Int
+def compareTo(x$1: Float): Int
+def compareTo(x$1: Integer): Int
 def compareTo(x$1: Long): Int
 def doubleValue(): Double
 def ensuring(cond: Boolean): Int
-def ensuring(cond: Boolean,msg: => Any): Int
+def ensuring(cond: Boolean, msg: => Any): Int
 def ensuring(cond: Int => Boolean): Int
-def ensuring(cond: Int => Boolean,msg: => Any): Int
+def ensuring(cond: Int => Boolean, msg: => Any): Int
 def equals(x$1: Any): Boolean
 def floatValue(): Float
 def floor: Double
@@ -134,10 +139,10 @@ def isValidLong: Boolean
 def longValue(): Long
 def round: Long
 def shortValue(): Short
-def to(end: Double): Range.Partial[Double,scala.collection.immutable.NumericRange[Double]]
-def to(end: Double,step: Double): scala.collection.immutable.NumericRange.Inclusive[Double]
+def to(end: Int): scala.collection.immutable.Range.Inclusive
+def to(end: Int, step: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
-def to(end: Long,step: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
+def to(end: Long, step: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
 def toBinaryString: String
 def toByte: Byte
 def toChar: Char
@@ -154,11 +159,10 @@ def toString(): String
 def unary_+: Int
 def unary_-: Int
 def unary_~: Int
-def underlying(): AnyRef
-def until(end: Double): Range.Partial[Double,scala.collection.immutable.NumericRange[Double]]
-def until(end: Double,step: Double): scala.collection.immutable.NumericRange.Exclusive[Double]
+def until(end: Int): scala.collection.immutable.Range
+def until(end: Int, step: Int): scala.collection.immutable.Range
 def until(end: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
-def until(end: Long,step: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
+def until(end: Long, step: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
 def |(x: Byte): Int
 def |(x: Char): Int
 def |(x: Int): Int
@@ -177,16 +181,20 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def abs: Double
 override def isValidByte: Boolean
 override def isValidChar: Boolean
 override def isValidInt: Boolean
 override def isValidShort: Boolean
-override def isWhole(): Boolean
+override def isWhole: Boolean
 override def max(that: Double): Double
+override def max(that: Float): Float
+override def max(that: Int): Int
 override def max(that: Long): Long
 override def min(that: Double): Double
+override def min(that: Float): Float
+override def min(that: Int): Int
 override def min(that: Long): Long
 override def signum: Int
 private[this] val self: Double

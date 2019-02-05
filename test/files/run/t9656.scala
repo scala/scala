@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 
 import scala.math.BigDecimal
 
@@ -13,10 +15,8 @@ object Test extends App {
   println(1L to 10L)
   println(1L to 10L by 2)
 
-  // want to know if this is BigDecimal or Double stepping by BigDecimal
-  println(0.1 until 1.0 by 0.1)
+  // want to know if this is BigDecimal stepping by BigDecimal
   println(Range.BigDecimal(BigDecimal("0.1"), BigDecimal("1.0"), BigDecimal("0.1")))
-  println(Range.Double(0.1, 1.0, 0.1))
 
   import concurrent.duration.{SECONDS => Seconds, _}, collection.immutable.NumericRange
   implicit val `duration is integerish`: math.Integral[FiniteDuration] = new math.Integral[FiniteDuration] {

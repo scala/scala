@@ -5,5 +5,5 @@ trait A { this: B =>
 }
 
 trait B extends A {
-  trait Y { def f {} }
+  trait Y { def f: Unit = {} }
 }

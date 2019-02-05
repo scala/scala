@@ -1,12 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -18,7 +20,7 @@ object languageFeature {
   sealed trait dynamics
   object dynamics extends dynamics
 
-  @meta.languageFeature("postfix operator #", enableRequired = false)
+  @meta.languageFeature("postfix operator #", enableRequired = true)
   sealed trait postfixOps
   object postfixOps extends postfixOps
 
@@ -34,7 +36,7 @@ object languageFeature {
   sealed trait higherKinds
   object higherKinds extends higherKinds
 
-  @meta.languageFeature("#, which cannot be expressed by wildcards, ", enableRequired = false)
+  @meta.languageFeature("#, which cannot be expressed by wildcards,", enableRequired = false)
   sealed trait existentials
   object existentials extends existentials
 

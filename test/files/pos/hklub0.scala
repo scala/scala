@@ -1,5 +1,6 @@
+class GenericCompanion[+CC[X] <: Iterable[X]]
 object Test {
-  val a : scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq] = null
-  val b : scala.collection.generic.GenericCompanion[scala.collection.mutable.Seq] = null
-  List(a, b) // immutable.this.List.apply[scala.collection.generic.GenericCompanion[Seq]](Test.this.a, Test.this.b)
+  val a : GenericCompanion[scala.collection.immutable.Seq] = null
+  val b : GenericCompanion[scala.collection.mutable.Seq] = null
+  List(a, b) // immutable.this.List.apply[GenericCompanion[Seq]](Test.this.a, Test.this.b)
 }

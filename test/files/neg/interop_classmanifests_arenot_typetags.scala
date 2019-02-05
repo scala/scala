@@ -1,4 +1,5 @@
 import scala.reflect.runtime.universe._
+import scala.reflect.ClassManifest
 
 object Test extends App {
   def classManifestIsnotTypeTag[T: ClassManifest] = {

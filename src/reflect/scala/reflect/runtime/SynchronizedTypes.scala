@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package runtime
@@ -18,7 +30,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   // we can keep this lock fine-grained, because super.unique just updates the cache
   // and, in particular, doesn't call any reflection APIs which makes deadlocks impossible
   private lazy val uniqueLock = new Object
-  private val uniques = mutable.WeakHashMap[Type, jWeakRef[Type]]()
+  private[this] val uniques = mutable.WeakHashMap[Type, jWeakRef[Type]]()
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
     // we need to have weak uniques for runtime reflection
     // because unlike the normal compiler universe, reflective universe isn't organized in runs

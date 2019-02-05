@@ -7,9 +7,9 @@ retrieved 32 members
 def +(other: String): String
 def ->[B](y: B): (Implicit.type, B)
 def ensuring(cond: Boolean): Implicit.type
-def ensuring(cond: Boolean,msg: => Any): Implicit.type
+def ensuring(cond: Boolean, msg: => Any): Implicit.type
 def ensuring(cond: Implicit.type => Boolean): Implicit.type
-def ensuring(cond: Implicit.type => Boolean,msg: => Any): Implicit.type
+def ensuring(cond: Implicit.type => Boolean, msg: => Any): Implicit.type
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -28,7 +28,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 implicit def AppliedImplicit[A](x: A): Implicit.AppliedImplicit[A]
 private[this] val x: Implicit.type
 protected[package lang] def clone(): Object

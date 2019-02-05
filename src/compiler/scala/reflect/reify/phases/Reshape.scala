@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.reify
 package phases
 
@@ -231,22 +243,8 @@ trait Reshape {
       }
 
       def extractOriginal: PartialFunction[Tree, Tree] = { case Apply(Select(New(tpt), _), _) => tpt }
-      assert(extractOriginal.isDefinedAt(ann.original), showRaw(ann.original))
+      assert(extractOriginal.isDefinedAt(ann.original), s"$ann has unexpected original ${showRaw(ann.original)}" )
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
-    }
-
-    private def toPreTyperLazyVal(ddef: DefDef): ValDef = {
-      def extractRhs(rhs: Tree) = rhs match {
-        case Block(Assign(lhs, rhs)::Nil, _) if lhs.symbol.isLazy => rhs
-        case _ => rhs // unit or trait case
-      }
-      val DefDef(mods0, name0, _, _, tpt0, rhs0) = ddef
-      val name1 = name0.dropLocal
-      val Modifiers(flags0, privateWithin0, annotations0) = mods0
-      val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
-      val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
-      val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
     }
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
@@ -280,7 +278,10 @@ trait Reshape {
             var flags1 = flags & ~LOCAL
             if (!ddef.symbol.isPrivate) flags1 = flags1 & ~PRIVATE
             val privateWithin1 = ddef.mods.privateWithin
-            val annotations1 = accessors(vdef).foldLeft(annotations)((curr, acc) => curr ++ (acc.symbol.annotations map toPreTyperAnnotation))
+            val annotations1 =
+              accessors(vdef).foldLeft(annotations){ (curr, acc) =>
+                curr ++ (acc.symbol.annotations.filterNot(_ == UnmappableAnnotation ).map(toPreTyperAnnotation))
+              }
             Modifiers(flags1, privateWithin1, annotations1) setPositions mods.positions
           } else {
             mods

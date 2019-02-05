@@ -135,7 +135,7 @@ object M3 {
 object M4 {
 
   def test = {
-    for (i <- range(1, 4)) { Console.print(i + " ") };
+    for (i <- range(1, 4)) { Console.print(s"$i ") };
     Console.println;
     Console.println(for (i <- range(1, 4)) yield i);
     Console.println;
@@ -295,7 +295,7 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        Console.println(a + " & " + b + " = " + result);
+        Console.println(a.toString + " & " + b + " = " + result);
         Console.println;
       }
 
@@ -320,7 +320,7 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        Console.println(a + " | " + b + " = " + result);
+        Console.println(a.toString + " | " + b + " = " + result);
         Console.println;
       }
 
@@ -348,7 +348,7 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         run;
-        Console.println(a + " + " + b + " = " + result);
+        Console.println(a.toString + " + " + b + " = " + result);
         Console.println;
       }
 
@@ -379,7 +379,7 @@ object M5 {
         bin setSignal (if (b == 0) false else true);
         cin setSignal (if (c == 0) false else true);
         run;
-        Console.println(a + " + " + b + " + " + c + " = " + result);
+        Console.println(a.toString + " + " + b + " + " + c + " = " + result);
         Console.println;
       }
 

@@ -11,20 +11,19 @@ object Test extends App {
   val maxKey = 50
   val maxValue = 50
 
-  def testSet[A <% Ordered[A]](set: SortedSet[A], list: List[A]) {
+  def testSet[A](set: SortedSet[A], list: List[A])(implicit o: Ordering[A]): Unit = {
     val distinctSorted = list.distinct.sorted
     assertEquals("Set size wasn't the same as list sze", set.size, distinctSorted.size)
 
     for(key <- distinctSorted) {
       val clazz = set.getClass
       val iteratorFrom = (set iteratorFrom key).toList
-      check(clazz, list, s"set iteratorFrom $key", s"(set from $key).iterator", iteratorFrom, (set from key).iterator.toList)
-      check(clazz, list, s"set.iteratorFrom $key", s"distinctSorted dropWhile (_ < $key)", iteratorFrom, distinctSorted dropWhile (_ < key))
-      check(clazz, list, s"set iteratorFrom $key", s"set keysIterator from $key", iteratorFrom, (set keysIteratorFrom key).toList)
+      check(clazz, list, s"set iteratorFrom $key", s"(set from $key).iterator", iteratorFrom, (set rangeFrom key).iterator.toList)
+      check(clazz, list, s"set.iteratorFrom $key", s"distinctSorted dropWhile (_ < $key)", iteratorFrom, distinctSorted dropWhile (o.lt(_, key)))
     }
   }
 
-  def testMap[A <% Ordered[A], B](map: SortedMap[A, B], list: List[(A, B)]) {
+  def testMap[A, B](map: SortedMap[A, B], list: List[(A, B)])(implicit o: Ordering[A]): Unit = {
     val distinctSorted = distinctByKey(list).sortBy(_._1)
     assertEquals("Map size wasn't the same as list sze", map.size, distinctSorted.size)
 
@@ -32,18 +31,18 @@ object Test extends App {
       val key = keyValue._1
       val clazz = map.getClass
       val iteratorFrom = (map iteratorFrom key).toList
-      check(clazz, list, s"map iteratorFrom $key", s"(map from $key).iterator", iteratorFrom, (map from key).iterator.toList)
-      check(clazz, list, s"map iteratorFrom $key", s"distinctSorted dropWhile (_._1 < $key)", iteratorFrom, distinctSorted dropWhile (_._1 < key))
+      check(clazz, list, s"map iteratorFrom $key", s"(map from $key).iterator", iteratorFrom, (map rangeFrom key).iterator.toList)
+      check(clazz, list, s"map iteratorFrom $key", s"distinctSorted dropWhile (_._1 < $key)", iteratorFrom, distinctSorted dropWhile (x => o.lt(x._1, key)))
       check(clazz, list, s"map iteratorFrom $key map (_._1)", s"map keysIteratorFrom $key", iteratorFrom map (_._1), (map keysIteratorFrom key).toList)
       check(clazz, list, s"map iteratorFrom $key map (_._2)", s"map valuesIteratorFrom $key", iteratorFrom map (_._2), (map valuesIteratorFrom key).toList)
     }
   }
 
-  def check[A](clazz: Class[_], list: List[_], m1: String, m2: String, l1: List[A], l2: List[A]) {
+  def check[A](clazz: Class[_], list: List[_], m1: String, m2: String, l1: List[A], l2: List[A]): Unit = {
     assertEquals(s"$clazz: `$m1` didn't match `$m2` on list $list", l1, l2)
   }
 
-  def assertEquals[A](msg: String, x: A, y: A) {
+  def assertEquals[A](msg: String, x: A, y: A): Unit = {
     assert(x == y, s"$msg\n1: $x\n2: $y")
   }
 
@@ -65,7 +64,7 @@ object Test extends App {
 
     val treeMap = immutable.TreeMap(keyValues:_*)
     testMap(treeMap, keyValues)
-    testMap(treeMap.filterKeys(_ % 2 == 0), keyValues  filter (_._1 % 2 == 0))
-    testMap(treeMap mapValues (_ + 1), keyValues map {case (k,v) => (k, v + 1)})
+    testMap(treeMap.view.filterKeys(_ % 2 == 0).to(SortedMap), keyValues  filter (_._1 % 2 == 0))
+    testMap(treeMap.view.mapValues(_ + 1).to(SortedMap), keyValues map {case (k,v) => (k, v + 1)})
   }
 }

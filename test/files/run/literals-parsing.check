@@ -1,0 +1,14 @@
+[[syntax trees at end of                    parser]] // newSource1.scala
+[0:161]package [0:0]<empty> {
+  [0:161]abstract trait T extends [8:161][161]scala.AnyRef {
+    [8]def $init$() = [8]{
+      [8]()
+    };
+    [16:34]def i: [23:26]Int = [29:34]1024;
+    [41:69]def j: [48:52]Long = [55:69][55:63][55:61]1024L.$times([64:69]1024);
+    [99:114]def f = [107:114]3.14;
+    [121:138]def d = [129:138]3.14E-19;
+    [146:155]def z = [154:155]0
+  }
+}
+

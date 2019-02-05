@@ -1,7 +1,7 @@
 
 import scala.language.{ reflectiveCalls }
 object Test {
-  def f(x: Any { def toInt: Int }) = println(x.toInt + " " + x.getClass.getName)
+  def f(x: Any { def toInt: Int }) = println(x.toInt.toString + " " + x.getClass.getName)
 
   def main(args: Array[String]): Unit = {
     f(1)

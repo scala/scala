@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools
 package reflect
 
@@ -23,7 +35,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
 
   /** Represents mode of operations of the typechecker underlying `c.typecheck` calls.
    *  Is necessary since the shape of the typechecked tree alone is not enough to guess how it should be typechecked.
-   *  Can be EXPRmode (typecheck as a term), TYPEmode (typecheck as a type) or PATTERNmode (typecheck as a pattern).
+   *  Can be TERMmode (typecheck as a term), TYPEmode (typecheck as a type) or PATTERNmode (typecheck as a pattern).
    */
   type TypecheckMode
 
@@ -47,7 +59,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
     typecheck(tree, TERMmode, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
 
   /** Typechecks a tree against the expected type `pt`
-   *  under typechecking mode specified in `mode` with [[EXPRmode]] being default.
+   *  under typechecking mode specified in `mode` with [[TERMmode]] being default.
    *  This populates symbols and types of the tree and possibly transforms it to reflect certain desugarings.
    *
    *  If the tree has unresolved type variables (represented as instances of `FreeTypeSymbol` symbols),

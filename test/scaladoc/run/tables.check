@@ -1,0 +1,16 @@
+newSource:36: warning: Dropping 1 excess table delimiter cells from row.
+  /**
+  ^
+newSource:36: warning: Dropping 1 excess table data cells from row.
+  /**
+  ^
+newSource:176: warning: Fixing missing delimiter row
+  /**
+  ^
+newSource:195: warning: Fixing missing delimiter row
+  /**
+  ^
+newSource:222: warning: Fixing missing delimiter row
+  /**
+  ^
+Done.

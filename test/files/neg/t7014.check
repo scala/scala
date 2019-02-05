@@ -1,4 +1,4 @@
-warning: While parsing annotations in t7014-neg.obj/t7014/ThreadSafetyLevel_1.class, could not find COMPLETELY_THREADSAFE in enum object ThreadSafetyLevel_1.
+warning: While parsing annotations in t7014-neg.obj/t7014/ThreadSafetyLevel_1.class, could not find COMPLETELY_THREADSAFE in enum ThreadSafetyLevel_1.
 This is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014).
 error: No warnings can be incurred under -Xfatal-warnings.
 one warning found

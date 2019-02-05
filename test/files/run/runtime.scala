@@ -24,7 +24,7 @@ object Test0Test {
     val ss: Array[Short  ] = Array(3, 4, 5);
     val cs: Array[Char   ] = Array('a', 'b', 'c');
     val is: Array[Int    ] = Array(6, 7, 8);
-    val ls: Array[Long   ] = Array(9l, 10l, 11l);
+    val ls: Array[Long   ] = Array(9L, 10L, 11L);
     val fs: Array[Float  ] = Array(12.0f, 13.0f);
     val ds: Array[Double ] = Array(14.0d, 15.0d);
     val os: Array[AnyRef ] = Array("string");
@@ -65,7 +65,7 @@ object Test1Test {
     // {System.out.print(12); java.lang}.System.out.println();
     // {System.out.print(13); java.lang.System}.out.println();
     {Console.print(14); Console}.println;
-    {Console.print(15); (() => Console.println):(() => Unit)} apply ();
+    {Console.print(15); (() => Console.println):(() => Unit)}.apply();
     {Console.print(16); Console.println};
 
     {Console.print(20)}; test1.bar.System.out.println();
@@ -73,7 +73,7 @@ object Test1Test {
     // {System.out.print(22); test1.bar}.System.out.println();
     {Console.print(23); test1.bar.System}.out.println();
     {Console.print(24); test1.bar.System.out}.println();
-    {Console.print(25); test1.bar.System.out.println _ : (() => Unit)} apply ();
+    {Console.print(25); test1.bar.System.out.println _ : (() => Unit)}.apply();
     {Console.print(26); test1.bar.System.out.println()};
   }
 
@@ -191,7 +191,7 @@ object Test  {
 
     if (errors > 0) {
       Console.println;
-      Console.println(errors + " error" + (if (errors > 1) "s" else ""));
+      Console.println(s"$errors error" + (if (errors > 1) "s" else ""));
     }
   }
 }

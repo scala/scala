@@ -1,5 +1,5 @@
 class SI extends JI {
-   def varArgsMethod( args : String*) {
+   def varArgsMethod( args : String*): Unit = {
         for( arg <- args ) println( arg )
    }
 }

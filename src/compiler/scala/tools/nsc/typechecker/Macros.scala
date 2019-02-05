@@ -1,7 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package typechecker
 
 import java.lang.Math.min
+import java.net.URL
+
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
@@ -10,9 +24,11 @@ import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
+import scala.reflect.io.AbstractFile
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack
+import scala.util.control.NonFatal
 import Fingerprint._
 
 /**
@@ -50,19 +66,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   lazy val fastTrack = new FastTrack[self.type](self)
 
   def globalSettings = global.settings
-
-  /** Obtains a `ClassLoader` instance used for macro expansion.
-   *
-   *  By default a new `ScalaClassLoader` is created using the classpath
-   *  from global and the classloader of self as parent.
-   *
-   *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
-   */
-  protected def findMacroClassLoader(): ClassLoader = {
-    val classpath = global.classPath.asURLs
-    macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-    ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
-  }
 
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
@@ -292,49 +295,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     fastTrackBoxity orElse bindingBoxity getOrElse false
   }
 
-  def computeMacroDefTypeFromMacroImplRef(macroDdef: DefDef, macroImplRef: Tree): Type = {
-    macroImplRef match {
-      case MacroImplReference(_, _, _, macroImpl, targs) =>
-        // Step I. Transform c.Expr[T] to T and everything else to Any
-        var runtimeType = decreaseMetalevel(macroImpl.info.finalResultType)
-
-        // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
-        runtimeType = runtimeType.substituteTypes(macroImpl.typeParams, targs map (_.tpe))
-
-        // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
-        def unsigma(tpe: Type): Type =
-          transformTypeTagEvidenceParams(macroImplRef, (param, tparam) => NoSymbol) match {
-            case (implCtxParam :: Nil) :: implParamss =>
-              val implToDef = flatMap2(implParamss, macroDdef.vparamss)(map2(_, _)((_, _))).toMap
-              object UnsigmaTypeMap extends TypeMap {
-                def apply(tp: Type): Type = tp match {
-                  case TypeRef(pre, sym, args) =>
-                    val pre1 = pre match {
-                      case SingleType(SingleType(SingleType(NoPrefix, c), prefix), value) if c == implCtxParam && prefix == MacroContextPrefix && value == ExprValue =>
-                        ThisType(macroDdef.symbol.owner)
-                      case SingleType(SingleType(NoPrefix, implParam), value) if value == ExprValue =>
-                        implToDef get implParam map (defParam => SingleType(NoPrefix, defParam.symbol)) getOrElse pre
-                      case _ =>
-                        pre
-                    }
-                    val args1 = args map mapOver
-                    TypeRef(pre1, sym, args1)
-                  case _ =>
-                    mapOver(tp)
-                }
-              }
-
-              UnsigmaTypeMap(tpe)
-            case _ =>
-              tpe
-          }
-
-        unsigma(runtimeType)
-      case _ =>
-        ErrorType
-    }
-  }
-
   /** Verifies that the body of a macro def typechecks to a reference to a static public non-overloaded method or a top-level macro bundle,
    *  and that that method is signature-wise compatible with the given macro definition.
    *
@@ -371,7 +331,18 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           val macroDdef: self.global.DefDef = macroDdef1
         } with DefaultMacroCompiler
         val macroImplRef = macroCompiler.resolveMacroImpl
-        if (macroImplRef.isEmpty) fail() else success(macroImplRef)
+        if (macroImplRef.isEmpty) fail() else {
+          def hasTypeTag = {
+            val marker = NoSymbol.newErrorValue("restricted")
+            val xformed = transformTypeTagEvidenceParams(macroImplRef, (_, _) => marker)
+            xformed.nonEmpty && xformed.last.contains(marker)
+          }
+          if (macroDdef.name == nme.macroTransform && hasTypeTag) {
+            typer.context.error(macroDdef.pos, "implementation restriction: macro annotation impls cannot have typetag context bounds " +
+                                               "(consider taking apart c.macroApplication and manually calling c.typecheck on the type arguments)")
+            fail()
+          } else success(macroImplRef)
+        }
       }
     }
   }
@@ -412,8 +383,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
     import typer.TyperErrorGen._
     val isNullaryArgsEmptyParams = argss.isEmpty && paramss == ListOfNil
-    if (paramss.length < argss.length) MacroTooManyArgumentListsError(expandee)
-    if (paramss.length > argss.length && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
+    if (paramss.sizeCompare(argss) < 0) MacroTooManyArgumentListsError(expandee)
+    if (paramss.sizeCompare(argss) > 0 && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
 
     val macroImplArgs: List[Any] =
       if (fastTrack contains macroDef) {
@@ -432,10 +403,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           val trees = map3(argss, paramss, signature)((args, defParams, implParams) => {
             val isVarargs = isVarArgsList(defParams)
             if (isVarargs) {
-              if (defParams.length > args.length + 1) MacroTooFewArgumentsError(expandee)
+              if (defParams.lengthIs > (args.length + 1)) MacroTooFewArgumentsError(expandee)
             } else {
-              if (defParams.length < args.length) MacroTooManyArgumentsError(expandee)
-              if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
+              if (defParams.sizeCompare(args) < 0) MacroTooManyArgumentsError(expandee)
+              if (defParams.sizeCompare(args) > 0) MacroTooFewArgumentsError(expandee)
             }
 
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
@@ -723,7 +694,18 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
    *  @see DefMacroExpander
    */
-  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = pluginsMacroExpand(typer, expandee, mode, pt)
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
+    // By default, use the current typer's fresh name creator in macros. The compiler option
+    // allows people to opt in to the old behaviour of Scala 2.12, which used a global fresh creator.
+    if (!settings.YmacroFresh.value) currentFreshNameCreator = typer.fresh
+    val macroSym = expandee.symbol
+    currentRun.profiler.beforeMacroExpansion(macroSym)
+    try {
+      pluginsMacroExpand(typer, expandee, mode, pt)
+    } finally {
+      currentRun.profiler.afterMacroExpansion(macroSym)
+    }
+  }
 
   /** Default implementation of `macroExpand`.
    *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroExpand for more details)
@@ -802,9 +784,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             val result = atPos(enclosingMacroPosition.focus)(expanded)
             Success(result)
           }
+          val isTermMacro = expandee.symbol.isTermMacro || currentRun.runDefinitions.treatLikeMacro(expandee.symbol)
           expanded match {
-            case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
-            case expanded: Tree if expandee.symbol.isTermMacro => validateResultingTree(expanded)
+            case expanded: Expr[_] if isTermMacro => validateResultingTree(expanded.tree)
+            case expanded: Tree if isTermMacro => validateResultingTree(expanded)
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }
         } catch {
@@ -812,10 +795,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             if (openMacros.nonEmpty) popMacroContext() // weirdly we started popping on an empty stack when refactoring fatalWarnings logic
             val realex = ReflectionUtils.unwrapThrowable(ex)
             realex match {
+              case ex: InterruptedException => throw ex
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)
               case ex: ControlThrowable => throw ex
               case ex: TypeError => MacroGeneratedTypeError(expandee, ex)
-              case _ => MacroGeneratedException(expandee, realex)
+              case NonFatal(_) => MacroGeneratedException(expandee, realex)
+              case fatal => throw fatal
             }
         } finally {
           expandee.removeAttachment[MacroRuntimeAttachment]
@@ -906,11 +891,21 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          try {
+            macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          } finally {
+            if (context.reporter.isBuffering)
+              context.reporter.propagateErrorsTo(typer.context.reporter)
+          }
         case _ =>
           tree
       })
     }.transform(expandee)
+}
+
+object Macros {
+  final val macroClassLoadersCache =
+    new scala.tools.nsc.classpath.FileBasedCache[ScalaClassLoader.URLClassLoader]()
 }
 
 trait MacrosStats {

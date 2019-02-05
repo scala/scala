@@ -1,15 +1,13 @@
-
-
 object Test {
-  def walk(depth: Int, bias: String): Stream[String] = {
+  def walk(depth: Int, bias: String): LazyList[String] = {
     if (depth == 0)
-      Stream(bias)
+      LazyList(bias)
     else {
-      (Stream.iterate(1, 99)(_+1).map((x: Int) => walk(depth-1, bias + x))).flatten
+      (LazyList.iterate(1, 99)(_+1).map((x: Int) => walk(depth-1, bias + x))).flatten
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     if (scala.tools.partest.utils.Properties.isAvian) {
       println("!!!TEST SKIPPED!!!")
       println("See scala/bug#7600 for further information.")

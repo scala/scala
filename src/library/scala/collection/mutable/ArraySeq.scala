@@ -1,111 +1,306 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
-
-
-package scala
-package collection
+package scala.collection
 package mutable
 
-import generic._
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
-/** A class for polymorphic arrays of elements that's represented
- *  internally by an array of objects. This means that elements of
- *  primitive types are boxed.
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-sequences "Scala's Collection Library overview"]]
- *  section on `Array Sequences` for more information.
- *
- *  @tparam A      type of the elements contained in this array sequence.
- *  @param length  the length of the underlying array.
- *
- *  @define Coll `ArraySeq`
- *  @define coll array sequence
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `ArraySeq[B]` because an implicit of type `CanBuildFrom[ArraySeq, B, ArraySeq[B]]`
- *    is defined in object `ArraySeq`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `ArraySeq`.
- *  @define orderDependent
- *  @define orderDependentFold
- *  @define mayNotTerminateInf
- *  @define willNotTerminateInf
- */
-@SerialVersionUID(1530165946227428979L)
-class ArraySeq[A](override val length: Int)
-extends AbstractSeq[A]
-   with IndexedSeq[A]
-   with GenericTraversableTemplate[A, ArraySeq]
-   with IndexedSeqOptimized[A, ArraySeq[A]]
-   with Serializable
-{
+import scala.runtime.ScalaRunTime
+import scala.reflect.ClassTag
+import scala.util.hashing.MurmurHash3
+import java.util.Arrays
 
-  override def companion: GenericCompanion[ArraySeq] = ArraySeq
+/**
+  *  A collection representing `Array[T]`. Unlike `ArrayBuffer` it is always backed by the same
+  *  underlying `Array`, therefore it is not growable or shrinkable.
+  *
+  *  @tparam T    type of the elements in this wrapped array.
+  *
+  *  @author  Martin Odersky, Stephane Micheloud
+  *  @since 2.8
+  *  @define Coll `ArraySeq`
+  *  @define coll wrapped array
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  */
+@SerialVersionUID(3L)
+sealed abstract class ArraySeq[T]
+  extends AbstractSeq[T]
+    with IndexedSeq[T]
+    with IndexedSeqOps[T, ArraySeq, ArraySeq[T]]
+    with StrictOptimizedSeqOps[T, ArraySeq, ArraySeq[T]]
+    with Serializable {
 
-  val array: Array[AnyRef] = new Array[AnyRef](length)
+  override def iterableFactory: scala.collection.SeqFactory[ArraySeq] = ArraySeq.untagged
 
-  def apply(idx: Int): A = {
-    if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)
-    array(idx).asInstanceOf[A]
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[T]): ArraySeq[T] = {
+    val b = ArrayBuilder.make(elemTag).asInstanceOf[ArrayBuilder[T]]
+    val s = coll.knownSize
+    if(s > 0) b.sizeHint(s)
+    b ++= coll
+    ArraySeq.make(b.result())
   }
+  override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(elemTag).asInstanceOf[Builder[T, ArraySeq[T]]]
 
-  def update(idx: Int, elem: A) {
-    if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)
-    array(idx) = elem.asInstanceOf[AnyRef]
-  }
+  /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
+    * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
+    * or subtype of the element type. */
+  def elemTag: ClassTag[_]
 
-  override def foreach[U](f: A => U) {
-    var i = 0
-    while (i < length) {
-      f(array(i).asInstanceOf[A])
-      i += 1
+  /** Update element at given index */
+  def update(@deprecatedName("idx", "2.13.0") index: Int, elem: T): Unit
+
+  /** The underlying array. Its element type does not have to be equal to the element type of this ArraySeq. A primitive
+    * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
+    * or subtype of the element type. */
+  def array: Array[_]
+
+  override protected[this] def stringPrefix = "ArraySeq"
+
+  /** Clones this object, including the underlying Array. */
+  override def clone(): ArraySeq[T] = ArraySeq.make(array.clone()).asInstanceOf[ArraySeq[T]]
+
+  override def copyToArray[B >: T](xs: Array[B], start: Int): Int = copyToArray[B](xs, start, length)
+
+  override def copyToArray[B >: T](xs: Array[B], start: Int, len: Int): Int = {
+    val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
+    if(copied > 0) {
+      Array.copy(array, 0, xs, start, copied)
     }
+    copied
   }
 
-  /** Fills the given array `xs` with at most `len` elements of
-   *  this traversable starting at position `start`.
-   *  Copying will stop once either the end of the current traversable is reached or
-   *  `len` elements have been copied or the end of the array is reached.
-   *
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @param  len number of elements to copy
-   */
-  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
-    val len1 = len min (xs.length - start) min length
-    if (len1 > 0) Array.copy(array, 0, xs, start, len1)
+  override def equals(other: Any): Boolean = other match {
+    case that: ArraySeq[_] if this.array.length != that.array.length =>
+      false
+    case _ =>
+      super.equals(other)
   }
 
-  override def clone(): ArraySeq[A] = {
-    val cloned = array.clone().asInstanceOf[Array[AnyRef]]
-    new ArraySeq[A](length) {
-      override val array = cloned
-    }
-  }
+  override def sorted[B >: T](implicit ord: Ordering[B]): ArraySeq[T] =
+    ArraySeq.make(array.sorted(ord.asInstanceOf[Ordering[Any]])).asInstanceOf[ArraySeq[T]]
 
+  override def sortInPlace[B >: T]()(implicit ord: Ordering[B]): this.type = {
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    this
+  }
 }
 
-/** $factoryInfo
- *  @define coll array sequence
- *  @define Coll `ArraySeq`
- */
-object ArraySeq extends SeqFactory[ArraySeq] {
-  /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
-  def newBuilder[A]: Builder[A, ArraySeq[A]] =
-    new ArrayBuffer[A] mapResult { buf =>
-      val result = new ArraySeq[A](buf.length)
-      buf.copyToArray(result.array.asInstanceOf[Array[Any]], 0)
-      result
+/** A companion object used to create instances of `ArraySeq`.
+  */
+@SerialVersionUID(3L)
+object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
+  val untagged: SeqFactory[ArraySeq] = new ClassTagSeqFactory.AnySeqDelegate(self)
+
+  // This is reused for all calls to empty.
+  private[this] val EmptyArraySeq  = new ofRef[AnyRef](new Array[AnyRef](0))
+  def empty[T : ClassTag]: ArraySeq[T] = EmptyArraySeq.asInstanceOf[ArraySeq[T]]
+
+  def from[A : ClassTag](it: scala.collection.IterableOnce[A]): ArraySeq[A] = {
+    val n = it.knownSize
+    if (n > -1) {
+      val elements = scala.Array.ofDim[A](n)
+      val iterator = it.iterator
+      var i = 0
+      while (i < n) {
+        ScalaRunTime.array_update(elements, i, iterator.next())
+        i = i + 1
+      }
+      make(elements)
+    } else make(ArrayBuffer.from(it).toArray)
+  }
+
+  def newBuilder[A : ClassTag]: Builder[A, ArraySeq[A]] = ArrayBuilder.make[A].mapResult(make)
+
+  /**
+   * Wrap an existing `Array` into a `ArraySeq` of the proper primitive specialization type
+   * without copying.
+   *
+   * Note that an array containing boxed primitives can be converted to a `ArraySeq` without
+   * copying. For example, `val a: Array[Any] = Array(1)` is an array of `Object` at runtime,
+   * containing `Integer`s. An `ArraySeq[Int]` can be obtained with a cast:
+   * `ArraySeq.make(a).asInstanceOf[ArraySeq[Int]]`. The values are still
+   * boxed, the resulting instance is an [[ArraySeq.ofRef]]. Writing
+   * `ArraySeq.make(a.asInstanceOf[Array[Int]])` does not work, it throws a `ClassCastException`
+   * at runtime.
+   */
+  def make[T](x: Array[T]): ArraySeq[T] = (x.asInstanceOf[Array[_]] match {
+    case null              => null
+    case x: Array[AnyRef]  => new ofRef[AnyRef](x)
+    case x: Array[Int]     => new ofInt(x)
+    case x: Array[Double]  => new ofDouble(x)
+    case x: Array[Long]    => new ofLong(x)
+    case x: Array[Float]   => new ofFloat(x)
+    case x: Array[Char]    => new ofChar(x)
+    case x: Array[Byte]    => new ofByte(x)
+    case x: Array[Short]   => new ofShort(x)
+    case x: Array[Boolean] => new ofBoolean(x)
+    case x: Array[Unit]    => new ofUnit(x)
+  }).asInstanceOf[ArraySeq[T]]
+
+  @SerialVersionUID(3L)
+  final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] {
+    lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
+    def length: Int = array.length
+    def apply(index: Int): T = array(index)
+    def update(index: Int, elem: T): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofRef[_] =>
+        Array.equals(
+          this.array.asInstanceOf[Array[AnyRef]],
+          that.array.asInstanceOf[Array[AnyRef]])
+      case _ => super.equals(that)
     }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofByte(val array: Array[Byte]) extends ArraySeq[Byte] {
+    def elemTag = ClassTag.Byte
+    def length: Int = array.length
+    def apply(index: Int): Byte = array(index)
+    def update(index: Int, elem: Byte): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofByte => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofShort(val array: Array[Short]) extends ArraySeq[Short] {
+    def elemTag = ClassTag.Short
+    def length: Int = array.length
+    def apply(index: Int): Short = array(index)
+    def update(index: Int, elem: Short): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofShort => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofChar(val array: Array[Char]) extends ArraySeq[Char] {
+    def elemTag = ClassTag.Char
+    def length: Int = array.length
+    def apply(index: Int): Char = array(index)
+    def update(index: Int, elem: Char): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofChar => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+      val jsb = sb.underlying
+      if (start.length != 0) jsb.append(start)
+      val len = array.length
+      if (len != 0) {
+        if (sep.isEmpty) jsb.append(array)
+        else {
+          jsb.ensureCapacity(jsb.length + len + end.length + (len - 1) * sep.length)
+          jsb.append(array(0))
+          var i = 1
+          while (i < len) {
+            jsb.append(sep)
+            jsb.append(array(i))
+            i += i
+          }
+        }
+      }
+      if (end.length != 0) jsb.append(end)
+      sb
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofInt(val array: Array[Int]) extends ArraySeq[Int] {
+    def elemTag = ClassTag.Int
+    def length: Int = array.length
+    def apply(index: Int): Int = array(index)
+    def update(index: Int, elem: Int): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofInt => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofLong(val array: Array[Long]) extends ArraySeq[Long] {
+    def elemTag = ClassTag.Long
+    def length: Int = array.length
+    def apply(index: Int): Long = array(index)
+    def update(index: Int, elem: Long): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofLong => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofFloat(val array: Array[Float]) extends ArraySeq[Float] {
+    def elemTag = ClassTag.Float
+    def length: Int = array.length
+    def apply(index: Int): Float = array(index)
+    def update(index: Int, elem: Float): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofFloat => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofDouble(val array: Array[Double]) extends ArraySeq[Double] {
+    def elemTag = ClassTag.Double
+    def length: Int = array.length
+    def apply(index: Int): Double = array(index)
+    def update(index: Int, elem: Double): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofDouble => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofBoolean(val array: Array[Boolean]) extends ArraySeq[Boolean] {
+    def elemTag = ClassTag.Boolean
+    def length: Int = array.length
+    def apply(index: Int): Boolean = array(index)
+    def update(index: Int, elem: Boolean): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofBoolean => Arrays.equals(array, that.array)
+      case _ => super.equals(that)
+    }
+  }
+
+  @SerialVersionUID(3L)
+  final class ofUnit(val array: Array[Unit]) extends ArraySeq[Unit] {
+    def elemTag = ClassTag.Unit
+    def length: Int = array.length
+    def apply(index: Int): Unit = array(index)
+    def update(index: Int, elem: Unit): Unit = { array(index) = elem }
+    override def hashCode = MurmurHash3.arraySeqHash(array)
+    override def equals(that: Any) = that match {
+      case that: ofUnit => array.length == that.array.length
+      case _ => super.equals(that)
+    }
+  }
 }

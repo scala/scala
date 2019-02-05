@@ -9,7 +9,7 @@ object Test extends DirectTest {
     newCompiler(settings)
   }
 
-  override def show() {
+  override def show(): Unit = {
     try {
       newCompiler()
     } catch {

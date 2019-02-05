@@ -1,10 +1,5 @@
-
-
-
 import java.io._
 import collection._
-
-
 
 object Test {
 
@@ -16,7 +11,7 @@ object Test {
     in.readObject.asInstanceOf[T]
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val values = mutable.Map(1 -> 1).values
     assert(serializeDeserialize(values).toList == values.toList)
 
@@ -34,4 +29,3 @@ object Test {
   }
 
 }
-

@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -150,19 +154,19 @@ import scala.language.implicitConversions
 object Exception {
   type Catcher[+T] = PartialFunction[Throwable, T]
 
-  def mkCatcher[Ex <: Throwable: ClassTag, T](isDef: Ex => Boolean, f: Ex => T) = new Catcher[T] {
+  def mkCatcher[Ex <: Throwable: ClassTag, T](isDef: Ex => Boolean, f: Ex => T): PartialFunction[Throwable, T] = new Catcher[T] {
     private def downcast(x: Throwable): Option[Ex] =
       if (classTag[Ex].runtimeClass.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[Ex])
       else None
 
-    def isDefinedAt(x: Throwable) = downcast(x) exists isDef
+    def isDefinedAt(x: Throwable): Boolean = downcast(x) exists isDef
     def apply(x: Throwable): T = f(downcast(x).get)
   }
 
-  def mkThrowableCatcher[T](isDef: Throwable => Boolean, f: Throwable => T) = mkCatcher(isDef, f)
+  def mkThrowableCatcher[T](isDef: Throwable => Boolean, f: Throwable => T): PartialFunction[Throwable, T] = mkCatcher[Throwable, T](isDef, f)
 
-  implicit def throwableSubtypeToCatcher[Ex <: Throwable: ClassTag, T](pf: PartialFunction[Ex, T]) =
-    mkCatcher(pf.isDefinedAt _, pf.apply _)
+  implicit def throwableSubtypeToCatcher[Ex <: Throwable: ClassTag, T](pf: PartialFunction[Ex, T]): Catcher[T] =
+    mkCatcher(pf.isDefinedAt, pf.apply)
 
   /** !!! Not at all sure of every factor which goes into this,
    *  and/or whether we need multiple standard variations.
@@ -177,13 +181,13 @@ object Exception {
 
   trait Described {
     protected val name: String
-    private var _desc: String = ""
-    def desc = _desc
+    private[this] var _desc: String = ""
+    def desc: String = _desc
     def withDesc(s: String): this.type = {
       _desc = s
       this
     }
-    override def toString() = name + "(" + desc + ")"
+    override def toString(): String = name + "(" + desc + ")"
   }
 
   /** A container class for finally code.
@@ -193,7 +197,7 @@ object Exception {
     protected val name = "Finally"
 
     def and(other: => Unit): Finally = new Finally({ body ; other })
-    def invoke() { body }
+    def invoke(): Unit = { body }
   }
 
   /** A container class for catch/finally logic.
@@ -256,8 +260,8 @@ object Exception {
       * but with the supplied `apply` method replacing the current one. */
     def withApply[U](f: Throwable => U): Catch[U] = {
       val pf2 = new Catcher[U] {
-        def isDefinedAt(x: Throwable) = pf isDefinedAt x
-        def apply(x: Throwable) = f(x)
+        def isDefinedAt(x: Throwable): Boolean = pf isDefinedAt x
+        def apply(x: Throwable): U = f(x)
       }
       new Catch(pf2, fin, rethrow)
     }
@@ -340,10 +344,9 @@ object Exception {
     * }}}
     *  @group dsl
     */
-  // TODO: Add return type
-  def handling[T](exceptions: Class[_]*) = {
-    def fun(f: Throwable => T) = catching(exceptions: _*) withApply f
-    new By[Throwable => T, Catch[T]](fun _)
+  def handling[T](exceptions: Class[_]*): By[Throwable => T, Catch[T]] = {
+    def fun(f: Throwable => T): Catch[T] = catching(exceptions: _*) withApply f
+    new By[Throwable => T, Catch[T]](fun)
   }
 
   /** Returns a `Catch` object with no catch logic and the argument as the finally logic.

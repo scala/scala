@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2006-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -17,10 +24,10 @@ class ConsoleWriter extends Writer {
 
   def flush() = Console.flush()
 
-  def write(cbuf: Array[Char], off: Int, len: Int) {
+  def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
     if (len > 0)
       write(new String(cbuf.slice(off, off+len)))
   }
 
-  override def write(str: String) { Console.print(str) }
+  override def write(str: String): Unit = { Console.print(str) }
 }

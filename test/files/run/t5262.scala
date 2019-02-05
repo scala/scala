@@ -7,7 +7,7 @@
 
 object Test {
 
-  def serializationDeserialization(obj : Any) {
+  def serializationDeserialization(obj : Any): Unit = {
     val bos = new java.io.ByteArrayOutputStream()
     val out = new java.io.ObjectOutputStream(bos)
     out.writeObject(obj)
@@ -18,7 +18,7 @@ object Test {
     println(o)
   }
 
-  def main(args : Array[String]) {
+  def main(args : Array[String]): Unit = {
     serializationDeserialization(List(1,2,3,4))
     serializationDeserialization(List(1,2,null,4))
   }

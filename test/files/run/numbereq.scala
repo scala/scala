@@ -4,15 +4,15 @@ object Test {
     val base = List[AnyRef](
       BigDecimal(x),
       BigInt(x),
-      new java.lang.Double(x.toDouble),
-      new java.lang.Float(x.toFloat),
-      new java.lang.Long(x.toLong),
-      new java.lang.Integer(x)
+      java.lang.Double.valueOf(x.toDouble),
+      java.lang.Float.valueOf(x.toFloat),
+      java.lang.Long.valueOf(x.toLong),
+      java.lang.Integer.valueOf(x)
     )
     val extras = List(
-      if (x >= Short.MinValue && x <= Short.MaxValue) List(new java.lang.Short(x.toShort)) else Nil,
-      if (x >= Byte.MinValue && x <= Byte.MaxValue) List(new java.lang.Byte(x.toByte)) else Nil,
-      if (x >= Char.MinValue && x <= Char.MaxValue) List(new java.lang.Character(x.toChar)) else Nil
+      if (x >= Short.MinValue && x <= Short.MaxValue) List(java.lang.Short.valueOf(x.toShort)) else Nil,
+      if (x >= Byte.MinValue && x <= Byte.MaxValue) List(java.lang.Byte.valueOf(x.toByte)) else Nil,
+      if (x >= Char.MinValue && x <= Char.MaxValue) List(java.lang.Character.valueOf(x.toChar)) else Nil
     ).flatten
 
     base ::: extras
@@ -22,13 +22,13 @@ object Test {
     List(
       List(BigDecimal(x, java.math.MathContext.UNLIMITED)),
       List(x),
-      if (x.isValidDouble) List(new java.lang.Double(x.toDouble)) else Nil,
-      if (x.isValidFloat) List(new java.lang.Float(x.toFloat)) else Nil,
-      if (x.isValidLong) List(new java.lang.Long(x.toLong)) else Nil,
-      if (x.isValidInt) List(new java.lang.Integer(x.toInt)) else Nil,
-      if (x.isValidShort) List(new java.lang.Short(x.toShort)) else Nil,
-      if (x.isValidByte) List(new java.lang.Byte(x.toByte)) else Nil,
-      if (x.isValidChar) List(new java.lang.Character(x.toChar)) else Nil
+      if (x.isValidDouble) List(java.lang.Double.valueOf(x.toDouble)) else Nil,
+      if (x.isValidFloat) List(java.lang.Float.valueOf(x.toFloat)) else Nil,
+      if (x.isValidLong) List(java.lang.Long.valueOf(x.toLong)) else Nil,
+      if (x.isValidInt) List(java.lang.Integer.valueOf(x.toInt)) else Nil,
+      if (x.isValidShort) List(java.lang.Short.valueOf(x.toShort)) else Nil,
+      if (x.isValidByte) List(java.lang.Byte.valueOf(x.toByte)) else Nil,
+      if (x.isValidChar) List(java.lang.Character.valueOf(x.toChar)) else Nil
     ).flatten
   }
 

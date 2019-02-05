@@ -1,10 +1,15 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // GENERATED CODE: DO NOT EDIT. See scala.Function0 for timestamp.
 
 package scala
@@ -44,8 +49,8 @@ trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @speciali
    *  @return   a function `f` such that `f((x1, x2)) == f(Tuple2(x1, x2)) == apply(x1, x2)`
    */
 
-  @annotation.unspecialized def tupled: Tuple2[T1, T2] => R = {
-    case Tuple2(x1, x2) => apply(x1, x2)
+  @annotation.unspecialized def tupled: ((T1, T2)) => R = {
+    case ((x1, x2)) => apply(x1, x2)
   }
-  override def toString() = "<function2>"
+  override def toString(): String = "<function2>"
 }

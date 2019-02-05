@@ -1,3 +1,5 @@
+// scalac: -Xdisable-assertions
+//
 
 object Elided {
   import annotation._, elidable._

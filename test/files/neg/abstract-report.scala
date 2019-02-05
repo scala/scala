@@ -1,1 +1,1 @@
-class Unimplemented extends TraversableOnce[String] { }
+class Unimplemented extends scala.collection.IterableOps[String, List, List[String]] { }

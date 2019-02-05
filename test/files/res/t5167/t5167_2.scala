@@ -1,7 +1,7 @@
 package compilerbug
 
 class TestClass {
-  def repro() {
+  def repro(): Unit = {
     SadObject.buggyMethod[Int]()()
   }
 }

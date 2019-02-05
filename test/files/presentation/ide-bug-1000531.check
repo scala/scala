@@ -1,17 +1,17 @@
 reload: CrashOnLoad.scala, TestIterable.java
 
-askTypeCompletion at CrashOnLoad.scala(6,11)
+askTypeCompletion at CrashOnLoad.scala(9,11)
 ================================================================================
-[response] askTypeCompletion at (6,11)
+[response] askTypeCompletion at (9,11)
 retrieved 30 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String
 def ->[B](y: B): (other.TestIterator[Nothing], B)
 def ensuring(cond: Boolean): other.TestIterator[Nothing]
-def ensuring(cond: Boolean,msg: => Any): other.TestIterator[Nothing]
+def ensuring(cond: Boolean, msg: => Any): other.TestIterator[Nothing]
 def ensuring(cond: other.TestIterator[Nothing] => Boolean): other.TestIterator[Nothing]
-def ensuring(cond: other.TestIterator[Nothing] => Boolean,msg: => Any): other.TestIterator[Nothing]
+def ensuring(cond: other.TestIterator[Nothing] => Boolean, msg: => Any): other.TestIterator[Nothing]
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hasNext: Boolean
@@ -31,5 +31,5 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 ================================================================================

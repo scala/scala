@@ -113,14 +113,14 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
   }
 
   property("exhaustive function matcher") = test {
-    def matches(line: String) { val q"(..$args) => $body" = parse(line) }
+    def matches(line: String): Unit = { val q"(..$args) => $body" = parse(line) }
     matches("() => bippy")
     matches("(y: Y) => y oh y")
     matches("(x: X, y: Y) => x and y")
   }
 
   property("exhaustive new pattern") = test {
-    def matches(line: String) {
+    def matches(line: String): Unit = {
       val q"new { ..$early } with $name[..$targs](...$vargss) with ..$mixin { $self => ..$body }" = parse(line)
     }
     matches("new foo")
@@ -137,7 +137,7 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
   }
 
   property("exhaustive assign pattern") = test {
-    def matches(tree: Tree) { val q"$rhs = $lhs" = tree }
+    def matches(tree: Tree): Unit = { val q"$rhs = $lhs" = tree }
     matches(parse("left = right"))
     matches(parse("arr(1) = 2"))
     matches(NamedArg(EmptyTree, EmptyTree))

@@ -10,7 +10,7 @@ object Crash {
   case object IntegerUpdateType extends UpdateType[Integer]
 
   //However this method will cause a crash
-  def crash(updates: List[StateUpdate[_]]) {
+  def crash(updates: List[StateUpdate[_]]): Unit = {
     updates match {
       case Nil =>
       case u::us =>

@@ -13,7 +13,7 @@ object O2 {
 }
 
 object Test extends App {
-  def check(c: Class[_]) {
+  def check(c: Class[_]): Unit = {
     val methodName = "f"
     val methods = c.getDeclaredMethods.filter(_.getName == methodName)
     println(methods.map(_.toString).sorted.mkString("\n"))

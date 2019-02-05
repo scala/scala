@@ -1,5 +1,5 @@
 object Test  {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     trait T1 { def a: Int; def c: Int }
     trait T2 { def a: Int; def b: Int }
     class Bar(val x: Int)

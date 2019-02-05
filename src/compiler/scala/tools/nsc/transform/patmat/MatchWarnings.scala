@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -44,7 +50,7 @@ trait MatchWarnings {
     // However this is a pain (at least the way I'm going about it)
     // and I have to think these detailed errors are primarily useful
     // for beginners, not people writing nested pattern matches.
-    def checkMatchVariablePatterns(cases: List[CaseDef]) {
+    def checkMatchVariablePatterns(cases: List[CaseDef]): Unit = {
       // A string describing the first variable pattern
       var vpat: String = null
       // Using an iterator so we can recognize the last case

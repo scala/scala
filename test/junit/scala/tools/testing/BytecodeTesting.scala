@@ -6,12 +6,12 @@ import org.junit.Assert._
 import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.BatchSourceFile
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc.backend.jvm.AsmUtils
+import scala.tools.nsc.backend.jvm.{AsmUtils, MethodNode1}
 import scala.tools.nsc.backend.jvm.AsmUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils
 import scala.tools.nsc.io.AbstractFile
@@ -142,7 +142,7 @@ object BytecodeTesting {
                 throwsExceptions: Array[String] = null,
                 handlers: List[ExceptionHandler] = Nil,
                 localVars: List[LocalVariable] = Nil)(body: Instruction*): MethodNode = {
-    val node = new MethodNode(flags, name, descriptor, genericSignature, throwsExceptions)
+    val node = new MethodNode1(flags, name, descriptor, genericSignature, throwsExceptions)
     applyToMethod(node, Method(body.toList, handlers, localVars))
     node
   }
@@ -337,4 +337,6 @@ object BytecodeTesting {
   implicit class listStringLines[T](val l: List[T]) extends AnyVal {
     def stringLines = l.mkString("\n")
   }
+
+  val ignoreDeprecations = (info: StoreReporter#Info) => info.msg.contains("deprecation")
 }

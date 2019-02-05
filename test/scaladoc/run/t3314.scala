@@ -23,13 +23,13 @@ object Test extends ScaladocModelTest {
     val test1 = base._package("test1")
     val test1Value = test1._class("Enum")._method("Value").resultType
     assert(test1Value.name == "Value",       test1Value.name + " == Value")
-    assert(test1Value.refEntity.size == 1, test1Value.refEntity.size + " == 1")
+    assert(test1Value.refEntity.size == 1, s"${test1Value.refEntity.size} == 1")
 
     val test1Constants = test1._object("Constants")._method("a").resultType
     assert(test1Constants.name == "Value", test1Constants.name + " == Value")
-    assert(test1Constants.refEntity.size == 1, test1Constants.refEntity.size + " == 1")
+    assert(test1Constants.refEntity.size == 1, test1Constants.refEntity.size.toString + " == 1")
     assert(test1Constants.refEntity(0)._1 == LinkToMember(test1._object("Constants")._class("Value"), test1._object("Constants")),
-           test1Constants.refEntity(0)._1 + " == LinkToMember(test1.Enum.Value)")
+           test1Constants.refEntity(0)._1.toString + " == LinkToMember(test1.Enum.Value)")
 
 
     // test2
@@ -40,9 +40,9 @@ object Test extends ScaladocModelTest {
         assert(doc._value(day).resultType.name == "Value",
                doc._value(day).resultType.name + " == Value")
         assert(doc._value(day).resultType.refEntity.size == 1,
-               doc._value(day).resultType.refEntity.size + " == 1")
+               doc._value(day).resultType.refEntity.size.toString + " == 1")
         assert(doc._value(day).resultType.refEntity(0)._1 == LinkToMember(doc._classMbr("Value"), doc),
-               doc._value(day).resultType.refEntity(0)._1 + " == LinkToMember(" + doc.qualifiedName + ".Value)")
+               doc._value(day).resultType.refEntity(0)._1.toString + " == LinkToMember(" + doc.qualifiedName + ".Value)")
       }
     }
     testDefinition(test2._trait("WeekDayTrait"))
@@ -70,9 +70,9 @@ object Test extends ScaladocModelTest {
         assert(doc._method(method).valueParams(0)(0).resultType.name == name,
                doc._method(method).valueParams(0)(0).resultType.name + " == " + name + " (in " + doc + "." + method + ")")
         assert(doc._method(method).valueParams(0)(0).resultType.refEntity.size == 1,
-               doc._method(method).valueParams(0)(0).resultType.refEntity.size + " == " + 1 + " (in " + doc + "." + method + ")")
+               doc._method(method).valueParams(0)(0).resultType.refEntity.size.toString + " == " + 1 + " (in " + doc + "." + method + ")")
         assert(doc._method(method).valueParams(0)(0).resultType.refEntity(0)._1 == LinkToMember(ref, ref.inTemplate),
-               doc._method(method).valueParams(0)(0).resultType.refEntity(0)._1 + " == LinkToMember(" + ref.qualifiedName + ") (in " + doc + "." + method + ")")
+               doc._method(method).valueParams(0)(0).resultType.refEntity(0)._1.toString + " == LinkToMember(" + ref.qualifiedName + ") (in " + doc + "." + method + ")")
       }
     }
     testUsage(test2._object("UserObject"))

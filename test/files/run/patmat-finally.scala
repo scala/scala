@@ -1,6 +1,6 @@
 /** Test pattern matching and finally, see scala/bug#5929. */
 object Test extends App {
-  def bar(s1: Object, s2: Object) {
+  def bar(s1: Object, s2: Object): Unit = {
     s1 match {
       case _ =>
     }

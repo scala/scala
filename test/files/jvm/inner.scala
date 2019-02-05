@@ -66,7 +66,7 @@ object Scalatest {
   private val javacmd   = javabin + File.separator + "java"
   private val javac     = javabin + File.separator + "javac"
 
-  def javac(src: String, fname: String) {
+  def javac(src: String, fname: String): Unit = {
     val tmpfilename = outputdir + File.separator + fname
     val tmpfile = new FileWriter(tmpfilename)
     tmpfile.write(src)
@@ -78,7 +78,7 @@ object Scalatest {
     exec(javacmd, "-cp", classpath, cname)
 
   /** Execute cmd, wait for the process to end and pipe its output to stdout */
-  private def exec(args: String*) {
+  private def exec(args: String*): Unit = {
     val proc = Runtime.getRuntime().exec(args.toArray)
     val inp = new BufferedReader(new InputStreamReader(proc.getInputStream))
     val errp = new BufferedReader(new InputStreamReader(proc.getErrorStream))
@@ -89,7 +89,7 @@ object Scalatest {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val javaInteraction = """
 public class JavaInteraction {
     public static void main(String[] args) {

@@ -130,7 +130,7 @@ object Test extends App {
 
 
   // test overflow protection
-  for (unit ← Seq(DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS)) {
+  for (unit <- Seq(DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS)) {
     val x = unit.convert(Long.MaxValue, NANOSECONDS)
     val dur = Duration(x, unit)
     val mdur = Duration(-x, unit)
@@ -151,7 +151,7 @@ object Test extends App {
     intercept[IllegalArgumentException] { mdur / 0.9 }
     intercept[IllegalArgumentException] { dur / 0.4 }
     intercept[IllegalArgumentException] { mdur / 0.4 }
-    Duration(x + unit.toString.toLowerCase)
+    Duration(x.toString + unit.toString.toLowerCase)
     Duration("-" + x + unit.toString.toLowerCase)
     intercept[IllegalArgumentException] { Duration("%.0f".format(x + 10000000d) + unit.toString.toLowerCase) }
     intercept[IllegalArgumentException] { Duration("-%.0f".format(x + 10000000d) + unit.toString.toLowerCase) }

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -302,7 +309,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   private var analyzerPlugins: List[AnalyzerPlugin] = Nil
 
   /** Registers a new analyzer plugin */
-  def addAnalyzerPlugin(plugin: AnalyzerPlugin) {
+  def addAnalyzerPlugin(plugin: AnalyzerPlugin): Unit = {
     if (!analyzerPlugins.contains(plugin))
       analyzerPlugins = plugin :: analyzerPlugins
   }
@@ -385,7 +392,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   private var macroPlugins: List[MacroPlugin] = Nil
 
   /** Registers a new macro plugin */
-  def addMacroPlugin(plugin: MacroPlugin) {
+  def addMacroPlugin(plugin: MacroPlugin): Unit = {
     if (!macroPlugins.contains(plugin))
       macroPlugins = plugin :: macroPlugins
   }

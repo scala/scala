@@ -1,6 +1,13 @@
-/* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Iulian Dragos
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -30,7 +37,7 @@ abstract class TailCalls extends Transform {
 
   /** The phase defined by this transform */
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit) {
+    def apply(unit: global.CompilationUnit): Unit = {
       if (!(settings.debuginfo.value == "notailcalls")) {
         newTransformer(unit).transformUnit(unit)
       }
@@ -92,7 +99,7 @@ abstract class TailCalls extends Transform {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason
-    private def tailrecFailure(ctx: TailContext) {
+    private def tailrecFailure(ctx: TailContext): Unit = {
       val method      = ctx.method
       val failReason  = failReasons(ctx)
       val failPos     = failPositions(ctx)
@@ -117,9 +124,7 @@ abstract class TailCalls extends Transform {
       def tailLabels: Set[Symbol]
 
       def enclosingType = method.enclClass.typeOfThis
-      def isEligible    = method.isEffectivelyFinalOrNotOverridden && !isExcludedBySingletonArg && !isExcludedBySingletonResult
-      def isExcludedBySingletonArg = mexists(method.paramss)(_.tpe_*.isInstanceOf[SingletonType])
-      def isExcludedBySingletonResult = method.tpe_*.finalResultType.isInstanceOf[SingletonType]
+      def isEligible    = method.isEffectivelyFinalOrNotOverridden
       def isMandatory   = method.hasAnnotation(TailrecClass)
       def isTransformed = isEligible && accessed(label)
 
@@ -258,11 +263,7 @@ abstract class TailCalls extends Transform {
           }
         }
 
-        if (ctx.isExcludedBySingletonArg)
-                                        fail("it has a singleton typed argument which cannot be erased correctly")
-        else if (ctx.isExcludedBySingletonResult)
-                                        fail("it has a singleton result type which cannot be erased correctly")
-        else if (!ctx.isEligible)       fail("it is neither private nor final so can be overridden")
+        if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
           if (ctx.isMandatory && receiverIsSuper) // OPT expensive check, avoid unless we will actually report the error
                                         failHere("it contains a recursive call targeting a supertype")

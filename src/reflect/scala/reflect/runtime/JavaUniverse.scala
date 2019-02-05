@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package runtime
@@ -21,12 +33,12 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   lazy val settings = new Settings
 
   override final val statistics = new Statistics(JavaUniverse.this, settings) with ReflectStats
-  private val isLogging = System.getProperty("scala.debug.reflect") != null
+  private[this] val isLogging = System.getProperty("scala.debug.reflect") != null
   def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   // TODO: why put output under isLogging? Calls to inform are already conditional on debug/verbose/...
-  import scala.reflect.internal.{Reporter, ReporterImpl}
-  override def reporter: Reporter = new ReporterImpl {
+  import scala.reflect.internal.Reporter
+  override def reporter: Reporter = new Reporter {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = log(msg)
   }
 
@@ -138,7 +150,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   // 5) That will crash PackageScope.enter that helpfully detects double-enters.
   //
   // Therefore, before initializing ScalaPackageClass, we must pre-initialize ObjectClass
-  def init() {
+  def init(): Unit = {
     definitions.init()
 
     // workaround for http://groups.google.com/group/scala-internals/browse_thread/thread/97840ba4fd37b52e

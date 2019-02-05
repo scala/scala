@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2015, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -34,7 +38,6 @@ import scala.math.Ordering
   * @author  Ross Judson
   * @author  Adriaan Moors
   * @author  Rex Kerr
-  * @version 1.1
   */
 object Sorting {
   /** Sort an array of Doubles using `java.util.Arrays.sort`. */
@@ -259,7 +262,7 @@ object Sorting {
   def stableSort[K](a: Array[K], f: (K, K) => Boolean): Unit = sort(a, Ordering fromLessThan f)
 
   /** A sorted Array, using the Ordering for the elements in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K: ClassTag: Ordering](a: Seq[K]): Array[K] = {
+  def stableSort[K: ClassTag: Ordering](a: scala.collection.Seq[K]): Array[K] = {
     val ret = a.toArray
     sort(ret, Ordering[K])
     ret
@@ -267,14 +270,14 @@ object Sorting {
 
   // TODO: make this fast for primitive K (could be specialized if it didn't go through Ordering)
   /** A sorted Array, given a function `f` that computes the less-than relation for each item in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K: ClassTag](a: Seq[K], f: (K, K) => Boolean): Array[K] = {
+  def stableSort[K: ClassTag](a: scala.collection.Seq[K], f: (K, K) => Boolean): Array[K] = {
     val ret = a.toArray
     sort(ret, Ordering fromLessThan f)
     ret
   }
 
   /** A sorted Array, given an extraction function `f` that returns an ordered key for each item in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K: ClassTag, M: Ordering](a: Seq[K], f: K => M): Array[K] = {
+  def stableSort[K: ClassTag, M: Ordering](a: scala.collection.Seq[K], f: K => M): Array[K] = {
     val ret = a.toArray
     sort(ret, Ordering[M] on f)
     ret

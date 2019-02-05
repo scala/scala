@@ -1,3 +1,5 @@
+// scalac: -Xlint:inaccessible -Xfatal-warnings
+//
 
 package outer
 

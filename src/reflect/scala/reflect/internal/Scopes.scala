@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -8,7 +15,8 @@ package reflect
 package internal
 
 import scala.annotation.tailrec
-import scala.collection.generic.Clearable
+import scala.collection.{AbstractIterable, AbstractIterator}
+import scala.collection.mutable.Clearable
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
@@ -57,7 +65,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    *  This is necessary because when run from reflection every scope needs to have a
    *  SynchronizedScope as mixin.
    */
-  class Scope protected[Scopes]() extends ScopeApi with MemberScopeApi {
+  class Scope protected[Scopes]() extends AbstractIterable[Symbol] with ScopeApi with MemberScopeApi {
 
     scopeCount += 1
     private[scala] var elems: ScopeEntry = _
@@ -72,9 +80,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** a cache for all elements, to be used by symbol iterator.
      */
-    private var elemsCache: List[Symbol] = null
-    private var cachedSize = -1
-    private def flushElemsCache() {
+    private[this] var elemsCache: List[Symbol] = null
+    private[this] var cachedSize = -1
+    private def flushElemsCache(): Unit = {
       elemsCache = null
       cachedSize = -1
     }
@@ -82,12 +90,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** size and mask of hash tables
      *  todo: make hashtables grow?
      */
-    private val HASHSIZE = 0x80
-    private val HASHMASK = 0x7f
+    private final val HASHSIZE = 0x80
+    private final val HASHMASK = 0x7f
 
     /** the threshold number of entries from which a hashtable is constructed.
      */
-    private val MIN_HASH = 8
+    private final val MIN_HASH = 8
 
     /** Returns a new scope with the same content as this one. */
     def cloneScope: Scope = newScopeWith(this.toList: _*)
@@ -114,7 +122,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a scope entry
      */
-    protected def enterEntry(e: ScopeEntry) {
+    protected def enterEntry(e: ScopeEntry): Unit = {
       flushElemsCache()
       if (hashtable ne null)
         enterInHash(e)
@@ -137,7 +145,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** enter a symbol, asserting that no symbol with same name exists in scope
      */
-    def enterUnique(sym: Symbol) {
+    def enterUnique(sym: Symbol): Unit = {
       assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
       enter(sym)
     }
@@ -148,12 +156,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       else existing.sym.asInstanceOf[T]
     }
 
-    private def createHash() {
+    private def createHash(): Unit = {
       hashtable = new Array[ScopeEntry](HASHSIZE)
       enterAllInHash(elems)
     }
 
-    private def enterAllInHash(e: ScopeEntry, n: Int = 0) {
+    private def enterAllInHash(e: ScopeEntry, n: Int = 0): Unit = {
       if (e ne null) {
         if (n < maxRecursions) {
           enterAllInHash(e.next, n + 1)
@@ -170,7 +178,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       }
     }
 
-    def rehash(sym: Symbol, newname: Name) {
+    def rehash(sym: Symbol, newname: Name): Unit = {
       if (hashtable ne null) {
         val index = sym.name.start & HASHMASK
         var e1 = hashtable(index)
@@ -197,7 +205,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** remove entry
      */
-    def unlink(e: ScopeEntry) {
+    def unlink(e: ScopeEntry): Unit = {
       if (elems == e) {
         elems = e.next
       } else {
@@ -219,7 +227,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** remove symbol */
-    def unlink(sym: Symbol) {
+    def unlink(sym: Symbol): Unit = {
       var e = lookupEntry(sym.name)
       while (e ne null) {
         if (e.sym == sym) unlink(e)
@@ -273,14 +281,14 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** Returns an iterator yielding every symbol with given name in this scope.
      */
-    def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
-      var e = lookupEntry(name)
+    def lookupAll(name: Name): Iterator[Symbol] = new AbstractIterator[Symbol] {
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): Symbol = try e.sym finally e = lookupNextEntry(e)
     }
 
-    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new Iterator[ScopeEntry] {
-      var e = lookupEntry(name)
+    def lookupAllEntries(name: Name): Iterator[ScopeEntry] = new AbstractIterator[ScopeEntry] {
+      private[this] var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
       def next(): ScopeEntry = try e finally e = lookupNextEntry(e)
     }
@@ -311,12 +319,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       var e: ScopeEntry = null
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.tail
         }
       } else {
         e = elems
-        while ((e ne null) && e.sym.name != name) {
+        while ((e ne null) && (e.sym.name ne name)) {
           e = e.next
         }
       }
@@ -407,19 +415,23 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
-    override def filterNot(p: Symbol => Boolean): Scope = (
-      if (toList exists p) newScopeWith(toList filterNot p: _*)
-      else this
-    )
-    override def filter(p: Symbol => Boolean): Scope = (
-      if (toList forall p) this
-      else newScopeWith(toList filter p: _*)
-    )
+    override def filterNot(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filterNot(p)
+      if (result eq filtered) this
+      else newScopeWith(filtered: _*)
+    }
+    override def filter(p: Symbol => Boolean): Scope = {
+      val result = toList
+      val filtered = result.filter(p)
+      if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
+    }
+
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
     def reverse: List[Symbol] = toList.reverse
 
-    override def mkString(start: String, sep: String, end: String) =
-      toList.map(_.defString).mkString(start, sep, end)
+    override def addString(sb: StringBuilder, start: String, sep: String, end: String) =
+      toList.map(_.defString).addString(sb, start, sep, end)
 
     override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
   }
@@ -495,7 +507,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   /** The empty scope (immutable).
    */
   object EmptyScope extends Scope {
-    override def enterEntry(e: ScopeEntry) {
+    override def enterEntry(e: ScopeEntry): Unit = {
       abort("EmptyScope.enter")
     }
   }

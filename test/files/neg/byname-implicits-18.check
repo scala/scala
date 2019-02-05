@@ -1,0 +1,5 @@
+byname-implicits-18.scala:52: error: diverging implicit expansion for type Test.Tc[Test.Bootstrap[Int]]
+starting with method tcGen in object Tc
+  implicitly[Tc[Bootstrap[Int]]]
+            ^
+one error found

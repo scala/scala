@@ -1,5 +1,5 @@
 object Test {
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         val v: FooBarPlus[Int] = new FooBarPlusImpl()
         v.foo += 10
     }
@@ -17,8 +17,8 @@ trait FooBarPlus[P] extends FooBar[P] {
     override def foo: P
     override def bar: P
 
-    def foo_=(x: P)
-    def bar_=(x: P)
+    def foo_=(x: P): Unit
+    def bar_=(x: P): Unit
 }
 
 class FooImpl extends Foo[Int] {
@@ -34,6 +34,6 @@ class FooBarImpl extends FooImpl with FooBar[Int] {
 }
 
 class FooBarPlusImpl extends FooBarImpl with FooBarPlus[Int] {
-    def foo_=(x: Int) { f = x }
-    def bar_=(x: Int) { b = x }
+    def foo_=(x: Int): Unit = { f = x }
+    def bar_=(x: Int): Unit = { b = x }
 }

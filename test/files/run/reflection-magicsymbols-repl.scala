@@ -14,7 +14,7 @@ object Test extends ReplTest {
     |  def foo8(x: Singleton) = ???
     |}
     |def test(n: Int): Unit = {
-    |  val sig = typeOf[A] member TermName("foo" + n) info
+    |  val sig = typeOf[A].member(TermName("foo" + n)).info
     |  val x = sig.asInstanceOf[MethodType].params.head
     |  println(x.info)
     |}

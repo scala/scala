@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Burak Emir
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -8,6 +15,7 @@ package ast.parser
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.collection.BufferedIterator
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
@@ -61,16 +69,22 @@ trait MarkupParsers {
       else reportSyntaxError(msg)
 
     var input : CharArrayReader = _
+
     def lookahead(): BufferedIterator[Char] =
       (input.buf drop input.charOffset).iterator.buffered
 
     import parser.{ symbXMLBuilder => handle, o2p, r2p }
 
-    def curOffset : Int = input.charOffset - 1
+    // consistent with scanner.nextToken in CRNL handling,
+    // but curOffset does not report correct position for last token (compare lastOffset)
+    def curOffset: Int = {
+      val res = input.charOffset - 1
+      if (res > 0 && input.buf(res) == '\n' && input.buf(res-1) == '\r') res - 1 else res
+    }
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
-    def nextch() { input.nextChar() }
+    def nextch(): Unit = { input.nextChar() }
 
     protected def ch_returning_nextch: Char = {
       val result = ch; input.nextChar(); result
@@ -175,13 +189,13 @@ trait MarkupParsers {
     def appendText(pos: Position, ts: Buffer[Tree], txt: String): Unit = {
       def append(text: String): Unit = {
         val tree = handle.text(pos, text)
-        ts append tree
+        ts += tree
       }
       val clean = if (preserveWS) txt else {
         val sb = new StringBuilder()
         txt foreach { c =>
-          if (!isSpace(c)) sb append c
-          else if (sb.isEmpty || !isSpace(sb.last)) sb append ' '
+          if (!isSpace(c)) sb += c
+          else if (sb.isEmpty || !isSpace(sb.last)) sb += ' '
         }
         sb.toString.trim
       }
@@ -191,7 +205,7 @@ trait MarkupParsers {
     /** adds entity/character to ts as side-effect
      *  @precond ch == '&'
      */
-    def content_AMP(ts: ArrayBuffer[Tree]) {
+    def content_AMP(ts: ArrayBuffer[Tree]): Unit = {
       nextch()
       val toAppend = ch match {
         case '#' => // CharacterRef
@@ -205,7 +219,7 @@ trait MarkupParsers {
           handle.entityRef(tmppos, n)
       }
 
-      ts append toAppend
+      ts += toAppend
     }
 
     /**
@@ -213,7 +227,7 @@ trait MarkupParsers {
      *  @postcond: xEmbeddedBlock == false!
      */
     def content_BRACE(p: Position, ts: ArrayBuffer[Tree]): Unit =
-      if (xCheckEmbeddedBlock) ts append xEmbeddedExpr
+      if (xCheckEmbeddedBlock) ts += xEmbeddedExpr
       else appendText(p, ts, xText)
 
     /** At an open angle-bracket, detects an end tag
@@ -228,7 +242,7 @@ trait MarkupParsers {
           case '?' => nextch() ; xProcInstr                            // PI
           case _   => element                                          // child node
         }
-        ts append toAppend
+        ts += toAppend
         false
       }
 
@@ -237,7 +251,7 @@ trait MarkupParsers {
       val coalescing = settings.XxmlSettings.isCoalescing
       @tailrec def loopContent(): Unit =
         if (xEmbeddedBlock) {
-          ts append xEmbeddedExpr
+          ts += xEmbeddedExpr
           loopContent()
         } else {
           tmppos = o2p(curOffset)
@@ -326,7 +340,7 @@ trait MarkupParsers {
             if (charComingAfter(nextch()) == '}') nextch()
             else errorBraces()
           }
-          buf append ch
+          buf += ch
           nextch()
         } while (!(ch == SU || xCheckEmbeddedBlock || ch == '<' ||  ch == '&'))
       buf.toString
@@ -350,12 +364,13 @@ trait MarkupParsers {
 
     /** Use a lookahead parser to run speculative body, and return the first char afterward. */
     private def charComingAfter(body: => Unit): Char = {
+      val saved = input
       try {
         input = input.lookaheadReader
         body
         ch
       }
-      finally input = parser.in
+      finally input = saved
     }
 
     /** xLiteral = element { element }
@@ -368,7 +383,6 @@ trait MarkupParsers {
 
         val ts = new ArrayBuffer[Tree]
         val start = curOffset
-        tmppos = o2p(curOffset)    // Iuli: added this line, as it seems content_LT uses tmppos when creating trees
         content_LT(ts)
 
         // parse more XML?
@@ -423,7 +437,7 @@ trait MarkupParsers {
     def xScalaPatterns: List[Tree] = escapeToScala(parser.xmlSeqPatterns(), "pattern")
 
     def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
-    def reportSyntaxError(str: String) {
+    def reportSyntaxError(str: String): Unit = {
       reportSyntaxError(curOffset, "in XML literal: " + str)
       nextch()
     }
@@ -449,7 +463,7 @@ trait MarkupParsers {
           else ch match {
             case '<'  => // tag
               nextch()
-              if (ch != '/') ts append xPattern   // child
+              if (ch != '/') ts += xPattern   // child
               else return false                   // terminate
 
             case '{' if xCheckEmbeddedBlock => // embedded Scala patterns, if not double brace

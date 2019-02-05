@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.reify
 package utils
 
@@ -29,7 +41,7 @@ trait SymbolTables {
     def symAliases(sym: Symbol): List[TermName] =
       symName(sym) match {
         case name if name.isEmpty => Nil
-        case _ => (aliases.distinct groupBy (_._1) mapValues (_ map (_._2)))(sym)
+        case _ => (aliases.distinct.groupMap(_._1)(_._2))(sym)
       }
 
     def symBinding(sym: Symbol): Tree =
@@ -48,14 +60,14 @@ trait SymbolTables {
 
     def +(sym: Symbol, name: TermName, reification: Tree): SymbolTable = add(sym, name, reification)
     def +(symDef: Tree): SymbolTable = add(symDef)
-    def ++(symDefs: TraversableOnce[Tree]): SymbolTable = (this /: symDefs)((symtab, symDef) => symtab.add(symDef))
+    def ++(symDefs: IterableOnce[Tree]): SymbolTable = symDefs.iterator.foldLeft(this)((symtab, symDef) => symtab.add(symDef))
     def ++(symtab: SymbolTable): SymbolTable = { val updated = this ++ symtab.symtab.values; new SymbolTable(updated.symtab, updated.aliases ++ symtab.aliases) }
     def -(sym: Symbol): SymbolTable = remove(sym)
     def -(name: TermName): SymbolTable = remove(name)
     def -(symDef: Tree): SymbolTable = remove(reifyBinding(symDef).symbol)
-    def --(syms: GenTraversableOnce[Symbol]): SymbolTable = (this /: syms)((symtab, sym) => symtab.remove(sym))
-    def --(names: Iterable[TermName]): SymbolTable = (this /: names)((symtab, name) => symtab.remove(name))
-    def --(symDefs: TraversableOnce[Tree]): SymbolTable = this -- (symDefs map (reifyBinding(_)))
+    def --(syms: IterableOnce[Symbol]): SymbolTable = syms.iterator.foldLeft(this)((symtab, sym) => symtab.remove(sym))
+    def --(names: List[TermName]): SymbolTable = names.foldLeft(this)((symtab, name) => symtab.remove(name))
+    def --(symDefs: Iterable[Tree]): SymbolTable = this -- (symDefs map (reifyBinding(_)))
     def --(symtab: SymbolTable): SymbolTable = { val updated = this -- symtab.symtab.values; new SymbolTable(updated.symtab, updated.aliases diff symtab.aliases) }
     def filterSyms(p: Symbol => Boolean): SymbolTable = this -- (syms filterNot p)
     def filterAliases(p: (Symbol, TermName) => Boolean): SymbolTable = this -- (aliases filterNot (tuple => p(tuple._1, tuple._2)) map (_._2))
@@ -77,7 +89,7 @@ trait SymbolTables {
         var name = name0.toString
         name = name.replace(".type", "$type")
         name = name.replace(" ", "$")
-        val fresh = typer.context.unit.fresh
+        val fresh = typer.fresh
         newTermName(fresh.newName(name))
       }
       val bindingAttachment = reification.attachments.get[ReifyBindingAttachment].get

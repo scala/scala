@@ -3,7 +3,7 @@ class A {
 }
 
 object X {
-  def foo {
+  def foo: Unit = {
     val a = new A
     val b = new a.B[c.type]("") // not a forward reference
     val c = ""

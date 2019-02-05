@@ -35,7 +35,7 @@ package sandbox
      }
    }
 
-   def foo () {
+   def foo (): Unit = {
      val t = new NAnB.nA
      println(t)
    }

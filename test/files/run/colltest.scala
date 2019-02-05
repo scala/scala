@@ -24,7 +24,7 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
     case 6         => "add"
     case 7         => "size"
   }
-  def checkSubSet(pre: String, s0: Set[Int], s1: Set[Int]) {
+  def checkSubSet(pre: String, s0: Set[Int], s1: Set[Int]): Unit = {
     for (e <- s0.iterator)
       if (!(s1 contains e)) {
         assert(false, pre+" element: "+e+"\n S0 = "+s0+"\n S1 = "+s1)
@@ -46,12 +46,8 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
   Console.println("succeeded for "+Iterations+" iterations.")
 }
 object Test extends App {
-  def t3954 {
+  def t3954: Unit = {
     import scala.collection.mutable
-    import scala.collection.immutable
-    val result = new mutable.ImmutableSetAdaptor(immutable.ListSet.empty[Int])
-    println(result.add(1))
-    println(result.add(1))
     val result2 = new mutable.HashSet[Int]
     println(result2.add(1))
     println(result2.add(1))
@@ -62,5 +58,4 @@ object Test extends App {
   t3954
 
   new TestSet(HashSet.empty, new LinkedHashSet)
-  new TestSet(new ImmutableSetAdaptor(collection.immutable.Set.empty[Int]), new LinkedHashSet)
 }

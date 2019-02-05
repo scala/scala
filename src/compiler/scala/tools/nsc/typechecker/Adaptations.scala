@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -23,8 +30,6 @@ trait Adaptations {
 
   trait Adaptation {
     self: Typer =>
-
-    import runDefinitions._
 
     def checkValidAdaptation(t: Tree, args: List[Tree]): Boolean = {
       def applyArg = t match {
@@ -60,32 +65,36 @@ trait Adaptations {
         // they are used limits our ability to enforce anything sensible until
         // an opt-in compiler option is given.
         oneArgObject && !(
-             isStringAddition(t.symbol)
-          || isArrowAssoc(t.symbol)
+             currentRun.runDefinitions.isStringAddition(t.symbol)
+          || currentRun.runDefinitions.isArrowAssoc(t.symbol)
           || t.symbol.name == nme.equals_
           || t.symbol.name == nme.EQ
           || t.symbol.name == nme.NE
         )
       }
-
-      if (settings.noAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage("No automatic adaptation here: use explicit parentheses."))
-      else if (args.isEmpty) {
-        if (settings.future)
-          context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
-        else {
-          val msg = "Adaptation of argument list by inserting () is deprecated: " + (
-          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
-          else "this is unlikely to be what you want.")
-          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg), "2.11.0")
-        }
-      } else if (settings.warnAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage(
-          s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want.")
-        )
-
-      // return `true` if the adaptation should be kept
-      !(settings.noAdaptedArgs || (args.isEmpty && settings.future))
+      @inline def msg(what: String): String = s"adaptation of an empty argument list by inserting () $what"
+      @inline def noAdaptation = {
+        context.error(t.pos, adaptWarningMessage(msg("has been removed"), showAdaptation = false))
+        false // drop adaptation
+      }
+      @inline def deprecatedAdaptation = {
+        val twist =
+          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous"
+          else "this is unlikely to be what you want"
+        val text = s"${msg("is deprecated")}: ${twist}"
+        context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(text), "2.11.0")
+        true // keep adaptation
+      }
+      @inline def warnAdaptation = {
+        if (settings.warnAdaptedArgs) context.warning(t.pos, adaptWarningMessage(
+          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"
+        ))
+        true // keep adaptation
+      }
+      if (args.isEmpty) {
+        if (settings.isScala300) noAdaptation else deprecatedAdaptation
+      } else
+        warnAdaptation
     }
   }
 }

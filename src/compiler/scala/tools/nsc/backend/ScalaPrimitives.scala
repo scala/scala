@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -192,7 +199,7 @@ abstract class ScalaPrimitives {
   private val primitives: mutable.Map[Symbol, Int] = new mutable.HashMap()
 
   /** Initialize the primitive map */
-  def init() {
+  def init(): Unit = {
     primitives.clear()
     // scala.Any
     addPrimitive(Any_==, EQ)
@@ -435,12 +442,12 @@ abstract class ScalaPrimitives {
   }
 
   /** Add a primitive operation to the map */
-  def addPrimitive(s: Symbol, code: Int) {
+  def addPrimitive(s: Symbol, code: Int): Unit = {
     assert(!(primitives contains s), "Duplicate primitive " + s)
     primitives(s) = code
   }
 
-  def addPrimitives(cls: Symbol, method: Name, code: Int) {
+  def addPrimitives(cls: Symbol, method: Name, code: Int): Unit = {
     val alts = (cls.info member method).alternatives
     if (alts.isEmpty)
       inform(s"Unknown primitive method $cls.$method")

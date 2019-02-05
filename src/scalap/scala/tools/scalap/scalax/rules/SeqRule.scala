@@ -15,6 +15,7 @@ package scalax
 package rules
 
 import language.postfixOps
+import scala.collection.immutable.ArraySeq
 
 /**
  * A workaround for the difficulties of dealing with
@@ -84,13 +85,13 @@ class SeqRule[S, +A, +X](rule: Rule[S, S, A, X]) {
 
   /** Repeats this rule num times */
   def times(num: Int): Rule[S, S, Seq[A], X] = from[S] {
-    val result = new scala.collection.mutable.ArraySeq[A](num)
+    val result = new Array[AnyRef](num)
     // more compact using HoF but written this way so it's tail-recursive
     def rep(i: Int, in: S): Result[S, Seq[A], X] = {
-      if (i == num) Success(in, result)
+      if (i == num) Success(in, ArraySeq.unsafeWrapArray(result).asInstanceOf[ArraySeq[A]])
       else rule(in) match {
        case Success(out, a) => {
-         result(i) = a
+         result(i) = a.asInstanceOf[AnyRef]
          rep(i + 1, out)
        }
        case Failure => Failure

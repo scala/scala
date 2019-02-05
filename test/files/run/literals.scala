@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 //############################################################################
 // Literals
 //############################################################################
@@ -14,7 +16,7 @@ object Test {
     def \u03b1\u03b1(that: GGG) = i + that.i
   }
 
-  def check_success[A](name: String, closure: => A, expected: A) {
+  def check_success[A](name: String, closure: => A, expected: A): Unit = {
     val res: Option[String] =
       try {
         val actual: A = closure
@@ -26,16 +28,16 @@ object Test {
     for (e <- res) println(s"test $name $e")
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // char
     check_success("'\\u0024' == '$'", '\u0024', '$')
     check_success("'\\u005f' == '_'", '\u005f', '_')
     check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
-    check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
+    //check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
     //check_success("\"\\0x61\\0x62\".trim() == \"x61\\0x62\"", "\0x61\0x62".substring(1), "x61\0x62")
-    check_success(""""\0x61\0x62".getBytes == Array(0, 120, ...)""",
-      "\0x61\0x62".getBytes(io.Codec.UTF8.charSet) sameElements Array[Byte](0, 120, 54, 49, 0, 120, 54, 50),
-      true)
+    //check_success(""""\0x61\0x62".getBytes == Array(0, 120, ...)""",
+    //  "\0x61\0x62".getBytes(io.Codec.UTF8.charSet) sameElements Array[Byte](0, 120, 54, 49, 0, 120, 54, 50),
+    //  true)
 
     // boolean
     check_success("(65 : Byte) == 'A'", (65: Byte) == 'A', true) // contrib #176
@@ -92,7 +94,7 @@ object Test {
       1.0000001f)
     check_success("3.4028235E38f == Float.MaxValue", 3.4028235E38f, Float.MaxValue)
     check_success("1.asInstanceOf[Float] == 1.0", 1.asInstanceOf[Float], 1.0f)
-    check_success("1l.asInstanceOf[Float] == 1.0", 1l.asInstanceOf[Float], 1.0f)
+    check_success("1L.asInstanceOf[Float] == 1.0", 1L.asInstanceOf[Float], 1.0f)
 
     // double
     check_success("1e1 == 10.0", 1e1, 10.0)

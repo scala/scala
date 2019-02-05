@@ -3,7 +3,7 @@ class C[@specialized(Int) A](a:A) {
   def c = b
 }
 object Test {
-  def main(args:Array[String]) {
+  def main(args:Array[String]): Unit = {
     val cInt = new C(3)
     println(cInt.c)
     println(cInt.c)

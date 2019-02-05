@@ -4,17 +4,18 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util
 
 @RunWith(classOf[JUnit4])
 class MapWrapperTest {
 
   /* Test for scala/bug#7883 */
   @Test
-  def testContains() {
+  def testContains(): Unit = {
     import scala.collection.JavaConverters.mapAsJavaMapConverter
     import scala.language.reflectiveCalls  // for accessing containsCounter
 
-    // A HashMap which throws an exception when the iterator() method is called.
+    // A HashMap which throws an exception when the iterator method is called.
     // Before the fix for scala/bug#7883, calling MapWrapper.containsKey() used to
     // iterate through every element of the wrapped Map, and thus would crash
     // in this case.
@@ -49,11 +50,32 @@ class MapWrapperTest {
 
   // test for scala/bug#8504
   @Test
-  def testHashCode() {
+  def testHashCodeNulls(): Unit = {
     import scala.collection.JavaConverters._
     val javaMap = Map(1 -> null).asJava
 
     // Before the fix for scala/bug#8504, this throws a NPE
     javaMap.hashCode
+  }
+
+  // regression test for https://github.com/scala/bug/issues/10663
+  @Test
+  def testHashCodeEqualsMatchesJavaMap(): Unit = {
+    import scala.collection.JavaConverters._
+    val jmap = new util.HashMap[String, String]()
+    jmap.put("scala", "rocks")
+    jmap.put("java interop is fun!", "ya!")
+    jmap.put("Ĺởồҝ ïŧ\\'ş ūŋǐčōđẹ", "whyyyy")
+    jmap.put("nulls nooo", null)
+    jmap.put(null, "null keys are you serious??")
+
+    // manually convert to scala map
+    val scalaMap = jmap.entrySet().iterator.asScala.map { e => e.getKey -> e.getValue}.toMap
+
+    val mapWrapper = scalaMap.asJava
+
+    assertEquals(jmap.hashCode(), mapWrapper.hashCode())
+    assertTrue(jmap == mapWrapper)
+    assertTrue(mapWrapper == jmap)
   }
 }

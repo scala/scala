@@ -11,6 +11,7 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.testing.BytecodeTesting
+import scala.tools.testing.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends BytecodeTesting {
@@ -105,10 +106,10 @@ class ScalaInlineInfoTest extends BytecodeTesting {
         ("x4$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
         ("x5()I",                                                     MethodInlineInfo(true, false,false)),
         ("x5$(LT;)I",                                                  MethodInlineInfo(true ,false,false)),
-        ("L$1(Lscala/runtime/LazyRef;)LT$L$2$;",                      MethodInlineInfo(true, false,false)),
+        ("L$2(Lscala/runtime/LazyRef;)LT$L$1$;",                      MethodInlineInfo(true, false,false)),
         ("nest$1()I",                                                 MethodInlineInfo(true, false,false)),
         ("$init$(LT;)V",                                              MethodInlineInfo(true,false,false)),
-        ("L$lzycompute$1(Lscala/runtime/LazyRef;)LT$L$2$;",           MethodInlineInfo(true,false,false))
+        ("L$lzycompute$1(Lscala/runtime/LazyRef;)LT$L$1$;",           MethodInlineInfo(true,false,false))
       ),
       None // warning
     )
@@ -194,5 +195,41 @@ class ScalaInlineInfoTest extends BytecodeTesting {
       "O()LC$O$;"            -> MethodInlineInfo(true,false,false))
     assert(infoC.methodInfos == expected, mapDiff(infoC.methodInfos, expected))
     assertSameMethods(c, expected.keySet)
+  }
+
+  @Test
+  def looksLikeForwarderTest(): Unit = {
+    import global.genBCode.postProcessor.backendUtils._
+
+    val code =
+      """trait T { def a = 0 }
+        |class C(x: Int, y: Long) extends T {
+        |  def t1 = {
+        |    val f = (b: Byte, i: Int) => i + b
+        |    f(1, 2)
+        |  }
+        |}
+        |object C {
+        |  def make(x: Int, y: java.lang.Long) = new C(x, y)
+        |  def foo(s: String) = {
+        |    val k = s"$s-$s"
+        |    println(k)
+        |  }
+        |}
+      """.stripMargin
+
+    val List(c, cm, t) =  compileClasses(code)
+
+    def tst(c: ClassNode, m: String, r: Int): Unit = assertEquals(looksLikeForwarderOrFactoryOrTrivial(getAsmMethod(c, m), c.name, allowPrivateCalls = true), r)
+    tst(c, "a", 4)
+    tst(c, "$anonfun$t1$1$adapted", 3)
+    tst(c, "$anonfun$t1$1", 1)
+    tst(c, "t1", -1)
+
+    tst(t, "a$", 4)
+    tst(t, "a", 1)
+
+    tst(cm, "make", 2)
+    tst(cm, "foo", -1)
   }
 }

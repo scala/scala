@@ -1,130 +1,131 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package collection
 package immutable
 
-import generic._
-import mutable.Builder
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.Builder
+import scala.language.higherKinds
 
-/** A map whose keys are sorted.
- *
- *  @tparam A     the type of the keys contained in this sorted map.
- *  @tparam B     the type of the values associated with the keys.
- *
- *  @author Sean McDirmid
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.4
- *  @define Coll immutable.SortedMap
- *  @define coll immutable sorted map
- */
-trait SortedMap[A, +B] extends Map[A, B]
-                         with scala.collection.SortedMap[A, B]
-                         with MapLike[A, B, SortedMap[A, B]]
-                         with SortedMapLike[A, B, SortedMap[A, B]]
-{
-self =>
+trait SortedMap[K, +V]
+  extends Map[K, V]
+    with collection.SortedMap[K, V]
+    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
 
-  override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
-    SortedMap.newBuilder[A, B]
+  override def unsorted: Map[K, V] = this
 
-  override def empty: SortedMap[A, B] = SortedMap.empty
-  override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
-  override def keySet: immutable.SortedSet[A] = new DefaultKeySortedSet
+  override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
 
-  protected class DefaultKeySortedSet extends super.DefaultKeySortedSet with immutable.SortedSet[A] {
-    override def + (elem: A): SortedSet[A] =
-      if (this(elem)) this
-      else SortedSet[A]() ++ this + elem
-    override def - (elem: A): SortedSet[A] =
-      if (this(elem)) SortedSet[A]() ++ this - elem
-      else this
-    override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = {
-      val map = self.rangeImpl(from, until)
-      new map.DefaultKeySortedSet
-    }
-    override def toSet[C >: A]: Set[C] = {
-      // This way of building sets typically has the best benchmarks, surprisingly!
-      val sb = Set.newBuilder[C]
-      foreach(sb += _)
-      sb.result()
-    }
-  }
+  /** The same map with a given default function.
+    *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
+    *  are not affected by `withDefault`.
+    *
+    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
+    *
+    *  @param d     the function mapping keys to values, used for non-present keys
+    *  @return      a wrapper of the map with a default value
+    */
+  override def withDefault[V1 >: V](d: K => V1): SortedMap.WithDefault[K, V1] = new SortedMap.WithDefault[K, V1](this, d)
 
-  /** Add a key/value pair to this map.
-   *  @param    kv the key/value pair
-   *  @return   A new map with the new binding added to this map
-   *  @note     needs to be overridden in subclasses
-   */
-  def + [B1 >: B](kv: (A, B1)): SortedMap[A, B1] = throw new AbstractMethodError("SortedMap.+")
-
-  /** Adds two or more elements to this collection and returns
-   *  a new collection.
-   *
-   *  @param elem1 the first element to add.
-   *  @param elem2 the second element to add.
-   *  @param elems the remaining elements to add.
-   */
-  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): SortedMap[A, B1] =
-    this + elem1 + elem2 ++ elems
-
-  /** Adds a number of elements provided by a traversable object
-   *  and returns a new collection with the added elements.
-   *
-   *  @param xs     the traversable object.
-   */
-  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: xs.seq) (_ + _)
-
-  override def filterKeys(p: A => Boolean): SortedMap[A, B] = new FilteredKeys(p) with SortedMap.Default[A, B] {
-    implicit def ordering: Ordering[A] = self.ordering
-    override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, B] = self.rangeImpl(from, until).filterKeys(p)
-    override def iteratorFrom(start: A) = self iteratorFrom start filter {case (k, _) => p(k)}
-    override def keysIteratorFrom(start : A) = self keysIteratorFrom start filter p
-    override def valuesIteratorFrom(start : A) = self iteratorFrom start collect {case (k,v) if p(k) => v}
-  }
-
-  override def mapValues[C](f: B => C): SortedMap[A, C] = new MappedValues(f) with SortedMap.Default[A, C] {
-    implicit def ordering: Ordering[A] = self.ordering
-    override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, C] = self.rangeImpl(from, until).mapValues(f)
-    override def iteratorFrom(start: A) = self iteratorFrom start map {case (k, v) => (k, f(v))}
-    override def keysIteratorFrom(start : A) = self keysIteratorFrom start
-    override def valuesIteratorFrom(start : A) = self valuesIteratorFrom start map f
-  }
-
+  /** The same map with a given default value.
+    *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.
+    *  are not affected by `withDefaultValue`.
+    *
+    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
+    *
+    *  @param d     default value used for non-present keys
+    *  @return      a wrapper of the map with a default value
+    */
+  override def withDefaultValue[V1 >: V](d: V1): SortedMap.WithDefault[K, V1] = new SortedMap.WithDefault[K, V1](this, _ => d)
 }
 
-/** $factoryInfo
- *  @define Coll immutable.SortedMap
- *  @define coll immutable sorted map
- */
-object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
-  /** $sortedMapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), SortedMap[A, B]] = new SortedMapCanBuildFrom[A, B]
-  def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = TreeMap.empty[A, B]
+trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
+  extends MapOps[K, V, Map, C] with collection.SortedMapOps[K, V, CC, C] { self =>
 
-  private[collection] trait Default[A, +B] extends SortedMap[A, B] with scala.collection.SortedMap.Default[A, B] {
-  self =>
-    override def +[B1 >: B](kv: (A, B1)): SortedMap[A, B1] = {
-      val b = SortedMap.newBuilder[A, B1]
-      b ++= this
-      b += ((kv._1, kv._2))
-      b.result()
-    }
+  protected def coll: C with CC[K, V]
 
-    override def - (key: A): SortedMap[A, B] = {
-      val b = newBuilder
-      for (kv <- this; if kv._1 != key) b += kv
-      b.result()
+  def unsorted: Map[K, V]
+
+  override def keySet: SortedSet[K] = new ImmutableKeySortedSet
+
+  /** The implementation class of the set returned by `keySet` */
+  protected class ImmutableKeySortedSet extends AbstractSet[K] with SortedSet[K] with GenKeySet with GenKeySortedSet {
+    def rangeImpl(from: Option[K], until: Option[K]): SortedSet[K] = {
+      val map = self.rangeImpl(from, until)
+      new map.ImmutableKeySortedSet
     }
+    def incl(elem: K): SortedSet[K] = fromSpecific(this).incl(elem)
+    def excl(elem: K): SortedSet[K] = fromSpecific(this).excl(elem)
+  }
+
+  // We override these methods to fix their return type (which would be `Map` otherwise)
+  def updated[V1 >: V](key: K, value: V1): CC[K, V1]
+  @`inline` final override def +[V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
+
+  override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
+}
+
+trait StrictOptimizedSortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
+  extends SortedMapOps[K, V, CC, C]
+    with collection.StrictOptimizedSortedMapOps[K, V, CC, C]
+    with StrictOptimizedMapOps[K, V, Map, C] {
+
+  override def concat[V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = {
+    var result: CC[K, V2] = coll
+    val it = xs.iterator
+    while (it.hasNext) result = result + it.next()
+    result
+  }
+}
+
+@SerialVersionUID(3L)
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap) {
+
+  @SerialVersionUID(3L)
+  final class WithDefault[K, +V](underlying: SortedMap[K, V], defaultValue: K => V)
+    extends Map.WithDefault[K, V](underlying, defaultValue)
+      with SortedMap[K, V]
+      with SortedMapOps[K, V, SortedMap, WithDefault[K, V]] with Serializable {
+
+    implicit def ordering: Ordering[K] = underlying.ordering
+
+    override def sortedMapFactory: SortedMapFactory[SortedMap] = underlying.sortedMapFactory
+
+    def iteratorFrom(start: K): scala.collection.Iterator[(K, V)] = underlying.iteratorFrom(start)
+
+    def keysIteratorFrom(start: K): scala.collection.Iterator[K] = underlying.keysIteratorFrom(start)
+
+    def rangeImpl(from: Option[K], until: Option[K]): WithDefault[K, V] =
+      new WithDefault[K, V](underlying.rangeImpl(from, until), defaultValue)
+
+    // Need to override following methods to match type signatures of `SortedMap.WithDefault`
+    // for operations preserving default value
+
+    override def updated[V1 >: V](key: K, value: V1): WithDefault[K, V1] =
+      new WithDefault[K, V1](underlying.updated(key, value), defaultValue)
+
+    override def concat [V2 >: V](xs: collection.IterableOnce[(K, V2)]): WithDefault[K, V2] =
+      new WithDefault( underlying.concat(xs) , defaultValue)
+
+    override def removed(key: K): WithDefault[K, V] = new WithDefault[K, V](underlying.removed(key), defaultValue)
+
+    override def empty: WithDefault[K, V] = new WithDefault[K, V](underlying.empty, defaultValue)
+
+    override protected def fromSpecific(coll: scala.collection.IterableOnce[(K, V)] @uncheckedVariance): WithDefault[K, V] =
+      new WithDefault[K, V](sortedMapFactory.from(coll), defaultValue)
+
+    override protected def newSpecificBuilder: Builder[(K, V), WithDefault[K, V]] @uncheckedVariance =
+      SortedMap.newBuilder.mapResult((p: SortedMap[K, V]) => new WithDefault[K, V](p, defaultValue))
   }
 }

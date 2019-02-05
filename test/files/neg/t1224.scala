@@ -1,3 +1,5 @@
+// scalac: -Ybreak-cycles
+//
 trait C[T] {}
 
 abstract class A {

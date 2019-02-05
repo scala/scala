@@ -49,7 +49,7 @@ class RangeConsistencyTest {
   
   // Motivated by scala/bug#4370: Wrong result for Long.MinValue to Long.MaxValue by Int.MaxValue
   @Test
-  def rangeChurnTest() {
+  def rangeChurnTest(): Unit = {
     val rn = new Random(4370)
     for (i <- 0 to 10000) { control.Breaks.breakable {
       val start = rn.nextInt
@@ -114,7 +114,7 @@ class RangeConsistencyTest {
   }
   
   @Test
-  def testSI4370() { assert{
+  def testSI4370(): Unit = { assert{
     Try((Long.MinValue to Long.MaxValue by Int.MaxValue).length) match {
       case Failure(iae: IllegalArgumentException) => true
       case _ => false
@@ -122,7 +122,7 @@ class RangeConsistencyTest {
   }}
   
   @Test
-  def testSI6736() {
+  def testSI6736(): Unit = {
     // These operations on overfull ranges should all succeed.
     assert( (0 to Int.MaxValue).contains(4) )
     assert( !((Int.MinValue to 0).contains(4)) )
@@ -137,20 +137,9 @@ class RangeConsistencyTest {
     assert( (-3 to Int.MaxValue).dropWhile(_ <= 0).length == Int.MaxValue )
     assert( (-3 to Int.MaxValue).span(_ <= 0) match { case (a,b) => a.length == 4 && b.length == Int.MaxValue } )
   }
-  
-  @Test
-  def testSI9348() {
-    // Test exclusive range with (end-start) != 0 (mod step)
-    assert( (0.0f until 0.4f by 0.25f) sameElements List(0.0f, 0.25f) )
-    assert( (1.0 until 2.2 by 0.5) sameElements List(1.0, 1.5, 2.0) )
-    
-    def bd(d: Double) = BigDecimal(d)
-    val bdRange = bd(-10.0) until bd(0.0) by bd(4.5)
-    assert( bdRange sameElements List(bd(-10.0), bd(-5.5), bd(-1.0)) )
-  }
 
   @Test
-  def test_SI9388()  {
+  def test_SI9388(): Unit =  {
     val possiblyNotDefaultNumeric = new scala.math.Numeric[Int] {
       def fromInt(x: Int) = x
       def parseString(str: String): Option[Int] = Try(str.toInt).toOption
@@ -175,7 +164,7 @@ class RangeConsistencyTest {
   }
 
   @Test
-  def test_SI10086()  {
+  def test_SI10086(): Unit =  {
     implicit val customIntegral =
       new Numeric.IntIsIntegral with Ordering.IntOrdering {}
 

@@ -1,12 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Jason Zaugg
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.reflect.internal
 package tpe
 
 import util.StatisticsStatics
 import Flags._
+import scala.runtime.Statics.releaseFence
 
 trait FindMembers {
   this: SymbolTable =>
@@ -14,7 +23,7 @@ trait FindMembers {
 
   /** Implementation of `Type#{findMember, findMembers}` */
   private[internal] abstract class FindMemberBase[T](tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) {
-    protected val initBaseClasses: List[Symbol] = tpe.baseClasses
+    protected[this] final val initBaseClasses: List[Symbol] = tpe.baseClasses
 
     // The first base class, or the symbol of the ThisType
     // e.g in:
@@ -73,9 +82,9 @@ trait FindMembers {
       // Have we seen a candidate deferred member?
       var deferredSeen = false
 
-      // All direct parents of refinement classes in the base class sequence
+      // All refinement classes in the base class sequence
       // from the current `walkBaseClasses`
-      var refinementParents: List[Symbol] = Nil
+      var refinementClasses: List[Symbol] = Nil
 
       // Has the current `walkBaseClasses` encountered a non-refinement class?
       var seenFirstNonRefinementClass = false
@@ -93,7 +102,7 @@ trait FindMembers {
           if (meetsRequirements) {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
-            if (!isExcluded && isPotentialMember(sym, flags, currentBaseClass, seenFirstNonRefinementClass, refinementParents)) {
+            if (!isExcluded && isPotentialMember(sym, flags, currentBaseClass, seenFirstNonRefinementClass, refinementClasses)) {
               if (shortCircuit(sym)) return false
               else addMemberIfNew(sym)
             } else if (excl == DEFERRED) {
@@ -110,7 +119,7 @@ trait FindMembers {
           //           the component types T1, ..., Tn and the refinement {R }
           //
           //           => private members should be included from T1, ... Tn. (scala/bug#7475)
-          refinementParents :::= currentBaseClass.parentSymbols
+          refinementClasses ::= currentBaseClass
         else if (currentBaseClass.isClass)
           seenFirstNonRefinementClass = true // only inherit privates of refinement parents after this point
 
@@ -130,23 +139,22 @@ trait FindMembers {
     // Q. When does a potential member fail to be an actual member?
     // A. if it is subsumed by an member in a subclass.
     private def isPotentialMember(sym: Symbol, flags: Long, owner: Symbol,
-                                  seenFirstNonRefinementClass: Boolean, refinementParents: List[Symbol]): Boolean = {
+                                  seenFirstNonRefinementClass: Boolean, refinementClasses: List[Symbol]): Boolean = {
       // conservatively (performance wise) doing this with flags masks rather than `sym.isPrivate`
       // to avoid multiple calls to `Symbol#flags`.
       val isPrivate      = (flags & PRIVATE) == PRIVATE
       val isPrivateLocal = (flags & PrivateLocal) == PrivateLocal
 
       // TODO Is the special handling of `private[this]` vs `private` backed up by the spec?
-      def admitPrivate(sym: Symbol): Boolean =
-        (selectorClass == owner) || (
-             !isPrivateLocal // private[this] only a member from within the selector class. (Optimization only? Does the spec back this up?)
-          && (
-                  !seenFirstNonRefinementClass
-               || refinementParents.contains(owner)
-             )
+      def admitPrivate: Boolean =
+          // private[this] only a member from within the selector class.
+          // (Optimization only? Does the spec back this up?)
+        !isPrivateLocal && ( !seenFirstNonRefinementClass ||
+          refinementClasses.exists(_.info.parents.exists(_.typeSymbol == owner))
         )
 
-      (!isPrivate || admitPrivate(sym)) && (sym.name != nme.CONSTRUCTOR || owner == initBaseClasses.head)
+      (sym.name != nme.CONSTRUCTOR || owner == initBaseClasses.head) &&
+        (!isPrivate || owner == selectorClass || admitPrivate)
     }
 
     // True unless the already-found member of type `memberType` matches the candidate symbol `other`.
@@ -257,7 +265,7 @@ trait FindMembers {
         }
         if (isNew) {
           val lastM1 = new ::(sym, null)
-          lastM.tl = lastM1
+          lastM.next = lastM1
           lastM = lastM1
         }
       }
@@ -281,7 +289,8 @@ trait FindMembers {
       } else member0
     } else {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(multMemberCount)
-      lastM.tl = Nil
+      lastM.next = Nil
+      releaseFence()
       initBaseClasses.head.newOverloaded(tpe, members)
     }
   }

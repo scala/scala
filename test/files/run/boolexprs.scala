@@ -33,7 +33,7 @@ object Test2 {
 // Test code
 
 object Test {
-  def check_success(name: String, closure: => Int, expected: Int) {
+  def check_success(name: String, closure: => Int, expected: Int): Unit = {
     Console.print("test " + name);
     try {
       val actual: Int = closure;
@@ -49,7 +49,7 @@ object Test {
     Console.println;
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     check_success("Test1", Test1.run, 1);
     check_success("Test2", Test2.run, 0);
     Console.println;

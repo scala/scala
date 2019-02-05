@@ -28,7 +28,7 @@ object CheckCollectionsTest extends Properties("reflect.internal.util.Collection
     map2Conserve(xs, ys)(testfun) == map2ConserveOld(xs, ys)(testfun)
   }
 
-  def checkStackOverflow() {
+  def checkStackOverflow(): Unit = {
     var xs: List[String] = Nil
     var ys: List[Int]    = Nil
     for (i <- 0 until 250000) {

@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package transform
 
@@ -155,7 +163,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       // so must drop their variance.
       val tparamsFromClass = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth) map (_ resetFlag COVARIANT | CONTRAVARIANT)
 
-      val thisParamType = appliedType(clazz, tparamsFromClass map (_.tpeHK): _*)
+      val thisParamType = appliedType(clazz, tparamsFromClass.map(_.tpeHK))
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       val resultType    = MethodType(List(thisParam), dropNullaryMethod(methodResult))
       val selfParamType = singleType(currentOwner.companionModule.thisType, thisParam)
@@ -210,6 +218,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
                 setAnnotations origMeth.annotations
             )
+            defineOriginalOwner(extensionMeth, origMeth.owner)
+            // @strictfp on class means strictfp on all methods, but `setAnnotations` won't copy it
+            if (origMeth.isStrictFP && !extensionMeth.hasAnnotation(ScalaStrictFPAttr))
+              extensionMeth.addAnnotation(ScalaStrictFPAttr)
             origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
             companion.info.decls.enter(extensionMeth)
           }
@@ -229,7 +241,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               .substituteSymbols(origTpeParams, extensionTpeParams)
               .substituteSymbols(origParams, extensionParams)
               .substituteThis(origThis, extensionThis)
-              .changeOwner(origMeth -> extensionMeth)
+              .changeOwner(origMeth, extensionMeth)
             new SubstututeRecursion(origMeth, extensionMeth, unit).transform(tree)
           }
           val castBody =

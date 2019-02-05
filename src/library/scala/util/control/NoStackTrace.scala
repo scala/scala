@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util.control
@@ -29,6 +33,6 @@ object NoStackTrace {
   final def noSuppression = _noSuppression
 
   // two-stage init to make checkinit happy, since sys.SystemProperties.noTraceSuppression.value calls back into NoStackTrace.noSuppression
-  final private var _noSuppression = false
+  final private[this] var _noSuppression = false
   _noSuppression = System.getProperty("scala.control.noTraceSuppression", "").equalsIgnoreCase("true")
 }

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -20,7 +27,7 @@ trait JavaPlatform extends Platform {
   private[nsc] var currentClassPath: Option[ClassPath] = None
 
   private[nsc] def classPath: ClassPath = {
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, global.closeableRegistry).result)
     currentClassPath.get
   }
 
@@ -50,7 +57,7 @@ trait JavaPlatform extends Platform {
    */
   def isMaybeBoxed(sym: Symbol) = {
     (sym == ObjectClass) ||
-    (sym == JavaSerializableClass) ||
+    (sym == SerializableClass) ||
     (sym == ComparableClass) ||
     (sym isNonBottomSubClass BoxedNumberClass) ||
     (sym isNonBottomSubClass BoxedCharacterClass) ||

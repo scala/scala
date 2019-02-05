@@ -13,7 +13,7 @@ object Test
   import java.io.{ File => JFile }
   import java.io.FileWriter
   import io.Source
-  def overwrite(file: JFile,w: FileWriter=>Unit) {
+  def overwrite(file: JFile,w: FileWriter=>Unit): Unit = {
     val fw=new FileWriter(file)
     w(fw)
     fw.close
@@ -39,13 +39,13 @@ object Test
       chars.flatMap((c)=>sufs.map(c :: _))
     }
   }
-  def test(n: Int) {
+  def test(n: Int): Unit = {
     for(l <- all_strings(n)) {
       val tmp=store_tempfile((f)=>l.foreach(f.write(_)))
       delete_after(tmp,(s)=>assert(s.toList == l))
     }
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (0 until N).foreach(test(_))
   }
 }

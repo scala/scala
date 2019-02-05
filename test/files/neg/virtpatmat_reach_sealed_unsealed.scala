@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 sealed abstract class X
 sealed case class A(x: Int) extends X
 

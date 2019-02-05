@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -95,7 +102,7 @@ trait Constants {
    *  broken down or evaluated, such as "true", "0", "classOf[List]". Such values become parts of the Scala abstract
    *  syntax tree representing the program. The constants
    *  correspond to section 6.24 "Constant Expressions" of the
-   *  [[http://www.scala-lang.org/files/archive/spec/2.11/ Scala Language Specification]].
+   *  [[http://www.scala-lang.org/files/archive/spec/2.13/ Scala Language Specification]].
    *
    *  Such constants are used to represent literals in abstract syntax trees (the [[scala.reflect.api.Trees#Literal]] node)
    *  and literal arguments for Java class file annotations (the [[scala.reflect.api.Annotations#LiteralArgument]] class).

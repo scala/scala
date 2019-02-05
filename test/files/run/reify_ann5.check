@@ -16,7 +16,7 @@
       C.super.<init>();
       ()
     };
-    @inline @scala.annotation.meta.beanGetter def getX(): Int = C.this.x
+    @inline @scala.annotation.meta.beanGetter @<notype> def getX(): Int = C.this.x
   };
   ()
 }

@@ -1,7 +1,6 @@
-import java.util.concurrent._
 import java.util.concurrent.atomic._
 
-object Test { def main(args: Array[String]) {
+object Test { def main(args: Array[String]): Unit = {
 
 val n = 10000
 val i = new AtomicInteger(n)
@@ -11,7 +10,7 @@ val sum = new AtomicInteger
 val q = new scala.concurrent.SyncVar[Int]
 
 val producers = (1 to 3) map { z => new Thread {
-  override def run() {
+  override def run(): Unit = {
     var again = true
     while (again) {
       val x = i.getAndDecrement()
@@ -24,7 +23,7 @@ val producers = (1 to 3) map { z => new Thread {
 } }
 
 val summers = (1 to 7) map { z => new Thread {
-  override def run() {
+  override def run(): Unit = {
     val x = j.decrementAndGet()
     if (x >= 0) {
       sum addAndGet q.take()
@@ -44,7 +43,7 @@ summers foreach { _.join() }
 
 val got = sum.get
 val expected = (n + 1) * n / 2
-println(got + " " + expected + " " + (got == expected))
+println(got.toString + " " + expected + " " + (got == expected))
 
 producers foreach { _.join() }
 

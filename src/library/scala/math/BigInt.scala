@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package math
@@ -14,14 +18,13 @@ import scala.language.implicitConversions
 
 /**
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  *  @since 2.1
  */
 object BigInt {
 
-  private val minCached = -1024
-  private val maxCached = 1024
-  private val cache = new Array[BigInt](maxCached - minCached + 1)
+  private[this] val minCached = -1024
+  private[this] val maxCached = 1024
+  private[this] val cache = new Array[BigInt](maxCached - minCached + 1)
   private val minusOne = BigInteger.valueOf(-1)
 
   /** Constructs a `BigInt` whose value is equal to that of the
@@ -107,7 +110,6 @@ object BigInt {
 
 /**
  *  @author  Martin Odersky
- *  @version 1.0, 15/07/2003
  */
 final class BigInt(val bigInteger: BigInteger)
   extends ScalaNumber
@@ -117,7 +119,7 @@ final class BigInt(val bigInteger: BigInteger)
 {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
-    if (isValidLong) unifiedPrimitiveHashcode()
+    if (isValidLong) unifiedPrimitiveHashcode
     else bigInteger.##
 
   /** Compares this BigInt with the specified value for equality.
@@ -170,7 +172,7 @@ final class BigInt(val bigInteger: BigInteger)
     (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
   }
 
-  def isWhole() = true
+  def isWhole = true
   def underlying = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.

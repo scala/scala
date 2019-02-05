@@ -1,7 +1,7 @@
 object Test {
 	val f : PartialFunction[_, Int] = { case a : Int => a } // undefined param
 
-	def foo[A](pf: PartialFunction[A, Int]) {};
+	def foo[A](pf: PartialFunction[A, Int]): Unit = {};
 	foo { case a : Int => a } // undefined param
 
 	val g : PartialFunction[Int, _] = { case a : Int => a } // okay

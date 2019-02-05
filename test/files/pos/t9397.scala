@@ -4,7 +4,7 @@ import scala.reflect.runtime.universe._
 
 object Foo {
 
-  def bar[T: TypeTag]() {
+  def bar[T: TypeTag](): Unit = {
   }
 
   import foo._

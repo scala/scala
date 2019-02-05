@@ -1,4 +1,4 @@
-t10097b.scala:2: error: case classes must have a non-implicit parameter list; try 'case class C()(...)'
+t10097b.scala:4: error: case classes must have a non-implicit parameter list; try 'case class C()(...)'
 case class C(implicit val c: Int)
             ^
 one error found

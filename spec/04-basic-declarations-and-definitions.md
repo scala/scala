@@ -693,9 +693,7 @@ function. That is, the argument is evaluated using _call-by-name_.
 
 The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
-classes for which a `val` prefix is implicitly generated. The
-by-name modifier is also disallowed for
-[implicit parameters](07-implicits.html#implicit-parameters).
+classes for which a `val` prefix is implicitly generated.
 
 ###### Example
 The declaration

@@ -1,4 +1,4 @@
-t650.scala:4: error: missing type arguments
-trait Test2 extends LinkedList;
+t650.scala:3: error: missing type arguments
+trait Test2 extends Stack
                     ^
 one error found

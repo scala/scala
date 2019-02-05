@@ -1,0 +1,12 @@
+t10806.scala:12: warning: unreachable code
+      case e: IllegalArgumentException => println(e.getMessage)
+                                                 ^
+t10806.scala:18: warning: unreachable code
+      case e: IllegalArgumentException => println(e.getMessage)
+                                                 ^
+t10806.scala:23: warning: unreachable code
+      case e: IllegalArgumentException => println(e.getMessage)
+                                                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

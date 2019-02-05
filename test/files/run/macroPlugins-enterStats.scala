@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 import scala.tools.partest._
 import scala.tools.nsc._
 
@@ -11,7 +13,7 @@ object Test extends DirectTest {
     }
   """.trim
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     import global._
     import analyzer._
@@ -22,7 +24,7 @@ object Test extends DirectTest {
     def logEnterStat(pluginName: String, stat: Tree): Unit = log(s"$pluginName:enterStat($stat)")
     def deriveStat(pluginName: String, typer: Typer, stat: Tree): List[Tree] = stat match {
       case DefDef(mods, name, Nil, Nil, TypeTree(), body) =>
-        val derived = DefDef(NoMods, TermName(name + pluginName), Nil, Nil, TypeTree(), Ident(TermName("$qmark$qmark$qmark")))
+        val derived = DefDef(NoMods, TermName(name.toString + pluginName), Nil, Nil, TypeTree(), Ident(TermName("$qmark$qmark$qmark")))
         newNamer(typer.context).enterSym(derived)
         List(derived)
       case _ =>

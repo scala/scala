@@ -1,0 +1,7 @@
+t10015.scala:3: error: not found: type Baz
+  f (new Baz { def g })
+         ^
+t10015.scala:3: error: only traits and abstract classes can have declared but undefined members
+  f (new Baz { def g })
+                   ^
+two errors found

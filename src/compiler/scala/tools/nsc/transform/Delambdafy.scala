@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package transform
 
@@ -28,7 +40,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   /** the following two members override abstract members in Transform */
   val phaseName: String = "delambdafy"
 
-  final case class LambdaMetaFactoryCapable(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol, bridges: List[Symbol], isSerializable: Boolean, addScalaSerializableMarker: Boolean)
+  final case class LambdaMetaFactoryCapable(lambdaTarget: Symbol, arity: Int, functionalInterface: Symbol, sam: Symbol, bridges: List[Symbol], isSerializable: Boolean)
 
   /**
     * Get the symbol of the target lifted lambda body method from a function. I.e. if
@@ -98,8 +110,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
       // no need for adaptation when the implemented sam is of a specialized built-in function type
       val lambdaTarget = if (isSpecialized) target else createBoxingBridgeMethodIfNeeded(fun, target, functionalInterface, sam)
-      val isSerializable = samUserDefined == NoSymbol || samUserDefined.owner.isNonBottomSubClass(definitions.JavaSerializableClass)
-      val addScalaSerializableMarker = samUserDefined == NoSymbol
+      val isSerializable = samUserDefined == NoSymbol || samUserDefined.owner.isNonBottomSubClass(definitions.SerializableClass)
 
       val samBridges = logResultIf[List[Symbol]](s"will add SAM bridges for $fun", _.nonEmpty) {
         userSamCls.fold[List[Symbol]](Nil) {
@@ -113,7 +124,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       // see https://docs.oracle.com/javase/8/docs/api/java/lang/invoke/LambdaMetafactory.html
       //   instantiatedMethodType is derived from lambdaTarget's signature
       //   samMethodType is derived from samOf(functionalInterface)'s signature
-      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface, sam, samBridges, isSerializable, addScalaSerializableMarker))
+      apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface, sam, samBridges, isSerializable))
 
       apply
     }
@@ -347,7 +358,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     private val thisReferringMethods = mutable.Set[Symbol]()
 
     // the set of lifted lambda body methods that each method refers to
-    private val liftedMethodReferences = mutable.Map[Symbol, Set[Symbol]]().withDefault(_ => mutable.Set())
+    private val liftedMethodReferences = mutable.Map[Symbol, mutable.Set[Symbol]]()
 
     def methodReferencesThisIn(tree: Tree) = {
       traverse(tree)
@@ -365,7 +376,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         else {
           seen += symbol
           (thisReferringMethods contains symbol) ||
-            (liftedMethodReferences(symbol) exists loop) && {
+            (liftedMethodReferences.contains(symbol) && liftedMethodReferences(symbol).exists(loop)) && {
               // add it early to memoize
               debuglog(s"$symbol indirectly refers to 'this'")
               thisReferringMethods += symbol
@@ -389,9 +400,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // we don't drill into functions because at the beginning of this phase they will always refer to 'this'.
         // They'll be of the form {(args...) => this.anonfun(args...)}
         // but we do need to make note of the lifted body method in case it refers to 'this'
-        if (currentMethod.exists) liftedMethodReferences(currentMethod) += targetMethod(fun)
+        if (currentMethod.exists) liftedMethodReferences.getOrElseUpdate(currentMethod, mutable.Set()) += targetMethod(fun)
       case Apply(sel @ Select(This(_), _), args) if sel.symbol.isLiftedMethod =>
-        if (currentMethod.exists) liftedMethodReferences(currentMethod) += sel.symbol
+        if (currentMethod.exists) liftedMethodReferences.getOrElseUpdate(currentMethod, mutable.Set()) += sel.symbol
         super.traverseTrees(args)
       case Apply(fun, outer :: rest) if shouldElideOuterArg(fun.symbol, outer) =>
         fun.traverse(this)

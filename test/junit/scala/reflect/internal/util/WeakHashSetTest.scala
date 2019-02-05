@@ -16,7 +16,7 @@ class WeakHashSetTest {
 
   // basic emptiness check
   @Test
-  def checkEmpty {
+  def checkEmpty: Unit = {
     val hs = new WeakHashSet[String]()
     assert(hs.size == 0)
     hs.diagnostics.fullyValidate
@@ -24,7 +24,7 @@ class WeakHashSetTest {
 
   // make sure += works
   @Test
-  def checkPlusEquals {
+  def checkPlusEquals: Unit = {
     val hs = new WeakHashSet[String]()
     val elements = List("hello", "goodbye")
     elements foreach (hs += _)
@@ -36,7 +36,7 @@ class WeakHashSetTest {
 
   // make sure += works when there are collisions
   @Test
-  def checkPlusEqualsCollisions {
+  def checkPlusEqualsCollisions: Unit = {
     val hs = new WeakHashSet[Collider]()
     val elements = List("hello", "goodbye") map Collider
     elements foreach (hs += _)
@@ -48,7 +48,7 @@ class WeakHashSetTest {
 
   // add a large number of elements to force rehashing and then validate
   @Test
-  def checkRehashing {
+  def checkRehashing: Unit = {
     val size = 200
     val hs = new WeakHashSet[String]()
     val elements = (0 until size).toList map ("a" + _)
@@ -59,7 +59,7 @@ class WeakHashSetTest {
 
   // make sure rehashing works properly when the set is rehashed
   @Test
-  def checkRehashCollisions {
+  def checkRehashCollisions: Unit = {
     val size = 200
     val hs = new WeakHashSet[Collider]()
     val elements = (0 until size).toList map {x => Collider("a" + x)}
@@ -71,7 +71,7 @@ class WeakHashSetTest {
   // test that unreferenced objects are removed
   // not run in an automated environment because gc behavior can't be relied on
   //@Test
-  def checkRemoveUnreferencedObjects {
+  def checkRemoveUnreferencedObjects: Unit = {
     val size = 200
     val hs = new WeakHashSet[Collider]()
     val elements = (0 until size).toList map {x => Collider("a" + x)}
@@ -93,7 +93,7 @@ class WeakHashSetTest {
 
   // make sure findOrUpdate returns the originally entered element
   @Test
-  def checkFindOrUpdate {
+  def checkFindOrUpdate: Unit = {
     val size = 200
     val hs = new WeakHashSet[Collider]()
     val elements = (0 until size).toList map {x => Collider("a" + x)}
@@ -108,7 +108,7 @@ class WeakHashSetTest {
 
   // check -= functionality
   @Test
-  def checkMinusEquals {
+  def checkMinusEquals: Unit = {
     val hs = new WeakHashSet[String]()
     val elements = List("hello", "goodbye")
     elements foreach (hs += _)
@@ -121,7 +121,7 @@ class WeakHashSetTest {
 
   // check -= when there are collisions
   @Test
-  def checkMinusEqualsCollisions {
+  def checkMinusEqualsCollisions: Unit = {
     val hs = new WeakHashSet[Collider]
     val elements = List(Collider("hello"), Collider("goodbye"))
     elements foreach (hs += _)
@@ -137,7 +137,7 @@ class WeakHashSetTest {
 
   // check that the clear method actually cleans everything
   @Test
-  def checkClear {
+  def checkClear: Unit = {
     val size = 200
     val hs = new WeakHashSet[String]()
     val elements = (0 until size).toList map ("a" + _)
@@ -150,7 +150,7 @@ class WeakHashSetTest {
 
   // check that the iterator covers all the contents
   @Test
-  def checkIterator {
+  def checkIterator: Unit = {
     val hs = new WeakHashSet[String]()
     val elements = (0 until 20).toList map ("a" + _)
     elements foreach (hs += _)
@@ -160,7 +160,7 @@ class WeakHashSetTest {
 
   // check that the iterator covers all the contents even when there is a collision
   @Test
-  def checkIteratorCollisions {
+  def checkIteratorCollisions: Unit = {
     val hs = new WeakHashSet[Collider]
     val elements = (0 until 20).toList map {x => Collider("a" + x)}
     elements foreach (hs += _)

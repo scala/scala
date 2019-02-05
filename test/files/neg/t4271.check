@@ -5,6 +5,7 @@ t4271.scala:10: error: value ensuring is not a member of Int
   5 ensuring true
     ^
 t4271.scala:11: error: value -> is not a member of Int
+did you mean >>>?
   3 -> 5
     ^
 three errors found

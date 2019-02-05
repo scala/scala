@@ -1,27 +1,33 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.collection.concurrent;
+
+import java.lang.Object;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class MainNode<K, V> extends BasicNode {
 
-    @SuppressWarnings("rawtypes")
-    public static final AtomicReferenceFieldUpdater<MainNode, MainNode> updater =
-            AtomicReferenceFieldUpdater.newUpdater(MainNode.class, MainNode.class, "prev");
+    @SuppressWarnings("unchecked")
+    public static final AtomicReferenceFieldUpdater<MainNode<?, ?>, MainNode<?, ?>> updater =
+            AtomicReferenceFieldUpdater.newUpdater((Class<MainNode<?, ?>>) (Class<?>) MainNode.class, (Class<MainNode<?, ?>>) (Class<?>) MainNode.class, "prev");
 
     public volatile MainNode<K, V> prev = null;
 
     public abstract int cachedSize(Object ct);
 
     public boolean CAS_PREV(MainNode<K, V> oldval, MainNode<K, V> nval) {
-	return updater.compareAndSet(this, oldval, nval);
+        return updater.compareAndSet(this, oldval, nval);
     }
 
     public void WRITE_PREV(MainNode<K, V> nval) {
@@ -33,7 +39,7 @@ abstract class MainNode<K, V> extends BasicNode {
     // irregardless of whether there are concurrent ARFU updates
     @Deprecated @SuppressWarnings("unchecked")
     public MainNode<K, V> READ_PREV() {
-	return updater.get(this);
+        return (MainNode<K, V>) updater.get(this);
     }
 
 }

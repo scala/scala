@@ -1,0 +1,6 @@
+t10820-warn.scala:13: warning: return statement uses an exception to pass control to the caller of the enclosing named method result
+  def result: Option[Int] = Try(0/0).recoverWith { case _ => return Some(-1) }.toOption
+                                                             ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

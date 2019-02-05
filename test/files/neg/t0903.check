@@ -1,8 +1,8 @@
-t0903.scala:3: error: value += is not a member of Int
+t0903.scala:5: error: value += is not a member of Int
   Expression does not convert to assignment because receiver is not assignable.
   x += 1
     ^
-t0903.scala:4: error: reassignment to val
+t0903.scala:6: error: reassignment to val
   x = 2
     ^
 two errors found

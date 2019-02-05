@@ -9,7 +9,7 @@ class ABC extends A with B with C {
   private def reflected = (
     Thread.currentThread.getStackTrace
       takeWhile (_.getMethodName != "main")
-      exists (_.toString contains "sun.reflect.")
+      exists (_.toString contains ".reflect.")
   )
   lazy val y: PQ = new PQ(reflected)
 }
@@ -66,7 +66,7 @@ object Gen {
       |
       |object Test {
       |  def whatis[T: TypeTag](x: T) = typeOf[T]
-      |  def sshow(label: String, xs: Traversable[Any]) {
+      |  def sshow(label: String, xs: Iterable[Any]) {
       |    println("==== " + label + " ====$nl")
       |    xs.toList.map("" + _).sorted foreach println
       |    println("$nl")

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.interpreter
@@ -92,7 +99,7 @@ trait ExprTyper {
         case tpe                     => tpe
       }
     }
-    val typeOpt = (properTypeOpt /: (1 to MaxFunctionArity)) {
+    val typeOpt = (1 to MaxFunctionArity).foldLeft(properTypeOpt){
       (acc, n: Int) => acc orElse typeFromTypeString(n) }
     typeOpt getOrElse NoType
   }

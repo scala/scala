@@ -1,7 +1,7 @@
 import scala.io.Source
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val lines = Source.fromString(
       """|
          |This is a file

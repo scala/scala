@@ -27,7 +27,7 @@ object A {
   }
 
 
-  def method {
+  def method: Unit = {
     try {
       lazy val x6 = 6
       println(x6)
@@ -56,7 +56,7 @@ object A {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     A.method
   }
 }

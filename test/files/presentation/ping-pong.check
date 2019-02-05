@@ -1,8 +1,8 @@
 reload: PingPong.scala
 
-askTypeCompletion at PingPong.scala(10,23)
+askTypeCompletion at PingPong.scala(10,31)
 ================================================================================
-[response] askTypeCompletion at (10,23)
+[response] askTypeCompletion at (10,31)
 retrieved 32 members
 [inaccessible] private[this] val ping: Ping
 [inaccessible] protected[package lang] def clone(): Object
@@ -10,9 +10,9 @@ retrieved 32 members
 def +(other: String): String
 def ->[B](y: B): (Pong, B)
 def ensuring(cond: Boolean): Pong
-def ensuring(cond: Boolean,msg: => Any): Pong
+def ensuring(cond: Boolean, msg: => Any): Pong
 def ensuring(cond: Pong => Boolean): Pong
-def ensuring(cond: Pong => Boolean,msg: => Any): Pong
+def ensuring(cond: Pong => Boolean, msg: => Any): Pong
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -30,23 +30,23 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def toString(): String
 private[this] val name: String
 ================================================================================
 
-askTypeCompletion at PingPong.scala(19,20)
+askTypeCompletion at PingPong.scala(19,28)
 ================================================================================
-[response] askTypeCompletion at (19,20)
+[response] askTypeCompletion at (19,28)
 retrieved 33 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String
 def ->[B](y: B): (Ping, B)
 def ensuring(cond: Boolean): Ping
-def ensuring(cond: Boolean,msg: => Any): Ping
+def ensuring(cond: Boolean, msg: => Any): Ping
 def ensuring(cond: Ping => Boolean): Ping
-def ensuring(cond: Ping => Boolean,msg: => Any): Ping
+def ensuring(cond: Ping => Boolean, msg: => Any): Ping
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -66,20 +66,20 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 override def toString(): String
 private[this] val pong: Pong
 ================================================================================
 
-askType at PingPong.scala(8,10)
+askType at PingPong.scala(8,18)
 ================================================================================
-[response] askTypeAt (8,10)
+[response] askTypeAt (8,18)
 def loop: Unit = Ping.this.poke()
 ================================================================================
 
-askType at PingPong.scala(10,10)
+askType at PingPong.scala(10,18)
 ================================================================================
-[response] askTypeAt (10,10)
+[response] askTypeAt (10,18)
 def poke: Unit = Ping.this.pong.poke()
 ================================================================================
 

@@ -11,7 +11,7 @@
  *  bounds hold.
  */
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val foo = Foo.createUnspecialized[Int]
     println(foo.bar(List(1, 2, 3)))
   }

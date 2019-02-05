@@ -1,12 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.interpreter.shell
 
 import scala.util.control.NonFatal
 import scala.tools.nsc.interpreter.Repl
 import scala.tools.nsc.interpreter.jline
+import scala.tools.nsc.interpreter.Naming
 
 class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
   import ReplCompletion._
@@ -20,6 +29,7 @@ class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
   }
 
   def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] = None
+
   def complete(buffer: String, cursor: Int): CompletionResult = {
     shellCompletion(buffer, cursor) getOrElse {
       // special case for:
@@ -57,13 +67,15 @@ class ReplCompletion(intp: Repl) extends jline.JLineCompletion {
 
     // secret handshakes
     val slashPrint  = """.*// *print *""".r
+    val slashPrintRaw  = """.*// *printRaw *""".r
     val slashTypeAt = """.*// *typeAt *(\d+) *(\d+) *""".r
     try {
       intp.presentationCompile(cursor, buf) match {
         case Left(_) => NoCompletions
         case Right(result) => try {
           buf match {
-            case slashPrint() if cursor == buf.length => CompletionResult(cursor, "" :: result.print :: Nil)
+            case slashPrint() if cursor == buf.length => CompletionResult(cursor, "" :: Naming.unmangle(result.print) :: Nil)
+            case slashPrintRaw() if cursor == buf.length => CompletionResult(cursor, "" :: result.print :: Nil)
             case slashTypeAt(start, end) if cursor == buf.length => CompletionResult(cursor, "" :: result.typeAt(start.toInt, end.toInt) :: Nil)
             case _ => val (c, r) = result.candidates(tabCount); CompletionResult(c, r)
           }

@@ -6,9 +6,7 @@ import org.scalacheck._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop.forAll
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{BuildFrom, immutable, mutable}
 import scala.util.Try
 import scala.collection.mutable.{RedBlackTree => RB}
 
@@ -140,7 +138,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.iteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted
+    map.iteratorFrom(k).toSeq == entries.view.filterKeys(_ >= k).toSeq.sorted
   }
 
   property("keysIteratorFrom") = forAll { (entries: Map[K, V], k: K) =>
@@ -154,7 +152,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
     val map = mutable.TreeMap[K, V]()
     map ++= entries
 
-    map.valuesIteratorFrom(k).toSeq == entries.filterKeys(_ >= k).toSeq.sorted.map(_._2)
+    map.valuesIteratorFrom(k).toSeq == entries.view.filterKeys(_ >= k).toSeq.sorted.map(_._2)
   }
 
   property("headOption") = forAll { (map: mutable.TreeMap[K, V]) =>
@@ -163,6 +161,28 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
 
   property("lastOption") = forAll { (map: mutable.TreeMap[K, V]) =>
     map.lastOption == Try(map.iterator.max).toOption
+  }
+
+  property("minAfter") = forAll { (allEntries: Map[K, V]) =>
+    val entries = allEntries.take(allEntries.size / 2)
+
+    val map = mutable.TreeMap[K, V]()
+    map ++= entries
+
+    allEntries.forall { case (k, v) =>
+      map.minAfter(k) == map.rangeImpl(Some(k), None).headOption
+    }
+  }
+
+  property("maxBefore") = forAll { (allEntries: Map[K, V]) =>
+    val entries = allEntries.take(allEntries.size / 2)
+
+    val map = mutable.TreeMap[K, V]()
+    map ++= entries
+
+    allEntries.forall { case (k, v) =>
+      map.maxBefore(k) == map.rangeImpl(None, Some(k)).lastOption
+    }
   }
 
   property("clear") = forAll { (map: mutable.TreeMap[K, V]) =>
@@ -194,7 +214,7 @@ object MutableTreeMapProperties extends Properties("mutable.TreeMap") with Gener
   }
 }
 
-object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") with Generators {
+object MutableTreeMapProjectionProperties extends Properties("mutable.TreeMapProjection") with Generators {
   type K = String
   type V = Int
 
@@ -203,8 +223,8 @@ object MutableTreeMapViewProperties extends Properties("mutable.TreeMapView") wi
   def in(key: K, from: Option[K], until: Option[K]) =
     from.fold(true)(_ <= key) && until.fold(true)(_ > key)
 
-  def entriesInView[This <: TraversableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: CanBuildFrom[This, (K, V), That]) = {
-    (bf.apply(entries) ++= entries.filter { case (k, _) => in(k, from, until) }).result()
+  def entriesInView[This <: IterableOnce[(K, V)], That](entries: This, from: Option[K], until: Option[K])(implicit bf: BuildFrom[This, (K, V), That]) = {
+    (bf.newBuilder(entries) ++= entries.iterator.filter { case (k, _) => in(k, from, until) }).result()
   }
 
   property("get, contains") = forAll { (allEntries: Map[K, V], from: Option[K], until: Option[K]) =>

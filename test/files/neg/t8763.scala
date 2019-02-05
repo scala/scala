@@ -2,7 +2,7 @@
 import collection.mutable
 
 object Foo {
-  def bar() {
+  def bar(): Unit = {
     val names_times = mutable.Map[String, mutable.Set[Long]]()
     val line = ""
     val Array(fields) = line.split("\t")

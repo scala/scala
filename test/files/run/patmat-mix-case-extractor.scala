@@ -35,7 +35,7 @@ class A {
     case CaseClass4(x, xs @ _*) => x + xs.sum
     case _                      => -2
   }
-  def run() {
+  def run(): Unit = {
     List(
       f1(CaseClass1()),
       f1(CaseClass2(1, 2, 3)),

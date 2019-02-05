@@ -4,7 +4,7 @@ object coinv {
  
   up(List("hi"))
  
-  // should not compile; `l' is unsound
+  // should not compile; `l` is unsound
   def oops1 = down[({type l[-a] = List[a]})#l](List('whatever: Object)).head + "oops"
   // scala> oops1
   // java.lang.ClassCastException: scala.Symbol cannot be cast to java.lang.String
@@ -15,7 +15,7 @@ object coinv {
   // [error] type A is contravariant, but type _ is declared covariant
   // up[Stringer]("printed: " + _)
  
-  // should not compile; `l' is unsound
+  // should not compile; `l` is unsound
   def oops2 = up[({type l[+a] = Stringer[a]})#l]("printed: " + _)
   // scala> oops2(Some(33))
   // java.lang.ClassCastException: scala.Some cannot be cast to java.lang.String

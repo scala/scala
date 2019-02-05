@@ -17,7 +17,7 @@ object Test extends Function0[Int] {
   val v = 7
   def apply() = 17
   override def toString = "Test"
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val sut = new A()()
     println(sut.toString)
     println(sut.m())

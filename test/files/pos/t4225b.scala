@@ -1,3 +1,6 @@
+
+// scalac: -Yrangepos
+//
 class Foo {
   class Bar
   object Bar {

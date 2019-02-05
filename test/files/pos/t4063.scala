@@ -15,7 +15,7 @@ trait CMap[K, V] extends CIterableLike[(K, V), CMap[K, V]] with Parallelizable[P
 object Test {
   var x = 0
 
-  def main() {
+  def main(): Unit = {
     val map: CMap[Int, CSet[Int]] = new CMap[Int, CSet[Int]] {}
     val set: CSet[Int] = new CSet[Int] {}
 

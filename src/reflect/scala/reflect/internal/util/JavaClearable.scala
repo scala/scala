@@ -1,9 +1,21 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.internal.util
 
 import java.lang.ref.WeakReference
 import java.util.{Collection => JCollection, Map => JMap}
 
-import scala.collection.generic.Clearable
+import scala.collection.mutable.Clearable
 
 object JavaClearable {
   def forCollection[T <: JCollection[_]](data: T): JavaClearable[T] = new JavaClearableCollection(new WeakReference(data))

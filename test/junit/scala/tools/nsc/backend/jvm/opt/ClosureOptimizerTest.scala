@@ -27,9 +27,7 @@ class ClosureOptimizerTest extends BytecodeTesting {
       """.stripMargin
 
     val c = compileClass(code)
-    val t = getAsmMethod(c, "t")
-    val bodyCall = findInstr(t, "INVOKESTATIC C.$anonfun$t$1 ()Lscala/runtime/Nothing$")
-    assert(bodyCall.getNext.getOpcode == ATHROW)
+    assertSameSummary(getMethod(c, "t"), List(ALOAD, "isEmpty", IFEQ /*12*/, NEW, DUP, LDC, "<init>", ATHROW, -1 /*12*/, ALOAD, ARETURN))
   }
 
   @Test
@@ -43,10 +41,7 @@ class ClosureOptimizerTest extends BytecodeTesting {
       """.stripMargin
 
     val c = compileClass(code)
-    val t = getAsmMethod(c, "t")
-    val bodyCall = findInstr(t, "INVOKESTATIC C.$anonfun$t$1 ()Lscala/runtime/Null$")
-    assert(bodyCall.getNext.getOpcode == POP)
-    assert(bodyCall.getNext.getNext.getOpcode == ACONST_NULL)
+    assertSameSummary(getMethod(c, "t"), List(ALOAD, "isEmpty", IFEQ /*9*/, ACONST_NULL, GOTO /*12*/, -1 /*9*/, ALOAD, -1 /*12*/, CHECKCAST, ARETURN))
   }
 
   @Test
@@ -62,8 +57,7 @@ class ClosureOptimizerTest extends BytecodeTesting {
     val c = compileClass(code)
     assertSameCode(getMethod(c, "t"),
       List(VarOp(ALOAD, 1), Invoke(INVOKEVIRTUAL, "scala/collection/immutable/List", "head", "()Ljava/lang/Object;", false),
-        TypeOp(CHECKCAST, "java/lang/String"), Invoke(INVOKESTATIC, "C", "$anonfun$t$1", "(Ljava/lang/String;)Ljava/lang/String;", false),
-        Op(ARETURN)))
+        TypeOp(CHECKCAST, "java/lang/String"), Op(ARETURN)))
   }
 
   @Test

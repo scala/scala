@@ -1,29 +1,66 @@
-9c9
-< 
----
-> /* INSTRUMENTED VERSION */
-51a52,59
->     public static int booleanBoxCount = 0;
->     public static int characterBoxCount = 0;
->     public static int byteBoxCount = 0;
->     public static int shortBoxCount = 0;
->     public static int integerBoxCount = 0;
->     public static int longBoxCount = 0;
->     public static int floatBoxCount = 0;
->     public static int doubleBoxCount = 0;
-53a62
->         booleanBoxCount += 1;
-57a67
->         characterBoxCount += 1;
-61a72
->         byteBoxCount += 1;
-65a77
->         shortBoxCount += 1;
-69a82
->         integerBoxCount += 1;
-73a87
->         longBoxCount += 1;
-77a92
->         floatBoxCount += 1;
-83a99
->         doubleBoxCount += 1;
+--- src/library/scala/runtime/BoxesRunTime.java	2016-12-09 15:12:14.000000000 +0100
++++ test/instrumented/library/scala/runtime/BoxesRunTime.java	2018-04-05 22:32:22.000000000 +0200
+@@ -9,7 +9,7 @@
+  * See the NOTICE file distributed with this work for
+  * additional information regarding copyright ownership.
+  */
+-
++/* INSTRUMENTED VERSION */
+ package scala.runtime;
+
+ import scala.math.ScalaNumber;
+@@ -47,37 +47,54 @@
+
+ /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
+
++    public static int booleanBoxCount = 0;
++    public static int characterBoxCount = 0;
++    public static int byteBoxCount = 0;
++    public static int shortBoxCount = 0;
++    public static int integerBoxCount = 0;
++    public static int longBoxCount = 0;
++    public static int floatBoxCount = 0;
++    public static int doubleBoxCount = 0;
++
+     public static java.lang.Boolean boxToBoolean(boolean b) {
++        booleanBoxCount += 1;
+         return java.lang.Boolean.valueOf(b);
+     }
+
+     public static java.lang.Character boxToCharacter(char c) {
++        characterBoxCount += 1;
+         return java.lang.Character.valueOf(c);
+     }
+
+     public static java.lang.Byte boxToByte(byte b) {
++        byteBoxCount += 1;
+         return java.lang.Byte.valueOf(b);
+     }
+
+     public static java.lang.Short boxToShort(short s) {
++        shortBoxCount += 1;
+         return java.lang.Short.valueOf(s);
+     }
+
+     public static java.lang.Integer boxToInteger(int i) {
++        integerBoxCount += 1;
+         return java.lang.Integer.valueOf(i);
+     }
+
+     public static java.lang.Long boxToLong(long l) {
++        longBoxCount += 1;
+         return java.lang.Long.valueOf(l);
+     }
+
+     public static java.lang.Float boxToFloat(float f) {
++        floatBoxCount += 1;
+         return java.lang.Float.valueOf(f);
+     }
+
+     public static java.lang.Double boxToDouble(double d) {
+         // System.out.println("box " + d);
+         // (new Throwable()).printStackTrace();
++        doubleBoxCount += 1;
+         return java.lang.Double.valueOf(d);
+     }
+ 

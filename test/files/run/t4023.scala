@@ -20,7 +20,7 @@ object Test {
     val valuesTry3 = C.classes3.sortBy(_.getName)
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println("Try 1: (" + TestHelper.valuesTry1.length + " classes)")
     TestHelper.valuesTry1.foreach(println)
     println("Try 2: (" + TestHelper.valuesTry2.length + " classes)")

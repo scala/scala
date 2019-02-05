@@ -2,7 +2,7 @@ package instrumented
 
 object MyPredef {
   @inline
-  final def assert(assertion: Boolean, message: => Any) {
+  final def assert(assertion: Boolean, message: => Any): Unit = {
     if (!assertion)
       throw new java.lang.AssertionError("assertion failed: " + message)
   }

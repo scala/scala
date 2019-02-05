@@ -7,7 +7,7 @@ object Test {
     val value= 1
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     implicit val b: Box= new Box {
       val value= 2
     }

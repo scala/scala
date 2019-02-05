@@ -5,13 +5,13 @@ object Junk {
     ret
   }
 
-  def test2() {
+  def test2(): Unit = {
     println(s.length)
     val z = 0
     lazy val s = "abc"
   }
 
-  def test4() {
+  def test4(): Unit = {
     lazy val x = {
       x
       val z = 0

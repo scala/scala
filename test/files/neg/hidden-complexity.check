@@ -1,0 +1,9 @@
+hidden-complexity.scala:12: error: diverging implicit expansion for type Foo[List]
+starting with method mkFoo in object Foo
+  implicitly[Foo[List]]
+            ^
+hidden-complexity.scala:13: error: diverging implicit expansion for type Bar[List]
+starting with method mkBar in object Bar
+  implicitly[Bar[List]]
+            ^
+two errors found

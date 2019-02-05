@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package runtime
@@ -60,7 +72,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   /** The type completer for packages.
    */
   class LazyPackageType extends LazyType with FlagAgnosticCompleter {
-    override def complete(sym: Symbol) {
+    override def complete(sym: Symbol): Unit = {
       assert(sym.isPackageClass)
       // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
       // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
@@ -119,7 +131,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     // package scopes need to synchronize on the GIL
     // because lookupEntry might cause changes to the global symbol table
     override def syncLockSynchronized[T](body: => T): T = gilSynchronized(body)
-    private val negatives = new mutable.HashSet[Name]
+    private[this] val negatives = new mutable.HashSet[Name]
     override def lookupEntry(name: Name): ScopeEntry = syncLockSynchronized {
       val e = super.lookupEntry(name)
       if (e != null)
@@ -172,7 +184,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType) {
+  override def validateClassInfo(tp: ClassInfoType): Unit = {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
 

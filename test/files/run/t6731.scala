@@ -1,16 +1,18 @@
+// scalac: -Yrangepos:false -deprecation
+//
 import scala.language.dynamics
 import scala.reflect.{ ClassTag, classTag }
 
 object Util {
   def show[T](x: T): T = { println(x) ; x }
-  def mkArgs(xs: Any*) = xs map { case ((k, v)) => k + "=" + v ; case x => "" + x } mkString ("(", ", ", ")")
+  def mkArgs(xs: Any*) = xs map { case ((k, v)) => s"$k=$v" ; case x => "" + x } mkString ("(", ", ", ")")
 }
 import Util._
 
 abstract class MonoDynamic extends Dynamic {
-  def selectDynamic(name: String): String                           = show(this + "." + name)
-  def applyDynamic(name: String)(args: Any*): String                = show(this + "." + name + mkArgs(args: _*))
-  def applyDynamicNamed(name: String)(args: (String, Any)*): String = show(this + "." + name + mkArgs(args: _*))
+  def selectDynamic(name: String): String                           = show(this.toString + "." + name)
+  def applyDynamic(name: String)(args: Any*): String                = show(this.toString + "." + name + mkArgs(args: _*))
+  def applyDynamicNamed(name: String)(args: (String, Any)*): String = show(this.toString + "." + name + mkArgs(args: _*))
 
   override def toString = (this.getClass.getName split '.').last
 }
@@ -74,11 +76,11 @@ object Nest1 extends Dynamic {
 
 object Named extends Dynamic {
   def applyDynamic(name: String)(args: Any*): Named.type = {
-    show(this + "." + name + mkArgs(args: _*))
+    show(this.toString + "." + name + mkArgs(args: _*))
     this
   }
   def applyDynamicNamed(name: String)(args: (String, Any)*): Named.type = {
-    show(this + "." + name + mkArgs(args: _*))
+    show(this.toString + "." + name + mkArgs(args: _*))
     this
   }
 
@@ -88,11 +90,11 @@ object Named extends Dynamic {
 
 object Named2 extends Dynamic {
   def applyDynamic(name: String)(a: Any)(b: Any = "b", c: Any = "c"): Named2.type = {
-    show(this + "." + name + mkArgs(a) + mkArgs(b, c))
+    show(this.toString + "." + name + mkArgs(a) + mkArgs(b, c))
     this
   }
   def applyDynamicNamed(name: String)(a: (String, Any))(b: (String, Any), c: (String, Any)): Named2.type = {
-    show(this + "." + name + mkArgs(a) + mkArgs(b, c))
+    show(this.toString + "." + name + mkArgs(a) + mkArgs(b, c))
     this
   }
 

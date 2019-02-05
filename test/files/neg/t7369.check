@@ -1,13 +1,13 @@
-t7369.scala:6: warning: unreachable code
+t7369.scala:8: warning: unreachable code
     case Tuple1(X) => // unreachable
                    ^
-t7369.scala:13: warning: unreachable code
+t7369.scala:15: warning: unreachable code
     case Tuple1(true) => // unreachable
                       ^
-t7369.scala:31: warning: unreachable code
+t7369.scala:33: warning: unreachable code
     case Tuple1(X) => // unreachable
                    ^
-t7369.scala:40: warning: unreachable code
+t7369.scala:42: warning: unreachable code
     case Tuple1(null) => // unreachable
                       ^
 error: No warnings can be incurred under -Xfatal-warnings.

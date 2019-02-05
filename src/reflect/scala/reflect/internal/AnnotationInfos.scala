@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -36,7 +43,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         // monomorphic one by introducing existentials, see scala/bug#7009 for details
         existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)
       }
-      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe), List(Literal(Constant(throwableTpe))), Nil)
+      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe :: Nil), List(Literal(Constant(throwableTpe))), Nil)
     }
 
     /** Tests for, get, or remove an annotation */
@@ -72,6 +79,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    * TODO: rename to `ConstantAnnotationArg`
    */
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
+  type JavaArgument = ClassfileAnnotArg
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
   case object UnmappableAnnotArg extends ClassfileAnnotArg
 
@@ -79,40 +87,21 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
    *  an instance of a Java enumeration value).
    */
-  case class LiteralAnnotArg(const: Constant)
-  extends ClassfileAnnotArg with LiteralArgumentApi {
-    def value = const
+  case class LiteralAnnotArg(const: Constant) extends ClassfileAnnotArg {
     override def toString = const.escapedStringValue
   }
-  object LiteralAnnotArg extends LiteralArgumentExtractor
 
   /** Represents an array of classfile annotation arguments */
-  case class ArrayAnnotArg(args: Array[ClassfileAnnotArg])
-  extends ClassfileAnnotArg with ArrayArgumentApi {
+  case class ArrayAnnotArg(args: Array[ClassfileAnnotArg]) extends ClassfileAnnotArg {
     override def toString = args.mkString("[", ", ", "]")
   }
-  object ArrayAnnotArg extends ArrayArgumentExtractor
 
   /** Represents a nested classfile annotation */
-  case class NestedAnnotArg(annInfo: AnnotationInfo)
-  extends ClassfileAnnotArg with NestedArgumentApi {
+  case class NestedAnnotArg(annInfo: AnnotationInfo) extends ClassfileAnnotArg {
     // The nested annotation should not have any Scala annotation arguments
     assert(annInfo.args.isEmpty, annInfo.args)
-    def annotation = annInfo
     override def toString = annInfo.toString
   }
-  object NestedAnnotArg extends NestedArgumentExtractor
-
-  type JavaArgument = ClassfileAnnotArg
-  type LiteralArgument = LiteralAnnotArg
-  val LiteralArgument = LiteralAnnotArg
-  implicit val LiteralArgumentTag = ClassTag[LiteralAnnotArg](classOf[LiteralAnnotArg])
-  type ArrayArgument = ArrayAnnotArg
-  val ArrayArgument = ArrayAnnotArg
-  implicit val ArrayArgumentTag = ClassTag[ArrayAnnotArg](classOf[ArrayAnnotArg])
-  type NestedArgument = NestedAnnotArg
-  val NestedArgument = NestedAnnotArg
-  implicit val NestedArgumentTag = ClassTag[NestedAnnotArg](classOf[NestedAnnotArg])
 
   object AnnotationInfo {
     def marker(atp: Type): AnnotationInfo =
@@ -144,7 +133,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     assert(args.isEmpty || assocs.isEmpty, atp)
 
     // necessary for reification, see Reifiers.scala for more info
-    private var orig: Tree = EmptyTree
+    private[this] var orig: Tree = EmptyTree
     def original = orig
     def setOriginal(t: Tree): this.type = {
       orig = t
@@ -158,7 +147,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   private[scala] def completeAnnotationToString(annInfo: AnnotationInfo) = {
     import annInfo._
     val s_args = if (!args.isEmpty) args.mkString("(", ", ", ")") else ""
-    val s_assocs = if (!assocs.isEmpty) (assocs map { case (x, y) => x+" = "+y } mkString ("(", ", ", ")")) else ""
+    val s_assocs = if (!assocs.isEmpty) (assocs map { case (x, y) => s"$x = $y" } mkString ("(", ", ", ")")) else ""
     s"${atp}${s_args}${s_assocs}"
   }
 
@@ -166,7 +155,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  definitions) have to be lazy (#1782)
    */
   final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
-    private var forced = false
+    private[this] var forced = false
     private lazy val forcedInfo = try lazyInfo finally forced = true
 
     def atp: Type                               = forcedInfo.atp
@@ -215,7 +204,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // see annotationArgRewriter
     lazy val isTrivial = atp.isTrivial && !hasArgWhich(_.isInstanceOf[This])
 
-    private var rawpos: Position = NoPosition
+    private[this] var rawpos: Position = NoPosition
     def pos = rawpos
     def setPos(pos: Position): this.type = { // Syncnote: Setpos inaccessible to reflection, so no sync in rawpos necessary.
       rawpos = pos
@@ -269,7 +258,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether the type or any of the arguments are erroneous */
     def isErroneous = atp.isErroneous || args.exists(_.isErroneous)
 
-    def isStatic = symbol isNonBottomSubClass StaticAnnotationClass
+    final def isStatic = symbol.isStaticAnnotation
 
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
@@ -280,8 +269,6 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def symbolArg(index: Int) = argAtIndex(index) collect {
       case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
         newTermName(str.stringValue)
-      case Literal(Constant(s: scala.Symbol)) =>
-        newTermName(s.name)
     }
 
     // !!! when annotation arguments are not literals, but any sort of
@@ -292,6 +279,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None
+
+    def transformArgs(f: List[Tree] => List[Tree]): AnnotationInfo =
+      new CompleteAnnotationInfo(atp, f(args), assocs)
 
     override def hashCode = atp.## + args.## + assocs.##
     override def equals(other: Any) = other match {
@@ -316,7 +306,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
           val tpe = if (const.tag == UnitTag) UnitTpe else ConstantType(const)
           Literal(const) setType tpe
         case ArrayAnnotArg(jargs) =>
-          val args = jargs map reverseEngineerArg
+          val args = jargs.map(reverseEngineerArg _)
           // TODO: I think it would be a good idea to typecheck Java annotations using a more traditional algorithm
           // sure, we can't typecheck them as is using the `new jann(foo = bar)` syntax (because jann is going to be an @interface)
           // however we can do better than `typedAnnotation` by desugaring the aforementioned expression to
@@ -334,8 +324,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case (name, jarg) :: rest => NamedArg(Ident(name), reverseEngineerArg(jarg)) :: reverseEngineerArgs(rest)
         case Nil => Nil
       }
-      if (ann.javaArgs.isEmpty) ann.scalaArgs
-      else reverseEngineerArgs(ann.javaArgs.toList)
+      if (ann.assocs.isEmpty) ann.args
+      else reverseEngineerArgs(ann.assocs)
     }
 
     // TODO: at the moment, constructor selection is unattributed, because AnnotationInfos lack necessary information

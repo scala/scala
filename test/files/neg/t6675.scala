@@ -1,3 +1,5 @@
+// scalac: -deprecation -Xfatal-warnings
+//
 object X {
   def unapply(s: String): Option[(Int,Int,Int)] = Some((1,2,3))
 }

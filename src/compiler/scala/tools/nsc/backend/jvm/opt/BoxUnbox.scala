@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -14,6 +21,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.{AsmAnalyzer, ProdConsAnalyzer}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class BoxUnbox {
@@ -226,20 +234,20 @@ abstract class BoxUnbox {
         })
 
         if (canRewrite) {
-          val localSlots: Vector[(Int, Type)] = boxKind.boxedTypes.map(tp => (getLocal(tp.getSize), tp))(collection.breakOut)
+          val localSlots = Vector.from[(Int, Type)](boxKind.boxedTypes.iterator.map(tp => (getLocal(tp.getSize), tp)))
 
           // store boxed value(s) into localSlots
-          val storeOps = localSlots.toList reverseMap { case (slot, tp) =>
+          val storeOps = localSlots.reverseIterator map { case (slot, tp) =>
             new VarInsnNode(tp.getOpcode(ISTORE), slot)
-          }
+          } to(List)
           val storeInitialValues = creation.loadInitialValues match {
             case Some(ops) => ops ::: storeOps
             case None => storeOps
           }
           if (keepBox) {
-            val loadOps: List[VarInsnNode] = localSlots.map({ case (slot, tp) =>
+            val loadOps = List.from[VarInsnNode](localSlots.iterator.map({ case (slot, tp) =>
               new VarInsnNode(tp.getOpcode(ILOAD), slot)
-            })(collection.breakOut)
+            }))
             toInsertBefore(creation.valuesConsumer) = storeInitialValues ::: loadOps
           } else {
             toReplace(creation.valuesConsumer) = storeInitialValues
@@ -333,7 +341,7 @@ abstract class BoxUnbox {
                 pops ::: extraction.postExtractionAdaptationOps(boxKind.boxedTypes.head)
               } else {
                 var loadOps: List[AbstractInsnNode] = null
-                val consumeStack = boxKind.boxedTypes.zipWithIndex reverseMap {
+                val consumeStack = boxKind.boxedTypes.zipWithIndex.reverseIterator.map {
                   case (tp, i) =>
                     if (i == valueIndex) {
                       val resultSlot = getLocal(tp.getSize)
@@ -342,7 +350,7 @@ abstract class BoxUnbox {
                     } else {
                       getPop(tp.getSize)
                     }
-                }
+                }.to(List)
                 consumeStack ::: loadOps
               }
               toReplace(extraction.consumer) = replacementOps
@@ -398,6 +406,8 @@ abstract class BoxUnbox {
         }
       }
 
+      // We don't need to worry about CallGraph.closureInstantiations and
+      // BackendUtils.indyLambdaImplMethods, the removed instructions are not IndyLambdas
       def removeFromCallGraph(insn: AbstractInsnNode): Unit = insn match {
         case mi: MethodInsnNode => callGraph.removeCallsite(mi, method)
         case _ =>
@@ -419,7 +429,8 @@ abstract class BoxUnbox {
 
       method.maxLocals = nextLocal
       method.maxStack += maxStackGrowth
-      toInsertBefore.nonEmpty || toReplace.nonEmpty || toDelete.nonEmpty
+      val changed = toInsertBefore.nonEmpty || toReplace.nonEmpty || toDelete.nonEmpty
+      changed
     }
   }
 
@@ -512,7 +523,7 @@ abstract class BoxUnbox {
           new VarInsnNode(opc, tp._2)
         }
         val locs = newLocals(vi.`var`)
-        replacements += vi -> (if (isLoad) locs.map(typedVarOp) else locs.reverseMap(typedVarOp))
+        replacements += vi -> (if (isLoad) locs.map(typedVarOp) else locs.map(typedVarOp).reverse)
 
       case copyOp =>
         if (copyOp.getOpcode == DUP && valueTypes.lengthCompare(1) == 0) {
@@ -530,7 +541,7 @@ abstract class BoxUnbox {
    * this iterator returns all copy operations (load, store, dup) that are in between.
    */
   class CopyOpsIterator(initialCreations: Set[BoxCreation], finalCons: Set[BoxConsumer], prodCons: ProdConsAnalyzer) extends Iterator[AbstractInsnNode] {
-    private var queue = mutable.Queue.empty[AbstractInsnNode] ++ initialCreations.iterator.flatMap(_.boxConsumers(prodCons, ultimate = false))
+    private val queue = mutable.Queue.empty[AbstractInsnNode] ++= initialCreations.iterator.flatMap(_.boxConsumers(prodCons, ultimate = false))
 
     // a single copy operation can consume multiple producers: val a = if (b) box(1) else box(2).
     // the `ASTORE a` has two producers (the two box operations). we need to handle it only once.

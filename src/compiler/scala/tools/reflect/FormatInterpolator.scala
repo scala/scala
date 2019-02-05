@@ -1,8 +1,19 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.{ ListBuffer, Stack }
-import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
 import scala.util.matching.Regex.Match
 
@@ -21,15 +32,15 @@ abstract class FormatInterpolator {
 
   private def bail(msg: String) = global.abort(msg)
 
-  def interpolate: Tree = c.macroApplication match {
+  def interpolateF: Tree = c.macroApplication match {
     //case q"$_(..$parts).f(..$args)" =>
     case Applied(Select(Apply(_, parts), _), _, argss) =>
       val args = argss.flatten
-      def badlyInvoked = (parts.length != args.length + 1) && truly {
+      def badlyInvoked = (parts.lengthIs != (args.length + 1)) && truly {
         def because(s: String) = s"too $s arguments for interpolated string"
         val (p, msg) =
-          if (parts.length == 0) (c.prefix.tree.pos, "there are no parts")
-          else if (args.length + 1 < parts.length)
+          if (parts.isEmpty) (c.prefix.tree.pos, "there are no parts")
+          else if (parts.lengthIs > (args.length + 1))
             (if (args.isEmpty) c.enclosingPosition else args.last.pos, because("few"))
           else (args(parts.length-1).pos, because("many"))
         c.abort(p, msg)
@@ -58,7 +69,7 @@ abstract class FormatInterpolator {
    *  5) "...${smth}%%" => okay, equivalent to "...${smth}%s%%"
    *  6) "...${smth}[%legalJavaConversion]" => okay*
    *  7) "...${smth}[%illegalJavaConversion]" => error
-   *  *Legal according to [[http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html]]
+   *  *Legal according to [[https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html]]
    */
   def interpolated(parts: List[Tree], args: List[Tree]) = {
     val fstring  = new StringBuilder
@@ -101,24 +112,18 @@ abstract class FormatInterpolator {
             val suggest = {
               val r = "([0-7]{1,3}).*".r
               (s0 drop e.index + 1) match {
-                case r(n) => altOf { (0 /: n) { case (a, o) => (8 * a) + (o - '0') } }
+                case r(n) => altOf { n.foldLeft(0){ case (a, o) => (8 * a) + (o - '0') } }
                 case _    => ""
               }
             }
             val txt =
               if ("" == suggest) ""
-              else s", use $suggest instead"
+              else s"use $suggest instead"
             txt
           }
           def badOctal = {
-            def msg(what: String) = s"Octal escape literals are $what$alt."
-            if (settings.future) {
-              c.error(errPoint, msg("unsupported"))
-              s0
-            } else {
-              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"), "2.11.0")
-              try StringContext.treatEscapes(s0) catch escapeHatch
-            }
+            c.error(errPoint, s"octal escape literals are unsupported: $alt")
+            s0
           }
           if (e.index == s0.length - 1) {
             c.error(errPoint, """Trailing '\' escapes nothing.""")

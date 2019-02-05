@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -207,6 +214,7 @@ abstract class TreeInfo {
    */
   def isPureExprForWarningPurposes(tree: Tree): Boolean = tree match {
     case Typed(expr, _)                    => isPureExprForWarningPurposes(expr)
+    case Function(_, _)                    => true
     case EmptyTree | Literal(Constant(())) => false
     case _                                 =>
       def isWarnableRefTree = tree match {
@@ -442,6 +450,11 @@ abstract class TreeInfo {
     case _                  => false
   }
 
+  def isLiteralString(t: Tree): Boolean = t match {
+    case Literal(Constant(_: String)) => true
+    case _ => false
+  }
+
   /** Does the tree have a structure similar to typechecked trees? */
   private[internal] def detectTypecheckedTree(tree: Tree) =
     tree.hasExistingSymbol || tree.exists {
@@ -556,9 +569,6 @@ abstract class TreeInfo {
     case t @ Assign(id: Ident, rhs) => atPos(t.pos)(NamedArg(id, rhs))
     case t                          => t
   }
-
-  /** Is name a left-associative operator? */
-  def isLeftAssoc(operator: Name) = operator.nonEmpty && (operator.endChar != ':')
 
   /** a Match(Typed(_, tpt), _) must be translated into a switch if isSwitchAnnotation(tpt.tpe) */
   def isSwitchAnnotation(tpe: Type) = tpe hasAnnotation definitions.SwitchClass
@@ -832,7 +842,7 @@ abstract class TreeInfo {
   }
 
   /** Does list of trees start with a definition of
-   *  a class of module with given name (ignoring imports)
+   *  a class or module with given name (ignoring imports)
    */
   def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
     case Import(_, _) :: xs             => firstDefinesClassOrObject(xs, name)
@@ -854,25 +864,6 @@ abstract class TreeInfo {
       case Apply(fun, _) => unapply(fun)
       case _             => None
     }
-  }
-
-  /** Is this file the body of a compilation unit which should not
-   *  have Predef imported?
-   */
-  def noPredefImportForUnit(body: Tree) = {
-    // Top-level definition whose leading imports include Predef.
-    def isLeadingPredefImport(defn: Tree): Boolean = defn match {
-      case PackageDef(_, defs1) => defs1 exists isLeadingPredefImport
-      case Import(expr, _)      => isReferenceToPredef(expr)
-      case _                    => false
-    }
-    // Compilation unit is class or object 'name' in package 'scala'
-    def isUnitInScala(tree: Tree, name: Name) = tree match {
-      case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
-      case _                                   => false
-    }
-
-    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {
@@ -912,12 +903,19 @@ abstract class TreeInfo {
 
   def isApplyDynamicName(name: Name) = (name == nme.updateDynamic) || (name == nme.selectDynamic) || (name == nme.applyDynamic) || (name == nme.applyDynamicNamed)
 
+  private object LiteralNameOrAdapted {
+    def unapply(tree: Tree) = tree match {
+      case Literal(Constant(name))                 => Some(name)
+      case Apply(_, List(Literal(Constant(name)))) => Some(name)
+      case _                                       => None
+    }
+  }
   class DynamicApplicationExtractor(nameTest: Name => Boolean) {
     def unapply(tree: Tree) = tree match {
-      case Apply(TypeApply(Select(qual, oper), _), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Select(qual, oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((qual, name))
-      case Apply(Ident(oper), List(Literal(Constant(name)))) if nameTest(oper) => Some((EmptyTree, name))
-      case _ => None
+      case Apply(TypeApply(Select(qual, oper), _), List(LiteralNameOrAdapted(name))) if nameTest(oper) => Some((qual, name))
+      case Apply(Select(qual, oper), List(LiteralNameOrAdapted(name))) if nameTest(oper)               => Some((qual, name))
+      case Apply(Ident(oper), List(LiteralNameOrAdapted(name))) if nameTest(oper)                      => Some((EmptyTree, name))
+      case _                                                                                           => None
     }
   }
   object DynamicUpdate extends DynamicApplicationExtractor(_ == nme.updateDynamic)
@@ -969,4 +967,141 @@ abstract class TreeInfo {
     case Block(_, expr) => isMacroApplicationOrBlock(expr)
     case tree => isMacroApplication(tree)
   }
+}
+
+// imported from scalamacros/paradise
+trait MacroAnnotionTreeInfo { self: TreeInfo =>
+  import global._
+  import definitions._
+  import build.{SyntacticClassDef, SyntacticTraitDef}
+
+  def primaryConstructorArity(tree: ClassDef): Int = treeInfo.firstConstructor(tree.impl.body) match {
+    case DefDef(_, _, _, params :: _, _, _) => params.length
+  }
+
+  def anyConstructorHasDefault(tree: ClassDef): Boolean = tree.impl.body exists {
+    case DefDef(_, nme.CONSTRUCTOR, _, paramss, _, _) => mexists(paramss)(_.mods.hasDefault)
+    case _                                            => false
+  }
+
+  def isMacroAnnotation(tree: ClassDef): Boolean = {
+    val clazz = tree.symbol
+    def isAnnotation = clazz isNonBottomSubClass AnnotationClass
+    def hasMacroTransformMethod = clazz.info.member(nme.macroTransform) != NoSymbol
+    clazz != null && isAnnotation && hasMacroTransformMethod
+  }
+
+  case class AnnotationZipper(annotation: Tree, annottee: Tree, owner: Tree)
+
+  // TODO: no immediate idea how to write this in a sane way
+  def getAnnotationZippers(tree: Tree): List[AnnotationZipper] = {
+    def loop[T <: Tree](tree: T, deep: Boolean): List[AnnotationZipper] = tree match {
+      case SyntacticClassDef(mods, name, tparams, constrMods, vparamss, earlyDefs, parents, selfdef, body) =>
+        val czippers = mods.annotations.map(ann => {
+          val mods1 = mods.mapAnnotations(_ diff List(ann))
+          val annottee = PatchedSyntacticClassDef(mods1, name, tparams, constrMods, vparamss, earlyDefs, parents, selfdef, body)
+          AnnotationZipper(ann, annottee, annottee)
+        })
+        if (!deep) czippers
+        else {
+          val tzippers = for {
+            tparam <- tparams
+            AnnotationZipper(ann, tparam1: TypeDef, _) <- loop(tparam, deep = false)
+            tparams1 = tparams.updated(tparams.indexOf(tparam), tparam1)
+          } yield AnnotationZipper(ann, tparam1, PatchedSyntacticClassDef(mods, name, tparams1, constrMods, vparamss, earlyDefs, parents, selfdef, body))
+          val vzippers = for {
+            vparams <- vparamss
+            vparam <- vparams
+            AnnotationZipper(ann, vparam1: ValDef, _) <- loop(vparam, deep = false)
+            vparams1 = vparams.updated(vparams.indexOf(vparam), vparam1)
+            vparamss1 = vparamss.updated(vparamss.indexOf(vparams), vparams1)
+          } yield AnnotationZipper(ann, vparam1, PatchedSyntacticClassDef(mods, name, tparams, constrMods, vparamss1, earlyDefs, parents, selfdef, body))
+          czippers ++ tzippers ++ vzippers
+        }
+      case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
+        val tdef = tree.asInstanceOf[ClassDef]
+        val czippers = mods.annotations.map(ann => {
+          val annottee = tdef.copy(mods = mods.mapAnnotations(_ diff List(ann)))
+          AnnotationZipper(ann, annottee, annottee)
+        })
+        if (!deep) czippers
+        else {
+          val tzippers = for {
+            tparam <- tparams
+            AnnotationZipper(ann, tparam1: TypeDef, _) <- loop(tparam, deep = false)
+            tparams1 = tparams.updated(tparams.indexOf(tparam), tparam1)
+          } yield AnnotationZipper(ann, tparam1, tdef.copy(tparams = tparams1))
+          czippers ++ tzippers
+        }
+      case mdef @ ModuleDef(mods, _, _) =>
+        mods.annotations.map(ann => {
+          val annottee = mdef.copy(mods = mods.mapAnnotations(_ diff List(ann)))
+          AnnotationZipper(ann, annottee, annottee)
+        })
+      case ddef @ DefDef(mods, _, tparams, vparamss, _, _) =>
+        val dzippers = mods.annotations.map(ann => {
+          val annottee = ddef.copy(mods = mods.mapAnnotations(_ diff List(ann)))
+          AnnotationZipper(ann, annottee, annottee)
+        })
+        if (!deep) dzippers
+        else {
+          val tzippers = for {
+            tparam <- tparams
+            AnnotationZipper(ann, tparam1: TypeDef, _) <- loop(tparam, deep = false)
+            tparams1 = tparams.updated(tparams.indexOf(tparam), tparam1)
+          } yield AnnotationZipper(ann, tparam1, ddef.copy(tparams = tparams1))
+          val vzippers = for {
+            vparams <- vparamss
+            vparam <- vparams
+            AnnotationZipper(ann, vparam1: ValDef, _) <- loop(vparam, deep = false)
+            vparams1 = vparams.updated(vparams.indexOf(vparam), vparam1)
+            vparamss1 = vparamss.updated(vparamss.indexOf(vparams), vparams1)
+          } yield AnnotationZipper(ann, vparam1, ddef.copy(vparamss = vparamss1))
+          dzippers ++ tzippers ++ vzippers
+        }
+      case vdef @ ValDef(mods, _, _, _) =>
+        mods.annotations.map(ann => {
+          val annottee = vdef.copy(mods = mods.mapAnnotations(_ diff List(ann)))
+          AnnotationZipper(ann, annottee, annottee)
+        })
+      case tdef @ TypeDef(mods, _, tparams, _) =>
+        val tzippers = mods.annotations.map(ann => {
+          val annottee = tdef.copy(mods = mods.mapAnnotations(_ diff List(ann)))
+          AnnotationZipper(ann, annottee, annottee)
+        })
+        if (!deep) tzippers
+        else {
+          val ttzippers = for {
+            tparam <- tparams
+            AnnotationZipper(ann, tparam1: TypeDef, _) <- loop(tparam, deep = false)
+            tparams1 = tparams.updated(tparams.indexOf(tparam), tparam1)
+          } yield AnnotationZipper(ann, tparam1, tdef.copy(tparams = tparams1))
+          tzippers ++ ttzippers
+        }
+      case _ =>
+        Nil
+    }
+    loop(tree, deep = true)
+  }
+
+  private object PatchedSyntacticClassDef {
+    def apply(mods: Modifiers, name: TypeName, tparams: List[Tree],
+              constrMods: Modifiers, vparamss: List[List[Tree]],
+              earlyDefs: List[Tree], parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef = {
+      // NOTE: works around SI-8771 and hopefully fixes https://github.com/scalamacros/paradise/issues/53 for good
+      SyntacticClassDef(mods, name, tparams, constrMods, vparamss.map(_.map(_.duplicate)), earlyDefs, parents, selfType, body)
+    }
+  }
+
+  // Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest)
+  final def splitAtSuper(stats: List[Tree], classOnly: Boolean): (List[Tree], List[Tree]) = {
+    def isConstr(tree: Tree): Boolean = tree match {
+      case Block(_, expr) => isConstr(expr) // scala/bug#6481 account for named argument blocks
+      case _              => (tree.symbol ne null) && (if (classOnly) tree.symbol.isClassConstructor else tree.symbol.isConstructor)
+    }
+    val (pre, rest0)       = stats span (!isConstr(_))
+    val (supercalls, rest) = rest0 span (isConstr(_))
+    (pre ::: supercalls, rest)
+  }
+
 }

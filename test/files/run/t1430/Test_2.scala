@@ -1,7 +1,7 @@
 package s {
   object Boop extends j.Bar_1 {
-    def foo() {}
-    def bar() {}
+    def foo(): Unit = {}
+    def bar(): Unit = {}
   }
   class Baz(x: j.Bar_1) {
     x.foo

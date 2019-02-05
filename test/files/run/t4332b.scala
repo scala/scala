@@ -13,7 +13,7 @@ object Test extends App {
     check(ls.sliding(N, 2).toList, ls.view.sliding(N, 2).toList.map(_.toList), s"sliding($N, 2)")
   }
   for (b <- List(true, false))
-    check(ls.filterNot(x => true), ls.view.filterNot(x => true), s"filterNot($b)")
+    check(ls.filterNot(x => true), ls.view.filterNot(x => true).toList, s"filterNot($b)")
 
   check(ls.inits.toList, ls.view.inits.toList.map(_.toList), "inits")
   check(ls.tails.toList, ls.view.tails.toList.map(_.toList), "tails")
@@ -31,5 +31,5 @@ object Test extends App {
 
   import collection.mutable.Buffer
   check(Buffer(1, 2, 3).tail, Buffer(1, 2, 3).view.tail.toList, "Buffer#tail")  
-  check(Buffer(1, 2, 3).tail.length, Buffer(1, 2, 3).view.tail.length, "Buffer#tail#length")  
+  check(Buffer(1, 2, 3).tail.length, Buffer(1, 2, 3).view.tail.size, "Buffer#tail#length")  
 }

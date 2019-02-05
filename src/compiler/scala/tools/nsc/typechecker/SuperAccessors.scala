@@ -1,3 +1,14 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
@@ -140,7 +151,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (mix != tpnme.EMPTY || member == NoSymbol ||
             !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
           reporter.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
-                               "unless it is overridden by a member declared `abstract' and `override'")
+                               "unless it is overridden by a member declared `abstract` and `override`")
       } else {
         val owner = sym.owner
         if (mix == tpnme.EMPTY && !owner.isTrait) {
@@ -225,11 +236,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
           for (s <- decls) {
-            if (s.privateWithin.isClass && !s.isProtected && !s.privateWithin.isModuleClass &&
-                !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
+            val privateWithin = s.privateWithin
+            if (privateWithin.isClass && !s.hasFlag(EXPANDEDNAME | PROTECTED) && !privateWithin.isModuleClass &&
+                !s.isConstructor) {
               val savedName = s.name
               decls.unlink(s)
-              s.expandName(s.privateWithin)
+              s.expandName(privateWithin)
               decls.enter(s)
               log("Expanded '%s' to '%s' in %s".format(savedName, s.name, sym))
             }
@@ -351,8 +363,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
             case Super(_, mix) =>
               if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-                if (!settings.overrideVars)
-                  reporter.error(tree.pos, "super may not be used on " + sym.accessedOrSelf)
+                reporter.error(tree.pos, "super may not be used on " + sym.accessedOrSelf)
               } else if (isDisallowed(sym)) {
                 reporter.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
               }

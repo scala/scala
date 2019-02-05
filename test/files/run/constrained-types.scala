@@ -75,7 +75,6 @@ val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
 """
 
   override def transformSettings(s: Settings): Settings = {
-    s.Xexperimental.value = true
     s.deprecation.value = true
     // when running that compiler, give it a scala-library to the classpath
     s.classpath.value = sys.props("java.class.path")

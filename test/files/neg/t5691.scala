@@ -1,3 +1,5 @@
+// scalac: -Xlint:type-parameter-shadow -language:higherKinds -Xfatal-warnings
+//
 class B {
 
   type T = Int

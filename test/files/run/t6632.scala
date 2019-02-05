@@ -17,6 +17,6 @@ object Test extends App {
   iiobe( lb2.update(-3, 'u) )
 
   val lb3 = newLB
-  iiobe( lb3.updated(-1, 'u) )
-  iiobe( lb3.updated(5, 'u) )
+  iiobe( lb3.update(-1, 'u) )
+  iiobe( lb3.update(5, 'u) )
 }

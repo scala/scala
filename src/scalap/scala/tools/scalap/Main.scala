@@ -1,21 +1,26 @@
-/*     ___ ____ ___   __   ___   ___
-**    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2013, LAMP/EPFL
-** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
-**
-*/
+/*
+ * Scala classfile decoder (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package tools.scalap
 
 import java.io.{ByteArrayOutputStream, OutputStreamWriter, PrintStream}
+
 import scala.reflect.NameTransformer
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
 import scalax.rules.scalasig._
-
 import scala.io.AnsiColor.{BOLD, RESET}
 
 /**The main object used to execute scalap on the command-line.
@@ -106,7 +111,7 @@ class Main {
         // we have to encode every fragment of a name separately, otherwise the NameTransformer
         // will encode using unicode escaping dot separators as well
         // we can afford allocations because this is not a performance critical code
-        classname.split('.').map(NameTransformer.encode).mkString(".")
+        classname.split('.').map(NameTransformer.encode _).mkString(".")
     }
 
     path.findClassFile(encName) match {
@@ -182,14 +187,18 @@ object Main extends Main {
       settings.YdisableFlatCpCaching.value = arguments contains opts.disableFlatClassPathCaching
       settings.Ylogcp.value = arguments contains opts.logClassPath
 
-      val path = createClassPath(cpArg, settings)
+      val registry = new CloseableRegistry
+      try {
+        val path = createClassPath(cpArg, settings, registry)
+        // print the classpath if output is verbose
+        if (verbose)
+          Console.println(BOLD + "CLASSPATH" + RESET + " = " + path.asClassPathString)
 
-      // print the classpath if output is verbose
-      if (verbose)
-        Console.println(BOLD + "CLASSPATH" + RESET + " = " + path.asClassPathString)
-
-      // process all given classes
-      arguments.getOthers foreach process(arguments, path)
+        // process all given classes
+        arguments.getOthers foreach process(arguments, path)
+      } finally {
+        registry.close()
+      }
     }
 
   private def parseArguments(args: Array[String]) =
@@ -205,11 +214,11 @@ object Main extends Main {
       .withOption(opts.logClassPath)
       .parse(args)
 
-  private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
+  private def createClassPath(cpArg: Option[String], settings: Settings, closeableRegistry: CloseableRegistry) = cpArg match {
     case Some(cp) =>
-      AggregateClassPath(new ClassPathFactory(settings).classesInExpandedPath(cp))
+      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
-      new PathResolver(settings).result
+      new PathResolver(settings, closeableRegistry).result
   }
 }

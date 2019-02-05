@@ -1,5 +1,5 @@
 object Test {
-  def testMethodLocalCaseClass {
+  def testMethodLocalCaseClass: Unit = {
     object MethodLocalWide
     case class MethodLocalWide(
                                 f01: Int, f02: Int, f03: Int, f04: Int, f05: Int, f06: Int, f07: Int, f08: Int, f09: Int, f10: Int,
@@ -13,7 +13,7 @@ object Test {
     }
     assert(result)
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     testMethodLocalCaseClass
   }
 }

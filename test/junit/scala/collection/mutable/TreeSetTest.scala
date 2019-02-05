@@ -12,7 +12,7 @@ import scala.collection.mutable
 class TreeSetTest {
 
   @Test
-  def rangeMkString() {
+  def rangeMkString(): Unit = {
 
     val set = mutable.TreeSet("a", "b", "c", "d")
     assertEquals("b", set.range("b", "c").mkString(","))

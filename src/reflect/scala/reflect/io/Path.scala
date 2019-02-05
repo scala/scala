@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -32,14 +39,10 @@ import scala.util.Random.alphanumeric
 object Path {
   def isExtensionJarOrZip(jfile: JFile): Boolean = isExtensionJarOrZip(jfile.getName)
   def isExtensionJarOrZip(name: String): Boolean = {
-    val ext = extension(name)
-    ext == "jar" || ext == "zip"
+    name.endsWith(".jar") || name.endsWith(".zip")
   }
   def extension(name: String): String = {
-    var i = name.length - 1
-    while (i >= 0 && name.charAt(i) != '.')
-      i -= 1
-
+    val i = name.lastIndexOf('.')
     if (i < 0) ""
     else name.substring(i + 1).toLowerCase
   }

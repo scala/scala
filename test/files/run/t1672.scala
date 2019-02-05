@@ -20,7 +20,7 @@ object Test {
     }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     assert(bar(2) == 0)
 
     assert(nestedTry1(2) == 0)

@@ -1,4 +1,4 @@
-
+import scala.tools.partest.Util.ArrayDeep
 import scala.language.postfixOps
 
 object Test extends App {

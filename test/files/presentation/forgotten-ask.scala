@@ -13,7 +13,7 @@ object Test extends InteractiveTest {
 
   final val Timeout = 5000 //ms
 
-  override def main(args: Array[String]) {
+  override def main(args: Array[String]): Unit = {
     val item1 = askItem()
 
     compiler.askShutdown()

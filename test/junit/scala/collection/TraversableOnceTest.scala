@@ -13,7 +13,7 @@ class TraversableOnceTest {
 
   // Basic emptiness check
   @Test
-  def checkEmpty {
+  def checkEmpty: Unit = {
     def hasException(code: => Any): Boolean = try {
       code
       false
@@ -65,6 +65,39 @@ class TraversableOnceTest {
       x * 10
     })
     assert(evaluatedCountOfMinBy == list.length, s"minBy: should evaluate f only ${list.length} times, but it evaluated $evaluatedCountOfMinBy times.")
+  }
+
+  @Test
+  def copyToBuffer(): Unit = {
+    val b1 = mutable.ArrayBuffer.empty[Int]
+    list.copyToBuffer(b1)
+    val b2 = mutable.ArrayBuffer.empty[Int]
+    b2 ++= list
+    assert(b1 == b2)
+  }
+
+  @Test
+  def checkEmptyOption: Unit = {
+    assert(Seq.empty[Int].maxOption == None, "maxOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minOption == None, "minOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].maxByOption(identity) == None, "maxByOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minByOption(identity) == None, "minByOption on a Empty Iterable is None")
+  }
+
+  @Test
+  def checkNonEmptyOption: Unit = {
+    assert(Seq(1).maxOption == Some(1), "maxOption on a Non Empty Iterable has value")
+    assert(Seq(1).minOption == Some(1), "minOption on a Non Empty Iterable has value")
+    assert(Seq(1).maxByOption(identity) == Some(1), "maxByOption on a Non Empty Iterable has value")
+    assert(Seq(1).minByOption(identity) == Some(1), "minByOption on a Non Empty Iterable has value")
+  }
+
+  @Test
+  def testMinMaxCorrectness(): Unit = {
+    import Ordering.Double.IeeeOrdering
+    val seq = Seq(5.0, 3.0, Double.NaN, 4.0)
+    assert(seq.min.isNaN)
+    assert(seq.max.isNaN)
   }
 
 }

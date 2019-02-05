@@ -6,7 +6,7 @@ package <empty> {
       ()
     };
     private[this] val f: Int => Int = {
-      @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1$mcII$sp with Serializable {
+      @SerialVersionUID(value = 0) final <synthetic> class $anonfun extends scala.runtime.AbstractFunction1$mcII$sp with java.io.Serializable {
         def <init>(): <$anon: Int => Int> = {
           $anonfun.super.<init>();
           ()

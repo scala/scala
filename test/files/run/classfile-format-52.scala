@@ -15,14 +15,14 @@ import Opcodes._
 object Test extends DirectTest {
   override def extraSettings: String = "-opt:l:inline -opt-inline-from:** -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
 
-  def generateInterface() {
+  def generateInterface(): Unit = {
     val interfaceName =  "HasDefaultMethod"
     val methodType = "()Ljava/lang/String;"
 
     val cw = new ClassWriter(0)
     cw.visit(52, ACC_PUBLIC+ACC_ABSTRACT+ACC_INTERFACE, interfaceName, null, "java/lang/Object", null)
 
-    def createMethod(flags:Int, name: String) {
+    def createMethod(flags:Int, name: String): Unit = {
       val method = cw.visitMethod(flags, name, methodType, null, null)
       method.visitCode()
       method.visitLdcInsn(s"hello from $name")
@@ -63,7 +63,7 @@ class Driver extends HasDefaultMethod {
       testUnderJavaAtLeast("1.8") {
         generateInterface()
         compile()
-        Class.forName("Driver").newInstance()
+        Class.forName("Driver").getDeclaredConstructor().newInstance()
         ()
       } otherwise {
         println("hello from publicMethod")

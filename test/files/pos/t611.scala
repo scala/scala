@@ -19,7 +19,7 @@ case class StringField(value: String) extends Field {
 }
 
 object Test {
-  def main (args: scala.Array[String]) {
+  def main (args: scala.Array[String]): Unit = {
     Console.println(List(new StringField ("bar"), new IntField(8)))
   }
 }

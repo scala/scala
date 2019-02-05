@@ -1,3 +1,5 @@
+// scalac: -Xsource:2.12
+//
 package test
 
 class X1
@@ -13,6 +15,6 @@ object Test {
 
   val foo = new Foo
 
-  test1(foo): One[X3]     // fails with -Ypartial-unification enabled
-  test1(foo): Two[X1, X2] // fails without -Ypartial-unification
+  test1(foo): One[X3]     // fails without -Xsource:2.12
+  test1(foo): Two[X1, X2] // fails with -Xsource:2.12
 }

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package doc
 package base
@@ -33,12 +45,12 @@ trait MemberLookupBase {
       """
       |Quick crash course on using Scaladoc links
       |==========================================
-      |Disambiguating terms and types: Prefix terms with '$' and types with '!' in case both names are in use:
+      |Disambiguating terms and types: Suffix terms with '$' and types with '!' in case both names are in use:
       | - [[scala.collection.immutable.List!.apply class List's apply method]] and
       | - [[scala.collection.immutable.List$.apply object List's apply method]]
       |Disambiguating overloaded members: If a term is overloaded, you can indicate the first part of its signature followed by *:
-      | - [[[scala.collection.immutable.List$.fill[A](Int)(⇒A):List[A]* Fill with a single parameter]]]
-      | - [[[scala.collection.immutable.List$.fill[A](Int,Int)(⇒A):List[List[A]]* Fill with a two parameters]]]
+      | - [[[scala.collection.immutable.List$.fill[A](Int)(=>A):List[A]* Fill with a single parameter]]]
+      | - [[[scala.collection.immutable.List$.fill[A](Int,Int)(=>A):List[List[A]]* Fill with a two parameters]]]
       |Notes:
       | - you can use any number of matching square brackets to avoid interference with the signature
       | - you can use \\. to escape dots in prefixes (don't forget to use * at the end to match the signature!)
@@ -52,22 +64,14 @@ trait MemberLookupBase {
     val fromRoot = lookupInRootPackage(pos, members)
 
     // (2) Or recursively go into each containing template.
-    val fromParents = Stream.iterate(site)(_.owner) takeWhile (!isRoot(_)) map (lookupInTemplate(pos, members, _))
+    val fromParents = LazyList.iterate(site)(_.owner) takeWhile (!isRoot(_)) map (lookupInTemplate(pos, members, _))
 
-    val syms = (fromRoot +: fromParents) find (_.nonEmpty) getOrElse Nil
+    val syms = (fromRoot +: fromParents).find(_.nonEmpty).getOrElse(Nil)
 
     val links = syms flatMap { case (sym, site) => internalLink(sym, site) } match {
       case Nil =>
         // (3) Look at external links
         syms.flatMap { case (sym, owner) =>
-          // reconstruct the original link
-          def linkName(sym: Symbol) = {
-            def nameString(s: Symbol) = s.nameString + (if ((s.isModule || s.isModuleClass) && !s.hasPackageFlag) "$" else "")
-            val packageSuffix = if (sym.hasPackageFlag) ".package" else ""
-
-            sym.ownerChain.reverse.filterNot(isRoot(_)).map(nameString(_)).mkString(".") + packageSuffix
-          }
-
           if (sym.isClass || sym.isModule || sym.isTrait || sym.hasPackageFlag)
             findExternalLink(sym, "")
           else if (owner.isClass || owner.isModule || owner.isTrait || owner.hasPackageFlag)

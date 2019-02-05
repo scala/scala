@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -56,7 +63,7 @@ object Streamable {
       lazy val in = bufferedInput()
       var offset = 0
 
-      def loop() {
+      def loop(): Unit = {
         if (offset < len) {
           val read = in.read(arr, offset, len - offset)
           if (read >= 0) {

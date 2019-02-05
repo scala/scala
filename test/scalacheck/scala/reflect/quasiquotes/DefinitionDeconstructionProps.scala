@@ -16,7 +16,7 @@ object DefinitionDeconstructionProps
 
 trait TraitDeconstruction { self: QuasiquoteProperties =>
   property("exhaustive trait matcher") = test {
-    def matches(line: String) {
+    def matches(line: String): Unit = {
       val q"""$mods trait $name[..$targs]
               extends { ..$early } with ..$parents { $self => ..$body }""" = parse(line)
     }
@@ -74,7 +74,7 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
   }
 
   property("exhaustive class matcher") = test {
-    def matches(line: String) {
+    def matches(line: String): Unit = {
       val tree = parse(line)
       val q"""$classMods0 class $name0[..$targs0] $ctorMods0(...$argss0)
               extends { ..$early0 } with ..$parents0 { $self0 => ..$body0 }""" = tree
@@ -165,7 +165,7 @@ trait ModsDeconstruction { self: QuasiquoteProperties =>
 
 trait ValVarDeconstruction { self: QuasiquoteProperties =>
   property("exhaustive val matcher") = test {
-    def matches(line: String) { val q"$mods val $name: $tpt = $rhs" = parse(line) }
+    def matches(line: String): Unit = { val q"$mods val $name: $tpt = $rhs" = parse(line) }
     matches("val x: Int")
     matches("val x: Int = 1")
     matches("lazy val x: Int = 1")
@@ -174,7 +174,7 @@ trait ValVarDeconstruction { self: QuasiquoteProperties =>
   }
 
   property("exhaustive var matcher") = test {
-    def matches(line: String) { val q"$mods var $name: $tpt = $rhs" = parse(line) }
+    def matches(line: String): Unit = { val q"$mods var $name: $tpt = $rhs" = parse(line) }
     matches("var x: Int")
     matches("var x: Int = 1")
     matches("var x = 1")
@@ -184,7 +184,7 @@ trait ValVarDeconstruction { self: QuasiquoteProperties =>
 
 trait PackageDeconstruction { self: QuasiquoteProperties =>
   property("exhaustive package matcher") = test {
-    def matches(line: String) { val q"package $name { ..$body }" = parse(line) }
+    def matches(line: String): Unit = { val q"package $name { ..$body }" = parse(line) }
     matches("package foo { }")
     matches("package foo { class C }")
     matches("package foo.bar { }")
@@ -193,7 +193,7 @@ trait PackageDeconstruction { self: QuasiquoteProperties =>
   }
 
   property("exhaustive package object matcher") = test {
-    def matches(line: String) {
+    def matches(line: String): Unit = {
       val q"package object $name extends { ..$early } with ..$parents { $self => ..$body }" = parse(line)
     }
     matches("package object foo")

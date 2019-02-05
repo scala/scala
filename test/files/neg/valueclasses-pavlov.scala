@@ -13,7 +13,7 @@ class Box2(val value: String) extends AnyVal
 
 object test2a {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val b1 = new Box1(null)
     val b2 = new Box2(null)
     val f: Foo[Box2] = b1

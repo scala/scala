@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     assert(math.signum(Long.MaxValue) == 1L)
     assert(math.signum(1L) == 1L)
     assert(math.signum(0L) == 0L)

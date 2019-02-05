@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package sys
@@ -13,7 +17,6 @@ package sys
  *  how to unregister itself.
  *
  *  @author Paul Phillips
- *  @version 2.9
  *  @since   2.9
  */
 class ShutdownHookThread private (runnable: Runnable, name: String) extends Thread(runnable, name) {
@@ -21,7 +24,7 @@ class ShutdownHookThread private (runnable: Runnable, name: String) extends Thre
 }
 
 object ShutdownHookThread {
-  private var hookNameCount: Int = 0
+  private[this] var hookNameCount: Int = 0
   private def hookName(): String = synchronized {
     hookNameCount += 1
     "shutdownHook" + hookNameCount
@@ -30,7 +33,7 @@ object ShutdownHookThread {
    *  given code.
    */
   def apply(body: => Unit): ShutdownHookThread = {
-    val t = new ShutdownHookThread(() => body, hookName)
+    val t = new ShutdownHookThread(() => body, hookName())
     Runtime.getRuntime addShutdownHook t
     t
   }

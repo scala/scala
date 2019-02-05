@@ -1,8 +1,7 @@
 
 
 import scala.language.{ higherKinds, reflectiveCalls }
-import scala.collection.{ mutable, immutable, generic }
-import generic.CanBuildFrom
+import scala.collection.{ mutable, immutable, generic, Factory }
 
 object Partial {
   type KnownContainer[CC[K, V] <: collection.Map[K, V]] = {
@@ -10,18 +9,18 @@ object Partial {
     def apply[K] : KnownKeys[CC, K]
   }
   type KnownKeys[CC[K, V] <: collection.Map[K, V], K] = {
-    def apply[V](implicit cbf: CanBuildFrom[_, (K, V), CC[K, V]]): CC[K, V]
+    def apply[V](implicit cbf: Factory[(K, V), CC[K, V]]): CC[K, V]
   }
   type KnownValues[CC[K, V] <: collection.Map[K, V], V] = {
-    def apply[K](implicit cbf: CanBuildFrom[_, (K, V), CC[K, V]]): CC[K, V]
+    def apply[K](implicit cbf: Factory[(K, V), CC[K, V]]): CC[K, V]
   }
 
   def apply[CC[K, V] <: collection.Map[K, V]] : KnownContainer[CC] = new {
     def values[V] : KnownValues[CC, V] = new {
-      def apply[K](implicit cbf: CanBuildFrom[_, (K, V), CC[K, V]]) = cbf().result
+      def apply[K](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder.result
     }
     def apply[K] = new {
-      def apply[V](implicit cbf: CanBuildFrom[_, (K, V), CC[K, V]]) = cbf().result
+      def apply[V](implicit cbf: Factory[(K, V), CC[K, V]]) = cbf.newBuilder.result
     }
   }
 }

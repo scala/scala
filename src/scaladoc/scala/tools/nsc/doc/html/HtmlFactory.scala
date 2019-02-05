@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author  David Bernard, Manohar Jonnalagedda
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -18,7 +25,7 @@ import scala.reflect.internal.Reporter
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
-  import page.{IndexScript, EntityPage}
+  import page.IndexScript
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */
@@ -28,13 +35,16 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
 
   def libResources = List(
     "class.svg",
+    "annotation.svg",
     "object.svg",
     "trait.svg",
     "package.svg",
     "class_comp.svg",
+    "annotation_comp.svg",
     "object_comp.svg",
     "trait_comp.svg",
     "object_comp_trait.svg",
+    "object_comp_annotation.svg",
     "abstract_type.svg",
     "lato-v11-latin-100.eot",
     "lato-v11-latin-100.ttf",
@@ -66,13 +76,9 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
 
     "index.js",
     "jquery.js",
-    "jquery.mousewheel.min.js",
-    "jquery.panzoom.min.js",
     "scheduler.js",
-    "diagrams.js",
     "template.js",
     "tools.tooltip.js",
-    "modernizr.custom.js",
 
     "index.css",
     "ref-index.css",
@@ -93,9 +99,9 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     * A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     */
-  def generate() {
+  def generate(): Unit = {
 
-    def copyResource(subPath: String) {
+    def copyResource(subPath: String): Unit = {
       val bytes = new Streamable.Bytes {
         val p = "/scala/tools/nsc/doc/html/resource/" + subPath
         val inputStream = getClass.getResourceAsStream(p)
@@ -116,16 +122,15 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
       writeTemplates(_ writeFor this)
     } finally {
       DiagramStats.printStats(universe.settings)
-      universe.dotRunner.cleanup()
     }
   }
 
-  def writeTemplates(writeForThis: HtmlPage => Unit) {
+  def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity) {
+    def writeTemplate(tpl: DocTemplateEntity): Unit = {
       if (!(written contains tpl)) {
-        val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings, universe.dotRunner)
+        val diagramGenerator: DiagramGenerator = new DotDiagramGenerator(universe.settings)
         writeForThis(page.EntityPage(universe, diagramGenerator, tpl, reporter))
         written += tpl
         tpl.templates collect { case d: DocTemplateEntity => d } map writeTemplate

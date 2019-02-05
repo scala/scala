@@ -54,6 +54,7 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-font-smoothing: antialiased;
   cursor: text;
   position: relative;
+  pointer-events: none;
 }
 
 h1, h2 {
@@ -501,3 +502,16 @@ header {
 /* proper rendering of MathJax into highlighted code blocks */
 .fixws { white-space: pre; }
 .fixws .math { white-space: nowrap; }
+
+.version-notice {
+    background-color: #C93A3A;
+    color: #f2f2f2;
+    border:1px solid #ccc;
+    padding: 1em;
+    margin-bottom: 1em;
+}
+.version-notice a {
+    color: #f2f2f2;
+    font-weight: bold;
+    text-decoration: underline;
+}

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -35,7 +42,7 @@ abstract class SymbolPairs {
    *  when viewed from IterableClass.
    */
   def sameInBaseClass(baseClass: Symbol)(tp1: Type, tp2: Type) =
-    (tp1 baseType baseClass) =:= (tp2 baseType baseClass)
+    tp1.baseType(baseClass).typeSymbol == tp2.baseType(baseClass).typeSymbol
 
   final case class SymbolPair(base: Symbol, low: Symbol, high: Symbol) {
     private[this] val self  = base.thisType
@@ -92,8 +99,8 @@ abstract class SymbolPairs {
     cursor =>
 
       final val self  = base.thisType   // The type relative to which symbols are seen.
-    private val decls = newScope        // all the symbols which can take part in a pair.
-    private val size  = bases.length
+    private[this] val decls = newScope        // all the symbols which can take part in a pair.
+    private[this] val size  = bases.length
 
     /** A symbol for which exclude returns true will not appear as
      *  either end of a pair.
@@ -125,20 +132,20 @@ abstract class SymbolPairs {
      *     i = index(p)
      *     j = index(b)
      *     p isSubClass b
-     *     p.baseType(b) == self.baseType(b)
+     *     p.baseType(b).typeSymbol == self.baseType(b).typeSymbol
      */
-    private val subParents = new Array[BitSet](size)
+    private[this] val subParents = new Array[BitSet](size)
 
     /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
      *  linearization order. Symbols that are not baseclasses map to -1.
      */
-    private val index = new mutable.HashMap[Symbol, Int] { override def default(key: Symbol) = -1 }
+    private[this] val index = new mutable.HashMap[Symbol, Int] { override def default(key: Symbol) = -1 }
 
     /** The scope entries that have already been visited as highSymbol
      *  (but may have been excluded via hasCommonParentAsSubclass.)
      *  These will not appear as lowSymbol.
      */
-    private val visited = HashSet[ScopeEntry]("visited", 64)
+    private[this] val visited = HashSet[ScopeEntry]("visited", 64)
 
     /** Initialization has to run now so decls is populated before
      *  the declaration of curEntry.
@@ -167,9 +174,9 @@ abstract class SymbolPairs {
     next()
 
     // populate the above data structures
-    private def init() {
+    private def init(): Unit = {
       // Fill `decls` with lower symbols shadowing higher ones
-      def fillDecls(bcs: List[Symbol], deferred: Boolean) {
+      def fillDecls(bcs: List[Symbol], deferred: Boolean): Unit = {
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferred)
           var e = bcs.head.info.decls.elems
@@ -201,7 +208,7 @@ abstract class SymbolPairs {
       fillDecls(bases, deferred = false)
     }
 
-    private def include(bs: BitSet, n: Int) {
+    private def include(bs: BitSet, n: Int): Unit = {
       val nshifted = n >> 5
       val nmask    = 1 << (n & 31)
       bs(nshifted) |= nmask
@@ -234,7 +241,7 @@ abstract class SymbolPairs {
       }
     }
 
-    @tailrec private def advanceNextEntry() {
+    @tailrec private def advanceNextEntry(): Unit = {
       if (nextEntry ne null) {
         nextEntry = decls lookupNextEntry nextEntry
         if (nextEntry ne null) {
@@ -250,7 +257,7 @@ abstract class SymbolPairs {
         }
       }
     }
-    @tailrec private def advanceCurEntry() {
+    @tailrec private def advanceCurEntry(): Unit = {
       if (curEntry ne null) {
         curEntry = curEntry.next
         if (curEntry ne null) {
@@ -270,14 +277,14 @@ abstract class SymbolPairs {
 
     def hasNext     = curEntry ne null
     def currentPair = new SymbolPair(base, low, high)
-    def iterator    = new Iterator[SymbolPair] {
+    def iterator: Iterator[SymbolPair] = new collection.AbstractIterator[SymbolPair] {
       def hasNext = cursor.hasNext
       def next()  = try cursor.currentPair finally cursor.next()
     }
 
     // Note that next is called once during object initialization to
     // populate the fields tracking the current symbol pair.
-    def next() {
+    def next(): Unit = {
       if (curEntry ne null) {
         lowSymbol = curEntry.sym
         advanceNextEntry()        // sets highSymbol

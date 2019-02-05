@@ -16,7 +16,7 @@ class Test {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(classOf[Test].getDeclaredMethods.map(_.toGenericString).toList.sorted.mkString("\n"))
   }
 }

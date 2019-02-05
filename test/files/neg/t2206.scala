@@ -2,7 +2,7 @@ object o {
   class A
 
   class AX {
-      def f() { }
+      def f(): Unit = { }
   }
 
   import Implicits._

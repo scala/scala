@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect
 package quasiquotes
 
@@ -473,7 +485,7 @@ trait Reifiers { self: Quasiquotes =>
         val mods = m.annotations.collect { case ModsPlaceholder(hole: UnapplyHole) => hole }
         mods match {
           case hole :: Nil =>
-            if (m.annotations.length != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
+            if (m.annotations.lengthIs != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
             ensureNoExplicitFlags(m, hole.pos)
             hole.treeNoUnlift
           case _ :: hole :: _ =>

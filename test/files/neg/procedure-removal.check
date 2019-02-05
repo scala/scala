@@ -1,0 +1,13 @@
+procedure-removal.scala:4: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `bar`'s return type
+  def bar {}
+          ^
+procedure-removal.scala:5: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `baz`'s return type
+  def baz
+         ^
+procedure-removal.scala:6: error: procedure syntax is unsupported: instead, add `: Unit` to explicitly declare `boo`'s return type
+  def boo(i: Int, l: Long)
+                          ^
+procedure-removal.scala:7: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `boz`'s return type
+  def boz(i: Int, l: Long) {}
+                           ^
+four errors found

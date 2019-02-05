@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package runtime
@@ -92,6 +104,18 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       else purpose.isFlagRelated && (_initializationMask & purpose.mask & TopLevelPickledFlags) == 0
     }
 
+    override final def privateWithin: Symbol = {
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      super.privateWithin
+    }
+
+    override def annotations: List[AnnotationInfo] = {
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
+      super.annotations
+    }
+
     /** Communicates with completers declared in scala.reflect.runtime.SymbolLoaders
      *  about the status of initialization of the underlying symbol.
      *
@@ -123,6 +147,11 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
       // if (isCompilerUniverse || isThreadsafe(purpose = AllOps)) body
       // else gilSynchronized { body }
       gilSynchronized { body }
+    }
+
+    override final def getFlag(mask: Long): Long = {
+      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
+      super.getFlag(mask)
     }
 
     override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }

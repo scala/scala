@@ -8,7 +8,7 @@ import java.io.File
 object Test extends DirectTest {
   override def code = "class Code"
 
-  override def extraSettings = s"-usejavacp"
+  override def extraSettings = s"-usejavacp -cp ${testOutput.jfile.getAbsolutePath}"
 
   // plugin named ploogin1_1 or ploogin1_2, but not ploogin2_x
   // Although the samples are in different classloaders, the plugin
@@ -24,7 +24,7 @@ object Test extends DirectTest {
 
   def compilePlugin(i: Int) = {
     val out  = (testOutput / s"p$i").createDirectory()
-    val args = Seq("-usejavacp", "-d", out.path)
+    val args = Seq("-usejavacp", "-d", out.path, "-cp", testOutput.path )
     compileString(newCompiler(args: _*))(pluginCode(i))
     val xml  = PluginDescription(s"p$i", s"t4841.SamplePloogin$i").toXML
     (out / "scalac-plugin.xml").toFile writeAll xml
@@ -33,7 +33,8 @@ object Test extends DirectTest {
 
   override def show() = {
     val dirs = 1 to 2 map (compilePlugin(_))
-    compile("-Xdev", s"-Xplugin:${dirs mkString ","}", "-usejavacp", "-d", testOutput.path)
+    val plugins = dirs.map(d => s"$d${java.io.File.pathSeparator}${testOutput.path}").mkString(",")
+    compile("-Xdev", s"-Xplugin:$plugins", "-usejavacp", "-d", testOutput.path)
   }
 }
 

@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -22,46 +28,18 @@ trait TreeAndTypeAnalysis extends Debugging {
    * which does not imply a type for the binder that binds the matched value.
    *
    * See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
-   *
-   * TODO: update spec as follows (deviation between `**`):
-   *
-   *   A pattern binder x@p consists of a pattern variable x and a pattern p.
-   *   The type of the variable x is the static type T **IMPLIED BY** the pattern p.
-   *   This pattern matches any value v matched by the pattern p
-   *     **Deleted: , provided the run-time type of v is also an instance of T, **
-   *   and it binds the variable name to that value.
-   *
-   *   Addition:
-   *     A pattern `p` _implies_ a type `T` if the pattern matches only values of the type `T`.
    */
   def binderTypeImpliedByPattern(pat: Tree, pt: Type, binder: Symbol): Type =
     pat match {
       // because `==` decides whether these patterns match, stable identifier patterns (ident or selection)
       // do not contribute any type information (beyond the pattern's expected type)
       // e.g., in case x@Nil => x --> all we know about `x` is that it satisfies Nil == x, which could be anything
-      case Ident(_) | Select(_, _) =>
-        if (settings.future) pt
-        else {
-          // TODO: don't warn unless this unsound assumption is actually used in a cast
-          // I tried annotating the type returned here with an internal annotation (`pat.tpe withAnnotation UnsoundAssumptionAnnotation`),
-          // and catching it in the patmat backend when used in a cast (because that would signal the unsound assumption was used),
-          // but the annotation didn't bubble up...
-          // This is a pretty poor approximation.
-          def unsoundAssumptionUsed = binder.name != nme.WILDCARD && !(pt <:< pat.tpe)
-          if (settings.warnUnsoundMatch && unsoundAssumptionUsed)
-            reporter.warning(pat.pos,
-              sm"""The value matched by $pat is bound to ${binder.name}, which may be used under the
-                  |unsound assumption that it has type ${pat.tpe}, whereas we can only safely
-                  |count on it having type $pt, as the pattern is matched using `==` (see scala/bug#1503).""")
-
-          pat.tpe
-        }
-
+      case Ident(_) | Select(_, _) => pt
 
       // the other patterns imply type tests, so we can safely assume the binder has the pattern's type when the pattern matches
       // concretely, a literal, type pattern, a case class (the constructor's result type) or extractor (the unapply's argument type) all imply type tests
       // (and, inductively, an alternative)
-      case _ => pat.tpe
+      case _                       => pat.tpe
     }
 
   // we use subtyping as a model for implication between instanceof tests
@@ -118,7 +96,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym if sym.isSealed =>
 
-          val tpApprox = typer.infer.approximateAbstracts(tp)
+          val tpApprox = analyzer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
 
           def filterChildren(children: List[Symbol]): List[Type] = {
@@ -130,7 +108,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 
               val memberType = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
               val subTp = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
-              val subTpApprox = typer.infer.approximateAbstracts(subTp) // TODO: needed?
+              val subTpApprox = analyzer.approximateAbstracts(subTp) // TODO: needed?
               // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
               else None
@@ -310,20 +288,28 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         def updateSubstitution(subst: Substitution): Unit = {
           // find part of substitution that replaces bound symbols by new symbols, and reverse that part
           // so that we don't introduce new aliases for existing symbols, thus keeping the set of bound symbols minimal
-          val (boundSubst, unboundSubst) = (subst.from zip subst.to) partition {
-            case (f, t) =>
-              t.isInstanceOf[Ident] && t.symbol.exists && pointsToBound(f)
-          }
-          val (boundFrom, boundTo) = boundSubst.unzip
-          val (unboundFrom, unboundTo) = unboundSubst.unzip
 
+          // HOT Method for allocation, hence the imperative style here
+          val substSize = subst.from.length
+          val boundFrom = new mutable.ListBuffer[Tree]()
+          val boundTo = new mutable.ListBuffer[Symbol]
+          val unboundFrom = new mutable.ArrayBuffer[Symbol](substSize)
+          val unboundTo = new mutable.ListBuffer[Tree]
+          foreach2(subst.from, subst.to) {
+            case (f, t: Ident) if t.symbol.exists && pointsToBound(f) =>
+              boundFrom += CODE.REF(f)
+              boundTo += t.symbol
+            case (f, t) =>
+              unboundFrom += f
+              unboundTo += normalize(t)
+          }
           // reverse substitution that would otherwise replace a variable we already encountered by a new variable
           // NOTE: this forgets the more precise type we have for these later variables, but that's probably okay
-          normalize >>= Substitution(boundTo map (_.symbol), boundFrom map (CODE.REF(_)))
+          normalize >>= Substitution(boundTo.toList, boundFrom.toList)
           // debug.patmat ("normalize subst: "+ normalize)
 
-          val okSubst = Substitution(unboundFrom, unboundTo map (normalize(_))) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
-          pointsToBound ++= ((okSubst.from, okSubst.to).zipped filter { (f, t) => pointsToBound exists (sym => t.exists(_.symbol == sym)) })._1
+          val okSubst = Substitution(unboundFrom.toList, unboundTo.toList) // it's important substitution does not duplicate trees here -- it helps to keep hash consing simple, anyway
+          pointsToBound ++= okSubst.from.lazyZip(okSubst.to).collect { case (f, t) if pointsToBound.exists(sym => t.exists(_.symbol == sym)) => f }
           // debug.patmat("pointsToBound: "+ pointsToBound)
 
           accumSubst >>= okSubst
@@ -364,6 +350,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
             case ProductExtractorTreeMaker(testedBinder, None)        => uniqueNonNullProp(binderToUniqueTree(testedBinder))
             case SubstOnlyTreeMaker(_, _)                             => True
+            case NonNullTestTreeMaker(prevBinder, _, _)               => uniqueNonNullProp(binderToUniqueTree(prevBinder))
             case GuardTreeMaker(guard) =>
               guard.tpe match {
                 case ConstantTrue  => True
@@ -488,7 +475,7 @@ trait MatchAnalysis extends MatchApproximation {
           else {
             prefix += prefHead
             current = current.tail
-          val and = And((current.head +: prefix): _*)
+          val and = And((current.head +: prefix).toIndexedSeq: _*)
           val model = findModelFor(eqFreePropToSolvable(and))
 
             // debug.patmat("trying to reach:\n"+ cnfString(current.head) +"\nunder prefix:\n"+ cnfString(prefix))
@@ -619,7 +606,7 @@ trait MatchAnalysis extends MatchApproximation {
       override def coveredBy(other: CounterExample): Boolean =
         other match {
           case other@ListExample(_) =>
-            this == other || ((elems.length == other.elems.length) && (elems zip other.elems).forall{case (a, b) => a coveredBy b})
+            this == other || ((elems.sizeCompare(other.elems) == 0) && (elems zip other.elems).forall{case (a, b) => a coveredBy b})
           case _ => super.coveredBy(other)
         }
 
@@ -631,7 +618,7 @@ trait MatchAnalysis extends MatchApproximation {
       override def coveredBy(other: CounterExample): Boolean =
         other match {
           case TupleExample(otherArgs) =>
-            this == other || ((ctorArgs.length == otherArgs.length) && (ctorArgs zip otherArgs).forall{case (a, b) => a coveredBy b})
+            this == other || ((ctorArgs.sizeCompare(otherArgs) == 0) && (ctorArgs zip otherArgs).forall{case (a, b) => a coveredBy b})
           case _ => super.coveredBy(other)
         }
     }
@@ -645,11 +632,11 @@ trait MatchAnalysis extends MatchApproximation {
     // returns a mapping from variable to
     // equal and notEqual symbols
     def modelToVarAssignment(model: Model): Map[Var, (Seq[Const], Seq[Const])] =
-      model.toSeq.groupBy{f => f match {case (sym, value) => sym.variable} }.mapValues{ xs =>
+      model.toSeq.groupBy(_._1.variable).view.mapValues{ xs =>
         val (trues, falses) = xs.partition(_._2)
         (trues map (_._1.const), falses map (_._1.const))
         // should never be more than one value in trues...
-      }
+      }.to(Map)
 
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
@@ -815,7 +802,7 @@ trait MatchAnalysis extends MatchApproximation {
         private lazy val cls        = ctor.safeOwner
         private lazy val caseFieldAccs = cls.caseFieldAccessors
 
-        def addField(symbol: Symbol, assign: VariableAssignment) {
+        def addField(symbol: Symbol, assign: VariableAssignment): Unit = {
           // scala/bug#7669 Only register this field if if this class contains it.
           val shouldConstrainField = !symbol.isCaseAccessor || caseFieldAccs.contains(symbol)
           if (shouldConstrainField) fields(symbol) = assign
@@ -849,7 +836,7 @@ trait MatchAnalysis extends MatchApproximation {
                   val argLen = (caseFieldAccs.length min ctorParams.length)
 
                   val examples = (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse Some(WildcardExample)).toList
-                  sequence(examples)
+                  sequenceOpt(examples)
                 }
 
                 cls match {

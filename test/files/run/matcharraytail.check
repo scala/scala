@@ -1,2 +1,2 @@
 Array(foo, bar, baz)
-Vector(bar, baz)
+ArraySeq(bar, baz)

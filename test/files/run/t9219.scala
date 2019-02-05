@@ -1,6 +1,6 @@
 object Test extends App {
-  def check[U](f: Stream[Int] => U) = {
-    val s = Stream.from(1)
+  def check[U](f: LazyList[Int] => U) = {
+    val s = LazyList.from(1)
     f(s)
     println(s)
   }

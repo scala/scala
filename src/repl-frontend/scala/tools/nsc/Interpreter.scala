@@ -1,8 +1,22 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 
 import scala.tools.nsc.interpreter.{IMain, Repl, ReplCore}
 import scala.tools.nsc.interpreter.shell.{ILoop, ReplReporterImpl, ShellConfig}
 import scala.tools.nsc.reporters.Reporter
+
+import scala.language.implicitConversions
 
 // Pretty gross contortion to satisfy the de facto interface expected by sbt.
 // The idea is to have sbt stage a dummy interpreter, to extract the configuration
@@ -97,7 +111,6 @@ class InterpreterLoop {
             override protected def newCompiler(settings: Settings, reporter: Reporter) =
               super.newCompiler(compilerSettings, reporter)
           }
-          interpreter.setContextClassLoader()
         }
 
         // for 2.8 compatibility

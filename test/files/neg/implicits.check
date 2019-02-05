@@ -4,11 +4,16 @@ implicits.scala:38: error: type mismatch;
   foo(set)
       ^
 implicits.scala:46: error: type mismatch;
- found   : List[Any]
- required: List[Mxml]
-        children.toList.flatMap ( e => {
-                                ^
-implicits.scala:66: error: could not find implicit value for parameter x: Nothing
+ found   : Iterable[_]
+ required: scala.collection.IterableOnce[Mxml]
+                case s: scala.collection.Iterable[_] => s
+                                                        ^
+implicits.scala:47: error: type mismatch;
+ found   : Any
+ required: Mxml
+                case a => List(a)
+                               ^
+implicits.scala:59: error: could not find implicit value for parameter x: Nothing
   foo {
       ^
-three errors found
+four errors found

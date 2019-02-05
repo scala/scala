@@ -1,12 +1,20 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.{concurrent, mutable}
+import java.{util => ju}
+import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
@@ -23,7 +31,7 @@ import scala.tools.nsc.backend.jvm.opt._
  */
 abstract class BTypes {
   val frontendAccess: PostProcessorFrontendAccess
-  import frontendAccess.{frontendSynch, recordPerRunCache}
+  import frontendAccess.{frontendSynch, recordPerRunJavaMapCache}
 
   val coreBTypes: CoreBTypes { val bTypes: BTypes.this.type }
   import coreBTypes._
@@ -35,13 +43,15 @@ abstract class BTypes {
    * `getCommonSuperClass`. In this method we need to obtain the ClassBType for a given internal
    * name. The method assumes that every class type that appears in the bytecode exists in the map
    */
-  def cachedClassBType(internalName: InternalName): Option[ClassBType] =
+  // OPT: not returning Option[ClassBType] because the Some allocation shows up as a hotspot
+  def cachedClassBType(internalName: InternalName): ClassBType =
     classBTypeCache.get(internalName)
 
   // Concurrent maps because stack map frames are computed when in the class writer, which
   // might run on multiple classes concurrently.
   // Note usage should be private to this file, except for tests
-  val classBTypeCache: concurrent.Map[InternalName, ClassBType] = recordPerRunCache(FlatConcurrentHashMap.empty)
+  val classBTypeCache: ju.concurrent.ConcurrentHashMap[InternalName, ClassBType] =
+    recordPerRunJavaMapCache(new ju.concurrent.ConcurrentHashMap[InternalName, ClassBType])
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -125,39 +135,33 @@ abstract class BTypes {
         case ArrayBType(component) =>
           if (other == ObjectRef || other == jlCloneableRef || other == jiSerializableRef) true
           else other match {
-            case ArrayBType(otherComponent) => component.conformsTo(otherComponent).orThrow
+            case ArrayBType(otherComponent) =>
+              // Array[Short]().isInstanceOf[Array[Int]] is false
+              // but Array[String]().isInstanceOf[Array[Object]] is true
+              if (component.isPrimitive || otherComponent.isPrimitive) component == otherComponent
+              else component.conformsTo(otherComponent).orThrow
             case _ => false
           }
 
         case classType: ClassBType =>
-          if (isBoxed) {
-            if (other.isBoxed) this == other
-            else if (other == ObjectRef) true
-            else other match {
-              case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow // e.g., java/lang/Double conforms to java/lang/Number
-              case _ => false
-            }
-          } else if (isNullType) {
-            if (other.isNothingType) false
-            else if (other.isPrimitive) false
-            else true // Null conforms to all classes (except Nothing) and arrays.
-          } else if (isNothingType) {
-            true
-          } else other match {
+          // Quick test for ObjectRef to make a common case fast
+          other == ObjectRef || (other match {
             case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType).orThrow
-            // case ArrayBType(_) => this.isNullType   // documentation only, because `if (isNullType)` above covers this case
-            case _ =>
-              // isNothingType ||                      // documentation only, because `if (isNothingType)` above covers this case
-              false
-          }
+            case _ => false
+          })
 
-        case UNIT =>
-          other == UNIT
-        case BOOL | BYTE | SHORT | CHAR =>
-          this == other || other == INT || other == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
         case _ =>
-          assert(isPrimitive && other.isPrimitive, s"Expected primitive types $this - $other")
-          this == other
+          // there are no bool/byte/short/char primitives at runtime, they are represented as ints.
+          // instructions like i2s are used to truncate, the result is again an int. conformsTo
+          // returns true for conversions that don't need a truncating instruction. see also emitT2T.
+          // note that for primitive arrays, Array[Short]().isInstanceOf[Array[Int]] is false.
+          this == other || ((this, other) match {
+            case (BOOL, BYTE | SHORT | INT) => true
+            case (BYTE, SHORT | INT) => true
+            case (SHORT, INT) => true
+            case (CHAR, INT) => true
+            case _ => false
+          })
       }
     }))
 
@@ -305,9 +309,12 @@ abstract class BTypes {
           }
 
         case LONG =>
-          if (other.isIntegralType)  LONG
-          else if (other.isRealType) DOUBLE
-          else                       uncomparable
+          other match {
+            case INT | BYTE | LONG | CHAR | SHORT => LONG
+            case DOUBLE                           => DOUBLE
+            case FLOAT                            => FLOAT
+            case _                                => uncomparable
+          }
 
         case FLOAT =>
           if (other == DOUBLE)          DOUBLE
@@ -625,7 +632,7 @@ abstract class BTypes {
         // synchronization required to ensure the apply is finished
         // which populates info. ClassBType doesnt escape apart from via the map
         // and the object mutex is locked prior to insertion. See apply
-        this.synchronized()
+        this.synchronized {}
       assert(_info != null, s"ClassBType.info not yet assigned: $this")
       _info
     }
@@ -660,10 +667,18 @@ abstract class BTypes {
 
     def isInterface: Either[NoClassBTypeInfo, Boolean] = info.map(i => (i.flags & asm.Opcodes.ACC_INTERFACE) != 0)
 
-    def superClassesTransitive: Either[NoClassBTypeInfo, List[ClassBType]] = info.flatMap(i => i.superClass match {
-      case None => Right(Nil)
-      case Some(sc) =>  sc.superClassesTransitive.map(sc :: _)
-    })
+    /** The super class chain of this type, starting with Object, ending with `this`. */
+    def superClassesChain: Either[NoClassBTypeInfo, List[ClassBType]] = try {
+      var res = List(this)
+      var sc = info.orThrow.superClass
+      while (sc.nonEmpty) {
+        res ::= sc.get
+        sc = sc.get.info.orThrow.superClass
+      }
+      Right(res)
+    } catch {
+      case Invalid(noInfo: NoClassBTypeInfo) => Left(noInfo)
+    }
 
     /**
      * The prefix of the internal name until the last '/', or the empty string.
@@ -735,7 +750,7 @@ abstract class BTypes {
      * Background:
      *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-     *   https://github.com/scala/bug/issues/3872
+     *   https://github.com/scala/bug/issues/3872#issuecomment-292386375
      */
     def jvmWiseLUB(other: ClassBType): Either[NoClassBTypeInfo, ClassBType] = {
       def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
@@ -756,12 +771,7 @@ abstract class BTypes {
             if (this.isSubtypeOf(other).orThrow) other else ObjectRef
 
           case _ =>
-            // TODO @lry I don't really understand the reasoning here.
-            // Both this and other are classes. The code takes (transitively) all superclasses and
-            // finds the first common one.
-            // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
-            //  - https://github.com/scala/bug/issues/3872
-            firstCommonSuffix(this :: this.superClassesTransitive.orThrow, other :: other.superClassesTransitive.orThrow)
+            firstCommonSuffix(superClassesChain.orThrow, other.superClassesChain.orThrow)
         }
 
         assert(isNotNullOrNothing(res), s"jvmWiseLUB computed: $res")
@@ -770,17 +780,16 @@ abstract class BTypes {
     }
 
     private def firstCommonSuffix(as: List[ClassBType], bs: List[ClassBType]): ClassBType = {
-      var chainA = as
-      var chainB = bs
-      var fcs: ClassBType = null
-      do {
-        if      (chainB contains chainA.head) fcs = chainA.head
-        else if (chainA contains chainB.head) fcs = chainB.head
-        else {
-          chainA = chainA.tail
-          chainB = chainB.tail
-        }
-      } while (fcs == null)
+      // assert(as.head == ObjectRef, as.head)
+      // assert(bs.head == ObjectRef, bs.head)
+      var chainA = as.tail
+      var chainB = bs.tail
+      var fcs = ObjectRef
+      while (chainA.nonEmpty && chainB.nonEmpty && chainA.head == chainB.head) {
+        fcs = chainA.head
+        chainA = chainA.tail
+        chainB = chainB.tail
+      }
       fcs
     }
   }
@@ -806,18 +815,24 @@ abstract class BTypes {
     )
     def unapply(cr:ClassBType) = Some(cr.internalName)
 
-    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]) = {
-      val newRes = if (fromSymbol) new ClassBTypeFromSymbol(internalName) else new ClassBTypeFromClassfile(internalName)
-      // synchronized s required to ensure proper initialisation if info.
-      // see comment on def info
-      newRes.synchronized {
-        classBTypeCache.putIfAbsent(internalName, newRes) match {
-          case None =>
-            newRes._info = init(newRes)
-            newRes.checkInfoConsistency()
-            newRes
-          case Some(old) =>
-            old
+    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]): ClassBType = {
+      val cached = classBTypeCache.get(internalName)
+      if (cached ne null) cached
+      else {
+        val newRes =
+          if (fromSymbol) new ClassBTypeFromSymbol(internalName)
+          else new ClassBTypeFromClassfile(internalName)
+        // synchronized is required to ensure proper initialisation of info.
+        // see comment on def info
+        newRes.synchronized {
+          classBTypeCache.putIfAbsent(internalName, newRes) match {
+            case null =>
+              newRes._info = init(newRes)
+              newRes.checkInfoConsistency()
+              newRes
+          case old =>
+              old
+          }
         }
       }
     }
@@ -1005,7 +1020,6 @@ abstract class BTypes {
       * to be executed when it's forced.
       */
     private final class LazyWithLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
-
       def init(t: () => T): T = frontendSynch {
         if (value == null) value = t()
         value
@@ -1017,7 +1031,6 @@ abstract class BTypes {
       * to be executed when it's forced.
       */
     private final class LazyWithoutLock[T <: AnyRef](t: () => T) extends AbstractLazy[T](t) {
-
       def init(t: () => T): T = this.synchronized {
         if (value == null) value = t()
         value
@@ -1027,7 +1040,7 @@ abstract class BTypes {
 
   /**
    * Create state that lazily evaluated (to work around / not worry about initialization ordering
-   * issues). The state is re-initialized in each compiler run when the component is initialized.
+   * issues). The state is cleared in each compiler run when the component is initialized.
    */
   def perRunLazy[T](component: PerRunInit)(init: => T): LazyVar[T] = {
     val r = new LazyVar(() => init)
@@ -1041,7 +1054,7 @@ abstract class BTypes {
    * be safely initialized in the post-processor.
    *
    * Note that values defined as `LazyVar`s are usually `lazy val`s themselves (created through the
-   * `perRunLazy` method). This ensures that re-initializing a component only re-initializes those
+   * `perRunLazy` method). This ensures that re-initializing a component only clears those
    * `LazyVar`s that have actually been used in the previous compiler run.
    */
   class LazyVar[T](init: () => T) {
@@ -1057,7 +1070,7 @@ abstract class BTypes {
       }
     }
 
-    def reInitialize(): Unit = frontendSynch{
+    def reInitialize(): Unit = frontendSynch {
       v = null.asInstanceOf[T]
       isInit = false
     }
@@ -1117,8 +1130,8 @@ object BTypes {
   // when inlining, local variable names of the callee are prefixed with the name of the callee method
   val InlinedLocalVariablePrefixMaxLength = 128
 }
-object FlatConcurrentHashMap {
-  import collection.JavaConverters._
-  def empty[K,V]: concurrent.Map[K,V] =
-    new java.util.concurrent.ConcurrentHashMap[K,V].asScala
+
+final class ClearableJConcurrentHashMap[K, V] extends scala.collection.mutable.Clearable {
+  val map = new java.util.concurrent.ConcurrentHashMap[K,V]
+  override def clear(): Unit = map.clear()
 }

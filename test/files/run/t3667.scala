@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val o4 = new Outer4
     val o5 = new Outer5
     val o6 = new Outer6
@@ -22,13 +22,13 @@ object Test {
     foo
   }
 
-  def foo {
+  def foo: Unit = {
     case class C(x: Int)
     ser(new C(1))
     ser(C)
   }
 
-  def ser(o: AnyRef) {
+  def ser(o: AnyRef): Unit = {
     val oos = new java.io.ObjectOutputStream(new java.io.ByteArrayOutputStream())
     oos.writeObject(o)
     oos.close()

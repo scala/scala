@@ -1,9 +1,17 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.interpreter.shell
 
-import scala.language.dynamics
 import scala.beans.BeanProperty
 import javax.script._
 import java.io.{Closeable, OutputStream, PrintWriter, Reader}
@@ -24,7 +32,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
   def createBindings: Bindings = new SimpleBindings
 
   // dynamic context bound under this name
-  final val ctx = "$ctx"
+  final val ctx = s"$$ctx"
 
   // the underlying interpreter, tweaked to handle dynamic bindings
   val intp: ScriptedRepl = new ScriptedInterpreter(settings, new SaveFirstErrorReporter(settings, out), importContextPreamble)
@@ -55,7 +63,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
       binding <- Option(ctx.getBindings(scope)) map (_.asScala) getOrElse Nil
       key = binding._1
     } yield key
-    terms.to[Set]
+    Set.from(terms)
   }
 
 
@@ -289,7 +297,7 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
   override def write(b: Int): Unit = {
     byteBuffer.put(b.toByte)
     byteBuffer.flip()
-    val result = decoder.decode(byteBuffer, charBuffer, /*eoi=*/ false)
+    decoder.decode(byteBuffer, charBuffer, /*eoi=*/ false)
     if (byteBuffer.remaining == 0) byteBuffer.clear()
     if (charBuffer.position() > 0) {
       charBuffer.flip()

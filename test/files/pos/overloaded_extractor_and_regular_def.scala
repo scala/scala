@@ -12,7 +12,7 @@ trait TreesBase {
 }
 
 trait TreesApi extends TreesBase {
-  def Apply(x: String)
+  def Apply(x: String): Unit
 }
 
 class Universe extends TreesApi {
@@ -23,9 +23,9 @@ class Universe extends TreesApi {
 }
 
 object Test extends App {
-  def foo(tapi: TreesApi) {
+  def foo(tapi: TreesApi): Unit = {
     import tapi._
-    def bar(tree: Tree) {
+    def bar(tree: Tree): Unit = {
       val Apply(x) = tree
     }
   }

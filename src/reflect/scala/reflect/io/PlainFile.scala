@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -141,7 +148,7 @@ private[scala] class PlainNioFile(nioPath: java.nio.file.Path) extends AbstractF
   def iterator: Iterator[AbstractFile] = {
     try {
       import scala.collection.JavaConverters._
-      val it = Files.newDirectoryStream(nioPath).iterator()
+      val it = Files.newDirectoryStream(nioPath).iterator
       it.asScala.map(new PlainNioFile(_))
     } catch {
       case _: NotDirectoryException => Iterator.empty

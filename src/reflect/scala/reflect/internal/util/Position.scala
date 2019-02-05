@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -94,6 +101,8 @@ sealed abstract class UndefinedPosition extends Position {
   override def start           = fail("start")
   override def point           = fail("point")
   override def end             = fail("end")
+
+  override def samePointAs(that: Position) = false
 }
 
 private[util] trait InternalPositionImpl {
@@ -118,6 +127,8 @@ private[util] trait InternalPositionImpl {
   def isOpaqueRange              = isRange && !isTransparent
   def pointOrElse(alt: Int): Int = if (isDefined) point else alt
   def makeTransparent: Position  = if (isOpaqueRange) Position.transparent(source, start, point, end) else this
+  final def makeTransparentIf(cond: Boolean): Position =
+    if (cond && isOpaqueRange) Position.transparent(source, start, point, end) else this
 
   /** Copy a range position with a changed value.
    */
@@ -199,6 +210,10 @@ private[util] trait InternalPositionImpl {
     else if (isDefined) s"[$point]"
     else "[NoPosition]"
   )
+
+  /* Same as `this.focus == that.focus`, but less allocation-y. */
+  def samePointAs(that: Position): Boolean =
+    that.isDefined && this.point == that.point && this.source.file == that.source.file
 
   private def asOffset(point: Int): Position = Position.offset(source, point)
   private def copyRange(source: SourceFile = source, start: Int = start, point: Int = point, end: Int = end): Position =

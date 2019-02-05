@@ -1,14 +1,14 @@
 class Outer {
-  def assertNoFields(c: Class[_]) {
+  def assertNoFields(c: Class[_]): Unit = {
     assert(c.getDeclaredFields.isEmpty)
   }
-  def assertHasOuter(c: Class[_]) {
+  def assertHasOuter(c: Class[_]): Unit = {
     assert(c.getDeclaredFields.exists(_.getName.contains("outer")))
   }
   class Member
   final class FinalMember
 
-  def test {
+  def test: Unit = {
     assertHasOuter(classOf[Member])
     assertNoFields(classOf[FinalMember])
     final class C

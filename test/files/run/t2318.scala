@@ -1,6 +1,8 @@
+// filter: WARNING.*
+// for now, ignore warnings due to reflective invocation
 import java.security._
 
-import scala.language.{ reflectiveCalls }
+import scala.language.reflectiveCalls
 
 object Test {
   trait Bar { def bar: Unit }
@@ -36,7 +38,7 @@ object Test {
     structural.bar
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     // figuring this will otherwise break on windows
     try t1()
     catch { case _: java.io.IOException => () }

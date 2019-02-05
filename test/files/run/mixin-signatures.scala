@@ -83,8 +83,8 @@ object Test {
     // scala.tools.nsc.symtab.Flags.flagsToString(flags)
   }
 
-  def show(clazz: Class[_]) {
-    print(clazz + " {")
+  def show(clazz: Class[_]): Unit = {
+    print(clazz.toString + " {")
     clazz.getMethods.sortBy(x => (x.getName, x.isBridge, x.toString)) filter (_.getName.length == 1) foreach { m =>
       print("\n  " + m + flagsString(m))
       if ("" + m != "" + m.toGenericString) {
@@ -94,8 +94,8 @@ object Test {
     println("\n}")
     println("")
   }
-  def show(x: AnyRef) { show(x.getClass) }
-  def show(x: String) { show(Class.forName(x)) }
+  def show(x: AnyRef): Unit = { show(x.getClass) }
+  def show(x: String): Unit = { show(Class.forName(x)) }
 
   def main(args: Array[String]): Unit = {
     List(bar1, bar2, bar3, bar4, bar5) foreach show

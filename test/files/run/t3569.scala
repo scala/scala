@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 object Test {
   final val bippy1 = 1
   final lazy val bippy2 = 2
@@ -26,7 +28,7 @@ object Test {
   case class Y(final var x: Int, final private var y: Int, final val z1: Int, final private val z2: Int) { }
 
   def f = new X(0).x += 1
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     f
     val s = new X(0)
     s.x += 1

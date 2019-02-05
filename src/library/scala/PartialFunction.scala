@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -50,7 +54,7 @@ package scala
  *
  *
  *  @author  Martin Odersky, Pavel Pavlov, Adriaan Moors
- *  @version 1.0, 16/07/2003
+ *  @since   1.0
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
   import PartialFunction._
@@ -78,13 +82,52 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 
   /**  Composes this partial function with a transformation function that
    *   gets applied to results of this partial function.
+   *
+   *   If the runtime type of the function is a `PartialFunction` then the
+   *   other `andThen` method is used (note its cautions).
+   *
    *   @param  k  the transformation function
    *   @tparam C  the result type of the transformation function.
-   *   @return a partial function with the same domain as this partial function, which maps
+   *   @return a partial function with the domain of this partial function,
+   *           possibly narrowed by the specified function, which maps
    *           arguments `x` to `k(this(x))`.
    */
-  override def andThen[C](k: B => C): PartialFunction[A, C] =
-    new AndThen[A, B, C] (this, k)
+  override def andThen[C](k: B => C): PartialFunction[A, C] = k match {
+    case pf: PartialFunction[B, C] => andThen(pf)
+    case _                         => new AndThen[A, B, C](this, k)
+  }
+
+  /**
+   * Composes this partial function with another partial function that
+   * gets applied to results of this partial function.
+   *
+   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
+   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
+   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   *
+   * @param  k  the transformation function
+   * @tparam C  the result type of the transformation function.
+   * @return a partial function with the domain of this partial function narrowed by
+   *         other partial function, which maps arguments `x` to `k(this(x))`.
+   */
+  def andThen[C](k: PartialFunction[B, C]): PartialFunction[A, C] =
+    new Combined[A, B, C](this, k)
+
+  /**
+   * Composes another partial function `k` with this partial function so that this
+   * partial function gets applied to results of `k`.
+   *
+   * Note that calling [[isDefinedAt]] on the resulting partial function may apply the first
+   * partial function and execute its side effect. It is highly recommended to call [[applyOrElse]]
+   * instead of [[isDefinedAt]] / [[apply]] for efficiency.
+   *
+   * @param  k  the transformation function
+   * @tparam R  the parameter type of the transformation function.
+   * @return a partial function with the domain of other partial function narrowed by
+   *         this partial function, which maps arguments `x` to `this(k(x))`.
+   */
+  def compose[R](k: PartialFunction[R, A]): PartialFunction[R, B] =
+    new Combined[R, A, B](k, this)
 
   /** Turns this partial function into a plain function returning an `Option` result.
    *  @see     Function.unlift
@@ -192,6 +235,22 @@ object PartialFunction {
     }
   }
 
+  /** Composite function produced by `PartialFunction#andThen` method
+    */
+  private class Combined[-A, B, +C] (pf: PartialFunction[A, B], k: PartialFunction[B, C]) extends PartialFunction[A, C] with Serializable {
+    def isDefinedAt(x: A): Boolean = {
+      val b: B = pf.applyOrElse(x, checkFallback[B])
+      if (!fallbackOccurred(b)) k.isDefinedAt(b) else false
+    }
+
+    def apply(x: A): C = k(pf(x))
+
+    override def applyOrElse[A1 <: A, C1 >: C](x: A1, default: A1 => C1): C1 = {
+      val pfv = pf.applyOrElse(x, checkFallback[B])
+      if (!fallbackOccurred(pfv)) k.applyOrElse(pfv, (_: B) => default(x)) else default(x)
+    }
+  }
+
   /** To implement patterns like {{{ if(pf isDefinedAt x) f1(pf(x)) else f2(x) }}} efficiently
    *  the following trick is used:
    *
@@ -242,11 +301,12 @@ object PartialFunction {
     case ff => new Unlifted(ff)
   }
 
-  /** Converts ordinary function to partial one
-   *  @since   2.10
+  /**  Converts an ordinary function to a partial function. Note that calling `isDefinedAt(x)` on 
+   *   this partial function will return `true` for every `x`.
+   *   @param  f  an ordinary function
+   *   @return    a partial function which delegates to the ordinary function `f`
    */
-  @deprecated("""For converting an ordinary function f to a partial function pf, use `val pf: PartialFunction[A, B] = { case x => f(x) }`. For creating a new PartialFunction, use an explicit type annotation instead, like in `val pf: PartialFunction[Int, String] = { case 1 => "one" }`.""", "2.12.5")
-  def apply[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
+  def fromFunction[A, B](f: A => B): PartialFunction[A, B] = { case x => f(x) }
 
   private[this] val constFalse: Any => Boolean = { _ => false}
 

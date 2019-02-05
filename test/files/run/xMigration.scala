@@ -2,18 +2,21 @@ import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
   def code = """
-Map(1 -> "eis").values    // no warn
+:paste -raw
+package scala { object T { @scala.annotation.migration("text", "2.8.0") def muh: String = "muuh" } }
+\u0004
+scala.T.muh    // no warn
 :setting -Xmigration:none
-Map(1 -> "eis").values    // no warn
+scala.T.muh    // no warn
 :setting -Xmigration:any
-Map(1 -> "eis").values    // warn
+scala.T.muh    // warn
 :setting -Xmigration:2.8
-Map(1 -> "eis").values    // no warn
+scala.T.muh    // no warn
 :setting -Xmigration:2.7
-Map(1 -> "eis").values    // warn
+scala.T.muh    // warn
 :setting -Xmigration:2.11
-Map(1 -> "eis").values    // no warn
-:setting -Xmigration      // same as :any
-Map(1 -> "eis").values    // warn
+scala.T.muh    // no warn
+:setting -Xmigration // same as :any
+scala.T.muh    // warn
   """
 }

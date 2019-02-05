@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.tools.nsc.ast.parser.xml
 
@@ -65,7 +69,7 @@ object Utility {
           rfb.clear()
           unescape(ref,sb) match {
             case null =>
-              if (!sb.isEmpty) {  // flush buffer
+              if (sb.nonEmpty) {  // flush buffer
                 nb += text(sb.toString())
                 sb.clear()
               }
@@ -77,7 +81,7 @@ object Utility {
       else sb append c
     }
 
-    if(!sb.isEmpty) // flush buffer
+    if(sb.nonEmpty) // flush buffer
       nb += text(sb.toString())
 
     nb.toList
@@ -129,7 +133,7 @@ object Utility {
    *  }}}
    *  See [4] and Appendix B of XML 1.0 specification.
   */
-  def isNameChar(ch: Char) = {
+  def isNameChar(ch: Char): Boolean = {
     import java.lang.Character._
     // The constants represent groups Mc, Me, Mn, Lm, and Nd.
 
@@ -150,7 +154,7 @@ object Utility {
    *  We do not allow a name to start with `:`.
    *  See [3] and Appendix B of XML 1.0 specification
    */
-  def isNameStart(ch: Char) = {
+  def isNameStart(ch: Char): Boolean = {
     import java.lang.Character._
 
     getType(ch).toByte match {

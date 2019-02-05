@@ -16,7 +16,7 @@ class B {
 
 class C extends B {
   override def foo(a: Int = 1092) = a
-  def foo(b: String = "lskdfj")
+  def foo(b: String = "lskdfj"): Unit
 
   def bar(i: Int = 129083) = i
 }

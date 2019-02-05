@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect.internal
 package util
@@ -17,18 +29,18 @@ trait TraceSymbolActivity {
   val prevOwners  = mutable.Map[Int, List[(Int, Phase)]]() withDefaultValue Nil
   val allTrees    = mutable.Set[Tree]()
 
-  def recordSymbolsInTree(tree: Tree) {
+  def recordSymbolsInTree(tree: Tree): Unit = {
     if (enabled)
       allTrees += tree
   }
 
-  def recordNewSymbol(sym: Symbol) {
+  def recordNewSymbol(sym: Symbol): Unit = {
     if (enabled && sym.id > 1) {
       allSymbols(sym.id) = sym
       allChildren(sym.owner.id) ::= sym.id
     }
   }
-  def recordNewSymbolOwner(sym: Symbol, newOwner: Symbol) {
+  def recordNewSymbolOwner(sym: Symbol, newOwner: Symbol): Unit = {
     if (enabled) {
       val sid = sym.id
       val oid = sym.owner.id
@@ -44,14 +56,14 @@ trait TraceSymbolActivity {
   private def signature(id: Int) = enteringPhase(erasurePhase)(allSymbols(id).defString)
 
   private def dashes(s: Any): String = ("" + s) map (_ => '-')
-  private def show(s1: Any, ss: Any*) {
+  private def show(s1: Any, ss: Any*): Unit = {
     println("%-12s".format(s1) +: ss mkString " ")
   }
-  private def showHeader(s1: Any, ss: Any*) {
+  private def showHeader(s1: Any, ss: Any*): Unit = {
     show(s1, ss: _*)
     show(dashes(s1), ss map dashes: _*)
   }
-  private def showSym(sym: Symbol) {
+  private def showSym(sym: Symbol): Unit = {
     def prefix = ("  " * (sym.ownerChain.length - 1)) + sym.id
     try println("%s#%s %s".format(prefix, sym.accurateKindString, sym.name.decode))
     catch {
@@ -59,7 +71,7 @@ trait TraceSymbolActivity {
     }
     allChildren(sym.id).sorted foreach showIdAndRemove
   }
-  private def showIdAndRemove(id: Int) {
+  private def showIdAndRemove(id: Int): Unit = {
     allSymbols remove id foreach showSym
   }
   private def symbolStr(id: Int): String = {
@@ -73,22 +85,20 @@ trait TraceSymbolActivity {
     sym.name.decode + "#" + sym.id
   }
 
-  private def freq[T, U](xs: scala.collection.Traversable[T])(fn: T => U): List[(U, Int)] = {
-    val ys = xs groupBy fn mapValues (_.size)
-    ys.toList sortBy (-_._2)
-  }
+  private def freq[T, U](xs: collection.Iterable[T])(fn: T => U): List[(U, Int)] =
+    xs.groupMapReduce(fn)(_ => 1)(_ + _).toList.sortBy(-_._2)
 
-  private def showMapFreq[T](xs: scala.collection.Map[T, Traversable[_]])(showFn: T => String) {
-    xs.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
+  private def showMapFreq[T](xs: collection.Map[T, Iterable[_]])(showFn: T => String): Unit = {
+    xs.view.mapValues(_.size).toList.sortBy(-_._2) take 100 foreach { case (k, size) =>
       show(size, showFn(k))
     }
     println("\n")
   }
-  private def showFreq[T, U](xs: Traversable[T])(groupFn: T => U, showFn: U => String) = {
+  private def showFreq[T, U](xs: Iterable[T])(groupFn: T => U, showFn: U => String) = {
     showMapFreq(xs.toList groupBy groupFn)(showFn)
   }
 
-  def showAllSymbols() {
+  def showAllSymbols(): Unit = {
     if (!enabled) return
     enabled = false
     allSymbols(1) = NoSymbol
@@ -121,7 +131,7 @@ trait TraceSymbolActivity {
 
         "%4s owners (%s)".format(
           owners.size,
-          owners.take(3).map({ case (k, v) => v + "/" + k }).mkString(", ") + ", ..."
+          owners.take(3).map({ case (k, v) => s"${v}/${k}" }).mkString(", ") + ", ..."
         )
       })
     }

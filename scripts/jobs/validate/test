@@ -1,8 +1,6 @@
 #!/bin/bash -e -v -x
 
-baseDir=${WORKSPACE-`pwd`}
-scriptsDir="$baseDir/scripts"
-. $scriptsDir/common
+source scripts/common
 
 generateRepositoriesConfig $prRepoUrl
 SBT="$SBT_CMD -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
@@ -20,7 +18,7 @@ case $prDryRun in
     # and run JUnit tests, ScalaCheck tests, partest, OSGi tests, MiMa and scaladoc
     $SBT \
        -Dstarr.version=$scalaVersion \
-       --warn \
+       -warn \
        "setupValidateTest $prRepoUrl" \
        $testExtraArgs \
        testAll

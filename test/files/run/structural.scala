@@ -69,7 +69,7 @@ object test1 {
     val y: Tata
   }
 
-  def l (r: rt) {
+  def l (r: rt): Unit = {
     println(" 1. " + r.c)
     println(" 2. " + r.a + 1)
     println(" 3. " + r.d(o1))
@@ -102,15 +102,15 @@ object test1 {
     println("30. " + r.e(r.x)) // static error
   }*/
 
-  def mb(r: Object { def e[T](x: T): T }) {
+  def mb(r: Object { def e[T](x: T): T }): Unit = {
     println("31. " + r.e[Int](4)) // while this is ok
   }
 
-  def m1(r: Object { def z(x: Tata): Unit }) {
+  def m1(r: Object { def z(x: Tata): Unit }): Unit = {
     println("32. " + r.z(new Titi)) // while this is ok
   }
 
-  def m2[T](r: Object { def e(x: Tata): T; val x: Tata }) {
+  def m2[T](r: Object { def e(x: Tata): T; val x: Tata }): Unit = {
     println("33. " + r.e(r.x)) // and this too
   }
 
@@ -118,7 +118,7 @@ object test1 {
     def e(x: T): T = x
   }
 
-  def m3[T](r: Rec3[T], x: T) {
+  def m3[T](r: Rec3[T], x: T): Unit = {
     println("33. " + r.e(x)) // and this too
   }
 
@@ -132,24 +132,24 @@ object test1 {
 }
 
 object test2 {
-  class C extends { def f() { println("1") } }
+  class C extends { def f(): Unit = { println("1") } }
   val x1 = new C
   x1.f()
 
-  abstract class D extends { def f() }
-  val x2 = new D { def f() { println("2") } }
+  abstract class D extends { def f(): Unit }
+  val x2 = new D { def f(): Unit = { println("2") } }
   x2.f()
 
-  val x3 = new { def f() { println("3") } }
-  def run(x: { def f() }) { x.f() }
+  val x3 = new { def f(): Unit = { println("3") } }
+  def run(x: { def f(): Unit }): Unit = { x.f() }
   run(x3)
 
-  type T = { def f() }
-  val x4 = new AnyRef { def f() { println("4") } } // ok!
+  type T = { def f(): Unit }
+  val x4 = new AnyRef { def f(): Unit = { println("4") } } // ok!
   //val x4 = new T { def f() { println("4") } }        // error! (bug #1241)
   x4.f()
 
-  val x5: T = new { def f() { println("5") } }
+  val x5: T = new { def f(): Unit = { println("5") } }
   x5.f()
 }
 

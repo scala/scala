@@ -60,7 +60,7 @@ object Covariant {
   class Test extends AbstractTest {
     val a : Foo[java.lang.Character] = new Foo[java.lang.Character]
   }
-  def main(args : Array[String]) {
+  def main(args : Array[String]): Unit = {
     val test = new Test
     test.c.doit1(test.b)
     test.c.doit2(test.b)

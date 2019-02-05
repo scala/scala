@@ -8,7 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
@@ -19,14 +19,15 @@ class JrtClassPathTest {
   @Test def lookupJavaClasses(): Unit = {
     val specVersion = scala.util.Properties.javaSpecVersion
     // Run the test using the JDK8 or 9 provider for rt.jar depending on the platform the test is running on.
+    val closeableRegistry = new CloseableRegistry
     val cp: ClassPath =
       if (specVersion == "" || specVersion == "1.8") {
         val settings = new Settings()
-        val resolver = new PathResolver(settings)
-        val elements = new ClassPathFactory(settings).classesInPath(resolver.Calculated.javaBootClassPath)
+        val resolver = new PathResolver(settings, closeableRegistry)
+        val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(resolver.Calculated.javaBootClassPath)
         AggregateClassPath(elements)
       }
-      else JrtClassPath().get
+      else JrtClassPath(None, closeableRegistry).get
 
     assertEquals(Nil, cp.classes(""))
     assertTrue(cp.packages("java").toString, cp.packages("java").exists(_.name == "java.lang"))
@@ -37,5 +38,7 @@ class JrtClassPathTest {
     assertTrue(cp.list("java.lang").classesAndSources.exists(_.name == "Object"))
     assertTrue(cp.findClass("java.lang.Object").isDefined)
     assertTrue(cp.findClassFile("java.lang.Object").isDefined)
+
+    closeableRegistry.close()
   }
 }

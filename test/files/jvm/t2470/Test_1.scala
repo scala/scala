@@ -4,7 +4,7 @@ object Test {
     def foo = 0
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = classOf[Foo].getDeclaredMethods().find(_.toString.contains("foo")).get
     println(m.getAnnotations().toList)
   }

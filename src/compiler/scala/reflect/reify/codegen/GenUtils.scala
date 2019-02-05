@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.reify
 package codegen
 
@@ -76,7 +88,7 @@ trait GenUtils {
     val lastName = mkName(parts.last)
     if (prefixParts.isEmpty) Ident(lastName)
     else {
-      val prefixTree = ((Ident(prefixParts.head): Tree) /: prefixParts.tail)(Select(_, _))
+      val prefixTree = prefixParts.tail.foldLeft(Ident(prefixParts.head): Tree)(Select(_, _))
       Select(prefixTree, lastName)
     }
   }

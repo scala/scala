@@ -9,9 +9,9 @@ retrieved 29 members
 def +(other: String): String
 def ->[B](y: B): (Object, B)
 def ensuring(cond: Boolean): Object
-def ensuring(cond: Boolean,msg: => Any): Object
+def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
-def ensuring(cond: Object => Boolean,msg: => Any): Object
+def ensuring(cond: Object => Boolean, msg: => Any): Object
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -29,7 +29,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 ================================================================================
 
 askTypeCompletion at Foo.scala(6,10)
@@ -41,9 +41,9 @@ retrieved 29 members
 def +(other: String): String
 def ->[B](y: B): (Object, B)
 def ensuring(cond: Boolean): Object
-def ensuring(cond: Boolean,msg: => Any): Object
+def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
-def ensuring(cond: Object => Boolean,msg: => Any): Object
+def ensuring(cond: Object => Boolean, msg: => Any): Object
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -61,7 +61,7 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 ================================================================================
 
 askTypeCompletion at Foo.scala(7,7)
@@ -73,9 +73,9 @@ retrieved 29 members
 def +(other: String): String
 def ->[B](y: B): (Object, B)
 def ensuring(cond: Boolean): Object
-def ensuring(cond: Boolean,msg: => Any): Object
+def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
-def ensuring(cond: Object => Boolean,msg: => Any): Object
+def ensuring(cond: Object => Boolean, msg: => Any): Object
 def equals(x$1: Any): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
@@ -93,5 +93,5 @@ final def notifyAll(): Unit
 final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
-final def wait(x$1: Long,x$2: Int): Unit
+final def wait(x$1: Long, x$2: Int): Unit
 ================================================================================

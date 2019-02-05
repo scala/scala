@@ -1,3 +1,5 @@
+// scalac: -Xdev -Xfatal-warnings
+//
 class Kaboom(a: Any) {
   def this() = {
     this({

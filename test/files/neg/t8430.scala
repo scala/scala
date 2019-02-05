@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -Ypatmat-exhaust-depth off
+//
 sealed trait CL3Literal
 case object IntLit extends CL3Literal
 case object CharLit extends CL3Literal
@@ -12,12 +14,12 @@ case object LetC extends Tree
 case object LetF extends Tree
  
 object Test {
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f0 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f1 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f2 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f3 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f4 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+  val f5 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
   // After the first patch for scala/bug#8430, we achieve stability: all of
   // these get the same warning:
   //

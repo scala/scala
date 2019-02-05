@@ -1,13 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.Position
-import reporters.Reporter
+import scala.reflect.internal.Reporter
 
 case class Problem(pos: Position, msg: String, severityLevel: Int)
 
@@ -40,7 +48,7 @@ abstract class InteractiveReporter extends Reporter {
     case ex: UnsupportedOperationException =>
   }
 
-  override def reset() {
+  override def reset(): Unit = {
     super.reset()
     otherProblems.clear()
   }

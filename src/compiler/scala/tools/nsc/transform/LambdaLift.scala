@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -9,7 +16,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection.mutable
-import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet, TreeSet }
+import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -50,7 +57,7 @@ abstract class LambdaLift extends InfoTransform {
 
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 
-    private type SymSet = TreeSet[Symbol]
+    private type SymSet = LinkedHashSet[Symbol]
 
     /** A map storing free variables of functions and classes */
     private val free = new LinkedHashMap[Symbol, SymSet]
@@ -64,8 +71,7 @@ abstract class LambdaLift extends InfoTransform {
     /** Symbols that are called from an inner class. */
     private val calledFromInner = new LinkedHashSet[Symbol]
 
-    private val ord = Ordering.fromLessThan[Symbol](_ isLess _)
-    private def newSymSet = TreeSet.empty[Symbol](ord)
+    private def newSymSet: LinkedHashSet[Symbol] = new LinkedHashSet[Symbol]
 
     private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet =
       f.getOrElseUpdate(sym, newSymSet)
@@ -179,7 +185,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    private def markCalled(sym: Symbol, owner: Symbol) {
+    private def markCalled(sym: Symbol, owner: Symbol): Unit = {
 //      println(s"mark called: $sym of ${sym.owner} is called by $owner")
       symSet(called, owner) += sym
       if (sym.enclClass != owner.enclClass) calledFromInner += sym
@@ -187,7 +193,7 @@ abstract class LambdaLift extends InfoTransform {
 
     /** The traverse function */
     private val freeVarTraverser = new InternalTraverser {
-      override def traverse(tree: Tree) {
+      override def traverse(tree: Tree): Unit = {
 //       try { //debug
         val sym = tree.symbol
         tree match {
@@ -231,7 +237,7 @@ abstract class LambdaLift extends InfoTransform {
      *  value/variable/let that are free in some function or class, and to
      *  all class/function symbols that are owned by some function.
      */
-    private def computeFreeVars() {
+    private def computeFreeVars(): Unit = {
       freeVarTraverser.traverse(unit.body)
 
       do {
@@ -240,7 +246,7 @@ abstract class LambdaLift extends InfoTransform {
           markFree(fv, caller)
       } while (changedFreeVars)
 
-      def renameSym(sym: Symbol) {
+      def renameSym(sym: Symbol): Unit = {
         val originalName = sym.name
         sym setName newName(sym)
         debuglog("renaming in %s: %s => %s".format(sym.owner.fullLocationString, originalName, sym.name))
@@ -370,7 +376,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    def freeArgsOrNil(sym: Symbol) = free.getOrElse(sym, Nil).toList
+    def freeArgsOrNil(sym: Symbol) = free.getOrElse[Iterable[Symbol]](sym, Nil).toList
 
     private def freeArgs(sym: Symbol): List[Symbol] =
       freeArgsOrNil(sym)
@@ -554,7 +560,7 @@ abstract class LambdaLift extends InfoTransform {
       def addLifted(stat: Tree): Tree = stat match {
         case ClassDef(_, _, _, _) =>
           val lifted = liftedDefs remove stat.symbol match {
-            case Some(xs) => xs reverseMap addLifted
+            case Some(xs) => xs.reverseIterator.map(addLifted).toList
             case _        => log("unexpectedly no lifted defs for " + stat.symbol) ; Nil
           }
           deriveClassDef(stat)(impl => deriveTemplate(impl)(_ ::: lifted))
@@ -567,7 +573,7 @@ abstract class LambdaLift extends InfoTransform {
       super.transformStats(stats, exprOwner) map addLifted
     }
 
-    override def transformUnit(unit: CompilationUnit) {
+    override def transformUnit(unit: CompilationUnit): Unit = {
       computeFreeVars()
       afterOwnPhase {
         super.transformUnit(unit)

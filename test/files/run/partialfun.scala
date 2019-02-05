@@ -1,17 +1,19 @@
 import collection._
 import collection.generic._
 
+import scala.language.higherKinds
+
 object Test {
-  def collectIDA[A, B, Repr, That](_this: TraversableLike[A, Repr])(pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def collectIDA[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     val repr: Repr = _this.asInstanceOf[Repr]
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     _this foreach { x => if (pf isDefinedAt x) b += pf(x) }
     b.result
   }
 
-  def collectRW[A, B, Repr, That](_this: TraversableLike[A, Repr])(pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def collectRW[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     val repr: Repr = _this.asInstanceOf[Repr]
-    val b = bf(repr)
+    val b = bf.newBuilder(repr)
     val f = pf runWith { b += _ }
     _this foreach f
     b.result
@@ -40,7 +42,7 @@ object Test {
     case Ex2(result) => result
   }
 
-  def collectTest() {
+  def collectTest(): Unit = {
     val xs = 1 to 100
     resetCnt()
 
@@ -61,17 +63,17 @@ object Test {
     println(cntRW)
   }
 
-  def orElseTest() {
+  def orElseTest(): Unit = {
     val pf0 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("0:apply") }
+      def apply(u: Unit): Unit = { println("0:apply") }
       def isDefinedAt(u: Unit) = { println("0:isDefinedAt"); false }
     }
     val pf1 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("1:apply") }
+      def apply(u: Unit): Unit = { println("1:apply") }
       def isDefinedAt(u: Unit) = { println("1:isDefinedAt"); false }
     }
     val pf2 = new PartialFunction[Unit, Unit] {
-      def apply(u: Unit) { println("2:apply") }
+      def apply(u: Unit): Unit = { println("2:apply") }
       def isDefinedAt(u: Unit) = { println("2:isDefinedAt"); true }
     }
 

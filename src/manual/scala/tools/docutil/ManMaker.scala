@@ -1,16 +1,13 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Stephane Micheloud
+ * Copyright 2005-2018 LAMP/EPFL
  * Adapted from Lex Spoon's sbaz manual
  */
 
 package scala.tools.docutil
 
-import org.apache.tools.ant.Task
-
 import java.io.{File, FileOutputStream}
 
-class ManMaker extends Task {
+class ManMaker {
 
   /** The command for which to generate the man page */
   private var command: List[String] = Nil
@@ -22,22 +19,22 @@ class ManMaker extends Task {
   private var manout: Option[File] = None
 
 
-  def setCommand(input: String) {
+  def setCommand(input: String): Unit = {
     command = input.split(",").toList.flatMap { s =>
       val st = s.trim()
       if (st != "") List(st) else Nil
     }
   }
 
-  def setHtmlout(input: File) {
+  def setHtmlout(input: File): Unit = {
     htmlout = Some(input)
   }
 
-  def setManout(input: File) {
+  def setManout(input: File): Unit = {
     manout = Some(input)
   }
 
-  override def execute() {
+  def execute(): Unit = {
     if (command.isEmpty) sys.error("Attribute 'command' is not set.")
     if (htmlout.isEmpty) sys.error("Attribute 'htmlout' is not set.")
     if (manout.isEmpty) sys.error("Attribute 'manout' is not set.")

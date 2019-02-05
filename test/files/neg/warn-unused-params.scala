@@ -1,3 +1,5 @@
+// scalac: -Ywarn-unused:params -Xfatal-warnings
+//
 
 trait InterFace {
   /** Call something. */
@@ -66,4 +68,29 @@ class Reusing(u: Int) extends Unusing(u)   // no warn
 
 class Main {
   def main(args: Array[String]): Unit = println("hello, args")  // no warn
+}
+
+trait Unimplementation {
+  def f(u: Int): Int = ???        // no warn for param in unimplementation
+}
+
+trait DumbStuff {
+  def f(implicit dummy: DummyImplicit) = 42
+  def g(dummy: DummyImplicit) = 42
+}
+trait Proofs {
+  def f[A, B](implicit ev: A =:= B) = 42
+  def g[A, B](implicit ev: A <:< B) = 42
+  def f2[A, B](ev: A =:= B) = 42
+  def g2[A, B](ev: A <:< B) = 42
+}
+
+trait Anonymous {
+  def f = (i: Int) => 42      // warn
+
+  def f1 = (_: Int) => 42     // no warn underscore parameter (a fresh name)
+
+  def f2: Int => Int = _ + 1  // no warn placeholder syntax (a fresh name and synthethic parameter)
+
+  def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
 }

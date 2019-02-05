@@ -68,6 +68,10 @@ class CompletionTest {
 
     // Output is sorted
     assertEquals(List("prefix_aaa", "prefix_nnn", "prefix_zzz"), completer.complete( """class C { def prefix_nnn = 0; def prefix_zzz = 0; def prefix_aaa = 0; prefix_""").candidates)
+
+    // Enable implicits to check completion enrichment
+    assert(completer.complete("""'c'.""").candidates.contains("toUpper"))
+    assert(completer.complete("""val c = 'c'; c.""").candidates.contains("toUpper"))
   }
 
   @Test
@@ -75,8 +79,9 @@ class CompletionTest {
     val completer = setup()
     checkExact(completer, "def foo[@specialize", " A]")("specialized")
     checkExact(completer, "def foo[@specialize")("specialized")
-    checkExact(completer, """@deprecatedN""", """ class Foo""")("deprecatedName")
-    checkExact(completer, """@deprecateN""")("deprecatedName")
+//    TODO: re-enable once scala/bug#11060 is fixed
+//    checkExact(completer, """@deprecatedN""", """ class Foo""")("deprecatedName")
+//    checkExact(completer, """@deprecateN""")("deprecatedName")
     checkExact(completer, """{@deprecateN""")("deprecatedName")
   }
 
@@ -101,6 +106,8 @@ class CompletionTest {
     checkExact(completer, "object O { def xxxxYyyyyZzzz = 1; def xxxxYyZeee = 1 }; import O._; xYZ")("", "xxxxYyyyyZzzz", "xxxxYyZeee")
     checkExact(completer, "object O { def xxxxYyyyyZzzz = 1; def xxxxYyyyyZeee = 1 }; import O._; xYZ")("xxxxYyyyyZzzz", "xxxxYyyyyZeee")
     checkExact(completer, "object O { class AbstractMetaFactoryFactory }; new O.AMFF")("AbstractMetaFactoryFactory")
+    checkExact(completer, "object O { val DECIMAL_DIGIT_NUMBER = 0 }; import O._; L_")("DECIMAL_DIGIT_NUMBER")
+    checkExact(completer, "object O { val _unusualIdiom = 0 }; import O._; _ui")("_unusualIdiom")
   }
 
   @Test
@@ -108,7 +115,17 @@ class CompletionTest {
     val completer = setup()
     checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; tcso")("theCatSatOnTheMat")
     checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; sotm")("theCatSatOnTheMat")
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; caton")("theCatSatOnTheMat")
+    checkExact(completer, "object O { def theCatSatOnTheMat = 1; def catOnYoutube = 2 }; import O._; caton")("", "theCatSatOnTheMat", "catOnYoutube")
     checkExact(completer, "object O { def theCatSatOnTheMat = 1 }; import O._; TCSOTM")()
+  }
+
+  @Test
+  def snakeCompletions(): Unit = {
+    val completer = setup()
+    checkExact(completer, "object O { final val THE_CAT_SAT_ON_THE_MAT = 1 }; import O._; TCSO")("THE_CAT_SAT_ON_THE_MAT")
+    checkExact(completer, "object O { final val THE_CAT_SAT_ON_THE_MAT = 1 }; import O._; tcso")("THE_CAT_SAT_ON_THE_MAT")
+    checkExact(completer, "object C { def isIdentifierIgnorable = ??? ; val DECIMAL_DIGIT_NUMBER = 0 }; import C._; iii")("isIdentifierIgnorable")
   }
 
   @Test

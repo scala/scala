@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package backend.jvm
 
@@ -163,7 +175,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   private[this] lazy val _jlCloneableRef            : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaCloneableClass))        // java/lang/Cloneable
 
   def                     jiSerializableRef         : ClassBType = _jiSerializableRef.get
-  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(JavaSerializableClass))     // java/io/Serializable
+  private[this] lazy val _jiSerializableRef         : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(SerializableClass))     // java/io/Serializable
 
   def                     jlClassCastExceptionRef   : ClassBType = _jlClassCastExceptionRef.get
   private[this] lazy val _jlClassCastExceptionRef   : LazyVar[ClassBType] = runLazy(classBTypeFromSymbol(ClassCastExceptionClass))   // java/lang/ClassCastException
@@ -221,11 +233,11 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   }
 
   private def srBoxesRuntimeMethods(getName: (String, String) => String): Map[BType, MethodNameAndType] = {
-    ScalaValueClassesNoUnit.map(primitive => {
+    Map.from(ScalaValueClassesNoUnit.iterator.map(primitive => {
       val bType = primitiveTypeToBType(primitive)
       val name = newTermName(getName(primitive.name.toString, boxedClass(primitive).name.toString))
       (bType, methodNameAndType(BoxesRunTimeClass, name))
-    })(collection.breakOut)
+    }))
   }
 
   // Z -> MethodNameAndType(boxToBoolean,(Z)Ljava/lang/Boolean;)
@@ -244,29 +256,29 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   // java/lang/Boolean -> MethodNameAndType(valueOf,(Z)Ljava/lang/Boolean;)
   def javaBoxMethods: Map[InternalName, MethodNameAndType] = _javaBoxMethods.get
   private[this] lazy val _javaBoxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
-    ScalaValueClassesNoUnit.map(primitive => {
+    Map.from(ScalaValueClassesNoUnit.iterator.map(primitive => {
       val boxed = boxedClass(primitive)
       val method = methodNameAndType(boxed, newTermName("valueOf"), static = true, filterOverload = singleParamOfClass(primitive))
       (classBTypeFromSymbol(boxed).internalName, method)
-    })(collection.breakOut)
+    }))
   }
 
   // java/lang/Boolean -> MethodNameAndType(booleanValue,()Z)
   def javaUnboxMethods: Map[InternalName, MethodNameAndType] = _javaUnboxMethods.get
   private[this] lazy val _javaUnboxMethods: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
-    ScalaValueClassesNoUnit.map(primitive => {
+    Map.from(ScalaValueClassesNoUnit.iterator.map(primitive => {
       val boxed = boxedClass(primitive)
       val name = primitive.name.toString.toLowerCase + "Value"
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, newTermName(name)))
-    })(collection.breakOut)
+    }))
   }
 
   private def predefBoxingMethods(getName: (String, String) => String): Map[String, MethodBType] = {
-    ScalaValueClassesNoUnit.map(primitive => {
+    Map.from(ScalaValueClassesNoUnit.iterator.map(primitive => {
       val boxed = boxedClass(primitive)
       val name = getName(primitive.name.toString, boxed.name.toString)
       (name, methodNameAndType(PredefModule.moduleClass, newTermName(name)).methodType)
-    })(collection.breakOut)
+    }))
   }
 
   // boolean2Boolean -> (Z)Ljava/lang/Boolean;
@@ -278,8 +290,8 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   private[this] lazy val _predefAutoUnboxMethods: LazyVar[Map[String, MethodBType]] = runLazy(predefBoxingMethods((primitive, boxed) => boxed + "2" + primitive.toLowerCase))
 
   private def staticRefMethods(name: Name): Map[InternalName, MethodNameAndType] = {
-    allRefClasses.map(refClass =>
-      (classBTypeFromSymbol(refClass).internalName, methodNameAndType(refClass, name, static = true)))(collection.breakOut)
+    Map.from(allRefClasses.iterator.map(refClass =>
+      (classBTypeFromSymbol(refClass).internalName, methodNameAndType(refClass, name, static = true))))
   }
 
   // scala/runtime/BooleanRef -> MethodNameAndType(create,(Z)Lscala/runtime/BooleanRef;)
@@ -293,14 +305,14 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
   // java/lang/Boolean -> MethodNameAndType(<init>,(Z)V)
   def primitiveBoxConstructors: Map[InternalName, MethodNameAndType] = _primitiveBoxConstructors.get
   private[this] lazy val _primitiveBoxConstructors: LazyVar[Map[InternalName, MethodNameAndType]] = runLazy {
-    ScalaValueClassesNoUnit.map(primitive => {
+    Map.from(ScalaValueClassesNoUnit.iterator.map(primitive => {
       val boxed = boxedClass(primitive)
       (classBTypeFromSymbol(boxed).internalName, methodNameAndType(boxed, nme.CONSTRUCTOR, filterOverload = singleParamOfClass(primitive)))
-    })(collection.breakOut)
+    }))
   }
 
   private def nonOverloadedConstructors(classes: Iterable[Symbol]): Map[InternalName, MethodNameAndType] = {
-    classes.map(cls => (classBTypeFromSymbol(cls).internalName, methodNameAndType(cls, nme.CONSTRUCTOR)))(collection.breakOut)
+    Map.from(classes.iterator.map(cls => (classBTypeFromSymbol(cls).internalName, methodNameAndType(cls, nme.CONSTRUCTOR))))
   }
 
   // scala/runtime/BooleanRef -> MethodNameAndType(<init>,(Z)V)
@@ -309,9 +321,9 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
 
   private def specializedSubclasses(cls: Symbol): List[Symbol] = {
     exitingSpecialize(cls.info) // the `transformInfo` method of specialization adds specialized subclasses to the `specializedClass` map
-    specializeTypes.specializedClass.collect({
-      case ((`cls`, _), specCls) => specCls
-    }).toList
+    val map = specializeTypes.specializedClass.getOrNull(cls)
+    if (map == null) Nil
+    else map.values.toList
   }
 
   // scala/Tuple3 -> MethodNameAndType(<init>,(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V)
@@ -355,11 +367,6 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
       case List(pt) => pt.typeSymbol == ObjectClass
       case _        => false
     })
-  }
-
-  def SSymbol_apply: Symbol = _SSymbol_apply.get
-  private[this] lazy val _SSymbol_apply: LazyVar[Symbol] = runLazy {
-    getMember(SymbolModule, nme.apply)
   }
 
   def lambdaMetaFactoryMetafactoryHandle: Handle = _lambdaMetaFactoryMetafactoryHandle.get

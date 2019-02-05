@@ -3,7 +3,7 @@ import scala.reflect.macros.blackbox.Context
 object Impls {
   def foo(c: Context)(xs: c.Expr[Int]*) = {
     import c.universe._
-    val stripped_xs = xs map (_.tree) toList match {
+    val stripped_xs = xs.map(_.tree).toList match {
       case List(Typed(stripped, Ident(wildstar))) if wildstar == typeNames.WILDCARD_STAR => List(stripped)
       case _ => ???
     }

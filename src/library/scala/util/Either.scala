@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package util
@@ -114,7 +118,6 @@ package util
  *  }}}
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 2.0, 2016-07-15
  *  @since 2.7
  */
 sealed abstract class Either[+A, +B] extends Product with Serializable {
@@ -162,12 +165,14 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was $e")
    *   }}}
    */
+  @deprecated("use swap instead", "2.13.0")
   def left = Either.LeftProjection(this)
 
   /** Projects this `Either` as a `Right`.
    *
    *  Because `Either` is right-biased, this method is not normally needed.
    */
+  @deprecated("Either is now right-biased, use methods directly on Either", "2.13.0")
   def right = Either.RightProjection(this)
 
   /** Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
@@ -280,6 +285,19 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     case _        => or
   }
 
+  /** Returns this `Right` or the given argument if this is a `Left`.
+   *
+   *  {{{
+   *  Right(1) orElse Left(2) // Right(1)
+   *  Left(1) orElse Left(2)  // Left(2)
+   *  Left(1) orElse Left(2) orElse Right(3) // Right(3)
+   *  }}}
+   */
+  def orElse[A1 >: A, B1 >: B](or: => Either[A1, B1]): Either[A1, B1] = this match {
+    case Right(_) => this
+    case _        => or
+  }
+
   /** Returns `true` if this is a `Right` and its value is equal to `elem` (as determined by `==`),
    *  returns `false` otherwise.
    *
@@ -338,6 +356,24 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     case Right(b) => f(b)
     case _        => this.asInstanceOf[Either[A1, B1]]
   }
+
+
+  /** Returns the right value if this is right
+    * or this value if this is left
+    *
+    * @example {{{
+    * val  l: Either[String, Either[String, Int]] = Left("pancake")
+    * val rl: Either[String, Either[String, Int]] = Right(Left("flounder"))
+    * val rr: Either[String, Either[String, Int]] = Right(Right(7))
+    *
+    *  l.flatten //Either[String, Int]: Left("pancake")
+    * rl.flatten //Either[String, Int]: Left("flounder")
+    * rr.flatten //Either[String, Int]: Right(7)
+    * }}}
+    * 
+    * Equivalent to `flatMap(id => id)`
+    */
+  def flatten[A1 >: A, B1](implicit ev: B <:< Either[A1, B1]): Either[A1, B1] = flatMap(ev)
 
   /** The given function is applied if this is a `Right`.
    *
@@ -420,25 +456,39 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 /** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](@deprecatedName('a, "2.12.0") value: A) extends Either[A, B] {
+final case class Left[+A, +B](value: A) extends Either[A, B] {
   def isLeft  = true
   def isRight = false
 
-  @deprecated("Use .value instead.", "2.12.0") def a: A = value
+  /**
+    * Upcasts this `Left[A, B]` to `Either[A, B1]`
+    * {{{
+    *   Left(1)                   // Either[Int, Nothing]
+    *   Left(1).withRight[String] // Either[Int, String]
+    * }}}
+    */
+  def withRight[B1 >: B]: Either[A, B1] = this
+
 }
 
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
- *  @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](@deprecatedName('b, "2.12.0") value: B) extends Either[A, B] {
+final case class Right[+A, +B](value: B) extends Either[A, B] {
   def isLeft  = false
   def isRight = true
 
-  @deprecated("Use .value instead.", "2.12.0") def b: B = value
+  /**
+    * Upcasts this `Right[A, B]` to `Either[A1, B]`
+    * {{{
+    *   Right("x")               // Either[Nothing, String]
+    *   Right("x").withLeft[Int] // Either[Int, String]
+    * }}}
+    */
+  def withLeft[A1 >: A]: Either[A1, B] = this
+
 }
 
 object Either {
@@ -477,9 +527,9 @@ object Either {
   /** Projects an `Either` into a `Left`.
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
-   *  @version 1.0, 11/10/2008
    *  @see [[scala.util.Either#left]]
    */
+  @deprecated("use `swap` instead", "2.13.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
      *  if this is a `Right`.
@@ -491,6 +541,7 @@ object Either {
      *
      *  @throws java.util.NoSuchElementException if the projection is [[scala.util.Right]]
      */
+    @deprecated("use `Either.swap.getOrElse` instead", "2.13.0")
     def get: A = e match {
       case Left(a) => a
       case _       => throw new NoSuchElementException("Either.left.get on Right")
@@ -530,7 +581,7 @@ object Either {
      *  Right(12).left.forall(_ > 10) // true
      *  }}}
      */
-    def forall(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def forall(p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => true
     }
@@ -544,7 +595,7 @@ object Either {
      *  Right(12).left.exists(_ > 10) // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: A => Boolean): Boolean = e match {
+    def exists(p: A => Boolean): Boolean = e match {
       case Left(a) => p(a)
       case _       => false
     }
@@ -583,11 +634,26 @@ object Either {
      *  Right(12).left.filter(_ > 10) // None
      *  }}}
      */
+    @deprecated("Use `filterToOption`, which more accurately reflects the return type", "2.13.0")
     def filter[B1](p: A => Boolean): Option[Either[A, B1]] = e match {
       case x @ Left(a) if p(a) => Some(x.asInstanceOf[Either[A, B1]])
       case _                   => None
     }
 
+    /** Returns `None` if this is a `Right` or if the given predicate
+     *  `p` does not hold for the left value, otherwise, returns a `Left`.
+     *
+     *  {{{
+     *  Left(12).left.filterToOption(_ > 10)  // Some(Left(12))
+     *  Left(7).left.filterToOption(_ > 10)   // None
+     *  Right(12).left.filterToOption(_ > 10) // None
+     *  }}}
+     */
+    def filterToOption[B1](p: A => Boolean): Option[Either[A, B1]] = e match {
+      case x @ Left(a) if p(a) => Some(x.asInstanceOf[Either[A, B1]])
+      case _                   => None
+    }
+    
     /** Returns a `Seq` containing the `Left` value if it exists or an empty
      *  `Seq` if this is a `Right`.
      *
@@ -622,8 +688,8 @@ object Either {
    *  2.11 and 2.12.)
    *
    *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
-   *  @version 1.0, 11/10/2008
    */
+  @deprecated("Either is now right-biased, calls to `right` should be removed", "2.13.0")
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 
     /** Returns the value from this `Right` or throws
@@ -636,6 +702,7 @@ object Either {
      *
      * @throws java.util.NoSuchElementException if the projection is `Left`.
      */
+    @deprecated("Use `Either.getOrElse` instead", "2.13.0")
     def get: B = e match {
       case Right(b) => b
       case _        => throw new NoSuchElementException("Either.right.get on Left")
@@ -689,7 +756,7 @@ object Either {
      *  Left(12).right.exists(_ > 10)   // false
      *  }}}
      */
-    def exists(@deprecatedName('f) p: B => Boolean): Boolean = e match {
+    def exists(p: B => Boolean): Boolean = e match {
       case Right(b) => p(b)
       case _        => false
     }
@@ -725,11 +792,27 @@ object Either {
      * Left(12).right.filter(_ > 10)  // None
      * }}}
      */
+    @deprecated("Use `filterToOption`, which more accurately reflects the return type", "2.13.0")
     def filter[A1](p: B => Boolean): Option[Either[A1, B]] = e match {
       case Right(b) if p(b) => Some(Right(b))
       case _                => None
     }
-
+    
+    /** Returns `None` if this is a `Left` or if the
+     *  given predicate `p` does not hold for the right value,
+     *  otherwise, returns a `Right`.
+     *
+     * {{{
+     * Right(12).right.filterToOption(_ > 10) // Some(Right(12))
+     * Right(7).right.filterToOption(_ > 10)  // None
+     * Left(12).right.filterToOption(_ > 10)  // None
+     * }}}
+     */
+    def filterToOption[A1](p: B => Boolean): Option[Either[A1, B]] = e match {
+      case r @ Right(b) if p(b) => Some(r.asInstanceOf[Either[A1, B]])
+      case _                    => None
+    }
+    
     /** Returns a `Seq` containing the `Right` value if
      *  it exists or an empty `Seq` if this is a `Left`.
      *

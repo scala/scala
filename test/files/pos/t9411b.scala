@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 object OhNoes {
 
   sealed trait F

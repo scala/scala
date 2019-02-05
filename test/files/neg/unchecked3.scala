@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 sealed trait A2[T1]
 final class B2[T1, T2] extends A2[T1]
 
@@ -69,12 +71,12 @@ object Matching {
     type A
     type B <: A
 
-    def f(xs: Traversable[B]) = xs match {
+    def f(xs: Iterable[B]) = xs match {
       /* nowarn */ case xs: List[A] => xs.head
       /* nowarn */ case xs: Seq[B]  => xs.head
       /*   warn */ case xs: Set[A]  => xs.head
     }
-    def f2[T <: B](xs: Traversable[T]) = xs match {
+    def f2[T <: B](xs: Iterable[T]) = xs match {
       /* nowarn */ case xs: List[B with T] => xs.head
       /* nowarn */ case xs: Seq[A]         => xs.head
       /* nowarn */ case xs: Set[T]         => xs.head

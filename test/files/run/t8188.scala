@@ -1,5 +1,5 @@
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import java.io.ByteArrayInputStream
     import java.io.ByteArrayOutputStream
     import java.io.ObjectInputStream

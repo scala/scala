@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 object Test extends App {
   val a = Array(1, 2, 3)
   println(a.deep.toString)

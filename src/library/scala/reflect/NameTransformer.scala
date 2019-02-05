@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package reflect
@@ -24,13 +28,13 @@ object NameTransformer {
   final val SETTER_SUFFIX_STRING          = "_$eq"
   final val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 
-  private val nops = 128
-  private val ncodes = 26 * 26
+  private[this] val nops = 128
+  private[this] val ncodes = 26 * 26
 
   private class OpCodes(val op: Char, val code: String, val next: OpCodes)
 
-  private val op2code = new Array[String](nops)
-  private val code2op = new Array[OpCodes](ncodes)
+  private[this] val op2code = new Array[String](nops)
+  private[this] val code2op = new Array[OpCodes](ncodes)
   private def enterOp(op: Char, code: String) = {
     op2code(op.toInt) = code
     val c = (code.charAt(1) - 'a') * 26 + code.charAt(2) - 'a'

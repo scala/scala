@@ -1,0 +1,6 @@
+t10701/Test.java:6: warning: [deprecation] whatever() in Meh has been deprecated
+        Meh.whatever();
+           ^
+error: warnings found and -Werror specified
+1 error
+1 warning

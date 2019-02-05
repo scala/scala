@@ -1,3 +1,5 @@
+// scalac: -Yrangepos
+//
 import scala.language.implicitConversions
 
 object Test extends App {

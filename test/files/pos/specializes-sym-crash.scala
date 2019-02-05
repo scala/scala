@@ -1,9 +1,24 @@
 import scala.collection._
 
+trait IterableViewLike[+A,
++Coll,
++This <: IterableView[A, Coll] with IterableViewLike[A, Coll, This]] {
+  def viewToString: String = ""
+  protected[this] def viewIdentifier: String = ""
+  trait Transformed[+B]
+}
+trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, Coll]]
+trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
+trait SeqViewLike[+A,
++Coll,
++This <: SeqView[A, Coll] with SeqViewLike[A, Coll, This]]
+  extends Seq[A] with SeqOps[A, Seq, Seq[A]] with IterableView[A, Coll] with IterableViewLike[A, Coll, This]
+
+
 trait Foo[+A,
-                     +Coll,
-                     +This <: SeqView[A, Coll] with SeqViewLike[A, Coll, This]]
-extends Seq[A] with SeqLike[A, This] with IterableView[A, Coll] with IterableViewLike[A, Coll, This] {
++Coll,
++This <: SeqView[A, Coll] with SeqViewLike[A, Coll, This]]
+extends Seq[A] with SeqOps[A, Seq, Seq[A]] with IterableView[A, Coll] with IterableViewLike[A, Coll, This] {
 self =>
 
   trait Transformed[+B] extends SeqView[B, Coll] with super.Transformed[B] {

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 import scala.language.reflectiveCalls
 
 trait A {
@@ -69,7 +71,7 @@ object Test {
     }
     implicit def barTag: scala.reflect.ClassTag[Bar] = scala.reflect.ClassTag(classOf[Bar])
 
-    def run() {
+    def run(): Unit = {
       println("f1")
       wrap(f1(new Concrete {}))
       wrap(f1(new Foo {}))
@@ -126,12 +128,12 @@ object Test {
   object ao extends Base
   object bo extends Base with B
 
-  private def wrap(body: => Any) {
+  private def wrap(body: => Any): Unit = {
     try println(body)
     catch { case ex: NoSuchMethodException => println(ex) }
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     ao.run()
     bo.run()
   }

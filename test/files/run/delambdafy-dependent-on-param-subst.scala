@@ -1,3 +1,5 @@
+// scalac: -Ydelambdafy:method
+//
 trait M[-X] {
   def m(x: X): Boolean
 }
@@ -6,7 +8,7 @@ class C
 class A { class C }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a = new A
 
     // class O extends M[a.C] { def m(x: a.C) = true }

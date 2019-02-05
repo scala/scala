@@ -7,7 +7,7 @@ class X[@specialized(Int) A] {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val xInt = new X[Int]
     println(xInt.f(42))
     val xString = new X[String]

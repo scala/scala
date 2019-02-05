@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -8,6 +15,7 @@ package tools
 package nsc
 
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter, Reader }
+import scala.collection.immutable.ArraySeq
 
 package object util {
   // forwarder for old code that builds against 2.9 and 2.10
@@ -43,7 +51,7 @@ package object util {
       val tarray = new Array[Thread](Thread.activeCount())
       val got    = Thread.enumerate(tarray)
 
-      tarray take got
+      ArraySeq.unsafeWrapArray(tarray.take(got))
     }
 
     val ts1    = allThreads()

@@ -1,6 +1,6 @@
 List[Int]
 scala.collection.immutable.List.type
-object java.lang.RuntimeException is not a value
+class java.lang.RuntimeException is not a value
 List[Int]
 List
 scala.collection.immutable.List.type

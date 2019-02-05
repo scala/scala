@@ -1,7 +1,7 @@
-hk-existential-lb.scala:3: error: type mismatch;
+hk-existential-lb.scala:5: error: type mismatch;
  found   : Functor[Option]
  required: Functor[_[x] >: List[x]]
-Note: Option <: [x]Any, but class Functor is invariant in type F.
+Note: Option <: Any, but class Functor is invariant in type F.
 You may wish to define F as +F instead. (SLS 4.5)
   val someF: Functor[F] forSome { type F[x] >: List[x] } = new Functor[Option]
                                                            ^

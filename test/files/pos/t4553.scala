@@ -1,5 +1,5 @@
 trait VectorLike[+T, +V[A] <: Vector[A]] {
-  def +[S, VResult[S] >: V[S]](v: VResult[S])
+  def +[S, VResult[S] >: V[S]](v: VResult[S]): Unit
 }
 
 trait Vector[+T] extends VectorLike[T, Vector]

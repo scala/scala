@@ -1,8 +1,19 @@
-package scala.tools.nsc
-package util
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
+package scala.tools.nsc.util
 
 import java.util.concurrent.ExecutionException
-import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
+import java.lang.reflect.{InvocationTargetException, UndeclaredThrowableException}
 
 object Exceptional {
   def rootCause(x: Throwable): Throwable = x match {
@@ -15,8 +26,4 @@ object Exceptional {
 
     case _ => x
   }
-  // partest still uses the old name.  once we re-in-source partest we
-  // can get rid of this, but in the meantime, we'd rather not branch
-  // partest just because one method got renamed
-  def unwrap(x: Throwable): Throwable = rootCause(x)
 }

@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
- * @author Manohar Jonnalagedda
- * @author Gilles Dubochet
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -340,6 +346,11 @@ trait Class extends MemberTemplateEntity {
 /** An object template. */
 trait Object extends MemberTemplateEntity {
   def kind = "object"
+}
+
+/** An annotation template. Any class which extends `scala.annotation.Annotation` */
+trait AnnotationClass extends MemberTemplateEntity {
+  def kind = "annotation"
 }
 
 /** A package template. A package is in the universe if it is declared as a package object, or if it

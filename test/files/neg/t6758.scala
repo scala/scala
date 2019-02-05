@@ -7,13 +7,13 @@ class AnnotNotFound {
     foo
   }
 
-  () => {
+  def f = () => {
     @infunction
     def foo = 0
     ()
   }
 
-  () => {
+  def g = () => {
     val bar: Int = {
       @nested
       val bar2: Int = 2

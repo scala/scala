@@ -1,73 +1,88 @@
-applydynamic_sip.scala:7: error: applyDynamic does not support passing a vararg parameter
+applydynamic_sip.scala:9: error: applyDynamic does not support passing a vararg parameter
   qual.sel(a, a2: _*)
        ^
-applydynamic_sip.scala:8: error: applyDynamicNamed does not support passing a vararg parameter
+applydynamic_sip.scala:9: error: value applyDynamic is not a member of Dynamic
+error after rewriting to Test.this.qual.<applyDynamic: error>("sel")
+possible cause: maybe a wrong Dynamic method signature?
+  qual.sel(a, a2: _*)
+  ^
+applydynamic_sip.scala:10: error: applyDynamicNamed does not support passing a vararg parameter
   qual.sel(arg = a, a2: _*)
        ^
-applydynamic_sip.scala:8: error: not found: value arg
+applydynamic_sip.scala:10: error: value applyDynamicNamed is not a member of Dynamic
+error after rewriting to Test.this.qual.<applyDynamicNamed: error>("sel")
+possible cause: maybe a wrong Dynamic method signature?
+  qual.sel(arg = a, a2: _*)
+  ^
+applydynamic_sip.scala:10: error: not found: value arg
   qual.sel(arg = a, a2: _*)
            ^
-applydynamic_sip.scala:9: error: applyDynamicNamed does not support passing a vararg parameter
+applydynamic_sip.scala:11: error: applyDynamicNamed does not support passing a vararg parameter
   qual.sel(arg, arg2 = "a2", a2: _*)
        ^
-applydynamic_sip.scala:9: error: not found: value arg
+applydynamic_sip.scala:11: error: value applyDynamicNamed is not a member of Dynamic
+error after rewriting to Test.this.qual.<applyDynamicNamed: error>("sel")
+possible cause: maybe a wrong Dynamic method signature?
+  qual.sel(arg, arg2 = "a2", a2: _*)
+  ^
+applydynamic_sip.scala:11: error: not found: value arg
   qual.sel(arg, arg2 = "a2", a2: _*)
            ^
-applydynamic_sip.scala:9: error: not found: value arg2
+applydynamic_sip.scala:11: error: not found: value arg2
   qual.sel(arg, arg2 = "a2", a2: _*)
                 ^
-applydynamic_sip.scala:18: error: type mismatch;
+applydynamic_sip.scala:20: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.selectDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel
        ^
-applydynamic_sip.scala:19: error: type mismatch;
+applydynamic_sip.scala:21: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.applyDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel(1)
        ^
-applydynamic_sip.scala:20: error: type mismatch;
+applydynamic_sip.scala:22: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.applyDynamicNamed("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel(a = 1)
        ^
-applydynamic_sip.scala:20: error: reassignment to val
+applydynamic_sip.scala:22: error: reassignment to val
   bad1.sel(a = 1)
              ^
-applydynamic_sip.scala:21: error: type mismatch;
+applydynamic_sip.scala:23: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.updateDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel = 1
        ^
-applydynamic_sip.scala:29: error: Int does not take parameters
+applydynamic_sip.scala:31: error: Int does not take parameters
 error after rewriting to Test.this.bad2.selectDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad2.sel
   ^
-applydynamic_sip.scala:30: error: Int does not take parameters
+applydynamic_sip.scala:32: error: Int does not take parameters
 error after rewriting to Test.this.bad2.applyDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad2.sel(1)
   ^
-applydynamic_sip.scala:31: error: Int does not take parameters
+applydynamic_sip.scala:33: error: Int does not take parameters
 error after rewriting to Test.this.bad2.applyDynamicNamed("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad2.sel(a = 1)
   ^
-applydynamic_sip.scala:31: error: reassignment to val
+applydynamic_sip.scala:33: error: reassignment to val
   bad2.sel(a = 1)
              ^
-applydynamic_sip.scala:32: error: Int does not take parameters
+applydynamic_sip.scala:34: error: Int does not take parameters
 error after rewriting to Test.this.bad2.updateDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad2.sel = 1
   ^
-16 errors found
+19 errors found

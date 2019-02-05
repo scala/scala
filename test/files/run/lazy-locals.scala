@@ -130,15 +130,15 @@ object Test extends App {
       t
   }
 
-  def testRecVal {
+  def testRecVal: Unit = {
     lazy val twos: List[Int] = 2 :: twos
-    lazy val ones: Stream[Int] = Stream.cons(1, ones)
+    lazy val ones: LazyList[Int] = LazyList.cons(1, ones)
 
     println("First 5 elements of ones: " + ones.take(5).toList)
   }
 
   // should compile without error
-  def testMutualRecVal {
+  def testMutualRecVal: Unit = {
     lazy val odd: Int = 1 + even
     lazy val even: Int = 1 + odd
 

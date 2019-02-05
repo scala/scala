@@ -2,7 +2,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.reflect.ClassTag
-import scala.reflect.internal.{NoPhase, Phase, SomePhase}
+import scala.reflect.internal.{NoPhase, Phase, Reporter, SomePhase}
 import scala.reflect.internal.util.Statistics
 import scala.tools.util.PathResolver
 import util.ClassPath
@@ -36,7 +36,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
     def platformPhases: List[SubComponent] = Nil
 
-    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings).result
+    private[nsc] lazy val classPath: ClassPath = new PathResolver(settings, new CloseableRegistry).result
 
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
@@ -81,7 +81,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def erasurePhase: scala.reflect.internal.Phase = SomePhase
 
   // Members declared in scala.reflect.internal.Reporting
-  def reporter = new scala.reflect.internal.ReporterImpl {
+  def reporter = new Reporter {
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
   }
 

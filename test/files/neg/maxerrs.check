@@ -1,14 +1,14 @@
-maxerrs.scala:22: error: type mismatch;
+maxerrs.scala:24: error: type mismatch;
  found   : String("")
  required: Int
   def F = f("")
             ^
-maxerrs.scala:24: error: type mismatch;
+maxerrs.scala:26: error: type mismatch;
  found   : String("")
  required: Int
   def g = f("")
             ^
-maxerrs.scala:26: error: type mismatch;
+maxerrs.scala:28: error: type mismatch;
  found   : String("")
  required: Int
   def h = f("")

@@ -7,7 +7,7 @@ object Test extends App {
     }
 
     val subs = Macros.knownDirectSubclasses[Foo]
-    assert(subs == List("Bar", "Baz"))
+    assert(subs.toSet == Set("Bar", "Baz"))
   }
 
   nested

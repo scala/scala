@@ -1,0 +1,7 @@
+t10748b.scala:2: error: p is not an enclosing class
+private[p] class C(i: Int = 42) { def c = new C() }
+                 ^
+t10748b.scala:4: error: p is not an enclosing class
+private[p] class D(i: Int = 42) { def f = new Q }
+                 ^
+two errors found

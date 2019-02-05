@@ -1,0 +1,4 @@
+t10228.scala:9: error: malformed type: A#Type
+  def g[A <: Fili[A]]: Unit = implicitly[A <:< A#Type]
+                                                 ^
+one error found

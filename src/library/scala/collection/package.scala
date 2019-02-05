@@ -1,122 +1,82 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
-/**
- * Contains the base traits and objects needed to use and extend Scala's collection library.
- *
- * == Guide ==
- *
- * A detailed guide for using the collections library is available
- * at [[http://docs.scala-lang.org/overviews/collections/introduction.html]].
- * Developers looking to extend the collections library can find a description
- * of its architecture at
- * [[http://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html]].
- *
- * == Using Collections ==
- *
- * It is convenient to treat all collections as either
- * a [[scala.collection.Traversable]] or [[scala.collection.Iterable]], as
- * these traits define the vast majority of operations
- * on a collection.
- *
- * Collections can, of course, be treated as specifically as needed, and
- * the library is designed to ensure that
- * the methods that transform collections will return a collection of the same
- * type: {{{
- * scala> val array = Array(1,2,3,4,5,6)
- * array: Array[Int] = Array(1, 2, 3, 4, 5, 6)
- *
- * scala> array map { _.toString }
- * res0: Array[String] = Array(1, 2, 3, 4, 5, 6)
- *
- * scala> val list = List(1,2,3,4,5,6)
- * list: List[Int] = List(1, 2, 3, 4, 5, 6)
- *
- * scala> list map { _.toString }
- * res1: List[String] = List(1, 2, 3, 4, 5, 6)
- *
- * }}}
- *
- * == Creating Collections ==
- *
- * The most common way to create a collection is to use its companion object as
- * a factory. The three most commonly used collections are
- * [[scala.collection.Seq]], [[scala.collection.immutable.Set]], and
- * [[scala.collection.immutable.Map]].
- * They can be used directly as shown below since their companion objects are
- * all available as type aliases in either the [[scala]] package or in
- * `scala.Predef`. New collections are created like this:
- * {{{
- * scala> val seq = Seq(1,2,3,4,1)
- * seq: Seq[Int] = List(1, 2, 3, 4, 1)
- *
- * scala> val set = Set(1,2,3,4,1)
- * set: scala.collection.immutable.Set[Int] = Set(1, 2, 3, 4)
- *
- * scala> val map = Map(1 -> "one", 2 -> "two", 3 -> "three", 2 -> "too")
- * map: scala.collection.immutable.Map[Int,String] = Map(1 -> one, 2 -> too, 3 -> three)
- * }}}
- *
- * It is also typical to prefer the [[scala.collection.immutable]] collections
- * over those in [[scala.collection.mutable]]; the types aliased in
- * the `scala.Predef` object are the immutable versions.
- *
- * Also note that the collections library was carefully designed to include several implementations of
- * each of the three basic collection types. These implementations have specific performance
- * characteristics which are described
- * in [[http://docs.scala-lang.org/overviews/collections/performance-characteristics.html the guide]].
- *
- * The concrete parallel collections also have specific performance characteristics which are
- * described in [[http://docs.scala-lang.org/overviews/parallel-collections/concrete-parallel-collections.html#performance-characteristics the parallel collections guide]]
- *
- * === Converting to and from Java Collections ===
- *
- * The [[scala.collection.JavaConverters]] object provides a collection
- * of decorators that allow converting between Scala and Java collections using `asScala`
- * and `asJava` methods.
- */
+import scala.language.higherKinds
+
 package object collection {
-  import scala.collection.generic.CanBuildFrom
+  @deprecated("Use Iterable instead of Traversable", "2.13.0")
+  type Traversable[+X] = Iterable[X]
+  @deprecated("Use Iterable instead of Traversable", "2.13.0")
+  val Traversable = Iterable
+  @deprecated("Use IterableOnce instead of TraversableOnce", "2.13.0")
+  type TraversableOnce[+X] = IterableOnce[X]
+  @deprecated("Use IterableOnce instead of TraversableOnce", "2.13.0")
+  val TraversableOnce = IterableOnce
+  @deprecated("Use SeqOps instead of SeqLike", "2.13.0")
+  type SeqLike[A, T] = SeqOps[A, Seq, T]
+  @deprecated("Use SeqOps (for the methods) or IndexedSeqOps (for fast indexed access) instead of ArrayLike", "2.13.0")
+  type ArrayLike[A] = SeqOps[A, Seq, Seq[A]]
 
-  /** Provides a CanBuildFrom instance that builds a specific target collection (`To')
-   *  irrespective of the original collection (`From').
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenTraversableOnce[+X] = IterableOnce[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenTraversableOnce = IterableOnce
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenTraversable[+X] = Iterable[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenTraversable = Iterable
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenIterable[+X] = Iterable[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenIterable = Iterable
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenSeq[+X] = Seq[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenSeq = Seq
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenSet[X] = Set[X]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenSet = Set
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  type GenMap[K, +V] = Map[K, V]
+  @deprecated("Gen* collection types have been removed", "2.13.0")
+  val GenMap = Map
+
+  /** Needed to circumvent a difficulty between dotty and scalac concerning
+   *  the right top type for a type parameter of kind * -> *.
+   *  In Scalac, we can provide `Any`, as `Any` is kind-polymorphic. In dotty this is not allowed.
+   *  In dotty, we can provide `[X] => Any`. But Scalac does not know lambda syntax.
    */
-  def breakOut[From, T, To](implicit b: CanBuildFrom[Nothing, T, To]): CanBuildFrom[From, T, To] =
-    // can't just return b because the argument to apply could be cast to From in b
-    new CanBuildFrom[From, T, To] {
-      def apply(from: From) = b.apply()
-      def apply()           = b.apply()
-    }
-}
+  private[scala] type AnyConstr[X] = Any
 
-package collection {
-  /** Collection internal utility functions.
-   */
-  private[collection] object DebugUtils {
-    def unsupported(msg: String)     = throw new UnsupportedOperationException(msg)
-    def noSuchElement(msg: String)   = throw new NoSuchElementException(msg)
-    def indexOutOfBounds(index: Int) = throw new IndexOutOfBoundsException(index.toString)
-    def illegalArgument(msg: String) = throw new IllegalArgumentException(msg)
+  /** An extractor used to head/tail deconstruct sequences. */
+  object +: {
+    /** Splits a sequence into head :+ tail.
+      * @return Some((head, tail)) if sequence is non-empty. None otherwise.
+      */
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(A, C)] =
+      if(t.isEmpty) None
+      else Some(t.head -> t.tail)
+  }
 
-    def buildString(closure: (Any => Unit) => Unit): String = {
-      var output = ""
-      closure(output += _ + "\n")
-
-      output
-    }
-
-    def arrayString[T](array: Array[T], from: Int, until: Int): String = {
-      array.slice(from, until) map {
-        case null => "n/a"
-        case x    => "" + x
-      } mkString " | "
-    }
+  /** An extractor used to init/last deconstruct sequences. */
+  object :+ {
+    /** Splits a sequence into init :+ last.
+      * @return Some((init, last)) if sequence is non-empty. None otherwise.
+      */
+    def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(C, A)] =
+      if(t.isEmpty) None
+      else Some(t.init -> t.last)
   }
 }

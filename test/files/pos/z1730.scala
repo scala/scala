@@ -1,3 +1,5 @@
+// scalac: -Ycheck:all
+//
 // /scala/trac/z1730/a.scala
 // Wed May 23 07:41:25 PDT 2012
 
@@ -7,7 +9,7 @@ class X[R] {
 
 class Boo {
   implicit def toX[R](v: R) : X[R] = null
-  def goo2 {
+  def goo2: Unit = {
     3.xx(34)
   }
 }

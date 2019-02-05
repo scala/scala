@@ -10,7 +10,7 @@ object Test {
     def a = b
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println(f(7).a)
   }
 }

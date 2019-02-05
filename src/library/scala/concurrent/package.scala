@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -105,28 +109,6 @@ package object concurrent {
   type ExecutionException =    java.util.concurrent.ExecutionException
   type CancellationException = java.util.concurrent.CancellationException
   type TimeoutException =      java.util.concurrent.TimeoutException
-
-  /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
-   *
-   *  The result becomes available once the asynchronous computation is completed.
-   *
-   *  @tparam T       the type of the result
-   *  @param body     the asynchronous computation
-   *  @param executor the execution context on which the future is run
-   *  @return         the `Future` holding the result of the computation
-   */
-  @deprecated("use `Future { ... }` instead", "2.11.0")
-  // removal planned for 2.13.0
-  def future[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] = Future[T](body)
-
-  /** Creates a promise object which can be completed with a value or an exception.
-   *
-   *  @tparam T       the type of the value in the promise
-   *  @return         the newly created `Promise` object
-   */
-  @deprecated("use `Promise[T]()` instead", "2.11.0")
-  // removal planned for 2.13.0
-  def promise[T](): Promise[T] = Promise[T]()
 
   /** Used to designate a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
    *  the runtime's behavior.

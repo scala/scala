@@ -1,6 +1,13 @@
+warning: there were three deprecation warnings (since 2.13.0); re-run with -deprecation for details
 Stream(1, ?)
 List(1, 2, 3)
 Stream(1, ?)
 List(1)
 Stream()
+List()
+LazyList(?)
+List(1, 2, 3)
+LazyList(?)
+List(1)
+LazyList()
 List()

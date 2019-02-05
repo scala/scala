@@ -1,21 +1,15 @@
-
-
-
 import collection._
 
-
-
 object Test {
-
-  class AlarmingBuffer[T] extends mutable.ArrayBuffer[T] {
-    override def sizeHint(x: Int) {
+  class AlarmingBuilder[T] extends mutable.ListBuffer[T] {
+    override def sizeHint(x: Int): Unit = {
       println("Received a size hint: " + x)
       super.sizeHint(x)
     }
   }
 
-  def main(args: Array[String]) {
-    val iteratorBuilder = (new AlarmingBuffer[Int]) mapResult {
+  def main(args: Array[String]): Unit = {
+    val iteratorBuilder = (new AlarmingBuilder[Int]) mapResult {
       res => res.iterator
     }
 

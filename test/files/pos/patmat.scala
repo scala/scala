@@ -34,7 +34,7 @@ object t1261 {
   object Row {
     def unapply(r: Row) = true
 
-    def f(elem: Elem) {
+    def f(elem: Elem): Unit = {
       elem match {
         case Bar() => ;
         case Row() => ;
@@ -49,7 +49,7 @@ case class Node(l: Tree, v: Int, r: Tree) extends Tree
 case object EmptyTree extends Tree
 
 object Ticket335 { // compile-only
-  def runTest() {
+  def runTest(): Unit = {
     (EmptyTree: Tree @unchecked) match {
       case Node(_, v, _) if (v == 0) => 0
       case EmptyTree => 2
@@ -152,7 +152,7 @@ object Ticket522 {
 }
 
 object Ticket710 {
-  def method {
+  def method: Unit = {
     sealed class Parent()
     case object Child extends Parent()
     val x: Parent = Child

@@ -1,11 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package math
@@ -18,19 +21,18 @@ import scala.collection.immutable.NumericRange
 /**
  *  @author  Stephane Micheloud
  *  @author  Rex Kerr
- *  @version 1.1
  *  @since 2.7
  */
 object BigDecimal {
   private final val maximumHashScale = 4934           // Quit maintaining hash identity with BigInt beyond this scale
   private final val hashCodeNotComputed = 0x5D50690F  // Magic value (happens to be "BigDecimal" old MurmurHash3 value)
   private final val deci2binary = 3.3219280948873626  // Ratio of log(10) to log(2)
-  private val minCached = -512
-  private val maxCached = 512
+  private[this] val minCached = -512
+  private[this] val maxCached = 512
   val defaultMathContext = MathContext.DECIMAL128
 
   /** Cache only for defaultMathContext using BigDecimals in a small range. */
-  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
+  private[this] lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
   object RoundingMode extends Enumeration {
     // Annoying boilerplate to ensure consistency with java.math.RoundingMode
@@ -126,7 +128,7 @@ object BigDecimal {
   /** Constructs a `BigDecimal` that exactly represents the number
    *  specified in base 10 in a character array.
    */
- def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
+  def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
 
 
   /** Constructs a `BigDecimal` using the java BigDecimal static
@@ -138,41 +140,12 @@ object BigDecimal {
   def valueOf(d: Double): BigDecimal = apply(BigDec valueOf d)
 
   /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor, specifying a `MathContext` that is
-   *  used for computations but isn't used for rounding.  Use
-   *  `BigDecimal.decimal` to use `MathContext` for rounding,
-   *  or `BigDecimal(java.math.BigDecimal.valueOf(d), mc)` for
-   *  no rounding.
-   *
-   *  @param  d the specified double value
-   *  @param  mc the `MathContext` used for future computations
-   *  @return the constructed `BigDecimal`
-   */
-  @deprecated("MathContext is not applied to Doubles in valueOf. Use BigDecimal.decimal to use rounding, or java.math.BigDecimal.valueOf to avoid it.", "2.11.0")
-  def valueOf(d: Double, mc: MathContext): BigDecimal = apply(BigDec valueOf d, mc)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
    *  valueOf constructor.
    *
    *  @param  x the specified `Long` value
    *  @return the constructed `BigDecimal`
    */
   def valueOf(x: Long): BigDecimal = apply(x)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor.  This is unlikely to do what you want;
-   *  use `valueOf(f.toDouble)` or `decimal(f)` instead.
-   */
-  @deprecated("Float arguments to valueOf may not do what you wish. Use decimal or valueOf(f.toDouble).", "2.11.0")
-  def valueOf(f: Float): BigDecimal = valueOf(f.toDouble)
-
-  /** Constructs a `BigDecimal` using the java BigDecimal static
-   *  valueOf constructor.  This is unlikely to do what you want;
-   *  use `valueOf(f.toDouble)` or `decimal(f)` instead.
-   */
-  @deprecated("Float arguments to valueOf may not do what you wish. Use decimal or valueOf(f.toDouble).", "2.11.0")
-  def valueOf(f: Float, mc: MathContext): BigDecimal = valueOf(f.toDouble, mc)
-
 
   /** Constructs a `BigDecimal` whose value is equal to that of the
    *  specified `Integer` value.
@@ -259,12 +232,6 @@ object BigDecimal {
    */
   def apply(d: Double, mc: MathContext): BigDecimal = decimal(d, mc)
 
-  @deprecated("The default conversion from Float may not do what you want. Use BigDecimal.decimal for a String representation, or explicitly convert the Float with .toDouble.", "2.11.0")
-  def apply(x: Float): BigDecimal = apply(x.toDouble)
-
-  @deprecated("The default conversion from Float may not do what you want. Use BigDecimal.decimal for a String representation, or explicitly convert the Float with .toDouble.", "2.11.0")
-  def apply(x: Float, mc: MathContext): BigDecimal = apply(x.toDouble, mc)
-
   /** Translates a character array representation of a `BigDecimal`
    *  into a `BigDecimal`.
    */
@@ -327,10 +294,7 @@ object BigDecimal {
     new BigDecimal(new BigDec(unscaledVal.bigInteger, scale, mc), mc)
 
   /** Constructs a `BigDecimal` from a `java.math.BigDecimal`. */
-  def apply(bd: BigDec): BigDecimal = apply(bd, defaultMathContext)
-
-  @deprecated("This method appears to round a java.math.BigDecimal but actually doesn't. Use new BigDecimal(bd, mc) instead for no rounding, or BigDecimal.decimal(bd, mc) for rounding.", "2.11.0")
-  def apply(bd: BigDec, mc: MathContext): BigDecimal = new BigDecimal(bd, mc)
+  def apply(bd: BigDec): BigDecimal = new BigDecimal(bd, defaultMathContext)
 
   /** Implicit conversion from `Int` to `BigDecimal`. */
   implicit def int2bigDecimal(i: Int): BigDecimal = apply(i)
@@ -394,7 +358,6 @@ object BigDecimal {
  *
  *  @author  Stephane Micheloud
  *  @author  Rex Kerr
- *  @version 1.1
  */
 final class BigDecimal(val bigDecimal: BigDec, val mc: MathContext)
 extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[BigDecimal] {
@@ -434,7 +397,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *  with large exponents.
    */
   override def hashCode(): Int = {
-    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode
+    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode()
     computedHashCode
   }
 
@@ -463,24 +426,6 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   override def isValidChar  = isValidInt && toIntExact >= Char.MinValue && toIntExact <= Char.MaxValue
   override def isValidInt   = noArithmeticException(toIntExact)
   def isValidLong  = noArithmeticException(toLongExact)
-  /** Tests whether the value is a valid Float.  "Valid" has several distinct meanings, however.  Use
-    * `isExactFloat`, `isBinaryFloat`, or `isDecimalFloat`, depending on the intended meaning.
-    * By default, `decimal` creation is used, so `isDecimalFloat` is probably what you want.
-    */
-  @deprecated("What constitutes validity is unclear. Use `isExactFloat`, `isBinaryFloat`, or `isDecimalFloat` instead.", "2.11.0")
-  def isValidFloat = {
-    val f = toFloat
-    !f.isInfinity && bigDecimal.compareTo(new BigDec(f.toDouble)) == 0
-  }
-  /** Tests whether the value is a valid Double.  "Valid" has several distinct meanings, however.  Use
-    * `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble`, depending on the intended meaning.
-    * By default, `decimal` creation is used, so `isDecimalDouble` is probably what you want.
-    */
-  @deprecated("Validity has distinct meanings. Use `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble` instead.", "2.11.0")
-  def isValidDouble = {
-    val d = toDouble
-    !d.isInfinity && bigDecimal.compareTo(new BigDec(d)) == 0
-  }
 
   /** Tests whether this `BigDecimal` holds the decimal representation of a `Double`. */
   def isDecimalDouble = {
@@ -524,7 +469,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     catch { case _: ArithmeticException => false }
   }
 
-  def isWhole() = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
+  def isWhole = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
 
   def underlying = bigDecimal
 
@@ -539,11 +484,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Addition of BigDecimals
    */
-  def +  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal add that.bigDecimal, mc)
+  def +  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.add(that.bigDecimal, mc), mc)
 
   /** Subtraction of BigDecimals
    */
-  def -  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal subtract that.bigDecimal, mc)
+  def -  (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.subtract(that.bigDecimal, mc), mc)
 
   /** Multiplication of BigDecimals
    */
@@ -556,15 +501,15 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   /** Division and Remainder - returns tuple containing the result of
    *  divideToIntegralValue and the remainder.  The computation is exact: no rounding is applied.
    */
-  def /% (that: BigDecimal): (BigDecimal, BigDecimal) =
-    this.bigDecimal.divideAndRemainder(that.bigDecimal) match {
-      case Array(q, r)  => (new BigDecimal(q, mc), new BigDecimal(r, mc))
-    }
+  def /% (that: BigDecimal): (BigDecimal, BigDecimal) = {
+    val qr = this.bigDecimal.divideAndRemainder(that.bigDecimal, mc)
+    (new BigDecimal(qr(0), mc), new BigDecimal(qr(1), mc))
+  }
 
   /** Divide to Integral value.
    */
   def quot (that: BigDecimal): BigDecimal =
-    new BigDecimal(this.bigDecimal divideToIntegralValue that.bigDecimal, mc)
+    new BigDecimal(this.bigDecimal.divideToIntegralValue(that.bigDecimal, mc), mc)
 
   /** Returns the minimum of this and that, or this if the two are equal
    */
@@ -582,11 +527,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Remainder after dividing this by that.
    */
-  def remainder (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal remainder that.bigDecimal, mc)
+  def remainder (that: BigDecimal): BigDecimal = new BigDecimal(this.bigDecimal.remainder(that.bigDecimal, mc), mc)
 
   /** Remainder after dividing this by that.
    */
-  def % (that: BigDecimal): BigDecimal = this remainder that
+  def % (that: BigDecimal): BigDecimal = this.remainder(that)
 
   /** Returns a BigDecimal whose value is this ** n.
    */
@@ -594,7 +539,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
-  def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(), mc)
+  def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(mc), mc)
 
   /** Returns the absolute value of this BigDecimal
    */
@@ -605,11 +550,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
-  def signum: Int = this.bigDecimal.signum()
+  def signum: Int = this.bigDecimal.signum
 
   /** Returns the precision of this `BigDecimal`.
    */
-  def precision: Int = this.bigDecimal.precision()
+  def precision: Int = this.bigDecimal.precision
 
   /** Returns a BigDecimal rounded according to the supplied MathContext settings, but
    *  preserving its own MathContext for future operations.
@@ -627,7 +572,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Returns the scale of this `BigDecimal`.
    */
-  def scale: Int = this.bigDecimal.scale()
+  def scale: Int = this.bigDecimal.scale
 
   /** Returns the size of an ulp, a unit in the last place, of this BigDecimal.
    */
@@ -755,20 +700,20 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
 
   /** Converts this `BigDecimal` to a scala.BigInt.
    */
-  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+  def toBigInt: BigInt = new BigInt(this.bigDecimal.toBigInteger)
 
   /** Converts this `BigDecimal` to a scala.BigInt if it
    *  can be done losslessly, returning Some(BigInt) or None.
    */
-  def toBigIntExact(): Option[BigInt] =
-    if (isWhole()) {
-      try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
+  def toBigIntExact: Option[BigInt] =
+    if (isWhole) {
+      try Some(new BigInt(this.bigDecimal.toBigIntegerExact))
       catch { case _: ArithmeticException => None }
     }
     else None
 
   /** Returns the decimal String representation of this BigDecimal.
    */
-  override def toString(): String = this.bigDecimal.toString()
+  override def toString: String = this.bigDecimal.toString
 
 }

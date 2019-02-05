@@ -1,6 +1,3 @@
-// a.scala
-// Fri Jan 13 11:31:47 PST 2012
-
 package foo {
   package object bar {
     def duh(n: Long)   = println("long")
@@ -11,7 +8,7 @@ package foo {
   }
   package bar {
     object Main {
-      def main(args:Array[String]) {
+      def main(args:Array[String]): Unit = {
         duh(33L)
         bip.bar.duh(33L)
         duh(33d)
@@ -39,7 +36,7 @@ package bip {
   package object bar extends Duh with Duh2 { }
   package bar {
     object Main {
-      def main(args:Array[String]) {
+      def main(args:Array[String]): Unit = {
         duh(33L)
         bip.bar.duh(33L)
         duh(33d)

@@ -1,120 +1,102 @@
-checksensible.scala:45: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
-        signature: Any.==(x$1: Any): Boolean
-  given arguments: <none>
- after adaptation: Any.==((): Unit)
-  () == ()
-     ^
-checksensible.scala:48: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
-        signature: Object.!=(x$1: Any): Boolean
-  given arguments: <none>
- after adaptation: Object.!=((): Unit)
-  scala.runtime.BoxedUnit.UNIT != ()
-                               ^
-checksensible.scala:49: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
-        signature: Any.!=(x$1: Any): Boolean
-  given arguments: <none>
- after adaptation: Any.!=((): Unit)
-  (scala.runtime.BoxedUnit.UNIT: java.io.Serializable) != () // shouldn't warn
-                                                       ^
-checksensible.scala:13: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:15: warning: comparing a fresh object using `eq` will always yield false
   (new AnyRef) eq (new AnyRef)
                ^
-checksensible.scala:14: warning: comparing a fresh object using `ne' will always yield true
+checksensible.scala:16: warning: comparing a fresh object using `ne` will always yield true
   (new AnyRef) ne (new AnyRef)
                ^
-checksensible.scala:15: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:17: warning: comparing a fresh object using `eq` will always yield false
   Shmoopie eq (new AnyRef)
            ^
-checksensible.scala:16: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:18: warning: comparing a fresh object using `eq` will always yield false
   (Shmoopie: AnyRef) eq (new AnyRef)
                      ^
-checksensible.scala:17: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:19: warning: comparing a fresh object using `eq` will always yield false
   (new AnyRef) eq Shmoopie
                ^
-checksensible.scala:18: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:20: warning: comparing a fresh object using `eq` will always yield false
   (new AnyRef) eq null
                ^
-checksensible.scala:19: warning: comparing a fresh object using `eq' will always yield false
+checksensible.scala:21: warning: comparing a fresh object using `eq` will always yield false
   null eq new AnyRef
        ^
-checksensible.scala:26: warning: comparing values of types Unit and Int using `==' will always yield false
+checksensible.scala:28: warning: comparing values of types Unit and Int using `==` will always yield false
   (c = 1) == 0
           ^
-checksensible.scala:27: warning: comparing values of types Integer and Unit using `==' will always yield false
+checksensible.scala:29: warning: comparing values of types Integer and Unit using `==` will always yield false
   0 == (c = 1)
     ^
-checksensible.scala:29: warning: comparing values of types Int and String using `==' will always yield false
+checksensible.scala:31: warning: comparing values of types Int and String using `==` will always yield false
   1 == "abc"
     ^
-checksensible.scala:33: warning: comparing values of types Some[Int] and Int using `==' will always yield false
+checksensible.scala:35: warning: comparing values of types Some[Int] and Int using `==` will always yield false
   Some(1) == 1      // as above
           ^
-checksensible.scala:38: warning: comparing a fresh object using `==' will always yield false
+checksensible.scala:40: warning: comparing a fresh object using `==` will always yield false
   new AnyRef == 1
              ^
-checksensible.scala:41: warning: comparing values of types Int and Boolean using `==' will always yield false
+checksensible.scala:43: warning: comparing values of types Int and Boolean using `==` will always yield false
   1 == (new java.lang.Boolean(true))
     ^
-checksensible.scala:43: warning: comparing values of types Int and Boolean using `!=' will always yield true
+checksensible.scala:45: warning: comparing values of types Int and Boolean using `!=` will always yield true
   1 != true
     ^
-checksensible.scala:44: warning: comparing values of types Unit and Boolean using `==' will always yield false
+checksensible.scala:46: warning: comparing values of types Unit and Boolean using `==` will always yield false
   () == true
      ^
-checksensible.scala:45: warning: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:47: warning: comparing values of types Unit and Unit using `==` will always yield true
   () == ()
      ^
-checksensible.scala:46: warning: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:48: warning: comparing values of types Unit and Unit using `==` will always yield true
   () == println
      ^
-checksensible.scala:47: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==' will always yield true
+checksensible.scala:49: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
   () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
      ^
-checksensible.scala:48: warning: comparing values of types scala.runtime.BoxedUnit and Unit using `!=' will always yield false
+checksensible.scala:50: warning: comparing values of types scala.runtime.BoxedUnit and Unit using `!=` will always yield false
   scala.runtime.BoxedUnit.UNIT != ()
                                ^
-checksensible.scala:51: warning: comparing values of types Int and Unit using `!=' will always yield true
+checksensible.scala:53: warning: comparing values of types Int and Unit using `!=` will always yield true
   (1 != println)
      ^
-checksensible.scala:52: warning: comparing values of types Int and Symbol using `!=' will always yield true
+checksensible.scala:54: warning: comparing values of types Int and Symbol using `!=` will always yield true
   (1 != 'sym)
      ^
-checksensible.scala:58: warning: comparing a fresh object using `==' will always yield false
+checksensible.scala:60: warning: comparing a fresh object using `==` will always yield false
   ((x: Int) => x + 1) == null
                       ^
-checksensible.scala:59: warning: comparing a fresh object using `==' will always yield false
+checksensible.scala:61: warning: comparing a fresh object using `==` will always yield false
   Bep == ((_: Int) + 1)
       ^
-checksensible.scala:61: warning: comparing a fresh object using `==' will always yield false
+checksensible.scala:63: warning: comparing a fresh object using `==` will always yield false
   new Object == new Object
              ^
-checksensible.scala:62: warning: comparing a fresh object using `==' will always yield false
+checksensible.scala:64: warning: comparing a fresh object using `==` will always yield false
   new Object == "abc"
              ^
-checksensible.scala:63: warning: comparing a fresh object using `!=' will always yield true
+checksensible.scala:65: warning: comparing a fresh object using `!=` will always yield true
   new Exception() != new Exception()
                   ^
-checksensible.scala:66: warning: comparing values of types Int and Null using `==' will always yield false
+checksensible.scala:68: warning: comparing values of types Int and Null using `==` will always yield false
   if (foo.length == null) "plante" else "plante pas"
                  ^
-checksensible.scala:71: warning: comparing values of types Bip and Bop using `==' will always yield false
+checksensible.scala:73: warning: comparing values of types Bip and Bop using `==` will always yield false
   (x1 == x2)
       ^
-checksensible.scala:81: warning: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
+checksensible.scala:83: warning: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==` will always yield false
   c3 == z1
      ^
-checksensible.scala:82: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
+checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==` will always yield false
   z1 == c3
      ^
-checksensible.scala:83: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
+checksensible.scala:85: warning: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=` will always yield true
   z1 != c3
      ^
-checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.C3 and String using `!=' will always yield true
+checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 and String using `!=` will always yield true
   c3 != "abc"
      ^
-checksensible.scala:95: warning: comparing values of types Unit and Int using `!=' will always yield true
+checksensible.scala:97: warning: comparing values of types Unit and Int using `!=` will always yield true
     while ((c = in.read) != -1)
                          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-36 warnings found
+33 warnings found
 one error found

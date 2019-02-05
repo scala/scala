@@ -26,23 +26,6 @@ class RegexTest {
     assertEquals("1", y)
   }
 
-  @Test def t8787nullMatch() = {
-    val r = """\d+""".r
-    val s: String = null
-    val x = s match { case r() => 1 ; case _ => 2 }
-    assertEquals(2, x)
-  }
-
-  @Test def t8787nullMatcher() = {
-    val r = """(\d+):(\d+)""".r
-    val s = "1:2 3:4 5:6"
-    val z = ((r findAllMatchIn s).toList :+ null) flatMap {
-      case r(x, y) => Some((x.toInt, y.toInt))
-      case _       => None
-    }
-    assertEquals(List((1,2),(3,4),(5,6)), z)
-  }
-
   @Test def `t9666: use inline group names`(): Unit = {
     val r = new Regex("a(?<Bee>b*)c")
     val ms = r findAllIn "stuff abbbc more abc and so on"
@@ -171,5 +154,23 @@ class RegexTest {
       assertEquals("bbbbbb", bes)
       assertEquals("aaaaa", aes)
     }
+  }
+
+  @Test def `t10827 matches method`(): Unit = {
+    val r = """\d+""".r
+    assertTrue(r.matches("500"))
+    assertFalse(r.matches("foo"))
+    assertFalse(r.matches("123 123"))
+    assertFalse(r.matches("foo2"))
+    assertFalse(r.matches("2foo"))
+  }
+
+  @Test def `t10827 matches method for unanchored Regex`(): Unit = {
+    val r = """\d+""".r.unanchored
+    assertTrue(r.matches("500"))
+    assertFalse(r.matches("abc"))
+    assertTrue(r.matches("123 123"))
+    assertTrue(r.matches("foo2"))
+    assertTrue(r.matches("2foo"))
   }
 }

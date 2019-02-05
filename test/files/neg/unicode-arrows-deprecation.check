@@ -1,0 +1,15 @@
+unicode-arrows-deprecation.scala:4: warning: The unicode arrow `⇒` is deprecated, use `=>` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.
+  val a: Int ⇒ Int = x ⇒ x
+             ^
+unicode-arrows-deprecation.scala:4: warning: The unicode arrow `⇒` is deprecated, use `=>` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.
+  val a: Int ⇒ Int = x ⇒ x
+                       ^
+unicode-arrows-deprecation.scala:6: warning: The unicode arrow `←` is deprecated, use `<-` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.
+  val b = for { x ← (1 to 10) } yield x
+                  ^
+unicode-arrows-deprecation.scala:8: warning: method → in class ArrowAssoc is deprecated (since 2.13.0): Use `->` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.
+  val c: (Int, Int) = 1 → 1
+                        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

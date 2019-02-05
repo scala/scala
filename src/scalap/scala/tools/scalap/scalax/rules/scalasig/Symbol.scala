@@ -1,3 +1,15 @@
+/*
+ * Scala classfile decoder (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.scalap
 package scalax
 package rules
@@ -27,7 +39,7 @@ abstract class ScalaSigSymbol extends Symbol {
   def entry: ScalaSig#Entry
   def index = entry.index
 
-  lazy val children: Seq[Symbol] = applyScalaSigRule(ScalaSigParsers.symbols) filter (_.parent == Some(this))
+  lazy val children: Seq[Symbol] = applyScalaSigRule(ScalaSigParsers.symbols) filter (sym => sym.parent == Some(this) && !sym.isParam)
   lazy val attributes: Seq[AttributeInfo] = applyScalaSigRule(ScalaSigParsers.attributes) filter (_.symbol == this)
 }
 

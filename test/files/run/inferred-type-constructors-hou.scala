@@ -119,7 +119,7 @@ object Test {
     whatis(extract(Array[Int]()))
     whatis(extract(scala.collection.immutable.BitSet(1)))
     whatis(extract("abc"))
-    whatis(extract(if (true) Stream(1) else List(1)))
+    whatis(extract(if (true) LazyList(1) else List(1)))
     whatis(extract(if (true) Seq(1) else Set(1)))
   }
 }

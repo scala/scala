@@ -7,7 +7,7 @@ class NameDefaults {
 
   implicit val l = 42
 
-  def bar {
+  def bar: Unit = {
     println()
     val someOtherInt = 10
 

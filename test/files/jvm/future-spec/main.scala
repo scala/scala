@@ -9,7 +9,7 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new FutureTests).check()
     (new PromiseTests).check()
     (new TryTests).check()
@@ -37,7 +37,7 @@ trait MinimalScalaTest extends Output with Features {
 
   val throwables = mutable.ArrayBuffer[Throwable]()
 
-  def check() {
+  def check(): Unit = {
     if (throwables.nonEmpty) println(buffer.toString)
   }
 
@@ -65,7 +65,7 @@ trait MinimalScalaTest extends Output with Features {
 
   implicit def objectops(obj: Any) = new {
 
-    def mustBe(other: Any) = assert(obj == other, obj + " is not " + other)
+    def mustBe(other: Any) = assert(obj == other, s"$obj is not $other")
     def mustEqual(other: Any) = mustBe(other)
 
   }
@@ -76,7 +76,7 @@ trait MinimalScalaTest extends Output with Features {
       throw new Exception("Exception of type %s was not thrown".format(manifest[T]))
     } catch {
       case t: Throwable =>
-        if (manifest[T].runtimeClass != t.getClass) throw t
+        if (!manifest[T].runtimeClass.isAssignableFrom(t.getClass)) throw t
         else t.asInstanceOf[T]
     }
   }

@@ -1,8 +1,9 @@
 import scala.reflect.runtime.universe._
+import scala.reflect.ClassManifest
 
 object Test extends App {
   def weakTypeTagIsnotClassManifest[T: WeakTypeTag] = {
-    println(classManifest[T])
+    println(implicitly[ClassManifest[T]])
   }
 
   weakTypeTagIsnotClassManifest[Int]

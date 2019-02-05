@@ -1,13 +1,19 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package reflect
 package internal
 
-import scala.{ Symbol => SSymbol }
 import scala.annotation.switch
 
 trait Constants extends api.Constants {
@@ -30,7 +36,6 @@ trait Constants extends api.Constants {
   final val ClazzTag   = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = 13
-  final val SSymbolTag = 14
 
   case class Constant(value: Any) extends ConstantApi {
     import java.lang.Double.doubleToRawLongBits
@@ -50,7 +55,6 @@ trait Constants extends api.Constants {
       case x: Char      => CharTag
       case x: Type      => ClazzTag
       case x: Symbol    => EnumTag
-      case x: SSymbol   => SSymbolTag
       case _            => throw new Error("bad constant value: " + value + " of class " + value.getClass)
     }
 
@@ -62,8 +66,7 @@ trait Constants extends api.Constants {
     def isFloatRange: Boolean = ByteTag <= tag && tag <= FloatTag
     def isNumeric: Boolean    = ByteTag <= tag && tag <= DoubleTag
     def isNonUnitAnyVal       = BooleanTag <= tag && tag <= DoubleTag
-    def isSymbol: Boolean     = tag == SSymbolTag
-    def isSuitableLiteralType = (BooleanTag <= tag && tag <= NullTag) || tag == SSymbolTag
+    def isSuitableLiteralType = BooleanTag <= tag && tag <= NullTag
     def isAnyVal              = UnitTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {
@@ -80,7 +83,6 @@ trait Constants extends api.Constants {
       case NullTag    => NullTpe
       case ClazzTag   => ClassType(typeValue)
       case EnumTag    => EnumType(symbolValue)
-      case SSymbolTag => SymbolTpe
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -88,7 +90,28 @@ trait Constants extends api.Constants {
     // !!! In what circumstance could `equalHashValue == that.equalHashValue && tag != that.tag` be true?
     override def equals(other: Any): Boolean = other match {
       case that: Constant =>
-        this.tag == that.tag && equalHashValue == that.equalHashValue
+        this.tag == that.tag && {
+          //
+          // Consider two `NaN`s to be identical, despite non-equality
+          // Consider -0d to be distinct from 0d, despite equality
+          //
+          // We use the raw versions (i.e. `floatToRawIntBits` rather than `floatToIntBits`)
+          // to avoid treating different encodings of `NaN` as the same constant.
+          // You probably can't express different `NaN` varieties as compile time
+          // constants in regular Scala code, but it is conceivable that you could
+          // conjure them with a macro.
+          //
+          this.tag match {
+            case NullTag =>
+              true
+            case FloatTag =>
+              floatToRawIntBits(value.asInstanceOf[Float]) == floatToRawIntBits(that.value.asInstanceOf[Float])
+            case DoubleTag =>
+              doubleToRawLongBits(value.asInstanceOf[Double]) == doubleToRawLongBits(that.value.asInstanceOf[Double])
+            case _ =>
+              this.value.equals(that.value)
+          }
+        }
       case _ => false
     }
 
@@ -247,30 +270,20 @@ trait Constants extends api.Constants {
     }
     def typeValue: Type     = value.asInstanceOf[Type]
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
-    def scalaSymbolValue: SSymbol = value.asInstanceOf[SSymbol]
-
-    /**
-     * Consider two `NaN`s to be identical, despite non-equality
-     * Consider -0d to be distinct from 0d, despite equality
-     *
-     * We use the raw versions (i.e. `floatToRawIntBits` rather than `floatToIntBits`)
-     * to avoid treating different encodings of `NaN` as the same constant.
-     * You probably can't express different `NaN` varieties as compile time
-     * constants in regular Scala code, but it is conceivable that you could
-     * conjure them with a macro.
-     */
-    private def equalHashValue: Any = value match {
-      case f: Float  => floatToRawIntBits(f)
-      case d: Double => doubleToRawLongBits(d)
-      case v         => v
-    }
 
     override def hashCode: Int = {
       import scala.util.hashing.MurmurHash3._
       val seed = 17
       var h = seed
       h = mix(h, tag.##) // include tag in the hash, otherwise 0, 0d, 0L, 0f collide.
-      h = mix(h, equalHashValue.##)
+      val valueHash = tag match {
+        case NullTag => 0
+        // We could just use value.hashCode here, at the cost of a collition between different NaNs
+        case FloatTag => java.lang.Integer.hashCode(floatToRawIntBits(value.asInstanceOf[Float]))
+        case DoubleTag => java.lang.Long.hashCode(doubleToRawLongBits(value.asInstanceOf[Double]))
+        case _ => value.hashCode()
+      }
+      h = mix(h, valueHash)
       finalizeHash(h, length = 2)
     }
   }

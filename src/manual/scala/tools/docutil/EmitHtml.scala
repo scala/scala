@@ -7,7 +7,6 @@
 package scala.tools.docutil
 
 object EmitHtml {
-  import scala.xml.{Node, NodeBuffer, NodeSeq, XML}
   import ManPage._
 
   val out = Console
@@ -18,13 +17,13 @@ object EmitHtml {
         .replaceAll(">", "&gt;")
 
 /* */
-  def emitSection(section: Section, depth: Int) {
-    def emitPara(text: AbstractText) {
+  def emitSection(section: Section, depth: Int): Unit = {
+    def emitPara(text: AbstractText): Unit = {
       out println "<div>"
       emitText(text)
       out println "\n</div>"
     }
-    def emitText(text: AbstractText) {
+    def emitText(text: AbstractText): Unit = {
       text match {
         case seq:SeqText =>
           seq.components foreach emitText
@@ -91,7 +90,7 @@ object EmitHtml {
       }
     }
 
-    def emitParagraph(para: Paragraph) {
+    def emitParagraph(para: Paragraph): Unit = {
       para match {
         case TextParagraph(text) =>
           out println "<p>"
@@ -144,7 +143,7 @@ object EmitHtml {
     section.paragraphs foreach emitParagraph
   }
 
-  private def emit3columns(col1: String, col2: String, col3: String) {
+  private def emit3columns(col1: String, col2: String, col3: String): Unit = {
     out println "<div style=\"float:left;\">"
     out println col1
     out println "</div>"
@@ -156,21 +155,21 @@ object EmitHtml {
     out println "</div>"
   }
 
-  private def emitHeader(col1: String, col2: String, col3: String) {
+  private def emitHeader(col1: String, col2: String, col3: String): Unit = {
     out println "<!-- header -->"
     out println "<div style=\"margin: 0 0 2em 0;\">"
     emit3columns(col1, col2, col3)
     out println "</div>"
   }
 
-  private def emitFooter(col1: String, col2: String, col3: String) {
+  private def emitFooter(col1: String, col2: String, col3: String): Unit = {
     out println "<!-- footer -->"
     out println "<div style=\"margin: 2em 0 0 0;\">"
     emit3columns(col1, col2, col3)
     out println "</div>"
   }
 
-  def emitDocument(document: Document) {
+  def emitDocument(document: Document): Unit = {
     out.println("<?xml version=\"1.1\" encoding=\"" + document.encoding + "\"?>")
     out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">")
     out.println("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n")

@@ -1,0 +1,15 @@
+implicitly-self.scala:7: warning: Implicit resolves to enclosing method c
+  implicit def c: Char = implicitly[Char]
+                                   ^
+implicitly-self.scala:8: warning: Implicit resolves to enclosing value s
+  implicit val s: String = implicitly[String]
+                                     ^
+implicitly-self.scala:10: warning: Implicit resolves to enclosing value t
+    def f = implicitly[Int]
+                      ^
+implicitly-self.scala:13: warning: Implicit resolves to enclosing object tcString
+  implicit object tcString extends TC[String] { def ix = implicitly[TC[String]].ix + 1 }
+                                                                   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

@@ -12,7 +12,7 @@ package object buffer {
 package buffer {
   object Main {
     // ArrayVec2 can be compiled, instantiated and used.
-    def main(args: Array[String]) { println(works) }
+    def main(args: Array[String]): Unit = { println(works) }
   }
 
   trait ElemType { type Element; type Component <: ElemType }
@@ -20,7 +20,7 @@ package buffer {
   class Vec2 extends ElemType { type Element = Vec2;  type Component = Float1 }
 
   abstract class BaseSeq[T <: ElemType, E]
-  extends IndexedSeq[E] with IndexedSeqOptimized[E, IndexedSeq[E]] {
+  extends IndexedSeq[E] with StrictOptimizedSeqOps[E, IndexedSeq, IndexedSeq[E]] {
     def length = 1
     def apply(i: Int) :E
   }

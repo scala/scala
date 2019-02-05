@@ -1,10 +1,10 @@
   konstruktor: class A
-  konstruktor: class A$O$12$
+  konstruktor: class A$O$3$
   konstruktor: class A$$anon$1
   konstruktor: class A$A
   konstruktor: class A$C
   konstruktor: class C
-  konstruktor: class T$O$15$
+  konstruktor: class T$O$9$
   konstruktor: class T$$anon$2
   konstruktor: class T$A
   konstruktor: class T$C
@@ -20,8 +20,8 @@ now initializing nested objects
   konstruktor: class A$A$Op$
   konstruktor: class A$T$O$
   konstruktor: class A$T$Op$
-  konstruktor: class A$O$11$
-  konstruktor: class A$O$13$
+  konstruktor: class A$O$1$
+  konstruktor: class A$O$5$
   konstruktor: class A$$anon$1$O$
   konstruktor: class A$$anon$1$Op$
   konstruktor: class T$O$
@@ -32,8 +32,8 @@ now initializing nested objects
   konstruktor: class T$A$Op$
   konstruktor: class T$T$O$
   konstruktor: class T$T$Op$
-  konstruktor: class T$O$14$
-  konstruktor: class T$O$16$
+  konstruktor: class T$O$7$
+  konstruktor: class T$O$11$
   konstruktor: class T$$anon$2$O$
   konstruktor: class T$$anon$2$Op$
 no object konstruktors called when serializing / deserializing objects (starting at the outer or the object itself)
@@ -46,7 +46,7 @@ accessing modules triggers initialization
 deserializing creates a new object graph, including new scala 'object' instances, no matter where serialization starts
 init static module M and field v
   konstruktor: class M$
-  konstruktor: class M$O$18$
+  konstruktor: class M$O$15$
 serDeser does not initialize nested static modules
 init M.O
   konstruktor: class M$O$
@@ -54,7 +54,7 @@ serDeser nested static module
 objects declared in field decls are not static modules, so they deserialize to new instances
 init lazy val M.w
 objects declared in lazy val are not static modules either
-  konstruktor: class M$O$19$
+  konstruktor: class M$O$17$
 object declared in a function: new instance created on each invocation
-  konstruktor: class M$O$20$
-  konstruktor: class M$O$20$
+  konstruktor: class M$O$19$
+  konstruktor: class M$O$19$

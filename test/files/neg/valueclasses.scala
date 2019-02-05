@@ -4,7 +4,7 @@ trait T extends AnyVal // fail
 
 class Foo {
   class Bar(x: Int) extends AnyVal // fail
-  def foo() {
+  def foo(): Unit = {
     class Baz(x: Int) extends AnyVal // fail
   }
 }

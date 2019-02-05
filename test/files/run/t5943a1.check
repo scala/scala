@@ -1,1 +1,1 @@
-scala.Predef.intWrapper(1).to(3).map[Int, scala.collection.immutable.IndexedSeq[Int]](((x$1: Int) => x$1.+(1)))(immutable.this.IndexedSeq.canBuildFrom[Int])
+scala.Predef.intWrapper(1).to(3).map[Int](((x$1: Int) => x$1.+(1)))

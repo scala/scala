@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 sealed abstract class TA
 sealed abstract class TB extends TA
 case object A extends TA

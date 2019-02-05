@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.interactive
 
 import java.io.{Reader, Writer}
@@ -8,8 +20,8 @@ import Lexer.EOF
 abstract class LogReplay {
   def logreplay(event: String, x: => Boolean): Boolean
   def logreplay[T: Pickler](event: String, x: => Option[T]): Option[T]
-  def close()
-  def flush()
+  def close(): Unit
+  def flush(): Unit
 }
 
 class Logger(wr0: Writer) extends LogReplay {
@@ -30,15 +42,15 @@ class Logger(wr0: Writer) extends LogReplay {
     }
     xx
   }
-  def close() { wr.close() }
-  def flush() { wr.flush() }
+  def close(): Unit = wr.close()
+  def flush(): Unit = wr.flush()
 }
 
 object NullLogger extends LogReplay {
   def logreplay(event: String, x: => Boolean) = x
   def logreplay[T: Pickler](event: String, x: => Option[T]) = x
-  def close() {}
-  def flush() {}
+  def close() = ()
+  def flush() = ()
 }
 
 class Replayer(raw: Reader) extends LogReplay {
@@ -68,7 +80,7 @@ class Replayer(raw: Reader) extends LogReplay {
       }
     }
 
-  def close() { raw.close() }
-  def flush() {}
+  def close(): Unit = raw.close()
+  def flush(): Unit = ()
 }
 

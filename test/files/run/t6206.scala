@@ -1,5 +1,5 @@
 class Outer {
-  def apply( position : Inner ) {}
+  def apply( position : Inner ): Unit = {}
   class Inner
 
   this.apply(new Inner)

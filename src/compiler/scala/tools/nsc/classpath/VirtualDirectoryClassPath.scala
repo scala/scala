@@ -1,7 +1,19 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.classpath
 
 import scala.tools.nsc.util.ClassRepresentation
-import scala.reflect.io.{AbstractFile, Path, PlainFile, VirtualDirectory}
+import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import FileUtils._
 import java.net.URL
 
@@ -25,7 +37,6 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
   // mimic the behavior of the old nsc.util.DirectoryClassPath
   def asURLs: Seq[URL] = Seq(new URL(dir.name))
   def asClassPathStrings: Seq[String] = Seq(dir.path)
-
   override def findClass(className: String): Option[ClassRepresentation] = findClassFile(className) map ClassFileEntryImpl
 
   def findClassFile(className: String): Option[AbstractFile] = {

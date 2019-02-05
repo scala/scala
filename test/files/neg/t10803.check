@@ -1,0 +1,10 @@
+t10803.scala:4: error: not found: type CocartesianMonoidalCategory
+  val sum: CocartesianMonoidalCategory[F] {
+           ^
+t10803.scala:18: error: not found: type CCC
+    } = new SymmetricDistributiveCategory[Function1] with CCC[Function1] { self =>
+                                                          ^
+t10803.scala:20: error: not found: type CocartesianMonoidalCategory
+      val sum = new CocartesianMonoidalCategory[F] {}
+                    ^
+three errors found

@@ -2,7 +2,7 @@ t3222.scala:1: error: not found: type B
 @throws(classOf[B])
                 ^
 t3222.scala:4: error: not found: type D
-  def foo(@throws(classOf[D]) x: Int) {}
+  def foo(@throws(classOf[D]) x: Int): Unit = {}
                           ^
 t3222.scala:3: error: not found: type C
   @throws(classOf[C])

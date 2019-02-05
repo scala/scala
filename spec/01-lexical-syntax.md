@@ -317,6 +317,7 @@ Literal  ::=  [‘-’] integerLiteral
            |  booleanLiteral
            |  characterLiteral
            |  stringLiteral
+           |  interpolatedString
            |  symbolLiteral
            |  ‘null’
 ```
@@ -332,13 +333,15 @@ digit           ::=  ‘0’ | nonZeroDigit
 nonZeroDigit    ::=  ‘1’ | … | ‘9’
 ```
 
-Integer literals are usually of type `Int`, or of type
-`Long` when followed by a `L` or
-`l` suffix. Values of type `Int` are all integer
+Values of type `Int` are all integer
 numbers between $-2\^{31}$ and $2\^{31}-1$, inclusive.  Values of
 type `Long` are all integer numbers between $-2\^{63}$ and
 $2\^{63}-1$, inclusive. A compile-time error occurs if an integer literal
 denotes a number outside these ranges.
+
+Integer literals are usually of type `Int`, or of type
+`Long` when followed by a `L` or `l` suffix.
+(Lowercase `l` is deprecated for reasons of legibility.)
 
 However, if the expected type [_pt_](06-expressions.html#expression-typing) of a literal
 in an expression is either `Byte`, `Short`, or `Char`
@@ -352,8 +355,11 @@ is _pt_. The numeric ranges given by these types are:
 |`Short`         | $-2\^{15}$ to $2\^{15}-1$|
 |`Char`          | $0$ to $2\^{16}-1$       |
 
+The digits of a numeric literal may be separated by
+arbitrarily many underscores for purposes of legibility.
+
 > ```scala
-> 0          21          0xFFFFFFFF       -42L
+> 0           21_000      0x7F        -42L        0xFFFF_FFFF
 > ```
 
 ### Floating Point Literals
@@ -498,6 +504,54 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 > [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 > `StringLike`, the method is applicable to all strings.
 
+#### Interpolated string
+
+```ebnf
+interpolatedString ::= alphaid ‘"’ {printableChar \ (‘"’ | ‘\$’) | escape} ‘"’ 
+                         |  alphaid ‘"""’ {[‘"’] [‘"’] char \ (‘"’ | ‘\$’) | escape} {‘"’} ‘"""’
+escape                 ::= ‘\$\$’ 
+                         | ‘\$’ id
+                         | ‘\$’ BlockExpr
+alphaid                ::= upper idrest
+                         |  varid
+
+```
+
+Interpolated string consist of an identifier starting with a letter immediately 
+followed by a string literal. There may be no whitespace characters or comments 
+between the leading identifier and the opening quote ‘”’ of the string. 
+The string literal in a interpolated string can be standard (single quote) 
+or multi-line (triple quote).
+
+Inside a interpolated string none of the usual escape characters are interpreted 
+(except for unicode escapes) no matter whether the string literal is normal 
+(enclosed in single quotes) or multi-line (enclosed in triple quotes). 
+Instead, there is are two new forms of dollar sign escape. 
+The most general form encloses an expression in \${ and }, i.e. \${expr}. 
+The expression enclosed in the braces that follow the leading \$ character is of 
+syntactical category BlockExpr. Hence, it can contain multiple statements, 
+and newlines are significant. Single ‘\$’-signs are not permitted in isolation 
+in a interpolated string. A single ‘\$’-sign can still be obtained by doubling the ‘\$’ 
+character: ‘\$\$’.
+
+The simpler form consists of a ‘\$’-sign followed by an identifier starting with 
+a letter and followed only by letters, digits, and underscore characters, 
+e.g \$id. The simpler form is expanded by putting braces around the identifier, 
+e.g \$id is equivalent to \${id}. In the following, unless we explicitly state otherwise, 
+we assume that this expansion has already been performed.
+
+The expanded expression is type checked normally. Usually, StringContext will resolve to 
+the default implementation in the scala package, 
+but it could also be user-defined. Note that new interpolators can also be added through 
+implicit conversion of the built-in scala.StringContext.
+
+One could write an extension
+```scala
+implicit class StringInterpolation(s: StringContext) {
+  def id(args: Any*) = ???
+}
+```
+
 ### Escape Sequences
 
 The following escape sequences are recognized in character and string literals.
@@ -512,10 +566,6 @@ The following escape sequences are recognized in character and string literals.
 | `‘\‘ ‘"‘`     | `\u0022` | double quote    |  `"`   |
 | `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
 | `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |
-
-A character with Unicode between 0 and 255 may also be represented by
-an octal escape, i.e. a backslash `'\'` followed by a
-sequence of up to three octal characters.
 
 It is a compile time error if a backslash character in a character or
 string literal does not start a valid escape sequence.

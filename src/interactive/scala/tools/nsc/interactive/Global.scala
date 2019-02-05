@@ -1,17 +1,25 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 
 import java.io.{ FileReader, FileWriter }
 import scala.collection.mutable
-import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
+import mutable.{LinkedHashMap, HashSet}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.SourceFile
-import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
@@ -52,7 +60,7 @@ trait InteractiveAnalyzer extends Analyzer {
   }
 
   trait InteractiveNamer extends Namer {
-    override def saveDefaultGetter(meth: Symbol, default: Symbol) {
+    override def saveDefaultGetter(meth: Symbol, default: Symbol): Unit = {
       // save the default getters as attachments in the method symbol. if compiling the
       // same local block several times (which can happen in interactive mode) we might
       // otherwise not find the default symbol, because the second time it the method
@@ -87,9 +95,9 @@ trait InteractiveAnalyzer extends Analyzer {
       }
       super.enterExistingSym(sym, tree)
     }
-    override def enterIfNotThere(sym: Symbol) {
+    override def enterIfNotThere(sym: Symbol): Unit = {
       val scope = context.scope
-      @tailrec def search(e: ScopeEntry) {
+      @tailrec def search(e: ScopeEntry): Unit = {
         if ((e eq null) || (e.owner ne scope))
           scope enter sym
         else if (e.sym ne sym)  // otherwise, aborts since we found sym
@@ -177,19 +185,17 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
    */
-  protected val toBeRemoved: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemoved: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
   /** A set containing all those files that need to be removed after a full background compiler run
    */
-  protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemovedAfterRun: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
   class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
     override def default(key: SourceFile): Set[Response[Tree]] = Set()
-    override def += (binding: (SourceFile, Set[Response[Tree]])) = {
+    override def addOne (binding: (SourceFile, Set[Response[Tree]])) = {
       assert(interruptsEnabled, "delayed operation within an ask")
-      super.+=(binding)
+      super.addOne(binding)
     }
   }
 
@@ -220,7 +226,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val global: Global.this.type = Global.this
   } with InteractiveAnalyzer
 
-  private def cleanAllResponses() {
+  private def cleanAllResponses(): Unit = {
     cleanResponses(waitLoadedTypeResponses)
     cleanResponses(getParsedEnteredResponses)
   }
@@ -231,7 +237,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       r raise new MissingResponse
     }
 
-  def checkNoResponsesOutstanding() {
+  def checkNoResponsesOutstanding(): Unit = {
     checkNoOutstanding(waitLoadedTypeResponses)
     checkNoOutstanding(getParsedEnteredResponses)
   }
@@ -270,13 +276,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   private var ignoredFiles: Set[AbstractFile] = Set()
 
   /** Flush the buffer of sources that are ignored during background compilation. */
-  def clearIgnoredFiles() {
+  def clearIgnoredFiles(): Unit = {
     ignoredFiles = Set()
   }
 
   /** Remove a crashed file from the ignore buffer. Background compilation will take it into account
    *  and errors will be reported against it. */
-  def enableIgnoredFile(file: AbstractFile) {
+  def enableIgnoredFile(file: AbstractFile): Unit = {
     ignoredFiles -= file
     debugLog("Removed crashed file %s. Still in the ignored buffer: %s".format(file, ignoredFiles))
   }
@@ -312,7 +318,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Called from parser, which signals hereby that a method definition has been parsed.
    */
-  override def signalParseProgress(pos: Position) {
+  override def signalParseProgress(pos: Position): Unit = {
     // We only want to be interruptible when running on the PC thread.
     if(onCompilerThread) {
       checkForMoreWork(pos)
@@ -326,7 +332,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  @param  old      The original node
    *  @param  result   The transformed node
    */
-  override def signalDone(context: Context, old: Tree, result: Tree) {
+  override def signalDone(context: Context, old: Tree, result: Tree): Unit = {
     val canObserveTree = (
          interruptsEnabled
       && lockedCount == 0
@@ -371,11 +377,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** The top level classes and objects no longer seen in the presentation compiler
    */
-  val deletedTopLevelSyms = new mutable.LinkedHashSet[Symbol] with mutable.SynchronizedSet[Symbol]
+  val deletedTopLevelSyms = new mutable.LinkedHashSet[Symbol]
 
   /** Called from typechecker every time a top-level class or object is entered.
    */
-  override def registerTopLevelSym(sym: Symbol) { currentTopLevelSyms += sym }
+  override def registerTopLevelSym(sym: Symbol): Unit = { currentTopLevelSyms += sym }
 
   protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
     val global: Global.this.type
@@ -412,7 +418,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  @param pos   The position of the tree if polling while typechecking, NoPosition otherwise
    *
    */
-  private[interactive] def pollForWork(pos: Position) {
+  private[interactive] def pollForWork(pos: Position): Unit = {
     var loop: Boolean = true
     while (loop) {
       breakable{
@@ -502,7 +508,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  protected def checkForMoreWork(pos: Position) {
+  protected def checkForMoreWork(pos: Position): Unit = {
     val typerRun = currentTyperRun
     pollForWork(pos)
     if (typerRun != currentTyperRun) demandNewCompilerRun()
@@ -520,7 +526,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
    */
   @elidable(elidable.WARNING)
-  override def assertCorrectThread() {
+  override def assertCorrectThread(): Unit = {
     assert(initializing || anyThread || onCompilerThread,
         "Race condition detected: You are running a presentation compiler method outside the PC thread.[phase: %s]".format(globalPhase) +
         " Please file a ticket with the current stack trace at https://www.assembla.com/spaces/scala-ide/support/tickets")
@@ -540,7 +546,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Compile all loaded source files in the order given by `allSources`.
    */
-  private[interactive] final def backgroundCompile() {
+  private[interactive] final def backgroundCompile(): Unit = {
     informIDE("Starting new presentation compiler type checking pass")
     reporter.reset()
 
@@ -596,7 +602,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
 
     // move units removable after this run to the "to-be-removed" buffer
-    toBeRemoved ++= toBeRemovedAfterRun
+    toBeRemoved.synchronized {
+      toBeRemovedAfterRun.synchronized {
+        toBeRemoved ++= toBeRemovedAfterRun
+      }
+    }
 
     // clean out stale waiting responses
     cleanAllResponses()
@@ -614,7 +624,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Service all pending getParsedEntered requests
    */
-  private def serviceParsedEntered() {
+  private def serviceParsedEntered(): Unit = {
     var atOldRun = true
     for ((source, rs) <- getParsedEnteredResponses; r <- rs) {
       if (atOldRun) { newTyperRun(); atOldRun = false }
@@ -650,7 +660,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Make sure unit is typechecked
    */
-  private[scala] def typeCheck(unit: RichCompilationUnit) {
+  private[scala] def typeCheck(unit: RichCompilationUnit): Unit = {
     debugLog("type checking: "+unit)
     parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -660,7 +670,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Update deleted and current top-level symbols sets */
-  def syncTopLevelSyms(unit: RichCompilationUnit) {
+  def syncTopLevelSyms(unit: RichCompilationUnit): Unit = {
     val deleted = currentTopLevelSyms filter { sym =>
       /** We sync after namer phase and it resets all the top-level symbols
        *  that survive the new parsing
@@ -672,22 +682,22 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
     for (d <- deleted) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms += d
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
       currentTopLevelSyms -= d
     }
   }
 
   /** Move list of files to front of allSources */
-  def moveToFront(fs: List[SourceFile]) {
+  def moveToFront(fs: List[SourceFile]): Unit = {
     allSources = fs ::: (allSources diff fs)
   }
 
   // ----------------- Implementations of client commands -----------------------
 
   def respond[T](result: Response[T])(op: => T): Unit =
-    respondGradually(result)(Stream(op))
+    respondGradually(result)(LazyList(op))
 
-  def respondGradually[T](response: Response[T])(op: => Stream[T]): Unit = {
+  def respondGradually[T](response: Response[T])(op: => LazyList[T]): Unit = {
     val prevResponse = pendingResponse
     try {
       pendingResponse = response
@@ -732,17 +742,17 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  private[interactive] def reloadSource(source: SourceFile) {
+  private[interactive] def reloadSource(source: SourceFile): Unit = {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
-    toBeRemoved -= source.file
-    toBeRemovedAfterRun -= source.file
+    toBeRemoved.synchronized { toBeRemoved -= source.file }
+    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun -= source.file }
     reset(unit)
     //parseAndEnter(unit)
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  private def reloadSources(sources: List[SourceFile]) {
+  private def reloadSources(sources: List[SourceFile]): Unit = {
     newTyperRun()
     minRunId = currentRunId
     sources foreach reloadSource
@@ -750,20 +760,20 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  private[interactive] def reload(sources: List[SourceFile], response: Response[Unit]) {
+  private[interactive] def reload(sources: List[SourceFile], response: Response[Unit]): Unit = {
     informIDE("reload: " + sources)
     lastWasReload = true
     respond(response)(reloadSources(sources))
     demandNewCompilerRun()
   }
 
-  private[interactive] def filesDeleted(sources: List[SourceFile], response: Response[Unit]) {
+  private[interactive] def filesDeleted(sources: List[SourceFile], response: Response[Unit]): Unit = {
     informIDE("files deleted: " + sources)
     val deletedFiles = sources.map(_.file).toSet
     val deletedSyms = currentTopLevelSyms filter {sym => deletedFiles contains sym.sourceFile}
     for (d <- deletedSyms) {
       d.owner.info.decls unlink d
-      deletedTopLevelSyms += d
+      deletedTopLevelSyms.synchronized { deletedTopLevelSyms += d }
       currentTopLevelSyms -= d
     }
     sources foreach (removeUnitOf(_))
@@ -776,8 +786,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  If we do just removeUnit, some problems with default parameters can ensue.
    *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
    */
-  private def afterRunRemoveUnitsOf(sources: List[SourceFile]) {
-    toBeRemovedAfterRun ++= sources map (_.file)
+  private def afterRunRemoveUnitsOf(sources: List[SourceFile]): Unit = {
+    toBeRemovedAfterRun.synchronized { toBeRemovedAfterRun ++= sources map (_.file) }
   }
 
   /** A fully attributed tree located at position `pos` */
@@ -825,13 +835,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
-  private[interactive] def getTypedTreeAt(pos: Position, response: Response[Tree]) {
+  private[interactive] def getTypedTreeAt(pos: Position, response: Response[Tree]): Unit = {
     respond(response)(typedTreeAt(pos))
   }
 
   /** Set sync var `response` to a fully attributed tree corresponding to the
    *  entire compilation unit  */
-  private[interactive] def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]) {
+  private[interactive] def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]): Unit = {
     respond(response)(typedTree(source, forceReload))
   }
 
@@ -901,7 +911,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askLinkPos */
-  private[interactive] def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
+  private[interactive] def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]): Unit = {
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
       if (sym.owner.isClass) {
@@ -915,7 +925,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit) {
+  private def forceDocComment(sym: Symbol, unit: RichCompilationUnit): Unit = {
     unit.body foreachPartial {
       case DocDef(comment, defn) if defn.symbol == sym =>
         fillDocComment(defn.symbol, comment)
@@ -927,7 +937,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Implements CompilerControl.askDocComment */
   private[interactive] def getDocComment(sym: Symbol, source: SourceFile, site: Symbol, fragments: List[(Symbol,SourceFile)],
-                                         response: Response[(String, String, Position)]) {
+                                         response: Response[(String, String, Position)]): Unit = {
     informIDE(s"getDocComment $sym at $source, site $site")
     respond(response) {
       withTempUnits(fragments.unzip._2){ units =>
@@ -967,7 +977,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   import analyzer.{SearchResult, ImplicitSearch}
 
-  private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
+  private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]): Unit = {
     informIDE("getScopeCompletion" + pos)
     respond(response) { scopeMembers(pos) }
   }
@@ -984,7 +994,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       !sym.hasFlag(ACCESSOR | PARAMACCESSOR) &&
       (!implicitlyAdded || m.implicitlyAdded)
 
-    def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M) {
+    def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M): Unit = {
       if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
         add(sym.accessed, pre, implicitlyAdded)(toMember)
       } else if (!sym.name.decodedName.containsName("$") && !sym.isError && !sym.isArtifact && sym.hasRawInfo) {
@@ -1057,13 +1067,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     result
   }
 
-  private[interactive] def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
+  private[interactive] def getTypeCompletion(pos: Position, response: Response[List[Member]]): Unit = {
     informIDE("getTypeCompletion " + pos)
     respondGradually(response) { typeMembers(pos) }
     //if (debugIDE) typeMembers(pos)
   }
 
-  private def typeMembers(pos: Position): Stream[List[TypeMember]] = {
+  private def typeMembers(pos: Position): LazyList[List[TypeMember]] = {
     // Choosing which tree will tell us the type members at the given position:
     //   If pos leads to an Import, type the expr
     //   If pos leads to a Select, type the qualifier as long as it is not erroneous
@@ -1106,7 +1116,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
      */
     def viewApply(view: SearchResult): Tree = {
       assert(view.tree != EmptyTree)
-      analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+      val t = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+        .typed(Apply(view.tree, List(tree)) setPos tree.pos)
+      if (!t.tpe.isErroneous) t
+      else analyzer.newTyper(context.makeSilent(reportAmbiguousErrors = true))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
         .onTypeError(EmptyTree)
     }
@@ -1128,7 +1141,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       val applicableViews: List[SearchResult] =
         if (ownerTpe.isErroneous) List()
         else new ImplicitSearch(
-          tree, functionType(List(ownerTpe), AnyTpe), isView = true,
+          tree, functionType(List(ownerTpe), AnyTpe), isView = true, isByNamePt = false,
           context0 = context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
       for (view <- applicableViews) {
         val vtree = viewApply(view)
@@ -1138,7 +1151,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
       }
       //println()
-      Stream(members.allMembers)
+      LazyList(members.allMembers)
     }
   }
 
@@ -1174,36 +1187,39 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
     }
     private val CamelRegex = "([A-Z][^A-Z]*)".r
-    private def camelComponents(s: String): List[String] = {
-      CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
+    private def camelComponents(s: String, allowSnake: Boolean): List[String] = {
+      if (allowSnake && s.forall(c => c.isUpper || c == '_')) s.split('_').toList.filterNot(_.isEmpty)
+      else CamelRegex.findAllIn("X" + s).toList match { case head :: tail => head.drop(1) :: tail; case Nil => Nil }
     }
     def camelMatch(entered: Name): Name => Boolean = {
       val enteredS = entered.toString
       val enteredLowercaseSet = enteredS.toLowerCase().toSet
+      val allowSnake = !enteredS.contains('_')
 
-      (candidate: Name) => {
-        def candidateChunks = camelComponents(candidate.toString)
-        // Loosely based on IntelliJ's autocompletion: the user can just write everything in
-        // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
-        def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
-          candidate match {
-            case Nil => entered.isEmpty && matchCount > 0
-            case head :: tail =>
-              val enteredAlternatives = Set(entered, entered.capitalize)
-              val n = (head, entered).zipped.count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
-              head.take(n).inits.exists(init =>
-                enteredAlternatives.exists(entered =>
-                  lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+      {
+        candidate: Name =>
+          def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
+          // Loosely based on IntelliJ's autocompletion: the user can just write everything in
+          // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
+          def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {
+            candidate match {
+              case Nil => entered.isEmpty && matchCount > 0
+              case head :: tail =>
+                val enteredAlternatives = Set(entered, entered.capitalize)
+                val n = head.toIterable.lazyZip(entered).count {case (c, e) => c == e || (c.isUpper && c == e.toUpper)}
+                head.take(n).inits.exists(init =>
+                  enteredAlternatives.exists(entered =>
+                    lenientMatch(entered.stripPrefix(init), tail, matchCount + (if (init.isEmpty) 0 else 1))
+                  )
                 )
-              )
+            }
           }
-        }
-        val containsAllEnteredChars = {
-          // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
-          val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
-          enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
-        }
-        containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
+          val containsAllEnteredChars = {
+            // Trying to rule out some candidates quickly before the more expensive `lenientMatch`
+            val candidateLowercaseSet = candidate.toString.toLowerCase().toSet
+            enteredLowercaseSet.diff(candidateLowercaseSet).isEmpty
+          }
+          containsAllEnteredChars && lenientMatch(enteredS, candidateChunks, 0)
       }
     }
   }
@@ -1250,7 +1266,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
 
   /** Implements CompilerControl.askLoadedTyped */
-  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true) {
+  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true): Unit = {
     getUnit(source) match {
       case Some(unit) =>
         if (unit.isUpToDate) {
@@ -1276,7 +1292,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askParsedEntered */
-  private[interactive] def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean = true) {
+  private[interactive] def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean = true): Unit = {
     getUnit(source) match {
       case Some(unit) =>
         getParsedEnteredNow(source, response)
@@ -1294,7 +1310,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Parses and enters given source file, storing parse tree in response */
-  private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
+  private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]): Unit = {
     respond(response) {
       onUnitOf(source) { unit =>
         parseAndEnter(unit)
@@ -1323,12 +1339,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     /** Apply a phase to a compilation unit
      *  @return true iff typechecked correctly
      */
-    private def applyPhase(phase: Phase, unit: CompilationUnit) {
+    private def applyPhase(phase: Phase, unit: CompilationUnit): Unit = {
       enteringPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
     }
   }
 
-  def newTyperRun() {
+  def newTyperRun(): Unit = {
     currentTyperRun = new TyperRun
   }
 

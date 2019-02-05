@@ -1,3 +1,5 @@
+// scalac: -Ydelambdafy:method
+//
 class DuplicateClassName {
   () => {
     {() => ()}

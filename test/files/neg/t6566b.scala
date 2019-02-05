@@ -9,7 +9,7 @@ object WhatsYourTypeIsMyType {
   }
 
   class Bar extends Foo with WithMyType[Bar] {
-    def unsound { println("iAmABar") }
+    def unsound: Unit = { println("iAmABar") }
 
     setX()
     println(x.unsound)

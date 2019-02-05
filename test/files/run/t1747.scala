@@ -1,5 +1,5 @@
 object Foo extends Foo {
-  def f {}
+  def f: Unit = {}
 }
 class Foo
 

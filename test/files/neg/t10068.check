@@ -1,16 +1,16 @@
-t10068.scala:4: error: i : Only concrete methods can be marked @elidable.
+t10068.scala:6: error: i : Only concrete methods can be marked @elidable.
   @elidable(INFO) val i: Int = 42
                       ^
-t10068.scala:5: error: j: Only concrete methods can be marked @elidable.
+t10068.scala:7: error: j: Only concrete methods can be marked @elidable.
   @elidable(INFO) lazy val j: Int = 42
                            ^
-t10068.scala:6: error: k : Only concrete methods can be marked @elidable.
+t10068.scala:8: error: k : Only concrete methods can be marked @elidable.
   @elidable(INFO) var k: Int = 42
                       ^
-t10068.scala:7: error: f: Only concrete methods can be marked @elidable. The annotation affects only the annotated method, not overriding methods in subclasses.
+t10068.scala:9: error: f: Only concrete methods can be marked @elidable. The annotation affects only the annotated method, not overriding methods in subclasses.
   @elidable(INFO) def f: Int
                       ^
-t10068.scala:9: error: D: Only concrete methods can be marked @elidable.
+t10068.scala:11: error: D: Only concrete methods can be marked @elidable.
 @elidable(INFO) class D
                       ^
 5 errors found

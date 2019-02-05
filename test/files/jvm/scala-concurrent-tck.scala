@@ -2,91 +2,103 @@ import scala.concurrent.{
   Future,
   Promise,
   TimeoutException,
-  SyncVar,
   ExecutionException,
   ExecutionContext,
   CanAwait,
-  Await
+  Await,
+  blocking
 }
-import scala.concurrent.blocking
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import scala.reflect.{ classTag, ClassTag }
 import scala.tools.partest.TestUtil.intercept
+import scala.annotation.tailrec
 
 trait TestBase {
   trait Done { def apply(proof: => Boolean): Unit }
-  def once(body: Done => Unit) {
+  def once(body: Done => Unit): Unit = {
     import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
-    assert(q.poll(2000, TimeUnit.MILLISECONDS).get)
+    assert(Option(q.poll(2000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
     // Check that we don't get more than one completion
     assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
+  }
+
+  def test[T](name: String)(body: => T): T = {
+    println(s"starting $name")
+    val r = body
+    println(s"finished $name")
+    r
   }
 }
 
 
-trait FutureCallbacks extends TestBase {
+class FutureCallbacks extends TestBase {
   import ExecutionContext.Implicits._
 
   def testOnSuccess(): Unit = once {
     done =>
-    var x = 0
-    val f = Future { x = 1 }
-    f onSuccess { case _ => done(x == 1) }
+      var x = 0
+      val f = Future { x = 1 }
+      f foreach { _ => done(x == 1) }
   }
 
   def testOnSuccessWhenCompleted(): Unit = once {
     done =>
-    var x = 0
-    val f = Future { x = 1 }
-    f onSuccess {
-      case _ if x == 1 =>
-      x = 2
-      f onSuccess {  case _ => done(x == 2) }
-    }
+      var x = 0
+      val f = Future { x = 1 }
+      f onComplete {
+        case Success(_) if x == 1 =>
+          x = 2
+          f foreach {  _ => done(x == 2) }
+        case _ =>
+      }
   }
 
   def testOnSuccessWhenFailed(): Unit = once {
     done =>
-    val f = Future[Unit] { throw new Exception }
-    f onSuccess { case _ => done(false) }
-    f onFailure { case _ => done(true) }
+      val f = Future[Unit] { throw new Exception }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(_) => done(true)
+      }
   }
 
   def testOnFailure(): Unit = once {
     done =>
-    val f = Future[Unit] { throw new Exception }
-    f onSuccess { case _ => done(false) }
-    f onFailure { case _ => done(true) }
+      val f = Future[Unit] { throw new Exception }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(_) => done(true)
+      }
   }
 
   def testOnFailureWhenSpecialThrowable(num: Int, cause: Throwable): Unit = once {
     done =>
-    val f = Future[Unit] { throw cause }
-    f onSuccess { case _ => done(false) }
-    f onFailure {
-      case e: ExecutionException if e.getCause == cause => done(true)
-      case _ => done(false)
-    }
+      val f = Future[Unit] { throw cause }
+      f onComplete {
+        case Failure(e: ExecutionException) if e.getCause == cause => done(true)
+        case _ => done(false)
+      }
   }
 
   def testOnFailureWhenTimeoutException(): Unit = once {
     done =>
-    val f = Future[Unit] { throw new TimeoutException() }
-    f onSuccess { case _ => done(false) }
-    f onFailure {
-      case e: TimeoutException => done(true)
-      case _ => done(false)
-    }
+      val f = Future[Unit] { throw new TimeoutException() }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(e: TimeoutException) => done(true)
+        case Failure(_) => done(false)
+      }
   }
 
   def testThatNestedCallbacksDoNotYieldStackOverflow(): Unit = {
     val promise = Promise[Int]
-    (0 to 10000).map(Future(_)).foldLeft(promise.future)((f1, f2) => f2.flatMap(i => f1))
+    (0 to 10000).map(Future(_)).foldLeft(promise.future)((pf, f) => f.flatMap(i => pf))
     promise.success(-1)
   }
 
@@ -94,11 +106,12 @@ trait FutureCallbacks extends TestBase {
     done =>
       val promise = Promise[Unit]
       val otherPromise = Promise[Unit]
-      def attachMeaninglessCallbacksTo(f: Future[Any]): Unit = (1 to 1000).foreach(_ => f.onComplete(_ => ()))
-      attachMeaninglessCallbacksTo(promise.future)
-      val future = promise.future.flatMap { _ =>
+      def attachMeaninglessCallbacksTo[T](f: Future[T]): Future[T] = {
+        (1 to 20000).foreach(_ => f.onComplete(_ => ()))
+        f
+      }
+      val future = attachMeaninglessCallbacksTo(promise.future).flatMap { _ =>
         attachMeaninglessCallbacksTo(otherPromise.future)
-        otherPromise.future
       }
       val numbers = new java.util.concurrent.ConcurrentHashMap[Int, Unit]()
       (0 to 10000) foreach { x => numbers.put(x, ()) }
@@ -109,61 +122,71 @@ trait FutureCallbacks extends TestBase {
       otherPromise.success(())
   }
 
-  testOnSuccess()
-  testOnSuccessWhenCompleted()
-  testOnSuccessWhenFailed()
-  testOnFailure()
-  testOnFailureWhenSpecialThrowable(5, new Error)
+  test("testOnSuccess")(testOnSuccess())
+  test("testOnSuccessWhenCompleted")(testOnSuccessWhenCompleted())
+  test("testOnSuccessWhenFailed")(testOnSuccessWhenFailed())
+  test("testOnFailure")(testOnFailure())
+  test("testOnFailureWhenSpecialThrowable")(testOnFailureWhenSpecialThrowable(5, new Error))
   // testOnFailureWhenSpecialThrowable(6, new scala.util.control.ControlThrowable { })
   //TODO: this test is currently problematic, because NonFatal does not match InterruptedException
   //testOnFailureWhenSpecialThrowable(7, new InterruptedException)
-  testThatNestedCallbacksDoNotYieldStackOverflow()
-  testOnFailureWhenTimeoutException()
-  stressTestNumberofCallbacks()
+  test("testThatNestedCallbacksDoNotYieldStackOverflow")(testThatNestedCallbacksDoNotYieldStackOverflow())
+  test("testOnFailureWhenTimeoutException")(testOnFailureWhenTimeoutException())
+  test("stressTestNumberofCallbacks")(stressTestNumberofCallbacks())
 }
 
 
-trait FutureCombinators extends TestBase {
+class FutureCombinators extends TestBase {
   import ExecutionContext.Implicits._
 
   def testMapSuccess(): Unit = once {
     done =>
       val f = Future { 5 }
       val g = f map { x => "result: " + x }
-      g onSuccess { case s => done(s == "result: 5") }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(s) => done(s == "result: 5")
+        case Failure(_) => done(false)
+      }
   }
 
   def testMapFailure(): Unit = once {
     done =>
       val f = Future[Unit] { throw new Exception("exception message") }
       val g = f map { x => "result: " + x }
-      g onSuccess { case _ => done(false) }
-      g onFailure { case t => done(t.getMessage() == "exception message") }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(t) => done(t.getMessage() == "exception message")
+      }
   }
 
   def testMapSuccessPF(): Unit = once {
     done =>
       val f = Future { 5 }
       val g = f map { case r => "result: " + r }
-      g onSuccess { case s => done(s == "result: 5") }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(s) => done(s == "result: 5")
+        case Failure(_) => done(false)
+      }
   }
 
   def testTransformSuccess(): Unit = once {
     done =>
       val f = Future { 5 }
       val g = f.transform(r => "result: " + r, identity)
-      g onSuccess { case s => done(s == "result: 5") }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(s) => done(s == "result: 5")
+        case Failure(_) => done(false)
+      }
   }
 
   def testTransformSuccessPF(): Unit = once {
     done =>
       val f = Future { 5 }
       val g = f.transform( { case r => "result: " + r }, identity)
-      g onSuccess { case s => done(s == "result: 5") }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(s) => done(s == "result: 5")
+        case Failure(_) => done(false)
+      }
   }
 
 def testTransformFailure(): Unit = once {
@@ -171,8 +194,10 @@ def testTransformFailure(): Unit = once {
       val transformed = new Exception("transformed")
       val f = Future { throw new Exception("expected") }
       val g = f.transform(identity, _ => transformed)
-      g onSuccess { case _ => done(false) }
-      g onFailure { case e => done(e eq transformed) }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(e) => done(e eq transformed)
+      }
   }
 
   def testTransformFailurePF(): Unit = once {
@@ -181,8 +206,10 @@ def testTransformFailure(): Unit = once {
       val transformed = new Exception("transformed")
       val f = Future[Unit] { throw e }
       val g = f.transform(identity, { case `e` => transformed })
-      g onSuccess { case _ => done(false) }
-      g onFailure { case e => done(e eq transformed) }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(e) => done(e eq transformed)
+      }
   }
 
   def testTransformResultToResult(): Unit = once {
@@ -283,24 +310,30 @@ def testTransformFailure(): Unit = once {
     done =>
       val f = Future[Unit] { throw new Exception("expected") }
       val g = f.transform(r => "result: " + r, identity)
-      g onSuccess { case _ => done(false) }
-      g onFailure { case t => done(t.getMessage() == "expected") }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(t) => done(t.getMessage() == "expected")
+      }
   }
 
   def testFlatMapSuccess(): Unit = once {
     done =>
       val f = Future { 5 }
       val g = f flatMap { _ => Future { 10 } }
-      g onSuccess { case x => done(x == 10) }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(x) => done(x == 10)
+        case Failure(_) => done(false)
+      }
   }
 
   def testFlatMapFailure(): Unit = once {
     done =>
       val f = Future[Unit] { throw new Exception("expected") }
       val g = f flatMap { _ => Future { 10 } }
-      g onSuccess { case _ => done(false) }
-      g onFailure { case t => done(t.getMessage() == "expected") }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(t) => done(t.getMessage() == "expected")
+      }
   }
 
   def testFlatMapDelayed(): Unit = once {
@@ -308,8 +341,10 @@ def testTransformFailure(): Unit = once {
       val f = Future { 5 }
       val p = Promise[Int]
       val g = f flatMap { _ => p.future }
-      g onSuccess { case x => done(x == 10) }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(x) => done(x == 10)
+        case Failure(_) => done(false)
+      }
       p.success(10)
   }
 
@@ -317,18 +352,20 @@ def testTransformFailure(): Unit = once {
     done =>
       val f = Future { 4 }
       val g = f filter { _ % 2 == 0 }
-      g onSuccess { case x: Int => done(x == 4) }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(x: Int) => done(x == 4)
+        case Failure(_) => done(false)
+      }
   }
 
   def testFilterFailure(): Unit = once {
     done =>
       val f = Future { 4 }
       val g = f filter { _ % 2 == 1 }
-      g onSuccess { case x: Int => done(false) }
-      g onFailure {
-        case e: NoSuchElementException => done(true)
-        case _ => done(false)
+      g onComplete {
+        case Success(x: Int) => done(false)
+        case Failure(e: NoSuchElementException) => done(true)
+        case Failure(_) => done(false)
       }
   }
 
@@ -336,23 +373,22 @@ def testTransformFailure(): Unit = once {
     done =>
       val f = Future { -5 }
       val g = f collect { case x if x < 0 => -x }
-      g onSuccess { case x: Int => done(x == 5) }
-      g onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(x: Int) => done(x == 5)
+        case Failure(_) => done(false)
+      }
   }
 
   def testCollectFailure(): Unit = once {
     done =>
       val f = Future { -5 }
       val g = f collect { case x if x > 0 => x * 2 }
-      g onSuccess { case _ => done(false) }
-      g onFailure {
-        case e: NoSuchElementException => done(true)
-        case _ => done(false)
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(e: NoSuchElementException) => done(true)
+        case Failure(_) => done(false)
       }
   }
-
-  /* TODO: Test for NonFatal in collect (more of a regression test at this point).
-   */
 
   def testForeachSuccess(): Unit = once {
     done =>
@@ -361,8 +397,10 @@ def testTransformFailure(): Unit = once {
       f foreach { x => p.success(x * 2) }
       val g = p.future
 
-      g.onSuccess { case res: Int => done(res == 10) }
-      g.onFailure { case _ => done(false) }
+      g onComplete {
+        case Success(res: Int) => done(res == 10)
+        case Failure(_) => done(false)
+      }
   }
 
   def testForeachFailure(): Unit = once {
@@ -370,110 +408,133 @@ def testTransformFailure(): Unit = once {
       val p = Promise[Int]()
       val f = Future[Int] { throw new Exception }
       f foreach { x => p.success(x * 2) }
-      f onFailure { case _ => p.failure(new Exception) }
+      f onComplete { case Failure(_) => p.failure(new Exception); case _ => }
       val g = p.future
 
-      g.onSuccess { case _ => done(false) }
-      g.onFailure { case _ => done(true) }
+      g onComplete {
+        case Success(_) => done(false)
+        case Failure(_) => done(true)
+      }
   }
 
   def testRecoverSuccess(): Unit = once {
     done =>
-    val cause = new RuntimeException
-    val f = Future {
-      throw cause
-    } recover {
-      case re: RuntimeException =>
-        "recovered" }
-    f onSuccess { case x => done(x == "recovered") }
-    f onFailure { case any => done(false) }
+      val cause = new RuntimeException
+      val f = Future {
+        throw cause
+      } recover {
+        case re: RuntimeException =>
+          "recovered" }
+      f onComplete {
+        case Success(x) => done(x == "recovered")
+        case Failure(_) => done(false)
+      }
   }
 
   def testRecoverFailure(): Unit = once {
     done =>
-    val cause = new RuntimeException
-    val f = Future {
-      throw cause
-    } recover {
-      case te: TimeoutException => "timeout"
-    }
-    f onSuccess { case _ => done(false) }
-    f onFailure { case any => done(any == cause) }
+      val cause = new RuntimeException
+      val f = Future {
+        throw cause
+      } recover {
+        case te: TimeoutException => "timeout"
+      }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(any) => done(any == cause)
+      }
   }
 
   def testRecoverWithSuccess(): Unit = once {
     done =>
-    val cause = new RuntimeException
-    val f = Future {
-      throw cause
-    } recoverWith {
-      case re: RuntimeException =>
-        Future { "recovered" }
-    }
-    f onSuccess { case x => done(x == "recovered") }
-    f onFailure { case any => done(false) }
+      val cause = new RuntimeException
+      val f = Future {
+        throw cause
+      } recoverWith {
+        case re: RuntimeException =>
+          Future { "recovered" }
+      }
+      f onComplete {
+        case Success(x) => done(x == "recovered")
+        case Failure(_) => done(false)
+      }
   }
 
   def testRecoverWithFailure(): Unit = once {
     done =>
-    val cause = new RuntimeException
-    val f = Future {
-      throw cause
-    } recoverWith {
-      case te: TimeoutException =>
-        Future { "timeout" }
-    }
-    f onSuccess { case x => done(false) }
-    f onFailure { case any => done(any == cause) }
+      val cause = new RuntimeException
+      val f = Future {
+        throw cause
+      } recoverWith {
+        case te: TimeoutException =>
+          Future { "timeout" }
+      }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(any) => done(any == cause)
+      }
   }
 
   def testZipSuccess(): Unit = once {
     done =>
-    val f = Future { 5 }
-    val g = Future { 6 }
-    val h = f zip g
-    h onSuccess { case (l: Int, r: Int) => done(l+r == 11) }
-    h onFailure { case _ => done(false) }
+      val f = Future { 5 }
+      val g = Future { 6 }
+      val h = f zip g
+      h onComplete {
+        case Success((l: Int, r: Int)) => done(l + r == 11)
+        case Success(_) =>
+        case Failure(_) => done(false)
+      }
   }
 
   def testZipFailureLeft(): Unit = once {
     done =>
-    val cause = new Exception("expected")
-    val f = Future { throw cause }
-    val g = Future { 6 }
-    val h = f zip g
-    h onSuccess { case _ => done(false) }
-    h onFailure { case e: Exception => done(e.getMessage == "expected") }
+      val cause = new Exception("expected")
+      val f = Future { throw cause }
+      val g = Future { 6 }
+      val h = f zip g
+      h onComplete {
+        case Success(_) => done(false)
+        case Failure(e: Exception) => done(e.getMessage == "expected")
+        case Failure(_) =>
+      }
   }
 
   def testZipFailureRight(): Unit = once {
     done =>
-    val cause = new Exception("expected")
-    val f = Future { 5 }
-    val g = Future { throw cause }
-    val h = f zip g
-    h onSuccess { case _ => done(false) }
-    h onFailure { case e: Exception => done(e.getMessage == "expected") }
+      val cause = new Exception("expected")
+      val f = Future { 5 }
+      val g = Future { throw cause }
+      val h = f zip g
+      h onComplete {
+        case Success(_) => done(false)
+        case Failure(e: Exception) => done(e.getMessage == "expected")
+        case Failure(_) =>
+      }
   }
 
   def testFallbackTo(): Unit = once {
     done =>
-    val f = Future { sys.error("failed") }
-    val g = Future { 5 }
-    val h = f fallbackTo g
-    h onSuccess { case x: Int => done(x == 5) }
-    h onFailure { case _ => done(false) }
+      val f = Future { sys.error("failed") }
+      val g = Future { 5 }
+      val h = f fallbackTo g
+      h onComplete {
+        case Success(x: Int) => done(x == 5)
+        case Failure(_) => done(false)
+      }
   }
 
   def testFallbackToFailure(): Unit = once {
     done =>
-    val cause = new Exception
-    val f = Future { throw cause }
-    val g = Future { sys.error("failed") }
-    val h = f fallbackTo g
+      val cause = new Exception
+      val f = Future { throw cause }
+      val g = Future { sys.error("failed") }
+      val h = f fallbackTo g
 
-    h onSuccess { case _ => done(false) }
-    h onFailure { case e => done(e eq cause) }
+      h onComplete {
+        case Success(_) => done(false)
+        case Failure(e) => done(e eq cause)
+      }
   }
 
   def testFallbackToThis(): Unit = {
@@ -484,42 +545,65 @@ def testTransformFailure(): Unit = once {
     check(Future.failed[Int](new Exception))
   }
 
-  testMapSuccess()
-  testMapFailure()
-  testFlatMapSuccess()
-  testFlatMapFailure()
-  testFlatMapDelayed()
-  testFilterSuccess()
-  testFilterFailure()
-  testCollectSuccess()
-  testCollectFailure()
-  testForeachSuccess()
-  testForeachFailure()
-  testRecoverSuccess()
-  testRecoverFailure()
-  testRecoverWithSuccess()
-  testRecoverWithFailure()
-  testZipSuccess()
-  testZipFailureLeft()
-  testZipFailureRight()
-  testFallbackTo()
-  testFallbackToFailure()
-  testTransformSuccess()
-  testTransformSuccessPF()
-  testTransformFailure()
-  testTransformFailurePF()
-  testTransformResultToResult()
-  testTransformResultToFailure()
-  testTransformFailureToResult()
-  testTransformFailureToFailure()
-  testTransformWithResultToResult()
-  testTransformWithResultToFailure()
-  testTransformWithFailureToResult()
-  testTransformWithFailureToFailure()
+  private[this] final def testMulti(f: Future[String] => Future[String]): Unit = {
+    val p = Promise[String]()
+    val f1, f2, f3 = f(p.future)
+
+    val p2 = Promise[String]()
+    val f4, f5, f6 = f(p.future)
+
+    p.success("foo")
+    p2.success("bar")
+
+    List(f1,f2,f3).foreach(f => Await.ready(f, 2.seconds))
+    assert(f1.value == f2.value && f2.value == f2.value)
+    List(f4,f5,f6).foreach(f => Await.ready(f, 2.seconds))
+    assert(f4.value == f5.value && f5.value == f6.value)
+  }
+
+  def testMultiFlatMap(): Unit = testMulti((to) => Future.unit.flatMap(_ => to))
+  def testMultiRecoverWith(): Unit = testMulti((to) => Future.failed[String](new NullPointerException).recoverWith { case _ => to })
+  def testMultiTransformWith(): Unit = testMulti((to) => Future.unit.transformWith(_ => to))
+
+  test("testMapSuccess")(testMapSuccess())
+  test("testMapFailure")(testMapFailure())
+  test("testFlatMapSuccess")(testFlatMapSuccess())
+  test("testFlatMapFailure")(testFlatMapFailure())
+  test("testFlatMapDelayed")(testFlatMapDelayed())
+  test("testFilterSuccess")(testFilterSuccess())
+  test("testFilterFailure")(testFilterFailure())
+  test("testCollectSuccess")(testCollectSuccess())
+  test("testCollectFailure")(testCollectFailure())
+  test("testForeachSuccess")(testForeachSuccess())
+  test("testForeachFailure")(testForeachFailure())
+  test("testRecoverSuccess")(testRecoverSuccess())
+  test("testRecoverFailure")(testRecoverFailure())
+  test("testRecoverWithSuccess")(testRecoverWithSuccess())
+  test("testRecoverWithFailure")(testRecoverWithFailure())
+  test("testZipSuccess")(testZipSuccess())
+  test("testZipFailureLeft")(testZipFailureLeft())
+  test("testZipFailureRight")(testZipFailureRight())
+  test("testFallbackTo")(testFallbackTo())
+  test("testFallbackToFailure")(testFallbackToFailure())
+  test("testTransformSuccess")(testTransformSuccess())
+  test("testTransformSuccessPF")(testTransformSuccessPF())
+  test("testTransformFailure")(testTransformFailure())
+  test("testTransformFailurePF")(testTransformFailurePF())
+  test("testTransformResultToResult")(testTransformResultToResult())
+  test("testTransformResultToFailure")(testTransformResultToFailure())
+  test("testTransformFailureToResult")(testTransformFailureToResult())
+  test("testTransformFailureToFailure")(testTransformFailureToFailure())
+  test("testTransformWithResultToResult")(testTransformWithResultToResult())
+  test("testTransformWithResultToFailure")(testTransformWithResultToFailure())
+  test("testTransformWithFailureToResult")(testTransformWithFailureToResult())
+  test("testTransformWithFailureToFailure")(testTransformWithFailureToFailure())
+  test("testMultiFlatMap")(testMultiFlatMap())
+  test("testMultiRecoverWith")(testMultiRecoverWith())
+  test("testMultiTransformWith")(testMultiTransformWith())
 }
 
 
-trait FutureProjections extends TestBase {
+class FutureProjections extends TestBase {
   import ExecutionContext.Implicits._
 
   def testFailedFailureOnComplete(): Unit = once {
@@ -534,9 +618,9 @@ trait FutureProjections extends TestBase {
 
   def testFailedFailureOnSuccess(): Unit = once {
     done =>
-    val cause = new RuntimeException
-    val f = Future { throw cause }
-    f.failed onSuccess { case t => done(t == cause) }
+      val cause = new RuntimeException
+      val f = Future { throw cause }
+      f.failed foreach { t => done(t == cause) }
   }
 
   def testFailedSuccessOnComplete(): Unit = once {
@@ -550,12 +634,12 @@ trait FutureProjections extends TestBase {
 
   def testFailedSuccessOnFailure(): Unit = once {
     done =>
-    val f = Future { 0 }
-    f.failed onFailure {
-      case e: NoSuchElementException => done(true)
-      case _ => done(false)
-    }
-    f.failed onSuccess { case _ => done(false) }
+      val f = Future { 0 }
+      f.failed onComplete {
+        case Success(_) => done(false)
+        case Failure(_: NoSuchElementException) => done(true)
+        case Failure(_) => done(false)
+      }
   }
 
   def testFailedFailureAwait(): Unit = once {
@@ -587,7 +671,7 @@ trait FutureProjections extends TestBase {
       Await.ready(f, Duration(500, "ms"))
       Await.ready(f, Duration.Inf)
       done(true)
-    } onFailure { case x => done(throw x) }
+    } onComplete { case Failure(x) => done(throw x); case _ => }
   }
 
   def testAwaitNegativeDuration(): Unit = once { done =>
@@ -597,21 +681,21 @@ trait FutureProjections extends TestBase {
       intercept[TimeoutException] { Await.ready(f, Duration.MinusInf) }
       intercept[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
       done(true)
-    } onFailure { case x => done(throw x) }
+    } onComplete { case Failure(x) => done(throw x); case _ => }
   }
 
-  testFailedFailureOnComplete()
-  testFailedFailureOnSuccess()
-  testFailedSuccessOnComplete()
-  testFailedSuccessOnFailure()
-  testFailedFailureAwait()
-  testFailedSuccessAwait()
-  testAwaitPositiveDuration()
-  testAwaitNegativeDuration()
+  test("testFailedFailureOnComplete")(testFailedFailureOnComplete())
+  test("testFailedFailureOnSuccess")(testFailedFailureOnSuccess())
+  test("testFailedSuccessOnComplete")(testFailedSuccessOnComplete())
+  test("testFailedSuccessOnFailure")(testFailedSuccessOnFailure())
+  test("testFailedFailureAwait")(testFailedFailureAwait())
+  test("testFailedSuccessAwait")(testFailedSuccessAwait())
+  test("testAwaitPositiveDuration")(testAwaitPositiveDuration())
+  test("testAwaitNegativeDuration")(testAwaitNegativeDuration())
 }
 
 
-trait Blocking extends TestBase {
+class Blocking extends TestBase {
   import ExecutionContext.Implicits._
 
   def testAwaitSuccess(): Unit = once {
@@ -638,12 +722,12 @@ trait Blocking extends TestBase {
          Await.getClass.getName == "scala.concurrent.Await")
   }
 
-  testAwaitSuccess()
-  testAwaitFailure()
-  testFQCNForAwaitAPI()
+  test("testAwaitSuccess")(testAwaitSuccess())
+  test("testAwaitFailure")(testAwaitFailure())
+  test("testFQCNForAwaitAPI")(testFQCNForAwaitAPI())
 }
 
-trait BlockContexts extends TestBase {
+class BlockContexts extends TestBase {
   import ExecutionContext.Implicits._
   import scala.concurrent.{ Await, Awaitable, BlockContext }
 
@@ -659,8 +743,9 @@ trait BlockContexts extends TestBase {
 
   // test BlockContext in our default ExecutionContext
   def testDefaultFJP(): Unit = {
+    val prevCurrent = BlockContext.current
     val bc = getBlockContext(BlockContext.current)
-    assert(bc.isInstanceOf[java.util.concurrent.ForkJoinWorkerThread])
+    assert(bc ne prevCurrent) // Should have been replaced by the EC.
   }
 
   // test BlockContext inside BlockContext.withBlockContext
@@ -694,49 +779,76 @@ trait BlockContexts extends TestBase {
     assert(bc ne customBC)
   }
 
-  testDefaultOutsideFuture()
-  testDefaultFJP()
-  testPushCustom()
-  testPopCustom()
+  test("testDefaultOutsideFuture")(testDefaultOutsideFuture())
+  test("testDefaultFJP")(testDefaultFJP())
+  test("testPushCustom")(testPushCustom())
+  test("testPopCustom")(testPopCustom())
 }
 
-trait Promises extends TestBase {
+class Promises extends TestBase {
   import ExecutionContext.Implicits._
 
   def testSuccess(): Unit = once {
     done =>
-    val p = Promise[Int]()
-    val f = p.future
+      val p = Promise[Int]()
+      val f = p.future
 
-    f onSuccess { case x => done(x == 5) }
-    f onFailure { case any => done(false) }
+      f onComplete {
+        case Success(x) => done(x == 5)
+        case Failure(_) => done(false)
+      }
 
-    p.success(5)
+      p.success(5)
   }
 
   def testFailure(): Unit = once {
     done =>
-    val e = new Exception("expected")
-    val p = Promise[Int]()
-    val f = p.future
+      val e = new Exception("expected")
+      val p = Promise[Int]()
+      val f = p.future
 
-    f onSuccess { case x => done(false) }
-    f onFailure { case any => done(any eq e) }
+      f onComplete {
+        case Success(_) => done(false)
+        case Failure(any) => done(any eq e)
+      }
 
-    p.failure(e)
+      p.failure(e)
   }
 
-  testSuccess()
-  testFailure()
+  test("testSuccess")(testSuccess())
+  test("testFailure")(testFailure())
 }
 
 
-trait Exceptions extends TestBase {
+class Exceptions extends TestBase {
+  import java.util.concurrent.{Executors, RejectedExecutionException}
+  def interruptHandling(): Unit = {
+    implicit val e = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(1))
+    val p = Promise[String]()
+    val f = p.future.map(_ => Thread.sleep(2000))
+    p.success("foo")
+    Thread.sleep(20)
+    e.shutdownNow()
+
+    val Failure(ee: ExecutionException) = Await.ready(f, 2.seconds).value.get
+    assert(ee.getCause.isInstanceOf[InterruptedException])
+  }
+
+  def rejectedExecutionException(): Unit = {
+    implicit val e = ExecutionContext.fromExecutor((r: Runnable) => throw new RejectedExecutionException("foo"))
+    val p = Promise[String]()
+    p.success("foo")
+    val f = p.future.map(identity)
+    val Failure(t: RejectedExecutionException) = Await.ready(f, 2.seconds).value.get
+  }
+
+  test("interruptHandling")(interruptHandling())
+  test("rejectedExecutionException")(rejectedExecutionException())
+}
+
+class GlobalExecutionContext extends TestBase {
   import ExecutionContext.Implicits._
-
-}
-
-trait GlobalExecutionContext extends TestBase {
+  
   def testNameOfGlobalECThreads(): Unit = once {
     done => Future({
         val expectedName = "scala-execution-context-global-"+ Thread.currentThread.getId
@@ -744,10 +856,10 @@ trait GlobalExecutionContext extends TestBase {
       })(ExecutionContext.global)
   }
 
-  testNameOfGlobalECThreads()
+  test("testNameOfGlobalECThreads")(testNameOfGlobalECThreads())
 }
 
-trait CustomExecutionContext extends TestBase {
+class CustomExecutionContext extends TestBase {
   import scala.concurrent.{ ExecutionContext, Awaitable }
 
   def defaultEC = ExecutionContext.global
@@ -799,10 +911,9 @@ trait CustomExecutionContext extends TestBase {
       blocking {
         once { done =>
           val f = Future(assertNoEC())(defaultEC)
-          f onSuccess {
-            case _ =>
-              assertEC()
-              done(true)
+          f foreach { _ =>
+            assertEC()
+            done(true)
           }
           assertNoEC()
         }
@@ -818,10 +929,9 @@ trait CustomExecutionContext extends TestBase {
       blocking {
         once { done =>
           val f = Promise.successful(10).future
-          f onSuccess {
-            case _ =>
-              assertEC()
-              done(true)
+          f foreach { _ =>
+            assertEC()
+            done(true)
           }
         }
       }
@@ -860,12 +970,45 @@ trait CustomExecutionContext extends TestBase {
     assert(count >= 1)
   }
 
-  testOnSuccessCustomEC()
-  testKeptPromiseCustomEC()
-  testCallbackChainCustomEC()
+  def testUncaughtExceptionReporting(): Unit = once {
+    done =>
+      import java.util.concurrent.TimeUnit.SECONDS
+      val example = new InterruptedException()
+      val latch = new java.util.concurrent.CountDownLatch(1)
+      @volatile var thread: Thread = null
+      @volatile var reported: Throwable = null
+      val ec = ExecutionContext.fromExecutorService(null, t => {
+        reported = t
+        latch.countDown()
+      })
+
+      @tailrec def waitForThreadDeath(turns: Int): Boolean =
+          if (turns <= 0) false
+          else if ((thread ne null) && thread.isAlive == false) true
+          else {
+            Thread.sleep(10)
+            waitForThreadDeath(turns - 1)
+          }
+
+      try {
+        ec.execute(() => {
+          thread = Thread.currentThread
+          throw example
+        })
+        latch.await(2, SECONDS)
+        done(waitForThreadDeath(turns = 100) && (reported eq example))
+      } finally {
+        ec.shutdown()
+      }
+  }
+
+  test("testUncaughtExceptionReporting")(testUncaughtExceptionReporting())
+  test("testOnSuccessCustomEC")(testOnSuccessCustomEC())
+  test("testKeptPromiseCustomEC")(testKeptPromiseCustomEC())
+  test("testCallbackChainCustomEC")(testCallbackChainCustomEC())
 }
 
-trait ExecutionContextPrepare extends TestBase {
+class ExecutionContextPrepare extends TestBase {
   val theLocal = new ThreadLocal[String] {
     override protected def initialValue(): String = ""
   }
@@ -914,22 +1057,22 @@ trait ExecutionContextPrepare extends TestBase {
     fut map { x => done(theLocal.get == "secret2") }
   }
 
-  testOnComplete()
-  testMap()
+  test("testOnComplete")(testOnComplete())
+  test("testMap")(testMap())
 }
 
 object Test
-extends App
-with FutureCallbacks
-with FutureCombinators
-with FutureProjections
-with Promises
-with BlockContexts
-with Exceptions
-with GlobalExecutionContext
-with CustomExecutionContext
-with ExecutionContextPrepare
-{
+extends App {
+  new FutureCallbacks
+  new FutureCombinators
+  new FutureProjections
+  new Promises
+  new BlockContexts
+  new Exceptions
+  new GlobalExecutionContext
+  new CustomExecutionContext
+  new ExecutionContextPrepare
+
   System.exit(0)
 }
 

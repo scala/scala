@@ -6,7 +6,7 @@ object Test {
     def apply(a: A): A
   }
   val g = new T[C[Any]] { def apply(a: C[Any]) = { println(s"g($a)"); a } }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
      f(new C("."))
      val methods = f.getClass.getDeclaredMethods.map(_.getName).sorted
      println("")

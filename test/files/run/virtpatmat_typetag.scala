@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 import reflect.{ClassTag, classTag}
 
 trait Extractors {
@@ -7,15 +9,15 @@ trait Extractors {
     def unapply(x: T) = Some(x)
   }
   def apply(a: Any) = a match {
-    case ExtractT(x)  => println(x +" is a "+ implicitly[ClassTag[T]])
-    case _ => println(a+ " is not a "+ implicitly[ClassTag[T]] +"; it's a "+ a.getClass)
+    case ExtractT(x)  => println(x.toString + " is a " + implicitly[ClassTag[T]])
+    case _ => println(a.toString + " is not a " + implicitly[ClassTag[T]] + "; it's a "+ a.getClass)
   }
 }
 
 object Test extends App {
   def typeMatch[T: ClassTag](a: Any) = a match {
-    case x : T => println(x +" is a "+ implicitly[ClassTag[T]])
-    case _ => println(a+ " is not a "+ implicitly[ClassTag[T]] +"; it's a "+ a.getClass)
+    case x : T => println(x.toString + " is a " + implicitly[ClassTag[T]])
+    case _ => println(a.toString + " is not a " + implicitly[ClassTag[T]] + "; it's a " + a.getClass)
   }
 
   // the same match as typeMatch, but using an extractor

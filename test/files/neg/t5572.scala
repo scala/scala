@@ -11,7 +11,7 @@ class Test {
 
   def bar(): (A, B)
 
-  def foo {
+  def foo: Unit = {
     val (b, a) = bar()
     Z.transf(a, b) match {
       case sth =>

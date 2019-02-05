@@ -29,3 +29,17 @@ abstract class CCC[T <: A] {
 class DDD extends CCC[B] {
   def f(b: Int, i: String) = b
 }
+
+// an additional example from the forum
+
+trait ParamTrait
+
+class ImplementingParamTrait extends ParamTrait
+
+trait Model[P <: ParamTrait] {
+  def create(conditionalParams: P)(implicit d: Double): Int
+}
+
+object Obj extends Model[ImplementingParamTrait] {
+  def create(conditionalParams: ImplementingParamTrait)(d: Double): Int = 5
+}

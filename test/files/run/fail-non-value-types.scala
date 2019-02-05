@@ -10,7 +10,7 @@ class CompletelyIndependentList[+A] {
 object Test {
   var failed = false
   def expectFailure[T](body: => T): Boolean = {
-    try { val res = body ; failed = true ; println(res + " failed to fail.") ; false }
+    try { val res = body ; failed = true ; println(s"$res failed to fail.") ; false }
     catch { case _: AssertionError => true }
   }
 

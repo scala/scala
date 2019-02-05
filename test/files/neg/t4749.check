@@ -1,32 +1,47 @@
-t4749.scala:2: warning: Fail1 has a main method with parameter type Array[String], but bippy.Fail1 will not be a runnable program.
-  Reason: main method must have exact signature (Array[String])Unit
-  object Fail1 {
-         ^
-t4749.scala:6: warning: Fail2 has a main method with parameter type Array[String], but bippy.Fail2 will not be a runnable program.
-  Reason: main methods cannot be generic.
-  object Fail2 {
-         ^
-t4749.scala:13: warning: Fail3 has a main method with parameter type Array[String], but bippy.Fail3 will not be a runnable program.
-  Reason: main methods cannot refer to type parameters or abstract types.
-  object Fail3 extends Bippy[Unit] { }
-         ^
-t4749.scala:16: warning: Fail4 has a main method with parameter type Array[String], but bippy.Fail4 will not be a runnable program.
+t4749.scala:5: warning: not a valid main method for bippy.Fail1,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[String]): Any = ()
+        ^
+t4749.scala:9: warning: not a valid main method for bippy.Fail2,
+  because main methods cannot be generic.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main[T](args: Array[String]): T = null.asInstanceOf[T]
+        ^
+t4749.scala:13: warning: not a valid main method for bippy.Fail3,
+  because main methods cannot refer to type parameters or abstract types.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
+    def main(args: Array[String]): T = null.asInstanceOf[T]
+        ^
+t4749.scala:18: warning: Fail4 has a valid main method (args: Array[String])Unit,
+  but bippy.Fail4 will not have an entry point on the JVM.
   Reason: companion is a trait, which means no static forwarder can be generated.
 
   object Fail4 {
          ^
-t4749.scala:21: warning: Fail5 has a main method with parameter type Array[String], but bippy.Fail5 will not be a runnable program.
+t4749.scala:23: warning: Fail5 has a valid main method (args: Array[String])Unit,
+  but bippy.Fail5 will not have an entry point on the JVM.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Fail5 extends Fail5 { }
          ^
-t4749.scala:26: warning: Fail6 has a main method with parameter type Array[String], but bippy.Fail6 will not be a runnable program.
+t4749.scala:28: warning: Fail6 has a valid main method (args: Array[String])Unit,
+  but bippy.Fail6 will not have an entry point on the JVM.
   Reason: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
 
   object Fail6 {
          ^
-t4749.scala:42: warning: Win3 has a main method with parameter type Array[String], but bippy.Win3 will not be a runnable program.
-  Reason: main method must have exact signature (Array[String])Unit
+t4749.scala:44: warning: not a valid main method for bippy.Win3,
+  because main methods must have the exact signature (Array[String])Unit.
+  To define an entry point, please define the main method as:
+    def main(args: Array[String]): Unit
+
   object Win3 extends WinBippy[Unit] { }
          ^
 error: No warnings can be incurred under -Xfatal-warnings.

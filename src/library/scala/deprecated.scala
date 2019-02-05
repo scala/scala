@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -41,16 +45,9 @@ import scala.annotation.meta._
  *  A deprecated element of the Scala language or a definition in the Scala standard library will
  *  be preserved at least for the current major version.
  *
- *  This means that an element deprecated in some 2.12.x release will be preserved in
- *  all 2.12.x releases, but may be removed in 2.13. (A deprecated element
- *  might be kept longer to ease migration. Developers should not rely on this.)
- *
- *  '''Special deprecation policy for Scala 2.12'''<br>
- *  The Scala team has decided to enact a special deprecation policy for Scala 2.12:<br/>
- *
- *  As an upgrade from 2.11 to 2.12 also requires upgrading from Java 6 to Java 8,
- *  deprecated elements will not normally be removed in this release, to ease migration
- *  and cross-building.
+ *  This means that an element deprecated in some 2.13.x release will be preserved in
+ *  all 2.13.x releases, but may be removed in 2.14. (A deprecated element
+ *  might be kept longer to ease migration, but developers should not rely on this.)
  *
  *  @see    The official documentation on [[http://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
  *  @param  message the message to print during compilation if the definition is accessed
@@ -61,4 +58,5 @@ import scala.annotation.meta._
  *  @see    [[scala.deprecatedName]]
  */
 @getter @setter @beanGetter @beanSetter
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
 class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation

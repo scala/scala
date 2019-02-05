@@ -13,7 +13,7 @@ class Matrix[@specialized A: ClassTag](val rows: Int, val cols: Int) {
     arr(i)(j)
   }
 
-  def update(i: Int, j: Int, e: A) {
+  def update(i: Int, j: Int, e: A): Unit = {
     arr(i)(j) = e
   }
 
@@ -28,7 +28,7 @@ class Matrix[@specialized A: ClassTag](val rows: Int, val cols: Int) {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = randomMatrix(200, 100)
     val n = randomMatrix(100, 200)
 
@@ -46,7 +46,7 @@ object Test {
     x
   }
 
-  def printMatrix[Double](m: Matrix[Double]) {
+  def printMatrix[Double](m: Matrix[Double]): Unit = {
     for (i <- 0 until m.rows) {
       for (j <- 0 until m.cols)
         print("%5.3f ".format(m(i, j)))
@@ -54,7 +54,7 @@ object Test {
     }
   }
 
-  def multTag[@specialized(Int) T](m: Matrix[T], n: Matrix[T])(implicit at: ClassTag[T], num: Numeric[T]) {
+  def multTag[@specialized(Int) T](m: Matrix[T], n: Matrix[T])(implicit at: ClassTag[T], num: Numeric[T]): Unit = {
     val p = new Matrix[T](m.rows, n.cols)
     import num._
 

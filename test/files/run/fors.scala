@@ -14,66 +14,66 @@ object Test extends App {
 
   /////////////////// old syntax ///////////////////
 
-  def testOld {
+  def testOld: Unit = {
     println("\ntestOld")
 
     // lists
-    for (x <- xs) print(x + " "); println
+    for (x <- xs) print(s"$x "); println
     for (x <- xs;
-         if x % 2 == 0) print(x + " "); println
+         if x % 2 == 0) print(s"$x "); println
     for {x <- xs
-         if x % 2 == 0} print(x + " "); println
+         if x % 2 == 0} print(s"$x "); println
     var n = 0
     for (_ <- xs) n += 1; println(n)
-    for ((x, y) <- xs zip ys) print(x + " "); println
-    for (p @ (x, y) <- xs zip ys) print(p._1 + " "); println
+    for ((x, y) <- xs zip ys) print(s"$x "); println
+    for (p @ (x, y) <- xs zip ys) print(s"${p._1} "); println
 
     // iterators
-    for (x <- it) print(x + " "); println
+    for (x <- it) print(s"$x "); println
     for (x <- it;
-         if x % 2 == 0) print(x + " "); println
+         if x % 2 == 0) print(s"$x "); println
     for {x <- it
-         if x % 2 == 0} print(x + " "); println
+         if x % 2 == 0} print(s"$x "); println
 
     // arrays
-    for (x <- ar) print(x + " "); println
+    for (x <- ar) print(s"$x "); println
     for (x <- ar;
-         if x.toInt > 97) print(x + " "); println
+         if x.toInt > 97) print(s"$x "); println
     for {x <- ar
-         if x.toInt > 97} print(x + " "); println
+         if x.toInt > 97} print(s"$x "); println
 
   }
 
   /////////////////// new syntax ///////////////////
 
-  def testNew {
+  def testNew: Unit = {
     println("\ntestNew")
 
     // lists
     var n = 0
     for (_ <- xs) n += 1; println(n)
-    for ((x, y) <- xs zip ys) print(x + " "); println
-    for (p @ (x, y) <- xs zip ys) print(p._1 + " "); println
+    for ((x, y) <- xs zip ys) print(s"$x "); println
+    for (p @ (x, y) <- xs zip ys) print(s"${p._1} "); println
 
     // iterators
-    for (x <- it) print(x + " "); println
-    for (x <- it if x % 2 == 0) print(x + " "); println
-    for (x <- it; if x % 2 == 0) print(x + " "); println
+    for (x <- it) print(s"$x "); println
+    for (x <- it if x % 2 == 0) print(s"$x "); println
+    for (x <- it; if x % 2 == 0) print(s"$x "); println
     for (x <- it;
-         if x % 2 == 0) print(x + " "); println
+         if x % 2 == 0) print(s"$x "); println
     for (x <- it
-         if x % 2 == 0) print(x + " "); println
+         if x % 2 == 0) print(s"$x "); println
     for {x <- it
-         if x % 2 == 0} print(x + " "); println
+         if x % 2 == 0} print(s"$x "); println
     for (x <- it;
          y = 2
-         if x % y == 0) print(x + " "); println
+         if x % y == 0) print(s"$x "); println
     for {x <- it
          y = 2
-         if x % y == 0} print(x + " "); println
+         if x % y == 0} print(s"$x "); println
 
     // arrays
-    for (x <- ar) print(x + " "); println
+    for (x <- ar) print(s"$x "); println
 
   }
 

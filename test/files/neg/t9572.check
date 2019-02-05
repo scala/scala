@@ -1,7 +1,7 @@
-t9572.scala:3: error: too many elements for tuple: 23, allowed: 22
+t9572.scala:3: error: tuples may not have more than 22 elements, but 23 given
   val term23 = (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23)
-               ^
-t9572.scala:5: error: too many elements for tuple: 23, allowed: 22
+                                                                         ^
+t9572.scala:5: error: tuples may not have more than 22 elements, but 23 given
   val type23: (Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int) = null
-              ^
+                                                                                                       ^
 two errors found

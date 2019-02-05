@@ -16,7 +16,7 @@ class C(x: String) {
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val b1 = new Box1("")
     val b2 = new Box2("")
     val f: Foo = b2

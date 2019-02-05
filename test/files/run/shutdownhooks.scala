@@ -6,7 +6,7 @@ object Test {
 
   def daemon() = {
     val t = new Thread {
-      override def run() {
+      override def run(): Unit = {
         Thread.sleep(10000)
         println("Hallelujah!") // should not see this
       }
@@ -18,7 +18,7 @@ object Test {
 
   def nonDaemon() = {
     val t = new Thread {
-      override def run() {
+      override def run(): Unit = {
         Thread.sleep(100)
         println("Fooblitzky!")
       }

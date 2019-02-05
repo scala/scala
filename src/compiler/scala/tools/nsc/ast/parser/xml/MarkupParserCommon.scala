@@ -1,12 +1,18 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.tools.nsc.ast.parser.xml
+
+import scala.collection.BufferedIterator
 
 /** This is not a public trait - it contains common code shared
  *  between the library level XML parser and the compiler's.
@@ -65,7 +71,7 @@ private[scala] trait MarkupParserCommon {
 
   /** [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'
    */
-  def xEndTag(startName: String) {
+  def xEndTag(startName: String): Unit = {
     xToken('/')
     if (xName != startName)
       errorNoEnd(startName)
@@ -145,11 +151,11 @@ private[scala] trait MarkupParserCommon {
     x
   }
 
-  def xToken(that: Char) {
+  def xToken(that: Char): Unit = {
     if (ch == that) nextch()
     else xHandleError(that, "'%s' expected instead of '%s'".format(that, ch))
   }
-  def xToken(that: Seq[Char]) { that foreach xToken }
+  def xToken(that: Iterable[Char]): Unit = {that foreach xToken }
 
   /** scan [S] '=' [S]*/
   def xEQ() = { xSpaceOpt(); xToken('='); xSpaceOpt() }

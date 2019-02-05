@@ -1,6 +1,6 @@
-t9093.scala:3: error: polymorphic expression cannot be instantiated to expected type;
- found   : [C](f: C)Null
- required: Unit
+t9093.scala:3: error: missing argument list for method apply2 in object Main
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `apply2 _` or `apply2(_)(_)` instead of `apply2`.
   val x: Unit = apply2(0)/*(0)*/
                       ^
 one error found

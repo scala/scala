@@ -1,7 +1,7 @@
 t5702-neg-ugly-xbrace.scala:11: error: bad simple pattern: bad brace or paren after _*
     val <top>{a, z@_*)</top> = xml
                      ^
-t5702-neg-ugly-xbrace.scala:12: error: Missing closing brace `}' assumed here
+t5702-neg-ugly-xbrace.scala:12: error: Missing closing brace `}` assumed here
     println("A for "+ a +", ending with "+ z)
     ^
 t5702-neg-ugly-xbrace.scala:13: error: in XML literal: in XML content, please use '}}' to express '}'

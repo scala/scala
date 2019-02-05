@@ -1,14 +1,21 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2015 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.{Position, RangePosition, StringOps}
-import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.{Settings, interactive}
+import scala.tools.nsc.{CloseableRegistry, Settings, interactive}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.interpreter.Results.{Error, Result}
@@ -55,10 +62,6 @@ trait PresentationCompilation { self: IMain =>
     * You may downcast the `reporter` to `StoreReporter` to access type errors.
     */
   def newPresentationCompiler(): interactive.Global = {
-    def mergedFlatClasspath = {
-      val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings)
-      AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
-    }
     def copySettings: Settings = {
       val s = new Settings(_ => () /* ignores "bad option -nc" errors, etc */)
       s.processArguments(global.settings.recreateArgs, processAll = false)
@@ -67,6 +70,11 @@ trait PresentationCompilation { self: IMain =>
     }
     val storeReporter: StoreReporter = new StoreReporter
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
+      def mergedFlatClasspath = {
+        val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings, closeableRegistry)
+        AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
+      }
+
       override lazy val platform: ThisPlatform = {
         new JavaPlatform {
           lazy val global: self.type = self

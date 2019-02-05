@@ -9,4 +9,4 @@ isAnonymousClass = true
 
 ===== SCALA POV =====
 class 1
-object Foo_1
+class Foo_1

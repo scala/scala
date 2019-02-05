@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
+import scala.collection.mutable
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.NestedClassesCollector
@@ -18,7 +19,10 @@ class Collector extends NestedClassesCollector[String] {
 
 @RunWith(classOf[JUnit4])
 class NestedClassesCollectorTest {
-  val c = new Collector
+  val c = new Collector {
+    override def visitInternalName(internalName: String, offset: Int, length: Int): Unit =
+      innerClasses += internalName.substring(offset, length)
+  }
   def inners: List[String] = {
     val res = c.innerClasses.toList.sorted
     c.innerClasses.clear()
@@ -29,7 +33,7 @@ class NestedClassesCollectorTest {
   def referenceTypeSignatures(): Unit = {
     def ref(sig: String, expect: List[String]) = {
       c.visitFieldSignature(sig)
-      assertEquals(inners, expect)
+      assertEquals(expect, inners)
     }
 
     // TypeVariableSignature
@@ -57,7 +61,7 @@ class NestedClassesCollectorTest {
   def classSignatures(): Unit = {
     def cls(sig: String, expect: List[String]) = {
       c.visitClassSignature(sig)
-      assertEquals(inners, expect)
+      assertEquals(expect, inners)
     }
 
     cls("LA;", List("A"))
@@ -103,13 +107,13 @@ class NestedClassesCollectorTest {
     import scala.collection.JavaConverters._
     val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/rt.jar")
     val fs = FileSystems.newFileSystem(zipfile, null)
-    val root = fs.getRootDirectories.iterator().next()
-    val contents = Files.walk(root).iterator().asScala.toList
+    val root = fs.getRootDirectories.iterator.next()
+    val contents = Files.walk(root).iterator.asScala.toList
     for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
       val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
       c.visitClassSignature(classNode.signature)
-      classNode.methods.iterator().asScala.map(_.signature).foreach(c.visitMethodSignature)
-      classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
+      classNode.methods.iterator.asScala.map(_.signature).foreach(c.visitMethodSignature)
+      classNode.fields.iterator.asScala.map(_.signature).foreach(c.visitFieldSignature)
     }
   }
 
@@ -128,14 +132,14 @@ class NestedClassesCollectorTest {
         val zipfile = Paths.get(path)
         println(path)
         val fs = FileSystems.newFileSystem(zipfile, null)
-        val root = fs.getRootDirectories.iterator().next()
-        val contents = Files.walk(root).iterator().asScala.toList
+        val root = fs.getRootDirectories.iterator.next()
+        val contents = Files.walk(root).iterator.asScala.toList
         for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
           currentClass = f
           val classNode = AsmUtils.classFromBytes(Files.readAllBytes(f))
           c.visitClassSignature(classNode.signature)
-          classNode.methods.iterator().asScala.map(_.signature).foreach(c.visitMethodSignature)
-          classNode.fields.iterator().asScala.map(_.signature).foreach(c.visitFieldSignature)
+          classNode.methods.iterator.asScala.map(_.signature).foreach(c.visitMethodSignature)
+          classNode.fields.iterator.asScala.map(_.signature).foreach(c.visitFieldSignature)
         }
       } catch {
         case t: Throwable =>

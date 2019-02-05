@@ -1,5 +1,7 @@
+import scala.tools.partest.Util.ArrayDeep
+
 object Test extends App {
-  val s0: Stream[Int] = Stream.empty
+  val s0: LazyList[Int] = LazyList.empty
   println(s0.take(1))
   println(s0.takeWhile(_ > 0))
   println(s0.lengthCompare(-5) > 0)
@@ -7,7 +9,7 @@ object Test extends App {
   println(s0.lengthCompare(5) < 0)
   println
 
-  val s1 = Stream.cons(1, Stream.empty)
+  val s1 = LazyList.cons(1, LazyList.empty)
   println(s1.toArray.deep)
   println(s1.take(1))
   println(s1.take(2))
@@ -21,7 +23,7 @@ object Test extends App {
   println(s1.lengthCompare(5) < 0)
   println
 
-  val s2 = s1.append(Stream.cons(2, Stream.empty))
+  val s2 = s1.lazyAppendedAll(LazyList.cons(2, LazyList.empty))
   println(s2.toArray.deep)
   println(s2.drop(1))
   println(s2.drop(2))
@@ -34,7 +36,7 @@ object Test extends App {
   println(s2.lengthCompare(5) < 0)
   println
 
-  val s3 = Stream.range(1, 1000) //100000 (ticket #153: Stackoverflow)
+  val s3 = LazyList.range(1, 1000) //100000 (ticket #153: Stackoverflow)
   println(s3.length)
 
   // ticket #153
@@ -46,21 +48,21 @@ object Test extends App {
   val size = 100000
 
   // test tail recursive methods
-  println(Stream.from(1).take(size).last)
-  println(Stream.from(1).drop(size))
-  println(Stream.from(1).filter(_ > size).take(5))
-  println(Stream.from(1).take(size).forall(_ >= 0))
-  println(Stream.from(1).exists(_ > size))
-  Stream.from(1).take(size).foreach( x => () )
-  println(Stream.from(1).take(size).foldLeft(0)(_ + _))
+  println(LazyList.from(1).take(size).last)
+  println(LazyList.from(1).drop(size))
+  println(LazyList.from(1).filter(_ > size).take(5))
+  println(LazyList.from(1).take(size).forall(_ >= 0))
+  println(LazyList.from(1).exists(_ > size))
+  LazyList.from(1).take(size).foreach( x => () )
+  println(LazyList.from(1).take(size).foldLeft(0)(_ + _))
   val arr = new Array[Int](size)
-  Stream.from(1).take(size).copyToArray(arr, 0)
+  LazyList.from(1).take(size).copyToArray(arr, 0)
 
   println
 
   // ticket #6415
   lazy val x = { println("evaluated"); 1 }
-  val s4 = 0 #:: x #:: Stream.empty
+  val s4 = 0 #:: x #:: LazyList.empty
 
   println(s4.isDefinedAt(0))
 }

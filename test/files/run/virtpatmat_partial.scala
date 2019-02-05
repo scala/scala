@@ -17,7 +17,7 @@ object Test extends App {
     final val GTGTGTEQ: Char = 'f'
     final val ASSIGN  : Char = 'g'
 
-    def acceptClosingAngle(in: Char) {
+    def acceptClosingAngle(in: Char): Unit = {
       val closers: PartialFunction[Char, Char] = {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -44,7 +44,7 @@ object Test extends App {
     final val GTGTGTEQ: Char = 'f'
     final val ASSIGN  : Char = 'g'
 
-    def acceptClosingAngle(in: Char) {
+    def acceptClosingAngle(in: Char): Unit = {
       val closers: PartialFunction[Char, Char] = x => x match {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -71,7 +71,7 @@ object Test extends App {
     final val GTGTGTEQ= 'f'
     final val ASSIGN  = 'g'
 
-    def acceptClosingAngle(in: Char) {
+    def acceptClosingAngle(in: Char): Unit = {
       val closers: PartialFunction[Char, Char] = x => x match {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -98,7 +98,7 @@ object Test extends App {
     final val GTGTGTEQ= 'f'
     final val ASSIGN  = 'g'
 
-    def acceptClosingAngle(in: Char) {
+    def acceptClosingAngle(in: Char): Unit = {
       val closers: PartialFunction[Char, Char] = {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -125,7 +125,7 @@ object Test extends App {
     final val GTGTGTEQ = 6
     final val ASSIGN   = 7
 
-    def acceptClosingAngle(in: Int) {
+    def acceptClosingAngle(in: Int): Unit = {
       val closers: PartialFunction[Int, Int] = x => {println("hai!"); (x + 1)} match {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT
@@ -152,7 +152,7 @@ object Test extends App {
     final val GTGTGTEQ = 6
     final val ASSIGN   = 7
 
-    def acceptClosingAngle(in: Int) {
+    def acceptClosingAngle(in: Int): Unit = {
       val closers: PartialFunction[Int, Int] = {
         case GTGTGTEQ => GTGTEQ
         case GTGTGT   => GTGT

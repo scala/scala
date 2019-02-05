@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package interactive
 package tests
@@ -24,8 +36,8 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
    *        bootclasspath takes precedence over the scala-library used to run the current
    *        test.
    */
-  override protected def prepareSettings(settings: Settings) {
-    def adjustPaths(paths: settings.PathSetting*) {
+  override protected def prepareSettings(settings: Settings): Unit = {
+    def adjustPaths(paths: settings.PathSetting*): Unit = {
       for (p <- paths if argsString.contains(p.name)) p.value = p.value.map {
         case '/' => separatorChar
         case ':' => pathSeparatorChar
@@ -57,10 +69,10 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
     val str = try File(optsFile).slurp() catch {
       case e: java.io.IOException => ""
     }
-    str.lines.filter(!_.startsWith(CommentStartDelimiter)).mkString(" ")
+    str.linesIterator.filter(!_.startsWith(CommentStartDelimiter)).mkString(" ")
   }
 
-  override protected def printClassPath(implicit reporter: Reporter) {
+  override protected def printClassPath(implicit reporter: Reporter): Unit = {
     reporter.println("\toutDir: %s".format(outDir.path))
     reporter.println("\tbaseDir: %s".format(baseDir.path))
     reporter.println("\targsString: %s".format(argsString))

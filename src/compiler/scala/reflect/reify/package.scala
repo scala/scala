@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 
@@ -51,6 +63,9 @@ package object reify {
     import definitions._
     import analyzer.enclosingMacroPosition
 
+    if (global.phase.id >= global.currentRun.erasurePhase.id)
+      devWarning(enclosingMacroPosition, s"reify Class[$tpe0] during ${global.phase.name}")
+
     // scala/bug#7375
     val tpe = tpe0.dealiasWiden
 
@@ -65,13 +80,11 @@ package object reify {
         val componentErasure = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
         gen.mkMethodCall(currentRun.runDefinitions.arrayClassMethod, List(componentErasure))
       case _ =>
-        var erasure = tpe.erasure
-        if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
-        gen.mkNullaryCall(currentRun.runDefinitions.Predef_classOf, List(erasure))
+        gen.mkClassOf(tpe)
     }
   }
 
-  // Note: If  current context is inside the constructor of an object or otherwise not inside
+  // Note: If current context is inside the constructor of an object or otherwise not inside
   // a class/object body, this will return an EmptyTree.
   def reifyEnclosingRuntimeClass(global: Global)(typer0: global.analyzer.Typer): global.Tree = {
     import global._

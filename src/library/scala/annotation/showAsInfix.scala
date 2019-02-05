@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.annotation
 
 /**
@@ -24,4 +36,5 @@ package scala.annotation
   * @param enabled whether to show this type as an infix type operator.
   * @since 2.12.2
   */
+@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
 class showAsInfix(enabled: Boolean = true) extends annotation.StaticAnnotation

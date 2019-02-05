@@ -1,6 +1,19 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect.macros
 package contexts
 
+import scala.reflect.internal.util.FreshNameCreator
 import scala.tools.nsc.reporters.StoreReporter
 
 trait Parsers {
@@ -12,7 +25,9 @@ trait Parsers {
     val oldReporter = global.reporter
     try {
       global.reporter = sreporter
-      val parser = newUnitParser(new CompilationUnit(newSourceFile(code, "<macro>")))
+      val parser = newUnitParser(new CompilationUnit(newSourceFile(code, "<macro>")) {
+        override implicit val fresh: FreshNameCreator = currentFreshNameCreator
+      })
       val tree = gen.mkTreeOrBlock(parser.parseStatsOrPackages())
       sreporter.infos.foreach {
         case sreporter.Info(pos, msg, sreporter.ERROR) => throw ParseException(pos, msg)

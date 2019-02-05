@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+import org.junit.Assert.assertSame
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -46,4 +47,32 @@ class ListTest {
     // real assertion
     Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
   }
+
+  @Test
+  def updated(): Unit = {
+    val xs = 1 :: 2 :: Nil
+    Assert.assertEquals(0 :: 2 :: Nil, xs.updated(index = 0, elem = 0))
+    Assert.assertEquals(1 :: 0 :: Nil, xs.updated(index = 1, elem = 0))
+    try {
+      xs.updated(index = -1, 0)
+      Assert.fail("No exception thrown")
+    } catch {
+      case e: IndexOutOfBoundsException => ()
+    }
+    try {
+      xs.updated(index = 2, 0)
+      Assert.fail("No exception thrown")
+    } catch {
+      case e: IndexOutOfBoundsException => ()
+    }
+  }
+
+  @Test
+  def factoryReuse(): Unit = {
+    val ls = List("a")
+    assertSame(ls, List.apply(ls: _*))
+    assertSame(ls, List.from(ls))
+  }
+
+  @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 }

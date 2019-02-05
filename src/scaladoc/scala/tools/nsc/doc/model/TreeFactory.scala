@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package doc
 package model
@@ -37,7 +49,7 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
           /** Finds the Entity on which we will later create a link on,
            * stores it in tree.refs with its position
            */
-          def makeLink(rhs: Tree){
+          def makeLink(rhs: Tree): Unit ={
             val start = pos.start - firstIndex
             val end = pos.end - firstIndex
             if(start != end) {

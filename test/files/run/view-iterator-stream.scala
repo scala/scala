@@ -2,17 +2,16 @@
 import scala.language.postfixOps
 
 import scala.collection.{ mutable, immutable, generic }
-import collection.TraversableView
 
 object Test {
-  type PerturberFn[T] = TraversableOnce[T] => TraversableOnce[T]
-  lazy val Id = new Perturber(Nil, identity[TraversableOnce[Int]] _) { }
+  type PerturberFn[T] = IterableOnce[T] => IterableOnce[T]
+  lazy val Id = new Perturber(Nil, identity[IterableOnce[Int]] _) { }
   class Perturber(val labels: List[String], val f: PerturberFn[Int]) extends PerturberFn[Int] {
-    def apply(xs: TraversableOnce[Int]): TraversableOnce[Int] = f(xs)
-    def show(xs: TraversableOnce[Int]): String = {
+    def apply(xs: IterableOnce[Int]): IterableOnce[Int] = f(xs)
+    def show(xs: IterableOnce[Int]): String = {
       val res       = f(xs)
       val resString = "" + res
-      val rest      = res.toTraversable
+      val rest      = LazyList.from(res)
       val failed    = (rest take 100).size == 100
 
       "%-45s %-30s %s".format(toString, resString,
@@ -28,19 +27,19 @@ object Test {
     def apply(label: String, f: PerturberFn[Int]) = new Perturber(List(label), f)
   }
 
-  def naturals = Stream from 1
-  val toV : Perturber = Perturber("view", _.toTraversable.view)
-  val toI : Perturber = Perturber("toIterator", _.toIterator)
-  val toS : Perturber = Perturber("toStream", _.toStream)
-  val toIS : Perturber = Perturber("toIndexedSeq", _.toIndexedSeq)
+  def naturals = LazyList from 1
+  val toV : Perturber = Perturber("view", LazyList.from(_).view)
+  val toI : Perturber = Perturber("iterator", _.iterator)
+  val toS : Perturber = Perturber("LazyList.from", LazyList.from(_))
+  val toIS : Perturber = Perturber("IndexedSeq.from", IndexedSeq.from(_))
 
   def p(ps: Perturber*): Perturber = if (ps.isEmpty) Id else ps.reduceLeft(_ and _)
-  def drop(n: Int): Perturber = Perturber("drop " + n, _.toIterator drop n)
-  def take(n: Int): Perturber = Perturber("take " + n, _.toIterator take n)
+  def drop(n: Int): Perturber = Perturber("drop " + n, _.iterator drop n)
+  def take(n: Int): Perturber = Perturber("take " + n, _.iterator take n)
   def slice(from: Int, until: Int): Perturber =
     Perturber(
       "slice(%d, %d)".format(from, until),
-      _.toTraversable.slice(from, until)
+      LazyList.from(_).slice(from, until)
     )
 
   val fns = List[Perturber](toV, toI, toS, toIS)

@@ -11,7 +11,7 @@ class Lazy {
 
 // issue 3307
 class Bug3307 {
-  def f[Z](block: String => Z) {
+  def f[Z](block: String => Z): Unit = {
     block("abc")
   }
 
@@ -34,7 +34,7 @@ class Bug3301 {
 }
 // issue 3299
 object Failure {
-  def thunk() {
+  def thunk(): Unit = {
     for (i <- 1 to 2) {
       val Array(a, b) = Array(1,2)
       ()
@@ -46,7 +46,7 @@ object Failure {
 
 object AA
 {
-    def f(block: => Unit) {}
+    def f(block: => Unit): Unit = {}
 
     object BB
     {
@@ -61,4 +61,4 @@ object AA
 }
 
 // issue 3325
-object O { def f[@specialized T] { for(k <- Nil: List[T]) { } } }
+object O { def f[@specialized T]: Unit = { for(k <- Nil: List[T]) { } } }

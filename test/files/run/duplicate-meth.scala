@@ -1,6 +1,6 @@
 
 trait Base {
-  private val secure_# = 10l
+  private val secure_# = 10L
 }
 
 class TestUser extends Base {
@@ -15,7 +15,7 @@ object TestUser extends TestUser {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     TestUser.objMeth
     // no-op, just check that it passes verification
     println("verified!")

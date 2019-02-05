@@ -1,14 +1,22 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
 package reflect.internal.util
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
+import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
  *  TODO - inlining doesn't work from here because of the bug that
@@ -45,7 +53,7 @@ trait Collections {
    *  but people are branching out in their collections so here's an overload.
    */
   final def mforeach[A](xss: List[List[A]])(f: A => Unit) = xss foreach (_ foreach f)
-  final def mforeach[A](xss: Traversable[Traversable[A]])(f: A => Unit) = xss foreach (_ foreach f)
+  final def mforeach[A](xss: Iterable[Iterable[A]])(f: A => Unit) = xss foreach (_ foreach f)
 
   /** A version of List#map, specialized for List, and optimized to avoid allocation if `as` is empty */
   final def mapList[A, B](as: List[A])(f: A => B): List[B] = if (as eq Nil) Nil else {
@@ -54,10 +62,11 @@ trait Collections {
     var rest = as.tail
     while (rest ne Nil) {
       val next = new ::(f(rest.head), Nil)
-      tail.tl = next
+      tail.next = next
       tail = next
       rest = rest.tail
     }
+    releaseFence()
     head
   }
 
@@ -128,7 +137,9 @@ trait Collections {
         }
       }
     }
-    loop(null, xs, xs, ys)
+    val result = loop(null, xs, xs, ys)
+    releaseFence()
+    result
   }
 
   final def map3[A, B, C, D](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => D): List[D] = {
@@ -151,7 +162,7 @@ trait Collections {
     if (lb eq null) Nil else lb.result
   }
 
-  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Traversable[B]]): List[B] = {
+  final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Iterable[B]]): List[B] = {
     val lb = new ListBuffer[B]
     for (x <- elems ; if pf isDefinedAt x)
       lb ++= pf(x)
@@ -176,7 +187,7 @@ trait Collections {
     xss.isEmpty || xss.head.isEmpty && flattensToEmpty(xss.tail)
   }
 
-  final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit) {
+  final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit): Unit = {
     var index = 0
     var ys = xs
     while (!ys.isEmpty) {
@@ -187,8 +198,8 @@ trait Collections {
   }
 
   // @inline
-  final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {
-    xs find p getOrElse orElse
+  final def findOrElse[A](xs: IterableOnce[A])(p: A => Boolean)(orElse: => A): A = {
+    xs.iterator find p getOrElse orElse
   }
 
   final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
@@ -288,9 +299,44 @@ trait Collections {
     true
   }
 
-  final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
-    if (as.exists (_.isEmpty)) None
-    else Some(as.flatten)
+  // "Opt" suffix or traverse clashes with the various traversers' traverses
+  final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
+  final def traverseOpt[A, B](as: List[A])(f: A => Option[B]): Option[List[B]] =
+    if (as eq Nil) SomeOfNil else {
+      var result: ListBuffer[B] = null
+      var curr = as
+      while (curr ne Nil) {
+        f(curr.head) match {
+          case Some(b) =>
+            if (result eq null) result = ListBuffer.empty
+            result += b
+          case None => return None
+        }
+        curr = curr.tail
+      }
+      Some(result.toList)
+    }
+
+  final def partitionInto[A](xs: List[A], pred: A => Boolean, ayes: ListBuffer[A], nays: ListBuffer[A]): Unit = {
+    var ys = xs
+    while (!ys.isEmpty) {
+      val y = ys.head
+      if (pred(y)) ayes.addOne(y) else nays.addOne(y)
+      ys = ys.tail
+    }
+  }
+
+  final def bitSetByPredicate[A](xs: List[A])(pred: A => Boolean): mutable.BitSet = {
+    val bs = new mutable.BitSet()
+    var ys = xs
+    var i: Int = 0
+    while (! ys.isEmpty){
+      if (pred(ys.head))
+        bs.add(i)
+      ys = ys.tail
+      i += 1
+    }
+    bs
   }
 
   final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {
@@ -298,6 +344,19 @@ trait Collections {
   } catch {
     case _: IllegalArgumentException => None
   }
+
+  /** True if two lists have the same length.  Since calling length on linear sequences
+    *  is O(n), it is an inadvisable way to test length equality.
+    */
+  final def sameLength(xs1: List[_], xs2: List[_]) = compareLengths(xs1, xs2) == 0
+  @tailrec final def compareLengths(xs1: List[_], xs2: List[_]): Int =
+    if (xs1.isEmpty) { if (xs2.isEmpty) 0 else -1 }
+    else if (xs2.isEmpty) 1
+    else compareLengths(xs1.tail, xs2.tail)
+
+  /** Again avoiding calling length, but the lengthCompare interface is clunky.
+    */
+  final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
 }
 
 object Collections extends Collections

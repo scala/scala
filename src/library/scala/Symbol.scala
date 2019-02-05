@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 
@@ -18,7 +22,7 @@ package scala
  *  `Symbol("mysym")`.
  *
  *  @author  Martin Odersky, Iulian Dragos
- *  @version 1.8
+ *  @since   1.7
  */
 final class Symbol private (val name: String) extends Serializable {
   /** Converts this symbol to a string.
@@ -45,10 +49,10 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
   import java.util.WeakHashMap
   import java.util.concurrent.locks.ReentrantReadWriteLock
 
-  private val rwl = new ReentrantReadWriteLock()
-  private val rlock = rwl.readLock
-  private val wlock = rwl.writeLock
-  private val map = new WeakHashMap[K, WeakReference[V]]
+  private[this] val rwl = new ReentrantReadWriteLock()
+  private[this] val rlock = rwl.readLock
+  private[this] val wlock = rwl.writeLock
+  private[this] val map = new WeakHashMap[K, WeakReference[V]]
 
   protected def valueFromKey(k: K): V
   protected def keyFromValue(v: V): Option[K]

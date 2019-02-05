@@ -1,3 +1,5 @@
+import scala.reflect.ClassManifest
+
 // #1435
 object t1435 {
   implicit def a(s:String):String = sys.error("")
@@ -17,7 +19,7 @@ class C1492 {
 
   class X
 
-  def foo(x: X => X) {}
+  def foo(x: X => X): Unit = {}
 
   foo ( implicit x => implicitly[X] )
   foo { implicit x => implicitly[X] }

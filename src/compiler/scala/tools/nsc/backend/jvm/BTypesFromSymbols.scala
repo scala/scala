@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -93,20 +100,16 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     else if (classSym == NullClass) srNullRef
     else {
       val internalName = classSym.javaBinaryNameString
-      cachedClassBType(internalName) match {
-        case Some(bType) =>
-          if (currentRun.compiles(classSym))
-            assert(bType fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
-          bType
-        case None =>
-          // The new ClassBType is added to the map via its apply, before we set its info. This
-          // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-          ClassBType(internalName, true) { res:ClassBType =>
-            if (completeSilentlyAndCheckErroneous(classSym))
-              Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-            else computeClassInfo(classSym, res)
-          }
+      // The new ClassBType is added to the map via its apply, before we set its info. This
+      // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+      val btype = ClassBType(internalName, fromSymbol = true) { res:ClassBType =>
+        if (completeSilentlyAndCheckErroneous(classSym))
+          Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+        else computeClassInfo(classSym, res)
       }
+      if (currentRun.compiles(classSym))
+        assert(btype.fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
+      btype
     }
   }
 
@@ -207,16 +210,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   def implementedInterfaces(classSym: Symbol): List[Symbol] = {
 
-    // scala/bug#9393: java annotations are interfaces, but the classfile / java source parsers make them look like classes.
-    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait || sym.hasJavaAnnotationFlag
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
 
-    val classParents = {
-      val parents = classSym.info.parents
-      // scala/bug#9393: the classfile / java source parsers add Annotation and StaticAnnotation to the
-      // parents of a java annotations. undo this for the backend (where we need classfile-level information).
-      if (classSym.hasJavaAnnotationFlag) parents.filterNot(c => c.typeSymbol == StaticAnnotationClass || c.typeSymbol == AnnotationClass)
-      else parents
-    }
+    val classParents = classSym.info.parents
 
     val minimizedParents = if (classSym.isJavaDefined) classParents else erasure.minimizeParents(classSym, classParents)
     // We keep the superClass when computing minimizeParents to eliminate more interfaces.
@@ -243,14 +239,14 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    *
    * Specialized classes are always considered top-level, see comment in BTypes.
    */
-  private def memberClassesForInnerClassTable(classSymbol: Symbol): List[Symbol] = classSymbol.info.decls.collect({
+  private def memberClassesForInnerClassTable(classSymbol: Symbol): List[Symbol] = List.from(classSymbol.info.decls.iterator.collect({
     case sym if sym.isClass && !considerAsTopLevelImplementationArtifact(sym) =>
       sym
     case sym if sym.isModule && !considerAsTopLevelImplementationArtifact(sym) =>
       val r = exitingPickler(sym.moduleClass)
       assert(r != NoSymbol, sym.fullLocationString)
       r
-  })(collection.breakOut)
+  }))
 
   private def computeClassInfo(classSym: Symbol, classBType: ClassBType): Right[Nothing, ClassInfo] = {
     /**
@@ -561,7 +557,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
     // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
-    val methodInlineInfos = methods.flatMap({
+    val methodInlineInfos = Map.from(methods.iterator.flatMap({
       case methodSym =>
         if (completeSilentlyAndCheckErroneous(methodSym)) {
           // Happens due to scala/bug#9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
@@ -603,7 +599,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           } else
             (signature, info) :: Nil
         }
-    }).toMap
+    }))
 
     InlineInfo(isEffectivelyFinal, sam, methodInlineInfos, warning)
   }
@@ -616,18 +612,16 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    cachedClassBType(internalName).getOrElse {
-      ClassBType(internalName, true) { c: ClassBType =>
-        val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
-        val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
-        Right(ClassInfo(
-          superClass = Some(ObjectRef),
-          interfaces = Nil,
-          flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
-          nestedClasses = nested,
-          nestedInfo = Lazy.eagerNone,
-          inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
-      }
+    ClassBType(internalName, fromSymbol = true) { c: ClassBType =>
+      val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
+      val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
+      Right(ClassInfo(
+        superClass = Some(ObjectRef),
+        interfaces = Nil,
+        flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
+        nestedClasses = nested,
+        nestedInfo = Lazy.eagerNone,
+        inlineInfo = EmptyInlineInfo.copy(isEffectivelyFinal = true))) // no method inline infos needed, scala never invokes methods on the mirror class
     }
   }
 
@@ -653,7 +647,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   /**
    * Return the Java modifiers for the given symbol.
    * Java modifiers for classes:
-   *  - public, abstract, final, strictfp (not used)
+   *  - public, abstract, final
    * for interfaces:
    *  - the same as for classes, without 'final'
    * for fields:
@@ -682,8 +676,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // Note that the presence of the `FINAL` flag on a symbol does not correspond 1:1 to emitting
     // ACC_FINAL in bytecode.
     //
-    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag). Nested
-    // objects don't get the flag to allow overriding (under -Yoverride-objects, scala/bug#5676).
+    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag).
+    // Currently, nested objects don't get the flag (originally, to allow overriding under the now-removed -Yoverride-objects, scala/bug#5676).
+    // TODO: give nested objects the ACC_FINAL flag again, since we won't let them be overridden
     //
     // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
     // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3

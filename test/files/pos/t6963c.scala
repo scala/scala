@@ -1,3 +1,6 @@
+// scalac: -Xmigration:2.9 -Xfatal-warnings
+//
+import collection.Seq
 object Test {
   def f1(x: Any) = x.isInstanceOf[Seq[_]]
   def f2(x: Any) = x match {
@@ -10,7 +13,7 @@ object Test {
     case _            => false
   }
 
-  def f4(x: Any) = x.isInstanceOf[Traversable[_]]
+  def f4(x: Any) = x.isInstanceOf[Iterable[_]]
 
   def f5(x1: Any, x2: Any, x3: AnyRef) = (x1, x2, x3) match {
     case (Some(_: Seq[_]), Nil, _)        => 1

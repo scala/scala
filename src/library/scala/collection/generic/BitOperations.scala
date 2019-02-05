@@ -1,20 +1,24 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
-package scala
-package collection
+package scala.collection
 package generic
 
+
 /** Some bit operations.
- *
- *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
- *  an explanation of unsignedCompare.
- */
+  *
+  *  See [[http://www.drmaciver.com/2008/08/unsigned-comparison-in-javascala/]] for
+  *  an explanation of unsignedCompare.
+  */
 private[collection] object BitOperations {
   trait Int {
     type Int = scala.Int

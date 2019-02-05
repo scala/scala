@@ -71,13 +71,29 @@ trait TryStandard {
 
   def testRecoverSuccess(): Unit = {
     val t = Success(1)
-    t.recover{ case x => assert(false); 99 }
+    val n = t.recover{ case x => assert(false); 99 }
+    assert(n.get == 1)
+  }
+
+  def testRecoverWithSuccess(): Unit = {
+    val t = Success(1)
+    val n = t recoverWith { case _ => assert(false); Success(99) }
+    assert(n.get == 1)
   }
 
   def testRecoverFailure(): Unit = {
     val t = Failure(new Exception("foo"))
     val n = t.recover{ case x => 1 }
     assert(n.get == 1)
+  }
+
+  def testRecoverWithFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+    val recovered = Failure(new Exception("bar"))
+    val n = t.recoverWith{ case _ => Success(1) }
+    assert(n.get == 1)
+    val Failure(f) = t.recoverWith{ case _ => recovered}
+    assert(f eq recovered.exception)
   }
 
   def testFlattenSuccess(): Unit = {
@@ -168,7 +184,9 @@ trait TryStandard {
   testRescueSuccess()
   testRescueFailure()
   testRecoverSuccess()
+  testRecoverWithSuccess()
   testRecoverFailure()
+  testRecoverWithFailure()
   testFlattenSuccess()
   testFailedSuccess()
   testFailedFailure()

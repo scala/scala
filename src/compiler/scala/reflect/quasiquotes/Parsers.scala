@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.reflect
 package quasiquotes
 
@@ -57,8 +69,8 @@ trait Parsers { self: Quasiquotes =>
       override implicit lazy val fresh: FreshNameCreator = new FreshNameCreator(nme.QUASIQUOTE_PREFIX)
 
       // Do not check for tuple arity. The placeholders can support arbitrary tuple sizes.
-      override def makeSafeTupleTerm(trees: List[Tree], offset: Offset): Tree = treeBuilder.makeTupleTerm(trees)
-      override def makeSafeTupleType(trees: List[Tree], offset: Offset): Tree = treeBuilder.makeTupleType(trees)
+      override def makeSafeTupleTerm(trees: List[Tree]): Tree = treeBuilder.makeTupleTerm(trees)
+      override def makeSafeTupleType(trees: List[Tree]): Tree = treeBuilder.makeTupleType(trees)
 
       override val treeBuilder = new ParserTreeBuilder {
         override implicit def fresh: FreshNameCreator = parser.fresh
@@ -94,7 +106,7 @@ trait Parsers { self: Quasiquotes =>
       import treeBuilder.{global => _, unit => _}
 
       // q"def foo($x)"
-      override def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef =
+      override def param(owner: Name, implicitmod: Long, caseParam: Boolean): ValDef =
         if (isHole && lookingAhead { in.token == COMMA || in.token == RPAREN }) {
           ParamPlaceholder(implicitmod, ident())
         } else super.param(owner, implicitmod, caseParam)

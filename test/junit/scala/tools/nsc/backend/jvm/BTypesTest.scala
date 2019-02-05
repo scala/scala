@@ -29,7 +29,7 @@ class BTypesTest extends BytecodeTesting {
   def method = MethodBType(List(oArr, INT, DOUBLE, s), UNIT)
 
   @Test
-  def classBTypesEquality() {
+  def classBTypesEquality(): Unit = {
     val s1 = classBTFS(jls)
     val s2 = classBTFS(jls)
     val o  = classBTFS(jlo)
@@ -40,7 +40,7 @@ class BTypesTest extends BytecodeTesting {
   }
 
   @Test
-  def typedOpcodes() {
+  def typedOpcodes(): Unit = {
     assert(UNIT.typedOpcode(Opcodes.IALOAD)   == Opcodes.IALOAD)
     assert(INT.typedOpcode(Opcodes.IALOAD)    == Opcodes.IALOAD)
     assert(BOOL.typedOpcode(Opcodes.IALOAD)   == Opcodes.BALOAD)
@@ -65,7 +65,7 @@ class BTypesTest extends BytecodeTesting {
   }
 
   @Test
-  def descriptors() {
+  def descriptors(): Unit = {
     assert(o.descriptor == "Ljava/lang/Object;")
     assert(s.descriptor == "Ljava/lang/String;")
     assert(oArr.descriptor == "[Ljava/lang/Object;")
@@ -73,7 +73,7 @@ class BTypesTest extends BytecodeTesting {
   }
 
   @Test
-  def toAsmTypeTest() {
+  def toAsmTypeTest(): Unit = {
     for (t <- List(o, s, oArr, method, INT, UNIT, DOUBLE)) {
       assertEquals(o.descriptor, o.toASMType.getDescriptor)
     }
@@ -218,7 +218,20 @@ class BTypesTest extends BytecodeTesting {
 
   // TODO @lry do more tests
   @Test
-  def maxTypeTest() {
+  def maxTypeTest(): Unit = {
 
+  }
+
+  @Test
+  def arraySubtypeTest(): Unit = global.exitingDelambdafy {
+    val primitives = List(BOOL, CHAR, BYTE, SHORT, INT, FLOAT, LONG, DOUBLE)
+    for (p1 <- primitives; p2 <- primitives) {
+      val a1 = ArrayBType(p1)
+      val a2 = ArrayBType(p2)
+      val expect = p1 == p2
+      assertEquals(s"$a1 $a2", expect, a1.conformsTo(a2).get)
+      assertEquals(s"$a1 $a2", expect, a2.conformsTo(a1).get)
+    }
+    assertTrue(ArrayBType(s).conformsTo(ArrayBType(o)).get)
   }
 }

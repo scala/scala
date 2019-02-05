@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings
+//
 class Foo {
   def foo(l: List[Int]): Int = {
     try l foreach { _ => return 5 }

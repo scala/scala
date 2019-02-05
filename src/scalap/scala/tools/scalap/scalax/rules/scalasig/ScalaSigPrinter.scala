@@ -1,10 +1,14 @@
-/*     ___ ____ ___   __   ___   ___
-**    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2013, LAMP/EPFL
-** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
-**
-*/
-
+/*
+ * Scala classfile decoder (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala.tools.scalap
 package scalax
@@ -23,7 +27,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   case class TypeFlags(printRep: Boolean)
 
-  def printSymbol(symbol: Symbol) {printSymbol(0, symbol)}
+  def printSymbol(symbol: Symbol): Unit = {printSymbol(0, symbol)}
 
   def printSymbolAttributes(s: Symbol, onNewLine: Boolean, indent: => Unit) = s match {
     case t: SymbolInfoSymbol => {
@@ -35,10 +39,10 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     case _ =>
   }
 
-  def printSymbol(level: Int, symbol: Symbol) {
+  def printSymbol(level: Int, symbol: Symbol): Unit = {
     if (!symbol.isLocal &&
             !(symbol.isPrivate && !printPrivates)) {
-      def indent() {for (i <- 1 to level) print("  ")}
+      def indent(): Unit = {for (i <- 1 to level) print("  ")}
 
       printSymbolAttributes(symbol, true, indent)
       symbol match {
@@ -60,7 +64,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case a: AliasSymbol =>
           indent
           printAlias(level, a)
-        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+")=>
+        case t: TypeSymbol if !t.name.matches("_\\$\\d+")=>
           indent
           printTypeSymbol(level, t)
         case s =>
@@ -82,17 +86,17 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
 
-  private def printChildren(level: Int, symbol: Symbol) {
+  private def printChildren(level: Int, symbol: Symbol): Unit = {
     for (child <- symbol.children) printSymbol(level + 1, child)
   }
 
-  def printWithIndent(level: Int, s: String) {
-    def indent() {for (i <- 1 to level) print("  ")}
+  def printWithIndent(level: Int, s: String): Unit = {
+    def indent(): Unit = {for (i <- 1 to level) print("  ")}
     indent
     print(s)
   }
 
-  def printModifiers(symbol: Symbol) {
+  def printModifiers(symbol: Symbol): Unit = {
     // print private access modifier
     if (symbol.isPrivate) print("private ")
     else if (symbol.isProtected) print("protected ")
@@ -117,7 +121,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   private def refinementClass(c: ClassSymbol) = c.name == "<refinement>"
 
-  def printClass(level: Int, c: ClassSymbol) {
+  def printClass(level: Int, c: ClassSymbol): Unit = {
     if (c.name == "<local child>" /*scala.tools.nsc.symtab.StdNames.LOCAL_CHILD.toString()*/ ) {
       print("\n")
     } else {
@@ -160,7 +164,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     }
   }
 
-  def printPackageObject(level: Int, o: ObjectSymbol) {
+  def printPackageObject(level: Int, o: ObjectSymbol): Unit = {
     printModifiers(o)
     print("package ")
     print("object ")
@@ -174,7 +178,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   }
 
-  def printObject(level: Int, o: ObjectSymbol) {
+  def printObject(level: Int, o: ObjectSymbol): Unit = {
     printModifiers(o)
     print("object ")
     print(processName(o.name))
@@ -226,7 +230,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     cont
   }
 
-  def printMethod(level: Int, m: MethodSymbol, indent: () => Unit) {
+  def printMethod(level: Int, m: MethodSymbol, indent: () => Unit): Unit = {
     def cont() = print(" = { /* compiled code */ }")
 
     val n = m.name
@@ -257,7 +261,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     print("\n")
   }
 
-  def printAlias(level: Int, a: AliasSymbol) {
+  def printAlias(level: Int, a: AliasSymbol): Unit = {
     print("type ")
     print(processName(a.name))
     printType(a.infoType, " = ")
@@ -265,7 +269,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     printChildren(level, a)
   }
 
-  def printTypeSymbol(level: Int, t: TypeSymbol) {
+  def printTypeSymbol(level: Int, t: TypeSymbol): Unit = {
     print("type ")
     print(processName(t.name))
     printType(t.infoType)

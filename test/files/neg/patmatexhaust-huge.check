@@ -1,7 +1,0 @@
-patmatexhaust-huge.scala:404: warning: match may not be exhaustive.
-It would fail on the following inputs: C392, C397
-  def f(c: C): Int = c match {
-                     ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

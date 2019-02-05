@@ -24,7 +24,7 @@ object Test extends App {
 
   // anonymous functions
   {
-    def doMod(f: Int => Unit) { f(20) }
+    def doMod(f: Int => Unit): Unit = { f(20) }
     var var1 = 0
     doMod(var1 = _)
     println(var1)
@@ -119,7 +119,7 @@ object Test extends App {
 
 
   // vararg
-  def test5(a: Int, b: Int)(c: Int, d: String*) = a +", "+ d.toList
+  def test5(a: Int, b: Int)(c: Int, d: String*) = s"$a, ${d.toList}"
   println(test5(b = 1, a = 2)(3, "4", "4", "4"))
   println(test5(b = 1, a = 2)(c = 29))
 
@@ -265,7 +265,7 @@ object Test extends App {
 
   // #2290
   def spawn(a: Int, b: => Unit) = { () }
-  def t {
+  def t: Unit = {
     spawn(b = { val ttt = 1; ttt }, a = 0)
   }
 
@@ -276,8 +276,8 @@ object Test extends App {
   case class A2390[T](x: Int) { def copy(a: Int)(b: Int = 0) = 0 }
 
   // #2489
-  class A2489 { def foo { def bar(a: Int = 1) = a; bar(); val u = 0 } }
-  class A2489x2 { def foo { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
+  class A2489 { def foo: Unit = { def bar(a: Int = 1) = a; bar(); val u = 0 } }
+  class A2489x2 { def foo: Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
 
   // a bug reported on the mailing lists, related to #2489
   class Test2489 {
@@ -355,15 +355,15 @@ object Test extends App {
   (new DBLAH())
 
   // deprecated names
-  def deprNam1(@deprecatedName('x) a: Int, @deprecatedName('y) b: Int) = a + b
+  def deprNam1(@deprecatedName("x") a: Int, @deprecatedName("y") b: Int) = a + b
   deprNam1(y = 10, a = 1)
   deprNam1(b = 2, x = 10)
 
   object deprNam2 {
-    def f(@deprecatedName('s) x: String) = 1
+    def f(@deprecatedName("s") x: String) = 1
     def f(s: Object) = 2
 
-    def g(@deprecatedName('x) s: Object) = 3
+    def g(@deprecatedName("x") s: Object) = 3
     def g(s: String) = 4
   }
   println(deprNam2.f(s = "dlf"))
@@ -406,13 +406,13 @@ object Test extends App {
   println(f8177(a = 1, 1))
 
   // DEFINITIONS
-  def test1(a: Int, b: String) = println(a +": "+ b)
-  def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
+  def test1(a: Int, b: String) = println(s"$a: $b")
+  def test2(u: Int, v: Int)(k: String, l: Int) = println(l.toString +": "+ k +", "+ (u + v))
 
-  def test3[T1, T2](a: Int, b: T1)(c: String, d: T2) = println(a +": "+ c +", "+ b +", "+ d)
+  def test3[T1, T2](a: Int, b: T1)(c: String, d: T2) = println(a.toString +": "+ c +", "+ b +", "+ d)
 
   def test4(a: Int) = {
-    def inner(b: Int = a, c: String) = println(b +": "+ c)
+    def inner(b: Int = a, c: String) = println(b.toString +": "+ c)
     inner(c = "/")
   }
   def test5(argName: Unit) = println("test5")
@@ -425,13 +425,13 @@ object Test extends App {
 
 
 class Base {
-  def test1[T1, T2](a: Int = 100, b: T1)(c: T2, d: String = a +": "+ b)(e: T2 = c, f: Int) =
-    println(a +": "+ d +", "+ b +", "+ c +", "+ e +", "+ f)
+  def test1[T1, T2](a: Int = 100, b: T1)(c: T2, d: String = a.toString +": "+ b)(e: T2 = c, f: Int) =
+    println(a.toString +": "+ d +", "+ b +", "+ c +", "+ e +", "+ f)
 }
 
 class Sub1 extends Base {
   override def test1[U1, U2](b: Int, a: U1)(m: U2, r: String = "overridden")(o: U2, f: Int = 555) =
-    println(b +": "+ r +", "+ a +", "+ m +", "+ o +", "+ f)
+    println(b.toString +": "+ r +", "+ a +", "+ m +", "+ o +", "+ f)
 }
 
 

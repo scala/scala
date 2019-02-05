@@ -1,9 +1,0 @@
-not-possible-cause.scala:2: error: type mismatch;
- found   : a.type (with underlying type A)
- required: AnyRef
-Note that A is bounded only by Equals, which means AnyRef is not a known parent.
-Such types can participate in value classes, but instances
-cannot appear in singleton types or in reference comparisons.
-  def foo[A <: Product](a: A) { type X = a.type }
-                                         ^
-one error found

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // Copyright 2005-2017 LAMP/EPFL and Lightbend, Inc.
 
 package scala.tools.nsc.interpreter.shell
@@ -9,7 +21,7 @@ import java.util.concurrent.TimeUnit
 import scala.PartialFunction.{cond => when}
 import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
-import scala.language.{existentials, implicitConversions}
+import scala.language.implicitConversions
 import scala.util.Properties.jdkHome
 import scala.reflect.classTag
 import scala.reflect.internal.util.ScalaClassLoader._
@@ -98,7 +110,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     intp.reporter.withoutTruncating { intp.reporter.printMessage(msg) }
   }
 
-
   import scala.tools.nsc.interpreter.ReplStrings.{words, string2codeQuoted}
 
   def welcome = enversion(welcomeString)
@@ -108,8 +119,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     replinfo(s"[info] started at ${new java.util.Date}")
     if (!welcome.isEmpty) echo(welcome)
   }
-
-
 
   def history = in.history
 
@@ -133,7 +142,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     *
     * Used by sbt.
     */
-  def closeInterpreter() {
+  def closeInterpreter(): Unit = {
     if (intp ne null) {
       intp.close()
       intp = null
@@ -171,7 +180,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
 
   /** Search the history */
-  def searchHistory(_cmdline: String) {
+  def searchHistory(_cmdline: String): Unit = {
     val cmdline = _cmdline.toLowerCase
     val offset  = history.index - history.size + 1
 
@@ -183,6 +192,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   /** Standard commands **/
   lazy val standardCommands = List(
+    cmd("completions", "<string>", "output completions for the given string", completionsCommand),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
@@ -300,7 +310,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       case "" => ":type [-v] <expression>. see also :help kind"
       case s  =>
         val verbose = s startsWith "-v "
-        val (sig, verboseSig) = intp.typeCommandInternal(s stripPrefix "-v " trim, verbose)
+        val (sig, verboseSig) = intp.typeCommandInternal(s.stripPrefix("-v ").trim, verbose)
         if (verbose) echoCommandMessage("// Type signature")
         echoCommandMessage(sig)
         if (!verboseSig.isEmpty) echoCommandMessage("\n// Internal Type structure\n"+ verboseSig)
@@ -351,7 +361,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   private def kindCommand(expr: String): Result = {
     expr.trim match {
       case "" => s":kind $kindUsage"
-      case s  => intp.kindCommandInternal(s stripPrefix "-v " trim, verbose = s startsWith "-v ")
+      case s  => intp.kindCommandInternal(s.stripPrefix("-v ").trim, verbose = s.startsWith("-v "))
     }
   }
 
@@ -515,10 +525,15 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   def replay(): Unit = {
     if (replayCommandStack.isEmpty)
       echo("Nothing to replay.")
-    else for (cmd <- replayCommands) {
-      echo("Replaying: " + cmd)  // flush because maybe cmd will have its own output
-      command(cmd)
-      echo("")
+    else {
+      val reprompt = "replay> "
+      intp.reporter.indenting(reprompt.length) {
+        for (cmd <- replayCommands) {
+          echo(s"$reprompt$cmd")
+          command(cmd)
+          echo("") // flush because maybe cmd will have its own output
+        }
+      }
     }
   }
   /** `reset` the interpreter in an attempt to start fresh.
@@ -543,12 +558,35 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     else if (intp.updateSettings(words(line))) run(destructive = true)
   }
   /** Resets without announcements. */
-  def reset() {
+  def reset(): Unit = {
     intp.reset()
     unleashAndSetPhase()
   }
 
   def lineCommand(what: String): Result = editCommand(what, None)
+
+  def newCompleter(): ReplCompletion =
+    new ReplCompletion(intp) {
+      override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
+        if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
+        else None
+    }
+
+  def completionsCommand(what: String): Result = {
+    val completions = newCompleter().complete(what, what.length)
+    val prefix = if (completions == NoCompletions) "" else what.substring(0, completions.cursor)
+
+    val completionLines =
+      completions.candidates.map { c =>
+        s"[completions] $prefix$c"
+      }
+
+    if (completionLines.nonEmpty) {
+      echo(completionLines.mkString("\n"))
+    }
+
+    Result.default // never record completions
+  }
 
   // :edit id or :edit line
   def editCommand(what: String): Result = editCommand(what, ShellConfig.EDITOR)
@@ -567,7 +605,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
               tmp.safeSlurp() match {
                 case Some(edited) if edited.trim.isEmpty => echo("Edited text is empty.")
                 case Some(edited) =>
-                  echo(edited.lines map ("+" + _) mkString "\n")
+                  echo(edited.linesIterator map ("+" + _) mkString "\n")
                   val res = intp interpret edited
                   if (res == Incomplete) diagnose(edited)
                   else {
@@ -633,20 +671,22 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   def withFile[A](filename: String)(action: File => A): Option[A] = intp.withLabel(filename) {
     val res = Some(File(filename)) filter (_.exists) map action
-    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename' does not exist.")  // courtesy side-effect
+    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename` does not exist.")  // courtesy side-effect
     res
   }
 
   def loadCommand(arg: String): Result = {
-    def run(file: String, verbose: Boolean) = withFile(file) { f =>
+    import scala.tools.cmd.CommandLineParser
+    def run(file: String, args: List[String], verbose: Boolean) = withFile(file) { f =>
+      intp.interpret(s"val args: Array[String] = ${ args.map("\"" + _ + "\"").mkString("Array(", ",", ")") }")
       interpretAllFrom(f, verbose)
       Result recording s":load $arg"
     } getOrElse Result.default
 
-    words(arg) match {
-      case "-v" :: file :: Nil => run(file, verbose = true)
-      case file :: Nil         => run(file, verbose = false)
-      case _                   => echo("usage: :load -v file") ; Result.default
+    CommandLineParser.tokenize(arg) match {
+      case "-v" :: file :: rest => run(file, rest, verbose = true)
+      case file :: rest         => run(file, rest, verbose = false)
+      case _                    => echo("usage: :load -v file") ; Result.default
     }
   }
 
@@ -730,7 +770,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       }
     }
 
-  def asyncEcho(async: Boolean, msg: => String) {
+  def asyncEcho(async: Boolean, msg: => String): Unit = {
     if (async) asyncMessage(msg)
     else echo(msg)
   }
@@ -801,7 +841,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
         val text = (
           margin filter (_.nonEmpty) map {
-            case "-" => input.lines map (_.trim) mkString "\n"
+            case "-" => input.linesIterator map (_.trim) mkString "\n"
             case m   => input stripMargin m.head   // ignore excess chars in "<<||"
           } getOrElse input
         ).trim
@@ -815,15 +855,16 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     }
     def compileCode() = paste.compilePaste(label = label, code = code)
 
-    if (code.nonEmpty) {
-      if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
-    }
+    if (code.nonEmpty)
+      intp.reporter.indenting(0) {
+        if (raw || paste.isPackaged(code)) compileCode() else interpretCode()
+      }
     result
   }
 
-  private val continueText   = {
+  private val continueText = {
     val text   = enversion(continueString)
-    val margin = promptText.lines.toList.last.length - text.length
+    val margin = promptText.linesIterator.toList.last.length - text.length
     if (margin > 0) " " * margin + text else text
   }
 
@@ -920,10 +961,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   /** Actions to cram in parallel while collecting first user input at prompt.
     * Run with output muted both from ILoop and from the intp reporter.
     */
-  private def interpretPreamble = {
+  private def interpretPreamble() = {
     // Bind intp somewhere out of the regular namespace where
     // we can get at it in generated code.
-    intp.quietBind(intp.namedParam[Repl]("$intp", intp)(tagOfRepl, classTag[Repl]))
+    intp.quietBind(intp.namedParam[Repl](s"$$intp", intp)(tagOfRepl, classTag[Repl]))
 
     // Auto-run code via some setting.
     (config.replAutorunCode.option
@@ -947,7 +988,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   /** Start an interpreter with the given settings.
    *  @return true if successful
    */
-  def run(interpreterSettings: Settings): Boolean = savingContextLoader {
+  def run(interpreterSettings: Settings): Boolean = {
     if (!batchMode) printWelcome()
 
     in = defaultIn
@@ -956,7 +997,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     val firstLine =
       SplashLoop.readLine(in, prompt) {
         if (intp eq null) createInterpreter(interpreterSettings)
-        intp.reporter.withoutPrintingResults {
+        intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
           intp.initializeCompiler()
           interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
@@ -971,14 +1012,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
           // enable TAB completion (we do this before blocking on input from the splash loop,
           // so that it can offer tab completion as soon as we're ready).
           if (doCompletion)
-            in.initCompletion(new ReplCompletion(intp) {
-              override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
-                if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
-                else None
-            })
+            in.initCompletion(newCompleter())
 
-        }
-      } orNull // null is used by readLine to signal EOF (`loop` will exit)
+        })
+      }.orNull // null is used by readLine to signal EOF (`loop` will exit)
 
     // start full loop (if initialization was successful)
     try
@@ -994,6 +1031,25 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): Repl = repl.intp
+
+  def testConfig(settings: Settings) =
+    new ShellConfig {
+      private val delegate = ShellConfig(settings)
+
+      val filesToPaste: List[String] = delegate.filesToPaste
+      val filesToLoad: List[String] = delegate.filesToLoad
+      val batchText: String = delegate.batchText
+      val batchMode: Boolean = delegate.batchMode
+      val doCompletion: Boolean = delegate.doCompletion
+      val haveInteractiveConsole: Boolean = delegate.haveInteractiveConsole
+
+      // No truncated output, because the result changes on Windows because of line endings
+      override val maxPrintString = {
+        val p = sys.Prop[Int]("wtf")
+        p.set("0")
+        p
+      }
+    }
 
   // Designed primarily for use by test code: take a String with a
   // bunch of code, and prints out a transcript of what it would look
@@ -1026,7 +1082,7 @@ object ILoop {
           }
         }
 
-        val config = ShellConfig(settings)
+        val config = testConfig(settings)
         val repl = new ILoop(config, input, output) {
           // remove welcome message as it has versioning info (for reproducible test results),
           override def welcome = ""
@@ -1062,5 +1118,5 @@ object ILoop {
       }
     }
   }
-  def run(lines: List[String]): String = run(lines map (_ + "\n") mkString)
+  def run(lines: List[String]): String = run(lines.mkString("", "\n", "\n"))
 }

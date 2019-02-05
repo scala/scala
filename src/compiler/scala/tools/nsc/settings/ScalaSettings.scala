@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 // $Id$
 
 package scala
@@ -9,11 +17,13 @@ package tools
 package nsc
 package settings
 
-import scala.language.existentials
+import java.util.zip.Deflater
 
+import scala.language.existentials
 import scala.annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
+import scala.reflect.internal.util.StringContextStripMarginOps
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings
@@ -29,14 +39,8 @@ trait ScalaSettings extends AbsScalaSettings
    */
   protected def defaultClasspath = Option(System.getenv("CLASSPATH")).getOrElse(".")
 
-  /** Enabled under -Xexperimental. */
-  protected def experimentalSettings = List[BooleanSetting](YpartialUnification)
-
-  /** Enabled under -Xfuture. */
-  protected def futureSettings = List[BooleanSetting]()
-
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
-  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
+  def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Is an info setting set? Any -option:help? */
   def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.exists(_.isHelping)
@@ -46,27 +50,27 @@ trait ScalaSettings extends AbsScalaSettings
 
   val jvmargs  = PrefixSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
   val defines  = PrefixSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")
-  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "")
-  val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.")
+  /*val toolcp =*/ PathSetting("-toolcp", "Add to the runner classpath.", "") withAbbreviation "--tool-class-path"
+  val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.") withAbbreviation "--no-boot-class-path"
 
   /**
    *  Standard settings
    */
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
+  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
   val d             = OutputSetting     (outputDirs, ".")
-  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
+  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.") withAbbreviation "--no-specialization"
 
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
   object languageFeatures extends MultiChoiceEnumeration {
     val dynamics            = Choice("dynamics",            "Allow direct or indirect subclasses of scala.Dynamic")
-    val postfixOps          = Choice("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList'")
-    val reflectiveCalls     = Choice("reflectiveCalls",     "Allow reflective access to members of structural types")
-    val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
-    val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
     val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
+    val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
+    val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
+    val postfixOps          = Choice("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList` (not recommended)")
+    val reflectiveCalls     = Choice("reflectiveCalls",     "Allow reflective access to members of structural types")
     val macros              = Choice("experimental.macros", "Allow macro definition (besides implementation and application)")
   }
   val language      = {
@@ -76,8 +80,17 @@ trait ScalaSettings extends AbsScalaSettings
       helpArg = "feature",
       descr   = description,
       domain  = languageFeatures
-    )
+    ) withAbbreviation "--language"
   }
+  val release = StringSetting("-release", "release", "Compile for a specific version of the Java platform. Supported targets: 6, 7, 8, 9", "").withPostSetHook { (value: StringSetting) =>
+    if (value.value != "" && !scala.util.Properties.isJavaAtLeast("9")) {
+      errorFn.apply("-release is only supported on Java 9 and higher")
+    } else {
+      // TODO validate numeric value
+      // TODO validate release <= java.specification.version
+    }
+  } withAbbreviation "--release"
+  def releaseValue: Option[String] = Option(release.value).filter(_ != "")
 
   /*
    * The previous "-source" option is intended to be used mainly
@@ -91,6 +104,8 @@ trait ScalaSettings extends AbsScalaSettings
   def isScala213: Boolean = source.value >= version213
   private[this] val version214 = ScalaVersion("2.14.0")
   def isScala214: Boolean = source.value >= version214
+  private[this] val version300 = ScalaVersion("3.0.0")
+  def isScala300: Boolean = source.value >= version300
 
   /**
    * -X "Advanced" settings
@@ -109,7 +124,6 @@ trait ScalaSettings extends AbsScalaSettings
   val logReflectiveCalls = BooleanSetting      ("-Xlog-reflective-calls", "Print a message when a reflective method call is generated")
   val logFreeTerms       = BooleanSetting      ("-Xlog-free-terms", "Print a message when reification creates a free term.")
   val logFreeTypes       = BooleanSetting      ("-Xlog-free-types", "Print a message when reification resorts to generating a free type.")
-  val maxClassfileName   = IntSetting          ("-Xmax-classfile-name", "Maximum filename length for generated classes", 255, Some((72, 255)), _ => None)
   val maxerrs            = IntSetting          ("-Xmaxerrs", "Maximum errors to print", 100, None, _ => None)
   val maxwarns           = IntSetting          ("-Xmaxwarns", "Maximum warnings to print", 100, None, _ => None)
   val Xmigration         = ScalaVersionSetting ("-Xmigration", "version", "Warn about constructs whose behavior may have changed since version.", initial = NoScalaVersion, default = Some(AnyScalaVersion))
@@ -124,7 +138,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xprint             = PhasesSetting       ("-Xprint", "Print out program after")
   val Xprintpos          = BooleanSetting      ("-Xprint-pos", "Print tree positions, as offsets.")
   val printtypes         = BooleanSetting      ("-Xprint-types", "Print tree types (debugging option).")
-  val printArgs          = BooleanSetting      ("-Xprint-args", "Print all compiler arguments and exit.")
+  val printArgs          = StringSetting       ("-Xprint-args", "file", "Print all compiler arguments to the specified location. Use - to echo to the reporter.", "-")
   val prompt             = BooleanSetting      ("-Xprompt", "Display a prompt after each error (debugging option).")
   val resident           = BooleanSetting      ("-Xresident", "Compiler stays resident: read source filenames from standard input.")
   val script             = StringSetting       ("-Xscript", "object", "Treat the source file as a script and wrap it in a main method.", "")
@@ -134,11 +148,9 @@ trait ScalaSettings extends AbsScalaSettings
   val showPhases         = BooleanSetting      ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
-  val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
   val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.13"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
-  val XfullLubs         = BooleanSetting ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
 
   val XmixinForceForwarders = ChoiceSetting(
     name    = "-Xmixin-force-forwarders",
@@ -180,8 +192,6 @@ trait ScalaSettings extends AbsScalaSettings
   /**
    * -Y "Private" settings
    */
-  val overrideObjects = BooleanSetting    ("-Yoverride-objects", "Allow member objects to be overridden.")
-  val overrideVars    = BooleanSetting    ("-Yoverride-vars", "Allow vars to be overridden.")
   val Yhelp           = BooleanSetting    ("-Y", "Print a synopsis of private options.")
   val breakCycles     = BooleanSetting    ("-Ybreak-cycles", "Attempt to break cycles encountered during typing")
   val browse          = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
@@ -195,8 +205,30 @@ trait ScalaSettings extends AbsScalaSettings
   val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig   = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
   val noimports       = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
+                       .withPostSetHook(bs => if (bs) imports.value = Nil)
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
-  val noAdaptedArgs   = BooleanSetting    ("-Yno-adapted-args", "Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.")
+                       .withPostSetHook(bs => if (bs && !noimports) imports.value = "java.lang" :: "scala" :: Nil)
+  val imports         = MultiStringSetting(name="-Yimports", arg="import", descr="Custom root imports, default is `java.lang,scala,scala.Predef`.", helpText=Some(
+  sm"""|Specify a list of packages and objects to import from as "root" imports.
+       |Root imports form the root context in which all Scala source is evaluated.
+       |The names supplied to `-Yimports` must be fully-qualified.
+       |
+       |For example, the default scala.Predef results in an `import scala.Predef._`.
+       |Ordinary access and scoping rules apply. Root imports increase the scoping
+       |depth, so that later root imports shadow earlier ones. In addition,
+       |names bound by root imports have lowest binding precedence, so that they
+       |cannot induce ambiguities in user code, where definitions and imports
+       |always have a higher precedence. Root imports are imports of last resort.
+       |
+       |By convention, an explicit import from a root import object such as
+       |Predef disables that root import for the current source file. The import
+       |is disabled when the import expression is compiled, so, also by convention,
+       |the import should be placed early in source code order. The textual name
+       |in the import does not need to match the value of `-Yimports`; the import
+       |works in the usual way, subject to renames and name binding precedence.
+       |
+    """
+  ))
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")
   val XshowtreesCompact
@@ -212,31 +244,55 @@ trait ScalaSettings extends AbsScalaSettings
   val stopAfter       = PhasesSetting     ("-Ystop-after", "Stop after") withAbbreviation ("-stop") // backward compat
   val stopBefore      = PhasesSetting     ("-Ystop-before", "Stop before")
   val Yrangepos       = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
-  val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", "Show start and end positions of members", "") withPostSetHook (_ => Yrangepos.value = true)
+  val Yvalidatepos    = PhasesSetting     ("-Yvalidate-pos", s"Validate positions after the given phases (implies ${Yrangepos.name})") withPostSetHook (_ => Yrangepos.value = true)
+  val Ymemberpos      = StringSetting     ("-Yshow-member-pos", "output style", s"Show start and end positions of members (implies ${Yrangepos.name})", "") withPostSetHook (_ => Yrangepos.value = true)
   val Yreifycopypaste = BooleanSetting    ("-Yreify-copypaste", "Dump the reified trees in copypasteable representation.")
   val Ymacroexpand    = ChoiceSetting     ("-Ymacro-expand", "policy", "Control expansion of macros, useful for scaladoc and presentation compiler.", List(MacroExpand.Normal, MacroExpand.None, MacroExpand.Discard), MacroExpand.Normal)
   val Ymacronoexpand  = BooleanSetting    ("-Ymacro-no-expand", "Don't expand macros. Might be useful for scaladoc and presentation compiler, but will crash anything which uses macros and gets past typer.") withDeprecationMessage(s"Use ${Ymacroexpand.name}:${MacroExpand.None}") withPostSetHook(_ => Ymacroexpand.value = MacroExpand.None)
-  val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
+  val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
+  val YmacroAnnotations = BooleanSetting  ("-Ymacro-annotations", "Enable support for macro annotations, formerly in macro paradise.")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects")
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
-  val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overridden methods.")
+  @deprecated("Unused setting will be removed", since="2.13")
+  val Yreplsync       = new BooleanSetting    ("-Yrepl-sync", "Legacy setting for sbt compatibility, unused.").internalOnly()
+  val Yscriptrunner   = StringSetting     ("-Yscriptrunner", "classname", "Specify a scala.tools.nsc.ScriptRunner (default, resident, shutdown, or a class name).", "default")
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
-  val YpartialUnification = BooleanSetting ("-Ypartial-unification", "Enable partial unification in type constructor inference")
-  val Yvirtpatmat     = BooleanSetting    ("-Yvirtpatmat", "Enable pattern matcher virtualization")
+  val YcachePluginClassLoader  = CachePolicy.setting("plugin", "compiler plugins")
+  val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
+
+  val YmacroClasspath = PathSetting       ("-Ymacro-classpath", "The classpath used to reflectively load macro implementations, default is the compilation classpath.", "")
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
+  val YaddBackendThreads = IntSetting   ("-Ybackend-parallelism", "maximum worker threads for backend", 1, Some((1,16)), (x: String) => None )
+  val YmaxQueue = IntSetting   ("-Ybackend-worker-queue", "backend threads worker queue size", 0, Some((0,1000)), (x: String) => None )
+  val YjarCompressionLevel = IntSetting("-Yjar-compression-level", "compression level to use when writing jar files",
+    Deflater.DEFAULT_COMPRESSION, Some((Deflater.DEFAULT_COMPRESSION,Deflater.BEST_COMPRESSION)), (x: String) => None)
+
+  sealed abstract class CachePolicy(val name: String, val help: String)
+  object CachePolicy {
+    def setting(style: String, styleLong: String) = ChoiceSetting(s"-Ycache-$style-class-loader", "policy", s"Policy for caching class loaders for $styleLong that are dynamically loaded.", values.map(_.name), None.name, values.map(_.help))
+    object None extends CachePolicy("none", "Don't cache class loader")
+    object LastModified extends CachePolicy("last-modified", "Cache class loader, using file last-modified time to invalidate")
+    // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
+    // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
+    def values: List[CachePolicy] = List(None, LastModified)
+  }
+
   object optChoices extends MultiChoiceEnumeration {
-    val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
-    val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
-    val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
-    val copyPropagation         = Choice("copy-propagation",          "Eliminate redundant local variables and unused values (including closures). Enables unreachable-code.")
-    val redundantCasts          = Choice("redundant-casts",           "Eliminate redundant casts using a type propagation analysis.")
-    val boxUnbox                = Choice("box-unbox",                 "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
-    val nullnessTracking        = Choice("nullness-tracking",         "Track nullness / non-nullness of local variables and apply optimizations.")
-    val closureInvocations      = Choice("closure-invocations" ,      "Rewrite closure invocations to the implementation method.")
-    val inline                  = Choice("inline",                    "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
+    val unreachableCode         = Choice("unreachable-code",            "Eliminate unreachable code, exception handlers guarding no instructions, redundant metadata (debug information, line numbers).")
+    val simplifyJumps           = Choice("simplify-jumps",              "Simplify branching instructions, eliminate unnecessary ones.")
+    val compactLocals           = Choice("compact-locals",              "Eliminate empty slots in the sequence of local variables.")
+    val copyPropagation         = Choice("copy-propagation",            "Eliminate redundant local variables and unused values (including closures). Enables unreachable-code.")
+    val redundantCasts          = Choice("redundant-casts",             "Eliminate redundant casts using a type propagation analysis.")
+    val boxUnbox                = Choice("box-unbox",                   "Eliminate box-unbox pairs within the same method (also tuples, xRefs, value class instances). Enables unreachable-code.")
+    val nullnessTracking        = Choice("nullness-tracking",           "Track nullness / non-nullness of local variables and apply optimizations.")
+    val closureInvocations      = Choice("closure-invocations" ,        "Rewrite closure invocations to the implementation method.")
+    val allowSkipCoreModuleInit = Choice("allow-skip-core-module-init", "Allow eliminating unused module loads for core modules of the standard library (e.g., Predef, ClassTag).")
+    val assumeModulesNonNull    = Choice("assume-modules-non-null",     "Assume loading a module never results in null (happens if the module is accessed in its super constructor).")
+    val allowSkipClassLoading   = Choice("allow-skip-class-loading",    "Allow optimizations that can skip or delay class loading.")
+    val inline                  = Choice("inline",                      "Inline method invocations according to -Yopt-inline-heuristics and -opt-inline-from.")
 
     // note: unlike the other optimizer levels, "l:none" appears up in the `opt.value` set because it's not an expanding option (expandsTo is empty)
     val lNone = Choice("l:none",
@@ -248,7 +304,7 @@ trait ScalaSettings extends AbsScalaSettings
       "Enable default optimizations: " + defaultChoices.mkString("", ",", "."),
       expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations)
+    private val methodChoices = List(unreachableCode, simplifyJumps, compactLocals, copyPropagation, redundantCasts, boxUnbox, nullnessTracking, closureInvocations, allowSkipCoreModuleInit, assumeModulesNonNull, allowSkipClassLoading)
     val lMethod = Choice(
       "l:method",
       "Enable intra-method optimizations: " + methodChoices.mkString("", ",", "."),
@@ -297,6 +353,9 @@ trait ScalaSettings extends AbsScalaSettings
   def optBoxUnbox                = optEnabled(optChoices.boxUnbox)
   def optNullnessTracking        = optEnabled(optChoices.nullnessTracking)
   def optClosureInvocations      = optEnabled(optChoices.closureInvocations)
+  def optAllowSkipCoreModuleInit = optEnabled(optChoices.allowSkipCoreModuleInit)
+  def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
+  def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
   def optInlinerEnabled          = optEnabled(optChoices.inline)
 
   // deprecated inliner levels
@@ -305,6 +364,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
+  def optUseAnalyzerCache        = opt.isSetByUser && !optNone && (optBuildCallGraph || opt.value.size > 1)
 
   val optInlineFrom = MultiStringSetting(
     "-opt-inline-from",
@@ -372,29 +432,19 @@ trait ScalaSettings extends AbsScalaSettings
 
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
-  import scala.reflect.internal.util.Statistics
-  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }
-  val Ystatistics = {
-    val description = "Print compiler statistics for specific phases"
-    MultiChoiceSetting(
-      name    = "-Ystatistics",
-      helpArg = "phase",
-      descr   = description,
-      domain  = YstatisticsPhases,
-      default = Some(List("_"))
-    )
-  }
-  override def YstatisticsEnabled = Ystatistics.value.nonEmpty
+  val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm").withPostSetHook(s => YstatisticsEnabled.value = s.value.nonEmpty)
+  val YstatisticsEnabled = BooleanSetting("-Ystatistics-enabled", "Internal setting, indicating that statistics are enabled for some phase.").internalOnly()
 
-  val YhotStatistics = BooleanSetting("-Yhot-statistics-enabled", s"Enable `${Ystatistics.name}` to print hot statistics.")
-  override def YhotStatisticsEnabled = YhotStatistics.value
+  val YhotStatisticsEnabled = BooleanSetting("-Yhot-statistics", s"Enable `${Ystatistics.name}` to also print hot statistics.")
 
   val YprofileEnabled = BooleanSetting("-Yprofile-enabled", "Enable profiling.")
-  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "where to send profiling output - specify a file, default is to the console.", "").
+  val YprofileDestination = StringSetting("-Yprofile-destination", "file", "Profiling output - specify a file or `-` for console.", "").
+    withPostSetHook( _ => YprofileEnabled.value = true )
+  val YprofileTrace = StringSetting("-Yprofile-trace", "file", "Capture trace of compilation in Chrome Trace format", "profile.trace").
     withPostSetHook( _ => YprofileEnabled.value = true )
   val YprofileExternalTool = PhasesSetting("-Yprofile-external-tool", "Enable profiling for a phase using an external tool hook. Generally only useful for a single phase", "typer").
     withPostSetHook( _ => YprofileEnabled.value = true )
-  val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or *", "_").
+  val YprofileRunGcBetweenPhases = PhasesSetting("-Yprofile-run-gc", "Run a GC between phases - this allows heap size to be accurate at the expense of more time. Specify a list of phases, or all", "_").
     withPostSetHook( _ => YprofileEnabled.value = true )
 
 
@@ -416,7 +466,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   /** Groups of Settings.
    */
-  val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
+  val future        = BooleanSetting("-Xfuture", "Deprecated. The future is now.").withDeprecationMessage("Use -Xsource instead.")
   val optimise      = BooleanSetting("-optimise", "Compiler flag for the optimizer in Scala 2.11")
     .withAbbreviation("-optimize")
     .withDeprecationMessage("In 2.12, -optimise enables -opt:l:inline -opt-inline-from:**. Check -opt:help for using the Scala 2.12 optimizer.")
@@ -424,7 +474,8 @@ trait ScalaSettings extends AbsScalaSettings
       opt.enable(optChoices.lInline)
       optInlineFrom.value = List("**")
     })
-  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
+  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions in Scala 2.12 and earlier.")
+    .withDeprecationMessage(s"In 2.13 all options previously enabled by -Xexperimental are enabled by default or removed.")
 
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")

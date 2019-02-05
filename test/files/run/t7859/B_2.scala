@@ -9,28 +9,28 @@ object B {
 //
 // See also scala/bug#6601.
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     unboxA
     unboxA1
     unboxA2
     unboxB
   }
 
-  def unboxA {
+  def unboxA: Unit = {
     val o: Some[A] = Some(A.Const)
     val a = o.get
     def id(a: A): A = a
     id(a)
   }
 
-  def unboxA1 {
+  def unboxA1: Unit = {
     val o: Some[A1] = Some(new A1(0))
     val a = o.get
     def id(a: A1): A1 = a
     id(a)
   }
 
-  def unboxA2 {
+  def unboxA2: Unit = {
     import p.A2
     val o: Some[A2] = Some(new A2(0))
     val a = o.get
@@ -38,7 +38,7 @@ object Test {
     id(a)
   }
 
-  def unboxB {
+  def unboxB: Unit = {
     val o: Some[B] = Some(B.Const)
     val b = o.get
     def id(b: B): B = b

@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -Xlint:adapted-args
+//
 
 
 trait T {

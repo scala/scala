@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -15,7 +22,7 @@ import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
-import scala.reflect.internal.pickling.{ByteCodecs, PickleBuffer}
+import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
@@ -151,7 +158,7 @@ abstract class ClassfileParser {
     }
   }
 
-  private def parseHeader() {
+  private def parseHeader(): Unit = {
     val magic = u4
     if (magic != JAVA_MAGIC)
       abort(s"class file ${in.file} has wrong magic number 0x${toHexString(magic)}")
@@ -439,7 +446,7 @@ abstract class ClassfileParser {
       lookupClass(name)
   }
 
-  def parseClass() {
+  def parseClass(): Unit = {
     unpickleOrParseInnerClasses()
 
     val jflags = readClassFlags()
@@ -476,11 +483,9 @@ abstract class ClassfileParser {
       val sflags = jflags.toScalaFlags // includes JAVA
 
       def parseParents(): List[Type] = raiseLoaderLevel {
-        val superType = if (jflags.isAnnotation) { u2; AnnotationClass.tpe }
-                        else pool.getSuperClass(u2).tpe_*
+        val superType = pool.getSuperClass(u2).tpe_*
         val ifaceCount = u2
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
-        if (jflags.isAnnotation) ifaces ::= StaticAnnotationClass.tpe
+        val ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
         superType :: ifaces
       }
 
@@ -510,7 +515,7 @@ abstract class ClassfileParser {
       // attributes now depend on having infos set already
       parseAttributes(clazz, classInfo)
 
-      def queueLoad() {
+      def queueLoad(): Unit = {
         in.bp = fieldsStartBp
         0 until u2 foreach (_ => parseField())
         sawPrivateConstructor = false
@@ -518,7 +523,7 @@ abstract class ClassfileParser {
         val needsConstructor = (
              !sawPrivateConstructor
           && !(instanceScope containsName nme.CONSTRUCTOR)
-          && (sflags & INTERFACE) == 0
+          && ((sflags & INTERFACE) == 0 || (sflags | JAVA_ANNOTATION) != 0)
         )
         if (needsConstructor)
           instanceScope enter clazz.newClassConstructor(NoPosition)
@@ -536,7 +541,7 @@ abstract class ClassfileParser {
   }
 
   /** Add type parameters of enclosing classes */
-  def addEnclosingTParams(clazz: Symbol) {
+  def addEnclosingTParams(clazz: Symbol): Unit = {
     var sym = clazz.owner
     while (sym.isClass && !sym.isModuleClass) {
       for (t <- sym.tpe.typeArgs)
@@ -546,7 +551,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def parseField() {
+  def parseField(): Unit = {
     val jflags = readFieldFlags()
     val sflags = jflags.toScalaFlags
 
@@ -585,7 +590,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def parseMethod() {
+  def parseMethod(): Unit = {
     val jflags = readMethodFlags()
     val sflags = jflags.toScalaFlags
     if (jflags.isPrivate) {
@@ -648,7 +653,7 @@ abstract class ClassfileParser {
   private def sigToType(sym: Symbol, sig: Name): Type = {
     var index = 0
     val end = sig.length
-    def accept(ch: Char) {
+    def accept(ch: Char): Unit = {
       assert(sig.charAt(index) == ch, (sig.charAt(index), ch))
       index += 1
     }
@@ -822,7 +827,8 @@ abstract class ClassfileParser {
   /**
    * Only invoked for java classfiles.
    */
-  def parseAttributes(sym: Symbol, symtype: Type, removedOuterParameter: Boolean = false) {
+  def parseAttributes(sym: Symbol, symtype: Type, removedOuterParameter: Boolean = false): Unit = {
+    var paramNames: ListBuffer[Name] = null // null means we didn't find any
     def convertTo(c: Constant, pt: Type): Constant = {
       if (pt.typeSymbol == BooleanClass && c.tag == IntTag)
         Constant(c.value != 0)
@@ -830,7 +836,7 @@ abstract class ClassfileParser {
         c convertTo pt
     }
 
-    def parseAttribute() {
+    def parseAttribute(): Unit = {
       val attrName = readTypeName()
       val attrLen  = u4
       attrName match {
@@ -867,18 +873,16 @@ abstract class ClassfileParser {
               in.skip(4)
               i += 1
             }
-            var remainingParams = sym.paramss.head // Java only has exactly one parameter list
+            paramNames = new ListBuffer()
             while (i < paramCount) {
-              val name = pool.getName(u2)
+              val rawname = pool.getName(u2)
               val access = u2
-              if (remainingParams.nonEmpty) {
-                val param = remainingParams.head
-                remainingParams = remainingParams.tail
-                if ((access & ACC_SYNTHETIC) != ACC_SYNTHETIC) { // name not synthetic
-                  param.name = name.encode
-                  param.resetFlag(SYNTHETIC)
-                }
-              }
+
+              val name =
+                if ((access & ACC_SYNTHETIC) == 0) rawname.encode
+                else nme.NO_NAME
+
+              paramNames += name
               i += 1
             }
           }
@@ -940,7 +944,7 @@ abstract class ClassfileParser {
      * Parse the "Exceptions" attribute which denotes the exceptions
      * thrown by a method.
      */
-    def parseExceptions(len: Int) {
+    def parseExceptions(len: Int): Unit = {
       val nClasses = u2
       for (n <- 0 until nClasses) {
         // FIXME: this performs an equivalent of getExceptionTypes instead of getGenericExceptionTypes (scala/bug#7065)
@@ -951,9 +955,25 @@ abstract class ClassfileParser {
         sym.addThrowsAnnotation(cls)
       }
     }
-
+    def addParamNames(): Unit =
+      if ((paramNames ne null) && sym.hasRawInfo && sym.isMethod) {
+        val params = sym.rawInfo.params
+        foreach2(paramNames.toList, params) {
+          case (nme.NO_NAME, _) => // param was ACC_SYNTHETIC; ignore
+          case (name, param) =>
+            param.resetFlag(SYNTHETIC)
+            param.name = name
+        }
+        devWarningIf(!sameLength(paramNames.toList, params)) {
+          // there's not anything we can do, but it's slightly worrisome
+          sm"""MethodParameters length mismatch while parsing $sym:
+              |  rawInfo.params: ${sym.rawInfo.params}
+              |  MethodParameters: ${paramNames.toList}"""
+        }
+      }
     // begin parseAttributes
     for (i <- 0 until u2) parseAttribute()
+    addParamNames()
   }
 
 
@@ -975,7 +995,10 @@ abstract class ClassfileParser {
         val s = module.info.decls.lookup(n)
         if (s != NoSymbol) Some(LiteralAnnotArg(Constant(s)))
         else {
-          warning(s"""While parsing annotations in ${in.file}, could not find $n in enum $module.\nThis is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014).""")
+          warning(
+            sm"""While parsing annotations in ${in.file}, could not find $n in enum ${module.nameString}.
+                |This is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014)."""
+          )
           None
         }
 
@@ -1036,11 +1059,11 @@ abstract class ClassfileParser {
   /** Enter own inner classes in the right scope. It needs the scopes to be set up,
    *  and implicitly current class' superclasses.
    */
-  private def enterOwnInnerClasses() {
+  private def enterOwnInnerClasses(): Unit = {
     def className(name: Name): Name =
       name.subName(name.lastPos('.') + 1, name.length)
 
-    def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile) {
+    def enterClassAndModule(entry: InnerClassEntry, file: AbstractFile): Unit = {
       def jflags      = entry.jflags
       val name        = entry.originalName
       val sflags      = jflags.toScalaFlags
@@ -1063,6 +1086,16 @@ abstract class ClassfileParser {
         mod.moduleClass setInfo loaders.moduleClassLoader
         cls.associatedFile = file
         mod.moduleClass.associatedFile = file
+
+        /**
+          * need to set privateWithin here because the classfile of a nested protected class is public in bytecode,
+          * so propagatePackageBoundary will not set it when the symbols are completed
+          */
+        if (jflags.isProtected) {
+          cls.privateWithin = cls.enclosingPackage
+          mod.privateWithin = cls.enclosingPackage
+        }
+
         (cls, mod)
       }
 
@@ -1098,7 +1131,7 @@ abstract class ClassfileParser {
    *
    * Expects `in.bp` to point to the `access_flags` entry, restores the old `bp`.
    */
-  def unpickleOrParseInnerClasses() {
+  def unpickleOrParseInnerClasses(): Unit = {
     val oldbp = in.bp
     in.skip(4) // access_flags, this_class
     skipSuperclasses()
@@ -1191,15 +1224,18 @@ abstract class ClassfileParser {
       val numAnnots = u2
       var i = 0
       var bytes: Array[Byte] = null
-      while (i < numAnnots && bytes == null) pool.getType(u2) match {
-        case SigTpe =>
-          checkScalaSigAnnotArg()
-          bytes = parseScalaSigBytes()
-        case LongSigTpe =>
-          checkScalaSigAnnotArg()
-          bytes = parseScalaLongSigBytes()
-        case _ =>
-          skipAnnotArgs()
+      while (i < numAnnots && bytes == null) {
+        pool.getType(u2) match {
+          case SigTpe =>
+            checkScalaSigAnnotArg()
+            bytes = parseScalaSigBytes()
+          case LongSigTpe =>
+            checkScalaSigAnnotArg()
+            bytes = parseScalaLongSigBytes()
+          case t =>
+            skipAnnotArgs()
+        }
+        i += 1
       }
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
@@ -1247,9 +1283,10 @@ abstract class ClassfileParser {
     def entries              = inners.values
 
     def add(entry: InnerClassEntry): Unit = {
-      inners get entry.externalName foreach (existing =>
-        devWarning(s"Overwriting inner class entry! Was $existing, now $entry")
-      )
+      devWarningIf(inners contains entry.externalName) {
+        val existing = inners(entry.externalName)
+        s"Overwriting inner class entry! Was $existing, now $entry"
+      }
       inners(entry.externalName) = entry
     }
     def innerSymbol(externalName: Name): Symbol = this getEntry externalName match {
@@ -1274,15 +1311,15 @@ abstract class ClassfileParser {
   }
 
   class TypeParamsType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
-    override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
+    override def complete(sym: Symbol): Unit = { throw new AssertionError("cyclic type dereferencing") }
   }
   class LazyAliasType(alias: Symbol) extends LazyType with FlagAgnosticCompleter {
-    override def complete(sym: Symbol) {
+    override def complete(sym: Symbol): Unit = {
       sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
 
-  def skipAttributes() {
+  def skipAttributes(): Unit = {
     var attrCount: Int = u2
     while (attrCount > 0) {
       in skip 2
@@ -1291,7 +1328,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def skipMembers() {
+  def skipMembers(): Unit = {
     var memberCount: Int = u2
     while (memberCount > 0) {
       in skip 6
@@ -1300,7 +1337,7 @@ abstract class ClassfileParser {
     }
   }
 
-  def skipSuperclasses() {
+  def skipSuperclasses(): Unit = {
     in.skip(2) // superclass
     val ifaces = u2
     in.skip(2 * ifaces)

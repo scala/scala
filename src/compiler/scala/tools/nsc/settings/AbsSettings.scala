@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -85,8 +92,8 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
       this
     }
 
-    /** Issue error and return */
-    def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }
+    /** Issue error and return the value. */
+    def errorAndValue[A](msg: String, x: A): A = { errorFn(msg) ; x }
 
     /** If this method returns true, print the [[help]] message and exit. */
     def isHelping: Boolean = false

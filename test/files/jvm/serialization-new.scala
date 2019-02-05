@@ -18,7 +18,7 @@ object Serialize {
       new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  def check[A, B](x: A, y: B) {
+  def check[A, B](x: A, y: B): Unit = {
     println("x = " + x)
     println("y = " + y)
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
@@ -180,7 +180,7 @@ object Test1_scala {
 object Test2_immutable {
   import scala.collection.immutable.{
     BitSet, HashMap, HashSet, ListMap, ListSet, Queue, Range, SortedMap,
-    SortedSet, Stack, Stream, TreeMap, TreeSet, Vector}
+    SortedSet, LazyList, TreeMap, TreeSet, Vector}
 
   // in alphabetic order
   try {
@@ -198,12 +198,12 @@ object Test2_immutable {
     check(bs2, _bs2)
 
     // HashMap
-    val hm1 = new HashMap[Int, String] + (1 -> "A", 2 -> "B", 3 -> "C")
+    val hm1 = HashMap.empty[Int, String] ++ List(1 -> "A", 2 -> "B", 3 -> "C")
     val _hm1: HashMap[Int, String] = read(write(hm1))
     check(hm1, _hm1)
 
     // HashSet
-    val hs1 = new HashSet[Int] + 1 + 2
+    val hs1 = HashSet.empty[Int] + 1 + 2
     val _hs1: HashSet[Int] = read(write(hs1))
     check(hs1, _hs1)
 
@@ -213,7 +213,7 @@ object Test2_immutable {
     check(xs1, _xs1)
 
     // ListMap
-    val lm1 = new ListMap[String, Int] + ("buffers" -> 20, "layers" -> 2, "title" -> 3)
+    val lm1 = new ListMap[String, Int] ++ List("buffers" -> 20, "layers" -> 2, "title" -> 3)
     val _lm1: ListMap[String, Int] = read(write(lm1))
     check(lm1, _lm1)
 
@@ -237,7 +237,7 @@ object Test2_immutable {
     check(r2, _r2)
 
     // SortedMap
-    val sm1 = SortedMap.empty[Int, String] + (2 -> "B", 3 -> "C", 1 -> "A")
+    val sm1 = SortedMap.empty[Int, String] ++ List(2 -> "B", 3 -> "C", 1 -> "A")
     val _sm1: SortedMap[Int, String] = read(write(sm1))
     check(sm1, _sm1)
 
@@ -246,14 +246,9 @@ object Test2_immutable {
     val _ss1: SortedSet[Int] = read(write(ss1))
     check(ss1, _ss1)
 
-    // Stack
-    val s1 = new Stack().push("a", "b", "c")
-    val _s1: Stack[String] = read(write(s1))
-    check(s1, _s1)
-
-    // Stream
-    val st1 = Stream.range(0, 10)
-    val _st1: Stream[Int] = read(write(st1))
+    // LazyList
+    val st1 = LazyList.range(0, 10)
+    val _st1: LazyList[Int] = read(write(st1))
     check(st1, _st1)
 
     // TreeMap
@@ -284,9 +279,9 @@ object Test2_immutable {
 object Test3_mutable {
   import scala.reflect.ClassTag
   import scala.collection.mutable.{
-    ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet, DoubleLinkedList,
-    HashMap, HashSet, History, LinkedHashMap, LinkedHashSet, LinkedList, ListBuffer,
-    Publisher, Queue, Stack, StringBuilder, WrappedArray, TreeSet}
+    ArrayBuffer, ArrayBuilder, BitSet,
+    HashMap, HashSet, LinkedHashMap, LinkedHashSet, ListBuffer,
+    Queue, Stack, StringBuilder, ArraySeq, TreeSet}
   import scala.collection.concurrent.TrieMap
 
   // in alphabetic order
@@ -306,17 +301,6 @@ object Test3_mutable {
     val _abu2: ArrayBuilder[ClassTag[Float]] = read(write(abu2))
     check(abu2, _abu2)
 
-    // ArraySeq
-    val aq1 = ArraySeq(1, 2, 3)
-    val _aq1: ArraySeq[Int] = read(write(aq1))
-    check(aq1, _aq1)
-
-    // ArrayStack
-    val as1 = new ArrayStack[Int]
-    as1 ++= List(20, 2, 3).iterator
-    val _as1: ArrayStack[Int] = read(write(as1))
-    check(as1, _as1)
-
     // BitSet
     val bs1 = new BitSet()
     bs1 += 0
@@ -324,13 +308,7 @@ object Test3_mutable {
     bs1 += 9
     val _bs1: BitSet = read(write(bs1))
     check(bs1, _bs1)
-/*
-    // DoubleLinkedList
-    val dl1 = new DoubleLinkedList[Int](2, null)
-    dl1.append(new DoubleLinkedList(3, null))
-    val _dl1: DoubleLinkedList[Int] = read(write(dl1))
-    check(dl1, _dl1)
-*/
+
     // HashMap
     val hm1 = new HashMap[String, Int]
     hm1 ++= List(("A", 1), ("B", 2), ("C", 3)).iterator
@@ -342,10 +320,6 @@ object Test3_mutable {
     hs1 ++= List("layers", "buffers", "title").iterator
     val _hs1: HashSet[String] = read(write(hs1))
     check(hs1, _hs1)
-
-    val h1 = new History[String, Int]
-    val _h1: History[String, Int] = read(write(h1))
-    check(h1, _h1)
 
     // LinkedHashMap
     { val lhm1 = new LinkedHashMap[String, Int]
@@ -366,13 +340,7 @@ object Test3_mutable {
       check(lhs1.toSeq, _lhs1.toSeq) // check elements order
       check(lhs1.toSeq, list) // check elements order
     }
-/*
-    // LinkedList
-    val ll1 = new LinkedList[Int](2, null)
-    ll1.append(new LinkedList(3, null))
-    val _ll1: LinkedList[Int] = read(write(ll1))
-    check(ll1, _ll1)
-*/
+
     // ListBuffer
     val lb1 = new ListBuffer[String]
     lb1 ++= List("white", "black")
@@ -397,9 +365,9 @@ object Test3_mutable {
     val _sb1: StringBuilder = read(write(sb1))
     check(sb1, _sb1)
 
-    // WrappedArray
-    val wa1 = WrappedArray.make(Array(1, 2, 3))
-    val _wa1: WrappedArray[Int] = read(write(wa1))
+    // ArraySeq
+    val wa1 = ArraySeq.make(Array(1, 2, 3))
+    val _wa1: ArraySeq[Int] = read(write(wa1))
     check(wa1, _wa1)
 
     // TreeSet

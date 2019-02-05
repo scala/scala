@@ -1,4 +1,6 @@
-
+// scalac: -deprecation
+//
+import scala.math.Ordering.Double.IeeeOrdering
 
 
 object Test {
@@ -11,7 +13,7 @@ object Test {
     end - start
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val sz = 1000000000
 
     val range = 1 to sz
@@ -21,17 +23,9 @@ object Test {
     val descending = sz to 1 by -1
     check { assert(descending.min == 1) }
     check { assert(descending.max == sz) }
-
-    val numeric = 1.0 to sz.toDouble by 1
-    check { assert(numeric.min == 1.0) }
-    check { assert(numeric.max == sz.toDouble) }
-
-    val numdesc = sz.toDouble to 1.0 by -1
-    check { assert(numdesc.min == 1.0) }
-    check { assert(numdesc.max == sz.toDouble) }
   }
 
-  def check[U](b: =>U) {
+  def check[U](b: =>U): Unit = {
     val exectime = time {
       b
     }

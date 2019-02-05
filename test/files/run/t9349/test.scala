@@ -16,6 +16,7 @@ object Test {
     null match {
       case Extractor(o2) =>
         val i = new o2.Inner
+      case _ =>
     }
   }
 }

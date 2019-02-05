@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -27,7 +34,9 @@ trait NamesDefaults { self: Analyzer =>
   // we need the ClassDef. To create and enter the symbols into the companion
   // object, we need the templateNamer of that module class. These two are stored
   // as an attachment in the companion module symbol
-  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer)
+  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer) {
+    val defaults = mutable.ListBuffer[Symbol]()
+  }
 
   // Attached to the synthetic companion `apply` method symbol generated for case classes, holds
   // the set contains all default getters for that method. If the synthetic `apply` is unlinked in
@@ -49,6 +58,13 @@ trait NamesDefaults { self: Analyzer =>
     vargss:     List[List[Tree]],
     blockTyper: Typer
   ) { }
+  object NamedApplyBlock {
+    private[this] val tag = reflect.classTag[NamedApplyInfo]
+    def unapply(b: Tree): Option[NamedApplyInfo] = b match {
+      case _: Block => b.attachments.get[NamedApplyInfo](tag)
+      case _ => None
+    }
+  }
 
   private def nameOfNamedArg(arg: Tree) = Some(arg) collect { case NamedArg(Ident(name), _) => name }
   def isNamedArg(arg: Tree) = arg match {
@@ -118,7 +134,6 @@ trait NamesDefaults { self: Analyzer =>
     import typer._
     import typer.infer._
     val context = typer.context
-    import context.unit
 
     /*
      * Transform a function into a block, and passing context.namedApplyBlockInfo to
@@ -170,11 +185,11 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName(nme.QUAL_PREFIX), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
+        val sym = blockTyper.context.owner.newValue(freshTermName(nme.QUAL_PREFIX)(typer.fresh), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: scala/bug#5720, scala/bug#5727
-        qual changeOwner (blockTyper.context.owner -> sym)
+        qual changeOwner (blockTyper.context.owner, sym)
 
         val newQual = atPos(qual.pos.focus)(blockTyper.typedQualifier(Ident(sym.name)))
         val baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
@@ -191,15 +206,13 @@ trait NamesDefaults { self: Analyzer =>
 
         val b = Block(List(vd), baseFunTransformed)
                   .setType(baseFunTransformed.tpe).setPos(baseFun.pos.makeTransparent)
-        context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper)))
+        b.updateAttachment(NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper))
         b
       }
 
       def blockWithoutQualifier(defaultQual: Option[Tree]) = {
         val b = atPos(baseFun.pos)(Block(Nil, baseFun).setType(baseFun.tpe))
-        context.namedApplyBlockInfo =
-          Some((b, NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper)))
+        b.updateAttachment(NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper))
         b
       }
 
@@ -300,8 +313,7 @@ trait NamesDefaults { self: Analyzer =>
               arg.tpe
             }
           )
-
-          val s = context.owner.newValue(unit.freshTermName(nme.NAMEDARG_PREFIX), arg.pos, newFlags = ARTIFACT) setInfo {
+          val s = context.owner.newValue(freshTermName(nme.NAMEDARG_PREFIX)(typer.fresh), arg.pos, newFlags = ARTIFACT) setInfo {
             val tp = if (byName) functionType(Nil, argTpe) else argTpe
             uncheckedBounds(tp)
           }
@@ -327,17 +339,14 @@ trait NamesDefaults { self: Analyzer =>
     }
 
     // begin transform
-    if (isNamedApplyBlock(tree)) {
-      context.namedApplyBlockInfo.get._1
-    } else tree match {
+    tree match {
+      case NamedApplyBlock(info) => tree
       // `fun` is typed. `namelessArgs` might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
         else {
-          assert(isNamedApplyBlock(transformedFun), transformedFun)
-          val NamedApplyInfo(qual, targs, vargss, blockTyper) =
-            context.namedApplyBlockInfo.get._2
+          val NamedApplyBlock(NamedApplyInfo(qual, targs, vargss, blockTyper)) = transformedFun
           val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
@@ -373,8 +382,7 @@ trait NamesDefaults { self: Analyzer =>
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
               val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
-              context.namedApplyBlockInfo =
-                Some((block, NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper)))
+              block.updateAttachment(NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper))
               block
             case _ => tree
           }
@@ -449,7 +457,7 @@ trait NamesDefaults { self: Analyzer =>
             }
             default1 = if (targs.isEmpty) default1
                        else TypeApply(default1, targs.map(_.duplicate))
-            val default2 = (default1 /: previousArgss)((tree, args) =>
+            val default2 = previousArgss.foldLeft(default1)((tree, args) =>
               Apply(tree, args.map(_.duplicate)))
             Some(atPos(pos) {
               if (positional) default2

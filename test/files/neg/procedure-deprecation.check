@@ -1,0 +1,15 @@
+procedure-deprecation.scala:4: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `bar`'s return type
+  def bar {}
+          ^
+procedure-deprecation.scala:5: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `baz`'s return type
+  def baz
+         ^
+procedure-deprecation.scala:6: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `boo`'s return type
+  def boo(i: Int, l: Long)
+                          ^
+procedure-deprecation.scala:7: warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `boz`'s return type
+  def boz(i: Int, l: Long) {}
+                           ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

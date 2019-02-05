@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package internal
@@ -13,7 +25,9 @@ trait Internals extends api.Internals {
   type Internal = MacroInternalApi
   lazy val internal: Internal = new SymbolTableInternal {}
 
+  @deprecated("compatibility with Scala 2.10 EOL", "2.13.0")
   type Compat = MacroCompatApi
+  @deprecated("compatibility with Scala 2.10 EOL", "2.13.0")
   lazy val compat: Compat = new Compat {}
 
   trait SymbolTableInternal extends MacroInternalApi {

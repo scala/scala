@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc
 package interactive
 
@@ -65,7 +73,7 @@ trait CompilerControl { self: Global =>
   /** Removes the CompilationUnit corresponding to the given SourceFile
    *  from consideration for recompilation.
    */
-  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = { toBeRemoved += s.file; unitOfFile get s.file }
+  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = { toBeRemoved.synchronized { toBeRemoved += s.file }; unitOfFile get s.file }
 
   /** Returns the top level classes and objects that were deleted
    * in the editor since last time recentlyDeleted() was called.

@@ -1,10 +1,18 @@
 /*
- * Copyright (c) 2014 Contributor. All rights reserved.
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala.tools.nsc.classpath
 
 import java.net.URL
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
@@ -57,7 +65,6 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def asClassPathStrings: Seq[String] = aggregates.map(_.asClassPathString).distinct
 
   override def asSourcePathString: String = ClassPath.join(aggregates map (_.asSourcePathString): _*)
-
   override private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
     val aggregatedPackages = aggregates.flatMap(_.packages(inPackage)).distinct
     aggregatedPackages
@@ -82,7 +89,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
       }
     }.unzip
     val distinctPackages = packages.flatten.distinct
-    val distinctClassesAndSources = mergeClassesAndSources(classesAndSources: _*)
+    val distinctClassesAndSources = mergeClassesAndSources(classesAndSources)
     ClassPathEntries(distinctPackages, distinctClassesAndSources)
   }
 
@@ -91,8 +98,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
    * creates an entry containing both of them. If there would be more than one class or source
    * entries for the same class it always would use the first entry of each type found on a classpath.
    */
-  private def mergeClassesAndSources(entries: Seq[ClassRepresentation]*): Seq[ClassRepresentation] = {
-    // based on the implementation from MergedClassPath
+  private def mergeClassesAndSources(entries: scala.collection.Seq[scala.collection.Seq[ClassRepresentation]]): Seq[ClassRepresentation] = {
     var count = 0
     val indices = collection.mutable.HashMap[String, Int]()
     val mergedEntries = new ArrayBuffer[ClassRepresentation](1024)
@@ -117,7 +123,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
         count += 1
       }
     }
-    mergedEntries.toIndexedSeq
+    if (mergedEntries.isEmpty) Nil else mergedEntries.toIndexedSeq
   }
 
   private def getDistinctEntries[EntryType <: ClassRepresentation](getEntries: ClassPath => Seq[EntryType]): Seq[EntryType] = {
@@ -125,12 +131,11 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     val entriesBuffer = new ArrayBuffer[EntryType](1024)
     for {
       cp <- aggregates
-      entry <- getEntries(cp) if !seenNames.contains(entry.name)
+      entry <- getEntries(cp)
     } {
-      entriesBuffer += entry
-      seenNames += entry.name
+      if (seenNames.add(entry.name)) entriesBuffer += entry
     }
-    entriesBuffer.toIndexedSeq
+    if (entriesBuffer.isEmpty) Nil else entriesBuffer.toIndexedSeq
   }
 }
 

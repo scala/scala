@@ -1,8 +1,14 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-
 
 package scala
 package reflect.internal.util
@@ -22,8 +28,9 @@ abstract class SourceFile {
   def isEndOfLine(idx: Int): Boolean
   def isSelfContained: Boolean
   def length : Int
+  def lineCount: Int
   def position(offset: Int): Position = {
-    assert(offset < length, file + ": " + offset + " >= " + length)
+    assert(offset < length, file.toString + ": " + offset + " >= " + length)
     Position.offset(this, offset)
   }
 
@@ -49,20 +56,28 @@ abstract class SourceFile {
     if (content(offset).isWhitespace) skipWhitespace(offset + 1) else offset
 
   def identifier(pos: Position): Option[String] = None
+
+  /** An iterator over the lines between `start` and `end`.
+    *
+    * Bounds are checked and clipped as necessary.
+    */
+  def lines(start: Int = 0, end: Int = lineCount): Iterator[String]
 }
 
 /** An object representing a missing source file.
  */
 object NoSourceFile extends SourceFile {
-  def content                   = Array()
-  def file                      = NoFile
-  def isLineBreak(idx: Int)     = false
-  def isEndOfLine(idx: Int)     = false
-  def isSelfContained           = true
-  def length                    = -1
-  def offsetToLine(offset: Int) = -1
-  def lineToOffset(index : Int) = -1
-  override def toString = "<no source file>"
+  def content                     = Array()
+  def file                        = NoFile
+  def isLineBreak(idx: Int)       = false
+  def isEndOfLine(idx: Int)       = false
+  def isSelfContained             = true
+  def length                      = -1
+  def lineCount                   = 0
+  def offsetToLine(offset: Int)   = -1
+  def lineToOffset(index : Int)   = -1
+  def lines(start: Int, end: Int) = Iterator.empty
+  override def toString           = "<no source file>"
 }
 
 object NoFile extends VirtualFile("<no file>", "<no file>")
@@ -122,7 +137,8 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
       content0 :+ '\n'
     else content0
   )
-  val length = content.length
+  def length = content.length
+  def lineCount = lineIndices.length - 1
   def start = 0
   def isSelfContained = true
 
@@ -186,6 +202,14 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
     lastLine = findLine(0, lines.length, lastLine)
     lastLine
   }
+
+  override def lines(start: Int, end: Int): Iterator[String] =
+    ((start max 0) until (end min lineCount)).iterator.map { ix =>
+      val off = lineIndices(ix)
+      val len = 0 max (lineIndices(ix + 1) - off - 1) // drop newline character
+      String.valueOf(content, off, len)
+    }
+
 
   override def equals(that : Any) = that match {
     case that : BatchSourceFile => file.path == that.file.path && start == that.start

@@ -4,7 +4,7 @@
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import scala.collection.immutable._
     val x = TreeSet("a", "b", "c", "d")
     val x2 = x + "e"

@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package typechecker
 
@@ -9,8 +21,6 @@ trait Tags {
 
   trait Tag {
     self: Typer =>
-
-    private val runDefinitions = currentRun.runDefinitions
 
     private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
       context.withMacros(enabled = allowMaterialization) { inferImplicitByType(taggedTp, context, pos).tree }
@@ -56,7 +66,7 @@ trait Tags {
       // if someone requests a type tag, but scala-reflect.jar isn't on the library classpath, then bail
       if (pre == NoType && ApiUniverseClass == NoSymbol) EmptyTree
       else {
-        val tagSym = if (concrete) runDefinitions.TypeTagClass else runDefinitions.WeakTypeTagClass
+        val tagSym = if (concrete) currentRun.runDefinitions.TypeTagClass else currentRun.runDefinitions.WeakTypeTagClass
         val tagTp =  if (pre == NoType) TypeRef(ApiUniverseClass.toTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
         val taggedTp = appliedType(tagTp, List(tp))
         resolveTag(pos, taggedTp, allowMaterialization)

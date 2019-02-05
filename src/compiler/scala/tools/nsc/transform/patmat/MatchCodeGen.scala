@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -73,18 +79,7 @@ trait MatchCodeGen extends Interface {
       def fun(arg: Symbol, body: Tree): Tree     = Function(List(ValDef(arg)), body)
       def tupleSel(binder: Symbol)(i: Int): Tree = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
       def index(tgt: Tree)(i: Int): Tree         = tgt APPLY (LIT(i))
-
-      // Right now this blindly calls drop on the result of the unapplySeq
-      // unless it verifiably has no drop method (this is the case in particular
-      // with Array.) You should not actually have to write a method called drop
-      // for name-based matching, but this was an expedient route for the basics.
-      def drop(tgt: Tree)(n: Int): Tree = {
-        def callDirect   = fn(tgt, nme.drop, LIT(n))
-        def callRuntime  = Apply(REF(currentRun.runDefinitions.traversableDropMethod), tgt :: LIT(n) :: Nil)
-        def needsRuntime = (tgt.tpe ne null) && (elementTypeFromDrop(tgt.tpe) == NoType)
-
-        if (needsRuntime) callRuntime else callDirect
-      }
+      def drop(tgt: Tree)(n: Int): Tree          = fn(tgt, nme.drop, LIT(n))
 
       // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)
@@ -100,44 +95,6 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait PureMatchMonadInterface extends MatchMonadInterface {
-    val matchStrategy: Tree
-    import CODE._
-    def _match(n: Name): SelectStart = matchStrategy DOT n
-
-    // TODO: error message
-    private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
-    override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
-  }
-
-  trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
-    def codegen: AbsCodegen = pureCodegen
-
-    object pureCodegen extends CommonCodegen with Casegen { import CODE._
-      //// methods in MatchingStrategy (the monad companion) -- used directly in translation
-      // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
-      // TODO: consider catchAll, or virtualized matching will break in exception handlers
-      def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree =
-        _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, cases map (f => f(this)) reduceLeft typedOrElse))
-
-      // __match.one(`res`)
-      def one(res: Tree): Tree = (_match(vpmName.one)) (res)
-      // __match.zero
-      protected def zero: Tree = _match(vpmName.zero)
-      // __match.guard(`c`, `then`)
-      def guard(c: Tree, thenp: Tree): Tree = _match(vpmName.guard) APPLY (c, thenp)
-
-      //// methods in the monad instance -- used directly in translation
-      // `prev`.flatMap(`b` => `next`)
-      def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = (prev DOT vpmName.flatMap)(fun(b, next))
-      // `thisCase`.orElse(`elseCase`)
-      def typedOrElse(thisCase: Tree, elseCase: Tree): Tree = (thisCase DOT vpmName.orElse) APPLY (elseCase)
-      //  __match.guard(`cond`, `res`).flatMap(`nextBinder` => `next`)
-      def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = flatMap(guard(cond, res), nextBinder, next)
-      //  __match.guard(`guardTree`, ()).flatMap((_: P[Unit]) => `next`)
-      def flatMapGuard(guardTree: Tree, next: Tree): Tree = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, pureType(UnitTpe)), next)
-    }
-  }
 
   trait OptimizedCodegen extends CodegenCore with TypedSubstitution with MatchMonadInterface {
     override def codegen: AbsCodegen = optimizedCodegen
@@ -197,8 +154,8 @@ trait MatchCodeGen extends Interface {
         // only used to wrap the RHS of a body
         // res: T
         // returns MatchMonad[T]
-        def one(res: Tree): Tree = matchEnd APPLY (res) // a jump to a case label is special-cased in typedApply
-        protected def zero: Tree = nextCase APPLY ()
+        def one(res: Tree): Tree = matchEnd.APPLY(res) // a jump to a case label is special-cased in typedApply
+        protected def zero: Tree = nextCase.APPLY()
 
         // prev: MatchMonad[T]
         // b: T

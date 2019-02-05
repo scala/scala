@@ -1,0 +1,7 @@
+C_2.scala:8: error: not found: type Numb
+  val v: Numb = Answer
+         ^
+C_2.scala:9: error: not found: value println
+  def greet() = println("hello, world!")
+                ^
+two errors found

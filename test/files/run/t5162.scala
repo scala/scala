@@ -13,7 +13,7 @@ object O2 {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     new O2.Derived().foo
   }
 }

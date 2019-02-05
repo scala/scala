@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -77,16 +84,17 @@ trait Checkable {
   def propagateKnownTypes(from: Type, to: Symbol): Type = {
     def tparams  = to.typeParams
     val tvars    = tparams map (p => TypeVar(p))
-    val tvarType = appliedType(to, tvars: _*)
+    val tvarType = appliedType(to, tvars)
     val bases    = from.baseClasses filter (to.baseClasses contains _)
 
     bases foreach { bc =>
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
-      if (tps1.size != tps2.size)
-        devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
+      devWarningIf(!sameLength(tps1, tps2)) {
+        s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)"
+      }
 
-      (tps1, tps2).zipped foreach (_ =:= _)
+      foreach2(tps1, tps2)(_ =:= _)
       // Alternate, variance respecting formulation causes
       // neg/unchecked3.scala to fail (abstract types).  TODO -
       // figure it out. It seems there is more work to do if I
@@ -104,7 +112,7 @@ trait Checkable {
       case (_, tvar) if tvar.instValid => tvar.constr.inst
       case (tparam, _)                 => tparam.tpeHK
     }
-    appliedType(to, resArgs: _*)
+    appliedType(to, resArgs)
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (
@@ -294,7 +302,7 @@ trait Checkable {
       *
       *  Instead of the canRemedy flag, annotate uncheckable types that have become checkable because of the availability of a class tag?
       */
-    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false) {
+    def checkCheckable(tree: Tree, P0: Type, X0: Type, inPattern: Boolean, canRemedy: Boolean = false): Unit = {
       if (uncheckedOk(P0)) return
       def where = if (inPattern) "pattern " else ""
 

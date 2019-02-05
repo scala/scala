@@ -1,0 +1,6 @@
+test.scala:7: error: reference to X is ambiguous;
+it is both defined in package p and imported subsequently by
+import q.X
+    def test = f(X)
+                 ^
+one error found

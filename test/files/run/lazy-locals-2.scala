@@ -281,8 +281,8 @@ object Test {
       lzyComputeMethods == expComputeMethods,
       s"wrong lzycompute methods. expected:\n$expComputeMethods\nfound:\n$lzyComputeMethods")
 
-    val fields = c.getClass.getDeclaredFields.toList.sortBy(_.getName).map(_.toString)
-    val expFields = List(
+    val fields: List[String] = c.getClass.getDeclaredFields.toList.sortBy(_.getName).map(_.toString)
+    val expFields = List[String](
       "private volatile byte C.bitmap$0",
       "private int C.lvl1",
       "private java.lang.String C.lvl2",
@@ -305,9 +305,22 @@ object Test {
     d.run()
 
     val dFields = d.getClass.getDeclaredFields.toList.sortBy(_.getName).map(_.toString)
-    assert(
-      dFields == expFields.map(_.replaceAll(" C.", " D.")),
-      s"wrong fields. expected:\n$expFields\nfound:\n$fields")
+    val expDFields = List[String](
+      "private volatile byte D.bitmap$0",
+      "private int D.lvl1",
+      "private java.lang.String D.lvl2",
+      "private scala.runtime.BoxedUnit D.lvl3",
+      "private int D.t1",
+      "private java.lang.String D.t2",
+      "private scala.runtime.BoxedUnit D.t3",
+      "private int D.vl1",
+      "private java.lang.String D.vl2",
+      "private scala.runtime.BoxedUnit D.vl3",
+      "private int D.vr1",
+      "private java.lang.String D.vr2",
+      "private scala.runtime.BoxedUnit D.vr3")
+    assert(dFields == expDFields,
+      s"wrong fields. expected:\n$expDFields\nfound:\n$dFields")
 
 
     val d1 = new D1

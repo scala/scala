@@ -1,9 +1,0 @@
-inlineMaxSize.scala:7: warning: C::i()I is annotated @inline but could not be inlined:
-The size of the callsite method C::j()I
-would exceed the JVM method size limit after inlining C::i()I.
-
-  @inline final def j = i + i + i
-                                ^
-error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
-one error found

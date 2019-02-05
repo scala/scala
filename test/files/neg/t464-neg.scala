@@ -1,7 +1,7 @@
 class A {
-  private[this] def f1() {}
-  protected[this] def f2() {}
-  private[A] def f3() {}
+  private[this] def f1(): Unit = {}
+  protected[this] def f2(): Unit = {}
+  private[A] def f3(): Unit = {}
 }
 class B extends A {
   f1()

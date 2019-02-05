@@ -23,7 +23,7 @@ class Ploogin(val global: Global) extends Plugin {
     def newPhase(prev: Phase) = new TestPhase(prev)
     class TestPhase(prev: Phase) extends StdPhase(prev) {
       override def description = TestComponent.this.description
-      def apply(unit: CompilationUnit) {
+      def apply(unit: CompilationUnit): Unit = {
         // kewl kode
       }
     }

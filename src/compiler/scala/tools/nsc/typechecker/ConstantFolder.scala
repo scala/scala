@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -67,9 +74,10 @@ abstract class ConstantFolder {
    *  the conversion.
    */
   def apply(tree: Tree, pt: Type): Tree = {
-    tree.tpe match {
-      case tp@ConstantType(x) => fold(apply(tree), x convertTo pt, isConstantType(tp))
-      case _ => apply(tree)
+    val orig = apply(tree)
+    orig.tpe match {
+      case tp@ConstantType(x) => fold(orig, x convertTo pt, isConstantType(tp))
+      case _ => orig
     }
   }
 

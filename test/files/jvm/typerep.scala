@@ -43,7 +43,7 @@ object testPrimitives {
   println(getType(16.toByte))
   println(getType('a'))
   println(getType(3))
-  println(getType(3l))
+  println(getType(3L))
   println(getType(0.0f))
   println(getType(0.0d))
   println(getType("abc"))
@@ -117,11 +117,11 @@ class Foo {
 }
 
 
-object foo extends Foo
+object Foo extends Foo
 
 package pkg1 {
   class C1
-  object c1 extends C1
+  object C1 extends C1
 }
 
 object testClasses {

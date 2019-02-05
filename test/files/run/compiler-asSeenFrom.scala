@@ -18,7 +18,7 @@ abstract class CompilerTest extends DirectTest {
 
   override def extraSettings = "-feature -usejavacp -d " + testOutput.path
 
-  def show() = (sources, units).zipped foreach check
+  def show() = sources.lazyZip(units) foreach check
 
   // Override at least one of these...
   def code = ""
@@ -164,7 +164,7 @@ package ll {
     for (x <- classes ++ terms) {
       afterEachPhase(signaturesIn(x.tpe)) collect {
         case (ph, sigs) if sigs.nonEmpty =>
-          println(sigs.mkString(x + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
+          println(sigs.mkString(x.toString + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
       }
     }
   }

@@ -1,3 +1,5 @@
+/* scalac: -Xsource:3.0 */
+
 object Test {
 
   def main(args: Array[String]): Unit = {
@@ -8,7 +10,9 @@ object Test {
     out.close()
     val buf = bytes.toByteArray
     val in = new ObjectInputStream(new ByteArrayInputStream(buf))
-    val unit = in.readObject()
-    assert(unit == ())
+    val actual = in.readObject()
+    // This is a workaround for actual == (())
+    val unit = ()
+    assert(actual == unit)
   }
 }

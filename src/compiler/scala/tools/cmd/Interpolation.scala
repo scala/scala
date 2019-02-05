@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -33,15 +40,15 @@ trait Interpolation {
 object Interpolation {
   /** A simple template for generating bash completion functions.
    */
-  lazy val bashTemplate = """
+  lazy val bashTemplate = s"""
     |_@@PROGRAM@@()
     |{
     |  local cur opts base
     |  COMPREPLY=()
-    |  cur="${COMP_WORDS[COMP_CWORD]}"
+    |  cur="$${COMP_WORDS[COMP_CWORD]}"
     |  opts="@@ALLOPTIONS@@"
     |
-    |  COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    |  COMPREPLY=($$(compgen -W "$${opts}" -- $${cur}))
     |  _filedir
     |  return 0
     |} && complete -F _@@PROGRAM@@ @@PROGRAM@@

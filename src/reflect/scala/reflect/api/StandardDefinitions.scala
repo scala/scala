@@ -1,7 +1,15 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
+
 package scala
 package reflect
 package api
@@ -131,10 +139,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = => scala.Int
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<byname>, // <-- ByNameParamClass
@@ -159,10 +167,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = <repeated...>[Object]
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<repeated...>, // <-- JavaRepeatedParamClass
@@ -184,10 +192,10 @@ trait StandardDefinitions {
      *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
-     *  scala> m.params(0)(0).info
+     *  scala> m.paramLists(0)(0).info
      *  res1: reflect.runtime.universe.Type = scala.Int*
      *
-     *  scala> showRaw(m.params(0)(0).info)
+     *  scala> showRaw(m.paramLists(0)(0).info)
      *  res2: String = TypeRef(
      *      ThisType(scala),
      *      scala.<repeated>, // <-- RepeatedParamClass

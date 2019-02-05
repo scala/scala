@@ -7,7 +7,6 @@ package scala.man1
 
 /**
  *  @author Stephane Micheloud
- *  @version 1.0
  */
 object scala extends Command {
   import _root_.scala.tools.docutil.ManPage._

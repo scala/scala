@@ -21,7 +21,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.postProcessor.backendUtils._
 
-  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new AsmAnalyzer(methodNode, classInternalName, new NullnessAnalyzer(isNonNullMethodInvocation, methodNode))
+  def newNullnessAnalyzer(methodNode: MethodNode, classInternalName: InternalName = "C") = new NullnessAnalyzer(methodNode, classInternalName, isNonNullMethodInvocation, true)
 
   def testNullness(analyzer: AsmAnalyzer[NullnessValue], method: MethodNode, query: String, index: Int, nullness: NullnessValue): Unit = {
     for (i <- findInstrs(method, query)) {
@@ -125,7 +125,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
   }
 
   @Test
-  def newArraynotNull() {
+  def newArraynotNull(): Unit = {
     val m = compileAsmMethod("def f = { val a = new Array[Int](2); a(0) }")
     val a = newNullnessAnalyzer(m)
     testNullness(a, m, "+NEWARRAY T_INT", 2, NotNullValue) // new array on stack
@@ -219,6 +219,23 @@ class NullnessAnalyzerTest extends BytecodeTesting {
       (tost, 1, NotNullValue),
       (tost, 2, NotNullValue),
       (trim, 3, NotNullValue)  // receiver at `trim`
+    )) testNullness(a, m, insn, index, nullness)
+  }
+
+  @Test
+  def branching(): Unit = {
+    val code =
+      """def f(o: Object) = {
+        |  if (o == null) throw null
+        |  o.toString
+        |}
+      """.stripMargin
+    val m = compileAsmMethod(code)
+    val a = newNullnessAnalyzer(m)
+    for ((insn, index, nullness) <- List(
+      ("IFNULL", 1, UnknownValue1),
+      ("ACONST_NULL", 1, NullValue),
+      ("INVOKEVIRTUAL java/lang/Object.toString", 1, NotNullValue) // after branch: known not null
     )) testNullness(a, m, insn, index, nullness)
   }
 }

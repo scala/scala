@@ -5,7 +5,7 @@ import scala.reflect.runtime.universe._
 scala> import scala.reflect.runtime._
 import scala.reflect.runtime._
 
-scala> classManifest[List[_]]
+scala> implicitly[scala.reflect.ClassManifest[List[_]]]
 warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 

@@ -30,7 +30,7 @@ object Main {
   (parents: List[PType], metaMapper: CMetaType, keyGetter: (PType) => FKType ):
   Map[Long, CType] = Map.empty
 
-  def callIt {
+  def callIt: Unit = {
     oneToOneJoin[TestRun, TestSubject, MetaTestSubject,
                  MappedForeignKey[Long, TestRun, TestSubject]](
     List(), TestSubject, (tr: TestRun) => tr.testSubject)

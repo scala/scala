@@ -9,12 +9,18 @@ import org.junit.runners.JUnit4
 class TreeSetTest {
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     val set = TreeSet(1, 2, 3)
 
     assertEquals(TreeSet.empty[Int], set take Int.MinValue)
     assertEquals(TreeSet.empty[Int], set takeRight Int.MinValue)
     assertEquals(set, set drop Int.MinValue)
     assertEquals(set, set dropRight Int.MinValue)
+  }
+
+  @Test
+  def factoryReuse(): Unit = {
+    val m = TreeSet("a")
+    assertSame(m, TreeSet.from(m))
   }
 }

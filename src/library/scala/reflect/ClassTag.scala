@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 
@@ -46,19 +58,8 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   def wrap: ClassTag[Array[T]] = ClassTag[Array[T]](arrayClass(runtimeClass))
 
   /** Produces a new array with element type `T` and length `len` */
-  override def newArray(len: Int): Array[T] =
-    runtimeClass match {
-      case java.lang.Byte.TYPE      => new Array[Byte](len).asInstanceOf[Array[T]]
-      case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]
-      case java.lang.Character.TYPE => new Array[Char](len).asInstanceOf[Array[T]]
-      case java.lang.Integer.TYPE   => new Array[Int](len).asInstanceOf[Array[T]]
-      case java.lang.Long.TYPE      => new Array[Long](len).asInstanceOf[Array[T]]
-      case java.lang.Float.TYPE     => new Array[Float](len).asInstanceOf[Array[T]]
-      case java.lang.Double.TYPE    => new Array[Double](len).asInstanceOf[Array[T]]
-      case java.lang.Boolean.TYPE   => new Array[Boolean](len).asInstanceOf[Array[T]]
-      case java.lang.Void.TYPE      => new Array[Unit](len).asInstanceOf[Array[T]]
-      case _                        => java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
-    }
+  def newArray(len: Int): Array[T] =
+    java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
 
   /** A ClassTag[T] can serve as an extractor that matches only objects of type T.
    *
@@ -69,18 +70,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
    * is uncheckable, but we have an instance of `ClassTag[T]`.
    */
   def unapply(x: Any): Option[T] =
-    if (null != x && (
-            (runtimeClass.isInstance(x))
-         || (x.isInstanceOf[Byte]    && runtimeClass.isAssignableFrom(classOf[Byte]))
-         || (x.isInstanceOf[Short]   && runtimeClass.isAssignableFrom(classOf[Short]))
-         || (x.isInstanceOf[Char]    && runtimeClass.isAssignableFrom(classOf[Char]))
-         || (x.isInstanceOf[Int]     && runtimeClass.isAssignableFrom(classOf[Int]))
-         || (x.isInstanceOf[Long]    && runtimeClass.isAssignableFrom(classOf[Long]))
-         || (x.isInstanceOf[Float]   && runtimeClass.isAssignableFrom(classOf[Float]))
-         || (x.isInstanceOf[Double]  && runtimeClass.isAssignableFrom(classOf[Double]))
-         || (x.isInstanceOf[Boolean] && runtimeClass.isAssignableFrom(classOf[Boolean]))
-         || (x.isInstanceOf[Unit]    && runtimeClass.isAssignableFrom(classOf[Unit])))
-       ) Some(x.asInstanceOf[T])
+    if (runtimeClass.isInstance(x)) Some(x.asInstanceOf[T])
     else None
 
   // case class accessories
@@ -99,19 +89,21 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
  * Class tags corresponding to primitive types and constructor/extractor for ClassTags.
  */
 object ClassTag {
-  private val ObjectTYPE = classOf[java.lang.Object]
-  private val NothingTYPE = classOf[scala.runtime.Nothing$]
-  private val NullTYPE = classOf[scala.runtime.Null$]
+  private[this] val ObjectTYPE = classOf[java.lang.Object]
+  private[this] val NothingTYPE = classOf[scala.runtime.Nothing$]
+  private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
-  val Byte    : ClassTag[scala.Byte]       = Manifest.Byte
-  val Short   : ClassTag[scala.Short]      = Manifest.Short
-  val Char    : ClassTag[scala.Char]       = Manifest.Char
-  val Int     : ClassTag[scala.Int]        = Manifest.Int
-  val Long    : ClassTag[scala.Long]       = Manifest.Long
-  val Float   : ClassTag[scala.Float]      = Manifest.Float
-  val Double  : ClassTag[scala.Double]     = Manifest.Double
-  val Boolean : ClassTag[scala.Boolean]    = Manifest.Boolean
-  val Unit    : ClassTag[scala.Unit]       = Manifest.Unit
+  import ManifestFactory._
+
+  val Byte    : ByteManifest               = Manifest.Byte
+  val Short   : ShortManifest              = Manifest.Short
+  val Char    : CharManifest               = Manifest.Char
+  val Int     : IntManifest                = Manifest.Int
+  val Long    : LongManifest               = Manifest.Long
+  val Float   : FloatManifest              = Manifest.Float
+  val Double  : DoubleManifest             = Manifest.Double
+  val Boolean : BooleanManifest            = Manifest.Boolean
+  val Unit    : UnitManifest               = Manifest.Unit
   val Any     : ClassTag[scala.Any]        = Manifest.Any
   val Object  : ClassTag[java.lang.Object] = Manifest.Object
   val AnyVal  : ClassTag[scala.AnyVal]     = Manifest.AnyVal
@@ -120,7 +112,11 @@ object ClassTag {
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
   @SerialVersionUID(1L)
-  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T]
+  private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
+    override def newArray(len: Int): Array[T] = {
+      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+    }
+  }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] =
     runtimeClass1 match {

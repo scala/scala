@@ -1,10 +1,14 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package runtime
@@ -22,11 +26,11 @@ final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends
   def charAt(index: Int): Char = {
     if (0 <= index && index < length)
       xs(start + index)
-    else throw new ArrayIndexOutOfBoundsException(index)
+    else throw new ArrayIndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${xs.length - 1})")
   }
   def subSequence(start0: Int, end0: Int): CharSequence = {
-    if (start0 < 0) throw new ArrayIndexOutOfBoundsException(start0)
-    else if (end0 > length) throw new ArrayIndexOutOfBoundsException(end0)
+    if (start0 < 0) throw new ArrayIndexOutOfBoundsException(s"$start0 is out of bounds (min 0, max ${length -1})")
+    else if (end0 > length) throw new ArrayIndexOutOfBoundsException(s"$end0 is out of bounds (min 0, max ${xs.length -1})")
     else if (end0 <= start0) new ArrayCharSequence(xs, 0, 0)
     else {
       val newlen = end0 - start0

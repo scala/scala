@@ -1,5 +1,5 @@
 object D {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a = new { def y[T](x: X[T]) = x.i }
     val b = new { def y[T](x: T): X[T] = new X(2) }
     val x = new X(3)

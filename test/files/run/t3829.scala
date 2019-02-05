@@ -2,7 +2,7 @@
 object Test {
   import collection.{ mutable, immutable }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val map = immutable.Map(1 -> 2, 3 -> 4)
     assert(map.get(0) == None)
 

@@ -10,14 +10,14 @@ object Test {
 
   def foo() = println(2)
   def client(f: () => Unit) = {f(); f()}
-  def attempt2() {
+  def attempt2(): Unit = {
     val bar: () => Unit = foo _
     //The code causing scala/bug#6306 was supposed to optimize code like this:
     client(() => bar ())
     //to:
     client(bar)
   }
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     attempt2()
     f3(Seq(1))
     f3(Seq())

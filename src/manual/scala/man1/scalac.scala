@@ -200,17 +200,11 @@ object scalac extends Command {
           "Calls to " & MItalic("@elidable") &
           " methods are omitted if method priority is lower than argument."),
         Definition(
-          CmdOption("Xexperimental"),
-          "Enable experimental extensions"),
-        Definition(
           CmdOption("Xfatal-warnings"),
           "Fail the compilation if there are any warnings."),
         Definition(
           CmdOption("Xfull-lubs"),
           "Retain pre 2.10 behavior of less aggressive truncation of least upper bounds."),
-        Definition(
-          CmdOption("Xfuture"),
-          "Turn on future language features."),
         Definition(
           CmdOption("Xgenerate-phase-graph", Argument("file")),
           "Generate the phase graphs (outputs .dot files) to fileX.dot."),
@@ -238,9 +232,6 @@ object scalac extends Command {
         Definition(
           CmdOption("Xmain-class", Argument("path")),
           "Class for manifest's Main-Class entry (only useful with -d <jar>)."),
-        Definition(
-          CmdOption("Xmax-classfile-name", Argument("n")),
-          "Maximum filename length for generated classes."),
         Definition(
           CmdOptionBound("Xmigration:", Argument("version")),
           "Warn about constructs whose behavior may have changed since" & Argument("version") & "."),

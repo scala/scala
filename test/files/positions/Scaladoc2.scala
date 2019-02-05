@@ -1,16 +1,16 @@
 object Scaladoc2 {
-  def f {
+  def f: Unit = {
     /**
      * Foo
      */
-    def g {}
+    def g: Unit = {}
 
     /*
      * Blah blah
      */
-    def h{}
+    def h: Unit ={}
     h
   }
 
-  def h {}
+  def h: Unit = {}
 }

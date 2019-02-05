@@ -2,7 +2,7 @@ class C
 class A { class C }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val a = new A
 
     new VC("").foo(a)

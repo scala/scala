@@ -7,7 +7,7 @@ import org.junit.Test
 @RunWith(classOf[JUnit4])
 class UnrolledBufferTestTest {
   @Test
-  def test_SI9254_original() {
+  def test_SI9254_original(): Unit = {
     val b = new UnrolledBuffer[Int]()
     (1 to 16).foreach(i => b append i)
     b.insert(0,-1)
@@ -16,10 +16,18 @@ class UnrolledBufferTestTest {
   }
 
   @Test
-  def test_SI9254_additional() {
+  def test_SI9254_additional(): Unit = {
     val b = new UnrolledBuffer[Int]()
     (1 to 100).foreach(i => b append i)
     b.insert(40, -1)
     assert(b sameElements((1 to 40) ++ Seq(-1) ++ (41 to 100)))
+  }
+
+  @Test
+  def test_removal(): Unit = {
+    val b = UnrolledBuffer(1, 2, 3)
+    b -= 2
+    assert(b == (1 :: 3 :: Nil))
+    assert(b.size == 2)
   }
 }

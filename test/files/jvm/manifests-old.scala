@@ -1,3 +1,5 @@
+import scala.tools.partest.Util.ArrayDeep
+
 object Test extends App {
   Test1
   Test2
@@ -133,7 +135,7 @@ trait TestUtil {
     in.readObject().asInstanceOf[A]
   }
   import scala.reflect._
-  def print[T](x: T)(implicit m: Manifest[T]) {
+  def print[T](x: T)(implicit m: Manifest[T]): Unit = {
     val m1: Manifest[T] = read(write(m))
     val x1 = x.toString.replaceAll("@[0-9a-z]+$", "")
     println("x="+x1+", m="+m1)

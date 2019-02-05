@@ -50,7 +50,6 @@ scala/
    +---/library              Scala Standard Library
    +---/reflect              Scala Reflection
    +---/compiler             Scala Compiler
-   +---/eclipse              Eclipse project files
    +---/intellij             IntelliJ project templates
 +--spec/                     The Scala language specification
 +--scripts/                  Scripts for the CI jobs (including building releases)
@@ -111,6 +110,7 @@ Once you've started an `sbt` session you can run one of the core commands:
   - `dist/mkPack` creates a build in the Scala distribution format in `build/pack`
   - `test` runs the JUnit test, `testOnly *immutable.ListTest` runs a subset
   - `partest` runs partest tests (accepts options, try `partest --help`)
+  - `scalacheck/test` runs scalacheck tests, `scalacheck/testOnly *FloatFormatTest` runs a subset
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
     - Optionally `set baseVersionSuffix := "-bin-abcd123-SNAPSHOT"`
@@ -124,9 +124,9 @@ Once you've started an `sbt` session you can run one of the core commands:
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on
-itself`, it may be that a global SBT plugin (such as [Ensime](http://ensime.org/)) is
+itself`, it may be that a global SBT plugin (such as [ENSIME](https://ensime.github.io/)) is
 resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
-temporarily commenting them out in `~/.sbt/0.13/plugins/plugins.sbt`).
+temporarily commenting them out in `~/.sbt/1.0/plugins/plugins.sbt`).
 
 #### Sandbox
 
@@ -139,8 +139,6 @@ Note that sbt's incremental compilation is often too coarse for the Scala compil
 codebase and re-compiles too many files, resulting in long build times (check
 [sbt#1104](https://github.com/sbt/sbt/issues/1104) for progress on that front). In the
 meantime you can:
-  - Enable "Ant mode" in which sbt only re-compiles source files that were modified.
-    Create a file `local.sbt` containing the line `antStyle := true`.
   - Use IntelliJ IDEA for incremental compiles (see [IDE Setup](#ide-setup) below) - its
     incremental compiler is a bit less conservative, but usually correct.
 
@@ -163,7 +161,7 @@ Assume the current `starr` version is `2.12.0` (defined in
     the version you published locally is binary compatible, i.e., if the current
     `starr` is a 2.12.x release and not a milestone / RC.
 
-The last step is required to resolve modules (scala-xml, scala-partest, etc). It
+The last step is required to resolve modules (scala-partest, etc). It
 assumes that the module releases for the current `starr` work (in terms of binary
 compatibility) with the local starr that you published locally. A full bootstrap
 requires re-building the all the modules. On our CI this is handled by the
@@ -173,8 +171,9 @@ be easily executed locally.
 ### IDE setup
 
 You may use IntelliJ IDEA (see [src/intellij/README.md](src/intellij/README.md)),
-the Scala IDE for Eclipse (see [src/eclipse/README.md](src/eclipse/README.md)),
-or ENSIME (see [this page on the ENSIME site](http://ensime.org/editors/)).
+or ENSIME (see [this page on the ENSIME site](https://ensime.github.io/editors/)).
+(Support for Eclipse has decayed and been removed, but could be resurrected by
+a volunteer.)
 
 In order to use IntelliJ's incremental compiler:
   - run `dist/mkBin` in sbt to get a build and the runner scripts in `build/quick/bin`
@@ -198,6 +197,8 @@ You may also want to check out the following resources:
   - [Scala documentation site](http://docs.scala-lang.org)
 
 # Scala CI
+
+[![Build Status](https://travis-ci.org/scala/scala.svg?branch=2.13.x)](https://travis-ci.org/scala/scala)
 
 Once you submit a PR your commits will be automatically tested by the Scala CI.
 

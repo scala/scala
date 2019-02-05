@@ -1,3 +1,5 @@
+// scalac: -Xfatal-warnings -Ywarn-value-discard
+//
 
 trait T {
 

@@ -22,7 +22,7 @@ object Test extends ScaladocModelTest {
 
   """
 
-  def testModel(rootPackage: Package) {
+  def testModel(rootPackage: Package): Unit = {
     import access._
 
     val f = rootPackage._object("Test")._method("f")

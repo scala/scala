@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2006-2013 LAMP/EPFL
- * @author  Stephane Micheloud
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -23,13 +30,11 @@ object Properties extends scala.util.PropertiesTrait {
     """Welcome to Scala %1$#s (%3$s, Java %2$s).
       |Type in expressions for evaluation. Or try :help.""".stripMargin
   )
+  def shellBannerString   = scalaPropOrElse("shell.banner", shellWelcomeString)
 
   // message to display at EOF (which by default ends with
   // a newline so as not to break the user's terminal)
   def shellInterruptedString = scalaPropOrElse("shell.interrupted", f":quit$lineSeparator")
-
-  // derived values
-  def isEmacsShell         = propOrEmpty("env.emacs") != ""
 
   // Where we keep fsc's state (ports/redirection)
   lazy val scalacDir = (Path(Properties.userHome) / ".scalac").createDirectory(force = false)

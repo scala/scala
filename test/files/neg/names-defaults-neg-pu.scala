@@ -1,3 +1,5 @@
+// scalac: -deprecation
+//
 object Test extends App {
   // TESTS
 
@@ -87,12 +89,12 @@ object Test extends App {
   }
 
   // deprecated names
-  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
-  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
-  def deprNam3(@deprecatedName('x) a: Int, @deprecatedName('y) b: Int) = a + b
+  def deprNam1(x: Int, @deprecatedName("x") y: String) = 0
+  def deprNam2(a: String)(@deprecatedName("a") b: Int) = 1
+  def deprNam3(@deprecatedName("x") a: Int, @deprecatedName("y") b: Int) = a + b
   deprNam3(y = 10, b = 2)
 
-  def deprNam4(@deprecatedName('deprNam4Arg) deprNam4Arg: String) = 0
+  def deprNam4(@deprecatedName("deprNam4Arg") deprNam4Arg: String) = 0
   deprNam4(deprNam4Arg = null)
   def deprNam5(@deprecatedName deprNam5Arg: String) = 0
   deprNam5(deprNam5Arg = null)
@@ -116,7 +118,7 @@ class B {
 
 class C extends B {
   override def foo(a: Int = 1092) = a
-  def foo(b: String = "lskdfj")
+  def foo(b: String = "lskdfj"): Unit
 
   def bar(i: Int = 129083) = i
 }
@@ -131,7 +133,7 @@ class A2[T](a: T = 1)
 // anonymous functions
 object anfun {
   var var2 = 0
-  def delay(var2: => Unit) { var2 }
+  def delay(var2: => Unit): Unit = { var2 }
   delay(var2 = 40)
 
   def testAnnFun(a: Int, b: String) = println(a +": "+ b)
@@ -143,9 +145,9 @@ object anfun {
 object t3685 {
   object t { def f(x: Int) = x }
 
-  def t1 { def x = t.f(x = 1) }
-  def t2 { val x = t.f(x = 1) }
-  def t3 { var x = t.f(x = 1) }
+  def t1: Unit = { def x = t.f(x = 1) }
+  def t2: Unit = { val x = t.f(x = 1) }
+  def t3: Unit = { var x = t.f(x = 1) }
   object t4 { def x = t.f(x = 1) }
   object t5 { val x = t.f(x = 1) }
   object t6 { var x = t.f(x = 1) }
@@ -153,9 +155,9 @@ object t3685 {
   class t8 { val x = t.f(x = 1) }
   class t9 { var x = t.f(x = 1) }
 
-  def t10 { def x: Int = t.f(x = 1) }
-  def t11 { val x: Int = t.f(x = 1) }
-  def t12 { var x: Int = t.f(x = 1) }
+  def t10: Unit = { def x: Int = t.f(x = 1) }
+  def t11: Unit = { val x: Int = t.f(x = 1) }
+  def t12: Unit = { var x: Int = t.f(x = 1) }
   class t13 { def x: Int = t.f(x = 1) }
   class t14 { val x: Int = t.f(x = 1) }
   class t15 { var x: Int = t.f(x = 1) }
@@ -163,18 +165,18 @@ object t3685 {
 
   object u { def f[T](x: T) = 100 }
 
-  def u1 { def x = u.f(x = 1) }
-  def u2 { val x = u.f(x = 1) }
-  def u3 { var x = u.f(x = 1) }
-  def u4 { def x = u.f(x = "23") }
-  def u5 { val x = u.f(x = "32") }
-  def u6 { var x = u.f(x = "32") }
-  def u7 { def x: Int = u.f(x = 1) }
-  def u8 { val x: Int = u.f(x = 1) }
-  def u9 { var x: Int = u.f(x = 1) }
-  def u10 { def x: Int = u.f(x = "32") }
-  def u11 { val x: Int = u.f(x = "32") }
-  def u12 { var x: Int = u.f(x = "32") }
+  def u1: Unit = { def x = u.f(x = 1) }
+  def u2: Unit = { val x = u.f(x = 1) }
+  def u3: Unit = { var x = u.f(x = 1) }
+  def u4: Unit = { def x = u.f(x = "23") }
+  def u5: Unit = { val x = u.f(x = "32") }
+  def u6: Unit = { var x = u.f(x = "32") }
+  def u7: Unit = { def x: Int = u.f(x = 1) }
+  def u8: Unit = { val x: Int = u.f(x = 1) }
+  def u9: Unit = { var x: Int = u.f(x = 1) }
+  def u10: Unit = { def x: Int = u.f(x = "32") }
+  def u11: Unit = { val x: Int = u.f(x = "32") }
+  def u12: Unit = { var x: Int = u.f(x = "32") }
 
   class u13 { def x = u.f(x = 1) }
   class u14 { val x = u.f(x = 1) }

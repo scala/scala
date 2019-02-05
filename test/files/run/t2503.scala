@@ -1,10 +1,7 @@
 import scala.collection.mutable._
 
 trait SB[A] extends Buffer[A] {
-
-  import collection.Traversable
-
-  abstract override def insertAll(n: Int, iter: Traversable[A]): Unit = synchronized {
+  abstract override def insertAll(n: Int, iter: IterableOnce[A]): Unit = synchronized {
      super.insertAll(n, iter)
   }
 

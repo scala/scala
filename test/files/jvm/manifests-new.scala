@@ -1,3 +1,4 @@
+import scala.tools.partest.Util.ArrayDeep
 import scala.reflect.runtime.universe._
 import scala.reflect.{ClassTag, classTag}
 
@@ -133,7 +134,7 @@ trait TestUtil {
     val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
-  def print[T](x: T)(implicit t: TypeTag[T]) {
+  def print[T](x: T)(implicit t: TypeTag[T]): Unit = {
     // todo. type tags are not yet serializable
 //    val t1: TypeTag[T] = read(write(t))
     val t1: TypeTag[T] = t

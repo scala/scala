@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.interpreter.shell
@@ -21,7 +28,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   def interpret(line: String): Result
   def echo(message: String): Unit
 
-  val PromptString    = prompt.lines.toList.last
+  val PromptString    = prompt.linesIterator.toList.last
   val AltPromptString = "scala> "
   val ContinuePrompt  = continuePrompt
   val ContinueString  = continueText     // "     | "
@@ -53,10 +60,10 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   private val resAssign    = """^val (res\d+).*""".r
 
   private class PasteAnalyzer(val lines: List[String]) {
-    val referenced = lines flatMap (resReference findAllIn _.trim.stripPrefix("res")) toSet
-    val ActualPromptString = lines find matchesPrompt map (s =>
-      if (matchesString(s, PromptString)) PromptString else AltPromptString) getOrElse PromptString
-    val cmds       = lines reduceLeft append split ActualPromptString filterNot (_.trim == "") toList
+    val referenced = lines.flatMap(s => resReference.findAllIn(s.trim.stripPrefix("res"))).toSet
+    val ActualPromptString = lines.find(matchesPrompt).map(s =>
+      if (matchesString(s, PromptString)) PromptString else AltPromptString).getOrElse(PromptString)
+    val cmds       = lines.reduceLeft(append).split(ActualPromptString).filterNot(_.trim == "").toList
 
     /** If it's a prompt or continuation line, strip the formatting bits and
      *  assemble the code.  Otherwise ship it off to be analyzed for res references
@@ -113,7 +120,7 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
   }
 
   // Run transcript and return incomplete line if any.
-  def transcript(lines: TraversableOnce[String]): Option[String] = {
+  def transcript(lines: IterableOnce[String]): Option[String] = {
     echo("\n// Detected repl transcript. Paste more, or ctrl-D to finish.\n")
     apply(lines)
   }
@@ -123,9 +130,9 @@ abstract class Pasted(prompt: String, continuePrompt: String, continueText: Stri
    *  Everything else is discarded.  When the end of the transcript is spotted,
    *  all the commands are replayed.
    */
-  def apply(lines: TraversableOnce[String]): Option[String] = {
+  def apply(lines: IterableOnce[String]): Option[String] = {
     isRunning = true
-    try new PasteAnalyzer(lines.toList).run()
+    try new PasteAnalyzer(List.from(lines)).run()
     finally isRunning = false
   }
 

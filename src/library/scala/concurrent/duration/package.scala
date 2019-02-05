@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.concurrent
 
 import scala.language.implicitConversions
@@ -41,15 +53,15 @@ package object duration {
   implicit def durationToPair(d: Duration): (Long, TimeUnit)           = (d.length, d.unit)
 
   implicit final class DurationInt(private val n: Int) extends AnyVal with DurationConversions {
-    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n.toLong, unit)
+    override protected def durationIn(unit: TimeUnit): FiniteDuration  = Duration(n.toLong, unit)
   }
 
   implicit final class DurationLong(private val n: Long) extends AnyVal with DurationConversions {
-    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
+    override protected def durationIn(unit: TimeUnit): FiniteDuration  = Duration(n, unit)
   }
 
   implicit final class DurationDouble(private val d: Double) extends AnyVal with DurationConversions {
-    override protected def durationIn(unit: TimeUnit): FiniteDuration =
+    override protected def durationIn(unit: TimeUnit): FiniteDuration  =
       Duration(d, unit) match {
         case f: FiniteDuration => f
         case _ => throw new IllegalArgumentException("Duration DSL not applicable to " + d)
@@ -60,16 +72,16 @@ package object duration {
    * Avoid reflection based invocation by using non-duck type
    */
   implicit final class IntMult(private val i: Int) extends AnyVal {
-    def *(d: Duration) = d * i.toDouble
-    def *(d: FiniteDuration) = d * i.toLong
+    def *(d: Duration): Duration             = d * i.toDouble
+    def *(d: FiniteDuration): FiniteDuration = d * i.toLong
   }
 
   implicit final class LongMult(private val i: Long) extends AnyVal {
-    def *(d: Duration) = d * i.toDouble
-    def *(d: FiniteDuration) = d * i.toLong
+    def *(d: Duration): Duration             = d * i.toDouble
+    def *(d: FiniteDuration): FiniteDuration = d * i.toLong
   }
 
   implicit final class DoubleMult(private val f: Double) extends AnyVal {
-    def *(d: Duration) = d * f.toDouble
+    def *(d: Duration): Duration             = d * f.toDouble
   }
 }

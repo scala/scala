@@ -28,7 +28,7 @@ object Test extends DirectTest {
   // bug was that typedAnnotated assigned a type to the Annotated tree. The second type check would consider
   // the tree as alreadyTyped, which is not cool, the Annotated needs to be transformed into a Typed tree.
 
-  def show() {
+  def show(): Unit = {
     val global = newCompiler()
     import global._
     import analyzer._

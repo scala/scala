@@ -5,12 +5,43 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import java.{lang => jl}
+
+import scala.collection.SortedSet
+import scala.math.Ordering.Float.TotalOrdering
+import scala.math.Ordering.Double.TotalOrdering
+
 @RunWith(classOf[JUnit4])
 class OrderingTest {
+  val floats = Seq(
+    Float.NegativeInfinity,
+    Float.MinValue,
+    -1f,
+    -0f,
+    0f,
+    Float.MinPositiveValue,
+    1f,
+    Float.MaxValue,
+    Float.PositiveInfinity,
+    Float.NaN
+  )
+
+  val doubles = Seq(
+    Double.NegativeInfinity,
+    Double.MinValue,
+    -1d,
+    -0d,
+    0d,
+    Double.MinPositiveValue,
+    1d,
+    Double.MaxValue,
+    Double.PositiveInfinity,
+    Double.NaN
+  )
 
   /* Test for scala/bug#9077 */
   @Test
-  def testReverseOrdering {
+  def reverseOrdering(): Unit = {
     def check[T: Ordering](t1: T, t2: T): Unit = {
       val O = Ordering[T]
       val R = O.reverse
@@ -46,8 +77,8 @@ class OrderingTest {
     checkAll[Char](Char.MinValue, -1.toChar, 0.toChar, 1.toChar, Char.MaxValue)
     checkAll[Short](Short.MinValue, -1, 0, 1, Short.MaxValue)
     checkAll[Int](Int.MinValue, -1, 0, 1, Int.MaxValue)
-    checkAll[Double](Double.MinValue, -1, -0, 0, 1, Double.MaxValue)
-    checkAll[Float](Float.MinValue, -1, -0, 0, 1, Float.MaxValue)
+    checkAll[Double](doubles: _*)
+    checkAll[Float](floats: _*)
 
     checkAll[BigInt](Int.MinValue, -1, 0, 1, Int.MaxValue)
     checkAll[BigDecimal](Int.MinValue, -1, -0, 1, Int.MaxValue)
@@ -59,7 +90,43 @@ class OrderingTest {
   }
 
   @Test
-  def testComposedOrdering(): Unit = {
+  def reverseOf(): Unit = {
+    def check[T](ord: Ordering[T]): Unit = {
+      assert(ord isReverseOf ord.reverse)
+      assert(ord.reverse isReverseOf ord)
+      assert(!(ord isReverseOf ord))
+      assert(!(ord.reverse isReverseOf ord.reverse))
+      assert(!ord.isReverseOf({ (_, _) => 0 }: Ordering[T]))
+      assert(!ord.reverse.isReverseOf({ (_, _) => 0 }: Ordering[T]))
+    }
+
+    check(Ordering[Int])
+    check(Ordering[(Int, Long)])
+    check(Ordering[(Int, Long, Float)])
+    check(Ordering[(Int, Long, Float, Double)])
+    check(Ordering[(Int, Long, Float, Double, Byte)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
+    check(Ordering[Option[Int]])
+
+    import Ordering.Implicits._
+    check(Ordering[Seq[Int]])
+    check(Ordering[SortedSet[Int]])
+  }
+
+  @Test
+  def cachedReverse(): Unit = {
+    def check[T](ord: Ordering[T]): Unit = {
+      assert(ord.reverse eq ord.reverse)
+    }
+
+    check(Ordering[Int])
+  }
+
+  @Test
+  def composedOrdering(): Unit = {
     case class Pair(a: Int, b: Int)
 
     def check(ord1: Ordering[Pair], ord2: Ordering[Pair]): Unit = {
@@ -76,5 +143,128 @@ class OrderingTest {
     check(o1, o2)
     check(o1, o3)
   }
-}
 
+  /* Test for scala/bug#10511 */
+  @Test
+  def floatDoubleTotalOrdering(): Unit = {
+    val fNegZeroBits = jl.Float.floatToRawIntBits(-0.0f)
+    val fPosZeroBits = jl.Float.floatToRawIntBits(0.0f)
+
+    val dNegZeroBits = jl.Double.doubleToRawLongBits(-0.0d)
+    val dPosZeroBits = jl.Double.doubleToRawLongBits(0.0d)
+
+    def checkFloats(floats: Float*): Unit = {
+      def same(f1: Float, f2: Float): Boolean = {
+        val thisBits = jl.Float.floatToRawIntBits(f1)
+        if (thisBits == fNegZeroBits) jl.Float.floatToRawIntBits(f2) == fNegZeroBits
+        else if (thisBits == fPosZeroBits) jl.Float.floatToRawIntBits(f2) == fPosZeroBits
+        else f1 == f2 || (jl.Float.isNaN(f1) && jl.Float.isNaN(f2))
+      }
+
+      val O = Ordering[Float]
+      for (i <- floats; j <- floats) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
+        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertTrue(msg,
+          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+
+        // consistency with `max` and `min`
+        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
+        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        if (!same(i, j)) {
+          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
+          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+        }
+      }
+    }
+
+    def checkDoubles(doubles: Double*): Unit = {
+      def same(d1: Double, d2: Double): Boolean = {
+        val thisBits = jl.Double.doubleToRawLongBits(d1)
+        if (thisBits == dNegZeroBits) jl.Double.doubleToRawLongBits(d2) == dNegZeroBits
+        else if (thisBits == dPosZeroBits) jl.Double.doubleToRawLongBits(d2) == dPosZeroBits
+        else d1 == d2 || (jl.Double.isNaN(d1) && jl.Double.isNaN(d2))
+      }
+
+      val O = Ordering[Double]
+      for (i <- doubles; j <- doubles) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
+        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertTrue(msg,
+          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+
+        // consistency with `max` and `min`
+        assertEquals(msg, O.compare(i, j) >= 0, same(O.max(i, j), i))
+        assertEquals(msg, O.compare(i, j) <= 0, same(O.min(i, j), i))
+        if (!same(i, j)) {
+          assertEquals(msg, O.compare(i, j) < 0, same(O.max(i, j), j))
+          assertEquals(msg, O.compare(i, j) > 0, same(O.min(i, j), j))
+        }
+      }
+    }
+
+    checkFloats(floats: _*)
+    checkDoubles(doubles: _*)
+  }
+
+  /* Test for scala/bug#8664 */
+  @Test
+  def symbolOrdering(): Unit = {
+    assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
+  }
+
+  @Test
+  def orderingEquality(): Unit = {
+    def check[T](ord: => Ordering[T]): Unit = {
+      assertEquals(ord, ord)
+      assertEquals(ord.hashCode(), ord.hashCode())
+      assertEquals(ord.reverse, ord.reverse)
+      assertEquals(ord.reverse.hashCode(), ord.reverse.hashCode())
+    }
+
+    check(Ordering[Int])
+    check(Ordering[(Int, Long)])
+    check(Ordering[(Int, Long, Float)])
+    check(Ordering[(Int, Long, Float, Double)])
+    check(Ordering[(Int, Long, Float, Double, Byte)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt)])
+    check(Ordering[(Int, Long, Float, Double, Byte, Char, Short, BigInt, BigDecimal)])
+    check(Ordering[Option[Int]])
+
+    import Ordering.Implicits._
+    check(Ordering[Seq[Int]])
+    check(Ordering[SortedSet[Int]])
+  }
+}

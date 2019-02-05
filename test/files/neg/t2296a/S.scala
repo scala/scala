@@ -2,7 +2,7 @@ package s {
   import j.J
 
   trait S extends J {
-    def bar() {
+    def bar(): Unit = {
       foo()
     }
   }
@@ -11,7 +11,7 @@ package s {
 }
 
 object Test {
-  def main(args : Array[String]) {
+  def main(args : Array[String]): Unit = {
     (new s.SC).bar()
     (new s.S { }).bar()
   }

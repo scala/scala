@@ -1,3 +1,5 @@
+// scalac: -Xcheckinit
+//
 trait Trait40_1 {
   val value37_2 = ()
   def run = { value37_2 }
@@ -8,7 +10,7 @@ trait T1 extends Trait40_1 {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println((new T1 {}).run)
   }
 }

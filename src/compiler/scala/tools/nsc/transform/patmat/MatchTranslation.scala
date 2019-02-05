@@ -1,7 +1,13 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
@@ -28,6 +34,7 @@ trait MatchTranslation {
 
   trait MatchTranslator extends TreeMakers with TreeMakerWarnings {
     import typer.context
+    def selectorPos: Position
 
     /** A conservative approximation of which patterns do not discern anything.
      * They are discarded during the translation.
@@ -110,7 +117,12 @@ trait MatchTranslation {
         val (makers, unappBinder) = {
           val paramType = extractor.expectedExtractedType
           // Statically conforms to paramType
-          if (tpe <:< paramType) (treeMakers(binder, false, pos), binder)
+          if (tpe <:< paramType) {
+            // enforce all extractor patterns to be non-null
+            val nonNullTest = NonNullTestTreeMaker(binder, paramType, pos)
+            val unappBinder = nonNullTest.nextBinder
+            (nonNullTest :: treeMakers(unappBinder, pos), unappBinder)
+          }
           else {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
@@ -118,12 +130,15 @@ trait MatchTranslation {
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val typeTest = TypeTestTreeMaker(binder, binder, paramType, paramType)(pos, extractorArgTypeTest = true)
             val binderKnownNonNull = typeTest impliesBinderNonNull binder
-
-            // check whether typetest implies binder is not null,
-            // even though the eventual null check will be on typeTest.nextBinder
-            // it'll be equal to binder casted to paramType anyway (and the type test is on binder)
-            val unappBinder = typeTest.nextBinder
-            (typeTest :: treeMakers(unappBinder, binderKnownNonNull, pos), unappBinder)
+            // skip null test if it's implied
+            if (binderKnownNonNull) {
+              val unappBinder = typeTest.nextBinder
+              (typeTest :: treeMakers(unappBinder, pos), unappBinder)
+            } else {
+              val nonNullTest = NonNullTestTreeMaker(typeTest.nextBinder, paramType, pos)
+              val unappBinder = nonNullTest.nextBinder
+              (typeTest :: nonNullTest :: treeMakers(unappBinder, pos), unappBinder)
+            }
           }
         }
 
@@ -160,13 +175,7 @@ trait MatchTranslation {
       }
       def translate(): List[TreeMaker] = nextStep() merge (_.translate())
 
-      private def setInfo(paramType: Type): Boolean = {
-        devWarning(s"resetting info of $this to $paramType")
-        setVarInfo(binder, paramType)
-        true
-      }
-
-      private def concreteType = tpe.bounds.hi
+      private def concreteType = tpe.upperBound
       private def unbound = unbind(tree)
       private def tpe_s = if (pt <:< concreteType) "" + pt else s"$pt (binder: $tpe)"
       private def at_s = unbound match {
@@ -223,8 +232,8 @@ trait MatchTranslation {
       // val packedPt = repeatedToSeq(typer.packedType(match_, context.owner))
       val selectorSym = freshSym(selector.pos, pureType(selectorTp)) setFlag treeInfo.SYNTH_CASE_FLAGS
 
-      // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, matchOwner, defaultOverride)
+      // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala
+      val combined = combineCases(selector, selectorSym, nonSyntheticCases map translateCase(selectorSym, pt), pt, selectorPos, matchOwner, defaultOverride)
 
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatNanos, start)
       combined
@@ -237,8 +246,12 @@ trait MatchTranslation {
     // unlike translateMatch, we type our result before returning it
     def translateTry(caseDefs: List[CaseDef], pt: Type, pos: Position): List[CaseDef] =
       // if they're already simple enough to be handled by the back-end, we're done
-      if (caseDefs forall treeInfo.isCatchCase) caseDefs
-      else {
+      if (caseDefs forall treeInfo.isCatchCase) {
+        // well, we do need to look for unreachable cases
+        if (!settings.XnoPatmatAnalysis) unreachableTypeSwitchCase(caseDefs).foreach(cd => reportUnreachable(cd.body.pos))
+
+        caseDefs
+      } else {
         val swatches = { // switch-catches
           // scala/bug#7459 must duplicate here as we haven't committed to switch emission, and just figuring out
           //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in
@@ -246,7 +259,7 @@ trait MatchTranslation {
           val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
-            val caseScrutSym = freshSym(pos, pureType(ThrowableTpe))
+            val caseScrutSym = freshSym(caseDef.pat.pos, pureType(ThrowableTpe))
             (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, pt)(caseDef), EmptySubstitution))
           }
 
@@ -256,7 +269,7 @@ trait MatchTranslation {
         }
 
         val catches = if (swatches.nonEmpty) swatches else {
-          val scrutSym = freshSym(pos, pureType(ThrowableTpe))
+          val scrutSym = freshSym(caseDefs.head.pat.pos, pureType(ThrowableTpe))
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
           val exSym = freshSym(pos, pureType(ThrowableTpe), "ex")
@@ -266,7 +279,7 @@ trait MatchTranslation {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, Some(scrut => Throw(REF(exSym))))
+                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))))
                 )
               })
         }
@@ -379,11 +392,8 @@ trait MatchTranslation {
 
     abstract class ExtractorCall(fun: Tree, args: List[Tree]) extends ExtractorAlignment(fun, args)(context) {
       /** Create the TreeMaker that embodies this extractor call
-       *
-       * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
-       * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker]
+      def treeMakers(binder: Symbol, pos: Position): List[TreeMaker]
 
       // `subPatBinders` are the variables bound by this pattern in the following patterns
       // subPatBinders are replaced by references to the relevant part of the extractor's result (tuple component, seq element, the result as-is)
@@ -405,22 +415,22 @@ trait MatchTranslation {
       protected def expectedLength      = elementArity
       protected def lastIndexingBinder  = nonStarArity - 1
 
-      private def productElemsToN(binder: Symbol, n: Int): List[Tree] = 1 to n map tupleSel(binder) toList
-      private def genTake(binder: Symbol, n: Int): List[Tree]         = (0 until n).toList map (codegen index seqTree(binder))
-      private def genDrop(binder: Symbol, n: Int): List[Tree]         = codegen.drop(seqTree(binder))(expectedLength) :: Nil
+      private def productElemsToN(binder: Symbol, n: Int): List[Tree] = if (n == 0) Nil else List.tabulate(n)(i => tupleSel(binder)(i + 1))
+      private def genTake(binder: Symbol, n: Int): List[Tree]         = if (n == 0) Nil else List.tabulate(n)(codegen index seqTree(binder, forceImmutable = false))
+      private def genDrop(binder: Symbol, n: Int): List[Tree]         = codegen.drop(seqTree(binder, forceImmutable = false))(n) :: Nil
 
       // codegen.drop(seqTree(binder))(nbIndexingIndices)))).toList
-      protected def seqTree(binder: Symbol)                = tupleSel(binder)(firstIndexingBinder + 1)
-      protected def tupleSel(binder: Symbol)(i: Int): Tree = codegen.tupleSel(binder)(i)
+      protected def seqTree(binder: Symbol, forceImmutable: Boolean) = tupleSel(binder)(firstIndexingBinder + 1)
+      protected def tupleSel(binder: Symbol)(i: Int): Tree           = codegen.tupleSel(binder)(i)
 
       // the trees that select the subpatterns on the extractor's result,
       // referenced by `binder`
       protected def subPatRefsSeq(binder: Symbol): List[Tree] = {
-        def lastTrees: List[Tree] = (
+        def lastTrees: List[Tree] = {
           if (!isStar) Nil
-          else if (expectedLength == 0) seqTree(binder) :: Nil
+          else if (expectedLength == 0) seqTree(binder, forceImmutable = true) :: Nil
           else genDrop(binder, expectedLength)
-        )
+        }
         // this error-condition has already been checked by checkStarPatOK:
         //   if(isSeq) assert(firstIndexingBinder + nbIndexingIndices + (if(lastIsStar) 1 else 0) == totalArity, "(resultInMonad, ts, subPatTypes, subPats)= "+(resultInMonad, ts, subPatTypes, subPats))
 
@@ -436,10 +446,10 @@ trait MatchTranslation {
 
       // the trees that select the subpatterns on the extractor's result, referenced by `binder`
       // require (nbSubPats > 0 && (!lastIsStar || isSeq))
-      protected def subPatRefs(binder: Symbol): List[Tree] = (
+      protected def subPatRefs(binder: Symbol): List[Tree] = {
         if (totalArity > 0 && isSeq) subPatRefsSeq(binder)
         else productElemsToN(binder, totalArity)
-      )
+      }
 
       private def compareInts(t1: Tree, t2: Tree) =
         gen.mkMethodCall(termMember(ScalaPackage, "math"), TermName("signum"), Nil, (t1 INT_- t2) :: Nil)
@@ -447,12 +457,14 @@ trait MatchTranslation {
       protected def lengthGuard(binder: Symbol): Option[Tree] =
         // no need to check unless it's an unapplySeq and the minimal length is non-trivially satisfied
         checkedLength map { expectedLength =>
+          def lengthCompareSym = binder.info member nme.lengthCompare
+
           // `binder.lengthCompare(expectedLength)`
           // ...if binder has a lengthCompare method, otherwise
           // `scala.math.signum(binder.length - expectedLength)`
           def checkExpectedLength = lengthCompareSym match {
-            case NoSymbol => compareInts(Select(seqTree(binder), nme.length), LIT(expectedLength))
-            case lencmp   => (seqTree(binder) DOT lencmp)(LIT(expectedLength))
+            case NoSymbol => compareInts(Select(seqTree(binder, forceImmutable = false), nme.length), LIT(expectedLength))
+            case lencmp   => (seqTree(binder, forceImmutable = false) DOT lencmp)(LIT(expectedLength))
           }
 
           // the comparison to perform
@@ -463,7 +475,7 @@ trait MatchTranslation {
             else         _ INT_== _
 
           // `if (binder != null && $checkExpectedLength [== | >=] 0) then else zero`
-          (seqTree(binder) ANY_!= NULL) AND compareOp(checkExpectedLength, ZERO)
+          (seqTree(binder, forceImmutable = false) ANY_!= NULL) AND compareOp(checkExpectedLength, ZERO)
         }
 
       def checkedLength: Option[Int] =
@@ -479,10 +491,8 @@ trait MatchTranslation {
       /** Create the TreeMaker that embodies this extractor call
        *
        * `binder` has been casted to `paramType` if necessary
-       * `binderKnownNonNull` indicates whether the cast implies `binder` cannot be null
-       * when `binderKnownNonNull` is `true`, `ProductExtractorTreeMaker` does not do a (redundant) null check on binder
        */
-      def treeMakers(binder: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
+      def treeMakers(binder: Symbol, pos: Position): List[TreeMaker] = {
         val paramAccessors = expectedExtractedType.typeSymbol.constrParamAccessors
         val numParams = paramAccessors.length
         def paramAccessorAt(subPatIndex: Int) = paramAccessors(math.min(subPatIndex, numParams - 1))
@@ -503,7 +513,7 @@ trait MatchTranslation {
         )
 
         // checks binder ne null before chaining to the next extractor
-        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, binderKnownNonNull, ignoredSubPatBinders) :: Nil
+        ProductExtractorTreeMaker(binder, lengthGuard(binder))(subPatBinders, subPatRefs(binder), mutableBinders, ignoredSubPatBinders) :: Nil
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
@@ -530,14 +540,13 @@ trait MatchTranslation {
       /** Create the TreeMaker that embodies this extractor call
        *
        *  `binder` has been casted to `paramType` if necessary
-       *  `binderKnownNonNull` is not used in this subclass
        *
        *  TODO: implement review feedback by @retronym:
        *    Passing the pair of values around suggests:
        *       case class Binder(sym: Symbol, knownNotNull: Boolean).
        *    Perhaps it hasn't reached critical mass, but it would already clean things up a touch.
        */
-      def treeMakers(patBinderOrCasted: Symbol, binderKnownNonNull: Boolean, pos: Position): List[TreeMaker] = {
+      def treeMakers(patBinderOrCasted: Symbol, pos: Position): List[TreeMaker] = {
         // the extractor call (applied to the binder bound by the flatMap corresponding
         // to the previous (i.e., enclosing/outer) pattern)
         val (extractorApply, needsSubst) = spliceApply(pos, patBinderOrCasted)
@@ -568,9 +577,13 @@ trait MatchTranslation {
           extractorTreeMaker :: Nil
       }
 
-      override protected def seqTree(binder: Symbol): Tree =
-        if (firstIndexingBinder == 0) REF(binder)
-        else super.seqTree(binder)
+      override protected def seqTree(binder: Symbol, forceImmutable: Boolean): Tree =
+        if (firstIndexingBinder == 0) {
+          val ref = REF(binder)
+          if (forceImmutable && !binder.tpe.typeSymbol.isNonBottomSubClass(SeqClass)) Select(ref, nme.toSeq)
+          else ref
+        }
+        else super.seqTree(binder, forceImmutable)
 
       // the trees that select the subpatterns on the extractor's result, referenced by `binder`
       // require (totalArity > 0 && (!lastIsStar || isSeq))

@@ -5,7 +5,7 @@
 object Test {
   import collection._
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val m = new mutable.HashMap[String, String]
 
     /* Use non hash-based structure for verification */
@@ -27,7 +27,7 @@ object Test {
   }
 
   /* Checks foreach of `actual` goes over all the elements in `expected` */
-  private def assertForeach[E](expected: Traversable[E], actual: Iterator[E]): Unit = {
+  private def assertForeach[E](expected: Iterable[E], actual: Iterator[E]): Unit = {
     val notYetFound = new mutable.ArrayBuffer[E]() ++= expected
     actual.foreach { e =>
       assert(notYetFound.contains(e))
@@ -38,11 +38,11 @@ object Test {
 
   /*
    * Checks foreach of `actual` goes over all the elements in `expected`
-   * We duplicate the method above because there is no common interface between Traversable and
+   * We duplicate the method above because there is no common interface between Iterable and
    * Iterator and we want to avoid converting between collections to ensure that we test what
    * we mean to test.
    */
-  private def assertForeach[E](expected: Traversable[E], actual: Traversable[E]): Unit = {
+  private def assertForeach[E](expected: Iterable[E], actual: Iterable[E]): Unit = {
     val notYetFound = new mutable.ArrayBuffer[E]() ++= expected
     actual.foreach { e =>
       assert(notYetFound.contains(e))

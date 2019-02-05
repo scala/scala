@@ -20,7 +20,7 @@ object Test {
 
   def numericBigIntRanges = rangeData.map(r => if (r.inclusive) NumericRange.inclusive(BigInt(r.start), BigInt(r.end), BigInt(r.step)) else NumericRange(BigInt(r.start), BigInt(r.end), BigInt(r.step)))
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     println("Ranges:")
     ranges.foreach{range => println(range.sum)}
     println("IntRanges:")

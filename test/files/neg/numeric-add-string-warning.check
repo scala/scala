@@ -1,0 +1,6 @@
+numeric-add-string-warning.scala:4: warning: method + in class Int is deprecated (since 2.13.0): Adding a number and a String is deprecated. Use the string interpolation `s"$num$str"`
+  val x = 4 + "2"
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

@@ -13,7 +13,7 @@ object PrinterHelper {
 
   import scala.reflect.internal.Chars._
   private def normalizeEOL(resultCode: String) =
-    resultCode.lines mkString s"$LF"
+    resultCode.linesIterator mkString s"$LF"
 
   def assertResultCode(code: String)(parsedCode: String = "", typedCode: String = "", wrap: Boolean = false, printRoot: Boolean = false) = {
     def toolboxTree(tree: => Tree) = try {
@@ -31,7 +31,7 @@ object PrinterHelper {
       |  class foo3[Af, Bf](a: scala.Int)(b: scala.Float, c: PrintersContext.this.foo1[Af, Bf]) extends scala.annotation.Annotation with scala.annotation.StaticAnnotation;
       |  trait A1;
       |  trait B1;
-      |${source.trim.lines map {"  " + _} mkString s"$LF"}
+      |${source.trim.linesIterator map {"  " + _} mkString s"$LF"}
       |}"""
 
       if (wrap) context.trim() else source.trim
@@ -134,7 +134,7 @@ class BasePrintTest {
   @Test def testName19 = assertPrintedCode("""class `class`""")
 
   @Test def testName20 = assertPrintedCode("""class `test name`""")
-  
+
   @Test def testName21 = assertPrintedCode("""class `test.name`""")
 
   @Test def testIfExpr1 = assertResultCode(code = sm"""
@@ -327,7 +327,7 @@ class BasePrintTest {
   @Test def testFunc1 = assertResultCode(
     code = "List(1, 2, 3).map((i: Int) => i - 1)")(
     parsedCode = "List(1, 2, 3).map(((i: Int) => i.-(1)))",
-    typedCode = sm"scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int, List[Int]](((i: scala.Int) => i.-(1)))(scala.collection.immutable.List.canBuildFrom[Int])")
+    typedCode = sm"scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int](((i: scala.Int) => i.-(1)))")
 
   @Test def testFunc2 = assertResultCode(
     code = "val sum: Seq[Int] => Int = _ reduceLeft (_+_)")(
@@ -337,7 +337,7 @@ class BasePrintTest {
   @Test def testFunc3 = assertResultCode(
     code = "List(1, 2, 3) map (_ - 1)")(
     parsedCode = "List(1, 2, 3).map(((x$1) => x$1.-(1))) ",
-    typedCode = "scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int, List[Int]](((x$1: Int) => x$1.-(1)))(scala.collection.immutable.List.canBuildFrom[Int])")
+    typedCode = "scala.collection.immutable.List.apply[Int](1, 2, 3).map[Int](((x$1: Int) => x$1.-(1)))")
 
   @Test def testFunc4 = assertResultCode(
     code = "val x: String => Int = ((str: String) => 1)")(
@@ -345,7 +345,7 @@ class BasePrintTest {
     typedCode = " val x: _root_.scala.Function1[_root_.scala.Predef.String, _root_.scala.Int] = ((str: _root_.scala.Predef.String) => 1)", printRoot = true)
 
   @Test def testAssign1 = assertPrintedCode("(f.v = 5).toString", checkTypedTree = false)
-  
+
   @Test def testAssign2 = assertPrintedCode("(f.v = 5)(2)", checkTypedTree = false)
 
   @Test def testImport1 = assertPrintedCode("import scala.collection.mutable")
@@ -429,12 +429,12 @@ class ClassPrintTest {
     |class X(var i: scala.Int) extends {
     |  val a = i;
     |  type B
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testClassWithThrow1 = assertPrintedCode(sm"""
     |class Throw1 {
     |  throw new scala.`package`.Exception("exception!")
-    |}""")  
+    |}""")
 
   @Test def testClassWithThrow2 = assertPrintedCode(sm"""
     |class Throw2 {
@@ -565,7 +565,7 @@ class ClassPrintTest {
     |  trait V {
     |    val x: scala.Int
     |  };
-    |  case class X(override val x: scala.Int, s: scala.Predef.String) extends scala.Cloneable;
+    |  case class X(override val x: scala.Int, s: scala.Predef.String) extends scala.`package`.Cloneable;
     |  ()
     |}""")
 
@@ -637,22 +637,22 @@ class ClassPrintTest {
   @Test def testObjectWithEarly1 = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testObjectWithEarly2 = assertPrintedCode(sm"""
     |object X extends {
     |  val early: scala.Int = 42;
     |  type EarlyT = scala.Predef.String
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testObjectWithSelf = assertPrintedCode(sm"""
-    |object Foo extends scala.Serializable { self =>
+    |object Foo extends scala.`package`.Serializable { self =>
     |  42
     |}""")
 
   @Test def testObjectInh = assertPrintedCode(sm"""
     |trait Y {
-    |  private[Y] object X extends scala.Serializable with scala.Cloneable
+    |  private[Y] object X extends scala.`package`.Serializable with scala.`package`.Cloneable
     |}""")
 
   @Test def testObjectWithPatternMatch1 = assertPrintedCode(sm"""
@@ -779,7 +779,7 @@ class ClassPrintTest {
 
   @Test def testObjectWithPatternMatch7 = assertPrintedCode(sm"""
     |object PM7 {
-    |  scala.Predef.augmentString("abcde").toList match {
+    |  scala.Predef.wrapString("abcde").toList match {
     |    case scala.collection.Seq((car @ _), _*) => car
     |  }
     |}""")
@@ -853,7 +853,7 @@ class TraitPrintTest {
     |}""")
 
   @Test def testTraitWithSelfTypeAndBody = assertPrintedCode(sm"""
-    |trait X { self: scala.Cloneable =>
+    |trait X { self: scala.`package`.Cloneable =>
     |  def y = "test"
     |}""")
 
@@ -863,7 +863,7 @@ class TraitPrintTest {
     |}""")
 
   @Test def testTraitWithSelf2 = assertPrintedCode(sm"""
-    |trait X { self: scala.Cloneable with scala.Serializable =>
+    |trait X { self: scala.`package`.Cloneable with scala.`package`.Serializable =>
     |  val x: scala.Int = 1
     |}""")
 
@@ -875,7 +875,7 @@ class TraitPrintTest {
     |  val bar: scala.Predef.String
     |}""")
 
-  @Test def testTraitWithInh = assertPrintedCode("trait X extends scala.Cloneable with scala.Serializable")
+  @Test def testTraitWithInh = assertPrintedCode("trait X extends scala.`package`.Cloneable with scala.`package`.Serializable")
 
   @Test def testTraitWithEarly1 = assertPrintedCode(sm"""
     |trait X extends {
@@ -886,7 +886,7 @@ class TraitPrintTest {
     |trait X extends {
     |  val x: scala.Int = 0;
     |  type Foo = scala.Unit
-    |} with scala.Cloneable""")
+    |} with scala.`package`.Cloneable""")
 
   @Test def testTraitWithEarly3 = assertPrintedCode(sm"""
     |trait X extends {
@@ -894,7 +894,7 @@ class TraitPrintTest {
     |  val y: scala.Double = 4.0;
     |  type Foo;
     |  type XString = scala.Predef.String
-    |} with scala.Serializable""")
+    |} with scala.`package`.Serializable""")
 
   @Test def testTraitWithEarly4 = assertPrintedCode(sm"""
     |trait X extends {
@@ -902,7 +902,7 @@ class TraitPrintTest {
     |  val y: scala.Double = 4.0;
     |  type Foo;
     |  type XString = scala.Predef.String
-    |} with scala.Serializable {
+    |} with scala.`package`.Serializable {
     |  val z: scala.Int = 7
     |}""")
 
@@ -961,7 +961,7 @@ class TraitPrintTest {
     |  type B <: scala.AnyRef;
     |  protected type C;
     |  type D <: scala.AnyRef
-    |}""")  
+    |}""")
 }
 
 @RunWith(classOf[JUnit4])
@@ -984,7 +984,7 @@ class ValAndDefPrintTest {
 
   @Test def testDef6 = assertPrintedCode("def a_(b_ : scala.Int) = ()")
 
-  @Test def testDef7 = assertTreeCode{ 
+  @Test def testDef7 = assertTreeCode{
     Block(
       DefDef(NoMods, newTermName("test1"), Nil, Nil, EmptyTree, Literal(Constant(()))),
       DefDef(NoMods, newTermName("test2"), Nil, Nil :: Nil, EmptyTree, Literal(Constant(())))

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2006-2013 LAMP/EPFL
- * @author  Lex Spoon
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -8,7 +15,7 @@ package scala.tools.nsc
 import interpreter.shell.{ILoop, ShellConfig}
 
 object JarRunner extends CommonRunner {
-  def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
+  def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Option[Throwable] = {
     val jar       = new io.Jar(jarPath)
     val mainClass = jar.mainClass getOrElse (throw new IllegalArgumentException(s"Cannot find main class for jar: $jarPath"))
     val jarURLs   = util.ClassPath expandManifestPath jarPath
@@ -29,8 +36,8 @@ object JarRunner extends CommonRunner {
  */
 class MainGenericRunner {
   def errorFn(str: String, e: Option[Throwable] = None, isFailure: Boolean = true): Boolean = {
-    if (str.nonEmpty) Console.err println str
-    e foreach (_.printStackTrace())
+    if (str.nonEmpty) Console.err.println(str)
+    e.foreach(_.printStackTrace())
     !isFailure
   }
 
@@ -58,17 +65,17 @@ class MainGenericRunner {
       }
 
       import GenericRunnerCommand.{AsObject, AsScript, AsJar, Error}
-      def runTarget(): Either[Throwable, Boolean] = howToRun match {
+      def runTarget(): Option[Throwable] = howToRun match {
         case AsObject =>
           ObjectRunner.runAndCatch(settings.classpathURLs, thingToRun, command.arguments)
         case AsScript if isE =>
-          Right(ScriptRunner.runCommand(settings, combinedCode, thingToRun +: command.arguments))
+          ScriptRunner(settings).runScriptText(combinedCode, thingToRun +: command.arguments)
         case AsScript =>
-          ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
+          ScriptRunner(settings).runScript(thingToRun, command.arguments)
         case AsJar    =>
           JarRunner.runJar(settings, thingToRun, command.arguments)
         case Error =>
-          Right(false)
+          None
         case _  =>
           // We start the repl when no arguments are given.
           // If user is agnostic about both -feature and -deprecation, turn them on.
@@ -77,12 +84,13 @@ class MainGenericRunner {
             settings.feature.value = true
           }
           val config = ShellConfig(settings)
-          Right(new ILoop(config).run(settings))
+          new ILoop(config).run(settings)
+          None
       }
 
       runTarget() match {
-        case Left(ex) => errorFn("", Some(ex))  // there must be a useful message of hope to offer here
-        case Right(b) => b
+        case e @ Some(ex) => errorFn("", e)  // there must be a useful message of hope to offer here
+        case _            => true
       }
     }
 

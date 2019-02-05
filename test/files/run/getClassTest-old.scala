@@ -26,12 +26,12 @@ class AnyRefs {
   class A
   class B extends A
 
-  def f1 = (new B: Any).getClass().newInstance()
-  def f2 = (new B: AnyRef).getClass().newInstance()
-  def f3 = (new B: A).getClass().newInstance()
-  def f4 = (new B: B).getClass().newInstance()
+  def f1 = (new B: Any).getClass().getDeclaredConstructor().newInstance()
+  def f2 = (new B: AnyRef).getClass().getDeclaredConstructor().newInstance()
+  def f3 = (new B: A).getClass().getDeclaredConstructor().newInstance()
+  def f4 = (new B: B).getClass().getDeclaredConstructor().newInstance()
 
-  def f0[T >: B] = (new B: T).getClass().newInstance()
+  def f0[T >: B] = (new B: T).getClass().getDeclaredConstructor().newInstance()
 
   def f5 = f0[Any]
   def f6 = f0[AnyRef]

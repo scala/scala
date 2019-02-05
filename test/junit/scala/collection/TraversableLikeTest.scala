@@ -23,47 +23,15 @@ class TraversableLikeTest {
   }
 
   @Test
-  def test_SI9019 {
-    object Foo {
-      def mkBar = () => {
-        class Bar extends FakeIndexedSeq[Int]
-        new Bar
-      }
-
-      def mkFalsePositiveToSyntheticTest = () => {
-        /* A class whose name tarts with an ASCII lowercase letter.
-         * It will be a false positive to the synthetic-part test.
-         */
-        class falsePositive extends FakeIndexedSeq[Int]
-        new falsePositive
-      }
-
-      def mkFrench = () => {
-        // For non-French speakers, this means "strange class name"
-        class ÉtrangeNomDeClasse extends FakeIndexedSeq[Int]
-        new ÉtrangeNomDeClasse
-      }
-
-      def mkFrenchLowercase = () => {
-        class étrangeNomDeClasseMinuscules extends FakeIndexedSeq[Int]
-        new étrangeNomDeClasseMinuscules
-      }
+  def test_SI10631 {
+    val baselist = List(1, 2)
+    var checklist = List.empty[Int]
+    val lst = baselist.view.map { x =>
+      checklist = x :: checklist
+      x
     }
 
-    val bar = Foo.mkBar()
-    assertEquals("Bar", bar.stringPrefix)  // Previously would have been outermost class, TraversableLikeTest
-
-    val baz = new Baz[Int]()
-    assertEquals("TraversableLikeTest.Baz", baz.stringPrefix)  // Make sure we don't see specialization $mcI$sp stuff
-
-    // The false positive unfortunately produces an empty stringPrefix
-    val falsePositive = Foo.mkFalsePositiveToSyntheticTest()
-    assertEquals("", falsePositive.stringPrefix)
-
-    val french = Foo.mkFrench()
-    assertEquals("ÉtrangeNomDeClasse", french.stringPrefix)
-
-    val frenchLowercase = Foo.mkFrenchLowercase()
-    assertEquals("étrangeNomDeClasseMinuscules", frenchLowercase.stringPrefix)
+    assertEquals(2, lst.last)
+    assertEquals(baselist.reverse, checklist)
   }
 }

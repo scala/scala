@@ -157,12 +157,4 @@ object UnliftableProps extends QuasiquoteProperties("unliftable") {
     assert(t21 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21))
     assert(t22 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22))
   }
-
-  property("unlift xml comment") = test {
-    implicit val unliftXmlComment = Unliftable[xml.Comment] {
-      case q"new _root_.scala.xml.Comment(${value: String})" => xml.Comment(value)
-    }
-    val q"${comment: xml.Comment}" = q"<!--foo-->"
-    assert(comment.commentText == "foo")
-  }
 }

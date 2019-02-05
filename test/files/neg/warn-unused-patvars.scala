@@ -1,3 +1,5 @@
+// scalac: -Ywarn-unused:-patvars,_ -Xfatal-warnings
+//
 
 // verify no warning when -Ywarn-unused:-patvars
 
@@ -25,11 +27,11 @@ trait Boundings {
   }
 
   def v() = {
-    val D(x) = d                          // warn, fixme
+    val D(x) = d                          // no warn
     17
   }
   def w() = {
-    val D(x @ _) = d                      // warn, fixme (valdef pos is different)
+    val D(x @ _) = d                      // no warn
     17
   }
 

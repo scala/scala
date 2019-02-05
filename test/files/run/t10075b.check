@@ -45,9 +45,9 @@
 @RetainedAnnotation() public int TMix.lzyValGetterAnnotation()
  private int TMix.lzyValGetterAnnotation$lzycompute()
 @RetainedAnnotation() public int TMix.method()
-@RetainedAnnotation() private final int TMix.valFieldAnnotation
+@RetainedAnnotation() private int TMix.valFieldAnnotation
  public int TMix.valFieldAnnotation()
- private final int TMix.valGetterAnnotation
+ private int TMix.valGetterAnnotation
 @RetainedAnnotation() public int TMix.valGetterAnnotation()
 @RetainedAnnotation() private int TMix.varFieldAnnotation
  public int TMix.varFieldAnnotation()

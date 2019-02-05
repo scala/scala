@@ -1,7 +1,16 @@
-t2462c.scala:18: error: No C of X$Y
+t2462c.scala:26: error: No C of X$Y
   f[X$Y]
    ^
-t2462c.scala:24: error: No C of Foo[Int]
+t2462c.scala:32: error: No C of Foo[Int]
   f[Foo[Int]]
    ^
-two errors found
+t2462c.scala:35: error: No C of Foo[Int]
+  g[Foo[Int]]
+   ^
+t2462c.scala:38: error: I see no C[Foo[Int]]
+  h[Foo[Int]]
+   ^
+t2462c.scala:42: error: String List [?T0, ZZ] -> List[C[_]] Int Option[Long] -- .
+  i.m[Option[Long]]
+     ^
+5 errors found

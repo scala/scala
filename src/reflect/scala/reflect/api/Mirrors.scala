@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala
 package reflect
 package api
@@ -101,7 +113,7 @@ package api
  * via `ModuleMirror.instance`). Entry point: `val mm = im.reflectMethod(<method symbol>)`.
  * Example:
  * {{{
- *   scala> val methodX = typeOf[C].declaration(TermName("x")).asMethod
+ *   scala> val methodX = typeOf[C].decl(TermName("x")).asMethod
  *   methodX: reflect.runtime.universe.MethodSymbol = method x
  *
  *   scala> val mm = im.reflectMethod(methodX)
@@ -126,7 +138,7 @@ package api
  *   scala> val im = m.reflect(new C)
  *   im: reflect.runtime.universe.InstanceMirror = instance mirror for C@5f0c8ac1
  *
- *   scala> val fieldX = typeOf[C].declaration(TermName("x")).asTerm.accessed.asTerm
+ *   scala> val fieldX = typeOf[C].decl(TermName("x")).asTerm.accessed.asTerm
  *   fieldX: reflect.runtime.universe.TermSymbol = value x
  *   scala> val fmX = im.reflectField(fieldX)
  *   fmX: reflect.runtime.universe.FieldMirror = field mirror for C.x (bound to C@5f0c8ac1)
@@ -136,7 +148,7 @@ package api
  *
  *   scala> fmX.set(3) // NOTE: can set an underlying value of an immutable field!
  *
- *   scala> val fieldY = typeOf[C].declaration(TermName("y")).asTerm.accessed.asTerm
+ *   scala> val fieldY = typeOf[C].decl(TermName("y")).asTerm.accessed.asTerm
  *   fieldY: reflect.runtime.universe.TermSymbol = variable y
  *
  *   scala> val fmY = im.reflectField(fieldY)
@@ -169,7 +181,7 @@ package api
  *   scala> val cm = m.reflectClass(classC)
  *   cm: reflect.runtime.universe.ClassMirror = class mirror for C (bound to null)
  *
- *   scala> val ctorC = typeOf[C].declaration(ru.nme.CONSTRUCTOR).asMethod
+ *   scala> val ctorC = typeOf[C].decl(ru.nme.CONSTRUCTOR).asMethod
  *   ctorC: reflect.runtime.universe.MethodSymbol = constructor C
  *
  *   scala> val ctorm = cm.reflectConstructor(ctorC)

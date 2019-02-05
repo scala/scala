@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc
 package ast
 
@@ -6,7 +18,7 @@ trait Positions extends scala.reflect.internal.Positions {
 
   class ValidatingPosAssigner extends PosAssigner {
     var pos: Position = _
-    override def traverse(t: Tree) {
+    override def traverse(t: Tree): Unit = {
       if (t eq EmptyTree) ()
       else if (t.pos == NoPosition) super.traverse(t setPos pos)
       else if (globalPhase.id <= currentRun.picklerPhase.id) {

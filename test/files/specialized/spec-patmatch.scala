@@ -25,13 +25,13 @@ object Test {
    case _ => "default"
  })
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     test(true)
     test(42.toByte)
     test(42.toShort)
     test('b')
     test(42)
-    test(42l)
+    test(42L)
     test(42.0)
     test(42.0f)
     test(new Object)
@@ -42,7 +42,7 @@ object Test {
     (new Foo).test(42.toShort)
     (new Foo).test('b')
     (new Foo).test(42)
-    (new Foo).test(42l)
+    (new Foo).test(42L)
     (new Foo).test(42.0)
     (new Foo).test(42.0f)
     (new Foo).test(new Object)

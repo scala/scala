@@ -26,7 +26,7 @@ class ThePlugin(val global: Global) extends Plugin {
 
   private class ThePhase(prev: Phase) extends Phase(prev) {
     def name = ThePlugin.this.name
-    def run {}
+    def run: Unit = {}
   }
 }
 

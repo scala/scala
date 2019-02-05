@@ -4,7 +4,7 @@ object Test {
   def f: Unit =
     try return finally while(true) ()
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     f
   }
 }

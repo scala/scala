@@ -1,3 +1,5 @@
+// scalac: -nowarn
+//
 object Test {
   def main(args: Array[String]): Unit = {
     // these should give unboxed results

@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc
@@ -34,9 +41,6 @@ abstract class TreeBuilder {
     AppliedTypeTree(rootScalaDot(tpnme.BYNAME_PARAM_CLASS_NAME), List(tpe))
   def repeatedApplication(tpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(tpnme.REPEATED_PARAM_CLASS_NAME), List(tpe))
-
-  // represents `expr _`, as specified in Method Values of spec/06-expressions.md
-  def makeMethodValue(expr: Tree): Tree = Typed(expr, Function(Nil, EmptyTree))
 
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)

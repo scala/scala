@@ -7,7 +7,7 @@
 
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val it = Iterator.from(1).map(n => n * n).scanLeft(0)(_+_)
 
     assert(it.next == 0)

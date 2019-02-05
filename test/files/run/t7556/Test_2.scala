@@ -1,7 +1,7 @@
 import scala.reflect.runtime.universe._
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val mc = new MegaClass
     val anns = mc.getClass.getAnnotations.map(_.annotationType.getName).toList.sorted
     println(s"class annotations: $anns")

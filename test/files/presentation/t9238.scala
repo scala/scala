@@ -4,7 +4,7 @@ import scala.tools.nsc.reporters.ConsoleReporter
 
 object Test {
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val settings = new Settings
     settings.usejavacp.value = true
     val reporter = new ConsoleReporter(settings)

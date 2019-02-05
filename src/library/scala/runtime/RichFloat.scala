@@ -1,25 +1,28 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
 
 package scala
 package runtime
 
 final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float] {
-  protected def num         = scala.math.Numeric.FloatIsFractional
-  protected def ord         = scala.math.Ordering.Float
-  protected def integralNum = scala.math.Numeric.FloatAsIfIntegral
+  protected def num: Fractional[Float] = scala.math.Numeric.FloatIsFractional
+  protected def ord: Ordering[Float]   = scala.math.Ordering.Float.TotalOrdering
 
-  override def doubleValue() = self.toDouble
-  override def floatValue()  = self
-  override def longValue()   = self.toLong
-  override def intValue()    = self.toInt
-  override def byteValue()   = self.toByte
-  override def shortValue()  = self.toShort
+  override def doubleValue = self.toDouble
+  override def floatValue  = self
+  override def longValue   = self.toLong
+  override def intValue    = self.toInt
+  override def byteValue   = self.toByte
+  override def shortValue  = self.toShort
 
   override def isWhole = {
     val l = self.toLong

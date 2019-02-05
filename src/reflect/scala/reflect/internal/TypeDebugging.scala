@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author  Paul Phillips
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -59,7 +66,7 @@ trait TypeDebugging {
   object typeDebug {
     import scala.io.AnsiColor._
 
-    private val colorsOk = scala.util.Properties.coloredOutputEnabled
+    private[this] val colorsOk = scala.util.Properties.coloredOutputEnabled
     private def inColor(s: String, color: String) = if (colorsOk && s != "") color +        s + RESET else s
     private def inBold(s: String, color: String)  = if (colorsOk && s != "") color + BOLD + s + RESET else s
 
@@ -77,7 +84,7 @@ trait TypeDebugging {
     private def to_s(x: Any): String = x match {
       // otherwise case classes are caught looking like products
       case _: Tree | _: Type     => "" + x
-      case x: TraversableOnce[_] => x mkString ", "
+      case x: IterableOnce[_]    => x.iterator mkString ", "
       case x: Product            => x.productIterator mkString ("(", ", ", ")")
       case _                     => "" + x
     }
@@ -114,7 +121,7 @@ trait TypeDebugging {
     }
     def ptTypeParam(td: TypeDef): String = {
       val TypeDef(_, name, tparams, rhs) = td
-      name + ptTypeParams(tparams) + ptTree(rhs)
+      name.toString + ptTypeParams(tparams) + ptTree(rhs)
     }
     def ptTypeParams(tparams: List[TypeDef]): String = str brackets (tparams map ptTypeParam)
 

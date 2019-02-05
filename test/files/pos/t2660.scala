@@ -18,7 +18,7 @@ class A[T](x: T) {
 }
 
 object T {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     implicit def g2h(g: G): H = new H
     new A(new H, 23)
   }

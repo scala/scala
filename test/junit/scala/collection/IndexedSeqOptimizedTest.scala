@@ -9,13 +9,14 @@ import org.junit.Test
 class IndexedSeqOptimizedTest {
 
   @Test
-  def notThrowsAnExceptionInLastIndexOf() {
-    assertEquals(0, (Array(2): collection.mutable.WrappedArray[Int]).lastIndexWhere(_ => true, 1))
+  def notThrowsAnExceptionInLastIndexOf(): Unit = {
+    assertEquals(0, Array(2).lastIndexWhere(_ => true, 1))
+    assertEquals(0, (Array(2): collection.mutable.ArraySeq[Int]).lastIndexWhere(_ => true, 1))
     assertEquals(2, "abc123".lastIndexWhere(_.isLetter, 6))
   }
 
   @Test
-  def hasCorrectDropAndTakeMethods() {
+  def hasCorrectDropAndTakeMethods(): Unit = {
     assertEquals("", "abc" take Int.MinValue)
     assertEquals("", "abc" takeRight Int.MinValue)
     assertEquals("abc", "abc" drop Int.MinValue)

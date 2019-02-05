@@ -52,7 +52,7 @@ object CheckEitherTest extends Properties("Either") {
       def g(s: String) = s.reverse
       e.left.map(x => f(g(x))) == e.left.map(x => g(x)).left.map(f(_))})
 
-    val prop_filter = forAll((e: Either[Int, Int], x: Int) => e.left.filter(_ % 2 == 0) ==
+    val prop_filterToOption = forAll((e: Either[Int, Int], x: Int) => e.left.filterToOption(_ % 2 == 0) ==
       (if(e.isRight || e.left.get % 2 != 0) None else Some(e)))
 
     val prop_seq = forAll((e: Either[Int, Int]) => e.left.toSeq == (e match {
@@ -98,7 +98,7 @@ object CheckEitherTest extends Properties("Either") {
       def g(s: String) = s.reverse
       e.right.map(x => f(g(x))) == e.right.map(x => g(x)).right.map(f(_))})
 
-    val prop_filter = forAll((e: Either[Int, Int], x: Int) => e.right.filter(_ % 2 == 0) ==
+    val prop_filterToOption = forAll((e: Either[Int, Int], x: Int) => e.right.filterToOption(_ % 2 == 0) ==
       (if(e.isLeft || e.right.get % 2 != 0) None else Some(e)))
 
     val prop_seq = forAll((e: Either[Int, Int]) => e.right.toSeq == (e match {
@@ -135,6 +135,11 @@ object CheckEitherTest extends Properties("Either") {
   val prop_getOrElse = forAll((e: Either[Int, Int], or: Int) => e.getOrElse(or) == (e match {
     case Left(_) => or
     case Right(b) => b
+  }))
+
+  val prop_orElse = forAll((e: Either[Int, Int], or: Either[Int, Int]) => e.orElse(or) == (e match {
+    case Left(_) => or
+    case Right(_) => e
   }))
 
   val prop_contains = forAll((e: Either[Int, Int], n: Int) =>
@@ -202,7 +207,7 @@ object CheckEitherTest extends Properties("Either") {
       ("Left.prop_flatMapComposition", CheckLeftProjection.prop_flatMapComposition),
       ("Left.prop_mapIdentity", CheckLeftProjection.prop_mapIdentity),
       ("Left.prop_mapComposition", CheckLeftProjection.prop_mapComposition),
-      ("Left.prop_filter", CheckLeftProjection.prop_filter),
+      ("Left.prop_filterToOption", CheckLeftProjection.prop_filterToOption),
       ("Left.prop_seq", CheckLeftProjection.prop_seq),
       ("Left.prop_option", CheckLeftProjection.prop_option),
       ("Right.prop_value", CheckRightProjection.prop_value),
@@ -214,7 +219,7 @@ object CheckEitherTest extends Properties("Either") {
       ("Right.prop_flatMapComposition", CheckRightProjection.prop_flatMapComposition),
       ("Right.prop_mapIdentity", CheckRightProjection.prop_mapIdentity),
       ("Right.prop_mapComposition", CheckRightProjection.prop_mapComposition),
-      ("Right.prop_filter", CheckRightProjection.prop_filter),
+      ("Right.prop_filterToOption", CheckRightProjection.prop_filterToOption),
       ("Right.prop_seq", CheckRightProjection.prop_seq),
       ("Right.prop_option", CheckRightProjection.prop_option),
       ("prop_Either_left", prop_Either_left),
@@ -223,6 +228,7 @@ object CheckEitherTest extends Properties("Either") {
       ("prop_Either_joinRight", prop_Either_joinRight),
       ("prop_Either_reduce", prop_Either_reduce),      
       ("prop_getOrElse", prop_getOrElse),
+      ("prop_orElse", prop_orElse),
       ("prop_contains", prop_contains),
       ("prop_forall", prop_forall),
       ("prop_exists", prop_exists),

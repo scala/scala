@@ -1,3 +1,15 @@
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 package scala.tools.nsc.interactive.tests.core
 
 case class DuplicateTestMarker(msg: String) extends Exception(msg)
@@ -6,7 +18,7 @@ object TestMarker {
   import scala.collection.mutable.Map
   private val markers: Map[String, TestMarker] = Map.empty
 
-  private def checkForDuplicate(marker: TestMarker) {
+  private def checkForDuplicate(marker: TestMarker): Unit = {
     markers.get(marker.marker) match {
       case None => markers(marker.marker) = marker
       case Some(otherMarker) =>

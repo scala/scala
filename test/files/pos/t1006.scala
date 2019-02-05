@@ -1,6 +1,6 @@
 object Test extends App {
 
-def test() {
+def test(): Unit = {
 
   abstract class A[T] {
     def myVal: T

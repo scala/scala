@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL, Typesafe Inc.
- * @author  Adriaan Moors
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -74,22 +81,23 @@ import util.Position
 /** Report information, warnings and errors.
  *
  *  This describes the (future) external interface for issuing information, warnings and errors.
- *  Currently, scala.tools.nsc.Reporter is used by sbt/ide/partest.
+ *  Currently, scala.tools.nsc.Reporter is used by sbt/ide.
  */
 abstract class Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
+  def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
   def echo(pos: Position, msg: String): Unit    = info0(pos, msg, INFO, force = true)
   def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
   def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
 
-  type Severity
-  val INFO: Severity
-  val WARNING: Severity
-  val ERROR: Severity
+  class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
+  object INFO    extends Severity(0)("INFO")
+  object WARNING extends Severity(1)("WARNING")
+  object ERROR   extends Severity(2)("ERROR")
 
-  def count(severity: Severity): Int
-  def resetCount(severity: Severity): Unit
+  def count(severity: Severity): Int       = severity.count
+  def resetCount(severity: Severity): Unit = severity.count = 0
 
   def errorCount: Int   = count(ERROR)
   def warningCount: Int = count(WARNING)
@@ -116,13 +124,33 @@ abstract class Reporter {
     }
 }
 
-// TODO: move into superclass once partest cuts tie on Severity
-abstract class ReporterImpl extends Reporter {
-  class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
-  object INFO    extends Severity(0)("INFO")
-  object WARNING extends Severity(1)("WARNING")
-  object ERROR   extends Severity(2)("ERROR")
+/** A `Reporter` that forwards messages to a delegate.
+ *
+ *  Concrete subclasses must implement the abstract `delegate` member.
+ */
+trait ForwardingReporter extends Reporter {
 
-  def count(severity: Severity): Int       = severity.count
-  def resetCount(severity: Severity): Unit = severity.count = 0
+  /* Receiver of all forwarded calls. */
+  protected val delegate: Reporter
+
+  /* Convenience method to forward a given message to the delegate reporter. */
+  protected def forward(pos: Position, msg: String, severity: Severity): Unit =
+    severity match {
+      case ERROR   => delegate.error(pos, msg)
+      case WARNING => delegate.warning(pos, msg)
+      case INFO    => delegate.echo(pos, msg)
+      case _       => throw new IllegalArgumentException(s"Unknown severity: $severity")
+    }
+
+  /* Always throws `UnsupportedOperationException`. */
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
+    throw new UnsupportedOperationException(s"$msg ($pos)")
+
+  override def echo(pos: Position, msg: String)    = delegate.echo(pos, msg)
+  override def warning(pos: Position, msg: String) = delegate.warning(pos, msg)
+  override def error(pos: Position, msg: String)   = delegate.error(pos, msg)
+
+  override def reset()      = { super.reset() ; delegate.reset() }
+  override def flush()      = { super.flush() ; delegate.flush() }
+  override def finish()     = { super.finish() ; delegate.finish() }
 }

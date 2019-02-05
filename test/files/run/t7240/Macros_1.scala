@@ -22,9 +22,9 @@ object Bakery {
 
       val tpeName = newTypeName(names.head)
       names.tail.reverse match {
-        case head :: tail ⇒
-          Select(tail.foldLeft[Tree](Ident(newTermName(head)))((tree, name) ⇒ Select(tree, newTermName(name))), tpeName)
-        case Nil ⇒
+        case head :: tail =>
+          Select(tail.foldLeft[Tree](Ident(newTermName(head)))((tree, name) => Select(tree, newTermName(name))), tpeName)
+        case Nil =>
           Ident(tpeName)
       }
     }

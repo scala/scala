@@ -1,6 +1,13 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
- * @author Martin Odersky
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala
@@ -160,7 +167,7 @@ abstract class ExplicitOuter extends InfoTransform
 
       val paramsWithOuter =
         if (sym.isClassConstructor && isInner(sym.owner)) // 1
-          sym.newValueParameter(nme.OUTER_ARG, sym.pos).setInfo(sym.owner.outerClass.thisType) :: params
+          sym.newValueParameter(nme.OUTER_ARG, sym.pos, ARTIFACT).setInfo(sym.owner.outerClass.thisType) :: params
         else params
 
       if ((resTpTransformed ne resTp) || (paramsWithOuter ne params)) MethodType(paramsWithOuter, resTpTransformed)
@@ -182,7 +189,7 @@ abstract class ExplicitOuter extends InfoTransform
               debuglog(s"Reusing outer accessor symbol of $clazz for the mixin outer accessor of $mc")
             else {
               if (decls1 eq decls) decls1 = decls.cloneScope
-              val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
+              val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED).setPos(clazz.pos)
               newAcc setInfo (clazz.thisType memberType mixinOuterAcc)
               decls1 enter newAcc
             }
@@ -257,14 +264,18 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
     /** The path
-     *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
+     *  <blockquote><pre>`base`.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
      *  which refers to the outer instance of class to of
      *  value base. The result is typed but not positioned.
      */
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       if (from == to) base
-      else outerPath(outerSelect(base), from.outerClass, to)
+      else {
+        val outerSel = outerSelect(base)
+        if (outerSel.isEmpty) EmptyTree
+        else outerPath(outerSel, from.outerClass, to)
+      }
     }
 
 
@@ -408,7 +419,7 @@ abstract class ExplicitOuter extends InfoTransform
                   reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
                 }
                 val outerParam =
-                  sym.newValueParameter(nme.OUTER, sym.pos) setInfo clazz.outerClass.thisType
+                  sym.newValueParameter(nme.OUTER, sym.pos, ARTIFACT) setInfo clazz.outerClass.thisType
                 ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
               } else vparamss
             super.transform(copyDefDef(tree)(vparamss = vparamss1))
@@ -482,7 +493,7 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
     /** The transformation method for whole compilation units */
-    override def transformUnit(unit: CompilationUnit) {
+    override def transformUnit(unit: CompilationUnit): Unit = {
       exitingExplicitOuter(super.transformUnit(unit))
     }
   }

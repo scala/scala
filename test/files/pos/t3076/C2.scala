@@ -1,4 +1,4 @@
 class C2 {
-  def m1() { new T { } }
-  def m2() { new T { } }
+  def m1(): Unit = { new T { } }
+  def m2(): Unit = { new T { } }
 }

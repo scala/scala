@@ -5,7 +5,7 @@ package object stalepkg {
 
 package stalepkg {
   object Test {
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
     }
   }
 }

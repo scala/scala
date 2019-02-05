@@ -1,0 +1,6 @@
+t4612.scala:13: error: type mismatch;
+ found   : t4612.this.Bob
+ required: _1
+      def foo = new Bob
+                ^
+one error found

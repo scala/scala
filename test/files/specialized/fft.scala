@@ -18,7 +18,7 @@ import Math.{sqrt, pow}
 object Test  {
   type Complex = (Double, Double)
 
-  def swap(x: Array[Complex], i: Int, j: Int) {
+  def swap(x: Array[Complex], i: Int, j: Int): Unit = {
     val tmp = x(i)
     x(i) = x(j)
     x(j) = tmp
@@ -42,21 +42,21 @@ object Test  {
   def minus(x: Complex, y: Complex) =
     (x._1 - y._1, x._2 - y._2)
 
-  def FFT(dir: Int, m: Long, x: Array[(Double, Double)]) {
-    var i, i1, i2,j, k, l, l1, l2, n = 0l
+  def FFT(dir: Int, m: Long, x: Array[(Double, Double)]): Unit = {
+    var i, i1, i2,j, k, l, l1, l2, n = 0L
 //   complex <double> tx, t1, u, c;
     var tx, t1, u, c = (0.0, 0.0)
 
    /*Calculate the number of points */
    n = 1
-   for (i <- 0l until m)
+   for (i <- 0L until m)
       n <<= 1
 
    /* Do the bit reversal */
    i2 = n >> 1
    j = 0
 
-   for (i <- 0l until (n - 1)) {
+   for (i <- 0L until (n - 1)) {
       if (i < j)
          swap(x, i.toInt, j.toInt);
 
@@ -75,14 +75,14 @@ object Test  {
    // c.imag(0.0);
    c = (-1.0, 0.0)
    l2 = 1
-   for (l <- 0l until m) {
+   for (l <- 0L until m) {
      l1 = l2
      l2 <<= 1;
       // u.real(1.0);
       // u.imag(0.0);
      u = (1.0, 0.0)
 
-     for (j <- 0l until l1) {
+     for (j <- 0L until l1) {
        for (i <- j.until(n, l2)) {
          i1 = i + l1;
          t1 = times(u, x(i1.toInt))
@@ -106,12 +106,12 @@ object Test  {
 
    /* Scaling for forward transform */
    if (dir == 1) {
-     for (i <- 0l until n)
+     for (i <- 0L until n)
        x(i.toInt) = div(x(i.toInt), n)
    }
   }
 
-  def run() {
+  def run(): Unit = {
     FFT(1, 16, data)
   }
   var data: Array[Complex] = null
@@ -122,7 +122,7 @@ object Test  {
     else "input2.txt"
   }
 
-  def setUp {
+  def setUp: Unit = {
 //    print("Loading from %s.. ".format(inputFileName))
     val f = io.Source.fromFile(inputFileName)
     val lines = f.getLines
@@ -138,7 +138,7 @@ object Test  {
     println("Processing " + n + " items")
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     setUp
     run()
 

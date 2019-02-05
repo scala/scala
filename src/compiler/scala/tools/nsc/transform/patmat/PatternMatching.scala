@@ -1,11 +1,18 @@
-/* NSC -- new Scala compiler
+/*
+ * Scala (https://www.scala-lang.org)
  *
- * Copyright 2011-2013 LAMP/EPFL
- * @author Adriaan Moors
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
 
 package scala.tools.nsc.transform.patmat
 
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.Global
 import scala.tools.nsc.ast
 import scala.language.postfixOps
@@ -59,9 +66,18 @@ trait PatternMatching extends Transform
       case Match(sel, cases) =>
         val origTp = tree.tpe
         // setType origTp intended for CPS -- TODO: is it necessary?
-        val translated = translator.translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
+        val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
-          localTyper.typed(translated) setType origTp
+          // Keep 2.12 behaviour of using wildcard expected type, recomputing the LUB, then throwing it away for the continuations plugins
+          // but for the rest of us pass in top as the expected type to avoid waste.
+          val pt = if (origTp <:< definitions.AnyTpe) definitions.AnyTpe else WildcardType
+          localTyper.typed(translated, pt) match {
+            case b @ Block(stats, m: Match) =>
+              b.setType(origTp)
+              m.setType(origTp)
+              b
+            case tree => tree setType origTp
+          }
         } catch {
           case x: (Types#TypeError) =>
             // TODO: this should never happen; error should've been reported during type checking
@@ -69,24 +85,21 @@ trait PatternMatching extends Transform
             translated
         }
       case Try(block, catches, finalizer) =>
-        treeCopy.Try(tree, transform(block), translator.translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
+        val selectorPos = catches.headOption.getOrElse(EmptyTree).orElse(finalizer).pos.focusEnd
+        treeCopy.Try(tree, transform(block), translator(selectorPos).translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
     }
 
     // TODO: only instantiate new match translator when localTyper has changed
     // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
     // as this is the only time TypingTransformer changes it
-    def translator: MatchTranslator with CodegenCore = {
-      new OptimizingMatchTranslator(localTyper)
+    def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
+      new OptimizingMatchTranslator(localTyper, selectorPos)
     }
   }
 
-  class PureMatchTranslator(val typer: analyzer.Typer, val matchStrategy: Tree) extends MatchTranslator with PureCodegen {
-    def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type) = (cases, Nil)
-    def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {}
-  }
 
-  class OptimizingMatchTranslator(val typer: analyzer.Typer) extends MatchTranslator
+  class OptimizingMatchTranslator(val typer: analyzer.Typer, val selectorPos: Position) extends MatchTranslator
                                                              with MatchOptimizer
                                                              with MatchAnalyzer
                                                              with Solver
@@ -191,34 +204,46 @@ trait Interface extends ast.TreeDSL {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   trait TypedSubstitution extends MatchMonadInterface {
     object Substitution {
-      def apply(from: Symbol, to: Tree) = new Substitution(List(from), List(to))
+      def apply(from: Symbol, to: Tree): Substitution = new Substitution(from :: Nil, to :: Nil)
       // requires sameLength(from, to)
-      def apply(from: List[Symbol], to: List[Tree]) =
+      def apply(from: List[Symbol], to: List[Tree]): Substitution =
         if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
     }
 
     class Substitution(val from: List[Symbol], val to: List[Tree]) {
       import global.{Transformer, Ident, NoType, TypeTree, SingleType}
 
+      private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
+      lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
+
       // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
       // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
       def apply(tree: Tree): Tree = {
         // according to -Ystatistics 10% of translateMatch's time is spent in this method...
         // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
-        val toIdents = to.forall(_.isInstanceOf[Ident])
+
+        val checkType = new TypeCollector[Boolean](false) {
+          override def apply(tp: Type): Unit =
+            if (!result) {
+              tp match {
+                case SingleType(_, sym) if from contains sym =>
+                  global.devWarningIf(to.exists(!_.isInstanceOf[Ident])) {
+                    s"Unexpected substitution of non-Ident into TypeTree, subst= $this"
+                  }
+                  result = true
+                case _ =>
+                    tp.foldOver(this)
+              }
+            }
+        }
         val containsSym = tree.exists {
           case i@Ident(_) => from contains i.symbol
-          case tt: TypeTree => tt.tpe.exists {
-            case SingleType(_, sym) =>
-              (from contains sym) && {
-                if (!toIdents) global.devWarning(s"Unexpected substitution of non-Ident into TypeTree `$tt`, subst= $this")
-                true
-              }
-            case _ => false
-          }
+          case tt: TypeTree =>
+            checkType.result = false
+            checkType.collect(tt.tpe)
           case _          => false
         }
-        val toSyms = to.map(_.symbol)
+
         object substIdentsForTrees extends Transformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
@@ -226,8 +251,6 @@ trait Interface extends ast.TreeDSL {
             // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
             else typer.typed(to)
 
-          def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
-          lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
 
           override def transform(tree: Tree): Tree = {
             def subst(from: List[Symbol], to: List[Tree]): Tree =
@@ -259,9 +282,17 @@ trait Interface extends ast.TreeDSL {
 
       // the substitution that chains `other` before `this` substitution
       // forall t: Tree. this(other(t)) == (this >> other)(t)
-      def >>(other: Substitution): Substitution = {
-        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !other.from.contains(f) }
-        new Substitution(other.from ++ fromFiltered, other.to.map(apply) ++ toFiltered) // a quick benchmarking run indicates the `.map(apply)` is not too costly
+      def >>(other: Substitution): Substitution = if (other == EmptySubstitution) this else {
+        // HOT
+        val newFrom = new ListBuffer[Symbol]
+        val newTo = new ListBuffer[Tree]
+        foreach2(from, to) { (f, t) =>
+          if (!other.from.contains(f)) {
+            newFrom += f
+            newTo += t
+          }
+        }
+        new Substitution(newFrom.prependToList(other.from), newTo.prependToList(other.to.mapConserve(apply)))
       }
       override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")
     }

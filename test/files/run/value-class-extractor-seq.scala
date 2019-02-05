@@ -2,7 +2,7 @@ import scala.runtime.ScalaRunTime.stringOf
 
 final class ArrayOpt[T](val xs: Array[T]) extends AnyVal {
   def isEmpty = xs == null
-  def get = xs
+  def get = new scala.Array.UnapplySeqWrapper(xs)
 }
 
 object Bip {

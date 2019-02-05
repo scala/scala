@@ -14,7 +14,7 @@ class RunTest extends RunTesting {
   @Test
   def annotationInfoNotErased(): Unit = {
     val code =
-      """import javax.annotation.Resource
+      """import scala.tools.testing.Resource
         |import scala.annotation.meta.getter
         |class C {
         |  type Rg = Resource @getter

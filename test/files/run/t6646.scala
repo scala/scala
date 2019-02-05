@@ -4,7 +4,7 @@ case object PrimaryKey extends ColumnOption
 case object lower extends ColumnOption
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val l = List(PrimaryKey, NoNull, lower)
 
     // withFilter must be generated in these

@@ -1,10 +1,15 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
+/*
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
+ */
+
 // GENERATED CODE: DO NOT EDIT. See scala.Function0 for timestamp.
 
 package scala
@@ -21,7 +26,7 @@ trait Product10[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Any w
   /** The arity of this product.
    *  @return 10
    */
-  override def productArity = 10
+  override def productArity: Int = 10
 
   
   /** Returns the n-th projection of this product if 0 <= n < productArity,
@@ -29,11 +34,11 @@ trait Product10[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Any w
    *
    *  @param n number of the projection to be returned
    *  @return  same as `._(n+1)`, for example `productElement(0)` is the same as `._1`.
-   *  @throws  IndexOutOfBoundsException
+   *  @throws  IndexOutOfBoundsException if the `n` is out of range(n < 0 || n >= 10).
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match { 
+  override def productElement(n: Int): Any = n match { 
     case 0 => _1
     case 1 => _2
     case 2 => _3
@@ -44,7 +49,7 @@ trait Product10[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Any w
     case 7 => _8
     case 8 => _9
     case 9 => _10
-    case _ => throw new IndexOutOfBoundsException(n.toString())
+    case _ => throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max 9)")
  }
 
   /** A projection of element 1 of this Product.

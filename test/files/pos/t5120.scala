@@ -22,5 +22,5 @@ class Test {
     }
   }
 
-  def foo[T](x: ScopedKey[T], v: ScopedKey[T]) {}
+  def foo[T](x: ScopedKey[T], v: ScopedKey[T]): Unit = {}
 }

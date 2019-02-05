@@ -10,7 +10,6 @@ import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util._
 
-
 @RunWith(classOf[JUnit4])
 class ConsoleReporterTest {
   val source = "Test_ConsoleReporter"
@@ -20,83 +19,64 @@ class ConsoleReporterTest {
   val writerOut = new ByteArrayOutputStream()
   val echoWriterOut = new ByteArrayOutputStream()
 
-
   def createConsoleReporter(inputForReader: String, errOut: ByteArrayOutputStream, echoOut: ByteArrayOutputStream = null): ConsoleReporter = {
     val reader = new BufferedReader(new StringReader(inputForReader))
       
-    /** Create reporter with the same writer and echoWriter if echoOut is null */
+    // Create reporter with the same writer and echoWriter if echoOut is null
     echoOut match {
-      case null => new ConsoleReporter(new Settings(), reader, new PrintWriter(errOut))
-      case _ => new ConsoleReporter(new Settings(), reader, new PrintWriter(errOut), new PrintWriter(echoWriterOut))
+      case null => new ConsoleReporter(new Settings, reader, new PrintWriter(errOut))
+      case _ => new ConsoleReporter(new Settings, reader, new PrintWriter(errOut), new PrintWriter(echoWriterOut))
     }
   }
 
-
-  def testHelper(pos: Position = NoPosition, msg: String, severity: String = "")(test: Position => Unit) = {
-    test(pos)
-    if (msg.isEmpty && severity.isEmpty) assertTrue(writerOut.toString.isEmpty)
-    else {
-      if (!pos.isDefined) assertEquals(severity + msg, writerOut.toString.lines.next)
+  def testHelper(pos: Position = NoPosition, msg: String, severity: String = "")(test: Position => Unit) =
+    try {
+      test(pos)
+      val buf = writerOut.toString
+      if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
+      else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next)
       else {
-        val it = writerOut.toString.lines
+        val it = buf.linesIterator
         assertEquals(source + ":1: " + severity + msg, it.next)
         assertEquals(content, it.next)
         assertEquals("    ^", it.next)
       }
-    }
-    writerOut.reset
-  }
+    } finally writerOut.reset
 
-  
   @Test
   def printMessageTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "Hello World!")(_ => reporter.printMessage("Hello World!"))
-    testHelper(msg = "Testing with NoPosition")(reporter.printMessage(_, "Testing with NoPosition"))
-    testHelper(posWithSource, "Testing with Defined Position")(reporter.printMessage(_, "Testing with Defined Position"))
+    testHelper(msg = "Hello World!")(_ => reporter.display(NoPosition, "Hello World!", null))
+    testHelper(posWithSource, "Testing with Defined Position")(reporter.display(_, "Testing with Defined Position", null))
   }
-
 
   @Test
   def echoTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut, echoWriterOut)
     reporter.echo("Hello World!")
-    assertEquals("Hello World!", echoWriterOut.toString.lines.next)
+    assertEquals("Hello World!", echoWriterOut.toString.linesIterator.next)
 
     /** Check with constructor which has the same writer and echoWriter */
     val reporter2 = createConsoleReporter("r", writerOut)
     testHelper(msg = "Hello World!")(_ => reporter2.echo("Hello World!"))
   }
 
-
   @Test
   def printTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "test")(reporter.print(_, "test", reporter.INFO))
-    testHelper(msg = "test", severity = "warning: ")(reporter.print(_, "test", reporter.WARNING))
-    testHelper(msg = "test", severity = "error: ")(reporter.print(_, "test", reporter.ERROR))
-    testHelper(posWithSource, msg = "test")(reporter.print(_, "test", reporter.INFO))
-    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.print(_, "test", reporter.WARNING))
-    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.print(_, "test", reporter.ERROR))
+    testHelper(msg = "test")(reporter.display(_, "test", reporter.INFO))
+    testHelper(msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
+    testHelper(msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
+    testHelper(posWithSource, msg = "test")(reporter.display(_, "test", reporter.INFO))
+    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
+    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
   }
-
-
-  @Test
-  def printColumnMarkerTest(): Unit = {
-    val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "")(reporter.printColumnMarker(_))
-
-    reporter.printColumnMarker(posWithSource)
-    assertEquals("    ^", writerOut.toString.lines.next)
-    writerOut.reset
-  }
-
 
   @Test
   def displayTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
 
-    /** Change maxerrs and maxwarns from default */
+    // Change maxerrs and maxwarns from default
     reporter.settings.maxerrs.value = 1
     reporter.settings.maxwarns.value = 1
 
@@ -121,10 +101,9 @@ class ConsoleReporterTest {
     testHelper(msg = "")(reporter.display(_, "Testing display for maxwarns to fail", reporter.WARNING))
   }
 
-
   @Test
   def finishTest(): Unit = {
-    val reporter = createConsoleReporter("r", writerOut)
+    val reporter = createConsoleReporter("", writerOut)
 
     reporter.resetCount(reporter.ERROR)
     reporter.resetCount(reporter.WARNING)
@@ -133,12 +112,12 @@ class ConsoleReporterTest {
     reporter.ERROR.count = 10
     reporter.WARNING.count = 3
     reporter.finish()
-    val it = writerOut.toString.lines
+    reporter.flush()
+    val it = writerOut.toString.linesIterator
     assertEquals("three warnings found", it.next)
     assertEquals("10 errors found", it.next)
     writerOut.reset
   }
-
 
   @Test
   def displayPromptTest(): Unit = {
@@ -147,16 +126,16 @@ class ConsoleReporterTest {
     /** Check for stack trace */
     val reporter = createConsoleReporter("s", writerOut, echoWriterOut)
     reporter.displayPrompt()
-    val it = writerOut.toString.lines
+    val it = writerOut.toString.linesIterator
     assertTrue(it.next.isEmpty)
     assertEquals(output + "java.lang.Throwable", it.next)
     assertTrue(it.hasNext)
-    
+
     /** Check for no stack trace */
     val writerOut2 = new ByteArrayOutputStream()
     val reporter2 = createConsoleReporter("w", writerOut2)
     reporter2.displayPrompt()
-    val it2 = writerOut2.toString.lines
+    val it2 = writerOut2.toString.linesIterator
     assertTrue(it2.next.isEmpty)
     assertEquals(output, it2.next)
     assertFalse(it2.hasNext)
@@ -165,9 +144,75 @@ class ConsoleReporterTest {
     val writerOut3 = new ByteArrayOutputStream()
     val reporter3 = createConsoleReporter("r", writerOut3)
     reporter3.displayPrompt()
-    val it3 = writerOut3.toString.lines
+    val it3 = writerOut3.toString.linesIterator
     assertTrue(it3.next.isEmpty)
     assertEquals(output, it3.next)
     assertFalse(it3.hasNext)
+  }
+
+  @Test
+  def filterTest(): Unit = {
+    val reporter = createConsoleReporter("r", writerOut)
+    val filter   = {
+      // Change maxerrs and maxwarns from default on filter only
+      val settings = new Settings
+      settings.maxerrs.value  = 1
+      settings.maxwarns.value = 1
+
+      new Reporter.LimitingReporter(settings, reporter) with CountingReporter
+    }
+
+    // pass one message
+    testHelper(msg = "Testing display")(filter.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(filter.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(filter.error(_, "Testing display"))
+    filter.reset()
+
+    testHelper(posWithSource, msg = "Testing display")(filter.echo(_, "Testing display"))
+    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(filter.warning(_, "Testing display"))
+    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(filter.error(_, "Testing display"))
+    filter.reset()
+
+    // either reset after each test or emit warn before error so that both are output by AbstractReporter
+    assertEquals(0, filter.errorCount)
+    assertEquals(0, reporter.errorCount)
+    assertEquals(0, filter.warningCount)
+    assertEquals(0, reporter.warningCount)
+
+    // try to pass two messages
+    // warn first; would be nice to flush too
+    testHelper(posWithSource, msg = "Testing display for maxwarns to pass", severity = "warning: ")(filter.warning(_, "Testing display for maxwarns to pass"))
+    testHelper(msg = "")(filter.warning(_, "Testing display for maxwarns to fail"))
+
+    testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(filter.error(_, "Testing display for maxerrs to pass"))
+    testHelper(msg = "")(filter.error(_, "Testing display for maxerrs to fail"))
+  }
+
+  @Test
+  def filteredInfoTest(): Unit = {
+    val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
+    // test obsolete API, make sure it doesn't throw
+    reporter.info(NoPosition, "goodbye, cruel world", force = false)
+  }
+
+  @Test
+  def adaptedReporterTest(): Unit = {
+    val reporter = createConsoleReporter("r", writerOut)
+    val adapted  = new Reporter.AdaptedReporter(reporter)
+
+    // pass one message
+    testHelper(msg = "Testing display")(adapted.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(adapted.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(adapted.error(_, "Testing display"))
+
+    assertTrue(adapted.hasErrors)
+    assertEquals(1, adapted.errorCount)
+    assertTrue(adapted.hasWarnings)
+    assertEquals(1, adapted.warningCount)
+    adapted.reset()
+    assertFalse(adapted.hasErrors)
+    assertEquals(0, adapted.errorCount)
+    assertFalse(adapted.hasWarnings)
+    assertEquals(0, adapted.warningCount)
   }
 }

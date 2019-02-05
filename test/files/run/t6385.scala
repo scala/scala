@@ -1,5 +1,5 @@
 object Test {
-   def main(args: Array[String]) {
+   def main(args: Array[String]): Unit = {
       val y: AA[Int] = C(2)
       val c: Int = y.x.y
       assert(c == 2)

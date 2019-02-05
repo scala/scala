@@ -100,7 +100,7 @@ object Test {
 
   var checks: Int = 0;
 
-  def check(test0: Boolean, actual: Any, expected: Any) {
+  def check(test0: Boolean, actual: Any, expected: Any): Unit = {
     val test1: Boolean = actual == expected;
     if (!test0 || !test1) {
       val s0 = if (test0) "ok" else "KO";
@@ -112,27 +112,27 @@ object Test {
     checks += 1
   }
 
-  def check_Ta[T <: Any    ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+  def check_Ta[T <: Any    ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     c(xs);
   }
 
-  def check_Tv[T <: AnyVal ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
-    check(xs.length == l, xs.length, l);
-    check(xs(0) == x0, xs(0), x0);
-    check_Ta(xs, l, x0, c);
-    c(xs);
-  }
-
-  def check_Tr[T <: AnyRef ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+  def check_Tv[T <: AnyVal ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
     c(xs);
   }
 
-  def check_To[T <: Object ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+  def check_Tr[T <: AnyRef ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
+    check(xs.length == l, xs.length, l);
+    check(xs(0) == x0, xs(0), x0);
+    check_Ta(xs, l, x0, c);
+    c(xs);
+  }
+
+  def check_To[T <: Object ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
     check(xs.length == l, xs.length, l);
     check(xs(0) == x0, xs(0), x0);
     check_Ta(xs, l, x0, c);
@@ -140,7 +140,7 @@ object Test {
     c(xs);
   }
 
-  def check_Tm[T <: Map    ](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+  def check_Tm[T <: Map    ](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
     check(xs.length == l, xs.length, l)
     check(xs(0) == x0, xs(0), x0)
     check_Ta(xs, l, x0, c)
@@ -149,7 +149,7 @@ object Test {
     c(xs)
   }
 
-  def check_Tn[T <: Strings](xs: Array[T], l: Int, x0: T, c: Check[T]) {
+  def check_Tn[T <: Strings](xs: Array[T], l: Int, x0: T, c: Check[T]): Unit = {
     check(xs.length == l, xs.length, l)
     check(xs(0) == x0, xs(0), x0)
     check_Ta(xs, l, x0, c)
@@ -158,7 +158,7 @@ object Test {
     c(xs)
   }
 
-  def checkT2368() {
+  def checkT2368(): Unit = {
     val arr = Array(1, 2, 3)
     arr(0) += 1
     assert(arr(0) == 2)
@@ -331,7 +331,7 @@ object Test {
     check(xs(2) == m2, xs(2), m2);
   }
 
-  def ncheck(xs: Array[Strings]) {
+  def ncheck(xs: Array[Strings]): Unit = {
     check(xs.length == 3, xs.length, 3)
     check(xs(0) == n0, xs(0), n0)
     check(xs(1) == n1, xs(1), n1)
@@ -341,13 +341,13 @@ object Test {
   //##########################################################################
   // Miscellaneous checks
 
-  def checkZip {
+  def checkZip: Unit = {
     val zipped = Array("a", "b", "c").zip(Array(1, 2))
     val expected = Array(("a",1), ("b",2))
     check(zipped sameElements expected, zipped.toList, expected.toList)
   }
 
-  def checkConcat { // ticket #713
+  def checkConcat: Unit = { // ticket #713
     val x1 = Array.concat(Array(1, 2), Array(3, 4))
     val y1 = Array(1, 2, 3, 4)
     check(x1 sameElements y1, x1.toList, y1.toList)

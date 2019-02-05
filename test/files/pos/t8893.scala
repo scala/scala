@@ -2,7 +2,7 @@
 object Test {
     def a(): Option[String] = Some("a")
 
-    def main(args: Array[String]) {
+    def main(args: Array[String]): Unit = {
         a() match {
             case Some(b1) =>
         a() match {

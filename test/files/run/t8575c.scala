@@ -11,7 +11,7 @@ object Test extends TypeMember {
   type B = Z with A
   type F = A with B
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     import reflect.runtime.universe._
     val t1 = typeOf[F with C]
     val t2 = typeOf[(A with B) with C]

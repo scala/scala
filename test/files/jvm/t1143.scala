@@ -49,7 +49,7 @@ class Form extends Component {
 @SerialVersionUID(1L)
 class Main extends Serializable {
   var pass = "pass"
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val f = new Form {
       val p = new Printer(new VarModel(pass, s => pass = s))
     }
@@ -58,7 +58,7 @@ class Main extends Serializable {
 }
 
 object Test {
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     (new Main).main(Array[String]())
   }
 }
