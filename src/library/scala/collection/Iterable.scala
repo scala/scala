@@ -619,7 +619,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *
     *  @return           a new $coll containing the prefix scan of the elements in this $coll
     */
-  @deprecated("Use scanLeft instead", "2.13.0")
   def scan[B >: A](z: B)(op: (B, B) => B): CC[B] = scanLeft(z)(op)
 
   def scanLeft[B](z: B)(op: (B, A) => B): CC[B] = iterableFactory.from(new View.ScanLeft(this, z, op))
