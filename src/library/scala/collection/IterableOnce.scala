@@ -657,7 +657,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the elements and `z`, or `z` if this $coll is empty.
     */
-  @deprecated("Use foldLeft instead", "2.13.0")
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Reduces the elements of this $coll using the specified associative binary operator.
