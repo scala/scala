@@ -77,19 +77,12 @@ trait Variances {
        *  leading to unsoundness (see scala/bug#6566).
        */
       def relativeVariance(tvar: Symbol): Variance = {
-        def nextVariance(sym: Symbol, v: Variance): Variance = (
+        def nextVariance(sym: Symbol, v: Variance): Variance =
           if (shouldFlip(sym, tvar)) v.flip
           else if (isExemptFromVariance(sym)) Bivariant
-          else if (sym.isAliasType) (
-            // Unsound pre-2.11 behavior preserved under -Xsource:2.10
-            if (settings.isScala211 || sym.isOverridingSymbol) Invariant
-            else {
-              currentRun.reporting.deprecationWarning(sym.pos, "Construct depends on unsound variance analysis and will not compile in scala 2.11 and beyond", "2.11.0")
-              Bivariant
-            }
-          )
+          else if (sym.isAliasType) Invariant
           else v
-        )
+
         def loop(sym: Symbol, v: Variance): Variance = (
           if (sym == tvar.owner || v.isBivariant) v
           else loop(sym.owner, nextVariance(sym, v))

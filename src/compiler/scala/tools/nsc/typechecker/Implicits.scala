@@ -1672,9 +1672,9 @@ trait Implicits {
             val outSym = out.typeSymbol
 
             val fail =
-              if (out.annotations.isEmpty && (outSym == ObjectClass || (settings.isScala211 && outSym == AnyValClass)))
+              if (out.annotations.isEmpty && (outSym == ObjectClass || outSym == AnyValClass))
                 maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than $out")
-              else if (settings.isScala211 && in.annotations.isEmpty && in.typeSymbol == NullClass)
+              else if (in.annotations.isEmpty && in.typeSymbol == NullClass)
                 maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
               else false
 
