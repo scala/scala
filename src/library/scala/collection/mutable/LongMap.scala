@@ -455,7 +455,10 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
-  override def + [V1 >: V](elem1: (Long, V1), elem2: (Long, V1), elems: (Long, V1)*): LongMap[V1] = LongMap.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
+  override def + [V1 >: V](elem1: (Long, V1), elem2: (Long, V1), elems: (Long, V1)*): LongMap[V1] = {
+    val m = this + elem1 + elem2
+    if(elems.isEmpty) m else m.concat(elems)
+  }
 
   override def concat[V1 >: V](xs: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] = {
     val lm = clone().asInstanceOf[LongMap[V1]]
