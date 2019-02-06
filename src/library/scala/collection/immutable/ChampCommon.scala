@@ -27,12 +27,6 @@ private[immutable] object Node {
 
   final val MaxDepth = ceil(HashCodeLength.toDouble / BitPartitionSize).toInt
 
-  final val SizeEmpty = 0
-
-  final val SizeOne = 1
-
-  final val SizeMoreThanOne = 2
-
   final val BranchingFactor = 1 << BitPartitionSize
 
   final def maskFrom(hash: Int, shift: Int): Int = (hash >>> shift) & BitPartitionMask
@@ -60,8 +54,6 @@ private[immutable] abstract class Node[T <: Node[T]] {
   def getPayload(index: Int): Any
 
   def getHash(index: Int): Int
-
-  def sizePredicate: Int
 
   def cachedJavaKeySetHashCode: Int
 

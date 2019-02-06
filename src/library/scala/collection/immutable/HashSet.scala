@@ -275,8 +275,6 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
   def getPayload(index: Int): A
 
-  def sizePredicate: Int
-
   def size: Int
 
   def foreach[U](f: A => U): Unit
@@ -415,19 +413,22 @@ private final class BitmapIndexedSetNode[A](
       val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
       // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
 
-      if (subNodeNew eq subNode) return this
-      subNodeNew.sizePredicate match {
-        case SizeOne =>
-          if (this.payloadArity == 0 && this.nodeArity == 1) { // escalate (singleton or empty) result
-            return subNodeNew
-          }
-          else { // inline value (move to front)
-            return copyAndMigrateFromNodeToInline(bitpos, elementHash, subNode, subNodeNew)
-          }
+      // cache just in case subNodeNew is a hashCollision node, in which in which case a little arithmetic is avoided
+      // in Vector#length
+      val subNodeNewSize = subNodeNew.size
 
-        case SizeMoreThanOne =>
-          // modify current node (set replacement node)
-          return copyAndSetNode(bitpos, subNode, subNodeNew)
+      if (subNodeNewSize == 1) {
+        if (this.size == subNode.size) {
+          // subNode is the only child (no other data or node children of `this` exist)
+          // escalate (singleton or empty) result
+          return subNodeNew
+        } else {
+          // inline value (move to front)
+          return copyAndMigrateFromNodeToInline(bitpos, elementHash, subNode, subNodeNew)
+        }
+      } else if (subNodeNewSize > 1) {
+        // modify current node (set replacement node)
+        return copyAndSetNode(bitpos, subNode, subNodeNew)
       }
     }
 
@@ -462,13 +463,6 @@ private final class BitmapIndexedSetNode[A](
       }
     }
   }
-
-  def sizePredicate: Int =
-    if (nodeArity == 0) payloadArity match {
-      case 0 => SizeEmpty
-      case 1 => SizeOne
-      case _ => SizeMoreThanOne
-    } else SizeMoreThanOne
 
   def hasPayload: Boolean = dataMap != 0
 
@@ -1066,8 +1060,6 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
   def getPayload(index: Int): A = content(index)
 
   override def getHash(index: Int): Int = originalHash
-
-  def sizePredicate: Int = SizeMoreThanOne
 
   def size: Int = content.length
 
