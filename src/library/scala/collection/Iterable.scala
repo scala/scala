@@ -13,7 +13,7 @@
 package scala
 package collection
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
@@ -898,5 +898,4 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
 }
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractIterable[+A] extends Iterable[A]
