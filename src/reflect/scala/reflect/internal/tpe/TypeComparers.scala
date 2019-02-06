@@ -404,14 +404,22 @@ trait TypeComparers {
 
     def isSub(tp1: Type, tp2: Type) =
       settings.isScala213 && isSubHKTypeVar(tp1, tp2) ||
-        isSub2(tp1.normalize, tp2.normalize)  // @M! normalize reduces higher-kinded case to PolyType's
+        isSub2(tp1.normalize, tp2.normalize)  // @M! normalize reduces higher-kinded typeref to PolyType
 
     def isSub2(ntp1: Type, ntp2: Type) = (ntp1, ntp2) match {
-      case (TypeRef(_, AnyClass, _), _) | (_, TypeRef(_, NothingClass, _))  => false                    // avoid some warnings when Nothing/Any are on the other side
-      case (WildcardType, _) | (_, WildcardType)                            => true                     // treat `?` as kind-polymorphic
-      case (pt1: PolyType, pt2: PolyType)                                   => isPolySubType(pt1, pt2)  // @assume both .isHigherKinded (both normalized to PolyType)
-      case (_: PolyType, MethodType(ps, _)) if ps exists (_.tpe.isWildcard) => false                    // don't warn on HasMethodMatching on right hand side
-      case _                                                                =>                          // @assume !(both .isHigherKinded) thus cannot be subtypes
+      case (pt1: PolyType, pt2: PolyType)                                   => isPolySubType(pt1, pt2) // @assume both .isHigherKinded (both normalized to PolyType)
+      case (WildcardType, _) | (_, WildcardType)                            => true  // treat `?` as kind-polymorphic
+      case (TypeRef(_, AnyClass, _), _) | (_, TypeRef(_, NothingClass, _))  => false // avoid some warnings when Nothing/Any are on the other side
+      case (_: PolyType, MethodType(ps, _)) if ps exists (_.tpe.isWildcard) => false // don't warn on HasMethodMatching on right hand side
+      // TODO: rethink whether ExistentialType should be considered isHigherKinded when its underlying type is;
+      // in any case, we do need to handle one of the types being an existential
+      case (tp1, et2: ExistentialType)                                      => et2.withTypeVars(isSubType(tp1, _, depth), depth)
+      case (et1: ExistentialType, tp2)                                      =>
+        try {
+          skolemizationLevel += 1
+          isSubType(et1.skolemizeExistential, tp2, depth)
+        } finally { skolemizationLevel -= 1 }
+      case _                                                                => // @assume !(both .isHigherKinded) thus cannot be subtypes
         def tp_s(tp: Type): String = f"$tp%-20s ${util.shortClassOfInstance(tp)}%s"
         devWarning(s"HK subtype check on $tp1 and $tp2, but both don't normalize to polytypes:\n  tp1=${tp_s(ntp1)}\n  tp2=${tp_s(ntp2)}")
         false
@@ -500,7 +508,7 @@ trait TypeComparers {
           annotationsConform(tp1, tp2)
       case tv @ TypeVar(_,_) =>
         tv.registerBound(tp2, isLowerBound = false)
-      case ExistentialType(_, _) =>
+      case ExistentialType(_, _) => // TODO: fast initial try for tp1 and tp2 both existentials? (first try instantiating tp2's existentials to tp1's skolems?)
         try {
           skolemizationLevel += 1
           isSubType(tp1.skolemizeExistential, tp2, depth)
