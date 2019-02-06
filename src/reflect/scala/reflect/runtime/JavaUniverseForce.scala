@@ -155,7 +155,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ErrorType
     this.WildcardType
     this.BoundedWildcardType
-    this.OverloadedArgFunProto
+    this.OverloadedArgProto
     this.NoType
     this.NoPrefix
     this.ThisType

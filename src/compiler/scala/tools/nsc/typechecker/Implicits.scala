@@ -1329,6 +1329,8 @@ trait Implicits {
             getParts(t)
           case PolyType(_, t) =>
             getParts(t)
+          // not needed, a view's expected type is normalized in typer by normalizeProtoForView:
+          // case proto: OverloadedArgProto => getParts(proto.underlying)
           case _ =>
         }
       }
@@ -1576,6 +1578,8 @@ trait Implicits {
         case TypeRef(_, sym, _) if sym.isAbstractType =>
           materializeImplicit(pt.dealias.lowerBound) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.lowerBound == pt)
         case pt @ TypeRef(pre, sym, arg :: Nil) =>
+          // TODO: is there any way in which an OverloadedArgProto could sneak into one of these special expected types for implicit search?
+          // As the outer expected type, it's normalized in typer by normalizeProtoForView
           sym match {
             case sym if ManifestSymbols(sym) => manifestOfType(arg, sym)
             case sym if TagSymbols(sym) => tagOfType(pre, arg, sym)

@@ -1434,9 +1434,13 @@ If there is precisely one alternative in $\mathscr{B}$, that alternative is chos
 
 Otherwise, let $S_1 , \ldots , S_m$ be the list of types obtained by typing each argument as follows.
 
-Normally, an argument is typed without an expected type, except when trying to propagate more type
-information to aid inference of higher-order function parameter types, as explained next. The intuition is
-that all arguments must be of a function-like type (`PartialFunction`, `FunctionN` or some equivalent [SAM type](#sam-conversion)),
+Normally, an argument is typed without an expected type, except when
+all alternatives explicitly specify the same parameter type for this argument (a missing parameter type,
+due to e.g. arity differences, is taken as `NoType`, thus resorting to no expected type),
+or when trying to propagate more type information to aid inference of higher-order function parameter types, as explained next.
+
+The intuition for higher-order function parameter type inference is that all arguments must be of a function-like type
+(`PartialFunction`, `FunctionN` or some equivalent [SAM type](#sam-conversion)),
 which in turn must define the same set of higher-order argument types, so that they can safely be used as
 the expected type of a given argument of the overloaded method, without unduly ruling out any alternatives.
 The intent is not to steer overloading resolution, but to preserve enough type information to steer type

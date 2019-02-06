@@ -1180,7 +1180,7 @@ trait Types
   abstract class ProtoType extends Type {
     def toBounds: TypeBounds = TypeBounds.empty
 
-    override final def isWildcard = true
+    override def isWildcard = true
     override def members = ErrorType.decls
 
     // tp <:< this prototype?
@@ -1201,7 +1201,8 @@ trait Types
     def toVariantType: Type = NoType
   }
 
-  /** Help infer parameter types for function arguments to overloaded methods.
+  /** Lazily compute expected types for arguments to overloaded methods.
+    * Primarily to improve parameter type inference for higher-order overloaded methods.
     *
     * Normally, overload resolution types the arguments to the alternatives without an expected type.
     * However, typing function literals and eta-expansion are driven by the expected type:
@@ -1210,22 +1211,30 @@ trait Types
     *
     * Now that the collections are full of overloaded HO methods, we should try harder to type check them nicely.
     *
-    * To avoid breaking existing code, we only provide an expected type (for each argument position) when:
+    * (This paragraph is conceptually true, but not a spec.) To avoid breaking existing code,
+    * we only provide an expected type (for each argument position) when:
     *   - there is at least one FunctionN type expected by one of the overloads:
     *     in this case, the expected type is a FunctionN[Ti, ?], where Ti are the argument types (they must all be =:=),
     *     and the expected result type is elided using a wildcard.
     *     This does not exclude any overloads that expect a SAM, because they conform to a function type through SAM conversion
     *   - OR: all overloads expect a SAM type of the same class, but with potentially varying result types (argument types must be =:=)
+    *   - OR: all expected types collapse to the same type (by =:=, pushing down method type params to arguments types)
     *
-    * We allow polymorphic cases, as long as the types parameters are instantiated by the AntiPolyType prefix.
+    * We allow polymorphic cases, taking account any instantiation by the AntiPolyType prefix.
+    * Constructors of polymorphic classes are not supported (type param occurrences use fresh symbols, hard to relate to class's type params).
     *
     * In all other cases, the old behavior is maintained: Wildcard is expected.
     */
-  final case class OverloadedArgFunProto(argIdx: Int, pre: Type, alternatives: List[Symbol]) extends ProtoType with SimpleTypeProxy {
+  final case class OverloadedArgProto(argIdx: Either[Int, Name], pre: Type, alternatives: List[Symbol]) extends ProtoType with SimpleTypeProxy {
     override def safeToString: String = underlying.safeToString
-    override def kind = "OverloadedArgFunProto"
+    override def kind = "OverloadedArgProto"
 
-    override def underlying: Type = functionArgsProto
+    override def underlying: Type = protoTp
+
+    // If underlying is not wildcard, we may have constrained a first-try-typing too much,
+    // so, when `!isWildcard` implicit search will try again with no expected type at all.
+    // See e.g., adaptToArguments's code paths that depend on `isWildcard`
+    override def isWildcard = underlying.isWildcard
 
     // Always match if we couldn't collapse the expected types contributed for this argument by the alternatives.
     // TODO: could we just match all function-ish types as an optimization? We previously used WildcardType
@@ -1249,7 +1258,7 @@ trait Types
     override def mapOver(map: TypeMap): Type = {
       val pre1 = pre.mapOver(map)
       val alts1 = map.mapOver(alternatives)
-      if ((pre ne pre1) || (alternatives ne alts1)) OverloadedArgFunProto(argIdx, pre1, alts1)
+      if ((pre ne pre1) || (alternatives ne alts1)) OverloadedArgProto(argIdx, pre1, alts1)
       else this
     }
 
@@ -1259,7 +1268,7 @@ trait Types
     }
 
     // TODO
-    // override def registerTypeEquality(tp: Type): Boolean = functionArgsProto =:= tp
+    // override def registerTypeEquality(tp: Type): Boolean = protoTp =:= tp
 
 
     // TODO: use =:=, but `!(typeOf[String with AnyRef] =:= typeOf[String])` (https://github.com/scala/scala-dev/issues/530)
@@ -1269,18 +1278,25 @@ trait Types
       def unapply(params: List[Symbol]): Option[Type] = {
         lazy val lastParamTp = params.last.tpe
 
+        val argIdxMapped = argIdx match {
+          case Left(idx) => idx
+          case Right(name) => params.indexWhere(p => p.name == name && !p.isSynthetic)
+        }
+
         // if we're asking for the last argument, or past, and it happens to be a repeated param -- strip the vararg marker and return the type
-        if (params.nonEmpty && params.lengthCompare(argIdx + 1) <= 0 && isRepeatedParamType(lastParamTp)) {
+        if (params.nonEmpty && params.lengthCompare(argIdxMapped + 1) <= 0 && isRepeatedParamType(lastParamTp)) {
           Some(lastParamTp.dealiasWiden.typeArgs.head)
-        } else if (params.isDefinedAt(argIdx)) {
-          Some(params(argIdx).tpe)
+        } else if (params.isDefinedAt(argIdxMapped)) {
+          Some(dropByName(params(argIdxMapped).tpe))
         } else None
       }
     }
 
 
     private def toWild(tp: Type): Type = tp match {
-      case PolyType(tparams, tp) => new SubstWildcardMap(tparams).apply(tp)
+      case PolyType(tparams, tp) =>
+        // we don't want bounded wildcards showing up for an f-bounded type param... no need for precision anyway
+        new SubstTypeMap(tparams, tparams map (_ => WildcardType)).apply(tp)
       case tp                    => tp
     }
 
@@ -1291,15 +1307,23 @@ trait Types
         alternatives map { alt =>
           // Use memberType so that a pre: AntiPolyType can instantiate its type params
           pre.memberType(alt) match {
-            case PolyType(tparams, MethodType(ParamAtIdx(paramTp), res)) => PolyType(tparams, paramTp.asSeenFrom(pre, alt.owner))
-            case MethodType(ParamAtIdx(paramTp), res)                    => paramTp.asSeenFrom(pre, alt.owner)
-            case _                                                       => NoType
+            case PolyType(tparams, MethodType(ParamAtIdx(paramTp), res))       => PolyType(tparams, paramTp.asSeenFrom(pre, alt.owner))
+            case MethodType(ParamAtIdx(paramTp), res)
+              if !(alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) => paramTp.asSeenFrom(pre, alt.owner)
+            // this is just too ugly, but the type params are out of whack and thus toWild won't catch them unless we rewrite as follows:
+            // if (alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) {
+            //   PolyType(alt.owner.info.typeParams.map(_.tpe.asSeenFrom(pre, alt.owner).typeSymbol), paramTp.asSeenFrom(pre, alt.owner))
+            // } else paramTp.asSeenFrom(pre, alt.owner)
+            case _ => NoType
           }
         }
 
+
+      // altParamTps.contains(NoType) implies sameTypesFolded.contains(NoType)
+      // so, if one alternative did not contribute an argument type, we'll not collapse this column
       altParamTps.foldLeft(Nil: List[Type]) {
-        case (acc, NoType | WildcardType) => acc
-        case (acc, tp)                    => if (acc.exists(same(tp, _))) acc else tp :: acc
+        case (acc, WildcardType) => acc
+        case (acc, tp)           => if (acc.exists(same(tp, _))) acc else tp :: acc
       }
     }
 
@@ -1308,7 +1332,7 @@ trait Types
 
     // Try to collapse all expected argument types (already distinct by =:=) into a single expected type,
     // so that we can use it to as the expected type to drive parameter type inference for a function literal argument.
-    private lazy val functionArgsProto = {
+    private lazy val protoTp = {
       val ABORT = (NoType, false, false)
 
       // we also consider any function-ish type equal as long as the argument types are
@@ -1330,15 +1354,22 @@ trait Types
 
       if ((sameHoArgTypesFolded eq WildcardType) || (sameHoArgTypesFolded eq NoType)) WildcardType
       else functionOrPfOrSamArgTypes(toWild(sameHoArgTypesFolded)) match {
-        case Nil     => WildcardType // TODO: can we retain some of this?
+        case Nil     =>
+          // Ok, it's not a function proto, but we did collapse to only one type -- why not use that as our expected type?
+          // we exclude constructors because a polymorphic class's type params are not represented as part of the constructor method's type, and thus toWild won't work
+          sameTypesFolded match {
+            case onlyType :: Nil =>
+              //              println(s"collapsed argument types at index $argIdx to ${toWild(onlyType)} for ${alternatives map (alt => (alt, pre memberType alt))} ")
+              toWild(onlyType)
+            case _               => WildcardType
+          }
         case hofArgs =>
           if (partialFun) appliedType(PartialFunctionClass, hofArgs :+ WildcardType)
           else if (regularFun) functionType(hofArgs, WildcardType)
-          // if we saw a variety of SAMs, can't collapse them -- what if they were accidental sams and we're not going to supply a function literal?
+               // if we saw a variety of SAMs, can't collapse them -- what if they were accidental sams and we're not going to supply a function literal?
           else if (sameTypesFolded.lengthCompare(1) == 0) toWild(sameTypesFolded.head)
           else WildcardType
       }
-
     }
   }
 

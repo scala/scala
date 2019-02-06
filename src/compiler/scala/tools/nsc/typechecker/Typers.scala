@@ -309,6 +309,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // to avoid unpositioned type errors.
     )
 
+    // Get rid of any special ProtoTypes, so that implicit search won't have to deal with them
+    private def normalizeProtoForView(proto: Type): Type = proto match {
+      case proto: OverloadedArgProto => proto.underlying
+      case pt                        => pt
+    }
 
     /** Infer an implicit conversion (`view`) between two types.
      *  @param tree             The tree which needs to be converted.
@@ -327,8 +332,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         debuglog(s"Inferring view from $from to $to for $tree (reportAmbiguous= $reportAmbiguous, saveErrors=$saveErrors)")
 
         val fromNoAnnot = from.withoutAnnotations
-        val result = inferImplicitView(fromNoAnnot, to, tree, context, reportAmbiguous, saveErrors) match {
-          case fail if fail.isFailure => inferImplicitView(byNameType(fromNoAnnot), to, tree, context, reportAmbiguous, saveErrors)
+        val toNorm = normalizeProtoForView(to)
+        val result = inferImplicitView(fromNoAnnot, toNorm, tree, context, reportAmbiguous, saveErrors) match {
+          case fail if fail.isFailure => inferImplicitView(byNameType(fromNoAnnot), toNorm, tree, context, reportAmbiguous, saveErrors)
           case ok => ok
         }
 
@@ -1292,7 +1298,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def adaptToArguments(qual: Tree, name: Name, args: List[Tree], pt: Type, reportAmbiguous: Boolean = true, saveErrors: Boolean = true): Tree = {
       def doAdapt(restpe: Type) =
         //util.trace("adaptToArgs "+qual+", name = "+name+", argtpes = "+(args map (_.tpe))+", pt = "+pt+" = ")
-        adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), restpe), reportAmbiguous, saveErrors)
+        adaptToMember(qual, HasMethodMatching(name, args map (_.tpe), normalizeProtoForView(restpe)), reportAmbiguous, saveErrors)
 
       if (pt.isWildcard)
         doAdapt(pt)
@@ -2919,8 +2925,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       */
     private def argsResProtosFromFun(pt: Type, numVparams: Int): (List[Type], Type) =
       pt match {
-        case pt: OverloadedArgFunProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
-        case _ =>
+        case pt: OverloadedArgProto if pt.hofParamTypes.lengthCompare(numVparams) == 0 => (pt.hofParamTypes, WildcardType)
+        case _                                                                         =>
           val FunctionSymbol = FunctionClass(numVparams)
 
           // In case of any non-trivial type slack between `pt` and the built-in function types, we go the SAM route,
@@ -3444,8 +3450,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val amode = forArgMode(fun, mode)
 
               mapWithIndex(args) { (arg, argIdx) =>
-                def typedArg0(tree: Tree) = {
-                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgFunProto(argIdx, pre, alts))
+                def typedArg0(tree: Tree, argIdxOrName: Either[Int, Name] = Left(argIdx)) = {
+                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts))
                   (argTyped, argTyped.tpe.deconst)
                 }
 
@@ -3457,7 +3463,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case NamedArg(lhs@Ident(name), rhs) =>
                     // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                     // the assign is untyped; that's ok because we call doTypedApply
-                    typedArg0(rhs) match {
+                    typedArg0(rhs, Right(name)) match {
                       case (rhsTyped, tp) => (treeCopy.NamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
                     }
                   case treeInfo.WildcardStarArg(_) =>
