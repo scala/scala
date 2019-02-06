@@ -37,10 +37,11 @@ abstract class AbstractBaseFutureBenchmark {
       case "fjp" =>
         val fjp = new ForkJoinPool(threads) with ExecutionContext with BatchingExecutor {
           final override def submitAsync(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
-          final override def isAsync = true
-          final override def batchable(runnable: Runnable): Boolean =
-            if (runnable.isInstanceOf[impl.Promise.Transformation[_,_]]) runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching
-            else super.batchable(runnable)
+          final override def execute(runnable: Runnable): Unit =
+            if ((!runnable.isInstanceOf[impl.Promise.Transformation[_,_]] || runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
+              submitAsyncBatched(runnable)
+            else
+              submitAsync(runnable)
           override final def reportFailure(t: Throwable) = t.printStackTrace(System.err)
         }
         executorService = fjp // we want to close this
@@ -48,10 +49,11 @@ abstract class AbstractBaseFutureBenchmark {
       case "fix" =>
         val fix = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue[Runnable]()) with ExecutionContext with BatchingExecutor {
           final override def submitAsync(runnable: Runnable): Unit = super[ThreadPoolExecutor].execute(runnable)
-          final override def isAsync = true
-          final override def batchable(runnable: Runnable): Boolean =
-            if (runnable.isInstanceOf[impl.Promise.Transformation[_,_]]) runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching
-            else super.batchable(runnable)
+          final override def execute(runnable: Runnable): Unit =
+            if ((!runnable.isInstanceOf[impl.Promise.Transformation[_,_]] || runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
+              submitAsyncBatched(runnable)
+            else
+              submitAsync(runnable)
           override final def reportFailure(t: Throwable) = t.printStackTrace(System.err)
         }
         executorService = fix // we want to close this
