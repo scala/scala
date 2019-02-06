@@ -93,8 +93,10 @@ trait StdNames {
     protected val stringToTypeName = null
     protected implicit def createNameType(name: String): NameType
 
-    def flattenedName(segments: Name*): NameType =
-      compactify(segments mkString NAME_JOIN_STRING)
+    def flattenedName(owner: Symbol, name: Name): NameType = {
+      val flat = owner.name.toString + NAME_JOIN_STRING + name.toString
+      if (owner.isJava) flat else compactify(flat) // scala/bug#11277
+    }
 
     // TODO: what is the purpose of all this duplication!?!?!
     // I made these constants because we cannot change them without bumping our major version anyway.

@@ -1360,7 +1360,7 @@ trait Definitions extends api.StandardDefinitions {
       getMemberIfDefined(owner, name) orElse {
         if (phase.flatClasses && name.isTypeName && !owner.isPackageObjectOrClass) {
           val pkg = owner.owner
-          val flatname = tpnme.flattenedName(owner.name, name)
+          val flatname = tpnme.flattenedName(owner, name)
           getMember(pkg, flatname)
         }
         else fatalMissingSymbol(owner, name)
