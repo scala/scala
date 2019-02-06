@@ -650,10 +650,12 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     fork in Test := true,
     // customise framework for early access to https://github.com/rickynils/scalacheck/pull/388
     // TODO remove this when we upgrade scalacheck
-    testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
+    //testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
+    // Due to https://github.com/sbt/sbt/issues/4009 we need a lazy Framework written in Java:
+    testFrameworks := Seq(TestFramework("org.scalacheck.LazyFramework")),
     javaOptions in Test += "-Xss1M",
     //Make scalacheck print full stack traces
-    testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.CustomScalaCheckFramework"), "-verbosity", "2"),
+    testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.LazyFramework"), "-verbosity", "2"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   ).settings(
