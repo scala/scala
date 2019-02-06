@@ -78,7 +78,7 @@ trait PresentationCompilation { self: IMain =>
       override lazy val platform: ThisPlatform = {
         new JavaPlatform {
           lazy val global: self.type = self
-          override private[nsc] lazy val classPath: ClassPath = mergedFlatClasspath
+          override lazy val classPath: ClassPath = mergedFlatClasspath
         }
       }
     }

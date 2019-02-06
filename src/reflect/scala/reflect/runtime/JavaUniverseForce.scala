@@ -17,7 +17,7 @@ package runtime
 trait JavaUniverseForce { self: runtime.JavaUniverse  =>
   def force(): Unit = {
     Literal(Constant(42)).duplicate
-    nme.flattenedName()
+    nme.flattenedName(NoSymbol, nme.NO_NAME)
     nme.raw
     WeakTypeTag
     TypeTag

@@ -8,6 +8,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - $HOME/.rvm/
 
 stages:
   - name: build
@@ -44,8 +45,14 @@ jobs:
 
       # build the spec using jekyll
       - stage: build
-        rvm: 2.2
-        install: bundle install
+        language: ruby
+        install:
+          - rvm install 2.2
+          - rvm use 2.2
+          - rvm info
+          - ruby -v
+          - bundler --version
+          - bundle install
         script:
         - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
         - bundle exec jekyll build -s spec/ -d build/spec

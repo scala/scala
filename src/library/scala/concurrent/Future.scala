@@ -789,7 +789,7 @@ object Future {
   }
 
   /** Initiates a non-blocking, asynchronous, fold over the supplied futures
-   *  where the fold-zero is the result value of the `Future` that's completed first.
+   *  where the fold-zero is the result value of the first `Future` in the collection.
    *
    *  Example:
    *  {{{
