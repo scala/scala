@@ -689,6 +689,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   private[this] var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
   private[this] var equalityobj = ef
+  @transient
   private[this] var rootupdater = rtupd
   def hashing = hashingobj
   def equality = equalityobj
@@ -1028,6 +1029,7 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
+  @transient
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
   class MangledHashing[K] extends Hashing[K] {

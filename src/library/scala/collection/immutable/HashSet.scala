@@ -1168,6 +1168,7 @@ object HashSet extends IterableFactory[HashSet] {
   private[HashSet] def apply[A](rootNode: SetNode[A], cachedJavaHashCode: Int) =
     new HashSet[A](rootNode)
 
+  @transient
   private final val EmptySet = new HashSet(SetNode.empty)
 
   def empty[A]: HashSet[A] =

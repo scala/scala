@@ -1515,6 +1515,7 @@ object HashMap extends MapFactory[HashMap] {
   private[HashMap] def apply[K, V](rootNode: MapNode[K, V]) =
     new HashMap[K, V](rootNode)
 
+  @transient
   private final val EmptyMap = new HashMap(MapNode.empty)
 
   def empty[K, V]: HashMap[K, V] =
