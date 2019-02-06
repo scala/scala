@@ -107,6 +107,7 @@ class HashMapTest {
     val expected = HashMap(A(0) -> 1, A(1) -> 1)
     assertEquals(merged, expected)
   }
+
   @Test
   def transformReturnsOriginalMap() {
     case class A(i: Int, j: Int) { override def hashCode = j }
@@ -120,6 +121,7 @@ class HashMapTest {
 
     assert(hashMap.transform((_, v) => v) eq hashMap)
   }
+
   @Test
   def testUpdatedWith(): Unit = {
     val hashMap = HashMap(1 -> "a")
@@ -132,5 +134,22 @@ class HashMapTest {
     assertEquals(hashMap.updatedWith(1)(noneAnytime), HashMap())
     assertEquals(hashMap.updatedWith(2)(noneAnytime), HashMap(1 -> "a"))
   }
-}
 
+  @Test
+  def t11257(): Unit = {
+    case class PoorlyHashed(i: Int) {
+      override def hashCode(): Int = i match {
+        case 0 | 1 => 42
+        case _ => super.hashCode()
+      }
+    }
+    val hashMapCollision = HashMap(PoorlyHashed(0) -> 0, PoorlyHashed(1) -> 1)
+    val singleElementMap = hashMapCollision.split.head
+    assert(singleElementMap.isInstanceOf[HashMap.HashMap1[_, _]])
+    val stillSingleElement = singleElementMap.split.head
+    assert(stillSingleElement.isInstanceOf[HashMap.HashMap1[_, _]])
+    val twoElemTrie = stillSingleElement + (PoorlyHashed(2) -> 2)
+    assert(twoElemTrie.isInstanceOf[HashMap.HashTrieMap[_, _]])
+  }
+
+}
