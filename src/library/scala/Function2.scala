@@ -31,7 +31,7 @@ package scala
  * }
  *  }}}
  */
-trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @specialized(scala.Int, scala.Long, scala.Double) -T2, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends AnyRef { self =>
+trait Function2[@specialized(Specializable.Args) -T1, @specialized(Specializable.Args) -T2, @specialized(Specializable.Return) +R] extends AnyRef { self =>
   /** Apply the body of this function to the arguments.
    *  @return   the result of function application.
    */

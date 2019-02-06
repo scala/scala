@@ -112,13 +112,30 @@ class BoxUnboxTest extends RunTesting {
 
     val b = runtime.BoxedUnit.UNIT
 
+    def boxing(x: Unit): runtime.BoxedUnit = {
+      val k = this.getClass.getClassLoader.loadClass("scala.Unit$")
+      val u = k.getDeclaredField("MODULE$").get(null)
+      k.getDeclaredMethods.find(_.getName == "box").get.invoke(u, x.asInstanceOf[Object]).asInstanceOf[runtime.BoxedUnit]
+    }
+    def unboxing(x: Object): Unit = {
+      val k = this.getClass.getClassLoader.loadClass("scala.Unit$")
+      val u = k.getDeclaredField("MODULE$").get(null)
+      k.getDeclaredMethods.find(_.getName == "unbox").get.invoke(u, x).asInstanceOf[Unit]
+    }
+
     assert(eff() == b); chk()
-    assert(Unit.box(eff()) == b); chk()
+    //assert(Unit.box(eff()) == b); chk()
+    assert(boxing(eff()) == b); chk()
     assert(().asInstanceOf[Object] == b)
 
-    Unit.unbox({eff(); b}); chk()
-    Unit.unbox({eff(); null}); chk()
-    assertThrows[ClassCastException](Unit.unbox({eff(); ""})); chk()
+    //Unit.unbox({eff(); b}); chk()
+    //Unit.unbox({eff(); null}); chk()
+    //assertThrows[ClassCastException](Unit.unbox({eff(); ""})); chk()
+    unboxing({eff(); b}); chk()
+    unboxing({eff(); null}); chk()
+    assertThrows[ClassCastException](
+      try unboxing({eff(); ""}) catch { case t: java.lang.reflect.InvocationTargetException => throw t.getCause }
+    ); chk()
 
     val n1 = null.asInstanceOf[Unit]
     assert(n1 == b)

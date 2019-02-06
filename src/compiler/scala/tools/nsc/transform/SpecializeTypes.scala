@@ -106,19 +106,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def specializedOn(sym: Symbol): List[Symbol] = {
     val GroupOfSpecializable = currentRun.runDefinitions.GroupOfSpecializable
-    sym getAnnotation SpecializedClass match {
-      case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
-      case Some(ann @ AnnotationInfo(_, args, _)) => {
-        args map (_.tpe) flatMap { tp =>
-          tp baseType GroupOfSpecializable match {
-            case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
-              arg.typeArgs map (_.typeSymbol)
-            case _ =>
-              tp.typeSymbol :: Nil
-          }
-        }
+    def expandGroup(tp: Type): List[Symbol] =
+      tp.baseType(GroupOfSpecializable) match {
+        case TypeRef(_, GroupOfSpecializable, arg :: Nil) => arg.typeArgs.map(_.typeSymbol)
+        case _                                            => tp.typeSymbol :: Nil
       }
-      case _ => Nil
+    sym.getAnnotation(SpecializedClass) match {
+      case Some(AnnotationInfo(_, Nil, _))  => specializableTypes.map(_.typeSymbol)
+      case Some(AnnotationInfo(_, args, _)) => args.map(_.tpe).flatMap(expandGroup)
+      case _                                => Nil
     }
   }
 
