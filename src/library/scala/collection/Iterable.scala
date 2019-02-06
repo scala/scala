@@ -31,7 +31,7 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   final def toIterable: this.type = this
 
   //TODO scalac generates an override for this in AbstractMap; Making it final leads to a VerifyError
-  protected def coll: this.type = this
+  final protected def coll: this.type = this
 
   protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
   protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]

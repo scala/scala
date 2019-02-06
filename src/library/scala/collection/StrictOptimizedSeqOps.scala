@@ -65,8 +65,8 @@ trait StrictOptimizedSeqOps [+A, +CC[_], +C]
   }
 
   // Must override here to ensure that `concat` is still an alias for `appendedAll` since it is overridden in `StrictOptimizedIterableOps`
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
-  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
+//  @deprecatedOverriding("Compatibility override", since="2.13.0")
+//  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
   override def padTo[B >: A](len: Int, elem: B): CC[B] = {
     val b = iterableFactory.newBuilder[B]

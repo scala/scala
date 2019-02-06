@@ -191,9 +191,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
   // overrides of this method
-  // TODO https://github.com/scala/bug/issues/10853 Uncomment final
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  @`inline` /*final*/ override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
+  @`inline` final override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.

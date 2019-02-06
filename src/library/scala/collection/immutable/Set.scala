@@ -43,8 +43,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def incl(elem: A): C
 
   /** Alias for `incl` */
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  override /*final*/ def + (elem: A): C = incl(elem) // like in collection.Set but not deprecated
+  override final def + (elem: A): C = incl(elem) // like in collection.Set but not deprecated
 
   /** Creates a new set with a given element removed from this set.
     *
@@ -55,8 +54,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def excl(elem: A): C
 
   /** Alias for `excl` */
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /*@`inline` final*/ override def - (elem: A): C = excl(elem)
+  @`inline` final override def - (elem: A): C = excl(elem)
 
   def diff(that: collection.Set[A]): C =
     toIterable.foldLeft(empty)((result, elem) => if (that contains elem) result else result + elem)
@@ -70,8 +68,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   def removedAll(that: IterableOnce[A]): C = that.iterator.foldLeft[C](coll)(_ - _)
 
   /** Alias for removeAll */
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  override /*final*/ def -- (that: IterableOnce[A]): C = removedAll(that)
+  override final def -- (that: IterableOnce[A]): C = removedAll(that)
 }
 
 trait StrictOptimizedSetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
