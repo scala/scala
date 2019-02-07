@@ -20,7 +20,7 @@ abstract class ScaladocJavaModelTest extends ScaladocModelTest {
   // overridden to pass explicit files to newDocFactory.makeUniverse (rather than code strings)
   // since the .java file extension is required
   override def model: Option[Universe] = {
-    val path = resourcePath + "/" + resourceFile
+    val path = s"$resourcePath/$resourceFile"
     newDocFactory.makeUniverse(Left(List(path)))
   }
 
