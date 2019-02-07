@@ -105,6 +105,30 @@ trait ScalaSettings extends AbsScalaSettings
   private[this] val version300 = ScalaVersion("3.0.0")
   def isScala300: Boolean = source.value >= version300
 
+  val deprecationPolicy  = MultiStringSetting("-deprecation-policy", "config", "Configure deprecation warnings.", helpText = Some(
+    """|Specify when to emit deprecation warnings and at which severity.
+       |
+       |To filter deprecations by version, use "since<1.0" for deprecations previous to "1.0",
+       |or "since=1.0" or "since>1.0" for at or after "1.0". Version strings must be parsable,
+       |otherwise only testing for equality is supported.
+       |
+       |To enable warnings in a package, list the package name.
+       |To escalate deprecations, prefix the package name with "+",
+       |or de-escalate by prefixing with "-".
+       |
+       |To enable warnings about symbols from a package, prefix the package name
+       |with a single quote.
+       |
+       |For example, "-deprecation-policy:since<1.5,com.acme.app,+com.acme.lib,-net.info,+'scala.collection"
+       |turns deprecated usages by "lib" into errors and also usages anywhere of deprecated collections.
+       |Warnings for "app" are enabled if "-deprecation" is not on, and "net.info" will not cause warnings.
+       |
+       |Package names can be followed by a condition: "-deprecation-policy:com.acme since<1.5",
+       |and a version string can include a library name: "-deprecation-policy:since<Acme Platform 1.5",
+       |where the library name must also match the deprecation since attribute.
+       |""".stripMargin
+    )) withAbbreviation "--deprecation-policy"
+
   /**
    * -X "Advanced" settings
    */
