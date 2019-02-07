@@ -18,7 +18,6 @@ import scala.collection.immutable.Range
 import BitSetOps.{LogWL, MaxSize}
 import scala.annotation.implicitNotFound
 
-
 /**
   * A class for mutable bitsets.
   *
@@ -106,10 +105,14 @@ class BitSet(protected[collection] final var elems: Array[Long])
     *  @param   other  the bitset to form the union with.
     *  @return  the bitset itself.
     */
-  def |= (other: BitSet): this.type = {
+  def |= (other: collection.BitSet): this.type = {
     ensureCapacity(other.nwords - 1)
-    for (i <- Range(0, other.nwords))
+    var i = 0
+    val othernwords = other.nwords
+    while (i < othernwords) {
       elems(i) = elems(i) | other.word(i)
+      i += 1
+    }
     this
   }
   /** Updates this bitset to the intersection with another bitset by performing a bitwise "and".
@@ -117,12 +120,16 @@ class BitSet(protected[collection] final var elems: Array[Long])
     *  @param   other  the bitset to form the intersection with.
     *  @return  the bitset itself.
     */
-  def &= (other: BitSet): this.type = {
+  def &= (other: collection.BitSet): this.type = {
     // Different from other operations: no need to ensure capacity because
     // anything beyond the capacity is 0.  Since we use other.word which is 0
     // off the end, we also don't need to make sure we stay in bounds there.
-    for (i <- Range(0, nwords))
+    var i = 0
+    val thisnwords = nwords
+    while (i < thisnwords) {
       elems(i) = elems(i) & other.word(i)
+      i += 1
+    }
     this
   }
   /** Updates this bitset to the symmetric difference with another bitset by performing a bitwise "xor".
@@ -130,10 +137,15 @@ class BitSet(protected[collection] final var elems: Array[Long])
     *  @param   other  the bitset to form the symmetric difference with.
     *  @return  the bitset itself.
     */
-  def ^= (other: BitSet): this.type = {
+  def ^= (other: collection.BitSet): this.type = {
     ensureCapacity(other.nwords - 1)
-    for (i <- Range(0, other.nwords))
+    var i = 0
+    val othernwords = other.nwords
+    while (i < othernwords) {
+
       elems(i) = elems(i) ^ other.word(i)
+      i += 1
+    }
     this
   }
   /** Updates this bitset to the difference with another bitset by performing a bitwise "and-not".
@@ -142,17 +154,16 @@ class BitSet(protected[collection] final var elems: Array[Long])
     *  @return  the bitset itself.
     */
   def &~= (other: collection.BitSet): this.type = {
-    val words = Math.min(nwords, other.nwords)
     var i = 0
-    while (i < words) {
+    val max = Math.min(nwords, other.nwords)
+    while (i < max) {
       elems(i) = elems(i) & ~other.word(i)
       i += 1
     }
     this
   }
 
-  override def clone(): BitSet =
-    new BitSet(java.util.Arrays.copyOf(elems, elems.length))
+  override def clone(): BitSet = new BitSet(java.util.Arrays.copyOf(elems, elems.length))
 
   def toImmutable: immutable.BitSet = immutable.BitSet.fromBitMask(elems)
 
@@ -171,6 +182,84 @@ class BitSet(protected[collection] final var elems: Array[Long])
   // necessary for disambiguation
   override def zip[B](that: IterableOnce[B])(implicit @implicitNotFound(collection.BitSet.zipOrdMsg) ev: Ordering[(Int, B)]): SortedSet[(Int, B)] =
     super.zip(that)
+
+  override def addAll(xs: IterableOnce[Int]): this.type = xs match {
+    case bs: collection.BitSet =>
+      this |= bs
+    case range: Range =>
+      if (range.nonEmpty) {
+        val start = range.min
+        if (start >= 0) {
+          val end = range.max
+          val endIdx = end >> LogWL
+          ensureCapacity(endIdx)
+
+          if (range.step == 1 || range.step == -1) {
+            val startIdx = start >> LogWL
+            val wordStart = startIdx * BitSetOps.WordLength
+            val wordMask = -1L << (start - wordStart)
+
+            if (endIdx > startIdx) {
+              elems(startIdx) |= wordMask
+              java.util.Arrays.fill(elems, startIdx + 1, endIdx, -1L)
+              elems(endIdx) |= -1L >>> (BitSetOps.WordLength - (end - endIdx * BitSetOps.WordLength) - 1)
+            } else elems(endIdx) |= (wordMask & (-1L >>> (BitSetOps.WordLength - (end - wordStart) - 1)))
+          } else super.addAll(range)
+        } else super.addAll(range)
+      }
+      this
+
+    case sorted: collection.SortedSet[Int] =>
+      // if `sorted` is using the regular Int ordering, ensure capacity for the largest
+      // element up front to avoid multiple resizing allocations
+      if (sorted.nonEmpty) {
+        val ord = sorted.ordering
+        if (ord eq Ordering.Int) {
+          ensureCapacity(sorted.lastKey >> LogWL)
+        } else if (ord eq Ordering.Int.reverse) {
+          ensureCapacity(sorted.firstKey >> LogWL)
+        }
+        val iter = sorted.iterator
+        while (iter.hasNext) {
+          addOne(iter.next())
+        }
+      }
+
+      this
+
+    case other =>
+      super.addAll(other)
+  }
+
+  override def subsetOf(that: collection.Set[Int]): Boolean = that match {
+    case bs: collection.BitSet =>
+      val thisnwords = this.nwords
+      val bsnwords = bs.nwords
+      val minWords = Math.min(thisnwords, bsnwords)
+
+      // if any bits are set to `1` in words out of range of `bs`, then this is not a subset. Start there
+      var i = bsnwords
+      while (i < thisnwords) {
+        if (word(i) != 0L) return false
+        i += 1
+      }
+
+      // the higher range of `this` is all `0`s, fall back to lower range
+      var j = 0
+      while (j < minWords) {
+        if ((word(j) & ~bs.word(j)) != 0L) return false
+        j += 1
+      }
+
+      true
+    case other =>
+      super.subsetOf(other)
+  }
+
+  override def subtractAll(xs: IterableOnce[Int]): this.type = xs match {
+    case bs: collection.BitSet => this &~= bs
+    case other => super.subtractAll(other)
+  }
 
   protected[this] def writeReplace(): AnyRef = new BitSet.SerializationProxy(this)
 
