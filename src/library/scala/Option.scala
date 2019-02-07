@@ -94,6 +94,9 @@ object Option {
  *  - [[exists]] — Apply predicate on optional value, or false if empty
  *  - [[forall]] — Apply predicate on optional value, or true if empty
  *  - [[contains]] — Checks if value equals optional value, or false if empty
+ *  - [[zip]] — Combine two optional values to make a paired optional value
+ *  - [[unzip]] — Split an optional pair to two optional values
+ *  - [[unzip3]] — Split an optional triple to three optional values
  *  - [[toList]] — Unary list of optional value, otherwise the empty list
  *
  *  A less-idiomatic way to use $option values is via pattern matching: {{{
@@ -281,6 +284,24 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def flatMap[B](f: A => Option[B]): Option[B] =
     if (isEmpty) None else f(this.get)
 
+  /** Returns the nested $option value if it is nonempty.  Otherwise,
+   * return $none.
+   *
+   * This is equivalent to:
+   * {{{
+   * option match {
+   *   case Some(Some(b)) => Some(b)
+   *   case _             => None
+   * }
+   * }}}
+   * @example {{{
+   * Some(Some("something")).flatten
+   * }}}
+   *
+   * @param ev an implicit conversion that asserts that the value is
+   *           also an $option.
+   * @see flatMap
+   */
   def flatten[B](implicit ev: A <:< Option[B]): Option[B] =
     if (isEmpty) None else ev(this.get)
 
@@ -461,6 +482,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *  by combining the corresponding elements in a pair.
    *  If either of the two options is empty, $none is returned.
    *
+   *  This is equivalent to:
+   *  {{{
+   *  option1.zip(option2) match {
+   *    case (Some(x), Some(y)) => Some((x, y))
+   *    case _                  => None
+   *  }
+   *  }}}
    *  @example {{{
    *  // Returns Option(("foo", "bar")) because both options are nonempty.
    *  Some("foo") zip Some("bar")
@@ -479,6 +507,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
 
   /** Converts an Option of a pair into an Option of the first element and an Option of the second element.
     *
+    *  This is equivalent to:
+    *  {{{
+    *  option.unzip match {
+    *    case Some((x, y)) => (Some(x), Some(y))
+    *    case _            => (None,    None)
+    *  }
+    *  }}}
     *  @tparam A1    the type of the first half of the element pair
     *  @tparam A2    the type of the second half of the element pair
     *  @param asPair an implicit conversion which asserts that the element type
@@ -497,6 +532,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
 
   /** Converts an Option of a triple into three Options, one containing the element from each position of the triple.
     *
+    *  This is equivalent to:
+    *  {{{
+    *  option.unzip3 match {
+    *    case Some((x, y, z)) => (Some(x), Some(y), Some(z))
+    *    case _               => (None,    None,    None)
+    *  }
+    *  }}}
     *  @tparam A1      the type of the first of three elements in the triple
     *  @tparam A2      the type of the second of three elements in the triple
     *  @tparam A3      the type of the third of three elements in the triple
