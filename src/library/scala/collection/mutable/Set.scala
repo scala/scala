@@ -60,6 +60,11 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     else remove(elem)
   }
 
+  /** Removes an element from this set.
+   *
+   *  @param elem     the element to be removed
+   *  @return true if this set contained the element before it was removed
+   */
   def remove(elem: A): Boolean = {
     val res = contains(elem)
     coll -= elem
