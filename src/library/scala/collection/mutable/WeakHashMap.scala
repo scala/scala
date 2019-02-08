@@ -37,6 +37,7 @@ class WeakHashMap[K, V] extends JMapWrapper[K, V](new java.util.WeakHashMap)
     with JMapWrapperLike[K, V, WeakHashMap, WeakHashMap[K, V]] {
   override def empty = new WeakHashMap[K, V]
   override def mapFactory: MapFactory[WeakHashMap] = WeakHashMap
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "WeakHashMap"
 }
 

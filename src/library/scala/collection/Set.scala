@@ -42,6 +42,7 @@ trait Set[A]
 
   def empty: IterableCC[A] = iterableFactory.empty
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "Set"
 
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too

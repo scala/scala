@@ -40,6 +40,7 @@ trait SortedMap[K, +V]
 
   override def empty: SortedMapCC[K, V] @uncheckedVariance = sortedMapFactory.empty
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SortedMap"
 }
 

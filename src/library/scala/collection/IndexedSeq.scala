@@ -20,6 +20,7 @@ import Searching.{SearchResult, Found, InsertionPoint}
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "IndexedSeq"
 }
 

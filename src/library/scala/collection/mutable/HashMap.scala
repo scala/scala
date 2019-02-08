@@ -322,6 +322,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "HashMap"
 }
 

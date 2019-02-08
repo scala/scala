@@ -257,6 +257,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new HashSet.DeserializationFactory[A](table.length, loadFactor), this)
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "HashSet"
 }
 

@@ -552,6 +552,7 @@ class ArrayDeque[A] protected (
   @inline private[this] def requireBounds(idx: Int, until: Int = length) =
     if (idx < 0 || idx >= until) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${until-1})")
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ArrayDeque"
 }
 
