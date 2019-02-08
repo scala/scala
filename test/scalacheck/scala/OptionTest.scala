@@ -33,6 +33,17 @@ object OptionTest extends Properties("scala.Option") {
     }
   }
 
+  property("flatten") = {
+    Prop.forAll { (optionOfOption: Option[Option[Int]]) =>
+      optionOfOption.flatten ?= {
+        optionOfOption match {
+          case Some(Some(i)) => Some(i)
+          case _             => None
+        }
+      }
+    }
+  }
+
   property("foreach") = {
     Prop.forAll { (option: Option[Int], unit: Unit) =>
       val proc: Function1[Int,Unit] = (_ => unit)
@@ -244,6 +255,39 @@ object OptionTest extends Properties("scala.Option") {
         option match {
           case Some(x) => 1
           case None    => 0
+        }
+      }
+    }
+  }
+
+  property("zip") = {
+    Prop.forAll { (option1: Option[Int], option2: Option[Int]) =>
+      option1.zip(option2) ?= {
+        (option1, option2) match {
+          case (Some(x), Some(y)) => Some((x, y))
+          case _                  => None
+        }
+      }
+    }
+  }
+
+  property("unzip") = {
+    Prop.forAll { (option: Option[(Int, Int)]) =>
+      option.unzip ?= {
+        option match {
+          case Some((x, y)) => (Some(x), Some(y))
+          case _            => (None,    None)
+        }
+      }
+    }
+  }
+
+  property("unzip3") = {
+    Prop.forAll { (option: Option[(Int, Int, Int)]) =>
+      option.unzip3 ?= {
+        option match {
+          case Some((x, y, z)) => (Some(x), Some(y), Some(z))
+          case _               => (None,    None,    None)
         }
       }
     }
