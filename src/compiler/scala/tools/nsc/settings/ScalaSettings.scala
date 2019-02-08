@@ -275,9 +275,10 @@ trait ScalaSettings extends AbsScalaSettings
     def setting(style: String, styleLong: String) = ChoiceSetting(s"-Ycache-$style-class-loader", "policy", s"Policy for caching class loaders for $styleLong that are dynamically loaded.", values.map(_.name), None.name, values.map(_.help))
     object None extends CachePolicy("none", "Don't cache class loader")
     object LastModified extends CachePolicy("last-modified", "Cache class loader, using file last-modified time to invalidate")
+    object Always extends CachePolicy("always", "Cache class loader with no invalidation")
     // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
     // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
-    def values: List[CachePolicy] = List(None, LastModified)
+    def values: List[CachePolicy] = List(None, LastModified, Always)
   }
 
   object optChoices extends MultiChoiceEnumeration {
