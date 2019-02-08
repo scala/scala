@@ -220,4 +220,4 @@ object SortedMapOps {
 }
 
 @SerialVersionUID(3L)
-object SortedMap extends SortedMapFactory.Delegate[SortedMap](TreeMap)
+object SortedMap extends SortedMapFactory.Delegate[SortedMap](immutable.SortedMap)

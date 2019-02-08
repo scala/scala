@@ -49,4 +49,9 @@ trait StrictOptimizedSortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[
   * @define Coll `immutable.SortedSet`
   */
 @SerialVersionUID(3L)
-object SortedSet extends SortedIterableFactory.Delegate[SortedSet](TreeSet)
+object SortedSet extends SortedIterableFactory.Delegate[SortedSet](TreeSet) {
+  override def from[E: Ordering](it: IterableOnce[E]): SortedSet[E] = it match {
+    case ss: SortedSet[E] if Ordering[E] == ss.ordering => ss
+    case _ => super.from(it)
+  }
+}

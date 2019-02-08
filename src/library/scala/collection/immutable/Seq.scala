@@ -37,7 +37,12 @@ trait SeqOps[+A, +CC[_], +C] extends Any with collection.SeqOps[A, CC, C]
   * @define Coll `immutable.Seq`
   */
 @SerialVersionUID(3L)
-object Seq extends SeqFactory.Delegate[Seq](List)
+object Seq extends SeqFactory.Delegate[Seq](List) {
+  override def from[E](it: IterableOnce[E]): Seq[E] = it match {
+    case s: Seq[E] => s
+    case _ => super.from(it)
+  }
+}
 
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A]
@@ -104,7 +109,12 @@ object IndexedSeqDefaults {
 }
 
 @SerialVersionUID(3L)
-object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector)
+object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](Vector) {
+  override def from[E](it: IterableOnce[E]): IndexedSeq[E] = it match {
+    case is: IndexedSeq[E] => is
+    case _ => super.from(it)
+  }
+}
 
 /** Base trait for immutable indexed Seq operations */
 trait IndexedSeqOps[+A, +CC[_], +C]
@@ -129,7 +139,12 @@ trait LinearSeq[+A]
 }
 
 @SerialVersionUID(3L)
-object LinearSeq extends SeqFactory.Delegate[LinearSeq](List)
+object LinearSeq extends SeqFactory.Delegate[LinearSeq](List) {
+  override def from[E](it: IterableOnce[E]): LinearSeq[E] = it match {
+    case ls: LinearSeq[E] => ls
+    case _ => super.from(it)
+  }
+}
 
 trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeqOps[A, CC, C]]
   extends Any with SeqOps[A, CC, C]
