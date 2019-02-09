@@ -94,9 +94,6 @@ abstract class SymbolTable extends macros.Universe
 
   def settings: MutableSettings
 
-  @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
-  def debugwarn(msg: => String): Unit = devWarning(msg)
-
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
 
