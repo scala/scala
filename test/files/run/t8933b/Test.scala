@@ -1,5 +1,5 @@
 class MotherClass extends MixinWithSymbol {
-  def foo = 'sym1
+  def foo = sym"sym1"
 }
 
 object Test {

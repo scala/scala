@@ -7,7 +7,7 @@ object Test extends App {
   it.head
   it.last
 
-  val that = Array(A("baz"), A('fff))
+  val that = Array(A("baz"), A(sym"fff"))
   that.head
   that.last
 }

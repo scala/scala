@@ -6,7 +6,7 @@
 
 object Test extends App {
   val xs = List(1, 2, 3)
-  val ys = List('a, 'b, 'c)
+  val ys = List(Symbol("a"), Symbol("b"), Symbol("c"))
 
   def it = 0 until 10
 

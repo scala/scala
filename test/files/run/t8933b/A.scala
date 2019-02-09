@@ -1,4 +1,4 @@
 trait MixinWithSymbol {
   self: MotherClass =>
-  def symbolFromTrait: Any = 'traitSymbol
+  def symbolFromTrait: Any = sym"traitSymbol"
 }

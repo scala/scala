@@ -1,3 +1,4 @@
+warning: there were 7 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 x=(), t=TypeTag[Unit], k=TypeRef, s=class Unit
 x=true, t=TypeTag[Boolean], k=TypeRef, s=class Boolean
 x=a, t=TypeTag[Char], k=TypeRef, s=class Char

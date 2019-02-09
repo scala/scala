@@ -1311,8 +1311,13 @@ self =>
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
       if (in.token == INTERPOLATIONID)
         interpolatedString(inPattern = inPattern)
-      else if (in.token == SYMBOLLIT)
+      else if (in.token == SYMBOLLIT) {
+        def msg(what: String) =
+          s"""symbol literal is $what; use sym"${in.strVal}" instead"""
+        if (settings.isScala214) syntaxError(in.offset, msg("unsupported"))
+        else deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
+      }
       else finish(in.token match {
         case CHARLIT                => in.charVal
         case INTLIT                 => in.intVal(isNegated).toInt

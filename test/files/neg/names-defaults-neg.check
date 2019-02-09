@@ -1,3 +1,9 @@
+names-defaults-neg.scala:103: warning: symbol literal is deprecated; use sym"foo" instead
+  def deprNam6(@deprecatedName('foo) deprNam6Arg: String) = 0
+                               ^
+names-defaults-neg.scala:105: warning: symbol literal is deprecated; use sym"bar" instead
+  def deprNam7(@deprecatedName('bar, "2.12.0") deprNam7Arg: String) = 0
+                               ^
 names-defaults-neg.scala:7: error: type mismatch;
  found   : String("#")
  required: Int
@@ -148,5 +154,5 @@ names-defaults-neg.scala:147: error: parameter 'a' is already specified at param
 names-defaults-neg.scala:148: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-7 warnings found
+9 warnings found
 33 errors found
