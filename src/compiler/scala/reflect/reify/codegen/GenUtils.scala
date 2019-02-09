@@ -42,7 +42,7 @@ trait GenUtils {
   def call(fname: String, args: Tree*): Tree =
     Apply(termPath(fname), args.toList)
 
-  def mirrorSelect(name: String): Tree   = termPath(nme.UNIVERSE_PREFIX + name)
+  def mirrorSelect(name: String): Tree   = termPath(nme.UNIVERSE_PREFIX.decoded + name)
   def mirrorSelect(name: TermName): Tree = mirrorSelect(name.toString)
 
   def mirrorMirrorSelect(name: TermName): Tree =

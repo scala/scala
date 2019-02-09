@@ -414,7 +414,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
         inform("[running phase " + name + " on " + unit + "]")
     }
 
-    @deprecated
+    @deprecated("Unused, inlined in applyPhase", since="2.13")
     final def withCurrentUnit(unit: CompilationUnit)(task: => Unit): Unit = {
       beforeUnit(unit)
       if (!cancelled(unit)) {
@@ -425,6 +425,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     }
 
     @inline
+    @deprecated("Unused, see withCurrentUnit", since="2.13")
     final def withCurrentUnitNoLog(unit: CompilationUnit)(task: => Unit): Unit = {
       val unit0 = currentUnit
       try {

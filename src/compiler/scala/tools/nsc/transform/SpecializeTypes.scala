@@ -153,7 +153,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  the given args. Expects the lists to have the same length.
      */
     def fromSpecialization(sym: Symbol, args: List[Type]): TypeEnv = {
-      ifDebug(assert(sym.info.typeParams.sizeCompare(args) == 0, sym + " args: " + args))
+      ifDebug(assert(sym.info.typeParams.sizeCompare(args) == 0, "" + sym + " args: " + args))
 
       emptyEnv ++ collectMap2(sym.info.typeParams, args)((k, v) => k.isSpecialized)
     }
@@ -416,7 +416,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specializedOn(sym).map(s => specializesClass(s).tpe).sorted
 
     if (isBoundedGeneric(sym.tpe) && (types contains AnyRefTpe))
-      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefTpe + ".")
+      reporter.warning(sym.pos, s"$sym is always a subtype of $AnyRefTpe.")
 
     types
   }
@@ -652,8 +652,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (stp != p)
               if (p.typeSymbol.isTrait) res ::= stp
               else if (currentRun.compiles(clazz))
-                reporter.warning(clazz.pos, p.typeSymbol + " must be a trait. Specialized version of "
-                  + clazz + " will inherit generic " + p)  // TODO change to error
+                // TODO change to error
+                reporter.warning(clazz.pos, s"${p.typeSymbol} must be a trait. Specialized version of $clazz will inherit generic $p")
           }
           res
         }
@@ -955,13 +955,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   // concise printing of type env
   private def pp(env: TypeEnv): String = {
-    env.toList.sortBy(_._1.name) map {
+    env.toList.sortBy(_._1.name).map {
       case (k, v) =>
         val vsym = v.typeSymbol
         if (k == vsym) "" + k.name
-        else k.name + ":" + vsym.name
-
-    } mkString ("env(", ", ", ")")
+        else "" + k.name + ":" + vsym.name
+    }.mkString("env(", ", ", ")")
   }
 
   /** Specialize member `m` w.r.t. to the outer environment and the type
@@ -1643,7 +1642,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               treeCopy.TypeApply(tree, treeCopy.Select(sel, qual1, name), transformTrees(targs))
             case specMember =>
               debuglog("found " + specMember.fullName)
-              ifDebug(assert(symbol.info.typeParams.sizeCompare(targs) == 0, symbol.info.typeParams + " / " + targs))
+              ifDebug(assert(symbol.info.typeParams.sizeCompare(targs) == 0, "" + symbol.info.typeParams + " / " + targs))
 
               val env = typeEnv(specMember)
               computeResidualTypeVars(tree, specMember, gen.mkAttributedSelect(qual1, specMember), targs, env)

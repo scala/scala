@@ -36,16 +36,10 @@ object BackendReporting {
   def assertionError(message: String): Nothing = throw new AssertionError(message)
 
   implicit class RightBiasedEither[A, B](val v: Either[A, B]) extends AnyVal {
-    def withFilter(f: B => Boolean)(implicit empty: A): Either[A, B] = v match {
-      case Left(_)  => v
-      case Right(e) => if (f(e)) v else Left(empty) // scalaz.\/ requires an implicit Monoid m to get m.empty
-    }
+    def withFilter(f: B => Boolean)(implicit empty: A): Either[A, B] = v.filterOrElse(f, empty)
 
     /** Get the value, fail with an assertion if this is an error. */
-    def get: B = {
-      assert(v.isRight, v.left.get)
-      v.right.get
-    }
+    def get: B = v.fold(a => assertionError(s"$a"), identity)
 
     /**
      * Get the right value of an `Either` by throwing a potential error message. Can simplify the
@@ -56,10 +50,7 @@ object BackendReporting {
      *       eitherOne.orThrow .... eitherTwo.orThrow ... eitherThree.orThrow
      *     }
      */
-    def orThrow: B = v match {
-      case Left(m)  => throw Invalid(m)
-      case Right(t) => t
-    }
+    def orThrow: B = v.fold(a => throw Invalid(a), identity)
   }
 
   case class Invalid[A](e: A) extends ControlThrowable
@@ -73,11 +64,13 @@ object BackendReporting {
     def emitWarning(settings: CompilerSettings): Boolean
   }
 
-  // Method withFilter in RightBiasedEither requires an implicit empty value. Taking the value here
-  // in scope allows for-comprehensions that desugar into withFilter calls (for example when using a
-  // tuple de-constructor).
-  implicit object emptyOptimizerWarning extends OptimizerWarning {
-    def emitWarning(settings: CompilerSettings): Boolean = false
+  object OptimizerWarning {
+    // Method withFilter in RightBiasedEither requires an implicit empty value. Taking the value here
+    // in scope allows for-comprehensions that desugar into withFilter calls (for example when using a
+    // tuple de-constructor).
+    implicit val emptyOptimizerWarning: OptimizerWarning = new OptimizerWarning {
+      def emitWarning(settings: CompilerSettings): Boolean = false
+    }
   }
 
   sealed trait MissingBytecodeWarning extends OptimizerWarning {
@@ -116,11 +109,11 @@ object BackendReporting {
     }
   }
 
-  case class ClassNotFound(internalName: InternalName, definedInJavaSource: Boolean) extends MissingBytecodeWarning
-  case class MethodNotFound(name: String, descriptor: String, ownerInternalNameOrArrayDescriptor: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning {
+  final case class ClassNotFound(internalName: InternalName, definedInJavaSource: Boolean) extends MissingBytecodeWarning
+  final case class MethodNotFound(name: String, descriptor: String, ownerInternalNameOrArrayDescriptor: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning {
     def isArrayMethod = ownerInternalNameOrArrayDescriptor.charAt(0) == '['
   }
-  case class FieldNotFound(name: String, descriptor: String, ownerInternalName: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning
+  final case class FieldNotFound(name: String, descriptor: String, ownerInternalName: InternalName, missingClass: Option[ClassNotFound]) extends MissingBytecodeWarning
 
   sealed trait NoClassBTypeInfo extends OptimizerWarning {
     override def toString = this match {
@@ -137,8 +130,8 @@ object BackendReporting {
     }
   }
 
-  case class NoClassBTypeInfoMissingBytecode(cause: MissingBytecodeWarning) extends NoClassBTypeInfo
-  case class NoClassBTypeInfoClassSymbolInfoFailedSI9111(classFullName: String) extends NoClassBTypeInfo
+  final case class NoClassBTypeInfoMissingBytecode(cause: MissingBytecodeWarning) extends NoClassBTypeInfo
+  final case class NoClassBTypeInfoClassSymbolInfoFailedSI9111(classFullName: String) extends NoClassBTypeInfo
 
   /**
    * Used in the CallGraph for nodes where an issue occurred determining the callee information.
@@ -172,9 +165,9 @@ object BackendReporting {
     }
   }
 
-  case class MethodInlineInfoIncomplete(declarationClass: InternalName, name: String, descriptor: String, cause: ClassInlineInfoWarning) extends CalleeInfoWarning
-  case class MethodInlineInfoMissing(declarationClass: InternalName, name: String, descriptor: String, cause: Option[ClassInlineInfoWarning]) extends CalleeInfoWarning
-  case class MethodInlineInfoError(declarationClass: InternalName, name: String, descriptor: String, cause: NoClassBTypeInfo) extends CalleeInfoWarning
+  final case class MethodInlineInfoIncomplete(declarationClass: InternalName, name: String, descriptor: String, cause: ClassInlineInfoWarning) extends CalleeInfoWarning
+  final case class MethodInlineInfoMissing(declarationClass: InternalName, name: String, descriptor: String, cause: Option[ClassInlineInfoWarning]) extends CalleeInfoWarning
+  final case class MethodInlineInfoError(declarationClass: InternalName, name: String, descriptor: String, cause: NoClassBTypeInfo) extends CalleeInfoWarning
 
   sealed trait CannotInlineWarning extends OptimizerWarning {
     def calleeDeclarationClass: InternalName
@@ -226,22 +219,22 @@ object BackendReporting {
         annotatedInline && settings.optWarningEmitAtInlineFailed
     }
   }
-  case class CalleeNotFinal(calleeDeclarationClass: InternalName, name: String, descriptor: String,  annotatedInline: Boolean) extends CannotInlineWarning
-  case class IllegalAccessInstructions(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
+  final case class CalleeNotFinal(calleeDeclarationClass: InternalName, name: String, descriptor: String,  annotatedInline: Boolean) extends CannotInlineWarning
+  final case class IllegalAccessInstructions(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                        callsiteClass: InternalName, instructions: List[AbstractInsnNode]) extends CannotInlineWarning
-  case class IllegalAccessCheckFailed(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
+  final case class IllegalAccessCheckFailed(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                       callsiteClass: InternalName, instruction: AbstractInsnNode, cause: OptimizerWarning) extends CannotInlineWarning
-  case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
+  final case class MethodWithHandlerCalledOnNonEmptyStack(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                                     callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
-  case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean) extends CannotInlineWarning
-  case class StrictfpMismatch(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
+  final case class SynchronizedMethod(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean) extends CannotInlineWarning
+  final case class StrictfpMismatch(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                               callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
   case class ResultingMethodTooLarge(calleeDeclarationClass: InternalName, name: String, descriptor: String, annotatedInline: Boolean,
                                      callsiteClass: InternalName, callsiteName: String, callsiteDesc: String) extends CannotInlineWarning
 
   // TODO: this should be a subtype of CannotInlineWarning
   // but at the place where it's created (in findIllegalAccess) we don't have the necessary data (calleeName, calleeDescriptor).
-  case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
+  final case object UnknownInvokeDynamicInstruction extends OptimizerWarning {
     override def toString = "The callee contains an InvokeDynamic instruction with an unknown bootstrap method (not a LambdaMetaFactory)."
     def emitWarning(settings: CompilerSettings): Boolean = settings.optWarningEmitAnyInlineFailed
   }
@@ -265,8 +258,8 @@ object BackendReporting {
         s"The closure body invocation cannot be rewritten because the target method is not accessible in class $callsiteClass."
     }
   }
-  case class RewriteClosureAccessCheckFailed(pos: Position, cause: OptimizerWarning) extends RewriteClosureApplyToClosureBodyFailed
-  case class RewriteClosureIllegalAccess(pos: Position, callsiteClass: InternalName) extends RewriteClosureApplyToClosureBodyFailed
+  final case class RewriteClosureAccessCheckFailed(pos: Position, cause: OptimizerWarning) extends RewriteClosureApplyToClosureBodyFailed
+  final case class RewriteClosureIllegalAccess(pos: Position, callsiteClass: InternalName) extends RewriteClosureApplyToClosureBodyFailed
 
   /**
    * Used in the InlineInfo of a ClassBType, when some issue occurred obtaining the inline information.
@@ -294,8 +287,8 @@ object BackendReporting {
     }
   }
 
-  case class NoInlineInfoAttribute(internalName: InternalName) extends ClassInlineInfoWarning
-  case class ClassSymbolInfoFailureSI9111(classFullName: String) extends ClassInlineInfoWarning
-  case class ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass: ClassNotFound) extends ClassInlineInfoWarning
-  case class UnknownScalaInlineInfoVersion(internalName: InternalName, version: Int) extends ClassInlineInfoWarning
+  final case class NoInlineInfoAttribute(internalName: InternalName) extends ClassInlineInfoWarning
+  final case class ClassSymbolInfoFailureSI9111(classFullName: String) extends ClassInlineInfoWarning
+  final case class ClassNotFoundWhenBuildingInlineInfoFromSymbol(missingClass: ClassNotFound) extends ClassInlineInfoWarning
+  final case class UnknownScalaInlineInfoVersion(internalName: InternalName, version: Int) extends ClassInlineInfoWarning
 }

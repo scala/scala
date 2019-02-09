@@ -619,7 +619,7 @@ abstract class ClassfileParser {
                    * If symbol 1 gets completed (e.g. because the compiled source mentions `A$B`, not `A#B`), the
                    * ClassfileParser for 1 executes, and clazz.owner is the package.
                    */
-                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, "" + params.head.tpe.typeSymbol + ": " + clazz.owner)
                   removedOuterParameter = true
                   params.tail
                 case _ =>
