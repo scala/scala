@@ -257,26 +257,52 @@ final class TreeSeqMap[K, +V] private (
 
   override def concat[V2 >: V](suffix: IterableOnce[(K, V2)]): TreeSeqMap[K, V2] = {
     var ong: Ordering[K] = ordering
-    var mng: Mapping[K, V2] = mapping
+    var mrn: BitmapIndexedMapNode[K, (Int, V2)] = mapping.rootNode
     var ord = increment(ordinal)
     val iter = suffix.iterator
     while (iter.hasNext) {
       val (k, v2) = iter.next()
-      mng.get(k) match {
+      val originalHash = k.##
+      val improvedHash = Hashing.improve(originalHash)
+      mrn.get(k, originalHash, improvedHash, 0) match  {
         case Some((o, v)) =>
-          if (orderedBy == OrderBy.Insertion && v != v2) mng = mng.updated(k, (o, v2))
+          if (orderedBy == OrderBy.Insertion && v != v2) mrn = mrn.updated(k, (o, v2), originalHash, improvedHash, 0)
           else if (orderedBy == OrderBy.Modification) {
-            mng = mng.updated(k, (ord, v2))
+            mrn = mrn.updated(k, (ord, v2), originalHash, improvedHash, 0)
             ong = ong.exclude(o).append(ord, k)
             ord = increment(ord)
           }
         case None =>
-          mng = mng.updated(k, (ord, v2))
+          mrn = mrn.updated(k, (ord, v2), originalHash, improvedHash, 0)
           ong = ong.append(ord, k)
           ord = increment(ord)
       }
+
+      if (mrn ne mapping.rootNode) {
+        var shallowlyMutableNodeMap = 0
+        while (iter.hasNext) {
+          val (k, v2) = iter.next()
+          val originalHash = k.##
+          val improvedHash = Hashing.improve(originalHash)
+          mrn.get(k, originalHash, improvedHash, 0) match {
+            case Some((o, v)) =>
+              if (orderedBy == OrderBy.Insertion && v != v2) {
+                shallowlyMutableNodeMap = mrn.updateWithShallowMutations(k, (o, v2), originalHash, improvedHash, 0, shallowlyMutableNodeMap)
+              } else if (orderedBy == OrderBy.Modification) {
+                shallowlyMutableNodeMap = mrn.updateWithShallowMutations(k, (o, v2), originalHash, improvedHash, 0, shallowlyMutableNodeMap)
+                ong = ong.exclude(o).append(ord, k)
+                ord = increment(ord)
+              }
+            case None =>
+              shallowlyMutableNodeMap = mrn.updateWithShallowMutations(k, (ord, v2), originalHash, improvedHash, 0, shallowlyMutableNodeMap)
+              ong = ong.append(ord, k)
+              ord = increment(ord)
+          }
+        }
+        return new TreeSeqMap[K, V2](ong, new HashMap(mrn), ord, orderedBy)
+      }
     }
-    new TreeSeqMap[K, V2](ong, mng, ord, orderedBy)
+    this
   }
 
   @`inline` private[this] def value(p: (_, V)) = p._2
@@ -305,7 +331,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
   def newBuilder[K, V](orderedBy: OrderBy): mutable.Builder[(K, V), TreeSeqMap[K, V]] = new Builder[K, V](orderedBy)
 
   final class Builder[K, V](orderedBy: OrderBy) extends mutable.Builder[(K, V), TreeSeqMap[K, V]] {
-    private[this] val bdr = new MapBuilderImpl[K, (Int, V)]
+    private[this] val bdr = new HashMapBuilder[K, (Int, V)]
     private[this] var ong = Ordering.empty[K]
     private[this] var ord = 0
     private[this] var aliased: TreeSeqMap[K, V] = _
@@ -347,8 +373,8 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
     }
   }
 
-  private type Mapping[K, +V] = Map[K, (Int, V)]
-  private val Mapping = Map
+  private type Mapping[K, +V] = HashMap[K, (Int, V)]
+  private val Mapping = HashMap
 
   /* The ordering implementation below is an adapted version of immutable.IntMap. */
   private[immutable] object Ordering {
