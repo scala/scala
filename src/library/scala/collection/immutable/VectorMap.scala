@@ -34,7 +34,7 @@ import scala.collection.mutable
   */
 final class VectorMap[K, +V] private (
     private[immutable] val fields: Vector[Any],
-    private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean)
+    private[immutable] val underlying: HashMap[K, (Int, V)], dummy: Boolean)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]] {
@@ -43,11 +43,11 @@ final class VectorMap[K, +V] private (
 
   override protected[this] def className: String = "VectorMap"
 
-  private[immutable] def this(fields: Vector[K], underlying: Map[K, (Int, V)]) = {
+  private[immutable] def this(fields: Vector[K], underlying: HashMap[K, (Int, V)]) = {
     this(fields, underlying, false)
   }
 
-  override val size = underlying.size
+  override val size: Int = underlying.size
 
   override def knownSize: Int = size
 
@@ -60,6 +60,55 @@ final class VectorMap[K, +V] private (
       case None =>
         new VectorMap(fields :+ key, underlying.updated[(Int, V1)](key, (fields.length, value)), false)
     }
+  }
+
+  override def concat[V1 >: V](that: IterableOnce[(K, V1)]): VectorMap[K, V1] = {
+    val iter = that.iterator
+    var newRootNode: BitmapIndexedMapNode[K, (Int, V1)] = underlying.rootNode
+    var newFields: VectorBuilder[Any] = null
+
+    while (iter.hasNext) {
+      val (k, v1) = iter.next()
+      val originalHash = k.##
+      val improvedHash = Hashing.improve(originalHash)
+
+      newRootNode.get(k, originalHash, improvedHash, 0) match {
+        case Some((slot, _)) =>
+          newRootNode = newRootNode.updated[(Int, V1)](k, (slot, v1), originalHash, improvedHash, 0)
+        case None =>
+          newRootNode = newRootNode.updated[(Int, V1)](k, (fields.length, v1), originalHash, improvedHash, 0)
+          newFields = new VectorBuilder[Any].addAll(fields).addOne(k)
+      }
+
+      if (newRootNode ne underlying.rootNode) {
+        var shallowlyMutableNodeMap = 0
+        while (iter.hasNext) {
+          val (k, v1) = iter.next()
+          val originalHash = k.##
+          val improvedHash = Hashing.improve(originalHash)
+
+          newRootNode.get(k, originalHash, improvedHash, 0) match {
+            case Some((slot, _)) =>
+              shallowlyMutableNodeMap =
+                newRootNode.updateWithShallowMutations(k, (slot, v1), originalHash, improvedHash, 0, shallowlyMutableNodeMap)
+            case None =>
+              if (newFields eq null) {
+                newFields = new VectorBuilder[Any].addAll(fields)
+              }
+
+              newFields.addOne(k)
+              shallowlyMutableNodeMap =
+                newRootNode.updateWithShallowMutations(k, (newFields.size - 1, v1), originalHash, improvedHash, 0, shallowlyMutableNodeMap)
+          }
+
+        }
+
+        return new VectorMap[K, V1](if (newFields eq null) fields else newFields.result(), new HashMap(newRootNode), false)
+      }
+
+    }
+
+    this
   }
 
   override def withDefault[V1 >: V](d: K => V1): Map.WithDefault[K, V1] =
@@ -231,7 +280,7 @@ object VectorMap extends MapFactory[VectorMap] {
 
 private[immutable] final class VectorMapBuilder[K, V] extends mutable.Builder[(K, V), VectorMap[K, V]] {
   private[this] val vectorBuilder = new VectorBuilder[K]
-  private[this] val mapBuilder = new MapBuilderImpl[K, (Int, V)]
+  private[this] val mapBuilder = new HashMapBuilder[K, (Int, V)]
   private[this] var aliased: VectorMap[K, V] = _
 
   override def clear(): Unit = {

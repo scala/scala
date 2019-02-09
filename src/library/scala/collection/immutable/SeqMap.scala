@@ -183,7 +183,7 @@ object SeqMap extends MapFactory[SeqMap] {
       else {
         // Directly create the elements for performance reasons
         val fields = Vector(key1, key2, key3, key4, key)
-        val underlying: Map[K, (Int, V1)] =
+        val underlying: HashMap[K, (Int, V1)] =
           HashMap(
             (key1, (0, value1)),
             (key2, (1, value2)),
