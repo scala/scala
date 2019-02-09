@@ -51,7 +51,6 @@ class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(
     phasesSet += analyzer.packageObjects
     phasesSet += analyzer.typerFactory
   }
-  override def forScaladoc = true
   override def createJavadoc = if (settings.docNoJavaComments.value) false else true
 
   override lazy val analyzer =
