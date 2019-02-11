@@ -13,7 +13,7 @@
 package scala.concurrent
 
 import scala.language.higherKinds
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.control.{NonFatal, NoStackTrace}

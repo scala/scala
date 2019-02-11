@@ -78,6 +78,25 @@ class FutureTests extends MinimalScalaTest {
   }
 
   "Futures" should {
+
+    "not be serializable" in {
+
+      def verifyNonSerializabilityFor(p: Future[_]): Unit = {
+        import java.io._
+        val out = new ObjectOutputStream(new ByteArrayOutputStream())
+        intercept[NotSerializableException] {
+          out.writeObject(p)
+        }
+      }
+      verifyNonSerializabilityFor(Await.ready(Future.unit.map(_ => ())(ExecutionContext.global), defaultTimeout))
+      verifyNonSerializabilityFor(Future.unit)
+      verifyNonSerializabilityFor(Future.failed(new NullPointerException))
+      verifyNonSerializabilityFor(Future.successful("test"))
+      verifyNonSerializabilityFor(Future.fromTry(Success("test")))
+      verifyNonSerializabilityFor(Future.fromTry(Failure(new NullPointerException)))
+      verifyNonSerializabilityFor(Future.never)
+    }
+
     "have proper toString representations" in {
       import ExecutionContext.Implicits.global
       val s = 5

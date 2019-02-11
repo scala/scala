@@ -21,6 +21,7 @@ import scala.runtime.NonLocalReturnControl
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.Objects.requireNonNull
+import java.io.{ NotSerializableException, IOException, ObjectInputStream, ObjectOutputStream }
 
 /**
   * Latch used to implement waiting on a DefaultPromise's result.
@@ -331,6 +332,15 @@ private[concurrent] object Promise {
         next.unlink(resolved)
       } else tryComplete0(state, resolved)
     }
+
+    @throws[IOException]
+    private def writeObject(out: ObjectOutputStream): Unit =
+      throw new NotSerializableException("Promises and Futures cannot be serialized")
+
+    @throws[IOException]
+    @throws[ClassNotFoundException]
+    private def readObject(in: ObjectInputStream): Unit =
+      throw new NotSerializableException("Promises and Futures cannot be deserialized")
   }
 
   // Constant byte tags for unpacking transformation function inputs or outputs
