@@ -1,8 +1,0 @@
-t7891.scala:2: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-  def this(x: Any) { this() ; new Object { self } }
-                                           ^
-t7891.scala:2: error: Internal error: unable to find the outer accessor symbol of <$anon: Object>
-  def this(x: Any) { this() ; new Object { self } }
-                                  ^
-one warning found
-one error found

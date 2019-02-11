@@ -159,11 +159,16 @@ trait Namers extends MethodSynthesis {
       setPrivateWithin(tree, sym, tree.mods)
 
     def inConstructorFlag: Long = {
-      val termOwnedContexts: List[Context] =
-        context.enclosingContextChain.takeWhile(c => c.owner.isTerm && !c.owner.isAnonymousFunction)
-      val constructorNonSuffix = termOwnedContexts exists (c => c.owner.isConstructor && !c.inConstructorSuffix)
-      val earlyInit            = termOwnedContexts exists (_.owner.isEarlyInitialized)
-      if (constructorNonSuffix || earlyInit) INCONSTRUCTOR else 0L
+      @tailrec def go(context: Context): Long =
+        if (context eq NoContext) 0L else {
+          val owner = context.owner
+          if (!owner.isTerm || owner.isAnonymousFunction) 0L
+          else if (owner.isConstructor) if (context.inConstructorSuffix) 0L else INCONSTRUCTOR
+          else if (owner.isEarlyInitialized) INCONSTRUCTOR
+          else go(context.outer)
+        }
+
+      go(context)
     }
 
     def moduleClassFlags(moduleFlags: Long) =
