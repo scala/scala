@@ -26,7 +26,13 @@ trait Batchable {
 
 private[concurrent] object BatchingExecutorStatics {
   final val emptyBatchArray: Array[Runnable] = new Array[Runnable](0)
-  final val marker = ""
+
+  // Max number of Runnables executed nested before starting to batch (to prevent stack exhaustion)
+  final val syncPreBatchDepth = 16
+
+  // Max number of Runnables processed in one go (to prevent starvation of other tasks on the pool)
+  final val runLimit = 1024
+
   final object MissingParentBlockContext extends BlockContext {
     override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T =
       try thunk finally throw new IllegalStateException("BUG in BatchingExecutor.Batch: parentBlockContext is null")
@@ -117,31 +123,24 @@ private[concurrent] trait BatchingExecutor extends Executor {
       this.size = sz + 1
     }
 
-    @tailrec protected final def runAll(): Unit = // TODO: Impose max limit of number of items (fairness)
-      (this.size: @switch) match {
-        case 0 =>
-        case 1 =>
-          val next = this.first
-          this.first = null
-          this.size = 0
-          next.run()
-          runAll()
-        case sz =>
-          val o = this.other
-          val next = o(sz - 2)
-          o(sz - 2) = null
-          this.size = sz - 1// Important to update prior to `r.run()`
-          next.run()
-          runAll()
-        }
-
-    protected final def runUntilFailureOrDone(): Throwable =
-      try {
-        runAll()
-        null
-      } catch {
-        case t: Throwable => t
-      }
+    @tailrec protected final def runN(n: Int): Unit =
+      if (n > 0)
+        (this.size: @switch) match {
+          case 0 =>
+          case 1 =>
+            val next = this.first
+            this.first = null
+            this.size = 0
+            next.run()
+            runN(n - 1)
+          case sz =>
+            val o = this.other
+            val next = o(sz - 2)
+            o(sz - 2) = null
+            this.size = sz - 1
+            next.run()
+            runN(n - 1)
+          }
   }
 
   private[this] final class AsyncBatch private(_first: Runnable, _other: Array[Runnable], _size: Int) extends AbstractBatch(_first, _other, _size) with Runnable with BlockContext with (BlockContext => Throwable) {
@@ -159,12 +158,15 @@ private[concurrent] trait BatchingExecutor extends Executor {
     }
 
     /* LOGIC FOR ASYNCHRONOUS BATCHES */
-    override final def apply(prevBlockContext: BlockContext): Throwable = {
+    override final def apply(prevBlockContext: BlockContext): Throwable = try {
       parentBlockContext = prevBlockContext
-      val failure = runUntilFailureOrDone()
+      runN(BatchingExecutorStatics.runLimit)
+      null
+    } catch {
+      case t: Throwable => t // We are handling exceptions on the outside of this method
+    } finally {
       parentBlockContext = BatchingExecutorStatics.MissingParentBlockContext
       _tasksLocal.remove()
-      failure
     }
 
     /* Attempts to resubmit this Batch to the underlying ExecutionContext,
@@ -174,7 +176,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
      */
     private[this] final def resubmit(cause: Throwable): Throwable =
       if (this.size > 0) {
-        try { submitAsync(this); cause } catch {
+        try { submitForExecution(this); cause } catch {
           case inner: Throwable =>
             if (NonFatal(inner)) {
               val e = new ExecutionException("Non-fatal error occurred and resubmission failed, see suppressed exception.", cause)
@@ -185,7 +187,7 @@ private[concurrent] trait BatchingExecutor extends Executor {
       } else cause // TODO: consider if NonFatals should simply be `reportFailure`:ed rather than rethrown
 
     private[this] final def cloneAndClear(): AsyncBatch = {
-      val newBatch = new AsyncBatch(first, other, size)
+      val newBatch = new AsyncBatch(this.first, this.other, this.size)
       this.first = null
       this.parentBlockContext = BatchingExecutorStatics.MissingParentBlockContext
       this.other = BatchingExecutorStatics.emptyBatchArray
@@ -196,56 +198,70 @@ private[concurrent] trait BatchingExecutor extends Executor {
     override final def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
       val pbc = parentBlockContext // Store this for later since `cloneAndClear()` will reset it
 
-      if(this.size > 0) // If we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
-        submitAsync(cloneAndClear()) // If this throws then we have bigger problems
+      // If we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
+      if(this.size > 0)
+        submitForExecution(cloneAndClear()) // If this throws then we have bigger problems
 
       pbc.blockOn(thunk) // Now delegate the blocking to the previous BC
     }
   }
 
   private[this] final class SyncBatch(runnable: Runnable) extends AbstractBatch(runnable, BatchingExecutorStatics.emptyBatchArray, 1) with Runnable {
-    @tailrec private[this] final def runWithoutResubmit(failure: Throwable): Throwable =
-      if (failure != null && (failure.isInstanceOf[InterruptedException] || NonFatal(failure))) {
-        reportFailure(failure)
-        runWithoutResubmit(runUntilFailureOrDone())
-      } else {
-        _tasksLocal.set(BatchingExecutorStatics.marker)
-        failure
+    @tailrec override final def run(): Unit = {
+      try runN(BatchingExecutorStatics.runLimit) catch {
+        case ie: InterruptedException =>
+          reportFailure(ie) // TODO: Handle InterruptedException differently?
+        case f if NonFatal(f) =>
+          reportFailure(f)
       }
 
-    override final def run(): Unit = {
-      _tasksLocal.set(this) // This is later cleared in `runWithoutResubmit`
-
-      val f = runWithoutResubmit(runUntilFailureOrDone())
-
-      if (f != null)
-        throw f
+      if (this.size > 0)
+        run()
     }
   }
 
-  /** SHOULD throw a NullPointerException when `runnable` is null
+  /** MUST throw a NullPointerException when `runnable` is null
+   * When implementing a sync BatchingExecutor, it is RECOMMENDED
+   * to implement this method as `runnable.run()`
   */
-  protected def submitAsync(runnable: Runnable): Unit
+  protected def submitForExecution(runnable: Runnable): Unit
 
   /** Reports that an asynchronous computation failed.
    *  See `ExecutionContext.reportFailure(throwable: Throwable)`
   */
   protected def reportFailure(throwable: Throwable): Unit
 
+  /**
+   * WARNING: Never use both `submitAsyncBatched` and `submitSyncBatched` in the same
+   * implementation of `BatchingExecutor`
+   */
   protected final def submitAsyncBatched(runnable: Runnable): Unit = {
     val b = _tasksLocal.get
     if (b.isInstanceOf[AsyncBatch]) b.asInstanceOf[AsyncBatch].push(runnable)
-    else submitAsync(new AsyncBatch(runnable))
+    else submitForExecution(new AsyncBatch(runnable))
   }
 
+  /**
+   * WARNING: Never use both `submitAsyncBatched` and `submitSyncBatched` in the same
+   * implementation of `BatchingExecutor`
+   */
   protected final def submitSyncBatched(runnable: Runnable): Unit = {
     Objects.requireNonNull(runnable, "runnable is null")
-    val b = _tasksLocal.get
+    val tl = _tasksLocal
+    val b = tl.get
     if (b.isInstanceOf[SyncBatch]) b.asInstanceOf[SyncBatch].push(runnable)
-    else if (b == null) {                             // If there is null in _tasksLocal, set a marker and run, inflate the Batch only if needed
-      _tasksLocal.set(BatchingExecutorStatics.marker) // Set a marker to indicate that we are submitting synchronously
-      runnable.run()                                  // If we observe a non-null task which isn't a batch here, then allocate a batch
-      _tasksLocal.remove()                            // Since we are executing synchronously, we can clear this at the end of execution
-    } else new SyncBatch(runnable).run()
+    else {
+      val i = if (b ne null) b.asInstanceOf[java.lang.Integer].intValue else 0
+      if (i < BatchingExecutorStatics.syncPreBatchDepth) {
+        tl.set(java.lang.Integer.valueOf(i + 1))
+        try submitForExecution(runnable) // User code so needs to be try-finally guarded here
+        finally tl.set(b)
+      } else {
+        val batch = new SyncBatch(runnable)
+        tl.set(batch)
+        submitForExecution(batch)
+        tl.set(b) // Batch only throws fatals so no need for try-finally here
+      }
+    }
   }
 }

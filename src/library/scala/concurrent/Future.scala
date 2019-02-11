@@ -867,7 +867,7 @@ object Future {
   // doesn't need to create defaultExecutionContext as
   // a side effect.
   private[concurrent] object InternalCallbackExecutor extends ExecutionContextExecutor with BatchingExecutor {
-    override final def submitAsync(runnable: Runnable): Unit = reportFailure(null) // Cannot submit async
+    override final def submitForExecution(runnable: Runnable): Unit = runnable.run()
     final override def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
     override final def reportFailure(t: Throwable): Unit =
       ExecutionContext.defaultReporter(new IllegalStateException("problem in scala.concurrent internal callback", t))

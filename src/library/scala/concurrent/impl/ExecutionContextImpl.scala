@@ -101,13 +101,13 @@ private[concurrent] object ExecutionContextImpl {
                                                  uncaught = (thread: Thread, cause: Throwable) => reporter(cause))
 
     new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService with BatchingExecutor {
-      final override def submitAsync(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
+      final override def submitForExecution(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
 
       final override def execute(runnable: Runnable): Unit =
         if ((!runnable.isInstanceOf[Promise.Transformation[_,_]] || runnable.asInstanceOf[Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
           submitAsyncBatched(runnable)
         else
-          submitAsync(runnable)
+          submitForExecution(runnable)
 
       final override def reportFailure(cause: Throwable): Unit =
         getUncaughtExceptionHandler() match {
