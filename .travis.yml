@@ -1,6 +1,10 @@
 # GCE VMs have better performance (will be upgrading to premium VMs soon)
 sudo: required
 
+os:
+- linux
+- windows
+
 language: scala
 jdk: openjdk8
 
