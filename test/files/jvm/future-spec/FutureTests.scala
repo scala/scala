@@ -1,5 +1,3 @@
-/* scalac: -Xsource:3.0 */
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration.Inf
@@ -41,8 +39,7 @@ class FutureTests extends MinimalScalaTest {
       val ms = new concurrent.TrieMap[Throwable, Unit]
       implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(), {
         t =>
-        val u = ()
-        ms += (t -> u)
+        ms.addOne((t, ()))
       })
 
       class ThrowableTest(m: String) extends Throwable(m)

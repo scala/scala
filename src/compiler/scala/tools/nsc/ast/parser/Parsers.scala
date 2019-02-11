@@ -1906,7 +1906,7 @@ self =>
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          if (settings.isScala214) syntaxError(in.offset, msg("unsupported", without))
+          if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported", without))
           else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
         }
         else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
@@ -2329,7 +2329,7 @@ self =>
         if (vds.isEmpty)
           syntaxError(start, s"case classes must have a parameter list; try 'case class $name()' or 'case object $name'")
         else if (vds.head.nonEmpty && vds.head.head.mods.isImplicit) {
-          if (settings.isScala213)
+          if (currentRun.isScala213)
             syntaxError(start, s"case classes must have a non-implicit parameter list; try 'case class $name()$elliptical'")
           else {
             deprecationWarning(start, s"case classes should have a non-implicit parameter list; adapting to 'case class $name()$elliptical'", "2.12.2")
@@ -2460,7 +2460,7 @@ self =>
           def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
                                      |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            if (settings.isScala214) syntaxError(in.offset, msg("unsupported"))
+            if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported"))
             else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
@@ -2771,14 +2771,14 @@ self =>
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (settings.isScala214) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
+              if (currentRun.isScala214) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
               else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (settings.isScala214) syntaxError(in.offset, msg("unsupported", ": Unit ="))
+            if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported", ": Unit ="))
             else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
             restype = scalaUnitConstr
             blockExpr()
@@ -2920,7 +2920,7 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (settings.isScala214) "" else " nor view bounds `<% ...`"
+            val viewBoundsExist = if (currentRun.isScala214) "" else " nor view bounds `<% ...`"
               syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
@@ -3014,7 +3014,7 @@ self =>
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
           val advice =
-            if (settings.isScala214) "use trait parameters instead."
+            if (currentRun.isScala214) "use trait parameters instead."
             else "they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits."
           deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
@@ -3037,7 +3037,7 @@ self =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
-        if (settings.isScala214) syntaxError(tdef.pos.point, msg("unsupported"))
+        if (currentRun.isScala214) syntaxError(tdef.pos.point, msg("unsupported"))
         else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>

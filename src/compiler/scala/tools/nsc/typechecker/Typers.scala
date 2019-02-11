@@ -785,11 +785,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *      store these instances in context.undetparams,
      *      unless followed by explicit type application.
      *  (4) Do the following to unapplied methods used as values:
-     *  (4.1) If the method has only implicit parameters pass implicit arguments
-     *  (4.2) otherwise, if the method is nullary with a result type compatible to `pt`
-     *        and it is not a constructor, apply it to ()
-     *  (4.3) otherwise, if `pt` is a function type and method is not a constructor,
-     *        convert to function by eta-expansion,
+     *  (4.1) If the method has only implicit parameters, pass implicit arguments (see adaptToImplicitMethod)
+     *  (4.2) otherwise, if the method is 0-ary and it can be auto-applied (see checkCanAutoApply), apply it to ()
+     *  (4.3) otherwise, if the method is not a constructor, and can be eta-expanded (see checkCanEtaExpand), eta-expand
      *  otherwise issue an error
      *  (5) Convert constructors in a pattern as follows:
      *  (5.1) If constructor refers to a case class factory, set tree's type to the unique
@@ -880,46 +878,109 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           )
       }
 
-      def instantiateToMethodType(mt: MethodType): Tree = {
-        val meth = tree match {
-          // a partial named application is a block (see comment in EtaExpansion)
-          //
-          // TODO: document why we need to peel off one layer to begin with, and, if we do, why we don't need to recurse??
-          // (and why we don't need to look at the stats to make sure it's the block created by eta-expansion)
-          // I don't see how we call etaExpand on a constructor..
-          //
-          // I guess we don't need to recurse because the outer block and a nested block will refer to the same method
-          // after eta-expansion (if that's what generated these blocks), so we can just look at the outer one.
-          //
-          // How about user-written blocks? Can they ever have a MethodType?
-          case Block(_, tree1) => tree1.symbol
-          case _               => tree.symbol
+      def adaptMethodTypeToExpr(mt: MethodType): Tree = {
+        val meth =
+          tree match {
+            // a partial named application is a block (see comment in EtaExpansion)
+            // How about user-written blocks? Can they ever have a MethodType?
+            case Block(_, tree1) => tree1.symbol
+            case _               => tree.symbol
+          }
+
+
+        val arity = mt.params.length
+
+        val sourceLevel2_14 = currentRun.isScala214
+
+        def warnTree = original orElse tree
+
+        def warnEtaSam() = {
+          val sam = samOf(pt)
+          val samClazz = sam.owner
+          // TODO: we allow a Java class as a SAM type, whereas Java only allows the @FunctionalInterface on interfaces -- align?
+          if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
+            reporter.warning(tree.pos, s"Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},\n" +
+                                       s"even though ${samClazz} is not annotated with `@FunctionalInterface`;\n" +
+                                       s"to suppress warning, add the annotation or write out the equivalent function literal.")
         }
 
-        def cantAdapt =
-          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth) else UnstableTreeError(tree)
+        // note that isFunctionProto(pt) does not work properly for Function0
+        lazy val ptUnderlying =
+          (pt match {
+            case oapt: OverloadedArgProto => oapt.underlying
+            case pt                       => pt
+          }).dealiasWiden
 
-        // constructors do not eta-expand
-        if (meth.isConstructor) cantAdapt
-        // (4.2) apply to empty argument list
-        else if (mt.params.isEmpty && (settings.isScala213 || !isFunctionType(pt))) {
-          // Starting with 2.13, always insert `()`, regardless of expected type.
-          // On older versions, expected type must not be a FunctionN (can be a SAM)
-          //
-          // scala/bug#7187 deprecates eta-expansion of zero-arg method values (since 2.12; was never introduced for SAM types: scala/bug#9536).
-          // The next step is to also deprecate insertion of `()` (except for java-defined methods), as dotty already requires explicitly writing them.
-          // Once explicit application to () is required, we can more aggressively eta-expand method references, even if they are 0-arity
-          adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
-        }
-        // (4.3) eta-expand method value when function or sam type is expected (for experimentation, always eta-expand under 2.14 source level)
-        else if (isFunctionProto(pt) || settings.isScala214) { // TODO: decide on `settings.isScala214`
-          if (settings.isScala212 && mt.params.isEmpty) // implies isFunctionType(pt)
-             currentRun.reporting.deprecationWarning(tree.pos, NoSymbol, "Eta-expansion of zero-argument methods is deprecated. "+
-                    s"To avoid this warning, write ${Function(Nil, Apply(tree, Nil))}.", "2.12.0")
+        // (4.3) condition for eta-expansion by -Xsource level
+        //
+        // until 2.13:
+        //   - for arity > 0: function or sam type is expected
+        //   - for arity == 0: Function0 is expected -- SAM types do not eta-expand because it could be an accidental SAM scala/bug#9489
+        // 2.14:
+        //   - for arity > 0: unconditional
+        //   - for arity == 0: a function-ish type of arity 0 is expected (including SAM)
+        //
+        // warnings:
+        //   - 2.12: eta-expansion of zero-arg methods was deprecated (scala/bug#7187)
+        //   - 2.13: deprecation dropped in favor of setting the scene for uniform eta-expansion in 3.0
+        //           (arity > 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
+        //   - 2.14: (arity == 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
+        def checkCanEtaExpand(): Boolean = {
+          def expectingSamOfArity = {
+            val sam = samOf(ptUnderlying)
+            sam.exists && sam.info.params.lengthCompare(arity) == 0
+          }
 
-          typedEtaExpansion(tree, mode, pt)
+          val expectingFunctionOfArity = {
+            val ptSym = ptUnderlying.typeSymbolDirect
+            (ptSym eq FunctionClass(arity)) || (arity > 0 && (ptSym eq FunctionClass(1))) // allowing for tupling conversion
+          }
+
+          val doIt =
+            if (arity == 0) {
+              val doEtaZero =
+                expectingFunctionOfArity || sourceLevel2_14 && expectingSamOfArity
+
+              if (doEtaZero && settings.warnEtaZero) {
+                val ptHelp =
+                  if (expectingFunctionOfArity) pt
+                  else s"$pt, which is SAM-equivalent to ${samToFunctionType(pt)}"
+
+                reporter.warning(tree.pos, s"An unapplied 0-arity method was eta-expanded (due to the expected type ${ptHelp}), rather than applied to `()`.\n" +
+                                           s"Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.")
+              }
+              doEtaZero
+            } else sourceLevel2_14 || expectingFunctionOfArity || expectingSamOfArity
+
+          if (doIt && !expectingFunctionOfArity && settings.warnEtaSam) warnEtaSam()
+
+          doIt
         }
-        else cantAdapt
+
+
+        // (4.2) condition for auto-application by -Xsource level
+        //
+        // until 2.14: none (assuming condition for (4.3) was not met)
+        // in 3.0: `meth.isJavaDefined`
+        //         (TODO decide -- currently the condition is more involved to give slack to Scala methods overriding Java-defined ones;
+        //          I think we should resolve that by introducing slack in overriding e.g. a Java-defined `def toString()` by a Scala-defined `def toString`.
+        //          This also works better for dealing with accessors overriding Java-defined methods. The current strategy in methodSig is problematic:
+        //          > // Add a () parameter section if this overrides some method with () parameters
+        //          > val vparamSymssOrEmptyParamsFromOverride =
+        //          This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
+        def checkCanAutoApply(): Boolean = {
+          if (sourceLevel2_14 && !meth.isJavaDefined)
+            context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
+                                                           s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
+                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.14.0")
+          true
+        }
+
+        if (!meth.isConstructor && checkCanEtaExpand()) typedEtaExpansion(tree, mode, pt)
+        else if (arity == 0 && checkCanAutoApply()) adapt(typed(Apply(tree, Nil) setPos tree.pos), mode, pt, original)
+        else
+          if (context.implicitsEnabled) MissingArgsForMethodTpeError(tree, meth) // `context.implicitsEnabled` implies we are not in a pattern
+          else UnstableTreeError(tree)
       }
 
       def adaptType(): Tree = {
@@ -1209,8 +1270,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case mt: MethodType if mode.typingExprNotFunNotLhs && mt.isImplicit => // (4.1)
           adaptToImplicitMethod(mt)
-        case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode && !treeInfo.isMacroApplicationOrBlock(tree) =>
-          instantiateToMethodType(mt)
+        case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode && !treeInfo.isMacroApplicationOrBlock(tree) => // (4.2) - (4.3)
+          adaptMethodTypeToExpr(mt)
         case _ =>
           vanillaAdapt(tree)
       }
@@ -1864,7 +1925,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         val impl2 = finishMethodSynthesis(impl1, clazz, context)
 
-        if (settings.isScala211 && mdef.symbol == PredefModule)
+        if (mdef.symbol == PredefModule)
           ensurePredefParentsAreInSameSourceFile(impl2)
 
         treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType

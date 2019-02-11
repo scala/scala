@@ -109,6 +109,8 @@ trait Warnings {
     val ImplicitNotFound       = LintWarning("implicit-not-found",        "Check @implicitNotFound and @implicitAmbiguous messages.")
     val Serial                 = LintWarning("serial",                    "@SerialVersionUID on traits and non-serializable classes.")
     val ValPattern             = LintWarning("valpattern",                "Enable pattern checks in val definitions.")
+    val EtaZero                = LintWarning("eta-zero",                  "Warn on eta-expansion (rather than auto-application) of zero-ary method.")
+    val EtaSam                 = LintWarning("eta-sam",                   "Warn on eta-expansion to meet a Java-defined functional interface that is not explicitly annotated with @FunctionalInterface.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -134,6 +136,8 @@ trait Warnings {
   def lintImplicitNotFound       = lint contains ImplicitNotFound
   def warnSerialization          = lint contains Serial
   def lintValPatterns            = lint contains ValPattern
+  def warnEtaZero                = lint contains EtaZero
+  def warnEtaSam                 = lint contains EtaSam
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

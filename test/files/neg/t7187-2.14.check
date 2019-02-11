@@ -1,11 +1,24 @@
-t7187-2.14.scala:8: error: type mismatch;
+t7187-2.14.scala:13: error: type mismatch;
  found   : Int
  required: () => Any
   val t1: () => Any  = m1   // error
                        ^
-t7187-2.14.scala:9: error: type mismatch;
- found   : Int
- required: () => Any
-  val t2: () => Any  = m2   // error, no eta-expansion of zero-args methods
+t7187-2.14.scala:14: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
+Write m2() to invoke method m2, or change the expected type.
+  val t2: () => Any  = m2   // eta-expanded with lint warning
                        ^
-two errors found
+t7187-2.14.scala:15: warning: An unapplied 0-arity method was eta-expanded (due to the expected type AcciSamZero, which is SAM-equivalent to () => Int), rather than applied to `()`.
+Write m2() to invoke method m2, or change the expected type.
+  val t2AcciSam: AcciSamZero = m2   // eta-expanded with lint warning + sam warning
+                               ^
+t7187-2.14.scala:15: warning: Eta-expansion performed to meet expected type AcciSamZero, which is SAM-equivalent to () => Int,
+even though trait AcciSamZero is not annotated with `@FunctionalInterface`;
+to suppress warning, add the annotation or write out the equivalent function literal.
+  val t2AcciSam: AcciSamZero = m2   // eta-expanded with lint warning + sam warning
+                               ^
+t7187-2.14.scala:16: warning: An unapplied 0-arity method was eta-expanded (due to the expected type SamZero, which is SAM-equivalent to () => Int), rather than applied to `()`.
+Write m2() to invoke method m2, or change the expected type.
+  val t2Sam: SamZero = m2   // eta-expanded with lint warning
+                       ^
+four warnings found
+one error found

@@ -187,11 +187,11 @@ trait TypeComparers {
   // scala/bug#2066 This prevents overrides with incompatible variance in higher order type parameters.
   private def methodHigherOrderTypeParamsSameVariance(sym1: Symbol, sym2: Symbol) = {
     def ignoreVariance(sym: Symbol) = !(sym.isHigherOrderTypeParameter && sym.logicallyEnclosingMember.isMethod)
-    !settings.isScala211 || ignoreVariance(sym1) || ignoreVariance(sym2) || sym1.variance == sym2.variance
+    ignoreVariance(sym1) || ignoreVariance(sym2) || sym1.variance == sym2.variance
   }
 
   private def methodHigherOrderTypeParamsSubVariance(low: Symbol, high: Symbol) =
-    !settings.isScala211 || methodHigherOrderTypeParamsSameVariance(low, high) || low.variance.isInvariant
+    methodHigherOrderTypeParamsSameVariance(low, high) || low.variance.isInvariant
 
   def isSameType2(tp1: Type, tp2: Type): Boolean = {
     def retry() = {

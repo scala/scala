@@ -140,12 +140,7 @@ abstract class RefChecks extends Transform {
           case MethodType(params, restpe) => (params exists (_.hasDefault)) || hasDefaultParam(restpe)
           case _                          => false
         }
-        val haveDefaults = methods filter (
-          if (settings.isScala211)
-             (sym => mexists(sym.info.paramss)(_.hasDefault) && !nme.isProtectedAccessorName(sym.name))
-          else
-            (sym => hasDefaultParam(sym.info) && !nme.isProtectedAccessorName(sym.name))
-        )
+        val haveDefaults = methods.filter(sym => mexists(sym.info.paramss)(_.hasDefault) && !nme.isProtectedAccessorName(sym.name))
 
         if (haveDefaults.lengthCompare(1) > 0) {
           val owners = haveDefaults map (_.owner)
@@ -1473,7 +1468,7 @@ abstract class RefChecks extends Transform {
           reporter.error(sym.pos, s"${sym.name}: Only concrete methods can be marked @elidable.$rest")
         }
       }
-      if (settings.isScala213) checkIsElidable(tree.symbol)
+      if (currentRun.isScala213) checkIsElidable(tree.symbol)
 
       tree match {
         case m: MemberDef =>

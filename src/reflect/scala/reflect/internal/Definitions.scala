@@ -549,10 +549,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
 
-    private def Context_210               = if (settings.isScala211) NoSymbol else getClassIfDefined("scala.reflect.macros.Context") // needed under -Xsource:2.10
-    lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.blackbox.Context").orElse(Context_210) // defined in scala-reflect.jar, so we need to be careful
+    lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.blackbox.Context") // defined in scala-reflect.jar, so we need to be careful
 
-    lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.whitebox.Context").orElse(Context_210) // defined in scala-reflect.jar, so we need to be careful
+    lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.whitebox.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix           = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.prefix))
          def MacroContextPrefixType       = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
          def MacroContextUniverse         = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.universe))
@@ -729,7 +728,7 @@ trait Definitions extends api.StandardDefinitions {
     // Are we expecting something function-ish? This considers FunctionN / SAM / ProtoType that matches functions
     def isFunctionProto(pt: Type): Boolean =
       (isFunctionType(pt)
-       || (pt match { case pt: ProtoType => pt.expectsFunctionType  case _ => false })
+       || (pt match { case pt: ProtoType => pt.expectsFunctionType  case _ => false }) // TODO: this does not work for Function0
        || samOf(pt).exists
       )
 

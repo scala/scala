@@ -132,7 +132,7 @@ trait Unapplies extends ast.TreeDSL {
       case _                                                          => nme.unapply
     }
     val cparams = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
-    val resultType = if (!settings.isScala212) TypeTree() else { // fix for scala/bug#6541 under -Xsource:2.12
+    val resultType = if (!currentRun.isScala212) TypeTree() else { // fix for scala/bug#6541 under -Xsource:2.12
       def repeatedToSeq(tp: Tree) = tp match {
         case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), tps) => AppliedTypeTree(gen.rootScalaDot(tpnme.Seq), tps)
         case _                                                                => tp
