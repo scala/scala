@@ -484,13 +484,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *
    *  This is equivalent to:
    *  {{{
-   *  option1.zip(option2) match {
+   *  (option1, option2) match {
    *    case (Some(x), Some(y)) => Some((x, y))
    *    case _                  => None
    *  }
    *  }}}
    *  @example {{{
-   *  // Returns Option(("foo", "bar")) because both options are nonempty.
+   *  // Returns Some(("foo", "bar")) because both options are nonempty.
    *  Some("foo") zip Some("bar")
    *
    *  // Returns None because `that` option is empty.
@@ -509,7 +509,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
     *
     *  This is equivalent to:
     *  {{{
-    *  option.unzip match {
+    *  option match {
     *    case Some((x, y)) => (Some(x), Some(y))
     *    case _            => (None,    None)
     *  }
@@ -534,7 +534,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
     *
     *  This is equivalent to:
     *  {{{
-    *  option.unzip3 match {
+    *  option match {
     *    case Some((x, y, z)) => (Some(x), Some(y), Some(z))
     *    case _               => (None,    None,    None)
     *  }
