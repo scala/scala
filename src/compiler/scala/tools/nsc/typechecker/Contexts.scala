@@ -1219,8 +1219,7 @@ trait Contexts { self: Analyzer =>
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
 
     private def requiresQualifier(s: Symbol): Boolean = (
-         !unit.isJava
-      && s.owner.isClass
+          s.owner.isClass
       && !s.owner.isPackageClass
       && !s.isTypeParameterOrSkolem
       && !s.isExistentiallyBound
@@ -1257,7 +1256,9 @@ trait Contexts { self: Analyzer =>
         }
       )
       def finishDefSym(sym: Symbol, pre0: Type): NameLookup = {
-        val qual = if (requiresQualifier(sym)) gen.mkAttributedQualifier(pre0) else EmptyTree
+        val qual =
+          if (!unit.isJava && requiresQualifier(sym)) gen.mkAttributedQualifier(pre0)
+          else EmptyTree
         finish(qual, sym)
       }
 
@@ -1393,8 +1394,7 @@ trait Contexts { self: Analyzer =>
       }
 
       // At this point only one or the other of defSym and impSym might be set.
-      if (defSym.exists)
-        finishDefSym(defSym, pre)
+      if (defSym.exists) finishDefSym(defSym, pre)
       else if (impSym.exists) {
         // If we find a competitor imp2 which imports the same name, possible outcomes are:
         //

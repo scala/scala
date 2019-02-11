@@ -553,7 +553,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  @return modified tree and new prefix type
      */
     private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): (Tree, Type) =
-      if (context.isInPackageObject(sym, pre.typeSymbol)) {
+      if (!unit.isJava && context.isInPackageObject(sym, pre.typeSymbol)) {
         if (pre.typeSymbol == ScalaPackageClass && sym.isTerm) {
           // short cut some aliases. It seems pattern matching needs this
           // to notice exhaustiveness and to generate good code when
@@ -3400,6 +3400,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!context.owner.isPackageClass)
           checkNoDoubleDefs(scope)
 
+        // Note that Java units don't have synthetics, but there's no point in making a special case (for performance or correctness),
+        // as we only type check Java units when running Scaladoc on Java sources.
         addSynthetics(stats1, scope)
       }
     }
