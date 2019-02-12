@@ -890,7 +890,7 @@ self =>
       case _ => t
     }
 
-    /** Create tree representing (unencoded) binary operation expression or pattern. */
+    /** Create tree representing (unencoded) binary operation expression or pattern. Pos set by caller. */
     def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
       require(isExpr || targs.isEmpty || targs.exists(_.isErroneous),
         s"Incompatible args to makeBinop: !isExpr but targs=$targs")
@@ -901,39 +901,32 @@ self =>
         val pos = (opPos union t.pos) makeTransparentIf rightAssoc
         val sel = atPos(pos)(Select(stripParens(t), op.encode))
         if (targs.isEmpty) sel
-        else {
-          /* if it's right-associative, `targs` are between `op` and `t` so make the pos transparent */
+        else
+          // if it's right-associative, (deprecated) `targs` are between `op` and `t` so make the pos transparent
           atPos((pos union targs.last.pos) makeTransparentIf rightAssoc) {
             TypeApply(sel, targs)
           }
-        }
       }
       def mkNamed(args: List[Tree]) = if (isExpr) args.map(treeInfo.assignmentToMaybeNamedArg) else args
       var isMultiarg = false
-      val arguments = right match {
+      def arguments(arg: Tree) = arg match {
         case Parens(Nil)               => literalUnit :: Nil
         case Parens(args @ (_ :: Nil)) => mkNamed(args)
         case Parens(args)              => isMultiarg = true ; mkNamed(args)
-        case _                         => right :: Nil
+        case _                         => arg :: Nil
       }
       def mkApply(fun: Tree, args: List[Tree]) = {
         val apply = Apply(fun, args).updateAttachment(InfixAttachment)
         if (isMultiarg) apply.updateAttachment(MultiargInfixAttachment)
         apply
       }
-      if (isExpr) {
-        if (rightAssoc) {
-          import symtab.Flags._
-          val x = freshTermName(nme.RIGHT_ASSOC_OP_PREFIX)
-          val liftedArg = atPos(left.pos) {
-            ValDef(Modifiers(FINAL | SYNTHETIC | ARTIFACT), x, TypeTree(), stripParens(left))
-          }
-          val apply = mkApply(mkSelection(right), List(Ident(x) setPos left.pos.focus))
-          Block(liftedArg :: Nil, apply)
-        } else
-          mkApply(mkSelection(left), arguments)
-      } else
-        mkApply(Ident(op.encode), stripParens(left) :: arguments)
+      if (isExpr)
+        if (rightAssoc)
+          mkApply(mkSelection(right), arguments(left)).updateAttachment(RightAssociative)
+        else
+          mkApply(mkSelection(left), arguments(right))
+      else
+        mkApply(Ident(op.encode), stripParens(left) :: arguments(right))
     }
 
     /** Is current ident a `*`, and is it followed by a `)` or `, )`? */
@@ -971,10 +964,9 @@ self =>
     }
 
     def checkHeadAssoc(leftAssoc: Boolean) = checkAssoc(opHead.offset, opHead.operator, leftAssoc)
-    def checkAssoc(offset: Offset, op: Name, leftAssoc: Boolean) = (
+    def checkAssoc(offset: Offset, op: Name, leftAssoc: Boolean) =
       if (nme.isLeftAssoc(op) != leftAssoc)
         syntaxError(offset, "left- and right-associative operators with same precedence may not be mixed", skipIt = false)
-    )
 
     def finishPostfixOp(start: Int, base: List[OpInfo], opinfo: OpInfo): Tree = {
       if (opinfo.targs.nonEmpty)
@@ -1002,7 +994,7 @@ self =>
 
     def reduceStack(isExpr: Boolean, base: List[OpInfo], top: Tree): Tree = {
       val opPrecedence = if (isIdent) Precedence(in.name.toString) else Precedence(0)
-      val leftAssoc    = !isIdent || (nme isLeftAssoc in.name)
+      val leftAssoc    = !isIdent || nme.isLeftAssoc(in.name)
 
       reduceStack(isExpr, base, top, opPrecedence, leftAssoc)
     }

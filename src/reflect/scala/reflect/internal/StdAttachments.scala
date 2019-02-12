@@ -154,4 +154,9 @@ trait StdAttachments {
   case object FieldTypeInferred extends PlainAttachment
 
   case class LookupAmbiguityWarning(msg: String) extends PlainAttachment
+
+  /** Apply is right associative. */
+  case object RightAssociative extends PlainAttachment
+  /** Arg to right associative infix application is candidate for rewriting. */
+  case object RightAssociativeArg extends PlainAttachment
 }

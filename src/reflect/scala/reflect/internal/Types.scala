@@ -71,7 +71,7 @@ import TypeConstants._
     // [tparams]result where result is a (Nullary)MethodType or ClassInfoType
 
   // The remaining types are not used after phase `typer`.
-  case OverloadedType(pre, tparams, alts) =>
+  case OverloadedType(pre, alts) =>
     // all alternatives of an overloaded ident
   case AntiPolyType(pre, targs) =>
     // rarely used, disappears when combined with a PolyType

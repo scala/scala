@@ -80,6 +80,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.TypedExpectingUnitAttachment
     this.FieldTypeInferred
     this.LookupAmbiguityWarning
+    this.RightAssociative
+    this.RightAssociativeArg
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

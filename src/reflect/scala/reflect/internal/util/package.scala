@@ -10,19 +10,13 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package reflect
-package internal
-
-import scala.language.existentials // scala/bug#6541
+package scala.reflect.internal
 
 package object util {
 
   // An allocation-avoiding reusable instance of the so-common List(Nil).
   val ListOfNil: List[List[Nothing]] = Nil :: Nil
   val SomeOfNil: Option[List[Nothing]] = Some(Nil)
-
-  def andFalse(body: Unit): Boolean = false
 
   // Shorten a name like Symbols$FooSymbol to FooSymbol.
   private def shortenName(name: String): String = {
@@ -45,7 +39,7 @@ package object util {
     if (isModule)
       (name split '$' filterNot (_ == "")).last + "$"
     else if (isAnon)
-      clazz.getSuperclass :: clazz.getInterfaces.toList map (c => shortClass(c)) mkString " with "
+      clazz.getInterfaces.toList.prepended(clazz.getSuperclass).map(shortClass).mkString(" with ")
     else
       shortenName(name)
   }

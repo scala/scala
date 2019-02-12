@@ -1,16 +1,17 @@
-// scalac: -Yrangepos
-//
+
 import scala.language.implicitConversions
 
 object Test extends App {
   class Foo {
-    class Bar
+    class Bar {
+      override def toString() = "bar"
+    }
     object Bar {
-      implicit def fromString(a: String): Bar = new Bar
+      implicit def fromString(a: String): Bar = { println("convert bar") ; new Bar }
     }
 
-    def andThen_:(b : Bar) = { println("pre") ; b ; println("post") }
-    def andThenByName_:(b : => Bar) = { println("pre") ; b ; println("post") }
+    def andThen_:(b: Bar) = { println("pre") ; println(s"use $b") ; println("post") }
+    def andThenByName_:(b: => Bar) = { println("pre") ; println(s"use $b") ; println(s"use $b") ; println("post") }
   }
 
   def mkFoo: Foo = { println("foo") ; new Foo }
@@ -24,7 +25,6 @@ object Test extends App {
 
   println()
 
-  // bar should be deferred but isn't due to scala/bug#10693
   mkBarString andThenByName_: mkFoo
 
   println()
