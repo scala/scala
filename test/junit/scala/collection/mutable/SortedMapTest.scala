@@ -14,7 +14,7 @@ import scala.{Option, Unit}
 class SortedMapTest {
   @Test
   def testWithDefaultValueReturnsSortedMapWithDefaultValue(): Unit = {
-    val tree: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     assertEquals("3 is not present in this map", tree(3))
@@ -22,7 +22,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterAnElementIsAddedToUnderlyingMap(): Unit = {
-    val tree: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     tree.addOne(3 -> "Three")
@@ -32,7 +32,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterCreatingEmptyMapFromUnderlyingSortedMap(): Unit = {
-    val originalMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     val emptyMapWithDefault = originalMap.empty
@@ -42,7 +42,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterRangeOperationOnSortedMap(): Unit = {
-    val rangedProjectOfTreeMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
+    val rangedProjectOfTreeMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
       .withDefault(defaultValueFunction)
       .range(1, 3) // range `to` parameter is not inclusive
 
@@ -51,7 +51,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedAfterAnElementFromUnderlyingMapIsRemoved(): Unit = {
-    val originalTreeMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
+    val originalTreeMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 3 -> "Three"))
       .withDefault(defaultValueFunction)
 
     originalTreeMap.remove(3)
@@ -62,7 +62,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsLostWhenNewSortedMapIsCreatedFromIterablesInOperationsLikeFlatMap(): Unit = {
-    val originalMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
     val newTreeMap: SortedMap[String, Int] = originalMap.flatMap((kv: (Int, String)) => TreeMap(kv._2 -> kv._1))
@@ -79,7 +79,7 @@ class SortedMapTest {
 
   @Test
   def testDefaultValueIsPersistedWhenNewSortedMapIsCreatedFromSpecificIterableInOperationsLikeFilter(): Unit = {
-    val evenNumbers: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 4 -> "Four", 5 -> "Five"))
+    val evenNumbers: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two", 4 -> "Four", 5 -> "Five"))
       .withDefault(defaultValueFunction)
       .filter((kv: (Int, String)) => kv._1 % 2 == 0)
 
@@ -88,7 +88,7 @@ class SortedMapTest {
 
   @Test
   def testDefaulValueIsNotPersistedWhenNewMapIterableIsConcatenatedToOriginalMutableMap(): Unit = {
-    val originaMap: SortedMap.WithDefault[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originaMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefaultValue("element missing")
 
     val newMap: SortedMap[Int, String] = originaMap ++ SortedMap.from(Map(3 -> "Three")).withDefaultValue("foobar")
@@ -140,7 +140,7 @@ class SortedMapTest {
   def testWithDefault: Unit = {
     val m1 = mutable.SortedMap(1 -> "a", 2 -> "b")
 
-    val m2: mutable.Map.WithDefault[Int, String] = m1.withDefault(i => (i + 1).toString)
+    val m2: mutable.Map[Int, String] = m1.withDefault(i => (i + 1).toString)
     m2.update(1, "aa")
     m2.update(100, "bb")
     m2.addAll(List(500 -> "c", 501 -> "c"))
@@ -153,10 +153,10 @@ class SortedMapTest {
     assertEquals(m2(501), "c")
     assertEquals(m2(502), "503")
 
-    val m3: mutable.Map.WithDefault[Int, String] = m2 - 1
+    val m3: mutable.Map[Int, String] = m2 - 1
     assertEquals(m3(1), "2")
 
-    val m4: mutable.Map.WithDefault[Int, String] = m3 -- List(2, 100)
+    val m4: mutable.Map[Int, String] = m3 -- List(2, 100)
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
