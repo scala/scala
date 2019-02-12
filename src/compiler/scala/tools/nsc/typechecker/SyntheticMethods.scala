@@ -301,6 +301,11 @@ trait SyntheticMethods extends ast.TreeDSL {
       createMethod(nme.hashCode_, Nil, IntTpe) { m =>
         val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntTpe
         val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
+        val mixPrefix   =
+          Assign(
+            Ident(accumulator),
+            callStaticsMethod("mix")(Ident(accumulator),
+              Apply(gen.mkAttributedSelect(gen.mkAttributedSelect(mkThis, Product_productPrefix), Object_hashCode), Nil)))
         val mixes       = accessors map (acc =>
           Assign(
             Ident(accumulator),
@@ -309,7 +314,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         )
         val finish = callStaticsMethod("finalizeHash")(Ident(accumulator), Literal(Constant(arity)))
 
-        Block(valdef :: mixes, finish)
+        Block(valdef :: mixPrefix :: mixes, finish)
       }
     }
     def chooseHashcode = {

@@ -53,16 +53,16 @@ private[hashing] class MurmurHash3 {
   }
 
   /** Compute the hash of a product */
-  final def productHash(x: Product, seed: Int): Int = {
+  final def productHash(x: Product, seed: Int, ignorePrefix: Boolean = false): Int = {
     val arr = x.productArity
     // Case objects have the hashCode inlined directly into the
     // synthetic hashCode method, but this method should still give
     // a correct result if passed a case object.
     if (arr == 0) {
       x.productPrefix.hashCode
-    }
-    else {
+    } else {
       var h = seed
+      if (!ignorePrefix) h = mix(h, x.productPrefix.hashCode)
       var i = 0
       while (i < arr) {
         h = mix(h, x.productElement(i).##)

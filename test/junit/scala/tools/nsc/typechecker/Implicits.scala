@@ -30,7 +30,12 @@ class ImplicitsTests extends BytecodeTesting {
       assert(I0 == I1)
       assert(I0.hashCode == I1.hashCode)
 
-      val pHash = (TermName("dummy"), NoSymbol).hashCode
+      def implicitInfoHash(name: TermName, sym: Symbol) = {
+        import scala.util.hashing.MurmurHash3._
+        finalizeHash(mix(mix(productSeed, name.##), sym.##), 2)
+      }
+
+      val pHash = implicitInfoHash(TermName("dummy"), NoSymbol)
 
       assert(I0.hashCode == pHash)
       assert(I1.hashCode == pHash)

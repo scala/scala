@@ -254,6 +254,6 @@ class ChampMapSmokeTest {
   }
 
   @Test def hashCodeCheck(): Unit = {
-    assertEquals(892962596, collection.immutable.HashMap(1 -> 2).hashCode())
+    assertEquals(2098967416, collection.immutable.HashMap(1 -> 2).hashCode())
   }
 }
