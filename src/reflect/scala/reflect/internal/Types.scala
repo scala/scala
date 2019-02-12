@@ -1303,27 +1303,25 @@ trait Types
     private lazy val sameTypesFolded = {
       // Collect all expected types contributed by the various alternatives for this argument (TODO: repeated params?)
       // Relative to `pre` at `alt.owner`, with `alt`'s type params approximated.
-      val altParamTps =
-        alternatives map { alt =>
-          // Use memberType so that a pre: AntiPolyType can instantiate its type params
-          pre.memberType(alt) match {
-            case PolyType(tparams, MethodType(ParamAtIdx(paramTp), res))       => PolyType(tparams, paramTp.asSeenFrom(pre, alt.owner))
-            case MethodType(ParamAtIdx(paramTp), res)
+      def typeOfAlt(alt: Symbol): Type =
+        // Use memberType so that a pre: AntiPolyType can instantiate its type params
+        pre.memberType(alt) match {
+          case PolyType(tparams, MethodType(ParamAtIdx(paramTp), res)) => PolyType(tparams, paramTp.asSeenFrom(pre, alt.owner))
+          case MethodType(ParamAtIdx(paramTp), res)
               if !(alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) => paramTp.asSeenFrom(pre, alt.owner)
-            // this is just too ugly, but the type params are out of whack and thus toWild won't catch them unless we rewrite as follows:
-            // if (alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) {
-            //   PolyType(alt.owner.info.typeParams.map(_.tpe.asSeenFrom(pre, alt.owner).typeSymbol), paramTp.asSeenFrom(pre, alt.owner))
-            // } else paramTp.asSeenFrom(pre, alt.owner)
-            case _ => NoType
-          }
+          // this is just too ugly, but the type params are out of whack and thus toWild won't catch them unless we rewrite as follows:
+          // if (alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) {
+          //   PolyType(alt.owner.info.typeParams.map(_.tpe.asSeenFrom(pre, alt.owner).typeSymbol), paramTp.asSeenFrom(pre, alt.owner))
+          // } else paramTp.asSeenFrom(pre, alt.owner)
+          case _ => NoType
         }
-
-
-      // altParamTps.contains(NoType) implies sameTypesFolded.contains(NoType)
+      // alternatives.map(fili).contains(NoType) implies sameTypesFolded.contains(NoType)
       // so, if one alternative did not contribute an argument type, we'll not collapse this column
-      altParamTps.foldLeft(Nil: List[Type]) {
-        case (acc, WildcardType) => acc
-        case (acc, tp)           => if (acc.exists(same(tp, _))) acc else tp :: acc
+      alternatives.foldLeft(Nil: List[Type]) { case (acc, alter) =>
+        typeOfAlt(alter) match {
+          case WildcardType => acc
+          case tp => if (acc.exists(same(tp, _))) acc else tp :: acc
+        }
       }
     }
 
