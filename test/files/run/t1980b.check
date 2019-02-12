@@ -1,0 +1,18 @@
+J
+I
+List(27, 42)
+LazyList(<not computed>)
+I
+Cell(42)
+LI(Some(42),LI(None,null))
+J
+I
+List(27, 42)
+List(())
+f27
+g5
+f42
+empty
+Cell(42)
+Cell(27)
+LI(Some(27),LI(Some(5),LI(Some(42),LI(None,null))))

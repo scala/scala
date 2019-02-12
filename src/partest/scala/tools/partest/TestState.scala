@@ -12,6 +12,8 @@
 
 package scala.tools.partest
 
+import scala.tools.nsc.util._
+
 sealed abstract class TestState {
   def testFile: java.io.File
   def what: String
@@ -67,7 +69,7 @@ object TestState {
   }
   case class Crash(testFile: java.io.File, caught: Throwable, transcript: Array[String]) extends TestState {
     def what = "crash"
-    def reason = s"caught $caught_s - ${caught.getMessage}"
+    def reason = s"caught $caught_s - ${caught.getMessage}: ${caught.stackTracePrefixString(_ => true)}"
     override def shortStatus = "?!"
 
     private def caught_s = (caught.getClass.getName split '.').last

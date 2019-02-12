@@ -1,4 +1,3 @@
-
 import scala.tools.partest.DirectTest
 
 import scala.jdk.CollectionConverters._

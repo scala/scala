@@ -183,4 +183,9 @@ trait StdAttachments {
   case object DiscardedExpr extends PlainAttachment
   /** Anonymous parameter of `if (_)` may be inferred as Boolean. */
   case object BooleanParameterType extends PlainAttachment
+
+  /** Apply is right associative. */
+  case object RightAssociative extends PlainAttachment
+  /** Arg to right associative infix application is candidate for rewriting. */
+  case object RightAssociativeArg extends PlainAttachment
 }
