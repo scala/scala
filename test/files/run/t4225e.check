@@ -1,22 +1,30 @@
-t4225e.scala:12: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+t4225e.scala:11: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     def andThen_:(b : Bar) = { println("pre") ; b ; println("post") }
                                                 ^
 bar
 foo
+convert bar
 pre
 post
 
 foo
 bar
-pre
-post
-
-bar
-foo
+convert bar
 pre
 post
 
 foo
 pre
 bar
+convert bar
+bar
+convert bar
+post
+
+foo
+pre
+bar
+convert bar
+bar
+convert bar
 post

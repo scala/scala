@@ -14,8 +14,6 @@ package scala
 package reflect
 package internal
 
-import scala.language.existentials // scala/bug#6541
-
 package object util {
 
   // An allocation-avoiding reusable instance of the so-common List(Nil).
@@ -45,7 +43,7 @@ package object util {
     if (isModule)
       (name split '$' filterNot (_ == "")).last + "$"
     else if (isAnon)
-      clazz.getSuperclass :: clazz.getInterfaces.toList map (c => shortClass(c)) mkString " with "
+      clazz.getInterfaces.toList.::(clazz.getSuperclass).map(shortClass).mkString(" with ")
     else
       shortenName(name)
   }

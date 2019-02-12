@@ -16,9 +16,10 @@ class LispTokenizer(s: String) extends Iterator[String] {
     if (hasNext) {
       val start = i
       if (isDelimiter(s charAt i)) i += 1
-      else
-        do i = i + 1
-        while (!isDelimiter(s charAt i))
+      else {
+        i += 1
+        while (!isDelimiter(s charAt i)) i += 1
+      }
       s.substring(start, i)
     } else sys.error("premature end of string")
 }
@@ -204,6 +205,7 @@ object LispCaseClasses extends Lisp {
       case _ => sys.error("illegal parameter list");
     }
 
+    //FUN(PartialFunction.fromFunction(args => eval(expr, extendEnv(env, ps, args))))
     FUN(args => eval(expr, extendEnv(env, ps, args)))
   }
 
@@ -310,9 +312,9 @@ object LispAny extends Lisp {
     case Symbol("def") :: (name :: args) :: body :: expr :: Nil =>
       normalize(Symbol("def") :: name :: (Symbol("lambda") :: args :: body :: Nil) :: expr :: Nil)
     case Symbol("cond") :: (Symbol("else") :: expr :: Nil) :: rest =>
-        normalize(expr);
+      normalize(expr);
     case Symbol("cond") :: (test :: expr :: Nil) :: rest =>
-	normalize(Symbol("if") :: test :: expr :: (Symbol("cond") :: rest) :: Nil)
+      normalize(Symbol("if") :: test :: expr :: (Symbol("cond") :: rest) :: Nil)
     case Symbol("cond") :: Symbol("else") :: expr :: Nil =>
       normalize(expr)
     case h :: t =>
@@ -395,6 +397,7 @@ object LispAny extends Lisp {
       case _ => sys.error("illegal parameter list");
     }
 
+    //Lambda(PartialFunction.fromFunction(args => eval(expr, extendEnv(env, ps, args))))
     Lambda(args => eval(expr, extendEnv(env, ps, args)))
   }
 
