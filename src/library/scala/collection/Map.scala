@@ -311,8 +311,12 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 
+  // The implicit dummy parameter is necessary to avoid erased signature clashes
+  // between this `++:` and the overload overriden below.
+  // Note that these clashes only happen in Dotty because it adds mixin
+  // forwarders before erasure unlike Scala 2.
   @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
-  def ++: [V1 >: V](that: IterableOnce[(K,V1)]): CC[K,V1] = {
+  def ++: [V1 >: V](that: IterableOnce[(K,V1)])(implicit dummy: DummyImplicit): CC[K,V1] = {
     val thatIterable: Iterable[(K, V1)] = that match {
       case that: Iterable[(K, V1)] => that
       case that => View.from(that)
