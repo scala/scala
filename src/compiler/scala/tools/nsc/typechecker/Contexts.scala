@@ -1190,6 +1190,14 @@ trait Contexts { self: Analyzer =>
       )
     }
 
+    def isPackageOwnedInDifferentUnit(s: Symbol): Boolean =
+      if (s.isOverloaded) s.alternatives.exists(isPackageOwnedInDifferentUnit)
+      else (s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file)
+      )
+
+
     /** Does the import just import the defined symbol?
      *
      *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
@@ -1202,7 +1210,7 @@ trait Contexts { self: Analyzer =>
      *
      *  This method doesn't use the ImportInfo, `imp1`.
      */
-    private def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
+    private[Contexts] def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
       val res = impSym == defSym
       if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
       res
@@ -1266,6 +1274,32 @@ trait Contexts { self: Analyzer =>
         case null => NoSymbol
         case entry =>
           entry.owner.lookupNameInSameScopeAs(original, name)
+      }
+    }
+
+    final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
+      val sym = pre.member(name).filter(qualifies)
+      val preSym = pre.typeSymbol
+      if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
+      else {
+        // In Java code, static innner classes, which we model as members of the companion object,
+        // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
+        val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
+        toSearch.iterator.map { bc =>
+          val pre1 = bc.typeOfThis
+          val found = pre1.decl(name)
+          found.filter(qualifies) match {
+            case NoSymbol =>
+              val companionModule = companionSymbolOf(pre1.typeSymbol, this)
+              val pre2 = companionModule.typeOfThis
+              val found = pre2.decl(name).filter(qualifies)
+              found match {
+                case NoSymbol => NoJavaMemberFound
+                case sym => (pre2, sym)
+              }
+            case sym => (pre1, sym)
+          }
+        }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
       }
     }
 
@@ -1409,7 +1443,7 @@ trait Contexts { self: Analyzer =>
        *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
        *     as the reference, have lowest precedence. Also "root" imports added implicitly.
        */
-      def foreignDefined = defSym.exists && isPackageOwnedInDifferentUnit(defSym)  // SI-2458
+      def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
       // can an import at this depth possibly shadow the definition found in scope if any?
       def importCanShadowAtDepth(imp: ImportInfo) = imp.depth > symbolDepth || (
         if (thisContext.unit.isJava) imp.depth == symbolDepth && imp.isExplicitImport(name)
@@ -1433,7 +1467,7 @@ trait Contexts { self: Analyzer =>
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
           impSym = NoSymbol
         // Try to reconcile them before giving up, at least if the def is not visible
-        else if (foreignDefined && reconcileAmbiguousImportAndDef(name, impSym, defSym))
+        else if (foreignDefined && thisContext.reconcileAmbiguousImportAndDef(name, impSym, defSym))
           impSym = NoSymbol
         // Otherwise they are irreconcilably ambiguous
         else
@@ -1477,32 +1511,6 @@ trait Contexts { self: Analyzer =>
         finish(resetPos(imp1.qual.duplicate), impSym)
       }
       else finish(EmptyTree, NoSymbol)
-    }
-
-    final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
-      val sym = pre.member(name).filter(qualifies)
-      val preSym = pre.typeSymbol
-      if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
-      else {
-        // In Java code, static innner classes, which we model as members of the companion object,
-        // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
-        val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
-        toSearch.iterator.map { bc =>
-          val pre1 = bc.typeOfThis
-          val found = pre1.decl(name)
-          found.filter(qualifies) match {
-            case NoSymbol =>
-              val companionModule = companionSymbolOf(pre1.typeSymbol, this)
-              val pre2 = companionModule.typeOfThis
-              val found = pre2.decl(name).filter(qualifies)
-              found match {
-                case NoSymbol => NoJavaMemberFound
-                case sym => (pre2, sym)
-              }
-            case sym => (pre1, sym)
-          }
-        }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
-      }
     }
   }
 
