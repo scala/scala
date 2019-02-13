@@ -572,8 +572,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (knownIsEmpty) LazyList.empty
     else super.intersect(that)
 
-  // TODO: override to detect cycles
-  override def distinctBy[B](f: A => B): LazyList[A] = super.distinctBy(f)
+  @tailrec
+  private def lengthLteq(len: Int): Boolean =
+    if (len < 0) false
+    else if (isEmpty) true
+    else tail.lengthLteq(len - 1)
 
   override def grouped(size: Int): Iterator[LazyList[A]] = {
     require(size > 0, "size must be positive, but was " + size)
@@ -587,11 +590,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   @inline private def lazySlidingImpl(size: Int, step: Int): Iterator[LazyList[A]] =
     if (knownIsEmpty) Iterator.empty
-    else Iterator.empty ++ slidingImpl(size, step) // concat with empty iterator so that `slidingImpl` is lazy
+    else Iterator.empty ++ slidingImpl(size, step, size - step max 0) // concat with empty iterator so that `slidingImpl` is lazy
 
-  private def slidingImpl(size: Int, step: Int): Iterator[LazyList[A]] =
-    if (isEmpty) Iterator.empty
-    else Iterator.single(take(size)) ++ drop(step).slidingImpl(size, step)
+  private def slidingImpl(size: Int, step: Int, minLen: Int): Iterator[LazyList[A]] =
+    if (lengthLteq(minLen)) Iterator.empty
+    else Iterator.single(take(size)) ++ drop(step).slidingImpl(size, step, minLen)
 
   override def padTo[B >: A](len: Int, elem: B): LazyList[B] = {
     if (len <= 0) this
