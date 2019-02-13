@@ -1,4 +1,5 @@
-t0345.scala:2: error: object creation impossible, since method cons in trait Lizt of type (a: Nothing)Unit is not defined
+t0345.scala:2: error: object creation impossible. Missing implementation for:
+  def cons(a: Nothing): Unit // inherited from trait Lizt
     val empty = new Lizt[Nothing] {
                     ^
 one error found

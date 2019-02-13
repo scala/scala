@@ -1,8 +1,5 @@
-abstract-report.scala:1: error: class Unimplemented needs to be abstract, since:
-it has 6 unimplemented members.
-/** As seen from class Unimplemented, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+abstract-report.scala:1: error: class Unimplemented needs to be abstract.
+Missing implementations for 6 members. Stub implementations follow:
   // Members declared in scala.collection.IterableOnce
   def iterator: Iterator[String] = ???
 

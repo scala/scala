@@ -1,7 +1,9 @@
-DerivedScala.scala:4: error: class C needs to be abstract, since there is a deferred declaration of method foo in class B of type => Int which is not implemented in a subclass
+DerivedScala.scala:4: error: class C needs to be abstract. No implementation found in a subclass for deferred declaration
+def foo: Int (defined in class B)
 class C extends B
       ^
-DerivedScala.scala:7: error: class DerivedScala needs to be abstract, since there is a deferred declaration of method foo in class Abstract of type ()Boolean which is not implemented in a subclass
+DerivedScala.scala:7: error: class DerivedScala needs to be abstract. No implementation found in a subclass for deferred declaration
+def foo(): Boolean (defined in class Abstract)
 class DerivedScala extends Abstract
       ^
 two errors found

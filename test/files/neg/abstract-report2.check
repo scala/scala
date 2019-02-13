@@ -1,8 +1,5 @@
-abstract-report2.scala:3: error: class Foo needs to be abstract, since:
-it has 13 unimplemented members.
-/** As seen from class Foo, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+abstract-report2.scala:3: error: class Foo needs to be abstract.
+Missing implementations for 13 members. Stub implementations follow:
   def add(x$1: Int): Boolean = ???
   def addAll(x$1: java.util.Collection[_ <: Int]): Boolean = ???
   def clear(): Unit = ???
@@ -19,11 +16,8 @@ it has 13 unimplemented members.
 
 class Foo extends Collection[Int]
       ^
-abstract-report2.scala:5: error: class Bar needs to be abstract, since:
-it has 13 unimplemented members.
-/** As seen from class Bar, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+abstract-report2.scala:5: error: class Bar needs to be abstract.
+Missing implementations for 13 members. Stub implementations follow:
   def add(x$1: List[_ <: String]): Boolean = ???
   def addAll(x$1: java.util.Collection[_ <: List[_ <: String]]): Boolean = ???
   def clear(): Unit = ???
@@ -40,11 +34,8 @@ it has 13 unimplemented members.
 
 class Bar extends Collection[List[_ <: String]]
       ^
-abstract-report2.scala:7: error: class Baz needs to be abstract, since:
-it has 13 unimplemented members.
-/** As seen from class Baz, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+abstract-report2.scala:7: error: class Baz needs to be abstract.
+Missing implementations for 13 members. Stub implementations follow:
   def add(x$1: T): Boolean = ???
   def addAll(x$1: java.util.Collection[_ <: T]): Boolean = ???
   def clear(): Unit = ???
@@ -61,11 +52,8 @@ it has 13 unimplemented members.
 
 class Baz[T] extends Collection[T]
       ^
-abstract-report2.scala:15: error: class Dingus needs to be abstract, since:
-it has 7 unimplemented members.
-/** As seen from class Dingus, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+abstract-report2.scala:15: error: class Dingus needs to be abstract.
+Missing implementations for 7 members. Stub implementations follow:
   // Members declared in scala.collection.IterableOnce
   def iterator: Iterator[(Set[Int], String)] = ???
 

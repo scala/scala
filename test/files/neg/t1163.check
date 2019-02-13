@@ -1,7 +1,8 @@
-t1163.scala:2: error: overriding method foo in trait Sub of type => Sub;
-  method foo in trait Super of type => Super has incompatible type;
-  (note that method foo in trait Sub of type => Sub is abstract,
-  and is therefore overridden by concrete method foo in trait Super of type => Super)
+t1163.scala:2: error: incompatible type in overriding
+override def foo: Sub (defined in trait Sub)
+  with def foo: Super (defined in trait Super);
+  (note that override def foo: Sub (defined in trait Sub) is abstract,
+  and is therefore overridden by concrete def foo: Super (defined in trait Super))
 trait Sub extends Super { override def foo: Sub }
       ^
 one error found
