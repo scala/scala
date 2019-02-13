@@ -460,22 +460,26 @@ class LazyListLazinessTest {
     assertLazyAllSkipping(_ forall { _ < 2 }, 3)
   }
 
-  private def genericSliding_properlyLazy(op: LazyListOp[Iterator[LazyList[Int]]]): Unit = {
-    assertLazyAll(op)
-    assertLazyAllSkipping(op andThen { _.hasNext }, 1)
-    assertLazyAllSkipping(op andThen { _.next().force }, 3)
-    assertKnownEmptyYields(op)(_ eq Iterator.empty)
+  private def genericSliding_properlyLazy(op: (LazyList[Int], Int) => Iterator[LazyList[Int]],
+                                          skipExtra: Int = 0): Unit = {
+    val op3 = lazyListOp(op(_, 3))
+    assertLazyAll(op3)
+    assertLazyAllSkipping(op3 andThen { _.hasNext }, 1 + skipExtra)
+    assertLazyAllSkipping(op3 andThen { _.next().force }, 3 + skipExtra)
+    assertKnownEmptyYields(op3)(_ eq Iterator.empty)
   }
 
   @Test
   def grouped_properlyLazy(): Unit = {
-    genericSliding_properlyLazy(_ grouped 3)
+    genericSliding_properlyLazy(_ grouped _)
   }
 
   @Test
   def sliding_properlyLazy(): Unit = {
-    genericSliding_properlyLazy(_ sliding 3)
-    genericSliding_properlyLazy(_.sliding(3, 2))
+    genericSliding_properlyLazy(_ sliding _, 2)
+    genericSliding_properlyLazy(_.sliding(_, 2), 1)
+    genericSliding_properlyLazy(_.sliding(_, 3))
+    genericSliding_properlyLazy(_.sliding(_, 4))
   }
 
   @Test
