@@ -169,22 +169,23 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
-    addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz))
+    addMember(clazz, cloneBeforeUncurry(mixinClass, mixinMember, clazz))
 
-  def cloneBeforeErasure(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol = {
-    val newSym = enteringErasure {
+  def cloneBeforeUncurry(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol = {
+    val newSym = enteringUncurry {
       // since we used `mixinMember` from the interface that represents the trait that's
       // being mixed in, have to instantiate the interface type params (that may occur in mixinMember's
       // info) as they are seen from the class.  We can't use the member that we get from the
       // implementation class, as it's a clone that was made after erasure, and thus it does not
-      // know its info at the beginning of erasure anymore.
+      // know its info at the beginning of uncurry anymore.
       val sym = mixinMember cloneSymbol clazz
 
+      val uncurryMap = uncurry.uncurry
       val erasureMap = erasure.erasure(mixinMember)
-      val erasedInterfaceInfo: Type = erasureMap(mixinMember.info)
+      val erasedInterfaceInfo: Type = erasureMap(uncurryMap(mixinMember.info))
       val specificForwardInfo       = (clazz.thisType baseType mixinClass) memberInfo mixinMember
       val forwarderInfo =
-        if (erasureMap(specificForwardInfo) =:= erasedInterfaceInfo)
+        if (erasureMap(uncurryMap(specificForwardInfo)) =:= erasedInterfaceInfo)
           specificForwardInfo
         else {
           erasedInterfaceInfo
@@ -343,10 +344,11 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
             // enteringPhase: the private field is moved to the implementation class by erasure,
             // so it can no longer be found in the mixinMember's owner (the trait)
             val accessed = enteringPickler(mixinMember.accessed)
-            // #3857, need to retain info before erasure when cloning (since cloning only
+            // #3857, need to retain info before uncurry when cloning (since cloning only
             // carries over the current entry in the type history)
-            val sym = enteringErasure {
-              // so we have a type history entry before erasure
+            val sym = enteringUncurry {
+              // so we have a type history entry before uncurry
+              // and, by extension, before erasure
               clazz.newValue(mixinMember.localName, mixinMember.pos).setInfo(mixinMember.tpe.resultType)
             }
             sym updateInfo mixinMember.tpe.resultType // info at current phase
