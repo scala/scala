@@ -296,7 +296,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
     def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
     override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
-    override def className = thisenum + ".ValueSet"
+    override def className = s"$thisenum.ValueSet"
     /** Creates a bit mask for the zero-adjusted ids in this set as a
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask

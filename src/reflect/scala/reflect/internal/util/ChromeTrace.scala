@@ -41,7 +41,7 @@ object ChromeTrace {
 final class ChromeTrace(f: Path) extends Closeable {
   import ChromeTrace.EventType
   private val traceWriter = FileUtils.newAsyncBufferedWriter(f)
-  private val context = mutable.ArrayStack[JsonContext](TopContext)
+  private val context = mutable.Stack[JsonContext](TopContext)
   private val tidCache = new ThreadLocal[String]() {
     override def initialValue(): String = Thread.currentThread().getId.formatted("%05d")
   }

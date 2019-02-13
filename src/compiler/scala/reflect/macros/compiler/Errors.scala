@@ -105,7 +105,7 @@ trait Errors extends Traces {
       val verbose = macroDebugVerbose
 
       def check(rtpe: Type, atpe: Type): Boolean = {
-        def success() = { if (verbose) println(rtpe + " <: " + atpe + "?" + EOL + "true"); true }
+        def success() = { if (verbose) println(f"$rtpe <: $atpe?%ntrue"); true }
         (rtpe, atpe) match {
           case _ if rtpe eq atpe => success()
           case (TypeRef(_, RepeatedParamClass, rtpe :: Nil), TypeRef(_, RepeatedParamClass, atpe :: Nil)) => check(rtpe, atpe)

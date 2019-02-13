@@ -53,7 +53,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
         val memberSourceFile = member.sourceFile
         if (memberSourceFile != null) {
           if (existingSourceFile != memberSourceFile)
-            error(member+"is defined twice,"+
+            error(""+member+"is defined twice,"+
               "\n in "+existingSourceFile+
               "\n and also in "+memberSourceFile)
         }

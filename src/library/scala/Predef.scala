@@ -12,7 +12,7 @@
 
 package scala
 
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 
 import scala.collection.{mutable, immutable, ArrayOps, StringOps}, immutable.WrappedString
 import scala.annotation.{elidable, implicitNotFound}, elidable.ASSERTION

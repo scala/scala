@@ -25,7 +25,7 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
 
   protected def emptyFiles: Array[AbstractFile] = Array.empty
   protected def getSubDir(packageDirName: String): Option[AbstractFile] =
-    Option(AbstractFileClassLoader.lookupPath(dir)(packageDirName.split('/'), directory = true))
+    Option(AbstractFileClassLoader.lookupPath(dir)(packageDirName.split('/').toIndexedSeq, directory = true))
   protected def listChildren(dir: AbstractFile, filter: Option[AbstractFile => Boolean] = None): Array[F] = filter match {
     case Some(f) => dir.iterator.filter(f).toArray
     case _ => dir.toArray
@@ -41,7 +41,7 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
 
   def findClassFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className) + ".class"
-    Option(AbstractFileClassLoader.lookupPath(dir)(relativePath split '/', directory = false))
+    Option(AbstractFileClassLoader.lookupPath(dir)(relativePath.split('/').toIndexedSeq, directory = false))
   }
 
   private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)

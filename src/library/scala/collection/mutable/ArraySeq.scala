@@ -67,6 +67,7 @@ sealed abstract class ArraySeq[T]
     * or subtype of the element type. */
   def array: Array[_]
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ArraySeq"
 
   /** Clones this object, including the underlying Array. */

@@ -619,7 +619,7 @@ abstract class ClassfileParser {
                    * If symbol 1 gets completed (e.g. because the compiled source mentions `A$B`, not `A#B`), the
                    * ClassfileParser for 1 executes, and clazz.owner is the package.
                    */
-                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, "" + params.head.tpe.typeSymbol + ": " + clazz.owner)
                   removedOuterParameter = true
                   params.tail
                 case _ =>
@@ -907,6 +907,7 @@ abstract class ClassfileParser {
           parseExceptions(attrLen)
 
         case tpnme.SourceFileATTR =>
+          /*
           if (forInteractive) {
             // opt: disable this code in the batch compiler for performance reasons.
             // it appears to be looking for the .java source file mentioned in this attribute
@@ -927,6 +928,8 @@ abstract class ClassfileParser {
             }
             srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
           } else in.skip(attrLen)
+          */
+          in.skip(attrLen)
 
         case tpnme.CodeATTR =>
           if (sym.owner.isInterface) {

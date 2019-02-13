@@ -341,11 +341,9 @@ object StringContext {
     }
 
     // Matched all of pattern to all of name. Success.
-    Some {
-      Array.tabulate(patternChunks.length - 1) { n =>
-        input.slice(matchStarts(n), matchEnds(n))
-      }
-    }
+    Some(collection.immutable.ArraySeq.unsafeWrapArray(
+      Array.tabulate(patternChunks.length - 1)(n => input.slice(matchStarts(n), matchEnds(n)))
+    ))
   }
 
   /** An exception that is thrown if a string contains a backslash (`\`) character

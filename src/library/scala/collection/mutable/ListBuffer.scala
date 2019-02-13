@@ -313,6 +313,7 @@ class ListBuffer[A]
    */
   override def lastOption: Option[A] = if (last0 eq null) None else Some(last0.head)
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ListBuffer"
 
 }

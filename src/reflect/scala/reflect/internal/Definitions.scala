@@ -1714,7 +1714,7 @@ trait Definitions extends api.StandardDefinitions {
         }
       }
 
-      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
+      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined(TermName("scala.runtime.java8"))
     }
   }
 }

@@ -56,7 +56,7 @@ abstract class ScaladocModelTest extends DirectTest {
   /** Override to feed code into scaladoc */
   override def code =
     if (resourceFile ne null)
-      io.File(resourcePath + "/" + resourceFile).slurp()
+      io.File(s"$resourcePath/$resourceFile").slurp()
     else
       sys.error("Scaladoc Model Test: You need to give a file or some code to feed to scaladoc!")
 

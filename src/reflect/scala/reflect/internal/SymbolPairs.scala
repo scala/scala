@@ -139,7 +139,7 @@ abstract class SymbolPairs {
     /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
      *  linearization order. Symbols that are not baseclasses map to -1.
      */
-    private[this] val index = new mutable.HashMap[Symbol, Int] { override def default(key: Symbol) = -1 }
+    private[this] val index = new mutable.HashMap[Symbol, Int]().withDefaultValue(-1)
 
     /** The scope entries that have already been visited as highSymbol
      *  (but may have been excluded via hasCommonParentAsSubclass.)

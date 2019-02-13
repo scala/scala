@@ -21,6 +21,7 @@ import scala.language.higherKinds
   *  Known subclasses: List, LazyList
   */
 trait LinearSeq[+A] extends Seq[A] with LinearSeqOps[A, LinearSeq, LinearSeq[A]] {
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "LinearSeq"
 }
 

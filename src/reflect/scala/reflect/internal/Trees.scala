@@ -1660,7 +1660,8 @@ trait Trees extends api.Trees {
 
   // Create a readable string describing a substitution.
   private def substituterString(fromStr: String, toStr: String, from: List[Any], to: List[Any]): String = {
-    "subst[%s, %s](%s)".format(fromStr, toStr, from.lazyZip(to).map(_ + " -> " + _).mkString(", "))
+    val toAndFro = from.lazyZip(to).map((f, t) => s"$f -> $t").mkString("(", ", ", ")")
+    s"subst[$fromStr, $toStr]$toAndFro"
   }
 
   // NOTE: calls shallowDuplicate on trees in `to` to avoid problems when symbols in `from`

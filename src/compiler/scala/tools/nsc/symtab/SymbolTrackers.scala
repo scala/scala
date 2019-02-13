@@ -138,7 +138,7 @@ trait SymbolTrackers {
           val s = sym.defString take 240
           if (s.length == 240) s + "..." else s
         }
-        else sym + changedOwnerString + flagSummaryString
+        else "" + sym + changedOwnerString + flagSummaryString
       )
 
       def flatten = children.foldLeft(Set(root))(_ ++ _.flatten)

@@ -35,6 +35,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override protected def fromSpecific(coll: IterableOnce[Int]): BitSetC = bitSetFactory.fromSpecific(coll)
   override protected def newSpecificBuilder: Builder[Int, BitSetC] = bitSetFactory.newBuilder
   override def empty: BitSetC = bitSetFactory.empty
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "BitSet"
   override def unsorted: Set[Int] = this
 }

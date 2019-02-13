@@ -30,7 +30,6 @@ class DocParser(settings: nsc.Settings, reporter: Reporter) extends Global(setti
   // the usual global initialization
   locally { new Run() }
 
-  override def forScaladoc = true
   override protected def computeInternalPhases(): Unit = phasesSet += syntaxAnalyzer
 
   /** Returns a list of `DocParser.Parseds`, which hold the DocDefs found

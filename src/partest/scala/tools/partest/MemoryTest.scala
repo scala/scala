@@ -44,7 +44,7 @@ abstract class MemoryTest {
     val delta = result - reference
     if (delta > maxDelta) {
       println("FAILED")
-      history foreach (mb => println(mb + " Mb"))
+      history foreach (mb => println(s"$mb Mb"))
     }
   }
 }

@@ -185,8 +185,7 @@ quant)
       val (value0, uvalue0) = prev
       value = value0 + underlying.value - uvalue0
     }
-    override def toString =
-      value + showPercent(value.toLong, underlying.value.toLong)
+    override def toString = s"${value}${showPercent(value.toLong, underlying.value.toLong)}"
   }
 
   class Timer(val prefix: String, val phases: Seq[String]) extends Quantity {

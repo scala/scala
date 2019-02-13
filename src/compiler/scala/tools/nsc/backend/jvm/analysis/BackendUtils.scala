@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.annotation.{switch, tailrec}
 import scala.collection.JavaConverters._
 import scala.collection.immutable.BitSet
+import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
 import scala.tools.asm
@@ -139,11 +140,11 @@ abstract class BackendUtils extends PerRunInit {
     }
     for ((label, i) <- initialLabels.iterator.zipWithIndex) {
       mv.visitLabel(label)
-      emitLambdaDeserializeIndy(groups(i))
+      emitLambdaDeserializeIndy(unsafeWrapArray(groups(i)))
       mv.visitInsn(ARETURN)
     }
     mv.visitLabel(terminalLabel)
-    emitLambdaDeserializeIndy(groups(numGroups - 1))
+    emitLambdaDeserializeIndy(unsafeWrapArray(groups(numGroups - 1)))
     mv.visitInsn(ARETURN)
   }
 

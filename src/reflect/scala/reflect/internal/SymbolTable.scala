@@ -94,12 +94,6 @@ abstract class SymbolTable extends macros.Universe
 
   def settings: MutableSettings
 
-  @deprecated("Interactive is implemented with a custom Global; this flag is ignored", "2.11.0") def forInteractive = false
-  @deprecated("Scaladoc is implemented with a custom Global; this flag is ignored", "2.11.0")    def forScaladoc = false
-
-  @deprecated("use devWarning if this is really a warning; otherwise use log", "2.11.0")
-  def debugwarn(msg: => String): Unit = devWarning(msg)
-
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
 
@@ -157,32 +151,19 @@ abstract class SymbolTable extends macros.Universe
     result
   }
 
-  // Getting in front of Predef's asserts to supplement with more info; see `supplementErrorMessage`.
-  // This has the happy side effect of masking the one argument forms of assert/require
-  // (but for now they're reproduced here, because there are a million uses internal and external to fix).
   @inline
-  final def assert(assertion: Boolean, message: => Any): Unit = {
-    // calling Predef.assert would send a freshly allocated closure wrapping the one received as argument.
+  final def assert(assertion: Boolean, message: => Any): Unit =
     if (!assertion) throwAssertionError(message)
-  }
 
-  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
-  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
-  final def assert(assertion: Boolean): Unit = {
-    assert(assertion, "")
-  }
+  @deprecated("consider supplying an explanatory message", since = "2.12.5")
+  final def assert(assertion: Boolean): Unit = assert(assertion, "")
 
   @inline
-  final def require(requirement: Boolean, message: => Any): Unit = {
-    // calling Predef.require would send a freshly allocated closure wrapping the one received as argument.
+  final def require(requirement: Boolean, message: => Any): Unit =
     if (!requirement) throwRequirementError(message)
-  }
 
-  // Let's consider re-deprecating this in the 2.13 series, to encourage informative messages.
-  //@deprecated("prefer to use the two-argument form", since = "2.12.5")
-  final def require(requirement: Boolean): Unit = {
-    require(requirement, "")
-  }
+  @deprecated("consider supplying an explanatory message", since = "2.12.5")
+  final def require(requirement: Boolean): Unit = require(requirement, "")
 
   // extracted from `assert`/`require` to make them as small (and inlineable) as possible
   private[internal] def throwAssertionError(msg: Any): Nothing =

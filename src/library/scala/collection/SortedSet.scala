@@ -35,6 +35,7 @@ trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] 
 
   override def empty: SortedIterableCC[A] = sortedIterableFactory.empty
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SortedSet"
 }
 

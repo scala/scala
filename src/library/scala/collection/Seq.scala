@@ -49,6 +49,7 @@ trait Seq[+A]
 
   override def toString(): String = super[Iterable].toString()
 
+  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "Seq"
 }
 
@@ -906,7 +907,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   }
 
   protected[collection] def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
-    val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
+    val occ = new mutable.HashMap[B, Int]().withDefaultValue(0)
     for (y <- sq) occ(y) += 1
     occ
   }
