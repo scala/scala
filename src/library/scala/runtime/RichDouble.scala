@@ -63,3 +63,7 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
    */
   def toDegrees: Double = math.toDegrees(self)
 }
+
+final class RichDoubleSignum(val self: Double) extends AnyVal {
+  def signum: Double = math.signum(self)
+}

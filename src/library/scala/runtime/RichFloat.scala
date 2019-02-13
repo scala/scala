@@ -64,3 +64,7 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
    */
   def toDegrees: Float = math.toDegrees(self.toDouble).toFloat
 }
+
+final class RichFloatSignum(val self: Float) extends AnyVal {
+  def signum: Float = math.signum(self)
+}

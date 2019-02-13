@@ -531,9 +531,10 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
   @inline implicit def intWrapper(x: Int): runtime.RichInt             = new runtime.RichInt(x)
   @inline implicit def charWrapper(c: Char): runtime.RichChar          = new runtime.RichChar(c)
   @inline implicit def longWrapper(x: Long): runtime.RichLong          = new runtime.RichLong(x)
-  @inline implicit def floatWrapper(x: Float): runtime.RichFloat       = new runtime.RichFloat(x)
-  @inline implicit def doubleWrapper(x: Double): runtime.RichDouble    = new runtime.RichDouble(x)
   @inline implicit def booleanWrapper(x: Boolean): runtime.RichBoolean = new runtime.RichBoolean(x)
+
+  @inline implicit def floatSignumWrapper(x: Float): runtime.RichFloatSignum = new runtime.RichFloatSignum(x)
+  @inline implicit def doubleSignumWrapper(x: Double): runtime.RichDoubleSignum = new runtime.RichDoubleSignum(x)
 
   /** @group conversions-array-to-wrapped-array */
   implicit def genericWrapArray[T](xs: Array[T]): ArraySeq[T] =
@@ -574,6 +575,10 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
 }
 
 private[scala] abstract class LowPriorityImplicits2 {
+
+  @inline implicit def floatWrapper(x: Float): runtime.RichFloat       = new runtime.RichFloat(x)
+  @inline implicit def doubleWrapper(x: Double): runtime.RichDouble    = new runtime.RichDouble(x)
+
   @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
   implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =
     if (xs eq null) null
