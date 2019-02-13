@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
 import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
 import Flags._
 import scala.annotation.tailrec
-import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>

@@ -24,6 +24,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
+import scala.reflect.internal.util.ReusableInstance
 import scala.reflect.io.{NoAbstractFile, VirtualFile}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
@@ -34,7 +35,7 @@ import scala.util.control.NonFatal
  *  @author Martin Odersky
  *  @version 1.0
  */
-abstract class ClassfileParser {
+abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   val symbolTable: SymbolTable {
     def settings: Settings
   }
@@ -143,14 +144,18 @@ abstract class ClassfileParser {
   def parse(file: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol): Unit = {
     this.file = file
     pushBusy(clazz) {
-      this.in           = new ByteBufferDataReader(file.toByteBuffer)
-      this.clazz        = clazz
-      this.staticModule = module
-      this.isScala      = false
+      reader.using { reader =>
+        this.in           = reader.reset(file)
+        this.clazz        = clazz
+        this.staticModule = module
+        this.isScala      = false
 
-      parseHeader()
-      this.pool = new ConstantPool
-      parseClass()
+        parseHeader()
+        this.pool = new ConstantPool
+        parseClass()
+        pool = null
+        in = null
+      }
     }
   }
 
@@ -482,11 +487,6 @@ abstract class ClassfileParser {
       n == "scala.runtime.Nothing$" || n == "scala.runtime.Null$"
     }
 
-    def release(): Unit = {
-      pool = null
-      in = null
-    }
-
     if (isScala) {
       () // We're done
     } else if (isScalaRaw && !isNothingOrNull) {
@@ -547,7 +547,6 @@ abstract class ClassfileParser {
       // We would also need to make sure that clazzTParams is populated before member type completers called sig2type.
       clazz.initialize
     }
-    release()
   }
 
   /** Add type parameters of enclosing classes */
