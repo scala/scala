@@ -4063,8 +4063,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
-      var localSyms = immutable.Set[Symbol]()
-      var boundSyms = immutable.Set[Symbol]()
+      val localSyms = mutable.LinkedHashSet[Symbol]()
+      val boundSyms = mutable.LinkedHashSet[Symbol]()
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
