@@ -14,7 +14,7 @@ package scala
 package util
 
 trait ChainingSyntax {
-  implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
+  @`inline` implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }
 
 /** Adds chaining methods `tap` and `pipe` to every type.
