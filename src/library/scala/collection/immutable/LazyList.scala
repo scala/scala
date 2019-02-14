@@ -585,28 +585,24 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     else super.intersect(that)
 
   @tailrec
-  private def lengthLteq(len: Int): Boolean =
-    if (len < 0) false
-    else if (isEmpty) true
-    else tail.lengthLteq(len - 1)
+  private def lengthGt(len: Int): Boolean =
+    if (len < 0) true
+    else if (isEmpty) false
+    else tail.lengthGt(len - 1)
 
   override def grouped(size: Int): Iterator[LazyList[A]] = {
     require(size > 0, "size must be positive, but was " + size)
-    lazySlidingImpl(size, size)
+    slidingImpl(size = size, step = size)
   }
 
   override def sliding(size: Int, step: Int): Iterator[LazyList[A]] = {
     require(size > 0 && step > 0, s"size=$size and step=$step, but both must be positive")
-    lazySlidingImpl(size, step)
+    slidingImpl(size = size, step = step)
   }
 
-  @inline private def lazySlidingImpl(size: Int, step: Int): Iterator[LazyList[A]] =
+  @inline private def slidingImpl(size: Int, step: Int): Iterator[LazyList[A]] =
     if (knownIsEmpty) Iterator.empty
-    else Iterator.empty ++ slidingImpl(size, step, size - step max 0) // concat with empty iterator so that `slidingImpl` is lazy
-
-  private def slidingImpl(size: Int, step: Int, minLen: Int): Iterator[LazyList[A]] =
-    if (lengthLteq(minLen)) Iterator.empty
-    else Iterator.single(take(size)) ++ drop(step).slidingImpl(size, step, minLen)
+    else new SlidingIterator[A](this, size = size, step = step)
 
   override def padTo[B >: A](len: Int, elem: B): LazyList[B] = {
     if (len <= 0) this
@@ -791,6 +787,26 @@ object LazyList extends SeqFactory[LazyList] {
 
     @SerialVersionUID(3L)
     final class Cons[A](val head: A, val tail: LazyList[A]) extends State[A]
+  }
+
+  private class SlidingIterator[A](private[this] var lazyList: LazyList[A], size: Int, step: Int)
+    extends AbstractIterator[LazyList[A]] {
+    private val minLen = size - step max 0
+    private var first = true
+
+    def hasNext: Boolean =
+      if (first) lazyList.nonEmpty
+      else lazyList.lengthGt(minLen)
+
+    def next(): LazyList[A] = {
+      if (!hasNext) Iterator.empty.next()
+      else {
+        first = false
+        val list = lazyList
+        lazyList = list.drop(step)
+        list.take(size)
+      }
+    }
   }
 
   private class LazyIterator[+A](private[this] var lazyList: LazyList[A]) extends AbstractIterator[A] {

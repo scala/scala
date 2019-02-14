@@ -433,15 +433,6 @@ class LazyListLazinessTest {
     assertLazyAllSkipping(_.startsWith(halfCount to count), 1)
   }
 
-  // TODO: re-enable if method is overridden; remove if idea is discarded
-  //@Test
-  def endsWith_properlyLazy(): Unit = {
-    // check laziness of coll when it is a `LazyList`
-    val checker = new OpLazinessChecker
-    LazyList.from(3).take(LazinessChecker.doubleCount).endsWith(checker.lazyList)
-    checker.assertAllSkipping(evaluated = false, 1)
-  }
-
   @Test
   def exists_properlyLazy(): Unit = {
     assertLazyAllSkipping(_ exists { _ < 2 }, 1)
@@ -461,11 +452,14 @@ class LazyListLazinessTest {
   }
 
   private def genericSliding_properlyLazy(op: (LazyList[Int], Int) => Iterator[LazyList[Int]],
-                                          skipExtra: Int = 0): Unit = {
+                                          evalExtra: Int = 0,
+                                          skip: Int = 0): Unit = {
     val op3 = lazyListOp(op(_, 3))
     assertLazyAll(op3)
-    assertLazyAllSkipping(op3 andThen { _.hasNext }, 1 + skipExtra)
-    assertLazyAllSkipping(op3 andThen { _.next().force }, 3 + skipExtra)
+    assertLazyAllSkipping(op3 andThen { _.hasNext }, 1)
+    assertLazyAllSkipping(op3 andThen { _.next().force }, 3)
+    assertLazyAllSkipping(op3 andThen { _.drop(1).hasNext }, 4 + evalExtra + skip)
+    assertLazyAllSkipping(op3 andThen { _.drop(1).next().force }, 6 + skip)
     assertKnownEmptyYields(op3)(_ eq Iterator.empty)
   }
 
@@ -476,10 +470,10 @@ class LazyListLazinessTest {
 
   @Test
   def sliding_properlyLazy(): Unit = {
-    genericSliding_properlyLazy(_ sliding _, 2)
-    genericSliding_properlyLazy(_.sliding(_, 2), 1)
+    genericSliding_properlyLazy(_ sliding _, evalExtra = 2)
+    genericSliding_properlyLazy(_.sliding(_, 2), evalExtra = 1)
     genericSliding_properlyLazy(_.sliding(_, 3))
-    genericSliding_properlyLazy(_.sliding(_, 4))
+    genericSliding_properlyLazy(_.sliding(_, 4), skip = 1)
   }
 
   @Test
@@ -506,15 +500,6 @@ class LazyListLazinessTest {
     assertLazyAllSkipping(_.indexWhere(_ < 2), 1)
     assertLazyAllSkipping(_.indexWhere(_ > 2), 4)
     assertLazyAllSkipping(_.indexWhere(_ > 2, 4), 5)
-  }
-
-  // TODO: re-enable if method is overridden; remove if idea is discarded
-  //@Test
-  def lastIndexOfSlice_properlyLazy(): Unit = {
-    // check laziness of slice when it is a `LazyList`
-    val checker = new OpLazinessChecker
-    LazyList.from(3).take(LazinessChecker.doubleCount).lastIndexOfSlice(checker.lazyList)
-    checker.assertAllSkipping(evaluated = false, 1)
   }
 
   @Test
