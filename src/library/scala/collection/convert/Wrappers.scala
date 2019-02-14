@@ -194,10 +194,10 @@ private[collection] trait Wrappers {
   @SerialVersionUID(3L)
   case class JSetWrapper[A](underlying: ju.Set[A]) extends mutable.AbstractSet[A] with mutable.SetOps[A, mutable.Set, mutable.Set[A]] with Serializable {
 
-    override def size = underlying.size
+    override def size: Int = underlying.size
     override def isEmpty: Boolean = underlying.isEmpty
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
-    def iterator = underlying.iterator.asScala
+    def iterator: Iterator[A] = underlying.iterator.asScala
 
     def contains(elem: A): Boolean = underlying.contains(elem)
 
@@ -205,15 +205,23 @@ private[collection] trait Wrappers {
     def subtractOne(elem: A): this.type = { underlying remove elem; this }
 
     override def remove(elem: A): Boolean = underlying remove elem
-    override def clear() = underlying.clear()
 
-    override def empty = JSetWrapper(new ju.HashSet[A])
+    override def clear(): Unit = {
+      underlying.clear()
+    }
+
+    override def empty: mutable.Set[A] = JSetWrapper(new ju.HashSet[A])
+
     // Note: Clone cannot just call underlying.clone because in Java, only specific collections
     // expose clone methods.  Generically, they're protected.
-    override def clone() =
-      new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
+    override def clone(): mutable.Set[A] = new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
 
-    override def iterableFactory = mutable.HashSet
+    override def iterableFactory: IterableFactory[mutable.Set] = mutable.HashSet
+
+    override def filterInPlace(p: A => Boolean): this.type = {
+      if (underlying.size() > 0) underlying.removeIf(!p(_))
+      this
+    }
   }
 
   @SerialVersionUID(3L)
