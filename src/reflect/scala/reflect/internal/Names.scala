@@ -48,6 +48,8 @@ trait Names extends api.Names {
   /** Hashtable for finding type names quickly. */
   private[this] val typeHashtable = new Array[TypeName](HASH_SIZE)
 
+  final def allNames(): Iterator[TermName] = termHashtable.iterator.filter(_ ne null).flatMap(n => Iterator.iterate(n)(_.next).takeWhile(_ ne null))
+
   /**
    * The hashcode of a name depends on the first, the last and the middle character,
    * and the length of the name.

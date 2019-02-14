@@ -1193,21 +1193,15 @@ trait StdNames {
     protected val stringToTypeName = null
     protected implicit def createNameType(s: String): TypeName = newTypeNameCached(s)
 
-    final val BoxedBoolean: TypeName       = "java.lang.Boolean"
-    final val BoxedByte: TypeName          = "java.lang.Byte"
-    final val BoxedCharacter: TypeName     = "java.lang.Character"
-    final val BoxedDouble: TypeName        = "java.lang.Double"
-    final val BoxedFloat: TypeName         = "java.lang.Float"
-    final val BoxedInteger: TypeName       = "java.lang.Integer"
-    final val BoxedLong: TypeName          = "java.lang.Long"
-    final val BoxedNumber: TypeName        = "java.lang.Number"
-    final val BoxedShort: TypeName         = "java.lang.Short"
-    final val IOOBException: TypeName      = "java.lang.IndexOutOfBoundsException"
-    final val InvTargetException: TypeName = "java.lang.reflect.InvocationTargetException"
-    final val MethodAsObject: TypeName     = "java.lang.reflect.Method"
-    final val NPException: TypeName        = "java.lang.NullPointerException"
-    final val Object: TypeName             = "java.lang.Object"
-    final val Throwable: TypeName          = "java.lang.Throwable"
+    final val BoxedBoolean: String       = "java.lang.Boolean"
+    final val BoxedByte: String          = "java.lang.Byte"
+    final val BoxedCharacter: String     = "java.lang.Character"
+    final val BoxedDouble: String        = "java.lang.Double"
+    final val BoxedFloat: String         = "java.lang.Float"
+    final val BoxedInteger: String       = "java.lang.Integer"
+    final val BoxedLong: String          = "java.lang.Long"
+    final val BoxedNumber: String        = "java.lang.Number"
+    final val BoxedShort: String         = "java.lang.Short"
 
     final val GetCause: TermName         = newTermName("getCause")
     final val GetClass: TermName         = newTermName("getClass")
@@ -1220,7 +1214,7 @@ trait StdNames {
     final val AltMetafactory: TermName      = newTermName("altMetafactory")
     final val Bootstrap: TermName           = newTermName("bootstrap")
 
-    val Boxed = immutable.Map[TypeName, TypeName](
+    val Boxed = immutable.Map[TypeName, String](
       tpnme.Boolean -> BoxedBoolean,
       tpnme.Byte    -> BoxedByte,
       tpnme.Char    -> BoxedCharacter,

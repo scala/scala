@@ -1550,6 +1550,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
       reporting.summarizeErrors()
 
+      // val allNamesArray: Array[String] = allNames().map(_.toString).toArray.sorted
+      // allNamesArray.foreach(println(_))
+
       if (traceSymbolActivity)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
 

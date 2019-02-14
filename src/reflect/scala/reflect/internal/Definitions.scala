@@ -189,11 +189,11 @@ trait Definitions extends api.StandardDefinitions {
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.
-    lazy val JavaLangPackage      = getPackage(TermName("java.lang"))
+    lazy val JavaLangPackage      = getPackage("java.lang")
     lazy val JavaLangPackageClass = JavaLangPackage.moduleClass.asClass
-    lazy val ScalaPackage         = getPackage(TermName("scala"))
+    lazy val ScalaPackage         = getPackage("scala")
     lazy val ScalaPackageClass    = ScalaPackage.moduleClass.asClass
-    lazy val RuntimePackage       = getPackage(TermName("scala.runtime"))
+    lazy val RuntimePackage       = getPackage("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass.asClass
 
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
@@ -289,7 +289,7 @@ trait Definitions extends api.StandardDefinitions {
     // top types
     lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT).markAllCompleted
     lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectTpe).markAllCompleted
-    lazy val ObjectClass = getRequiredClass(sn.Object.toString)
+    lazy val ObjectClass = getRequiredClass("java.lang.Object")
 
     // Cached types for core monomorphic classes
     lazy val AnyRefTpe       = AnyRefClass.tpe
@@ -340,12 +340,12 @@ trait Definitions extends api.StandardDefinitions {
 
     // exceptions and other throwables
     lazy val ClassCastExceptionClass        = requiredClass[ClassCastException]
-    lazy val IndexOutOfBoundsExceptionClass = getClassByName(sn.IOOBException)
-    lazy val InvocationTargetExceptionClass = getClassByName(sn.InvTargetException)
+    lazy val IndexOutOfBoundsExceptionClass = getClassByName("java.lang.IndexOutOfBoundsException")
+    lazy val InvocationTargetExceptionClass = getClassByName("java.lang.reflect.InvocationTargetException")
     lazy val MatchErrorClass                = requiredClass[MatchError]
     lazy val NonLocalReturnControlClass     = requiredClass[scala.runtime.NonLocalReturnControl[_]]
-    lazy val NullPointerExceptionClass      = getClassByName(sn.NPException)
-    lazy val ThrowableClass                 = getClassByName(sn.Throwable)
+    lazy val NullPointerExceptionClass      = getClassByName("java.lang.NullPointerException")
+    lazy val ThrowableClass                 = getClassByName("java.lang.Throwable")
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
     lazy val RuntimeExceptionClass          = requiredClass[RuntimeException]
     lazy val IllegalArgExceptionClass       = requiredClass[IllegalArgumentException]
@@ -496,7 +496,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // reflection / structural types
     lazy val SoftReferenceClass     = requiredClass[java.lang.ref.SoftReference[_]]
-    lazy val MethodClass            = getClassByName(sn.MethodAsObject)
+    lazy val MethodClass            = getClassByName("java.lang.reflect.Method")
     lazy val EmptyMethodCacheClass  = requiredClass[scala.runtime.EmptyMethodCache]
     lazy val MethodCacheClass       = requiredClass[scala.runtime.MethodCache]
       def methodCache_find          = getMemberMethod(MethodCacheClass, nme.find_)
@@ -1309,7 +1309,7 @@ trait Definitions extends api.StandardDefinitions {
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
-    lazy val metaAnnotations: Set[Symbol] = getPackage(TermName("scala.annotation.meta")).info.members.filter(_ isSubClass StaticAnnotationClass).toSet
+    lazy val metaAnnotations: Set[Symbol] = getPackage("scala.annotation.meta").info.members.filter(_ isSubClass StaticAnnotationClass).toSet
 
     // According to the scala.annotation.meta package object:
     // * By default, annotations on (`val`-, `var`- or plain) constructor parameters
