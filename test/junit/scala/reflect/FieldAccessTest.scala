@@ -16,10 +16,10 @@ class FieldAccessTest {
   @Test
   def testFieldAccess(): Unit = {
     import scala.reflect.runtime.{universe => ru}
-    val mirror = ru.runtimeMirror(getClass.getClassLoader)
+    import scala.reflect.runtime.currentMirror
     val obj = new TestClass
-    val objType = mirror.reflect(obj).symbol.toType
+    val objType = currentMirror.reflect(obj).symbol.toType
     val objFields = objType.members.collect { case ms: ru.MethodSymbol if ms.isGetter => ms }
-    assertEquals(123, mirror.reflect(obj).reflectField(objFields.head).get)
+    assertEquals(123, currentMirror.reflect(obj).reflectField(objFields.head).get)
   }
 }
