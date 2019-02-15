@@ -12,10 +12,9 @@
 
 package scala.concurrent.impl
 
-import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{ Semaphore, ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.Collection
-import scala.concurrent.{ BatchingExecutor, BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.concurrent.{ Batchable, BatchingExecutor, BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.annotation.tailrec
 
 
@@ -36,17 +35,7 @@ private[concurrent] object ExecutionContextImpl {
     require(prefix ne null, "DefaultThreadFactory.prefix must be non null")
     require(maxBlockers >= 0, "DefaultThreadFactory.maxBlockers must be greater-or-equal-to 0")
 
-    private final val currentNumberOfBlockers = new AtomicInteger(0)
-
-    @tailrec private final def newBlocker(): Boolean = currentNumberOfBlockers.get() match {
-      case `maxBlockers` | Int.`MaxValue` => false
-      case other => currentNumberOfBlockers.compareAndSet(other, other + 1) || newBlocker()
-    }
-
-    @tailrec private final def freeBlocker(): Boolean = currentNumberOfBlockers.get() match {
-      case 0 => false
-      case other => currentNumberOfBlockers.compareAndSet(other, other - 1) || freeBlocker()
-    }
+    private final val blockerPermits = new Semaphore(maxBlockers)
 
     def wire[T <: Thread](thread: T): T = {
       thread.setDaemon(daemonic)
@@ -61,7 +50,7 @@ private[concurrent] object ExecutionContextImpl {
       wire(new ForkJoinWorkerThread(fjp) with BlockContext {
         private[this] final var isBlocked: Boolean = false // This is only ever read & written if this thread is the current thread
         final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T =
-          if ((Thread.currentThread eq this) && !isBlocked && newBlocker()) {
+          if ((Thread.currentThread eq this) && !isBlocked && blockerPermits.tryAcquire()) {
             try {
               val b: ForkJoinPool.ManagedBlocker with (() => T) =
                 new ForkJoinPool.ManagedBlocker with (() => T) {
@@ -84,7 +73,7 @@ private[concurrent] object ExecutionContextImpl {
               b()
             } finally {
               isBlocked = false
-              freeBlocker()
+              blockerPermits.release()
             }
           } else thunk // Unmanaged blocking
       })
@@ -112,7 +101,14 @@ private[concurrent] object ExecutionContextImpl {
                                                  uncaught = (thread: Thread, cause: Throwable) => reporter(cause))
 
     new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService with BatchingExecutor {
-      final override def unbatchedExecute(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
+      final override def submitForExecution(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
+
+      final override def execute(runnable: Runnable): Unit =
+        if ((!runnable.isInstanceOf[Promise.Transformation[_,_]] || runnable.asInstanceOf[Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
+          submitAsyncBatched(runnable)
+        else
+          submitForExecution(runnable)
+
       final override def reportFailure(cause: Throwable): Unit =
         getUncaughtExceptionHandler() match {
           case null =>

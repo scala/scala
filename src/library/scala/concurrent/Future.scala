@@ -13,7 +13,7 @@
 package scala.concurrent
 
 import scala.language.higherKinds
-import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.control.{NonFatal, NoStackTrace}
@@ -416,7 +416,7 @@ trait Future[+T] extends Awaitable[T] {
    * @group Transformations
    */
   def zipWith[U, R](that: Future[U])(f: (T, U) => R)(implicit executor: ExecutionContext): Future[R] =
-    flatMap(r1 => that.map(r2 => f(r1, r2)))
+    flatMap(r1 => that.map(r2 => f(r1, r2)))(if (executor.isInstanceOf[BatchingExecutor]) executor else internalExecutor)
 
   /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
    *  the result of the `that` future if `that` is completed successfully.
@@ -692,7 +692,7 @@ object Future {
   final def sequence[A, CC[X] <: IterableOnce[X], To](in: CC[Future[A]])(implicit bf: BuildFrom[CC[Future[A]], A, To], executor: ExecutionContext): Future[To] =
     in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, fa) => fr.zipWith(fa)(Future.addToBuilderFun)
-    }.map(_.result())(InternalCallbackExecutor)
+    }.map(_.result())(if (executor.isInstanceOf[BatchingExecutor]) executor else InternalCallbackExecutor)
 
   /** Asynchronously and non-blockingly returns a new `Future` to the result of the first future
    *  in the list that is completed. This means no matter if it is completed as a success or as a failure.
@@ -844,7 +844,7 @@ object Future {
   final def traverse[A, B, M[X] <: IterableOnce[X]](in: M[A])(fn: A => Future[B])(implicit bf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
     in.iterator.foldLeft(successful(bf.newBuilder(in))) {
       (fr, a) => fr.zipWith(fn(a))(Future.addToBuilderFun)
-    }.map(_.result())(InternalCallbackExecutor)
+    }.map(_.result())(if (executor.isInstanceOf[BatchingExecutor]) executor else InternalCallbackExecutor)
 
 
   // This is used to run callbacks which are internal
@@ -866,8 +866,9 @@ object Future {
   // by just not ever using it itself. scala.concurrent
   // doesn't need to create defaultExecutionContext as
   // a side effect.
-  private[concurrent] object InternalCallbackExecutor extends ExecutionContext with java.util.concurrent.Executor with BatchingExecutor {
-    override protected final def unbatchedExecute(r: Runnable): Unit = r.run()
+  private[concurrent] object InternalCallbackExecutor extends ExecutionContextExecutor with BatchingExecutor {
+    override final def submitForExecution(runnable: Runnable): Unit = runnable.run()
+    final override def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
     override final def reportFailure(t: Throwable): Unit =
       ExecutionContext.defaultReporter(new IllegalStateException("problem in scala.concurrent internal callback", t))
   }

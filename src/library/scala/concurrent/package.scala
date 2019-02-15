@@ -121,7 +121,7 @@ package object concurrent {
    *  @throws InterruptedException in the case that a wait within the blocking `body` was interrupted
    */
   @throws(classOf[Exception])
-  def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
+  final def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
 }
 
 package concurrent {
@@ -169,7 +169,7 @@ package concurrent {
      */
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
+    final def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
       blocking(awaitable.ready(atMost)(AwaitPermission))
 
     /**
@@ -193,7 +193,7 @@ package concurrent {
      * @throws IllegalArgumentException if `atMost` is [[scala.concurrent.duration.Duration.Undefined Duration.Undefined]]
      */
     @throws(classOf[Exception])
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T =
+    final def result[T](awaitable: Awaitable[T], atMost: Duration): T =
       blocking(awaitable.result(atMost)(AwaitPermission))
   }
 }
