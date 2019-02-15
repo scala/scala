@@ -30,6 +30,7 @@ res10: Int = 12
 // Replaying 8 commands from transcript.
 
 scala> 999l
+warning: 1 deprecation (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res0: Long = 999
 
 scala> val res5 = { 123 }

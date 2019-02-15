@@ -8,7 +8,7 @@ import scala.tools.reflect.ToolBox
 scala> import scala.tools.reflect.Eval
 import scala.tools.reflect.Eval
 
-scala> def foo[T]{
+scala> def foo[T] = {
   val code = reify {
     List[T]()
   }

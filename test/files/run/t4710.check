@@ -1,5 +1,6 @@
 
 scala> def method : String = { implicit def f(s: Symbol) = "" ; 'symbol }
+warning: 1 deprecation (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 warning: 1 feature warning; for details, enable `:setting -feature' or `:replay -feature'
 def method: String
 

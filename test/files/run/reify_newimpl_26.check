@@ -1,5 +1,5 @@
 
-scala> def foo[T]{
+scala> def foo[T] = {
   import scala.reflect.runtime.universe._
   val tt = implicitly[WeakTypeTag[List[T]]]
   println(tt)
