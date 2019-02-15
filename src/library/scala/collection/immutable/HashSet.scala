@@ -1678,5 +1678,6 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
   }
 
   private[collection] def size: Int = rootNode.size
-}
 
+  override def knownSize: Int = rootNode.size
+}

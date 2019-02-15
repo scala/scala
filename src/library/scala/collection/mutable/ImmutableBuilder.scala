@@ -18,7 +18,7 @@ package mutable
 /**
   * Reusable builder for immutable collections
   */
-abstract class ImmutableBuilder[-A, C](empty: C)
+abstract class ImmutableBuilder[-A, C <: IterableOnce[_]](empty: C)
   extends ReusableBuilder[A, C] {
 
   protected var elems: C = empty
@@ -27,4 +27,5 @@ abstract class ImmutableBuilder[-A, C](empty: C)
 
   def result(): C = elems
 
+  override def knownSize: Int = elems.knownSize
 }

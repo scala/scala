@@ -66,6 +66,11 @@ trait Growable[-A] extends Clearable {
 
   /** Alias for `addAll` */
   @`inline` final def ++= (xs: IterableOnce[A]): this.type = addAll(xs)
+
+  /** @return The number of elements in the collection under construction, if it can be cheaply computed,
+    *  -1 otherwise. The default implementation always returns -1.
+    */
+  def knownSize: Int = -1
 }
 
 object Growable {

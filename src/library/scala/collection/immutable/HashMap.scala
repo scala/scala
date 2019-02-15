@@ -1761,4 +1761,6 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
   }
 
   private[collection] def size: Int = rootNode.size
+
+  override def knownSize: Int = rootNode.size
 }

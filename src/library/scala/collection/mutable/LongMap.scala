@@ -581,6 +581,7 @@ object LongMap {
     }
     def clear(): Unit = elems = new LongMap[V]
     def result(): LongMap[V] = elems
+    override def knownSize: Int = elems.knownSize
   }
 
   /** Creates a new `LongMap` with zero or more key/value pairs. */

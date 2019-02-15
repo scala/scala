@@ -12,7 +12,7 @@
 
 package scala.collection.mutable
 
-import scala.collection.IterableFactory
+import scala.collection.{IterableFactory, IterableOps}
 import scala.language.higherKinds
 
 /** Base trait for mutable sets */
@@ -30,6 +30,7 @@ trait Set[A]
   */
 trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
   extends collection.SetOps[A, CC, C]
+    with IterableOps[A, CC, C] // only needed so we can use super[IterableOps] below
     with Cloneable[C]
     with Builder[A, C]
     with Growable[A]
@@ -100,6 +101,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
 
   override def clone(): C = empty ++= toIterable
 
+  override def knownSize: Int = super[IterableOps].knownSize
 }
 
 /**

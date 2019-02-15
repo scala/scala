@@ -201,6 +201,8 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
   @deprecated("Use m.clone().addOne((k,v)) instead of m.updated(k, v)", "2.13.0")
   def updated[V1 >: V](key: K, value: V1): CC[K, V1] =
     clone().asInstanceOf[CC[K, V1]].addOne((key, value))
+
+  override def knownSize: Int = super[IterableOps].knownSize
 }
 
 /**
