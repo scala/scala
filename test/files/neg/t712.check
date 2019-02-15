@@ -1,4 +1,7 @@
 t712.scala:10: error: overloaded method coerce needs result type
   implicit def coerce(p : ParentImpl) = p.self;
                                           ^
-one error found
+t712.scala:18: error: value scope is not a member of B.this.Symbol
+  val s_scope = s.scope;
+                  ^
+two errors found

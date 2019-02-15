@@ -903,19 +903,12 @@ trait Contexts { self: Analyzer =>
       collect(imp.tree.selectors)
     }
 
-    /* scala/bug#5892 / scala/bug#4270: `implicitss` can return results which are not accessible at the
-     * point where implicit search is triggered. Example: implicits in (annotations of)
-     * class type parameters (scala/bug#5892). The `context.owner` is the class symbol, therefore
-     * `implicitss` will return implicit conversions defined inside the class. These are
-     * filtered out later by `eligibleInfos` (scala/bug#4270 / 9129cfe9), as they don't type-check.
-     */
     def implicitss: List[List[ImplicitInfo]] = {
       val nextOuter = this.nextOuter
-      def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] =
-        is match {
-          case Nil => nextOuter.implicitss
-          case _   => is :: nextOuter.implicitss
-        }
+      def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] = is match {
+        case Nil => nextOuter.implicitss
+        case _   => is :: nextOuter.implicitss
+      }
 
       val CycleMarker = NoRunId - 1
       if (implicitsRunId == CycleMarker) {
@@ -947,7 +940,7 @@ trait Contexts { self: Analyzer =>
           //     remedied nonetheless.
           Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
         }
-      } else if (scope != nextOuter.scope && !owner.isPackageClass) {
+      } else if (scope != nextOuter.scope && !owner.isPackageClass && !(owner.isClass && owner.isInitialized)) {
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
       } else if (firstImport != nextOuter.firstImport) {
