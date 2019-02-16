@@ -13,9 +13,9 @@
 package scala
 
 /** A type for which there is always an implicit value. */
-class DummyImplicit
+final class DummyImplicit private ()
 
 object DummyImplicit {
   /** An implicit value yielding a `DummyImplicit`. */
-  implicit def dummyImplicit: DummyImplicit = new DummyImplicit
+  implicit val dummyImplicit: DummyImplicit = new DummyImplicit
 }
