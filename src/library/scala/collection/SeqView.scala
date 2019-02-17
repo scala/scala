@@ -31,7 +31,7 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(prefix, this)
 
-  override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = new SeqView.Sorted(this)
+  override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = new SeqView.Sorted(this, ord)
 }
 
 object SeqView {
@@ -116,7 +116,7 @@ object SeqView {
   }
 
   @SerialVersionUID(3L)
-  class Sorted[A, B >: A](underlying: SomeSeqOps[A])(implicit ord: Ordering[B]) extends SeqView[A] {
+  class Sorted[A, B >: A](underlying: SomeSeqOps[A], ord: Ordering[B]) extends SeqView[A] {
     private[this] lazy val _sorted = {
       val len = underlying.length
       new SeqView.Id(
