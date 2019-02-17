@@ -709,6 +709,10 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     b.result()
   }
 
+  // TODO: docs
+  def sortTo[C1, B >: A](factory: Factory[A, C1])(implicit ord: Ordering[B]): C1 =
+    factory.fromSpecific(new SeqView.Sorted(this, ord))
+
   /** Sorts this $coll according to a comparison function.
     *  $willNotTerminateInf
     *  $willForceEvaluation
