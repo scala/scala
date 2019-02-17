@@ -12,8 +12,6 @@
 
 package scala.collection
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.LazyList
 
@@ -37,6 +35,12 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Seria
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
   @`inline` def force: IndexedSeq[A] = toIndexedSeq
+
+  /**
+    * @return a view containing the elements of this view which only evaluates elements once,
+    *         and does so lazily.
+    */
+  def cached: View[A] = LazyList.from(this).view
 }
 
 /** This object reifies operations on views as case classes
