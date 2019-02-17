@@ -44,6 +44,7 @@ object SeqView {
     def length: Int = underlying.length
     def iterator: Iterator[A] = underlying.iterator
     override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
   }
 
   @SerialVersionUID(3L)
@@ -77,7 +78,9 @@ object SeqView {
   class Reverse[A](underlying: SomeSeqOps[A]) extends AbstractSeqView[A] {
     def apply(i: Int) = underlying.apply(size - 1 - i)
     def length = underlying.size
-    override def iterator: Iterator[A] = underlying.reverseIterator
+    def iterator: Iterator[A] = underlying.reverseIterator
+    override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
   }
 
   @SerialVersionUID(3L)
