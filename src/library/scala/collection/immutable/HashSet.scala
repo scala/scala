@@ -408,7 +408,7 @@ private final class BitmapIndexedSetNode[A](
       val subNode = this.getNode(index)
 
       val subNodeNew = subNode.removed(element, originalHash, elementHash, shift + BitPartitionSize)
-      // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
+      // assert(subNodeNew.size != 0, "Sub-node must have at least one element.")
 
       // cache just in case subNodeNew is a hashCollision node, in which in which case a little arithmetic is avoided
       // in Vector#length

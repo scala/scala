@@ -521,7 +521,7 @@ private final class BitmapIndexedMapNode[K, +V](
       val subNode = this.getNode(index)
 
       val subNodeNew = subNode.removed(key, originalHash, keyHash, shift + BitPartitionSize)
-      // assert(subNodeNew.sizePredicate != SizeEmpty, "Sub-node must have at least one element.")
+      // assert(subNodeNew.size != 0, "Sub-node must have at least one element.")
 
       if (subNodeNew eq subNode) return this
 
