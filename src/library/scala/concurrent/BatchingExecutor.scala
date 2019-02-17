@@ -33,7 +33,7 @@ private[concurrent] object BatchingExecutorStatics {
   // Max number of Runnables processed in one go (to prevent starvation of other tasks on the pool)
   final val runLimit = 1024
 
-  final object MissingParentBlockContext extends BlockContext {
+  object MissingParentBlockContext extends BlockContext {
     override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T =
       try thunk finally throw new IllegalStateException("BUG in BatchingExecutor.Batch: parentBlockContext is null")
   }
