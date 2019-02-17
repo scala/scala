@@ -117,32 +117,33 @@ object SeqView {
 
   @SerialVersionUID(3L)
   class Sorted[A, B >: A](underlying: SomeSeqOps[A], ord: Ordering[B]) extends SeqView[A] {
-    private[this] lazy val _sorted = {
+    private[this] lazy val _sorted: Seq[A] = {
       val len = underlying.length
-      new SeqView.Id(
-        if (len == 0) Nil
-        else if (len == 1) List(underlying.head)
-        else {
-          val arr = new Array[Any](len) // Array[Any] =:= Array[AnyRef]
-          underlying.copyToArray(arr)
-          java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
-          // casting the Array[AnyRef] to Array[A] and creating an ArraySeq from it
-          // is safe because:
-          //   - the ArraySeq is immutable, and items that are not of type A
-          //     cannot be added to it
-          //   - we know it only contains items of type A (and if this collection
-          //     contains items of another type, we'd get a CCE anyway)
-          //   - the cast doesn't actually do anything in the runtime because the
-          //     type of A is not known and Array[_] is Array[AnyRef]
-          immutable.ArraySeq.unsafeWrapArray(arr.asInstanceOf[Array[A]])
-        }
-      )
+      if (len == 0) Nil
+      else if (len == 1) List(underlying.head)
+      else {
+        val arr = new Array[Any](len) // Array[Any] =:= Array[AnyRef]
+        underlying.copyToArray(arr)
+        java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
+        // casting the Array[AnyRef] to Array[A] and creating an ArraySeq from it
+        // is safe because:
+        //   - the ArraySeq is immutable, and items that are not of type A
+        //     cannot be added to it
+        //   - we know it only contains items of type A (and if this collection
+        //     contains items of another type, we'd get a CCE anyway)
+        //   - the cast doesn't actually do anything in the runtime because the
+        //     type of A is not known and Array[_] is Array[AnyRef]
+        immutable.ArraySeq.unsafeWrapArray(arr.asInstanceOf[Array[A]])
+      }
     }
 
     def apply(i: Int): A = _sorted.apply(i)
     def length: Int = underlying.length
     def iterator: Iterator[A] = Iterator.empty ++ _sorted.iterator // very lazy
     override def knownSize: Int = underlying.knownSize
+
+    override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
+      if (ord1 == this.ord) this else super.sorted(ord1)
   }
 }
 
