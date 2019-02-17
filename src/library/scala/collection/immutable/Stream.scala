@@ -82,8 +82,12 @@ sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with L
     else tail.foldLeft(op(z, head))(op)
   }
 
+  /** The stream resulting from the concatenation of this stream with the argument stream.
+    *  @param rest   The collection that gets appended to this stream
+    *  @return       The stream containing elements of this stream and the iterable object.
+    */
   @deprecated("The `append` operation has been renamed `lazyAppendedAll`", "2.13.0")
-  @inline final def append[B >: A](suffix: IterableOnce[B]): Stream[B] = lazyAppendedAll(suffix)
+  @inline final def append[B >: A](rest: => IterableOnce[B]): Stream[B] = lazyAppendedAll(rest)
 
   protected[this] def writeReplace(): AnyRef =
     if(nonEmpty && tailDefined) new Stream.SerializationProxy[A](this) else this
