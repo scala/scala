@@ -30,6 +30,8 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(prefix, this)
+
+  override def cached: SeqView[A] = new SeqView.Id(LazyList.from(this))
 }
 
 object SeqView {
