@@ -141,6 +141,8 @@ object SeqView {
     def length: Int = underlying.length
     def iterator: Iterator[A] = Iterator.empty ++ _sorted.iterator // very lazy
     override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
+    override def to[C1](factory: Factory[A, C1]): C1 = _sorted.to(factory)
 
     override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
       if (ord1 == this.ord) this else super.sorted(ord1)
