@@ -30,7 +30,7 @@ class FutureTests extends MinimalScalaTest {
     t
   }
 
-  val defaultTimeout = 5 seconds
+  val defaultTimeout = Test.DefaultTimeout
 
   /* future specification */
 

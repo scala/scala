@@ -9,6 +9,8 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 
 object Test {
 
+  val DefaultTimeout = Duration(60, TimeUnit.SECONDS)
+
   def main(args: Array[String]): Unit = {
     (new FutureTests).check()
     (new PromiseTests).check()
@@ -86,7 +88,7 @@ trait MinimalScalaTest extends Output with Features {
 
 
 object TestLatch {
-  val DefaultTimeout = Duration(5, TimeUnit.SECONDS)
+  val DefaultTimeout = Test.DefaultTimeout
 
   def apply(count: Int = 1) = new TestLatch(count)
 }
