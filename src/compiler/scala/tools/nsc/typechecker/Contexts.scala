@@ -15,7 +15,7 @@ package typechecker
 
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ shortClassOfInstance, SomeOfNil }
+import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, SomeOfNil }
 import scala.reflect.internal.Reporter
 
 /**
@@ -1146,7 +1146,7 @@ trait Contexts { self: Analyzer =>
      *    package object foo { type InputStream = java.io.InputStream }
      *    import foo._, java.io._
      */
-    private def resolveAmbiguousImport(name: Name, imp1: ImportInfo, imp2: ImportInfo): Option[ImportInfo] = {
+    private[Contexts] def resolveAmbiguousImport(name: Name, imp1: ImportInfo, imp2: ImportInfo): Option[ImportInfo] = {
       val imp1Explicit = imp1 isExplicitImport name
       val imp2Explicit = imp2 isExplicitImport name
       val ambiguous    = if (imp1.depth == imp2.depth) imp1Explicit == imp2Explicit else !imp1Explicit && imp2Explicit
@@ -1190,6 +1190,14 @@ trait Contexts { self: Analyzer =>
       )
     }
 
+    def isPackageOwnedInDifferentUnit(s: Symbol): Boolean =
+      if (s.isOverloaded) s.alternatives.exists(isPackageOwnedInDifferentUnit)
+      else (s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file)
+      )
+
+
     /** Does the import just import the defined symbol?
      *
      *  `import p._ ; package p { S }` where `p.S` is defined elsewhere.
@@ -1202,7 +1210,7 @@ trait Contexts { self: Analyzer =>
      *
      *  This method doesn't use the ImportInfo, `imp1`.
      */
-    private def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
+    private[Contexts] def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
       val res = impSym == defSym
       if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
       res
@@ -1211,14 +1219,14 @@ trait Contexts { self: Analyzer =>
     /** The symbol with name `name` imported via the import in `imp`,
      *  if any such symbol is accessible from this context.
      */
-    private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
+    private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean, record: Boolean): Symbol =
       if (isExcludedRootImport(imp)) NoSymbol
       else imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
 
-    private def requiresQualifier(s: Symbol): Boolean = (
+    private[Contexts] def requiresQualifier(s: Symbol): Boolean = (
           s.owner.isClass
       && !s.owner.isPackageClass
       && !s.isTypeParameterOrSkolem
@@ -1235,17 +1243,89 @@ trait Contexts { self: Analyzer =>
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
-    /** Find the symbol of a simple name starting from this context.
-     *  All names are filtered through the "qualifies" predicate,
-     *  the search continuing as long as no qualifying name is found.
-     */
-    def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup = {
-      var lookupError: NameLookup  = null       // set to non-null if a definite error is encountered
-      var inaccessible: NameLookup = null       // records inaccessible symbol for error reporting in case none is found
-      var defSym: Symbol           = NoSymbol   // the directly found symbol
-      var pre: Type                = NoPrefix   // the prefix type of defSym, if a class member
-      var cx: Context              = this       // the context under consideration
-      var symbolDepth: Int         = -1         // the depth of the directly found symbol
+    def lookupSymbol(name: Name, qualifies: Symbol => Boolean): NameLookup =
+      symbolLookupCache.using(_(this, name)(qualifies))
+
+    final def lookupCompanionInIncompleteOwner(original: Symbol): Symbol = {
+      // Must have both a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
+      def isCompanion(sym: Symbol): Boolean =
+        (original.isModule && sym.isClass || sym.isModule && original.isClass) && sym.isCoDefinedWith(original)
+      lookupSibling(original, original.name.companionName).filter(isCompanion)
+    }
+
+    final def lookupSibling(original: Symbol, name: Name): Symbol = {
+      /* Search scopes in current and enclosing contexts for the definition of `symbol` */
+      def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
+        var res: ScopeEntry = null
+        var ctx = this
+        while (res == null && ctx.outer != ctx) {
+          val s = ctx.scope lookupSymbolEntry symbol
+          if (s != null)
+            res = s
+          else
+            ctx = ctx.outer
+        }
+        res
+      }
+
+      // Must be owned by the same Scope, to ensure that in
+      // `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
+      lookupScopeEntry(original) match {
+        case null => NoSymbol
+        case entry =>
+          entry.owner.lookupNameInSameScopeAs(original, name)
+      }
+    }
+
+    final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
+      val sym = pre.member(name).filter(qualifies)
+      val preSym = pre.typeSymbol
+      if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
+      else {
+        // In Java code, static innner classes, which we model as members of the companion object,
+        // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
+        val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
+        toSearch.iterator.map { bc =>
+          val pre1 = bc.typeOfThis
+          val found = pre1.decl(name)
+          found.filter(qualifies) match {
+            case NoSymbol =>
+              val companionModule = companionSymbolOf(pre1.typeSymbol, this)
+              val pre2 = companionModule.typeOfThis
+              val found = pre2.decl(name).filter(qualifies)
+              found match {
+                case NoSymbol => NoJavaMemberFound
+                case sym => (pre2, sym)
+              }
+            case sym => (pre1, sym)
+          }
+        }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
+      }
+    }
+
+  } //class Context
+
+  /** Find the symbol of a simple name starting from this context.
+   *  All names are filtered through the "qualifies" predicate,
+   *  the search continuing as long as no qualifying name is found.
+   */
+  // OPT: moved this into a (cached) object to avoid costly and non-eliminated {Object,Int}Ref allocations
+  private[Contexts] final val symbolLookupCache = ReusableInstance[SymbolLookup](new SymbolLookup)
+  private[Contexts] final class SymbolLookup {
+    private[this] var lookupError: NameLookup  = _ // set to non-null if a definite error is encountered
+    private[this] var inaccessible: NameLookup = _ // records inaccessible symbol for error reporting in case none is found
+    private[this] var defSym: Symbol           = _ // the directly found symbol
+    private[this] var pre: Type                = _ // the prefix type of defSym, if a class member
+    private[this] var cx: Context              = _ // the context under consideration
+    private[this] var symbolDepth: Int         = _ // the depth of the directly found symbol
+
+    def apply(thisContext: Context, name: Name)(qualifies: Symbol => Boolean): NameLookup = {
+      lookupError  = null
+      inaccessible = null
+      defSym       = NoSymbol
+      pre          = NoPrefix
+      cx           = thisContext
+      symbolDepth  = -1
 
       def finish(qual: Tree, sym: Symbol): NameLookup = (
         if (lookupError ne null) lookupError
@@ -1257,14 +1337,14 @@ trait Contexts { self: Analyzer =>
       )
       def finishDefSym(sym: Symbol, pre0: Type): NameLookup = {
         val qual =
-          if (!unit.isJava && requiresQualifier(sym)) gen.mkAttributedQualifier(pre0)
+          if (!thisContext.unit.isJava && thisContext.requiresQualifier(sym)) gen.mkAttributedQualifier(pre0)
           else EmptyTree
         finish(qual, sym)
       }
 
       def lookupInPrefix(name: Name): Symbol = {
-        if (unit.isJava) {
-          javaFindMember(pre, name, qualifies) match {
+        if (thisContext.unit.isJava) {
+          thisContext.javaFindMember(pre, name, qualifies) match {
             case (_, NoSymbol) =>
               NoSymbol
             case (pre1, sym) =>
@@ -1275,7 +1355,8 @@ trait Contexts { self: Analyzer =>
           pre.member(name).filter(qualifies)
         }
       }
-      def accessibleInPrefix(s: Symbol) = isAccessible(s, pre, superAccess = false)
+      def accessibleInPrefix(s: Symbol) =
+        thisContext.isAccessible(s, pre, superAccess = false)
 
       def searchPrefix = {
         cx = cx.enclClass
@@ -1340,11 +1421,11 @@ trait Contexts { self: Analyzer =>
         symbolDepth = cx.depth
 
       var impSym: Symbol = NoSymbol
-      val importCursor = new ImportCursor(this, name)
+      val importCursor = new ImportCursor(thisContext, name)
       import importCursor.{imp1, imp2}
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean) =
-        importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
+        thisContext.importedAccessibleSymbol(imp, name, requireExplicit, record = true) filter qualifies
 
       /* Java: A single-type-import declaration d in a compilation unit c of package p
        * that imports a type named n shadows, throughout c, the declarations of:
@@ -1362,10 +1443,10 @@ trait Contexts { self: Analyzer =>
        *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
        *     as the reference, have lowest precedence. Also "root" imports added implicitly.
        */
-      def foreignDefined = defSym.exists && isPackageOwnedInDifferentUnit(defSym)  // SI-2458
+      def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
       // can an import at this depth possibly shadow the definition found in scope if any?
       def importCanShadowAtDepth(imp: ImportInfo) = imp.depth > symbolDepth || (
-        if (unit.isJava) imp.depth == symbolDepth && imp.isExplicitImport(name)
+        if (thisContext.unit.isJava) imp.depth == symbolDepth && imp.isExplicitImport(name)
         else foreignDefined
       )
 
@@ -1386,7 +1467,7 @@ trait Contexts { self: Analyzer =>
         else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
           impSym = NoSymbol
         // Try to reconcile them before giving up, at least if the def is not visible
-        else if (foreignDefined && reconcileAmbiguousImportAndDef(name, impSym, defSym))
+        else if (foreignDefined && thisContext.reconcileAmbiguousImportAndDef(name, impSym, defSym))
           impSym = NoSymbol
         // Otherwise they are irreconcilably ambiguous
         else
@@ -1415,13 +1496,13 @@ trait Contexts { self: Analyzer =>
           // actually used.
           val other = lookupImport(imp2, requireExplicit = !importCursor.sameDepth)
 
-          def imp1wins(): Unit = { importCursor.advanceImp2() }
-          def imp2wins(): Unit = { impSym = other; importCursor.advanceImp1Imp2() }
+          @inline def imp1wins(): Unit = { importCursor.advanceImp2() }
+          @inline def imp2wins(): Unit = { impSym = other; importCursor.advanceImp1Imp2() }
           if (!other.exists) // imp1 wins; drop imp2 and continue.
             imp1wins()
           else if (importCursor.imp2Wins) // imp2 wins; drop imp1 and continue.
             imp2wins()
-          else resolveAmbiguousImport(name, imp1, imp2) match {
+          else thisContext.resolveAmbiguousImport(name, imp1, imp2) match {
             case Some(imp) => if (imp eq imp1) imp1wins() else imp2wins()
             case _         => lookupError = ambiguousImports(imp1, imp2)
           }
@@ -1431,70 +1512,6 @@ trait Contexts { self: Analyzer =>
       }
       else finish(EmptyTree, NoSymbol)
     }
-
-    final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
-      val sym = pre.member(name).filter(qualifies)
-      val preSym = pre.typeSymbol
-      if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
-      else {
-        // In Java code, static innner classes, which we model as members of the companion object,
-        // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
-        val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
-        toSearch.iterator.map { bc =>
-          val pre1 = bc.typeOfThis
-          val found = pre1.decl(name)
-          found.filter(qualifies) match {
-            case NoSymbol =>
-              val companionModule = companionSymbolOf(pre1.typeSymbol, this)
-              val pre2 = companionModule.typeOfThis
-              val found = pre2.decl(name).filter(qualifies)
-              found match {
-                case NoSymbol => NoJavaMemberFound
-                case sym => (pre2, sym)
-              }
-            case sym => (pre1, sym)
-          }
-        }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
-      }
-    }
-
-    final def lookupCompanionInIncompleteOwner(original: Symbol): Symbol = {
-      // Must have both a class and module symbol, so that `{ class C; def C }` or `{ type T; object T }` are not companions.
-      def isCompanion(sym: Symbol): Boolean =
-        (original.isModule && sym.isClass || sym.isModule && original.isClass) && sym.isCoDefinedWith(original)
-      lookupSibling(original, original.name.companionName).filter(isCompanion)
-    }
-
-    final def lookupSibling(original: Symbol, name: Name): Symbol = {
-      /* Search scopes in current and enclosing contexts for the definition of `symbol` */
-      def lookupScopeEntry(symbol: Symbol): ScopeEntry = {
-        var res: ScopeEntry = null
-        var ctx = this
-        while (res == null && ctx.outer != ctx) {
-          val s = ctx.scope lookupSymbolEntry symbol
-          if (s != null)
-            res = s
-          else
-            ctx = ctx.outer
-        }
-        res
-      }
-
-      // Must be owned by the same Scope, to ensure that in
-      // `{ class C; { ...; object C } }`, the class is not seen as a companion of the object.
-      lookupScopeEntry(original) match {
-        case null => NoSymbol
-        case entry =>
-          entry.owner.lookupNameInSameScopeAs(original, name)
-      }
-    }
-
-    def isPackageOwnedInDifferentUnit(s: Symbol): Boolean =
-      if (s.isOverloaded) s.alternatives.exists(isPackageOwnedInDifferentUnit)
-      else (s.isDefinedInPackage && (
-           !currentRun.compiles(s)
-        || unit.exists && s.sourceFile != unit.source.file)
-      )
   }
 
   /** A `Context` focussed on an `Import` tree */
@@ -1720,7 +1737,7 @@ trait Contexts { self: Analyzer =>
       var result: Symbol = NoSymbol
       var renamed = false
       var selectors = tree.selectors
-      def current = selectors.head
+      @inline def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name.toTermName))
           result = qual.tpe.nonLocalMember( // #2733: consider only non-local members for imports

@@ -230,6 +230,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with Annotatable[Symbol]
              with Attachable {
+    protected[this] final var _rawname = initName
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
@@ -244,16 +245,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // Rename as little as possible.  Enforce invariants on all renames.
     type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
 
-    // Abstract here so TypeSymbol and TermSymbol can have a private[this] field
-    // with the proper specific type.
-    def rawname: NameType
-    def name: NameType
+    final def rawname: NameType = _rawname.asInstanceOf[NameType]
+    final def name: NameType = if (needsFlatClasses) flattenedName else _rawname.asInstanceOf[NameType]
     def name_=(n: Name): Unit = {
       if (shouldLogAtThisPhase) {
         def msg = s"In $owner, renaming $name -> $n"
         if (isSpecialized) debuglog(msg) else log(msg)
       }
     }
+    protected[this] def flattenedName: NameType = rawname
     def asNameType(n: Name): NameType
 
     // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
@@ -262,12 +262,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _rawowner = if (initOwner eq null) this else initOwner
     private[this] var _rawflags: Long = _
 
-    def rawowner = _rawowner
-    def rawflags = _rawflags
+    final def rawowner = _rawowner
+    final def rawflags = _rawflags
 
     rawatt = initPos
 
-    val id = nextId() // identity displayed when -uniqid
+    final val id = nextId() // identity displayed when -uniqid
     //assert(id != 3390, initName)
 
     private[this] var _validTo: Period = NoPeriod
@@ -840,7 +840,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDelambdafyTarget  = isArtifact && isMethod && hasAttachment[DelambdafyTarget.type]
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
-    final def needsFlatClasses    = phase.flatClasses && (rawowner ne NoSymbol) && !rawowner.isPackageClass
+    final def needsFlatClasses    = phase.flatClasses && (rawowner ne NoSymbol) && !rawowner.isPackageClass && !isMethod
 
     // TODO introduce a flag for these?
     final def isPatternTypeVariable: Boolean =
@@ -2820,11 +2820,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     type TypeOfClonedSymbol = TermSymbol
 
-    private[this] var _rawname: TermName = initName
-    def rawname = _rawname
-    def name = {
-      _rawname
-    }
     override def name_=(name: Name): Unit = {
       if (name != rawname) {
         super.name_=(name)   // logging
@@ -2947,7 +2942,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for module symbols */
   class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) with ModuleSymbolApi {
-    private[this] var flatname: TermName = null
+    private[this] var flatname: TermName = _
 
     override def associatedFile = moduleClass.associatedFile
     override def associatedFile_=(f: AbstractFile): Unit = { moduleClass.associatedFile = f }
@@ -2959,14 +2954,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }
-    override def name: TermName = {
-      if (!isMethod && needsFlatClasses) {
-        if (flatname eq null)
-          flatname = nme.flattenedName(rawowner, rawname)
+    override protected[this] def flattenedName: TermName = {
+      if (flatname eq null)
+        flatname = nme.flattenedName(rawowner, rawname)
 
-        flatname
-      }
-      else rawname
+      flatname
     }
   }
   implicit val ModuleSymbolTag = ClassTag[ModuleSymbol](classOf[ModuleSymbol])
@@ -3084,15 +3076,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   abstract class TypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends Symbol(initOwner, initPos, initName) with TypeSymbolApi {
     privateWithin = NoSymbol
-    private[this] var _rawname: TypeName = initName
 
     type TypeOfClonedSymbol >: Null <: TypeSymbol
     // cloneSymbolImpl still abstract in TypeSymbol.
 
-    def rawname = _rawname
-    def name = {
-      _rawname
-    }
     final def asNameType(n: Name) = n.toTypeName
 
     override def isNonClassType = true
@@ -3377,14 +3364,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (needsFlatClasses) rawowner.owner else rawowner
     }
 
-    override def name: TypeName = {
-      if (needsFlatClasses) {
-        if (flatname eq null)
-          flatname = tpnme.flattenedName(rawowner, rawname)
-
-        flatname
-      }
-      else rawname
+    override protected[this] def flattenedName: TypeName = {
+      if (flatname eq null)
+        flatname = tpnme.flattenedName(rawowner, rawname)
+      flatname
     }
 
     /** A symbol carrying the self type of the class as its type */
@@ -3581,8 +3564,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type TypeOfClonedSymbol = NoSymbol
 
     def asNameType(n: Name) = n.toTermName
-    def rawname = nme.NO_NAME
-    def name = nme.NO_NAME
     override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
     // Syncnote: no need to synchronize this, because NoSymbol's initialization is triggered by JavaUniverse.init
