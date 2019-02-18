@@ -169,8 +169,10 @@ package concurrent {
      */
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
-    final def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
-      blocking(awaitable.ready(atMost)(AwaitPermission))
+    final def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = awaitable match {
+      case f: Future[T] if f.isCompleted => awaitable
+      case _ => blocking(awaitable.ready(atMost)(AwaitPermission))
+    }
 
     /**
      * Await and return the result (of type `T`) of an `Awaitable`.
@@ -193,7 +195,9 @@ package concurrent {
      * @throws IllegalArgumentException if `atMost` is [[scala.concurrent.duration.Duration.Undefined Duration.Undefined]]
      */
     @throws(classOf[Exception])
-    final def result[T](awaitable: Awaitable[T], atMost: Duration): T =
-      blocking(awaitable.result(atMost)(AwaitPermission))
+    final def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable match {
+      case f: Future[T] if f.isCompleted => f.value.get.get
+      case _ => blocking(awaitable.result(atMost)(AwaitPermission))
+    }
   }
 }
