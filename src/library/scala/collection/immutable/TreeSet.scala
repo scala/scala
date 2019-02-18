@@ -18,6 +18,9 @@ import mutable.{Builder, ReusableBuilder}
 import immutable.{RedBlackTree => RB}
 import scala.collection.generic.DefaultSerializable
 
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
+
 
 /** This class implements immutable sorted sets using a tree.
   *
@@ -113,6 +116,18 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   def iterator: Iterator[A] = RB.keysIterator(tree)
 
   def iteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import scala.collection.convert.impl._
+    type T = RB.Tree[A, Any]
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => IntBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.key.asInstanceOf[Int])
+      case StepperShape.LongValue   => LongBinaryTreeStepper.from[T]  (size, tree, _.left, _.right, _.key.asInstanceOf[Long])
+      case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T](size, tree, _.left, _.right, _.key.asInstanceOf[Double])
+      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[B, T](size, tree, _.left, _.right, _.key.asInstanceOf[B]))
+    }
+    s.asInstanceOf[S with EfficientSubstep]    
+  }
 
   /** Checks if this set contains element `elem`.
     *

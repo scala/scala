@@ -16,6 +16,9 @@ package collection.mutable
 import collection.{SortedIterableFactory, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
 import collection.mutable.{RedBlackTree => RB}
 
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
+
 import java.lang.String
 
 import scala.collection.generic.DefaultSerializable
@@ -51,11 +54,23 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
     */
   def this()(implicit ord: Ordering[A]) = this(RB.Tree.empty)(ord)
 
-  def iterator: collection.Iterator[A] = RB.keysIterator(tree)
-
   override def sortedIterableFactory: SortedIterableFactory[TreeSet] = TreeSet
 
+  def iterator: collection.Iterator[A] = RB.keysIterator(tree)
+
   def iteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import scala.collection.convert.impl._
+    type T = RB.Node[A, Null]
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => IntBinaryTreeStepper.from[T]   (size, tree.root, _.left, _.right, _.key.asInstanceOf[Int])
+      case StepperShape.LongValue   => LongBinaryTreeStepper.from[T]  (size, tree.root, _.left, _.right, _.key.asInstanceOf[Long])
+      case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T](size, tree.root, _.left, _.right, _.key.asInstanceOf[Double])
+      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[B, T](size, tree.root, _.left, _.right, _.key.asInstanceOf[B]))
+    }
+    s.asInstanceOf[S with EfficientSubstep]    
+  }
 
   def addOne(elem: A): this.type = {
     RB.insert(tree, elem, null)
