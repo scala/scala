@@ -4,8 +4,7 @@ import scala.concurrent.duration.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
-
-
+import java.util.concurrent.ForkJoinPool
 
 class FutureTests extends MinimalScalaTest {
 
@@ -37,7 +36,7 @@ class FutureTests extends MinimalScalaTest {
   "A future with custom ExecutionContext" should {
     "shouldHandleThrowables" in {
       val ms = new concurrent.TrieMap[Throwable, Unit]
-      implicit val ec = scala.concurrent.ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(1), {
+      implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(new ForkJoinPool(1), {
         t =>
         ms.addOne((t, ()))
       })
@@ -53,22 +52,24 @@ class FutureTests extends MinimalScalaTest {
       }
 
       val latch = new TestLatch
+      val endLatch = new TestLatch(4)
       val f2 = Future {
         Await.ready(latch, 5 seconds)
         "success"
       }
 
-      f2 foreach { _ => throw new ThrowableTest("dispatcher foreach") }
-      f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher onComplete"); case _ => }
+      f2 foreach { _ => endLatch.countDown(); throw new ThrowableTest("dispatcher foreach") }
+      f2 onComplete { case Success(_) => endLatch.countDown(); throw new ThrowableTest("dispatcher onComplete"); case _ => endLatch.countDown() }
 
       latch.open()
 
       Await.result(f2, defaultTimeout) mustBe ("success")
 
-      f2 foreach { _ => throw new ThrowableTest("current thread foreach") }
-      f2 onComplete { case Success(_) => throw new ThrowableTest("current thread onComplete"); case _ => }
+      f2 foreach { _ => endLatch.countDown(); throw new ThrowableTest("current thread foreach") }
+      f2 onComplete { case Success(_) => endLatch.countDown(); throw new ThrowableTest("current thread onComplete"); case _ => endLatch.countDown() }
 
       Await.result(f2 map { s => s.toUpperCase }, defaultTimeout) mustBe ("SUCCESS")
+      waitForIt(endLatch.isOpen)
 
       ms.size mustBe 4
       val msgs = ms.keysIterator.map(_.getMessage).toSet

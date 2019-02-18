@@ -1,15 +1,12 @@
 
-
-
 import scala.collection._
 import scala.concurrent._
 import scala.concurrent.duration.Duration
-import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
-
+import java.util.concurrent.{TimeoutException, CountDownLatch, TimeUnit}
 
 object Test {
 
-  val DefaultTimeout = Duration(60, TimeUnit.SECONDS)
+  val DefaultTimeout = Duration(5, TimeUnit.SECONDS)
 
   def main(args: Array[String]): Unit = {
     (new FutureTests).check()
@@ -35,7 +32,7 @@ trait Output {
 }
 
 
-trait MinimalScalaTest extends Output with Features {
+trait MinimalScalaTest extends Output with Features with Vigil {
 
   val throwables = mutable.ArrayBuffer[Throwable]()
 
@@ -86,6 +83,32 @@ trait MinimalScalaTest extends Output with Features {
   def checkType[T: Manifest, S](in: Future[T], refmanifest: Manifest[S]): Boolean = manifest[T] == refmanifest
 }
 
+trait Vigil {
+  def waitForIt(terminated: => Boolean): Unit = {
+    val limit = 5
+    var n = 1
+    var (dormancy, factor) = (250L, 4)
+    var period = 0L
+    var done = false
+    var ended = false
+    while (!done && n < limit) {
+      try {
+        ended = terminated
+        if (ended) {
+          done = true
+        } else {
+          Thread.sleep(dormancy)
+          period += dormancy
+        }
+      } catch {
+        case _: InterruptedException => done = true
+      }
+      n += 1
+      dormancy *= factor
+    }
+    assert(ended, s"Expired after dormancy period $period waiting for termination condition")
+  }
+}
 
 object TestLatch {
   val DefaultTimeout = Test.DefaultTimeout
@@ -115,4 +138,3 @@ class TestLatch(count: Int = 1) extends Awaitable[Unit] {
   }
 
 }
-
