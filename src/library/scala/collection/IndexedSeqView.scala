@@ -13,6 +13,8 @@
 package scala
 package collection
 
+import java.util.concurrent.atomic.AtomicReferenceArray
+
 
 /** View defined in terms of indexing a range */
 trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A] { self =>
@@ -38,6 +40,8 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   def concat[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(prefix, this)
+
+  override def cached: IndexedSeqView[A] = new IndexedSeqView.Cached[A](this)
 }
 
 object IndexedSeqView {
@@ -164,6 +168,40 @@ object IndexedSeqView {
     @throws[IndexOutOfBoundsException]
     def apply(i: Int): A = underlying(lo + i)
     def length: Int = len
+  }
+
+  private object Cached {
+    private[Cached] final val uncomputed = new AnyRef
+    private[Cached] final val computing = new AnyRef
+  }
+
+  @SerialVersionUID(3L)
+  class Cached[A](underlying: SomeIndexedSeqOps[A]) extends AbstractIndexedSeqView[A] {
+    private val _cache = {
+      val arr = Array.fill[AnyRef](underlying.length)(Cached.uncomputed)
+      new AtomicReferenceArray[AnyRef](arr)
+    }
+
+    @throws[IndexOutOfBoundsException]
+    def apply(i: Int): A = {
+      if (i < 0 || i >= underlying.length) throw new IndexOutOfBoundsException(i.toString)
+
+      var res = _cache.get(i)
+      if (res eq Cached.uncomputed) {
+        // Try to replace `uncomputed` with `computing`, indicating to other
+        //  threads that we are the one computing the value. If the CAS fails,
+        //  a different thread is computing the value.
+        if (_cache.compareAndSet(i, Cached.uncomputed, Cached.computing)) {
+          res = underlying(i).asInstanceOf[AnyRef]
+          _cache.set(i, res)
+        } else res = Cached.computing
+      }
+      while (res eq Cached.computing) res = _cache.get(i) // spin until it's finished
+      res.asInstanceOf[A]
+    }
+
+    def length: Int = underlying.length
+    override def cached: IndexedSeqView[A] = this
   }
 }
 
