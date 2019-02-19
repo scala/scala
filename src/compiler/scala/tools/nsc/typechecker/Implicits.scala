@@ -987,16 +987,16 @@ trait Implicits {
 
       /** Sorted list of eligible implicits.
        */
-      val eligible = {
-        val matches = iss flatMap { is =>
-          val result = is filter (info => checkValid(info.sym) && survives(info))
-          shadower addInfos is
-          result
-        }
 
-        // most frequent one first
-        matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+      val eligible: mutable.ArrayBuffer[ImplicitInfo] = new mutable.ArrayBuffer[ImplicitInfo]()
+      iss.foreach { is =>
+        is.foreach { info =>
+          if (checkValid(info.sym) && survives(info))
+            eligible += info
+        }
+        shadower addInfos is
       }
+
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
@@ -1012,9 +1012,14 @@ trait Implicits {
       lazy val wildPtNotInstantiable =
         wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
 
-      @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
-        case Nil                          => acc
-        case firstPending :: otherPending =>
+      @tailrec private def rankImplicits(
+        pending: Iterator[ImplicitInfo],
+        acc: List[(SearchResult, ImplicitInfo)]
+      ): List[(SearchResult, ImplicitInfo)] =
+        if (pending.hasNext) {
+          val firstPending = pending.next()
+          val otherPending = pending
+
           def firstPendingImproves(alt: ImplicitInfo) =
             firstPending == alt || (
               try improves(firstPending, alt)
@@ -1048,11 +1053,15 @@ trait Implicits {
               }
               rankImplicits(pendingImprovingBest, (newBest, firstPending) :: acc)
           }
-      }
+      } else acc
 
       /** Returns all eligible ImplicitInfos and their SearchResults in a map.
        */
-      def findAll() = linkedMapFrom(eligible)(x => try typedImplicit(x, ptChecked = false, isLocalToCallsite) finally context.reporter.clearAll())
+      def findAll(): mutable.LinkedHashMap[ImplicitInfo, SearchResult] =
+        linkedMapFrom(eligible.iterator){ x =>
+          try typedImplicit(x, ptChecked = false, isLocalToCallsite)
+          finally context.reporter.clearAll()
+        }
 
       /** Returns the SearchResult of the best match.
        */
@@ -1060,7 +1069,7 @@ trait Implicits {
         // After calling rankImplicits, the least frequent matching one is first and
         // earlier elems may improve on later ones, but not the other way.
         // So if there is any element not improved upon by the first it is an error.
-        rankImplicits(eligible, Nil) match {
+        rankImplicits(eligible.iterator, Nil) match {
           case Nil            => ()
           case (chosenResult, chosenInfo) :: rest =>
             rest find { case (_, alt) => !improves(chosenInfo, alt) } match {

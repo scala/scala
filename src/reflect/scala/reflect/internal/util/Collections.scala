@@ -215,8 +215,10 @@ trait Collections {
   final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
     Map[A1, B](xs map (x => (x, f(x))): _*)
   }
-  final def linkedMapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): mutable.LinkedHashMap[A1, B] = {
-    mutable.LinkedHashMap[A1, B](xs map (x => (x, f(x))): _*)
+  final def linkedMapFrom[A, A1 >: A, B](xs: Iterator[A])(f: A => B): mutable.LinkedHashMap[A1, B] = {
+    val res = mutable.LinkedHashMap.empty[A1, B]
+    xs.foreach(x => res +=  x -> f(x) )
+    res
   }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {
