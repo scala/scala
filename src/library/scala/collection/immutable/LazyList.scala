@@ -225,6 +225,18 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   @inline private[this] def knownIsEmpty: Boolean = stateEvaluated && (isEmpty: @inline)
   @inline private def knownNonEmpty: Boolean = stateEvaluated && !(isEmpty: @inline)
 
+  /**
+    * Force the lazy list to evaluate all the elements. If it is a circular lazy list then the cycle is detected
+    * and the evaluation of further elements stops.
+    * Eg :- {{{
+    *   val ring: LazyList[Int] = 1 #:: 2 #:: 3 #:: ring
+    *   ring.force
+    *   ring.toString
+    * }}}
+    * gives 'LazyList(1, 2, 3, ...)'
+    *
+    * @return The lazy list that called the function.
+    */
   def force: this.type = {
     // Use standard 2x 1x iterator trick for cycle detection ("those" is slow one)
     var these, those: LazyList[A] = this
