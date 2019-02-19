@@ -50,6 +50,7 @@ trait Contexts { self: Analyzer =>
     val javaAndScalaList = JavaLangPackage :: ScalaPackage :: Nil
     val completeList     = JavaLangPackage :: ScalaPackage :: PredefModule :: Nil
   }
+  private lazy val NoJavaMemberFound = (NoType, NoSymbol)
 
   def ambiguousImports(imp1: ImportInfo, imp2: ImportInfo) =
     LookupAmbiguous(s"it is imported twice in the same scope by\n$imp1\nand $imp2")
@@ -1024,7 +1025,7 @@ trait Contexts { self: Analyzer =>
       imp.importedSymbol(name, requireExplicit, record) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
     private[Contexts] def requiresQualifier(s: Symbol): Boolean = (
-         s.owner.isClass
+          s.owner.isClass
       && !s.owner.isPackageClass
       && !s.isTypeParameterOrSkolem
       && !s.isExistentiallyBound
@@ -1074,6 +1075,31 @@ trait Contexts { self: Analyzer =>
       }
     }
 
+    final def javaFindMember(pre: Type, name: Name, qualifies: Symbol => Boolean): (Type, Symbol) = {
+      val sym = pre.member(name).filter(qualifies)
+      val preSym = pre.typeSymbol
+      if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
+      else {
+        // In Java code, static innner classes, which we model as members of the companion object,
+        // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
+        val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
+        toSearch.iterator.map { bc =>
+          val pre1 = bc.typeOfThis
+          val found = pre1.decl(name)
+          found.filter(qualifies) match {
+            case NoSymbol =>
+              val pre2 = companionSymbolOf(pre1.typeSymbol, this).typeOfThis
+              val found = pre2.decl(name).filter(qualifies)
+              found match {
+                case NoSymbol => NoJavaMemberFound
+                case sym => (pre2, sym)
+              }
+            case sym => (pre1, sym)
+          }
+        }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
+      }
+    }
+
   } //class Context
 
   /** Find the symbol of a simple name starting from this context.
@@ -1107,7 +1133,7 @@ trait Contexts { self: Analyzer =>
         }
       )
       def finishDefSym(sym: Symbol, pre0: Type): NameLookup =
-        if (thisContext.requiresQualifier(sym))
+        if (!thisContext.unit.isJava && thisContext.requiresQualifier(sym))
           finish(gen.mkAttributedQualifier(pre0), sym)
         else
           finish(EmptyTree, sym)
@@ -1119,15 +1145,19 @@ trait Contexts { self: Analyzer =>
         )
       )
       def lookupInPrefix(name: Name) = {
-        val sym = pre.member(name).filter(qualifies)
-        def isNonPackageNoModuleClass(sym: Symbol) =
-          sym.isClass && !sym.isModuleClass && !sym.isPackageClass
-        if (!sym.exists && thisContext.unit.isJava && isNonPackageNoModuleClass(pre.typeSymbol)) {
-          // TODO factor out duplication with Typer::inCompanionForJavaStatic
-          val pre1 = companionSymbolOf(pre.typeSymbol, thisContext).typeOfThis
-          pre1.member(name).filter(qualifies).andAlso(_ => pre = pre1)
-        } else sym
+        if (thisContext.unit.isJava) {
+          thisContext.javaFindMember(pre, name, qualifies) match {
+            case (_, NoSymbol) =>
+              NoSymbol
+            case (pre1, sym) =>
+              pre = pre1
+              sym
+          }
+        } else {
+          pre.member(name).filter(qualifies)
+        }
       }
+
       def accessibleInPrefix(s: Symbol) =
         thisContext.isAccessible(s, pre, superAccess = false)
 
@@ -1237,8 +1267,7 @@ trait Contexts { self: Analyzer =>
       }
 
       // At this point only one or the other of defSym and impSym might be set.
-      if (defSym.exists)
-        finishDefSym(defSym, pre)
+      if (defSym.exists) finishDefSym(defSym, pre)
       else if (impSym.exists) {
         // If we find a competitor imp2 which imports the same name, possible outcomes are:
         //

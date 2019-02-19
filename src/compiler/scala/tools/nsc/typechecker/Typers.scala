@@ -554,7 +554,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  @return modified tree and new prefix type
      */
     private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): (Tree, Type) =
-      if (context.isInPackageObject(sym, pre.typeSymbol)) {
+      if (!unit.isJava && context.isInPackageObject(sym, pre.typeSymbol)) {
         if (pre.typeSymbol == ScalaPackageClass && sym.isTerm) {
           // short cut some aliases. It seems pattern matching needs this
           // to notice exhaustiveness and to generate good code when
@@ -671,16 +671,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    /** The member with given name of given qualifier tree */
-    def member(qual: Tree, name: Name) = {
+    /** The member with given name of given qualifier type */
+    def member(qual: Type, name: Name): Symbol = {
       def callSiteWithinClass(clazz: Symbol) = context.enclClass.owner hasTransOwner clazz
-      val includeLocals = qual.tpe match {
+      val includeLocals = qual match {
         case ThisType(clazz) if callSiteWithinClass(clazz)                => true
         case SuperType(clazz, _) if callSiteWithinClass(clazz.typeSymbol) => true
         case _                                                            => phase.next.erasedTypes
       }
-      if (includeLocals) qual.tpe member name
-      else qual.tpe nonLocalMember name
+      if (includeLocals) qual member name
+      else qual nonLocalMember name
     }
 
     def silent[T](op: Typer => T,
@@ -1160,7 +1160,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def vanillaAdapt(tree: Tree) = {
         def applyPossible = {
-          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)
+          def applyMeth = member(adaptToName(tree, nme.apply).tpe, nme.apply)
           def hasPolymorphicApply = applyMeth.alternatives exists (_.tpe.typeParams.nonEmpty)
           def hasMonomorphicApply = applyMeth.alternatives exists (_.tpe.paramSectionCount > 0)
 
@@ -1364,7 +1364,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  If no conversion is found, return `qual` unchanged.
      */
     def adaptToName(qual: Tree, name: Name) =
-      if (member(qual, name) != NoSymbol) qual
+      if (member(qual.tpe, name) != NoSymbol) qual
       else adaptToMember(qual, HasMember(name))
 
     private def validateNoCaseAncestor(clazz: Symbol) = {
@@ -3382,6 +3382,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!context.owner.isPackageClass)
           checkNoDoubleDefs(scope)
 
+        // Note that Java units don't have synthetics, but there's no point in making a special case (for performance or correctness),
+        // as we only type check Java units when running Scaladoc on Java sources.
         addSynthetics(stats1, scope)
       }
     }
@@ -5011,11 +5013,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // For Java, instance and static members are in the same scope, but we put the static ones in the companion object
       // so, when we can't find a member in the class scope, check the companion
-      def inCompanionForJavaStatic(pre: Type, cls: Symbol, name: Name): Symbol =
-        if (!(context.unit.isJava && cls.isClass && !cls.isModuleClass)) NoSymbol else {
-          val companion = companionSymbolOf(cls, context)
-          if (!companion.exists) NoSymbol
-          else member(gen.mkAttributedRef(pre, companion), name) // assert(res.isStatic, s"inCompanionForJavaStatic($pre, $cls, $name) = $res ${res.debugFlagString}")
+      def inCompanionForJavaStatic(cls: Symbol, name: Name): Symbol =
+        if (!(context.unit.isJava && cls.isClass)) NoSymbol else {
+          context.javaFindMember(cls.typeOfThis, name, _ => true)._2
         }
 
       /* Attribute a selection where `tree` is `qual.name`.
@@ -5034,7 +5034,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             wrapErrors(t, (_.typed1(t, mode, pt)))
           }
 
-          val sym = tree.symbol orElse member(qual, name) orElse inCompanionForJavaStatic(qual.tpe.prefix, qual.symbol, name)
+          val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.symbol, name)
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an
@@ -5151,7 +5151,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (name.isTypeName) {
             val qualTyped = typedTypeSelectionQualifier(tree.qualifier, WildcardType)
             val qualStableOrError =
-              if (qualTyped.isErrorTyped || treeInfo.admitsTypeSelection(qualTyped)) qualTyped
+              if (qualTyped.isErrorTyped || unit.isJava || treeInfo.admitsTypeSelection(qualTyped)) qualTyped
               else UnstableTreeError(qualTyped)
             typedSelect(tree, qualStableOrError, name)
           } else {
@@ -5205,6 +5205,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
           // ignore current variable scope in patterns to enforce linearity
         val startContext = if (mode.typingPatternOrTypePat) context.outer else context
+
+        def asTypeName = if (mode.inAll(MonoQualifierModes) && unit.isJava && name.isTermName) {
+          startContext.lookupSymbol(name.toTypeName, qualifies).symbol
+        } else NoSymbol
+
         val nameLookup   = tree.symbol match {
           case NoSymbol   => startContext.lookupSymbol(name, qualifies)
           case sym        => LookupSucceeded(EmptyTree, sym)
@@ -5214,7 +5219,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case LookupAmbiguous(msg)         => issue(AmbiguousIdentError(tree, name, msg))
           case LookupInaccessible(sym, msg) => issue(AccessError(tree, sym, context, msg))
           case LookupNotFound               =>
-            inEmptyPackage orElse lookupInRoot(name) match {
+            asTypeName orElse inEmptyPackage orElse lookupInRoot(name) match {
               case NoSymbol => issue(SymbolNotFoundError(tree, name, context.owner, startContext))
               case sym      => typed1(tree setSymbol sym, mode, pt)
                 }
