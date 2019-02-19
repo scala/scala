@@ -105,12 +105,21 @@ class ListBuffer[A]
     aliased = false
   }
 
-  def addOne(elem: A): this.type = {
+  final def addOne(elem: A): this.type = {
     ensureUnaliased()
     val last1 = new ::[A](elem, Nil)
     if (len == 0) first = last1 else last0.next = last1
     last0 = last1
     len += 1
+    this
+  }
+
+  // Overridden for performance (to avoid virtual call to addOne
+  override final def addAll(xs: IterableOnce[A]): this.type = {
+    val it = xs.iterator
+    while (it.hasNext) {
+      addOne(it.next())
+    }
     this
   }
 
