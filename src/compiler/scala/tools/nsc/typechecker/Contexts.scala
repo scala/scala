@@ -922,11 +922,12 @@ trait Contexts { self: Analyzer =>
         withOuter(Nil)
       } else if (implicitsRunId != currentRunId) {
         implicitsRunId = CycleMarker
-        implicits(nextOuter) match {
-          case None =>
+        // this has to match nullable
+        implicitsOrNull(nextOuter) match {
+          case null =>
             implicitsRunId = NoRunId
             withOuter(Nil)
-          case Some(is) =>
+          case is =>
             implicitsRunId = currentRunId
             implicitsCache = is
             withOuter(is)
@@ -935,29 +936,29 @@ trait Contexts { self: Analyzer =>
       else withOuter(implicitsCache)
     }
 
-    /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
-    private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
+    /** @return null if a cycle is detected, or a non-null infos containing the in-scope implicits at this context */
+    private def implicitsOrNull(nextOuter: Context): List[ImplicitInfo] = {
       val firstImport = this.firstImport
       if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
-        if (!owner.isInitialized) None
+        if (!owner.isInitialized) null
         else savingEnclClass(this) {
           // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
           //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
           //     remedied nonetheless.
-          Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
+          collectImplicits(owner.thisType.implicitMembers, owner.thisType)
         }
       } else if (scope != nextOuter.scope && !owner.isPackageClass) {
         debuglog("collect local implicits " + scope.toList)//DEBUG
-        Some(collectImplicits(scope, NoPrefix))
+        collectImplicits(scope, NoPrefix)
       } else if (firstImport != nextOuter.firstImport) {
         if (isDeveloper)
           assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
-        Some(collectImplicitImports(firstImport.get))
+        collectImplicitImports(firstImport.get)
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
         val pre = owner.packageObject.typeOfThis
-        Some(collectImplicits(pre.implicitMembers, pre))
-      } else SomeOfNil
+        collectImplicits(pre.implicitMembers, pre)
+      } else Nil
     }
 
     //
