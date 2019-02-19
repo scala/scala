@@ -306,7 +306,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         // scala/bug#9390 emit lifted methods that don't require a `this` reference as STATIC
         // delambdafy targets are excluded as they are made static by `transformFunction`.
         // a synchronized method cannot be static (`methodReferencesThis` will not see the implicit this reference due to `this.synchronized`)
-        if (!dd.symbol.hasFlag(STATIC | SYNCHRONIZED) && !methodReferencesThis(dd.symbol)) {
+        if (!dd.symbol.hasFlag(STATIC) && !methodReferencesThis(dd.symbol)) {
           dd.symbol.setFlag(STATIC)
           dd.symbol.removeAttachment[mixer.NeedStaticImpl.type]
         }
@@ -391,6 +391,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     private var currentMethod: Symbol = NoSymbol
 
     override def traverse(tree: Tree) = tree match {
+      case _: DefDef if tree.symbol.hasFlag(SYNCHRONIZED) =>
+        thisReferringMethods add tree.symbol
       case DefDef(_, _, _, _, _, _) if tree.symbol.isDelambdafyTarget || tree.symbol.isLiftedMethod =>
         // we don't expect defs within defs. At this phase trees should be very flat
         if (currentMethod.exists) devWarning("Found a def within a def at a phase where defs are expected to be flattened out.")

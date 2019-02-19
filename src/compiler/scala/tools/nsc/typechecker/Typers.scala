@@ -137,7 +137,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (`owner` tells where the type occurs).
      */
     def privates[T <: Tree](typer: Typer, owner: Symbol, tree: T): T =
-      check(typer, owner, EmptyScope, WildcardType, tree)
+      if (owner.isJavaDefined) tree else check(typer, owner, EmptyScope, WildcardType, tree)
 
     private def check[T <: Tree](typer: Typer, owner: Symbol, scope: Scope, pt: Type, tree: T): T = {
       this.owner = owner
@@ -1792,7 +1792,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           checkStablePrefixClassType(parent)
 
           if (psym != superclazz) {
-            if (psym.isTrait) {
+            if (context.unit.isJava && psym.isJavaAnnotation) {
+              // allowed
+            } else if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
                 pending += ParentSuperSubclassError(parent, superclazz, ps.head.typeSymbol, psym)
@@ -4096,8 +4098,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
-      val localSyms = mutable.LinkedHashSet.empty[Symbol]
-      val boundSyms = mutable.Set.empty[Symbol]
+      val localSyms = mutable.LinkedHashSet[Symbol]()
+      val boundSyms = mutable.LinkedHashSet[Symbol]()
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
