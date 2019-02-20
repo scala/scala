@@ -36,12 +36,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   protected def nextId() = { ids += 1; ids }
 
-  /** Used for deciding in the IDE whether we can interrupt the compiler */
-  //protected var activeLocks = 0
-
-  /** Used for debugging only */
-  //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
-
   /** Used to keep track of the recursion depth on locked symbols */
   private[this] var _recursionTable = immutable.Map.empty[Symbol, Int]
   def recursionTable = _recursionTable
@@ -589,16 +583,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       } else {
         _rawflags |= LOCKED
         true
-//        activeLocks += 1
-//        lockedSyms += this
       }
     }
 
     // Unlock a symbol
     private[scala] def unlock() = {
       if ((_rawflags & LOCKED) != 0L) {
-//        activeLocks -= 1
-//        lockedSyms -= this
         _rawflags &= ~LOCKED
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
@@ -1521,41 +1511,42 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
      */
-    def info: Type = try {
+    def info: Type = {
       var cnt = 0
-      while (validTo == NoPeriod) {
-        assert(infos ne null, this.name)
-        assert(infos.prev eq null, this.name)
-        val tp = infos.info
-
-        if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
-          lock {
-            setInfo(ErrorType)
-            throw CyclicReference(this, tp)
-          }
-        } else {
-          _rawflags |= LOCKED
-          // TODO another commented out lines - this should be solved in one way or another
-//          activeLocks += 1
- //         lockedSyms += this
-        }
-        val current = phase
-        try {
-          assertCorrectThread()
-          phase = phaseOf(infos.validFrom)
-          tp.complete(this)
-        } finally {
-          unlock()
-          phase = current
-        }
+      while (_validTo == NoPeriod) {
+        completeInfo()
         cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (cnt == 3) abort(s"no progress in completing $this: $tp")
+        def abortNoProgress() = abort(s"no progress in completing $this: ${infos.info}")
+        if (cnt == 3) abortNoProgress()
       }
       rawInfo
     }
-    catch {
+
+    private def completeInfo(): Unit = try {
+      assert(infos ne null, this.name)
+      assert(infos.prev eq null, this.name)
+      val tp = infos.info
+
+      if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
+        lock {
+          setInfo(ErrorType)
+          throw CyclicReference(this, tp)
+        }
+      } else {
+        _rawflags |= LOCKED
+      }
+      val current = phase
+      try {
+        assertCorrectThread()
+        phase = phaseOf(infos.validFrom)
+        tp.complete(this)
+      } finally {
+        unlock()
+        phase = current
+      }
+    } catch {
       case ex: CyclicReference =>
         devWarning("... hit cycle trying to complete " + this.fullLocationString)
         throw ex
@@ -1611,80 +1602,86 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
-      var infos = this.infos
-      assert(infos != null)
-      val curPeriod = currentPeriod
-      val curPid = phaseId(curPeriod)
+      // OPT: hoisting the outer reference reduces the bytecode size of this method a little which makes it more
+      //      likely to inline into hot callers of .info
+      val outer = Symbols.this
 
-      if (validTo != NoPeriod) {
+      var infos = this.infos
+      outer.assert(infos != null)
+
+      if (_validTo != NoPeriod) {
+        val curPeriod = outer.currentPeriod
+        val curPid = outer.phaseId(curPeriod)
+
         // skip any infos that concern later phases
-        while (curPid < phaseId(infos.validFrom) && infos.prev != null)
+        while (curPid < outer.phaseId(infos.validFrom) && infos.prev != null)
           infos = infos.prev
 
-        if (validTo < curPeriod) {
-          assertCorrectThread()
+        if (_validTo < curPeriod) {
           // adapt any infos that come from previous runs
-          val current = phase
+          val curPhase = outer.phase
           try {
-            infos = adaptInfos(infos)
+            if (infos != null && outer.runId(infos.validFrom) != outer.currentRunId) {
+              // scala/bug#8871 Discard all but the first element of type history. Specialization only works in the resident
+              // compiler / REPL if re-run its info transformer in this run to correctly populate its
+              // per-run caches, e.g. typeEnv
+              infos = adaptInfo(infos.oldest)
+            }
 
             //assert(runId(validTo) == currentRunId, name)
             //assert(runId(infos.validFrom) == currentRunId, name)
 
-            if (validTo < curPeriod) {
-              var itr = nextFrom(phaseId(validTo))
-              infoTransformers = itr; // caching optimization
-              while (itr.pid != NoPhase.id && itr.pid < current.id) {
-                phase = phaseWithId(itr.pid)
-                val info1 = itr.transform(this, infos.info)
-                if (info1 ne infos.info) {
-                  infos = TypeHistory(currentPeriod + 1, info1, infos)
-                  this.infos = infos
-                }
-                _validTo = currentPeriod + 1 // to enable reads from same symbol during info-transform
-                itr = itr.next
-              }
-              _validTo = if (itr.pid == NoPhase.id) curPeriod
-                         else period(currentRunId, itr.pid)
+            if (_validTo < curPeriod) {
+              infos = transformInfos(infos, curPhase, curPeriod)
             }
           } finally {
-            phase = current
+            outer.phase = curPhase
           }
         }
       }
       infos.info
     }
 
-    // adapt to new run in fsc.
-    private def adaptInfos(infos: TypeHistory): TypeHistory = {
-      assert(isCompilerUniverse)
-      if (infos == null || runId(infos.validFrom) == currentRunId) {
-        infos
-      } else if (infos ne infos.oldest) {
-        // scala/bug#8871 Discard all but the first element of type history. Specialization only works in the resident
-        // compiler / REPL if re-run its info transformer in this run to correctly populate its
-        // per-run caches, e.g. typeEnv
-        adaptInfos(infos.oldest)
-      } else {
-        val prev1 = adaptInfos(infos.prev)
-        if (prev1 ne infos.prev) prev1
-        else {
-          val pid = phaseId(infos.validFrom)
-
-          _validTo = period(currentRunId, pid)
-          phase   = phaseWithId(pid)
-
-          val info1 = adaptToNewRunMap(infos.info)
-          if (info1 eq infos.info) {
-            infos.validFrom = validTo
-            infos
-          } else {
-            this.infos = TypeHistory(validTo, info1, prev1)
-            this.infos
-          }
+    private def transformInfos(infos0: TypeHistory, curPhase: Phase, curPeriod: Period): TypeHistory = {
+      assertCorrectThread()
+      var infos = infos0
+      var itr = nextFrom(phaseId(_validTo))
+      infoTransformers = itr; // caching optimization
+      while (itr.pid != NoPhase.id && itr.pid < curPhase.id) {
+        phase = phaseWithId(itr.pid)
+        val info1 = itr.transform(this, infos.info)
+        if (info1 ne infos.info) {
+          infos = TypeHistory(currentPeriod + 1, info1, infos)
+          this.infos = infos
         }
+        _validTo = currentPeriod + 1 // to enable reads from same symbol during info-transform
+        itr = itr.next
+      }
+      _validTo = if (itr.pid == NoPhase.id) curPeriod
+      else period(currentRunId, itr.pid)
+      infos
+    }
+
+    // adapt to new run in fsc.
+    private def adaptInfo(oldest: TypeHistory): TypeHistory = {
+      assert(isCompilerUniverse)
+      assert(oldest.prev == null)
+      val pid = phaseId(oldest.validFrom)
+
+      _validTo = period(currentRunId, pid)
+      phase   = phaseWithId(pid)
+
+      val info1 = adaptToNewRunMap(oldest.info)
+      if (info1 eq oldest.info) {
+        oldest.validFrom = validTo
+        this.infos = oldest
+        oldest
+      } else {
+        this.infos = TypeHistory(validTo, info1, null)
+        this.infos
       }
     }
+
 
     /** Raises a `MissingRequirementError` if this symbol is a `StubSymbol` */
     def failIfStub(): Unit = {}
