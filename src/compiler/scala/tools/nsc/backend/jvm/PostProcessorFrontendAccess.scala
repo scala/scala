@@ -68,8 +68,6 @@ object PostProcessorFrontendAccess {
     def optUseAnalyzerCache: Boolean
 
     def optNone: Boolean
-    def optLClasspath: Boolean
-    def optLProject: Boolean
 
     def optUnreachableCode: Boolean
     def optNullnessTracking: Boolean
@@ -192,8 +190,6 @@ object PostProcessorFrontendAccess {
       val optUseAnalyzerCache: Boolean = s.optUseAnalyzerCache
 
       val optNone: Boolean = s.optNone
-      val optLClasspath: Boolean = s.optLClasspath
-      val optLProject: Boolean = s.optLProject
 
       val optUnreachableCode: Boolean = s.optUnreachableCode
       val optNullnessTracking: Boolean = s.optNullnessTracking

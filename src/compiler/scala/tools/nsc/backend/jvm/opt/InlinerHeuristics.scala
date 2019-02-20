@@ -82,10 +82,8 @@ abstract class InlinerHeuristics extends PerRunInit {
   }
 
   def canInlineFromSource(sourceFilePath: Option[String], calleeDeclarationClass: InternalName): Boolean = {
-    compilerSettings.optLClasspath ||
-      compilerSettings.optLProject && sourceFilePath.isDefined ||
-      inlineSourceMatcher.get.allowFromSources && sourceFilePath.isDefined ||
-      inlineSourceMatcher.get.allow(calleeDeclarationClass)
+    inlineSourceMatcher.get.allowFromSources && sourceFilePath.isDefined ||
+    inlineSourceMatcher.get.allow(calleeDeclarationClass)
   }
 
   /**
