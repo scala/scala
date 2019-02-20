@@ -106,7 +106,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   def getInfoMessage(global: Global): String = {
     import settings._
-    import Properties.{ versionString, copyrightString } //versionFor
+    import Properties.{versionString, copyrightString}
     def versionFor(command: String) = f"Scala $command $versionString -- $copyrightString"
 
     if (version)            versionFor(cmdDesc)

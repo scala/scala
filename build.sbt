@@ -886,6 +886,13 @@ lazy val root: Project = (project in file("."))
       GenerateAnyVals.run(dir.getAbsoluteFile)
       state
     },
+    // ../docs.scala-lang/_data/compiler-options.yml
+    commands += Command.command("generateDocsData") { state =>
+      val dir = (((baseDirectory in ThisBuild).value) / ".." / "docs.scala-lang" / "_data")
+      val target = if (dir.exists) dir else ((baseDirectory in ThisBuild).value)
+      GenerateDocsData.run(target.getAbsoluteFile)
+      state
+    },
 
     testJDeps := TestJDeps.testJDepsImpl.value,
 
