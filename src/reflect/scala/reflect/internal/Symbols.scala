@@ -407,10 +407,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *    pre.memberType(m)
      */
-    final def newOverloaded(pre: Type, alternatives: List[Symbol]): TermSymbol = (
-      newTermSymbol(alternatives.head.name.toTermName, alternatives.head.pos, OVERLOADED)
-        setInfo OverloadedType(pre, alternatives)
-    )
+    final def newOverloaded(pre: Type, alternatives: List[Symbol]): TermSymbol = {
+      val triedCookingFlag = if (alternatives.forall(_.hasFlag(TRIEDCOOKING))) TRIEDCOOKING else 0L
+
+      newTermSymbol(alternatives.head.name.toTermName, alternatives.head.pos, OVERLOADED | triedCookingFlag) setInfo OverloadedType(pre, alternatives)
+    }
 
     final def newErrorValue(name: TermName): TermSymbol =
       newTermSymbol(name, pos, SYNTHETIC | IS_ERROR) setInfo ErrorType
@@ -1717,8 +1718,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info  // force the current info
       if (isJavaDefined || isType && owner.isJavaDefined)
         this modifyInfo rawToExistential
-      else if (isOverloaded)
-        alternatives withFilter (_.isJavaDefined) foreach (_ modifyInfo rawToExistential)
+      else if (isOverloaded) {
+        for (alt <- alternatives) {
+          alt.setFlag(TRIEDCOOKING)
+          if (alt.isJavaDefined) alt.modifyInfo(rawToExistential)
+        }
+      }
 
       this
     }
