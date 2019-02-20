@@ -306,14 +306,6 @@ trait ScalaSettings extends AbsScalaSettings
     val lInline = Choice("l:inline",
       "Enable cross-method optimizations (note: inlining requires -opt-inline-from): " + inlineChoices.mkString("", ",", "."),
       expandsTo = inlineChoices)
-
-    val lProject = Choice(
-      "l:project",
-      "[deprecated, use -opt:l:inline, -opt-inline-from] Enable cross-method optimizations within the current project.")
-
-    val lClasspath = Choice(
-      "l:classpath",
-      "[deprecated, use -opt:l:inline, -opt-inline-from] Enable cross-method optimizations across the entire classpath.")
   }
 
   // We don't use the `default` parameter of `MultiChoiceSetting`: it specifies the default values
@@ -323,11 +315,7 @@ trait ScalaSettings extends AbsScalaSettings
     name = "-opt",
     helpArg = "optimization",
     descr = "Enable optimizations",
-    domain = optChoices).withPostSetHook(s => {
-    import optChoices._
-    if (!s.value.contains(inline) && (s.value.contains(lProject) || s.value.contains(lClasspath)))
-        s.enable(lInline)
-    })
+    domain = optChoices)
 
   private def optEnabled(choice: optChoices.Choice) = {
     !opt.contains(optChoices.lNone) && {
@@ -349,10 +337,6 @@ trait ScalaSettings extends AbsScalaSettings
   def optAssumeModulesNonNull    = optEnabled(optChoices.assumeModulesNonNull)
   def optAllowSkipClassLoading   = optEnabled(optChoices.allowSkipClassLoading)
   def optInlinerEnabled          = optEnabled(optChoices.inline)
-
-  // deprecated inliner levels
-  def optLProject                = optEnabled(optChoices.lProject)
-  def optLClasspath              = optEnabled(optChoices.lClasspath)
 
   def optBuildCallGraph          = optInlinerEnabled || optClosureInvocations
   def optAddToBytecodeRepository = optBuildCallGraph || optInlinerEnabled || optClosureInvocations
@@ -549,12 +533,6 @@ trait ScalaSettings extends AbsScalaSettings
       case warnings => Some("Conflicting compiler settings were detected. Some settings will be ignored.\n" + warnings.mkString("\n"))
     }
     */
-
-    if (opt.value.contains(optChoices.lProject))
-      Some("-opt:l:project is deprecated, use -opt:l:inline and -opt-inline-from")
-    else if (opt.value.contains(optChoices.lClasspath))
-      Some("-opt:l:classpath is deprecated, use -opt:l:inline and -opt-inline-from")
-    else
-      None
+    None
   }
 }
