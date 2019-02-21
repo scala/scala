@@ -27,12 +27,14 @@ If you need some help with your PR at any time, please feel free to @-mention an
 |                                                                                                 | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/adriaanm"      height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
- <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | build, developer docs, community build, Jenkins, library, the welcome-to-Scala experience |
+ <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | getting started, build, developer docs, community build, Jenkins, library |
  <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
+ <img src="https://avatars.githubusercontent.com/szeiger"       height="50px" title="Stefan Zeiger"/>        | [`@szeiger`](https://github.com/szeiger)             | collections, build |
+ <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | back end, optimizer, named & default arguments              |
  <img src="https://avatars.githubusercontent.com/Ichoran"       height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
- <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
+ <img src="https://avatars.githubusercontent.com/viktorklang"   height="50px" title="Viktor Klang"/>         | [`@viktorklang`](https://github.com/viktorklang)     | concurrency, futures |
+ <img src="https://avatars.githubusercontent.com/axel22"        height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | concurrency, parallel collections, specialization |
  <img src="https://avatars.githubusercontent.com/dragos"        height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
- <img src="https://avatars.githubusercontent.com/axel22"        height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | collections, concurrency, specialization |
  <img src="https://avatars.githubusercontent.com/janekdb"       height="50px" title="Janek Bogucki"/>        | [`@janekdb`](https://github.com/janekdb)             | documentation |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
