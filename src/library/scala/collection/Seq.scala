@@ -766,7 +766,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     */
   def indices: Range = Range(0, length)
 
-  override final def sizeCompare(_size: Int): Int = lengthCompare(_size)
+  override final def sizeCompare(otherSize: Int): Int = lengthCompare(otherSize)
 
   /** Compares the length of this $coll to a test value.
     *
