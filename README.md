@@ -31,10 +31,6 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
  <img src="https://avatars.githubusercontent.com/Ichoran"       height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
  <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
- <img src="https://avatars.githubusercontent.com/VladUreche"    height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization, Scaladoc tool |
- <img src="https://avatars.githubusercontent.com/densh"         height="50px" title="Denys Shabalin"/>       | [`@densh`](https://github.com/densh)                 | quasiquotes, parser, string interpolators, macros in standard library |
- <img src="https://avatars.githubusercontent.com/xeno-by"       height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
- <img src="https://avatars.githubusercontent.com/heathermiller" height="50px" title="Heather Miller"/>      | [`@heathermiller`](https://github.com/heathermiller)  | documentation |
  <img src="https://avatars.githubusercontent.com/dragos"        height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
  <img src="https://avatars.githubusercontent.com/axel22"        height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | collections, concurrency, specialization |
  <img src="https://avatars.githubusercontent.com/janekdb"       height="50px" title="Janek Bogucki"/>        | [`@janekdb`](https://github.com/janekdb)             | documentation |
