@@ -397,6 +397,16 @@ trait Collections {
 
   @tailrec final def sumSize(xss: List[List[_]], acc: Int): Int =
     if (xss.isEmpty) acc else sumSize(xss.tail, acc + xss.head.size)
+
+  final def fillList[T](n: Int)(t: T): List[T] = {
+    var i = 0
+    var result: List[T] = Nil
+    while (i < n) {
+      result = t :: result
+      i += 1
+    }
+    result
+  }
 }
 
 object Collections extends Collections
