@@ -1,1 +1,3 @@
 warning: there were 5 deprecation warnings (since 2.13.0); re-run with -deprecation for details
+FutureTests$$anon$2: do not rethrow
+FutureTests$$anon$3: expected

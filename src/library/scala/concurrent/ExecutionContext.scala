@@ -139,9 +139,29 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
+  final def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
 
-  object Implicits {
+  /**
+   * This `ExecutionContext` steals execution time from other threads, by having its
+   * `Runnable`s run on the `Thread` which calls `execute` and then yielding back control
+   * to the caller after *all* its `Runnables` have been executed.
+   * Nested invocations of `execute` will be trampolined to prevent uncontrolled stack space growth.
+   *
+   * WARNING: Do *not* call any blocking code in the `Runnable`s submitted to this `ExecutionContext`
+   * as it will prevent progress by other enqueued `Runnable`s and the calling `Thread`.
+   * Only execute logic which will quickly return control to the caller.
+   * Symptoms of misuse of this `ExecutionContext` include, but are not limited to, deadlocks
+   * and severe performance problems.
+   *
+   * Any `NonFatal` or `InterruptedException`s will be reported to the `defaultReporter`.
+   */
+  final object parasitic extends ExecutionContextExecutor with BatchingExecutor {
+    override final def submitForExecution(runnable: Runnable): Unit = runnable.run()
+    override final def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
+    override final def reportFailure(t: Throwable): Unit = defaultReporter(t)
+  }
+
+  final object Implicits {
     /**
      * The implicit global `ExecutionContext`. Import `global` when you want to provide the global
      * `ExecutionContext` implicitly.
@@ -150,7 +170,7 @@ object ExecutionContext {
      * the thread pool uses a target number of worker threads equal to the number of
      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
      */
-    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+    implicit lazy final val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.

@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 @Fork(value = 1, jvmArgsAppend = Array("-Xmx1G", "-Xms1G", "-server", "-XX:+AggressiveOpts", "-XX:+UseCompressedOops", "-XX:+AlwaysPreTouch", "-XX:+UseCondCardMark"))
 @Threads(value = 1)
 abstract class AbstractBaseFutureBenchmark {
-  // fjp = ForkJoinPool, fix = FixedThreadPool, fie = FutureInternalExecutor, gbl = GlobalEC
+  // fjp = ForkJoinPool, fix = FixedThreadPool, fie = parasiticEC, gbl = GlobalEC
   @Param(Array[String]("fjp", "fix", "fie", "gbl"))
   final var pool: String = _
 
@@ -65,7 +65,7 @@ abstract class AbstractBaseFutureBenchmark {
         System.setProperty("scala.concurrent.context.maxThreads", threads.toString)
         ExecutionContext.global
       case "fie" =>
-        scala.concurrent.Future.InternalCallbackExecutor
+        scala.concurrent.ExecutionContext.parasitic
     }
   }
 

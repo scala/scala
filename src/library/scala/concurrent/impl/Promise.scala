@@ -12,7 +12,6 @@
 
 package scala.concurrent.impl
 import scala.concurrent.{ Batchable, ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, OnCompleteRunnable }
-import Future.InternalCallbackExecutor
 import scala.concurrent.duration.Duration
 import scala.annotation.{ tailrec, switch }
 import scala.util.control.{ NonFatal, ControlThrowable }
@@ -200,7 +199,7 @@ private[concurrent] object Promise {
             if (atMost <= Duration.Zero) null
             else {
               val l = new CompletionLatch[T]()
-              onComplete(l)(InternalCallbackExecutor)
+              onComplete(l)(ExecutionContext.parasitic)
 
               if (atMost.isFinite)
                 l.tryAcquireSharedNanos(1, atMost.toNanos)
@@ -261,7 +260,7 @@ private[concurrent] object Promise {
         if (!state.isInstanceOf[Try[T]]) {
           val resolved = if (other.isInstanceOf[DefaultPromise[T]]) other.asInstanceOf[DefaultPromise[T]].value0 else other.value.orNull
           if (resolved ne null) tryComplete0(state, resolved)
-          else other.onComplete(this)(InternalCallbackExecutor)
+          else other.onComplete(this)(ExecutionContext.parasitic)
         }
       }
 
@@ -365,7 +364,7 @@ private[concurrent] object Promise {
     override final def toString: String = "ManyCallbacks"
   }
 
-  private[this] final val Noop = new Transformation[Nothing, Nothing](Xform_noop, null, InternalCallbackExecutor)
+  private[this] final val Noop = new Transformation[Nothing, Nothing](Xform_noop, null, ExecutionContext.parasitic)
 
   /**
    * A Transformation[F, T] receives an F (it is a Callback[F]) and applies a transformation function to that F,
