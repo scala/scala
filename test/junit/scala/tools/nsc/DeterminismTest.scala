@@ -263,6 +263,19 @@ class DeterminismTest {
     test(List(javaAnnots) :: code :: Nil)
   }
 
+  @Test def testPackedType(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          | class C {
+          |   def foo = { object A; object B; object C; object D; object E; object F; def foo[A](a: A) = (a, a); foo((A, B, C, D, E))}
+          | }
+          |
+      """.stripMargin)
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
   private def test(groups: List[List[SourceFile]]): Unit = {
     val referenceOutput = Files.createTempDirectory("reference")
