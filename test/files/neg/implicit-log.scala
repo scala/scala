@@ -1,4 +1,4 @@
-/* scalac: -Xlog-implicits -Xsource:3 -Xfatal-warnings */
+/* scalac: -Xsource:3 -Xfatal-warnings */
 
 package foo
 

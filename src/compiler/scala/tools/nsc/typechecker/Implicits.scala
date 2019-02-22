@@ -33,7 +33,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *
  *  @author  Martin Odersky
  */
-trait Implicits {
+trait Implicits extends splain.SplainData {
   self: Analyzer =>
 
   import global._
@@ -105,12 +105,14 @@ trait Implicits {
     if (shouldPrint)
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
+    ImplicitErrors.startSearch(pt)
     val dpt = if (isView) pt else dropByName(pt)
     val isByName = dpt ne pt
     val search = new ImplicitSearch(tree, dpt, isView, implicitSearchContext, pos, isByName)
     pluginsNotifyImplicitSearch(search)
     val result = search.bestImplicit
     pluginsNotifyImplicitSearchResult(result)
+    ImplicitErrors.finishSearch(result.isSuccess, pt)
 
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
       implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
@@ -146,7 +148,7 @@ trait Implicits {
     if (result.isFailure && !silent) {
       val err = context.reporter.firstError
       val errPos = err.map(_.errPos).getOrElse(pos)
-      val errMsg = err.map(_.errMsg).getOrElse("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
+      val errMsg = err.map(_.errMsg).getOrElse("implicit search has failed. to find out the reason, turn on -Vimplicits")
       onError(errPos, errMsg)
     }
     result.tree
@@ -443,8 +445,6 @@ trait Implicits {
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
-      if (settings.XlogImplicits)
-        reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
     /** Is implicit info `info1` better than implicit info `info2`?
@@ -906,7 +906,8 @@ trait Implicits {
             // bounds check on the expandee tree
             itree3.attachments.get[MacroExpansionAttachment] match {
               case Some(MacroExpansionAttachment(exp @ TypeApply(fun, targs), _)) =>
-                checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targs.map(_.tpe), "inferred ")
+                val withinBounds = checkBounds(exp, NoPrefix, NoSymbol, fun.symbol.typeParams, targs.map(_.tpe), "inferred ")
+                if (!withinBounds) splainPushNonconformantBonds(pt, tree, targs.map(_.tpe), undetParams, None)
               case _ => ()
             }
 
@@ -953,6 +954,7 @@ trait Implicits {
 
             context.reporter.firstError match {
               case Some(err) =>
+                splainPushImplicitSearchFailure(itree3, pt, err)
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
                 val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams)
@@ -1492,17 +1494,15 @@ trait Implicits {
             // so that if we find one, we could convert it to whatever universe we need by the means of the `in` method
             // if no tag is found in scope, we end up here, where we ask someone to materialize the tag for us
             // however, since the original search was about a tag with no particular prefix, we cannot proceed
-            // this situation happens very often, so emitting an error message here (even if only for -Xlog-implicits) would be too much
+            // this situation happens very often, so emitting an error message here (even if only for -Vimplicits) would be too much
             //return failure(tp, "tag error: unsupported prefix type %s (%s)".format(pre, pre.kind))
             return SearchFailure
         }
       )
       // todo. migrate hardcoded materialization in Implicits to corresponding implicit macros
       val materializer = atPos(pos.focus)(gen.mkMethodCall(TagMaterializers(tagClass), List(tp), if (prefix != EmptyTree) List(prefix) else List()))
-      if (settings.XlogImplicits) reporter.echo(pos, "materializing requested %s.%s[%s] using %s".format(pre, tagClass.name, tp, materializer))
       if (context.macrosEnabled) success(materializer)
       // don't call `failure` here. if macros are disabled, we just fail silently
-      // otherwise -Xlog-implicits will spam the long with zillions of "macros are disabled"
       // this is ugly but temporary, since all this code will be removed once I fix implicit macros
       else SearchFailure
     }

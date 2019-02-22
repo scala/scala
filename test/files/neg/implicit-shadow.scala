@@ -1,5 +1,3 @@
-// scalac: -Xlog-implicits
-//
 object Test {
 	import B._, C._
 
