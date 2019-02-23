@@ -527,7 +527,7 @@ abstract class RefChecks extends Transform {
                   kindErrors.toList.mkString("\n", ", ", ""))
             }
           }
-          else if (low.isAbstractType && lowType.isVolatile && !highInfo.bounds.hi.isVolatile)
+          else if (low.isAbstractType && lowType.isVolatile && !highInfo.upperBound.isVolatile)
             overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
         }
         def checkOverrideTerm() {
@@ -992,7 +992,7 @@ abstract class RefChecks extends Transform {
       }
       def underlyingClass(tp: Type): Symbol = {
         val sym = tp.widen.typeSymbol
-        if (sym.isAbstractType) underlyingClass(sym.info.bounds.hi)
+        if (sym.isAbstractType) underlyingClass(sym.info.upperBound)
         else sym
       }
       val actual   = underlyingClass(other.tpe)
@@ -1359,7 +1359,7 @@ abstract class RefChecks extends Transform {
       // types of the value parameters
       mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
+      member.typeParams.map(_.info.upperBound.widen) foreach checkAccessibilityOfType
     }
 
     private def checkByNameRightAssociativeDef(tree: DefDef) {

@@ -207,14 +207,14 @@ private[internal] trait TypeConstraints {
       if (tvar.constr.inst == NoType) {
         val up = if (variance.isContravariant) !upper else upper
         tvar.constr.inst = null
-        val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
+        val bound: Type = if (up) tparam.info.upperBound else tparam.info.lowerBound
         //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
         var cyclic = bound contains tparam
         foreach3(tvars, tparams, variances)((tvar2, tparam2, variance2) => {
           val ok = (tparam2 != tparam) && (
             (bound contains tparam2)
-              ||  up && (tparam2.info.bounds.lo =:= tparam.tpeHK)
-              || !up && (tparam2.info.bounds.hi =:= tparam.tpeHK)
+              ||  up && (tparam2.info.lowerBound =:= tparam.tpeHK)
+              || !up && (tparam2.info.upperBound =:= tparam.tpeHK)
             )
           if (ok) {
             if (tvar2.constr.inst eq null) cyclic = true
@@ -228,7 +228,7 @@ private[internal] trait TypeConstraints {
               tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
             }
             for (tparam2 <- tparams)
-              tparam2.info.bounds.lo.dealias match {
+              tparam2.info.lowerBound.dealias match {
                 case TypeRef(_, `tparam`, _) =>
                   debuglog(s"$tvar addHiBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
@@ -240,7 +240,7 @@ private[internal] trait TypeConstraints {
               tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
             }
             for (tparam2 <- tparams)
-              tparam2.info.bounds.hi.dealias match {
+              tparam2.info.upperBound.dealias match {
                 case TypeRef(_, `tparam`, _) =>
                   debuglog(s"$tvar addLoBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
                   tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)

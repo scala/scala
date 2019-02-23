@@ -163,6 +163,8 @@ trait Types
     override def widen = underlying.widen
     override def typeOfThis = underlying.typeOfThis
     override def bounds = underlying.bounds
+    override def lowerBound = underlying.lowerBound
+    override def upperBound = underlying.upperBound
     override def parents = underlying.parents
     override def prefix = underlying.prefix
     override def decls = underlying.decls
@@ -408,7 +410,9 @@ trait Types
      *  for a reference denoting an abstract type, its bounds,
      *  for all other types, a TypeBounds type all of whose bounds are this type.
      */
-    def bounds: TypeBounds = TypeBounds(this, this)
+    def bounds: TypeBounds = TypeBounds(lowerBound, upperBound)
+    def lowerBound: Type = this
+    def upperBound: Type = this
 
     /** For a class or intersection type, its parents.
      *  For a TypeBounds type, the parents of its hi bound.
@@ -1151,6 +1155,8 @@ trait Types
    *       BoundedWildcardTypes.
    */
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type with BoundedWildcardTypeApi {
+    override def upperBound: Type = bounds.hi
+    override def lowerBound: Type = bounds.lo
     override def isWildcard = true
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
@@ -1310,6 +1316,8 @@ trait Types
     def supertype = hi
     override def isTrivial: Boolean = lo.isTrivial && hi.isTrivial
     override def bounds: TypeBounds = this
+    override def upperBound: Type = hi
+    override def lowerBound: Type = lo
     def containsType(that: Type) = that match {
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
@@ -2090,6 +2098,8 @@ trait Types
     override def baseClasses = relativeInfo.baseClasses
     override def decls       = relativeInfo.decls
     override def bounds      = relativeInfo.bounds
+    override def upperBound  = relativeInfo.upperBound
+    override def lowerBound  = relativeInfo.lowerBound
 
     // TODO: this deviates from the spec "The base types of an abstract type are the base types of its upper bound."
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = bounds.hi.baseTypeSeq prepend this
@@ -2671,9 +2681,8 @@ trait Types
      *  to represent a higher-kinded type parameter
      *  wrap lo&hi in polytypes to bind variables
      */
-    override def bounds: TypeBounds =
-      TypeBounds(typeFun(typeParams, resultType.bounds.lo),
-                 typeFun(typeParams, resultType.bounds.hi))
+    override def lowerBound: Type = typeFun(typeParams, resultType.lowerBound)
+    override def upperBound: Type = typeFun(typeParams, resultType.upperBound)
 
     override def isHigherKinded = !typeParams.isEmpty
 
@@ -2710,7 +2719,9 @@ trait Types
     override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
     override def isTrivial = false
-    override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
+    override def lowerBound = maybeRewrap(underlying.lowerBound)
+    override def upperBound = maybeRewrap(underlying.upperBound)
+
     override def parents = underlying.parents map maybeRewrap
     @deprecated("No longer used in the compiler implementation", since = "2.12.3")
     override def boundSyms = quantified.toSet
@@ -3460,6 +3471,8 @@ trait Types
       case TypeBounds(_: this.type, _: this.type) => TypeBounds(this, this)
       case oftp                                   => oftp
     }
+    override def lowerBound: Type = bounds.lo
+    override def upperBound: Type = bounds.hi
 
     // ** Replace formal type parameter symbols with actual type arguments. * /
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {

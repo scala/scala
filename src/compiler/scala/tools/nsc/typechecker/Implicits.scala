@@ -354,7 +354,7 @@ trait Implicits {
             sym.tpe match {
               case MethodType(params, restpe)
               if (params forall (_.tpe.isInstanceOf[BoundedWildcardType])) =>
-                Some((sym.name, params map (_.tpe.bounds.lo), restpe))
+                Some((sym.name, params map (_.tpe.lowerBound), restpe))
               case _ => None
             }
           case _ => None
@@ -462,8 +462,8 @@ trait Implicits {
       def core(tp: Type): Type = tp.dealiasWiden match {
         case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
         case AnnotatedType(annots, tp)          => core(tp)
-        case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+        case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
+        case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
         case _                                  => tp
       }
       def stripped(tp: Type): Type = {
@@ -624,7 +624,7 @@ trait Implicits {
           else pt match {
             case tr @ TypeRef(pre, sym, args) =>
               if (sym.isAliasType) loop(tp, pt.dealias)
-              else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
+              else if (sym.isAbstractType) loop(tp, pt.lowerBound)
               else {
                 val ptFunctionArity = functionArity(pt)
                 ptFunctionArity > 0 && hasLength(params, ptFunctionArity) && {
@@ -668,7 +668,7 @@ trait Implicits {
         // We only know enough to rule out a subtype relationship if the left hand side is a class.
         case tr1@TypeRef(_, sym1, args1) if sym1.isClass =>
           val tp2Wide =
-            tp2.dealiasWiden.bounds.hi match {
+            tp2.dealiasWiden.upperBound match {
               case et: ExistentialType => et.underlying // OPT meant as cheap approximation of skolemizeExistential?
               case tp                  => tp
             }
@@ -1195,7 +1195,7 @@ trait Implicits {
               // SLS 2.12, section 7.2:
 
               //  - if `T` is an abstract type, the parts of its upper bound;
-              getParts(tp.bounds.hi)
+              getParts(tp.upperBound)
 
               if (isScala213) {
                 //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
@@ -1382,7 +1382,7 @@ trait Implicits {
                  else findSubManifest(pre) :: suffix): _*)
             } else if (sym.isExistentiallyBound && full) {
               manifestFactoryCall("wildcardType", tp,
-                                  findManifest(tp.bounds.lo), findManifest(tp.bounds.hi))
+                                  findManifest(tp.lowerBound), findManifest(tp.upperBound))
             }
             // looking for a manifest of a type parameter that hasn't been inferred by now,
             // can't do much, but let's not fail
@@ -1447,7 +1447,7 @@ trait Implicits {
     private def materializeImplicit(pt: Type): SearchResult =
       pt match {
         case TypeRef(_, sym, _) if sym.isAbstractType =>
-          materializeImplicit(pt.dealias.bounds.lo) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.bounds.lo == pt)
+          materializeImplicit(pt.dealias.lowerBound) // #3977: use pt.dealias, not pt (if pt is a type alias, pt.lowerBound == pt)
         case pt @ TypeRef(pre, sym, arg :: Nil) =>
           sym match {
             case sym if ManifestSymbols(sym) => manifestOfType(arg, sym)
