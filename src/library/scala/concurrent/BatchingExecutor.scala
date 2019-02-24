@@ -255,6 +255,12 @@ private[concurrent] trait BatchingExecutor extends Executor {
       if (i < BatchingExecutorStatics.syncPreBatchDepth) {
         tl.set(java.lang.Integer.valueOf(i + 1))
         try submitForExecution(runnable) // User code so needs to be try-finally guarded here
+        catch {
+          case ie: InterruptedException =>
+            reportFailure(ie) // TODO: Handle InterruptedException differently?
+          case f if NonFatal(f) =>
+            reportFailure(f)
+        }
         finally tl.set(b)
       } else {
         val batch = new SyncBatch(runnable)
