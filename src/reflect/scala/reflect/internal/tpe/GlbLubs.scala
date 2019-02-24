@@ -501,11 +501,17 @@ private[internal] trait GlbLubs {
             val glbThisType = glbRefined.typeSymbol.thisType
             def glbsym(proto: Symbol): Symbol = {
               val prototp = glbThisType.memberInfo(proto)
-              val syms = for (t <- ts;
-                              alt <- (t.nonPrivateMember(proto.name).alternatives)
-                              if glbThisType.memberInfo(alt) matches prototp
-              ) yield alt
-              val symtypes = syms map glbThisType.memberInfo
+              val symtypes: List[Type] = {
+                var res = mutable.ListBuffer.empty[Type]
+                ts foreach { t =>
+                  t.nonPrivateMember(proto.name).alternatives foreach { alt =>
+                    val mi = glbThisType.memberInfo(alt)
+                    if (mi matches prototp)
+                      res += mi
+                  }
+                }
+                res.toList
+              }
               assert(!symtypes.isEmpty)
               proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
                 if (proto.isTerm) glb(symtypes, depth.decr)
