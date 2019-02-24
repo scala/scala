@@ -560,9 +560,12 @@ trait Infer extends Checkable {
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
       def canWarnAboutAny = {
-        val loBounds = tparams map (_.info.lowerBound)
-        def containsAny(t: Type) = (t contains AnyClass) || (t contains AnyValClass) || (t contains ObjectClass)
-        val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
+        val coll = new ContainsAnyCollector(List(AnyClass, AnyValClass, ObjectClass))
+        def containsAny(t: Type) = t.dealiasWidenChain.exists(coll.collect)
+        val hasAny = containsAny(pt) || containsAny(restpe) ||
+          formals.exists(containsAny) ||
+          argtpes.exists(containsAny) ||
+          tparams.exists(x => containsAny(x.info.lowerBound))
         !hasAny
       }
       if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
