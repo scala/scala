@@ -1,0 +1,6 @@
+symbolic-ops-deprecation.scala:4: warning: multi-parameter symbolic method is deprecated: instead, change the parameters into a tuple or use a non-symbolic name
+  def +=(a: Int, b: Int): Foo
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

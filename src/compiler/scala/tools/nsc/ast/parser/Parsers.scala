@@ -2794,6 +2794,14 @@ self =>
             }
             expr()
           }
+        def symbolicMethodMsg(what: String) =
+          s"multi-parameter symbolic method is $what: instead, change the parameters into a tuple or use a non-symbolic name"
+        def checkMultiParameterSymbolicMethod(): Unit =
+          if (vparamss.size == 1 && vparamss.head.size > 1 && name.isSymbolicName) {
+            if (currentRun.isScala214) syntaxError(nameOffset, symbolicMethodMsg("unsupported"))
+            else deprecationWarning(nameOffset, symbolicMethodMsg("deprecated"), "2.13.0")
+          }
+        checkMultiParameterSymbolicMethod()
         DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
       signalParseProgress(result.pos)

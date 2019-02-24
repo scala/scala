@@ -2425,7 +2425,7 @@ trait Types
       hasLength(args, 2) &&
         sym.getAnnotation(ShowAsInfixAnnotationClass)
          .map(_ booleanArg 0 getOrElse true)
-         .getOrElse(!Character.isUnicodeIdentifierStart(sym.decodedName.head))
+         .getOrElse(sym.name.isSymbolicName)
 
     private[Types] def invalidateTypeRefCaches(): Unit = {
       parentsCache = null

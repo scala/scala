@@ -431,6 +431,12 @@ trait Names extends api.Names {
       newTermName(cs, 0, len)
     }
 
+    /** This name does NOT start with an underscore or a Unicode identifier letter */
+    final def isSymbolicName: Boolean = {
+      val c = decode.head
+      (c != '_') && !Character.isUnicodeIdentifierStart(c)
+    }
+
     /* TODO - reconcile/fix that encode returns a Name but
      *  decode returns a String.
      */

@@ -1,0 +1,4 @@
+symbolic-ops-removal.scala:4: error: multi-parameter symbolic method is unsupported: instead, change the parameters into a tuple or use a non-symbolic name
+  def +=(a: Int, b: Int): Foo
+      ^
+one error found
