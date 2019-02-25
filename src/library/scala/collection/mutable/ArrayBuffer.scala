@@ -189,7 +189,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     * @return modified input $coll sorted according to the ordering `ord`.
     */
   override def sortInPlace[B >: A]()(implicit ord: Ordering[B]): this.type = {
-    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]])
+    if (length > 1) scala.util.Sorting.stableSort(array.asInstanceOf[Array[B]], 0, length)
     this
   }
 }
