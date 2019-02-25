@@ -872,6 +872,10 @@ self =>
         case Parens(args) => mkNamed(args)
         case _            => right :: Nil
       }
+      def msg(what: String) = s"""multi-parameter infix notation is $what; use dot-and-parenthesis instead"""
+      if (settings.isScala214 && arguments.size > 1) {
+        deprecationWarning(right.pos.point, msg("deprecated"), "2.14.0")
+      }
       if (isExpr) {
         if (rightAssoc) {
           import symtab.Flags._

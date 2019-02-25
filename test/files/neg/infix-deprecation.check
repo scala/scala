@@ -1,0 +1,6 @@
+infix-deprecation.scala:5: warning: multi-parameter infix notation is deprecated; use dot-and-parenthesis instead
+  val im2 = scala.collection.immutable.Map("foo" -> 1) updated ("baz", 3) // not ok
+                                                               ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
