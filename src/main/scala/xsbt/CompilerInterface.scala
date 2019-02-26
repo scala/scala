@@ -54,7 +54,8 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 
 private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
     extends CachedCompiler
-    with CachedCompilerCompat {
+    with CachedCompilerCompat
+    with java.io.Closeable {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////// INITIALIZATION CODE ////////////////////////////////////////
@@ -84,6 +85,13 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   val compiler: ZincCompiler = newCompiler(command.settings, dreporter, output)
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  def close(): Unit = {
+    compiler match {
+      case c: java.io.Closeable => c.close()
+      case _                    =>
+    }
+  }
 
   def noErrors(dreporter: DelegatingReporter) = !dreporter.hasErrors && command.ok
 

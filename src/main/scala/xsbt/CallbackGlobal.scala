@@ -246,6 +246,10 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     callback0 = null
     superDropRun()
     reporter = null
+    this match {
+      case c: java.io.Closeable => c.close()
+      case _                    =>
+    }
   }
 
   // Scala 2.10.x and later
