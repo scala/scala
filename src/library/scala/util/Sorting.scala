@@ -237,34 +237,55 @@ object Sorting {
 
   // TODO: add upper bound: T <: AnyRef, propagate to callers below (not binary compatible)
   // Maybe also rename all these methods to `sort`.
-  @inline private def sort[T](a: Array[T], ord: Ordering[T]): Unit = a match {
+  @inline private def sort[T](a: Array[T], from: Int, until: Int, ord: Ordering[T]): Unit = a match {
     case _: Array[AnyRef]  =>
       // Note that runtime matches are covariant, so could actually be any Array[T] s.t. T is not primitive (even boxed value classes)
       if (a.length > 1 && (ord eq null)) throw new NullPointerException("Ordering")
-      java.util.Arrays.sort(a, ord)
-    case a: Array[Int]     => if (ord eq Ordering.Int) java.util.Arrays.sort(a) else mergeSort[Int](a, 0, a.length, ord)
-    case a: Array[Double]  => mergeSort[Double](a, 0, a.length, ord)  // Because not all NaNs are identical, stability is meaningful!
-    case a: Array[Long]    => if (ord eq Ordering.Long) java.util.Arrays.sort(a) else mergeSort[Long](a, 0, a.length, ord)
-    case a: Array[Float]   => mergeSort[Float](a, 0, a.length, ord)   // Because not all NaNs are identical, stability is meaningful!
-    case a: Array[Char]    => if (ord eq Ordering.Char) java.util.Arrays.sort(a) else mergeSort[Char](a, 0, a.length, ord)
-    case a: Array[Byte]    => if (ord eq Ordering.Byte) java.util.Arrays.sort(a) else mergeSort[Byte](a, 0, a.length, ord)
-    case a: Array[Short]   => if (ord eq Ordering.Short) java.util.Arrays.sort(a) else mergeSort[Short](a, 0, a.length, ord)
-    case a: Array[Boolean] => if (ord eq Ordering.Boolean) booleanSort(a) else mergeSort[Boolean](a, 0, a.length, ord)
+      java.util.Arrays.sort(a, from, until, ord)
+    case a: Array[Int]     => if (ord eq Ordering.Int) java.util.Arrays.sort(a) else mergeSort[Int](a, from, until, ord)
+    case a: Array[Double]  => mergeSort[Double](a, from, until, ord)  // Because not all NaNs are identical, stability is meaningful!
+    case a: Array[Long]    => if (ord eq Ordering.Long) java.util.Arrays.sort(a) else mergeSort[Long](a, from, until, ord)
+    case a: Array[Float]   => mergeSort[Float](a, from, until, ord)   // Because not all NaNs are identical, stability is meaningful!
+    case a: Array[Char]    => if (ord eq Ordering.Char) java.util.Arrays.sort(a) else mergeSort[Char](a, from, until, ord)
+    case a: Array[Byte]    => if (ord eq Ordering.Byte) java.util.Arrays.sort(a) else mergeSort[Byte](a, from, until, ord)
+    case a: Array[Short]   => if (ord eq Ordering.Short) java.util.Arrays.sort(a) else mergeSort[Short](a, from, until, ord)
+    case a: Array[Boolean] => if (ord eq Ordering.Boolean) booleanSort(a) else mergeSort[Boolean](a, from, until, ord)
     // Array[Unit] is matched as an Array[AnyRef] due to covariance in runtime matching.  Not worth catching it as a special case.
     case null => throw new NullPointerException
   }
 
-  /** Sort array `a` using the Ordering on its elements, preserving the original ordering where possible.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K: Ordering](a: Array[K]): Unit = sort(a, Ordering[K])
+  /** Sort array `a` using the Ordering on its elements, preserving the original ordering where possible.
+    * Uses `java.util.Arrays.sort` unless `K` is a primitive type. This is the same as `stableSort(a, 0, a.length)`. */
+  @`inline` def stableSort[K: Ordering](a: Array[K]): Unit = stableSort(a, 0, a.length)
+
+  /** Sort array `a` or a part of it using the Ordering on its elements, preserving the original ordering where possible.
+    * Uses `java.util.Arrays.sort` unless `K` is a primitive type.
+    *
+    * @param a The array to sort
+    * @param from The first index in the array to sort
+    * @param until The last index (exclusive) in the array to sort
+    */
+  def stableSort[K: Ordering](a: Array[K], from: Int, until: Int): Unit = sort(a, from, until, Ordering[K])
+
+  /** Sort array `a` using function `f` that computes the less-than relation for each element.
+    * Uses `java.util.Arrays.sort` unless `K` is a primitive type. This is the same as `stableSort(a, f, 0, a.length)`. */
+  @`inline` def stableSort[K](a: Array[K], f: (K, K) => Boolean): Unit = stableSort(a, f, 0, a.length)
 
   // TODO: make this fast for primitive K (could be specialized if it didn't go through Ordering)
-  /** Sort array `a` using function `f` that computes the less-than relation for each element.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
-  def stableSort[K](a: Array[K], f: (K, K) => Boolean): Unit = sort(a, Ordering fromLessThan f)
+  /** Sort array `a` or a part of it using function `f` that computes the less-than relation for each element.
+    * Uses `java.util.Arrays.sort` unless `K` is a primitive type.
+    *
+    * @param a The array to sort
+    * @param f A function that computes the less-than relation for each element
+    * @param from The first index in the array to sort
+    * @param until The last index (exclusive) in the array to sort
+    */
+  def stableSort[K](a: Array[K], f: (K, K) => Boolean, from: Int, until: Int): Unit = sort(a, from, until, Ordering fromLessThan f)
 
   /** A sorted Array, using the Ordering for the elements in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
   def stableSort[K: ClassTag: Ordering](a: scala.collection.Seq[K]): Array[K] = {
     val ret = a.toArray
-    sort(ret, Ordering[K])
+    sort(ret, 0, ret.length, Ordering[K])
     ret
   }
 
@@ -272,14 +293,14 @@ object Sorting {
   /** A sorted Array, given a function `f` that computes the less-than relation for each item in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
   def stableSort[K: ClassTag](a: scala.collection.Seq[K], f: (K, K) => Boolean): Array[K] = {
     val ret = a.toArray
-    sort(ret, Ordering fromLessThan f)
+    sort(ret, 0, ret.length, Ordering fromLessThan f)
     ret
   }
 
   /** A sorted Array, given an extraction function `f` that returns an ordered key for each item in the sequence `a`.  Uses `java.util.Arrays.sort` unless `K` is a primitive type. */
   def stableSort[K: ClassTag, M: Ordering](a: scala.collection.Seq[K], f: K => M): Array[K] = {
     val ret = a.toArray
-    sort(ret, Ordering[M] on f)
+    sort(ret, 0, ret.length, Ordering[M] on f)
     ret
   }
 }

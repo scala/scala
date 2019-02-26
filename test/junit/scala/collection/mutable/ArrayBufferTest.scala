@@ -352,5 +352,10 @@ class ArrayBufferTest {
     }
   }
 
-
+  @Test def t11417_sortInPlace: Unit = {
+    val a = ArrayBuffer(5,4,3,2,1)
+    a.trimEnd(2)
+    a.sortInPlace
+    assertEquals(List(3,4,5), a)
+  }
 }
