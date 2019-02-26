@@ -13,7 +13,6 @@
 package scala.collection
 package mutable
 
-import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
 import scala.collection.generic.DefaultSerializationProxy
 
@@ -319,6 +318,40 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   }
 
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new mutable.HashMap.DeserializationFactory[K, V](table.length, loadFactor), this)
+
+  override def filterInPlace(p: (K, V) => Boolean): this.type = {
+    if (nonEmpty) {
+      var bucket = 0
+
+      while (bucket < table.length) {
+        var head = table(bucket)
+
+        while ((head ne null) && !p(head.key, head.value)) {
+          head = head.next
+          contentSize -= 1
+        }
+
+        if (head ne null) {
+          var prev = head
+          var next = head.next
+
+          while (next ne null) {
+            if (p(next.key, next.value)) {
+              prev = next
+            } else {
+              prev.next = next.next
+              contentSize -= 1
+            }
+            next = next.next
+          }
+        }
+
+        table(bucket) = head
+        bucket += 1
+      }
+    }
+    this
+  }
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
