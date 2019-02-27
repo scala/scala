@@ -1651,7 +1651,7 @@ self =>
     def isTypedParam(t: Tree) = t.isInstanceOf[Typed]
 
     /** {{{
-     *  Expr ::= implicit Id => Expr
+     *  Expr ::= implicit Id `=>` Expr
      *  }}}
      */
 
