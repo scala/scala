@@ -1,11 +1,13 @@
 # Welcome!
-This is the official repository for the [Scala Programming Language](http://www.scala-lang.org).
+
+This is the official repository for the [Scala Programming Language](http://www.scala-lang.org)
+standard library, compiler, and language spec.
 
 # How to contribute
 
-To contribute to the Scala standard library, Scala compiler, and Scala Language Specification, please send us a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository.
+To contribute in this repo, please open a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository.
 
-We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work into our code base, to protect its open source nature.
+We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect its open source nature.
 
 For more information on building and developing the core of Scala, make sure to read
 the rest of this README!
@@ -25,17 +27,16 @@ If you need some help with your PR at any time, please feel free to @-mention an
 |                                                                                                 | username                                                       | talk to me about...                               |
 --------------------------------------------------------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
  <img src="https://avatars.githubusercontent.com/adriaanm"      height="50px" title="Adriaan Moors"/>        | [`@adriaanm`](https://github.com/adriaanm)           | type checker, pattern matcher, infrastructure, language spec |
- <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | build, developer docs, community build, Jenkins, library, the welcome-to-Scala experience |
+ <img src="https://avatars.githubusercontent.com/SethTisue"     height="50px" title="Seth Tisue"/>           | [`@SethTisue`](https://github.com/SethTisue)         | getting started, build, developer docs, community build, Jenkins, library |
  <img src="https://avatars.githubusercontent.com/retronym"      height="50px" title="Jason Zaugg"/>          | [`@retronym`](https://github.com/retronym)           | compiler performance, weird compiler bugs, Java 8 lambdas, REPL |
+ <img src="https://avatars.githubusercontent.com/szeiger"       height="50px" title="Stefan Zeiger"/>        | [`@szeiger`](https://github.com/szeiger)             | collections, build |
+ <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | back end, optimizer, named & default arguments              |
  <img src="https://avatars.githubusercontent.com/Ichoran"       height="50px" title="Rex Kerr"/>             | [`@Ichoran`](https://github.com/Ichoran)             | collections library, performance              |
- <img src="https://avatars.githubusercontent.com/lrytz"         height="50px" title="Lukas Rytz"/>           | [`@lrytz`](https://github.com/lrytz)                 | optimizer, named & default arguments              |
- <img src="https://avatars.githubusercontent.com/VladUreche"    height="50px" title="Vlad Ureche"/>          | [`@VladUreche`](https://github.com/VladUreche)       | specialization, Scaladoc tool |
- <img src="https://avatars.githubusercontent.com/densh"         height="50px" title="Denys Shabalin"/>       | [`@densh`](https://github.com/densh)                 | quasiquotes, parser, string interpolators, macros in standard library |
- <img src="https://avatars.githubusercontent.com/xeno-by"       height="50px" title="Eugene Burmako"/>       | [`@xeno-by`](https://github.com/xeno-by)             | macros and reflection |
- <img src="https://avatars.githubusercontent.com/heathermiller" height="50px" title="Heather Miller"/>      | [`@heathermiller`](https://github.com/heathermiller)  | documentation |
+ <img src="https://avatars.githubusercontent.com/viktorklang"   height="50px" title="Viktor Klang"/>         | [`@viktorklang`](https://github.com/viktorklang)     | concurrency, futures |
+ <img src="https://avatars.githubusercontent.com/axel22"        height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | concurrency, parallel collections, specialization |
  <img src="https://avatars.githubusercontent.com/dragos"        height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
- <img src="https://avatars.githubusercontent.com/axel22"        height="50px" title="Aleksandr Prokopec"/>   | [`@axel22`](https://github.com/axel22)               | collections, concurrency, specialization |
  <img src="https://avatars.githubusercontent.com/janekdb"       height="50px" title="Janek Bogucki"/>        | [`@janekdb`](https://github.com/janekdb)             | documentation |
+ <img src="https://avatars.githubusercontent.com/sjrd"          height="50px" title="Sébastien Doeraene"/>   | [`@sjrd`](https://github.com/sjrd)             | interactions with Scala.js |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
@@ -50,13 +51,13 @@ scala/
    +---/library              Scala Standard Library
    +---/reflect              Scala Reflection
    +---/compiler             Scala Compiler
-   +---/eclipse              Eclipse project files
    +---/intellij             IntelliJ project templates
 +--spec/                     The Scala language specification
 +--scripts/                  Scripts for the CI jobs (including building releases)
 +--test/                     The Scala test suite
    +---/files                Partest tests
    +---/junit                JUnit tests
+   +---/scalacheck           ScalaCheck tests
 +--build/                    [Generated] Build output directory
 ```
 
@@ -68,10 +69,9 @@ You need the following tools:
   - Java SDK. The baseline version is 8 for both 2.12.x and 2.13.x. It may be possible to use a
     later SDK for local development, but the CI will verify against the baseline
     version.
-  - sbt. We recommend the [sbt-extras](https://github.com/paulp/sbt-extras) runner
-    script. It provides sensible default jvm options (stack and heap size).
+  - sbt (sbt 0.13 on the 2.12.x branch, sbt 1 on the 2.13.x branch)
 
-Mac OS X and Linux work. Windows may work if you use Cygwin. Community help with keeping
+MacOS and Linux work. Windows may work if you use Cygwin. Community help with keeping
 the build working on Windows is appreciated.
 
 ## Tools we use
@@ -87,7 +87,7 @@ We are grateful for the following OSS licenses:
 
 During ordinary development, a new Scala build is built by the
 previously released version.  For short we call the previous release
-"starr": the stable reference Scala release.  Building with starr is
+"starr": the stable reference release.  Building with starr is
 sufficient for most kinds of changes.
 
 However, a full build of Scala (a *bootstrap*, as performed by our CI)
@@ -258,14 +258,14 @@ after an LGTM comment is in the [scala/scabot](https://github.com/scala/scabot) 
 
 ## Community build
 
-The Scala community build is a central element for testing Scala
+The Scala community build is an important method for testing Scala
 releases. A community build can be launched for any Scala commit, even
 before the commit's PR has been merged. That commit is then used to
 build a large number of open-source projects from source and run their
 test suites.
 
 To request a community build run on your PR, just ask in a comment on
-the PR and a Scala team member will take care of
+the PR and a Scala team member (probably @SethTisue) will take care of
 it. ([details](https://github.com/scala/community-builds/wiki#can-i-run-it-against-a-pull-request-in-scalascala))
 
 Community builds run on the Scala Jenkins instance.  The jobs are
