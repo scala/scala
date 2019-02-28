@@ -30,16 +30,18 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   def concat[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(this, suffix)
   def prependedAll[B >: A](prefix: SeqView.SomeSeqOps[B]): SeqView[B] = new SeqView.Concat(prefix, this)
+
+  override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = new SeqView.Sorted(this, ord)
 }
 
 object SeqView {
 
   /** A `SeqOps` whose collection type and collection type constructor are unknown */
-  type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
+  private type SomeSeqOps[+A] = SeqOps[A, AnyConstr, _]
 
   /** A view that doesn’t apply any transformation to an underlying sequence */
   @SerialVersionUID(3L)
-  class Id[+A](underlying: SeqOps[A, AnyConstr, _]) extends AbstractSeqView[A] {
+  class Id[+A](underlying: SomeSeqOps[A]) extends AbstractSeqView[A] {
     def apply(idx: Int): A = underlying.apply(idx)
     def length: Int = underlying.length
     def iterator: Iterator[A] = underlying.iterator
@@ -114,6 +116,78 @@ object SeqView {
     def length = len
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i)
+  }
+
+  @SerialVersionUID(3L)
+  class Sorted[A, B >: A](private[this] var underlying: SomeSeqOps[A], ord: Ordering[B]) extends SeqView[A] {
+    outer =>
+
+    @SerialVersionUID(3L)
+    private[this] class ReverseSorted extends SeqView[A] {
+      private[this] lazy val _reversed = new SeqView.Reverse(_sorted)
+
+      def apply(i: Int): A = _reversed.apply(i)
+      def length: Int = elems.length
+      def iterator: Iterator[A] = Iterator.empty ++ _reversed.iterator // very lazy
+      override def knownSize: Int = elems.knownSize
+      override def isEmpty: Boolean = elems.isEmpty
+      override def to[C1](factory: Factory[A, C1]): C1 = _reversed.to(factory)
+      override def reverse: SeqView[A] = outer
+      override protected def reversed: Iterable[A] = outer
+
+      override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
+        if (ord1 == Sorted.this.ord) outer
+        else if (ord1.isReverseOf(Sorted.this.ord)) this
+        else new Sorted(elems, ord1)
+    }
+
+    @volatile private[this] var evaluated = false
+
+    private[this] lazy val _sorted: Seq[A] = {
+      val res = {
+        val len = underlying.length
+        if (len == 0) Nil
+        else if (len == 1) List(underlying.head)
+        else {
+          val arr = new Array[Any](len) // Array[Any] =:= Array[AnyRef]
+          underlying.copyToArray(arr)
+          java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
+          // casting the Array[AnyRef] to Array[A] and creating an ArraySeq from it
+          // is safe because:
+          //   - the ArraySeq is immutable, and items that are not of type A
+          //     cannot be added to it
+          //   - we know it only contains items of type A (and if this collection
+          //     contains items of another type, we'd get a CCE anyway)
+          //   - the cast doesn't actually do anything in the runtime because the
+          //     type of A is not known and Array[_] is Array[AnyRef]
+          immutable.ArraySeq.unsafeWrapArray(arr.asInstanceOf[Array[A]])
+        }
+      }
+      evaluated = true
+      underlying = null
+      res
+    }
+
+    private[this] def elems: SomeSeqOps[A] = {
+      val orig = underlying
+      if (evaluated) _sorted else orig
+    }
+
+    def apply(i: Int): A = _sorted.apply(i)
+    def length: Int = elems.length
+    def iterator: Iterator[A] = Iterator.empty ++ _sorted.iterator // very lazy
+    override def knownSize: Int = elems.knownSize
+    override def isEmpty: Boolean = elems.isEmpty
+    override def to[C1](factory: Factory[A, C1]): C1 = _sorted.to(factory)
+    override def reverse: SeqView[A] = new ReverseSorted
+    // we know `_sorted` is either tiny or has efficient random access,
+    //  so this is acceptable for `reversed`
+    override protected def reversed: Iterable[A] = new ReverseSorted
+
+    override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
+      if (ord1 == this.ord) this
+      else if (ord1.isReverseOf(this.ord)) reverse
+      else new Sorted(elems, ord1)
   }
 }
 

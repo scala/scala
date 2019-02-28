@@ -694,18 +694,14 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   def sorted[B >: A](implicit ord: Ordering[B]): C = {
     val len = this.length
     val b = newSpecificBuilder
-    if (len == 1) b ++= toIterable
+    if (len == 1) b += head
     else if (len > 1) {
       b.sizeHint(len)
-      val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
+      val arr = new Array[Any](len)
+      copyToArray(arr)
+      java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
       var i = 0
-      for (x <- this) {
-        arr(i) = x.asInstanceOf[AnyRef]
-        i += 1
-      }
-      java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
-      i = 0
-      while (i < arr.length) {
+      while (i < len) {
         b += arr(i).asInstanceOf[A]
         i += 1
       }
