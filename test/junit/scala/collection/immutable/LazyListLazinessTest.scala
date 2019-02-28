@@ -881,6 +881,13 @@ class LazyListLazinessTest {
   def unapplySeq_properlyLazy(): Unit = {
     genericLazyOp_properlyLazy(LazyList.unapplySeq(_).toSeq.to(LazyList))
   }
+
+  @Test
+  def builder_properlyLazy(): Unit = {
+    val op = lazyListOp { ll => (LazyList.newBuilder[Int] ++= ll).result() }
+    assertLazyAll(op)
+    assertRepeatedlyLazy(op)
+  }
 }
 
 private object LazyListLazinessTest {
