@@ -30,11 +30,15 @@ trait ReplGlobal extends Global {
     super.abort(msg)
   }
 
-  override protected[scala] def findMacroClassLoader(): ClassLoader = {
-    val loader = super.findMacroClassLoader
-    analyzer.macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(classPath.asURLs))
-    val virtualDirectory = analyzer.globalSettings.outputDirs.getSingleOutput.get
-    new util.AbstractFileClassLoader(virtualDirectory, loader) {}
+  override lazy val analyzer = new {
+    val global: ReplGlobal.this.type = ReplGlobal.this
+  } with Analyzer {
+    override protected def findMacroClassLoader(): ClassLoader = {
+      val loader = super.findMacroClassLoader
+      macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
+      val virtualDirectory = globalSettings.outputDirs.getSingleOutput.get
+      new util.AbstractFileClassLoader(virtualDirectory, loader) {}
+    }
   }
 
   override def optimizerClassPath(base: ClassPath): ClassPath = {

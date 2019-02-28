@@ -64,6 +64,43 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   def globalSettings = global.settings
 
+  /** Obtains a `ClassLoader` instance used for macro expansion.
+    *
+    *  By default a new `ScalaClassLoader` is created using the classpath
+    *  from global and the classloader of self as parent.
+    *
+    *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
+    */
+  protected def findMacroClassLoader(): ClassLoader = {
+    import java.net.URL
+    import scala.tools.nsc.io.AbstractFile
+
+    val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
+      for {
+        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
+        af <- Option(AbstractFile getDirectory file)
+      } yield af.file.toURI.toURL
+    } else global.classPath.asURLs
+    def newLoader: () => ScalaClassLoader.URLClassLoader = () => {
+      analyzer.macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
+      ScalaClassLoader.fromURLs(classpath, getClass.getClassLoader)
+    }
+
+    val policy = settings.YcacheMacroClassLoader.value
+    val cache = Macros.macroClassLoadersCache
+    val disableCache = policy == settings.CachePolicy.None.name
+    val checkStamps = policy == settings.CachePolicy.LastModified.name
+    cache.checkCacheability(classpath, checkStamps, disableCache) match {
+      case Left(msg) =>
+        analyzer.macroLogVerbose(s"macro classloader: $msg.")
+        val loader = newLoader()
+        closeableRegistry.registerClosable(loader)
+        loader
+      case Right(paths) =>
+        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
+    }
+  }
+
   /** `MacroImplBinding` and its companion module are responsible for
    *  serialization/deserialization of macro def -> impl bindings.
    *
