@@ -30,7 +30,7 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
     *  Macro expansion can use everything available in `global.classPath` or `rootClassLoader`.
     *  The `rootClassLoader` is used to obtain runtime defined macros.
     */
-  override protected[scala] def findMacroClassLoader(): ClassLoader = {
+  override def findMacroClassLoader(): ClassLoader = {
     val classpath = classPath.asURLs
     perRunCaches.recordClassloader(ScalaClassLoader.fromURLs(classpath, rootClassLoader))
   }
