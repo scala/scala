@@ -33,6 +33,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success, Try}
+import PipelineMain.{BuildStrategy, Traditional, OutlineTypePipeline, Pipeline}
 
 class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy, argFiles: Seq[Path], useJars: Boolean) {
   private val pickleCacheConfigured = System.getProperty("scala.pipeline.picklecache")
@@ -234,16 +235,16 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     }
     strategy match {
       case OutlineTypePipeline =>
-        projects.foreach { p =>
+        projects.foreach { p: Task =>
           val isLeaf = !dependedOn.contains(p)
-          val depsReady = Future.sequence(dependsOn.getOrElse(p, Nil).map { task => p.dependencyReadyFuture(task) })
+          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
           val f = if (isLeaf) {
             for {
               _ <- depsReady
               _ <- {
                 p.outlineDone.complete(Success(()))
                 p.fullCompile()
-                Future.sequence(p.groups.map(_.done.future))
+                Future.traverse(p.groups)(_.done.future)
               }
             } yield {
               p.javaCompile()
@@ -257,7 +258,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
               }
               _ <- {
                 p.fullCompile()
-                Future.sequence(p.groups.map(_.done.future))
+                Future.traverse(p.groups)(_.done.future)
               }
             } yield {
               p.javaCompile()
@@ -286,7 +287,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
           println(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Pipeline =>
         projects.foreach { p =>
-          val depsReady = Future.sequence(dependsOn.getOrElse(p, Nil).map(task => p.dependencyReadyFuture(task)))
+          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
           val f = for {
             _ <- depsReady
             _ <- {
@@ -297,7 +298,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
               } else
                 p.fullCompileExportPickles()
               // Start javac after scalac has completely finished
-              Future.sequence(p.groups.map(_.done.future))
+              Future.traverse(p.groups)(_.done.future)
             }
           } yield {
             p.javaCompile()
@@ -324,11 +325,11 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
           println(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Traditional =>
         projects.foreach { p =>
-          val f1 = Future.sequence(dependsOn.getOrElse(p, Nil).map(_.t.javaDone.future))
+          val f1 = Future.traverse(dependsOn.getOrElse(p, Nil))(_.t.javaDone.future)
           val f2 = f1.flatMap { _ =>
             p.outlineDone.complete(Success(()))
             p.fullCompile()
-            Future.sequence(p.groups.map(_.done.future)).map(_ => p.javaCompile())
+            Future.traverse(p.groups)(_.done.future).map(_ => p.javaCompile())
           }
           f2.onComplete { _ => p.compiler.close() }
         }
@@ -462,7 +463,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     val outlineDoneFuture = outlineDone.future
     val javaDone: Promise[Unit] = Promise[Unit]()
     val javaDoneFuture: Future[_] = javaDone.future
-    val groupsDoneFuture: Future[List[Unit]] = Future.sequence(groups.map(_.done.future))
+    val groupsDoneFuture: Future[List[Unit]] = Future.traverse(groups)(_.done.future)
     val futures: List[Future[_]] = {
       outlineDone.future :: javaDone.future :: groups.map(_.done.future)
     }
@@ -646,17 +647,18 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
   }
 }
 
-sealed abstract class BuildStrategy
-
-/** Outline type check to compute type signatures as pickles as an input to downstream compilation. */
-case object OutlineTypePipeline extends BuildStrategy
-
-case object Pipeline extends BuildStrategy
-
-/** Emit class files before triggering downstream compilation */
-case object Traditional extends BuildStrategy
 
 object PipelineMain {
+  sealed abstract class BuildStrategy
+
+  /** Outline type check to compute type signatures as pickles as an input to downstream compilation. */
+  case object OutlineTypePipeline extends BuildStrategy
+
+  case object Pipeline extends BuildStrategy
+
+  /** Emit class files before triggering downstream compilation */
+  case object Traditional extends BuildStrategy
+
   def main(args: Array[String]): Unit = {
     val strategies = List(OutlineTypePipeline, Pipeline, Traditional)
     val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
