@@ -709,22 +709,29 @@ trait Implicits {
       if (ok) typedImplicit1(info, isLocalToCallsite) else SearchFailure
     }
 
+    private class MarkerAttachment
     private def typedImplicit1(info: ImplicitInfo, isLocalToCallsite: Boolean): SearchResult = {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchingImplicits)
 
       // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
       val isScaladoc = context.tree == EmptyTree
 
-      val itree0 = atPos(pos.focus) {
-        if (isLocalToCallsite && !isScaladoc) {
-          // scala/bug#4270 scala/bug#5376 Always use an unattributed Ident for implicits in the local scope,
-          // rather than an attributed Select, to detect shadowing.
-          Ident(info.name)
-        } else {
+      val marker = new MarkerAttachment
+      val itree0: Tree = atPos(pos.focus) {
+        def mkSelect: Tree = {
           assert(info.pre != NoPrefix, info)
           // scala/bug#2405 Not info.name, which might be an aliased import
           val implicitMemberName = info.sym.name
           Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
+        }
+        if (isLocalToCallsite) {
+          (if (isScaladoc) mkSelect else {
+            // scala/bug#4270 scala/bug#5376 Always use an unattributed Ident for implicits in the local scope,
+            // rather than an attributed Select, to detect shadowing.
+            Ident(info.name)}
+          ).updateAttachment(marker)
+        } else {
+          mkSelect
         }
       }
       val itree1 = if (isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
@@ -773,23 +780,31 @@ trait Implicits {
 
         typingStack.showAdapt(itree0, itree3, pt, context)
 
-        def hasMatchingSymbol(tree: Tree, view: Boolean): Boolean = {
-          tree match {
-            case Apply(fun, _)           => hasMatchingSymbol(fun, view)
-            case TypeApply(fun, _)       => hasMatchingSymbol(fun, view)
-            case i @ Ident(_)            => i.symbol == info.sym && (info.pre eq NoPrefix)
-            case sel @ Select(pre, name) =>
-              def matchesPre = (sel.qualifier.tpe =:= info.pre || (info.pre.typeSymbol.isPackageClass && sel.qualifier.tpe =:= info.pre.typeSymbol.packageObject.typeOfThis))
-              (view && name == nme.apply && hasMatchingSymbol(pre, false)) || (sel.symbol == info.sym && matchesPre)
-            case _                       => false
+        def hasMatchingSymbol(tree: Tree): Boolean = {
+          var result = TriState.Unknown
+          for (t <- tree if !result.isKnown) {
+            t.getAndRemoveAttachment[MarkerAttachment] match {
+              case Some(`marker`) =>
+                t match {
+                  case i@Ident(_) =>
+                    result = i.symbol == info.sym && (info.pre eq NoPrefix)
+                  case sel@Select(pre, name) =>
+                    def matchesPre = sel.qualifier.tpe =:= info.pre || (info.pre.typeSymbol.isPackageClass && sel.qualifier.tpe =:= info.pre.typeSymbol.packageObject.typeOfThis)
+                    result = sel.symbol == info.sym && matchesPre
+                  case t =>
+                    result = false
+                }
+              case _ =>
+            }
           }
+          result == TriState.True
         }
 
         if (context.reporter.hasErrors)
           fail("hasMatchingSymbol reported error: " + context.reporter.firstError.get.errMsg)
         else if (itree3.isErroneous)
           fail("error typechecking implicit candidate")
-        else if (isLocalToCallsite && !hasMatchingSymbol(itree2, isView))
+        else if (isLocalToCallsite && !hasMatchingSymbol(itree2))
           fail("candidate implicit %s is shadowed by %s".format(
             info.sym.fullLocationString, itree2.symbol.fullLocationString))
         else {
