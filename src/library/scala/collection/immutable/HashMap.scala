@@ -24,6 +24,9 @@ import scala.collection.{Iterator, MapFactory, mutable}
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence
 
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
+
 /** This class implements immutable maps using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
   *
@@ -71,6 +74,33 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   protected[immutable] def reverseIterator: Iterator[(K, V)] = {
     if (isEmpty) Iterator.empty
     else new MapKeyValueTupleReverseIterator[K, V](rootNode)
+  }
+
+  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
+    shape.
+      parUnbox(collection.convert.impl.AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i))).
+      asInstanceOf[S with EfficientSubstep]
+
+  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {
+    import collection.convert.impl._
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Int])
+      case StepperShape.LongValue   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Long])
+      case StepperShape.DoubleValue => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Double])
+      case _         => shape.parUnbox(AnyChampStepper.from[K, MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i)))
+    }
+    s.asInstanceOf[S with EfficientSubstep]    
+  }
+
+  override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    import collection.convert.impl._
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Int])
+      case StepperShape.LongValue   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Long])
+      case StepperShape.DoubleValue => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Double])
+      case _         => shape.parUnbox(AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i)))
+    }
+    s.asInstanceOf[S with EfficientSubstep]    
   }
 
   override final def contains(key: K): Boolean = {

@@ -140,7 +140,7 @@ extends EfficientSubstep {
 
 private[collection] final class AnyBinaryTreeStepper[A, T >: Null <: AnyRef](
   _maxLength: Int, _myCurrent: T, _stack: Array[AnyRef], _index: Int, _left: T => T, _right: T => T, protected val extract: T => A
-) //TODO--finish!!!
+)
 extends BinaryTreeStepperBase[A, T, AnyStepper[A], AnyBinaryTreeStepper[A, T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with AnyStepper[A] {
   def next() = 
