@@ -27,6 +27,13 @@ final class ReusableDataReader() extends DataReader {
       } catch {
         case _: BufferUnderflowException => -1
       }
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        val pos = bb.position()
+        bb.get(b, off, len)
+        bb.position() - pos
+      }
+
       override def markSupported(): Boolean = false
     }
     new DataInputStream(stream)
