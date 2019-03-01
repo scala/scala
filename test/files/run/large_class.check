@@ -1,1 +1,2 @@
-error: Could not write class BigEnoughToFail because it exceeds JVM code size limits. Class file too large!
+error: Error while emitting BigEnoughToFail
+Class too large: BigEnoughToFail
