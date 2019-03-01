@@ -13,7 +13,7 @@
 package scala.tools.partest.nest
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.cmd._
+import scala.tools.cmd.toArgs
 
 trait CommandLineConfig {
   def enforceArity: Boolean = true
@@ -23,7 +23,7 @@ trait CommandLineConfig {
 /** An instance of a command line, parsed according to a Spec.
  */
 class CommandLine(val spec: Reference, val originalArgs: List[String]) extends CommandLineConfig {
-  def this(spec: Reference, line: String) = this(spec, CommandLineParser tokenize line)
+  def this(spec: Reference, line: String) = this(spec, toArgs(line))
   def this(spec: Reference, args: Array[String]) = this(spec, args.toList)
 
   import spec.{ isUnaryOption, isBinaryOption, isExpandOption }

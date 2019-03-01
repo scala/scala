@@ -13,7 +13,6 @@
 package scala.tools.partest.nest
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.cmd._
 import scala.tools.nsc.Properties.envOrNone
 
 /** Mixes in the specification trait and uses the vals therein to

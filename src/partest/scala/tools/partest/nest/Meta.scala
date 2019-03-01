@@ -12,7 +12,6 @@
 
 package scala.tools.partest.nest
 
-import scala.tools.cmd._
 import scala.tools.nsc.io.File
 import Interpolation._
 

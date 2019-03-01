@@ -13,7 +13,7 @@
 package scala.tools.partest.nest
 
 import scala.reflect.OptManifest
-import scala.tools.cmd._
+import scala.tools.cmd.toArgs
 import scala.tools.nsc.io.Directory
 
 /** A general mechanism for defining how a command line argument
