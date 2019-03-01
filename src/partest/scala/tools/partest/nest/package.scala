@@ -15,10 +15,6 @@ package scala.tools.partest
 package object nest {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
-  // make some language features in this package compile without warning
-  implicit def implicitConversions = scala.language.implicitConversions
-  implicit def postfixOps = scala.language.postfixOps
-
   def runAndExit(body: => Unit): Nothing = {
     body
     System.exit(0)
