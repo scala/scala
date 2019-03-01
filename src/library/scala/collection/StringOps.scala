@@ -168,7 +168,13 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Get the char at the specified index. */
   @`inline` def apply(i: Int): Char = s.charAt(i)
 
+  def sizeCompare(otherSize: Int): Int = Integer.compare(s.length, otherSize)
+
   def lengthCompare(len: Int): Int = Integer.compare(s.length, len)
+
+  def sizeIs: Int = s.length
+
+  def lengthIs: Int = s.length
 
   /** Builds a new collection by applying a function to all chars of this string.
     *
