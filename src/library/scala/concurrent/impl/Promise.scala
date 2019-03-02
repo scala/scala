@@ -447,7 +447,7 @@ private[concurrent] object Promise {
               fun(v)
               null
             case Xform_recover       =>
-              resolve(v.recover(fun.asInstanceOf[PartialFunction[Throwable, F]])) //recover F=:=T
+              if (v.isInstanceOf[Failure[F]]) resolve(v.recover(fun.asInstanceOf[PartialFunction[Throwable, F]])) else v //recover F=:=T
             case Xform_recoverWith   =>
               if (v.isInstanceOf[Failure[F]]) {
                 val f = fun.asInstanceOf[PartialFunction[Throwable, Future[T]]].applyOrElse(v.asInstanceOf[Failure[F]].exception, Future.recoverWithFailed)

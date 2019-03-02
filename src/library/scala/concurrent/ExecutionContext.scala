@@ -139,17 +139,22 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  final def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
+  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
 
   /**
-   * This `ExecutionContext` steals execution time from other threads, by having its
+   * WARNING: Only ever execute logic which will quickly return control to the caller.
+   *
+   * This `ExecutionContext` steals execution time from other threads by having its
    * `Runnable`s run on the `Thread` which calls `execute` and then yielding back control
-   * to the caller after *all* its `Runnables` have been executed.
+   * to the caller after *all* its `Runnable`s have been executed.
    * Nested invocations of `execute` will be trampolined to prevent uncontrolled stack space growth.
    *
-   * WARNING: Do *not* call any blocking code in the `Runnable`s submitted to this `ExecutionContext`
+   * When using `parasitic` with abstractions such as `Future` it will in many cases be non-deterministic
+   * as to which `Thread` will be executing the logic, as it depends on when/if that `Future` is completed.
+   *
+   * Do *not* call any blocking code in the `Runnable`s submitted to this `ExecutionContext`
    * as it will prevent progress by other enqueued `Runnable`s and the calling `Thread`.
-   * Only execute logic which will quickly return control to the caller.
+   * 
    * Symptoms of misuse of this `ExecutionContext` include, but are not limited to, deadlocks
    * and severe performance problems.
    *
@@ -170,7 +175,7 @@ object ExecutionContext {
      * the thread pool uses a target number of worker threads equal to the number of
      * [[https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html#availableProcessors-- available processors]].
      */
-    implicit lazy final val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+    implicit final def global: ExecutionContext = ExecutionContext.global
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
@@ -217,7 +222,5 @@ object ExecutionContext {
    *
    *  @return the function for error reporting
    */
-  def defaultReporter: Throwable => Unit = _.printStackTrace()
+  final val defaultReporter: Throwable => Unit = _.printStackTrace()
 }
-
-
