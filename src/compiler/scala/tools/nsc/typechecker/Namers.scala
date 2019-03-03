@@ -581,20 +581,23 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value) {
-        def loop(xs: List[Name]): Unit = xs match {
+      def noDuplicatesBy(namer: ImportSelector => Name, check: DuplicatesErrorKinds.Value): Unit = {
+        def canSkip(name: Name, sels: List[ImportSelector]): Boolean =
+          name == null || name == nme.WILDCARD || sels.forall(name ne namer(_))
+        @tailrec
+        def loop(xs: List[ImportSelector]): Unit = xs match {
           case Nil      => ()
           case hd :: tl =>
-            if (hd == nme.WILDCARD || !(tl contains hd)) loop(tl)
-            else DuplicatesError(tree, hd, check)
+            if (canSkip(namer(hd), tl)) loop(tl)
+            else DuplicatesError(tree, namer(hd), check)
         }
-        loop(names filterNot (x => x == null || x == nme.WILDCARD))
+        loop(selectors)
       }
       selectors foreach checkSelector
 
       // checks on the whole set
-      noDuplicates(selectors map (_.name), RenamedTwice)
-      noDuplicates(selectors map (_.rename), AppearsTwice)
+      noDuplicatesBy(  nameOfImportSelector, RenamedTwice)
+      noDuplicatesBy(renameOfImportSelector, AppearsTwice)
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
@@ -2153,4 +2156,8 @@ trait Namers extends MethodSynthesis {
       companionSymbolOf(original.sourceModule, ctx)
     else
       companionSymbolOf(original, ctx).moduleClass
+
+  val   nameOfImportSelector: ImportSelector => Name = _.name
+  val renameOfImportSelector: ImportSelector => Name = _.rename
+
 }
