@@ -245,15 +245,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     // Use standard 2x 1x iterator trick for cycle detection ("those" is slow one)
     var these, those: LazyList[A] = this
     if (these.nonEmpty) {
-      these.head
       these = these.tail
     }
     while (those ne these) {
       if (these.isEmpty) return this
-      these.head
       these = these.tail
       if (these.isEmpty) return this
-      these.head
       these = these.tail
       if (these eq those) return this
       those = those.tail
