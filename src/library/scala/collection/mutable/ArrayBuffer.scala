@@ -247,7 +247,6 @@ object RefArrayUtils {
       throw new Exception(s"Collections can not have a negative size")
     if (n == Int.MaxValue)
       throw new Exception(s"Collections can not have more than ${Int.MaxValue} elements")
-    // Use a Long to prevent overflows
     var newLength: Int = array.length
     while (newLength >= n && newLength >= 8)
       newLength = newLength / 2
