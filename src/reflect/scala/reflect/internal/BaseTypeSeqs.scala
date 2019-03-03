@@ -130,6 +130,9 @@ trait BaseTypeSeqs {
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
 
+    /** Return an iterator over all evaluated types in this sequence */
+    def toIterator: Iterator[Type] = elems.iterator
+
     def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
       java.lang.System.arraycopy(elems, 0, arr, offset, elems.length)
