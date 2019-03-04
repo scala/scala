@@ -58,7 +58,7 @@ private[internal] trait TypeMaps {
   object abstractTypesToBounds extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(_, sym, _) if sym.isAliasType    => apply(tp.dealias)
-      case TypeRef(_, sym, _) if sym.isAbstractType => apply(tp.bounds.hi)
+      case TypeRef(_, sym, _) if sym.isAbstractType => apply(tp.upperBound)
       case rtp @ RefinedType(parents, decls)        => copyRefinedType(rtp, parents mapConserve this, decls)
       case AnnotatedType(_, _)                      => mapOver(tp)
       case _                                        => tp             // no recursion - top level only
@@ -409,7 +409,7 @@ private[internal] trait TypeMaps {
       if (variance.isInvariant) tp1
       else tp1 match {
         case TypeRef(pre, sym, args) if tparams contains sym =>
-          val repl = if (variance.isPositive) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
+          val repl = if (variance.isPositive) dropSingletonType(tp1.upperBound) else tp1.lowerBound
           val count = occurCount(sym)
           val containsTypeParam = tparams exists (repl contains _)
           def msg = {

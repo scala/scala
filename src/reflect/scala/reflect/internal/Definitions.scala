@@ -788,7 +788,7 @@ trait Definitions extends api.StandardDefinitions {
       case _: SingletonType                             => true
       case NoPrefix                                     => true
       case TypeRef(_, NothingClass | SingletonClass, _) => true
-      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.bounds.hi.typeSymbol isSubClass SingletonClass
+      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.upperBound.typeSymbol isSubClass SingletonClass
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
       case TypeRef(_, _, _)                             => val normalize = tp.normalize; (normalize ne tp) && isStable(normalize)
       case TypeVar(origin, _)                           => isStable(origin)
@@ -803,7 +803,7 @@ trait Definitions extends api.StandardDefinitions {
       // indirectly upper-bounded by itself. See #2918
       def isVolatileAbstractType: Boolean = {
         def sym = tp.typeSymbol
-        def volatileUpperBound = isVolatile(tp.bounds.hi)
+        def volatileUpperBound = isVolatile(tp.upperBound)
         def safeIsVolatile = (
           if (volatileRecursions < TypeConstants.LogVolatileThreshold)
             volatileUpperBound
