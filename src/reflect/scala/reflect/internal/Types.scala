@@ -2703,8 +2703,8 @@ trait Types
     }
     private def customToString = sym match {
       case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
-      case ByNameParamClass   => "=> " + args.head
-      case _                  =>
+      case ByNameParamClass if args.nonEmpty => "=> " + args.head
+      case _ =>
         if (isFunctionTypeDirect(this)) {
           // Aesthetics: printing Function1 as T => R rather than (T) => R
           // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
