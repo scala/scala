@@ -175,7 +175,7 @@ trait Plugins { global: Global =>
     *
     *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
     */
-  protected[scala] def findMacroClassLoader(): ClassLoader = {
+  def findMacroClassLoader(): ClassLoader = {
     val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
       for {
         file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)

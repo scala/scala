@@ -26,7 +26,7 @@ class GlobalCustomizeClassloaderTest {
     }
 
     val g = new Global(new Settings) {
-      override protected[scala] def findMacroClassLoader(): ClassLoader = new URLClassLoader(Nil, getClass.getClassLoader){
+      override def findMacroClassLoader(): ClassLoader = new URLClassLoader(Nil, getClass.getClassLoader){
         override def close(): Unit = closeUnexpected()
       }
       override protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
