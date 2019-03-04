@@ -236,8 +236,8 @@ final class FileBasedCache[T] {
     import scala.reflect.io.{AbstractFile, Path}
     lazy val urlsAndFiles = urls.filterNot(_.getProtocol == "jrt").map(u => u -> AbstractFile.getURL(u))
     lazy val paths = urlsAndFiles.map(t => Path(t._2.file).jfile.toPath)
-    if (!checkStamps) Right(paths)
-    else if (disableCache) Left("caching is disabled due to a policy setting")
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (!checkStamps) Right(paths)
     else {
       val nonJarZips = urlsAndFiles.filter { case (url, file) => file == null || !Jar.isJarOrZip(file.file) }
       if (nonJarZips.nonEmpty) Left(s"caching is disabled because of the following classpath elements: ${nonJarZips.map(_._1).mkString(", ")}.")
