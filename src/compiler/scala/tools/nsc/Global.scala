@@ -40,9 +40,11 @@ import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
+import java.io.Closeable
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
+    with Closeable
     with CompilationUnits
     with Plugins
     with PhaseAssembly
@@ -400,12 +402,16 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     def apply(unit: CompilationUnit): Unit
 
+    // run only the phases needed
+    protected def shouldSkipThisPhaseForJava: Boolean = {
+      this.id > (if (createJavadoc) currentRun.typerPhase.id
+      else currentRun.namerPhase.id)
+    }
+
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
-      // run the typer only if in `createJavadoc` mode
-      val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
       if (Thread.interrupted()) reporter.cancelled = true
-      reporter.cancelled || unit.isJava && this.id > maxJavaPhase
+      reporter.cancelled || unit.isJava && shouldSkipThisPhaseForJava
     }
 
     private def beforeUnit(unit: CompilationUnit): Unit = {
@@ -817,7 +823,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
-    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings))
+    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings, closeableRegistry))
     val newClassPath = AggregateClassPath.createAggregate(platform.classPath +: urlClasspaths : _*)
     platform.currentClassPath = Some(newClassPath)
     invalidateClassPathEntries(urls.map(_.getPath): _*)
@@ -879,7 +885,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
       entries(classPath) find matchesCanonical match {
         case Some(oldEntry) =>
-          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings))
+          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry))
         case None =>
           error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None
@@ -1706,6 +1712,13 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   }
 
   def createJavadoc    = false
+
+  final val closeableRegistry: CloseableRegistry = new CloseableRegistry
+
+  def close(): Unit = {
+    perRunCaches.clearAll()
+    closeableRegistry.close()
+  }
 }
 
 object Global {

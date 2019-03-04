@@ -14,8 +14,9 @@ package scala
 package tools.scalap
 
 import java.io.{ByteArrayOutputStream, OutputStreamWriter, PrintStream}
+
 import scala.reflect.NameTransformer
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
@@ -185,14 +186,18 @@ object Main extends Main {
       settings.YdisableFlatCpCaching.value = arguments contains opts.disableFlatClassPathCaching
       settings.Ylogcp.value = arguments contains opts.logClassPath
 
-      val path = createClassPath(cpArg, settings)
+      val registry = new CloseableRegistry
+      try {
+        val path = createClassPath(cpArg, settings, registry)
+        // print the classpath if output is verbose
+        if (verbose)
+          Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path.asClassPathString)
 
-      // print the classpath if output is verbose
-      if (verbose)
-        Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path.asClassPathString)
-
-      // process all given classes
-      arguments.getOthers foreach process(arguments, path)
+        // process all given classes
+        arguments.getOthers foreach process(arguments, path)
+      } finally {
+        registry.close()
+      }
     }
 
   private def parseArguments(args: Array[String]) =
@@ -208,11 +213,11 @@ object Main extends Main {
       .withOption(opts.logClassPath)
       .parse(args)
 
-  private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
+  private def createClassPath(cpArg: Option[String], settings: Settings, closeableRegistry: CloseableRegistry) = cpArg match {
     case Some(cp) =>
-      AggregateClassPath(new ClassPathFactory(settings).classesInExpandedPath(cp))
+      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
-      new PathResolver(settings).result
+      new PathResolver(settings, closeableRegistry).result
   }
 }

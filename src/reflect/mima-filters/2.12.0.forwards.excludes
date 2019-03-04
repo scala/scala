@@ -25,3 +25,10 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArch
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.getDir")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.allDirsByDottedName")
+
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.RootPath")
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.RootPath$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.URLZipArchive.close")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.close")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ManifestResources.close")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.close")

@@ -33,7 +33,6 @@ trait ReplGlobal extends Global {
   override lazy val analyzer = new {
     val global: ReplGlobal.this.type = ReplGlobal.this
   } with Analyzer {
-
     override protected def findMacroClassLoader(): ClassLoader = {
       val loader = super.findMacroClassLoader
       macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(global.classPath.asURLs))
@@ -47,7 +46,7 @@ trait ReplGlobal extends Global {
       case None => base
       case Some(out) =>
         // Make bytecode of previous lines available to the inliner
-        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings)
+        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry)
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }

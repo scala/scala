@@ -2077,7 +2077,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     // use typedValDef instead. this version is called after creating a new context for the ValDef
-    private def typedValDefImpl(vdef: ValDef) = {
+    private def typedValDefImpl(vdef: ValDef): ValDef = {
       val sym = vdef.symbol.initialize
       val typedMods = if (nme.isLocalName(sym.name) && sym.isPrivateThis && !vdef.mods.isPrivateLocal) {
         // scala/bug#10009 This tree has been given a field symbol by `enterGetterSetter`, patch up the

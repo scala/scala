@@ -25,11 +25,8 @@ import scala.tools.nsc.io.AbstractFile
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-class AbstractFileReader(val file: AbstractFile) {
-
-  /** the buffer containing the file
-   */
-  val buf: Array[Byte] = file.toByteArray
+class AbstractFileReader(val file: AbstractFile, val buf: Array[Byte]) {
+  def this(file: AbstractFile) = this(file, file.toByteArray)
 
   /** the current input pointer
    */

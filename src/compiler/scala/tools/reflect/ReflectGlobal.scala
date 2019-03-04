@@ -29,10 +29,10 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
     val global: ReflectGlobal.this.type = ReflectGlobal.this
   } with Analyzer {
     /** Obtains the classLoader used for runtime macro expansion.
-     *
-     *  Macro expansion can use everything available in [[global.classPath]] or [[rootClassLoader]].
-     *  The [[rootClassLoader]] is used to obtain runtime defined macros.
-     */
+      *
+      *  Macro expansion can use everything available in [[global.classPath]] or [[rootClassLoader]].
+      *  The [[rootClassLoader]] is used to obtain runtime defined macros.
+      */
     override protected def findMacroClassLoader(): ClassLoader = {
       val classpath = global.classPath.asURLs
       ScalaClassLoader.fromURLs(classpath, rootClassLoader)

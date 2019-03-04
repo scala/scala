@@ -18,6 +18,7 @@ import scala.tools.asm.tree._
 import java.io.{InputStream, File => JFile}
 
 import AsmNode._
+import scala.tools.nsc.CloseableRegistry
 
 /**
  * Provides utilities for inspecting bytecode using ASM library.
@@ -144,7 +145,7 @@ abstract class BytecodeTest {
     import scala.tools.nsc.Settings
     // logic inspired by scala.tools.util.PathResolver implementation
     // `Settings` is used to check YdisableFlatCpCaching in ZipArchiveFlatClassPath
-    val factory = new ClassPathFactory(new Settings())
+    val factory = new ClassPathFactory(new Settings(), new CloseableRegistry)
     val containers = factory.classesInExpandedPath(sys.props("partest.output") + java.io.File.pathSeparator + Defaults.javaUserClassPath)
     new AggregateClassPath(containers)
   }

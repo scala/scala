@@ -14,6 +14,8 @@ package scala
 package reflect
 package internal
 
+import java.net.URLClassLoader
+
 import scala.annotation.elidable
 import scala.collection.mutable
 import util._
@@ -427,6 +429,22 @@ abstract class SymbolTable extends macros.Universe
           caches ::= new WeakReference(cache)
       }
       cache
+    }
+
+    /** Closes the provided classloader at the conclusion of this Run */
+    final def recordClassloader(loader: ClassLoader): ClassLoader = {
+      def attemptClose(loader: ClassLoader): Unit = {
+        loader match {
+          case u: URLClassLoader => debuglog("Closing classloader " + u); u.close()
+          case _ =>
+        }
+      }
+      caches ::= new WeakReference((new Clearable {
+        def clear(): Unit = {
+          attemptClose(loader)
+        }
+      }))
+      loader
     }
 
     /**

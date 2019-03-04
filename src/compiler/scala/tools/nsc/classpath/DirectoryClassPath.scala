@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.classpath
 
-import java.io.File
+import java.io.{Closeable, File}
 import java.net.{URI, URL}
 import java.nio.file.{FileSystems, Files, SimpleFileVisitor}
 import java.util.function.IntFunction
@@ -25,6 +25,7 @@ import FileUtils._
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.reflect.internal.JDK9Reflectors
+import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.PackageNameUtils.{packageContains, separatePkgAndClassNames}
 
 /**
@@ -61,6 +62,7 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends ClassPath {
 
   private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
     val dirForPackage = getDirectory(inPackage)
+
     val nestedDirs: Array[F] = dirForPackage match {
       case None => emptyFiles
       case Some(directory) => listChildren(directory, Some(isPackage))
@@ -137,7 +139,7 @@ trait JFileDirectoryLookup[FileEntryType <: ClassRepresentation] extends Directo
 
 object JrtClassPath {
   import java.nio.file._, java.net.URI
-  def apply(release: Option[String]): Option[ClassPath] = {
+  def apply(release: Option[String], closeableRegistry: CloseableRegistry): Option[ClassPath] = {
     import scala.util.Properties._
     if (!isJavaAtLeast("9")) None
     else {
@@ -154,7 +156,11 @@ object JrtClassPath {
           try {
             val ctSym = Paths.get(javaHome).resolve("lib").resolve("ct.sym")
             if (Files.notExists(ctSym)) None
-            else Some(new CtSymClassPath(ctSym, v.toInt))
+            else {
+              val classPath = new CtSymClassPath(ctSym, v.toInt)
+              closeableRegistry.registerClosable(classPath)
+              Some(classPath)
+            }
           } catch {
             case _: Throwable => None
           }
@@ -230,7 +236,7 @@ final class JrtClassPath(fs: java.nio.file.FileSystem) extends ClassPath with No
 /**
   * Implementation `ClassPath` based on the $JAVA_HOME/lib/ct.sym backing http://openjdk.java.net/jeps/247
   */
-final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends ClassPath with NoSourcePaths {
+final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends ClassPath with NoSourcePaths with Closeable {
   import java.nio.file.Path, java.nio.file._
 
   private val fileSystem: FileSystem = FileSystems.newFileSystem(ctSym, null)
@@ -278,7 +284,7 @@ final class CtSymClassPath(ctSym: java.nio.file.Path, release: Int) extends Clas
 
   def asURLs: Seq[URL] = Nil
   def asClassPathStrings: Seq[String] = Nil
-
+  override def close(): Unit = fileSystem.close()
   def findClassFile(className: String): Option[AbstractFile] = {
     if (!className.contains(".")) None
     else {

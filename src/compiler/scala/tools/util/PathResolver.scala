@@ -15,8 +15,9 @@ package tools
 package util
 
 import java.net.URL
+
 import scala.tools.reflect.WrappedProperties.AccessControl
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
@@ -189,19 +190,24 @@ object PathResolver {
     } else {
       val settings = new Settings()
       val rest = settings.processArguments(args.toList, processAll = false)._2
-      val pr = new PathResolver(settings)
-      println("COMMAND: 'scala %s'".format(args.mkString(" ")))
-      println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
+      val registry = new CloseableRegistry
+      try {
+        val pr = new PathResolver(settings, registry)
+        println("COMMAND: 'scala %s'".format(args.mkString(" ")))
+        println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
 
-      pr.result match {
-        case cp: AggregateClassPath =>
-          println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
+        pr.result match {
+          case cp: AggregateClassPath =>
+            println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
+        }
+      } finally {
+        registry.close()
       }
     }
 }
 
-final class PathResolver(settings: Settings) {
-  private val classPathFactory = new ClassPathFactory(settings)
+final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistry) {
+  private val classPathFactory = new ClassPathFactory(settings, closeableRegistry)
 
   import PathResolver.{ AsLines, Defaults, ppcp }
 
@@ -250,7 +256,7 @@ final class PathResolver(settings: Settings) {
 
     // Assemble the elements!
     def basis = List[Traversable[ClassPath]](
-      JrtClassPath.apply(settings.releaseValue),    // 0. The Java 9 classpath (backed by the jrt:/ virtual system, if available)
+      jrt,                                          // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -260,6 +266,8 @@ final class PathResolver(settings: Settings) {
       classesInManifest(useManifestClassPath),      // 8. The Manifest class path.
       sourcesInPath(sourcePath)                     // 7. The Scala source path.
     )
+
+    private def jrt: Option[ClassPath] = JrtClassPath.apply(settings.releaseValue, closeableRegistry)
 
     lazy val containers = basis.flatten.distinct
 
