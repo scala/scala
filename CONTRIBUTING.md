@@ -204,8 +204,8 @@ Consider updating the package-level doc (in the package object), if appropriate.
 
 Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
 
-* Don't violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
-* Follow the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule).
+* Don't violate [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself.
+* Follow the [Boy Scout Rule](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html).
 
 Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 
