@@ -194,7 +194,7 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
 
 final class FileBasedCache[T] {
   import java.nio.file.Path
-  private case class Stamp(lastModified: FileTime, fileKey: Object)
+  private case class Stamp(lastModified: FileTime, size: Long, fileKey: Object)
   private case class Entry(stamps: Seq[Stamp], t: T) {
     val referenceCount: AtomicInteger = new AtomicInteger(1)
   }
@@ -252,11 +252,11 @@ final class FileBasedCache[T] {
       val lastModified = attrs.lastModifiedTime()
       // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
       val fileKey = attrs.fileKey()
-      Stamp(lastModified, fileKey)
+      Stamp(lastModified, attrs.size(), fileKey)
       } catch {
         case ex: java.nio.file.NoSuchFileException =>
           // Dummy stamp for (currently) non-existent file.
-          Stamp(FileTime.fromMillis(0), new Object)
+          Stamp(FileTime.fromMillis(0), -1, new Object)
       }
     }
 
