@@ -1,1 +1,2 @@
-error: Could not write class BigEnoughToFail because it exceeds JVM code size limits. Method tooLong's code too large!
+error: Error while emitting BigEnoughToFail
+Method too large: BigEnoughToFail.tooLong ()V

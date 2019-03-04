@@ -464,16 +464,16 @@ case class ParameterProducer(local: Int)                                        
 case class UninitializedLocalProducer(local: Int)                                       extends InitialProducer
 case class ExceptionProducer[V <: Value](handlerLabel: LabelNode, handlerStackTop: Int) extends InitialProducer
 
-class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm.Opcodes.ASM7_EXPERIMENTAL) {
+class InitialProducerSourceInterpreter extends SourceInterpreter(scala.tools.asm.Opcodes.ASM7) {
   override def newParameterValue(isInstanceMethod: Boolean, local: Int, tp: Type): SourceValue = {
     new SourceValue(tp.getSize, ParameterProducer(local))
   }
 
-  override def newEmptyNonParameterLocalValue(local: Int): SourceValue = {
+  override def newEmptyValue(local: Int): SourceValue = {
     new SourceValue(1, UninitializedLocalProducer(local))
   }
 
-  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[_ <: Value], exceptionType: Type): SourceValue = {
+  override def newExceptionValue(tryCatchBlockNode: TryCatchBlockNode, handlerFrame: Frame[SourceValue], exceptionType: Type): SourceValue = {
     val handlerStackTop = handlerFrame.stackTop + 1 // +1 because this value is about to be pushed onto `handlerFrame`.
     new SourceValue(1, ExceptionProducer(tryCatchBlockNode.handler, handlerStackTop))
   }

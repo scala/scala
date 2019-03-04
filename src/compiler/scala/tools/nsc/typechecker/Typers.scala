@@ -671,6 +671,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
+    @deprecated("Use the overload accepting a Type.", "2.12.9")
+    def member(qual: Tree, name: Name): Symbol = member(qual.tpe, name)
     /** The member with given name of given qualifier type */
     def member(qual: Type, name: Name): Symbol = {
       def callSiteWithinClass(clazz: Symbol) = context.enclClass.owner hasTransOwner clazz

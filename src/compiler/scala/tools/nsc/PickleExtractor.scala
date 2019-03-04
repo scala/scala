@@ -107,7 +107,7 @@ object PickleExtractor {
         true
       }).asJava
     }
-    val writer = new ClassWriter(Opcodes.ASM7_EXPERIMENTAL)
+    val writer = new ClassWriter(Opcodes.ASM7)
     val isScalaRaw = foundScalaAttr && !foundScalaSig
     if (isScalaRaw) Skip
     else {
