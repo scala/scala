@@ -5946,7 +5946,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
-        case _           => if (settings.Youtline.value) EmptyTree else typed(tree, mode, pt)
+        case _           => typed(tree, mode, pt)
       }
     }
     final def lookupTransformed(tree: Tree): Option[Tree] =
