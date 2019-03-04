@@ -581,18 +581,35 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      def noDuplicatesBy(namer: ImportSelector => Name, check: DuplicatesErrorKinds.Value): Unit = {
-        def canSkip(name: Name, sels: List[ImportSelector]): Boolean =
-          name == null || name == nme.WILDCARD || sels.forall(name ne namer(_))
+      def noDuplicatesBy(fun: ImportSelector => Name, check: DuplicatesErrorKinds.Value): Unit = {
+        def quickHasDups: Boolean = { /*Collect Bloom filter */
+          var bloomFilter: Long = 0L
+          var res: Boolean = false
+          var ss = selectors
+          while (!res && ss.nonEmpty){
+            val hh = fun(ss.head)
+            if ((hh ne null) && (hh ne nme.WILDCARD)){
+              val bit = 1L << ( (hh.start | hh.length) & 0x7F)
+              res = (bloomFilter & bit) != 0
+              bloomFilter = (bloomFilter | bit)
+            }
+            ss = ss.tail
+          }
+          res
+        }
+        @inline def canSkip(name: Name, sels: List[ImportSelector]): Boolean =
+          name == null || name == nme.WILDCARD || sels.forall(name ne fun(_))
         @tailrec
         def loop(xs: List[ImportSelector]): Unit = xs match {
           case Nil      => ()
           case hd :: tl =>
-            if (canSkip(namer(hd), tl)) loop(tl)
-            else DuplicatesError(tree, namer(hd), check)
+            val hname = fun(hd)
+            if (canSkip(hname, tl)) loop(tl)
+            else DuplicatesError(tree, hname, check)
         }
-        loop(selectors)
+        if (quickHasDups) loop(selectors)
       }
+
       selectors foreach checkSelector
 
       // checks on the whole set
