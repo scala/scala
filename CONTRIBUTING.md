@@ -204,8 +204,14 @@ Consider updating the package-level doc (in the package object), if appropriate.
 
 Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
 
-* Don't violate [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself.
-* Follow the [Boy Scout Rule](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html).
+Don't violate [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+* DRY means: "Don't repeat yourself". 
+* Every piece of knowledge must have a single, unambiguous, authoritative representation within a system. 
+* Try to only write functionality or algorithms once and reference them (Abstraction) instead of Copy&Paste
+
+Follow the [Boy Scout Rule](https://martinfowler.com/bliki/OpportunisticRefactoring.html).
+* "Always leave the code behind in a better state than you found it"
+* This translates to using any opportunity possible to improve and cleanup the code in front of you
 
 Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 
