@@ -10,10 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
-import nsc.io.File
+import scala.tools.nsc.io.File
 import Interpolation._
 
 /** Meta-options for command line tools.  We could have all kinds
@@ -30,7 +29,7 @@ object Meta {
     self: Spec with Interpolation =>
 
                                 Bash.name   --> runAndExit(Bash.action())
-    val selfUpdateName  = SelfUpdate.name   --| ;
+    val selfUpdateName  = SelfUpdate.name.--|
 
     if (selfUpdateName.isDefined)
       runAndExit(SelfUpdate.action())

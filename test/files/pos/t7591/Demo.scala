@@ -3,7 +3,9 @@
  * @author  Paul Phillips
  */
 
-import scala.tools.cmd._
+import scala.tools.partest.nest.{ Instance, Interpolation, Meta, Spec }
+
+import scala.language.postfixOps
 
 /** A sample command specification for illustrative purposes.
  *  First take advantage of the meta-options:

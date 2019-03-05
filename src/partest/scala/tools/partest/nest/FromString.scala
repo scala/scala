@@ -10,11 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
-import nsc.io.Directory
 import scala.reflect.OptManifest
+import scala.tools.cmd.toArgs
+import scala.tools.nsc.io.Directory
 
 /** A general mechanism for defining how a command line argument
  *  (always a String) is transformed into an arbitrary type.  A few
@@ -39,14 +39,14 @@ object FromString {
     override def isDefinedAt(s: String) = toDir(s).isDirectory
     def apply(s: String): Directory =
       if (isDefinedAt(s)) toDir(s)
-      else cmd.runAndExit(println("'%s' is not an existing directory." format s))
+      else runAndExit(println("'%s' is not an existing directory." format s))
   }
   def ExistingDirRelativeTo(root: Directory) = new FromString[Directory] {
     private def resolve(s: String) = (toDir(s) toAbsoluteWithRoot root).toDirectory
     override def isDefinedAt(s: String) = resolve(s).isDirectory
     def apply(s: String): Directory =
       if (isDefinedAt(s)) resolve(s)
-      else cmd.runAndExit(println("'%s' is not an existing directory." format resolve(s)))
+      else runAndExit(println("'%s' is not an existing directory." format resolve(s)))
   }
 
   /** Argument expander, i.e. turns single argument "foo bar baz" into argument

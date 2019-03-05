@@ -14,8 +14,6 @@ package scala.tools.partest.nest
 
 import language.postfixOps
 
-import scala.tools.cmd.{ CommandLine, Interpolation, Meta, Reference, Spec, Instance }
-
 trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = RunnerSpec
   def programInfo         = Spec.Info(
@@ -51,7 +49,7 @@ trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
   val optVerbose      = "verbose"      / "show verbose progress information" --?
   val optTerse        = "terse"        / "show terse progress information"   --?
   val optDebug        = "debug"        / "enable debugging output"           --?
-  
+
   heading("Other options:")
   val optVersion      = "version"      / "show Scala version and exit"  --?
   val optHelp         = "help"         / "show this page and exit"      --?

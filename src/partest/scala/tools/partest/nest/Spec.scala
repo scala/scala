@@ -10,8 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools
-package cmd
+package scala.tools.partest.nest
 
 /** This trait works together with others in scala.tools.cmd to allow
  *  declaratively specifying a command line program, with many attendant

@@ -10,9 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package tools
-package cmd
+package scala.tools.partest.nest
 
 /** Interpolation logic for generated files.  The idea is to be
  *  able to write in terms of @@THIS@@ and @@THAT@@ and the reference
