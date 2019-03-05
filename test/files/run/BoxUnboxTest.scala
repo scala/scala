@@ -1,24 +1,19 @@
-package scala.lang.primitives
-
 import org.junit.Assert._
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import scala.tools.testing.AssertUtil._
 
-import scala.tools.testing.RunTesting
+class VCI(val x: Int) extends AnyVal { override def toString = "" + x }
 
-object BoxUnboxTest {
-  class VCI(val x: Int) extends AnyVal { override def toString = "" + x }
-}
+object Test {
 
-@RunWith(classOf[JUnit4])
-class BoxUnboxTest extends RunTesting {
-  import runner._
+  def main(args: Array[String]): Unit = {
+    boxUnboxInt()
+    numericConversions()
+    boxUnboxBoolean()
+    boxUnboxUnit()
+    t9671()
+  }
 
-  @Test
   def boxUnboxInt(): Unit = {
-    import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
 
     def genericNull[T] = null.asInstanceOf[T] // allowed, see scala/bug#4437, point 2
 
@@ -78,10 +73,7 @@ class BoxUnboxTest extends RunTesting {
     assertEquals(n12, 0)
   }
 
-  @Test
   def numericConversions(): Unit = {
-    import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
 
     val i1 = 1L.asInstanceOf[Int]
     assertEquals(i1, 1)
@@ -91,20 +83,16 @@ class BoxUnboxTest extends RunTesting {
     }
   }
 
-  @Test
   def boxUnboxBoolean(): Unit = {
     val n1 = Option(null.asInstanceOf[Boolean])
     assertEquals(n1, Some(false))
   }
 
-  @Test
   def boxUnboxUnit(): Unit = {
     // should not use assertEquals in this test: it takes two Object parameters. normally, Unit does
     // not conform to Object, but for Java-defined methods scalac makes an exception and treats them
     // as Any. passing a Unit as Any makes the compiler go through another layer of boxing, so it
     // can hide some bugs (where we actually have a null, but the compiler makes it a ()).
-    import scala.tools.testing.AssertUtil._
-    import org.junit.Assert._
 
     var v = 0
     def eff() = { v = 1 }
@@ -148,9 +136,7 @@ class BoxUnboxTest extends RunTesting {
     assertEquals(n3, "()")
   }
 
-  @Test
   def t9671(): Unit = {
-    import scala.lang.primitives.BoxUnboxTest.VCI
 
     def f1(a: Any) = "" + a
     def f2(a: AnyVal) = "" + a
