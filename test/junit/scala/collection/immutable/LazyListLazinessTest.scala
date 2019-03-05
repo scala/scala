@@ -774,17 +774,11 @@ class LazyListLazinessTest {
     assertRepeatedlyLazy(factory)
   }
 
-  // TODO: fix
   @Test
-  def `#:: and #::: properlyLazy`(): Unit = {
+  def `#::: properlyLazy`(): Unit = {
     val factory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
-        def elem(): LazyList[Int] = LazyList.unfold(true) {
-          case true =>
-            init.evaluate(index)
-            Some(index, false)
-          case false => None
-        }
+        def elem(): LazyList[Int] = LazyList.fill(1) { init.evaluate(index); index }
         if (index >= LazinessChecker.count) LazyList.empty
         else elem() #::: gen(index + 1)
       }
