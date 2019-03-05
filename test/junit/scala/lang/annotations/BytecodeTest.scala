@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.AsmUtils
-import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 

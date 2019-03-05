@@ -10,7 +10,7 @@ import org.junit.runners.JUnit4
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.AbstractInsnNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 

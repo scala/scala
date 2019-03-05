@@ -1,4 +1,5 @@
-import scala.tools.partest.{BytecodeTest, ASMConverters}
+import scala.tools.partest.BytecodeTest
+import scala.tools.testing.ASMConverters
 import ASMConverters._
 
 class D {

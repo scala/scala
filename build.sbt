@@ -318,7 +318,7 @@ def regexFileFilter(s: String): FileFilter = new FileFilter {
 
 def setForkedWorkingDirectory: Seq[Setting[_]] = {
   // When we fork subprocesses, use the base directory as the working directory.
-  // This“ enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
+  // This enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
   val setting = (forkOptions in Compile) := (forkOptions in Compile).value.withWorkingDirectory((baseDirectory in ThisBuild).value)
   setting ++ inTask(run)(setting)
 }
@@ -543,7 +543,7 @@ lazy val scalap = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val partest = configureAsSubproject(project)
-  .dependsOn(library, reflect, compiler, scalap, replFrontend, scaladoc)
+  .dependsOn(library, reflect, compiler, scalap, scaladoc, junit % "compile->test")
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
@@ -622,7 +622,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
 
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, partest, scaladoc)
+  .dependsOn(library, reflect, compiler, replFrontend, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
