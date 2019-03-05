@@ -570,7 +570,8 @@ trait Namers extends MethodSynthesis {
       def checkSelector(s: ImportSelector) = {
         val ImportSelector(from, fromPos, to, _) = s
         def isValid(original: Name) =
-          original.bothNames forall (x => (base nonLocalMember x) == NoSymbol)
+          (base nonLocalMember original.toTermName) == NoSymbol &&
+            (base nonLocalMember original.toTypeName) == NoSymbol
 
         if (!s.isWildcard && base != ErrorType) {
           if (isValid(from)) {

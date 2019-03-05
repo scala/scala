@@ -195,7 +195,8 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
 final class FileBasedCache[T] {
   import java.nio.file.Path
   private val NoFileKey = new Object
-  private case class Stamp(lastModified: FileTime, fileKey: Object)
+
+  private case class Stamp(lastModified: FileTime, size: Long, fileKey: Object)
   private case class Entry(stamps: Seq[Stamp], t: T) {
     val referenceCount: AtomicInteger = new AtomicInteger(1)
   }
@@ -237,8 +238,8 @@ final class FileBasedCache[T] {
     import scala.reflect.io.{AbstractFile, Path}
     lazy val urlsAndFiles = urls.filterNot(_.getProtocol == "jrt").map(u => u -> AbstractFile.getURL(u))
     lazy val paths = urlsAndFiles.map(t => Path(t._2.file).jfile.toPath)
-    if (!checkStamps) Right(paths)
-    else if (disableCache) Left("caching is disabled due to a policy setting")
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (!checkStamps) Right(paths)
     else {
       val nonJarZips = urlsAndFiles.filter { case (url, file) => file == null || !Jar.isJarOrZip(file.file) }
       if (nonJarZips.nonEmpty) Left(s"caching is disabled because of the following classpath elements: ${nonJarZips.map(_._1).mkString(", ")}.")
@@ -249,15 +250,15 @@ final class FileBasedCache[T] {
   def getOrCreate(paths: Seq[Path], create: () => T, closeableRegistry: CloseableRegistry, checkStamps: Boolean): T = cache.synchronized {
     val stamps = if (!checkStamps) Nil else paths.map { path =>
       try {
-        val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
-        val lastModified = attrs.lastModifiedTime()
-        // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
-        val fileKey = attrs.fileKey()
-        Stamp(lastModified, if (fileKey == null) NoFileKey else fileKey)
+      val attrs = Files.readAttributes(path, classOf[BasicFileAttributes])
+      val lastModified = attrs.lastModifiedTime()
+      // only null on some platforms, but that's okay, we just use the last modified timestamp as our stamp
+      val fileKey = attrs.fileKey()
+      Stamp(lastModified, attrs.size(), if (fileKey == null) NoFileKey else fileKey)
       } catch {
         case ex: java.nio.file.NoSuchFileException =>
           // Dummy stamp for (currently) non-existent file.
-          Stamp(FileTime.fromMillis(0), NoFileKey)
+          Stamp(FileTime.fromMillis(0), -1, new Object)
       }
     }
 

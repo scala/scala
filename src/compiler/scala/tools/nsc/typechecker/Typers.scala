@@ -4795,28 +4795,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           // TODO: case to recurse into Function?
-          def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
-            case Block(_, r)                        => treesInResult(r)
-            case Match(_, cases)                    => cases
-            case CaseDef(_, _, r)                   => treesInResult(r)
-            case Annotated(_, r)                    => treesInResult(r)
-            case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
-            case Try(b, catches, _)                 => treesInResult(b) ++ catches
-            case MethodValue(r)                     => treesInResult(r)
-            case Select(qual, name)                 => treesInResult(qual)
-            case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case _                                  => Nil
-          })
           /* Only retry if the error hails from a result expression of `tree`
            * (for instance, it makes no sense to retry on an error from a block statement)
            * compare with `samePointAs` since many synthetic trees are made with
            * offset positions even under -Yrangepos.
            */
-          def errorInResult(tree: Tree) =
-            treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
-
-          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
+          def errorInResult(tree: Tree): Boolean = {
+            def pred(tree: Tree) = typeErrors.exists(_.errPos samePointAs tree.pos)
+            def loop(tree: Tree): Boolean = pred(tree) || (tree match {
+              case Block(_, r)          => loop(r)
+              case Match(_, cases)      => cases.exists(pred)
+              case CaseDef(_, _, r)     => loop(r)
+              case Annotated(_, r)      => loop(r)
+              case If(_, t, e)          => loop(t) || loop(e)
+              case Try(b, catches, _)   => loop(b) || catches.exists(pred)
+              case MethodValue(r)       => loop(r)
+              case Select(qual, name)   => loop(qual)
+              case Apply(fun, args)     => loop(fun) || args.exists(loop)
+              case TypeApply(fun, args) => loop(fun) || args.exists(loop)
+              case _                    => false
+            })
+            loop(tree)
+          }
+          val retry = typeErrors.forall(_.errPos != null) && (errorInResult(fun) || errorInResult(tree) || args.exists(errorInResult))
           typingStack.printTyping({
             val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
             if (retry) "second try: " + funStr
@@ -6097,7 +6098,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
-        case _           => if (settings.Youtline.value) EmptyTree else typed(tree, mode, pt)
+        case _           => typed(tree, mode, pt)
       }
     }
     final def lookupTransformed(tree: Tree): Option[Tree] =

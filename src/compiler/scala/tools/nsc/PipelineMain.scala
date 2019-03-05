@@ -33,6 +33,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success, Try}
+import PipelineMain.{BuildStrategy, Traditional, Pipeline}
 
 class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy, argFiles: Seq[Path], useJars: Boolean) {
   private val pickleCacheConfigured = System.getProperty("scala.pipeline.picklecache")
@@ -233,60 +234,9 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       }
     }
     strategy match {
-      case OutlineTypePipeline =>
-        projects.foreach { p =>
-          val isLeaf = !dependedOn.contains(p)
-          val depsReady = Future.sequence(dependsOn.getOrElse(p, Nil).map { task => p.dependencyReadyFuture(task) })
-          val f = if (isLeaf) {
-            for {
-              _ <- depsReady
-              _ <- {
-                p.outlineDone.complete(Success(()))
-                p.fullCompile()
-                Future.sequence(p.groups.map(_.done.future))
-              }
-            } yield {
-              p.javaCompile()
-            }
-          } else {
-            for {
-              _ <- depsReady
-              _ <- {
-                p.outlineCompile()
-                p.outlineDone.future
-              }
-              _ <- {
-                p.fullCompile()
-                Future.sequence(p.groups.map(_.done.future))
-              }
-            } yield {
-              p.javaCompile()
-            }
-          }
-          f.onComplete { _ => p.compiler.close() }
-        }
-
-        awaitDone()
-
-        for (p <- projects) {
-          val dependencies = dependsOn(p).map(_.t)
-
-          def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
-
-          val maxOutlineCriticalPathMs = maxByOrZero(dependencies)(_.outlineCriticalPathMs)
-          p.outlineCriticalPathMs = maxOutlineCriticalPathMs + p.outlineTimer.durationMs
-          p.regularCriticalPathMs = maxOutlineCriticalPathMs + maxByOrZero(p.groups)(_.timer.durationMs)
-          p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
-        }
-
-        if (parallelism == 1) {
-          val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          println(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
-        } else
-          println(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Pipeline =>
         projects.foreach { p =>
-          val depsReady = Future.sequence(dependsOn.getOrElse(p, Nil).map(task => p.dependencyReadyFuture(task)))
+          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
           val f = for {
             _ <- depsReady
             _ <- {
@@ -297,7 +247,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
               } else
                 p.fullCompileExportPickles()
               // Start javac after scalac has completely finished
-              Future.sequence(p.groups.map(_.done.future))
+              Future.traverse(p.groups)(_.done.future)
             }
           } yield {
             p.javaCompile()
@@ -324,11 +274,11 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
           println(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Traditional =>
         projects.foreach { p =>
-          val f1 = Future.sequence(dependsOn.getOrElse(p, Nil).map(_.t.javaDone.future))
+          val f1 = Future.traverse(dependsOn.getOrElse(p, Nil))(_.t.javaDone.future)
           val f2 = f1.flatMap { _ =>
             p.outlineDone.complete(Success(()))
             p.fullCompile()
-            Future.sequence(p.groups.map(_.done.future)).map(_ => p.javaCompile())
+            Future.traverse(p.groups)(_.done.future).map(_ => p.javaCompile())
           }
           f2.onComplete { _ => p.compiler.close() }
         }
@@ -372,7 +322,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     def projectEvents(p: Task): List[String] = {
       val events = List.newBuilder[String]
       if (p.outlineTimer.durationMicros > 0d) {
-        val desc = if (strategy == OutlineTypePipeline) "outline-type" else "parser-to-pickler"
+        val desc = "parser-to-pickler"
         events += durationEvent(p.label, desc, p.outlineTimer)
         events += durationEvent(p.label, "pickle-export", p.pickleExportTimer)
       }
@@ -438,7 +388,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
 
     val groups: List[Group] = {
       val isScalaLibrary = files.exists(_.endsWith("Predef.scala"))
-      if (strategy != OutlineTypePipeline || isScalaLibrary) {
+      if (isScalaLibrary) {
         Group(files) :: Nil
       } else {
         command.settings.classpath.value = command.settings.outputDirs.getSingleOutput.get.toString + File.pathSeparator + command.settings.classpath.value
@@ -462,7 +412,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     val outlineDoneFuture = outlineDone.future
     val javaDone: Promise[Unit] = Promise[Unit]()
     val javaDoneFuture: Future[_] = javaDone.future
-    val groupsDoneFuture: Future[List[Unit]] = Future.sequence(groups.map(_.done.future))
+    val groupsDoneFuture: Future[List[Unit]] = Future.traverse(groups)(_.done.future)
     val futures: List[Future[_]] = {
       outlineDone.future :: javaDone.future :: groups.map(_.done.future)
     }
@@ -483,34 +433,8 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
         throw t
     }
 
-    def outlineCompile(): Unit = {
-      outlineTimer.start()
-      try {
-        log("scalac outline: start")
-        command.settings.Youtline.value = true
-        command.settings.stopAfter.value = List("pickler")
-        command.settings.Ymacroexpand.value = command.settings.MacroExpand.None
-        val run1 = new compiler.Run()
-        run1 compile files
-        registerPickleClassPath(command.settings.outputDirs.getSingleOutput.get.file.toPath, run1.symData)
-        outlineTimer.stop()
-        reporter.finish()
-        if (reporter.hasErrors) {
-          log("scalac outline: failed")
-          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-        } else {
-          log(f"scala outline: done ${outlineTimer.durationMs}%.0f ms")
-          outlineDone.complete(Success(()))
-        }
-      } catch {
-        case t: Throwable =>
-          t.printStackTrace()
-          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-      }
-    }
 
     def fullCompile(): Unit = {
-      command.settings.Youtline.value = false
       command.settings.stopAfter.value = Nil
       command.settings.Ymacroexpand.value = command.settings.MacroExpand.Normal
 
@@ -646,19 +570,18 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
   }
 }
 
-sealed abstract class BuildStrategy
-
-/** Outline type check to compute type signatures as pickles as an input to downstream compilation. */
-case object OutlineTypePipeline extends BuildStrategy
-
-case object Pipeline extends BuildStrategy
-
-/** Emit class files before triggering downstream compilation */
-case object Traditional extends BuildStrategy
 
 object PipelineMain {
+  sealed abstract class BuildStrategy
+
+  /** Begin compilation as soon as the pickler phase is complete on all dependencies. */
+  case object Pipeline extends BuildStrategy
+
+  /** Emit class files before triggering downstream compilation */
+  case object Traditional extends BuildStrategy
+
   def main(args: Array[String]): Unit = {
-    val strategies = List(OutlineTypePipeline, Pipeline, Traditional)
+    val strategies = List(Pipeline, Traditional)
     val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
     val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", parallel.availableProcessors)
     val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")
