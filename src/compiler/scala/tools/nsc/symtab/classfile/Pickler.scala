@@ -90,6 +90,8 @@ abstract class Pickler extends SubComponent {
           throw e
       }
     }
+
+    override protected def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value
   }
 
   private class Pickle(root: Symbol) extends PickleBuffer(new Array[Byte](4096), -1, 0) {
@@ -214,7 +216,7 @@ abstract class Pickler extends SubComponent {
                 // initially, but seems not to work, as the bug shows).
                 // Adding the LOCAL_CHILD is necessary to retain exhaustivity warnings under separate
                 // compilation. See test neg/aladdin1055.
-                val parents = (if (sym.isTrait) List(definitions.ObjectTpe) else Nil) ::: List(sym.tpe)
+                val parents = if (sym.isTrait) List(definitions.ObjectTpe, sym.tpe) else List(sym.tpe)
                 globals + sym.newClassWithInfo(tpnme.LOCAL_CHILD, parents, EmptyScope, pos = sym.pos)
               }
 

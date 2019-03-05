@@ -2103,7 +2103,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     // use typedValDef instead. this version is called after creating a new context for the ValDef
-    private def typedValDefImpl(vdef: ValDef) = {
+    private def typedValDefImpl(vdef: ValDef): ValDef = {
       val sym = vdef.symbol.initialize
       val typedMods = if (nme.isLocalName(sym.name) && sym.isPrivateThis && !vdef.mods.isPrivateLocal) {
         // scala/bug#10009 This tree has been given a field symbol by `enterGetterSetter`, patch up the
@@ -6097,7 +6097,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
-        case _           => typed(tree, mode, pt)
+        case _           => if (settings.Youtline.value) EmptyTree else typed(tree, mode, pt)
       }
     }
     final def lookupTransformed(tree: Tree): Option[Tree] =
