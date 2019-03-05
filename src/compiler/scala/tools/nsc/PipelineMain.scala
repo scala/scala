@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.tools.ToolProvider
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
-import scala.collection.{immutable, mutable, parallel}
+import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.pickling.PickleBuffer
@@ -583,7 +583,7 @@ object PipelineMain {
   def main(args: Array[String]): Unit = {
     val strategies = List(Pipeline, Traditional)
     val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
-    val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", parallel.availableProcessors)
+    val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", java.lang.Runtime.getRuntime.availableProcessors())
     val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")
     val argFiles: Seq[Path] = args match {
       case Array(path) if Files.isDirectory(Paths.get(path)) =>

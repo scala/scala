@@ -477,6 +477,10 @@ trait Implicits {
      *  if one or both are intersection types with a pair of overlapping parent types.
      */
     private def dominates(dtor: Type, dted: Type): Boolean = {
+      @annotation.tailrec def sumComplexity(acc: Int, xs: List[Type]): Int = xs match {
+        case h :: t => sumComplexity(acc + complexity(h), t)
+        case _: Nil.type => acc
+      }
       def complexity(tp: Type): Int = tp.dealias match {
         case NoPrefix                => 0
         case SingleType(pre, sym)    => if (sym.hasPackageFlag) 0 else complexity(tp.dealiasWiden)
