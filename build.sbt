@@ -633,6 +633,7 @@ lazy val junit = project.in(file("test") / "junit")
     javaOptions in Test += "-Xss1M",
     (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
+    scalacOptions += "-feature",
     libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Compile := Nil,

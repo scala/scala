@@ -4,6 +4,7 @@ import org.junit.Test
 
 import scala.collection.mutable.Builder
 import scala.math.Ordering
+import language.higherKinds
 
 class BuildFromTest {
 

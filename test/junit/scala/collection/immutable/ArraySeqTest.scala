@@ -12,6 +12,7 @@ class ArraySeqTest {
   @Test
   def slice(): Unit = {
 
+    import language.implicitConversions
     implicit def array2ArraySeq[T](array: Array[T]): ArraySeq[T] =
       ArraySeq.unsafeWrapArray(array)
 
