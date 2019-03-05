@@ -1978,7 +1978,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         var alts0: List[Symbol] = alternatives
         var alts1: List[Symbol] = Nil
 
-        while (alts0.nonEmpty) {
+        while (!alts0.isEmpty) {
           if (cond(alts0.head))
             alts1 ::= alts0.head
           else
