@@ -279,13 +279,6 @@ val disableDocs = Seq[Setting[_]](
   publishArtifact in (Compile, packageDoc) := false
 )
 
-val disablePublishing = Seq[Setting[_]](
-  publishArtifact := false,
-  // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
-  publish := {},
-  publishLocal := {}
-)
-
 lazy val setJarLocation: Setting[_] =
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
@@ -395,7 +388,7 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
@@ -477,7 +470,7 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler"
@@ -486,12 +479,12 @@ lazy val interactive = configureAsSubproject(project)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies += jlineDep,
     name := "scala-repl-frontend"
@@ -505,7 +498,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
@@ -563,7 +556,7 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scalacheck-lib",
     libraryDependencies += testInterfaceDep
@@ -575,7 +568,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     sourceGenerators in Compile += Def.task {
       import scala.collection.JavaConverters._
@@ -606,7 +599,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
   .dependsOn((if (benchmarkScalaVersion == "") Seq[sbt.ClasspathDep[sbt.ProjectReference]](library, compiler) else Nil): _*)
   .settings(if (benchmarkScalaVersion == "") instanceSettings else Seq(scalaVersion := benchmarkScalaVersion, crossPaths := false))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "test-benchmarks",
@@ -627,7 +620,7 @@ lazy val junit = project.in(file("test") / "junit")
   .settings(commonSettings)
   //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",
@@ -645,7 +638,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     // Enable forking to workaround https://github.com/sbt/sbt/issues/4009. We also need a lazy Framework
     // written in Java to further reduce ClassLoader problems when bootstrapping:
@@ -679,7 +672,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     fork in Test := true,
     parallelExecution in Test := false,
@@ -743,7 +736,7 @@ lazy val test = project
   .settings(commonSettings)
   //.settings(scalacOptions in Compile -= "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_") // as in common settings
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep),
@@ -796,7 +789,7 @@ lazy val test = project
 
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     classDirectory in Compile := (target in Compile).value / "classes"
@@ -856,7 +849,7 @@ def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
 
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(generateBuildCharacterFileSettings)
   .settings(
     commands ++= ScriptCommands.all,
