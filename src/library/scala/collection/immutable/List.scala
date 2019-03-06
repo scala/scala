@@ -395,6 +395,19 @@ sealed abstract class List[+A]
     None
   }
 
+  override def last: A = {
+    if (isEmpty) throw new NoSuchElementException("List.last")
+    else {
+      var these = this
+      var scout = tail
+      while (!scout.isEmpty) {
+        these = scout
+        scout = scout.tail
+      }
+      these.head
+    }
+  }
+
   override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
     case that: LinearSeq[B] =>
       var i = this
