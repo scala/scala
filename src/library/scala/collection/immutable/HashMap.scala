@@ -96,28 +96,31 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     rootNode.getOrElse(key, keyUnimprovedHash, keyHash, 0, default)
   }
 
+  @`inline` private[this] def newHashMapOrThis[V1 >: V](newRootNode: MapNode[K, V1]): HashMap[K, V1] =
+    if (newRootNode eq rootNode) this else new HashMap(newRootNode)
+
   def updated[V1 >: V](key: K, value: V1): HashMap[K, V1] = {
     val keyUnimprovedHash = key.##
-    val keyHash = improve(keyUnimprovedHash)
-    val newRootNode = rootNode.updated(key, value, keyUnimprovedHash, keyHash, 0)
-    if (newRootNode ne rootNode) new HashMap(newRootNode) else this
+    newHashMapOrThis(rootNode.updated(key, value, keyUnimprovedHash, improve(keyUnimprovedHash), 0))
   }
 
   def removed(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
-    val keyHash = improve(keyUnimprovedHash)
-    val newRootNode = rootNode.removed(key, keyUnimprovedHash, keyHash, 0)
-    if (newRootNode ne rootNode) new HashMap(newRootNode) else this
+    newHashMapOrThis(rootNode.removed(key, keyUnimprovedHash, improve(keyUnimprovedHash), 0))
   }
 
   override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = that match {
-    case hm: HashMap[K, V1] =>
-      if (hm.rootNode eq rootNode) this else {
-        val newRootNode = rootNode.concat(hm.rootNode, 0)
-        if (newRootNode eq rootNode) this
-        else if (newRootNode eq hm.rootNode) hm
-        else new HashMap(newRootNode)
+    case hm: HashMap[K, V1] => newHashMapOrThis(rootNode.concat(hm.rootNode, 0))
+    case hm: collection.mutable.HashMap[K, V] =>
+      val iter = hm.nodeIterator
+      var newRootNode = rootNode
+      while (iter.hasNext) {
+        val next = iter.next()
+        val originalHash = hm.unimproveHash(next.hash)
+        val hash = improve(originalHash)
+        newRootNode = newRootNode.updated(next.key, next.value, originalHash, hash, 0)
       }
+      newHashMapOrThis(newRootNode)
     case _ =>
       super.concat(that)
   }
@@ -132,6 +135,9 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   override def last: (K, V) = reverseIterator.next()
 
   override def foreach[U](f: ((K, V)) => U): Unit = rootNode.foreach(f)
+
+  /** Applies a function to each key, value, and **original** hash value in this Map */
+  @`inline` private[collection] def foreachWithHash(f: (K, V, Int) => Unit): Unit = rootNode.foreachWithHash(f)
 
   override def equals(that: Any): Boolean =
     that match {
@@ -161,11 +167,8 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     }
   }
 
-  override def transform[W](f: (K, V) => W) = {
-    val transformed = rootNode.transform(f)
-    if (transformed eq rootNode) this.asInstanceOf[HashMap[K, W]]
-    else new HashMap(transformed)
-  }
+  override def transform[W](f: (K, V) => W): HashMap[K, W] =
+    newHashMapOrThis(rootNode.transform(f)).asInstanceOf[HashMap[K, W]]
 
   override protected[collection] def filterImpl(pred: ((K, V)) => Boolean, isFlipped: Boolean): HashMap[K, V] = {
     val newRootNode = rootNode.filterImpl(pred, isFlipped)
@@ -328,6 +331,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def size: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
+
+  def foreachWithHash(f: (K, V, Int) => Unit): Unit
 
   def transform[W](f: (K, V) => W): MapNode[K, W]
 
@@ -713,26 +718,44 @@ private final class BitmapIndexedMapNode[K, +V](
   }
 
   override def foreach[U](f: ((K, V)) => U): Unit = {
+    val iN = payloadArity // arity doesn't change during this operation
     var i = 0
-    while (i < payloadArity) {
+    while (i < iN) {
       f(getPayload(i))
       i += 1
     }
 
+    val jN = nodeArity // arity doesn't change during this operation
     var j = 0
-    while (j < nodeArity) {
+    while (j < jN) {
       getNode(j).foreach(f)
+      j += 1
+    }
+  }
+
+  override def foreachWithHash(f: (K, V, Int) => Unit): Unit = {
+    var i = 0
+    val iN = payloadArity // arity doesn't change during this operation
+    while (i < iN) {
+      f(getKey(i), getValue(i), getHash(i))
+      i += 1
+    }
+
+    val jN = nodeArity // arity doesn't change during this operation
+    var j = 0
+    while (j < jN) {
+      getNode(j).foreachWithHash(f)
       j += 1
     }
   }
 
   override def transform[W](f: (K, V) => W): BitmapIndexedMapNode[K, W] = {
     var newContent: Array[Any] = null
-    val _payloadArity = payloadArity
-    val _nodeArity = nodeArity
+    val iN = payloadArity // arity doesn't change during this operation
+    val jN = nodeArity // arity doesn't change during this operation
     val newContentLength = content.length
     var i = 0
-    while (i < _payloadArity) {
+    while (i < iN) {
       val key = getKey(i)
       val value = getValue(i)
       val newValue = f(key, value)
@@ -748,7 +771,7 @@ private final class BitmapIndexedMapNode[K, +V](
     }
 
     var j = 0
-    while (j < _nodeArity) {
+    while (j < jN) {
       val node = getNode(j)
       val newNode = node.transform(f)
       if (newContent eq null) {
@@ -1330,6 +1353,14 @@ private final class HashCollisionMapNode[K, +V ](
 
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
 
+  override def foreachWithHash(f: (K, V, Int) => Unit): Unit = {
+    val iter = content.iterator
+    while (iter.hasNext) {
+      val next = iter.next()
+      f(next._1, next._2, originalHash)
+    }
+  }
+
   override def transform[W](f: (K, V) => W): HashCollisionMapNode[K, W] = {
     val newContent = Vector.newBuilder[(K, W)]
     val contentIter = content.iterator
@@ -1727,7 +1758,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
     this
   }
 
-  override def addAll(xs: IterableOnce[(K, V)]) = {
+  override def addAll(xs: IterableOnce[(K, V)]): this.type = {
     ensureUnaliased()
     xs match {
       case hm: HashMap[K, V] =>
@@ -1744,6 +1775,14 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
             )
             currentValueCursor += 1
           }
+        }
+      case hm: collection.mutable.HashMap[K, V] =>
+        val iter = hm.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          val originalHash = hm.unimproveHash(next.hash)
+          val hash = improve(originalHash)
+          update(rootNode, next.key, next.value, originalHash, hash, 0)
         }
       case other =>
         val it = other.iterator

@@ -9,7 +9,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   type K = Int
 
   override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-    p.withMinSuccessfulTests(100)
+    p.withMinSuccessfulTests(100).withInitialSeed(42L)
 
   private def doSubtract(one: HashSet[K], two: HashSet[K]) = {
     one.foldLeft(HashSet.empty[K])((result, elem) => if (two contains elem) result else result + elem)
@@ -290,6 +290,7 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
   property("(xs - elem) == xs.toList.filterNot(_ == elem).toSet") = forAll { (xs: Set[K], elem: K) =>
     (xs - elem) == xs.toList.filterNot(_ == elem).toSet
   }
+
   property("(xs + elem) == (xs.toList :+ elem).toSet") = forAll { (xs: Set[K], elem: K) =>
     (xs + elem) == (xs.toList :+ elem).toSet
   }
@@ -297,4 +298,31 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     val range = 1 to (rangeMax % 10000)
     xs -- range == xs -- range.toSet
   }
+
+  property("concat(mutable.HashSet)") = forAll { (left: HashSet[Int], right: HashSet[Int]) =>
+    val expected: collection.Set[Int] = left concat right
+    val actual: collection.Set[Int] = left.concat(right.to(collection.mutable.HashSet))
+    actual ?= expected
+  }
+  property("concat(Vector)") = forAll { (left: HashSet[Int], right: Vector[Int]) =>
+    val expected: collection.Set[Int] = left.iterableFactory.newBuilder[Int].addAll(left).addAll(right).result()
+    val actual: collection.Set[Int] = left.concat(right)
+    actual ?= expected
+  }
+  property("removedAll(HashSet)") = forAll { (left: HashSet[Int], right: HashSet[Int]) =>
+    val expected: collection.Set[Int] = left.filter(!right.contains(_))
+    val actual: collection.Set[Int] = left -- right
+    actual ?= expected
+  }
+  property("removedAll(mutable.HashSet)") = forAll { (left: HashSet[Int], right: HashSet[Int]) =>
+    val expected: collection.Set[Int] = left -- right
+    val actual: collection.Set[Int] = left -- right.to(collection.mutable.HashSet)
+    actual ?= expected
+  }
+  property("removedAll(Vector)") = forAll { (left: HashSet[Int], right: Vector[Int]) =>
+    val expected: collection.Set[Int] = left.filter(!right.contains(_))
+    val actual: collection.Set[Int] = left -- right
+    actual ?= expected
+  }
+
 }
