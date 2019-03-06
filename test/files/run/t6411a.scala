@@ -1,3 +1,9 @@
+// filter: scala.runtime.BoxesRunTime.{1,2}unboxToInt
+//
+// noise from -XX:CompileCommand=exclude,scala/runtime/BoxesRunTime.unboxToInt
+// CompilerOracle: exclude scala/runtime/BoxesRunTime.unboxToInt
+// ### Excluding compile: static scala.runtime.BoxesRunTime::unboxToInt
+//
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.language.reflectiveCalls
