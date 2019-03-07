@@ -1632,14 +1632,17 @@ trait Types
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
       // scala/bug#8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
-      def flatten(tps: List[Type]): List[Type] = {
+      val flattened: List[Type] = {
+        @inline
         def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
-        tps map dealiasRefinement flatMap {
-          case RefinedType(parents, ds) if ds.isEmpty => flatten(parents)
-          case tp => List(tp)
+        val buf: ListBuffer[Type] = ListBuffer.empty[Type]
+        def loop(tp: Type): Unit = dealiasRefinement(tp) match {
+          case RefinedType(parents, ds) if ds.isEmpty => parents.foreach(loop)
+          case tp => if (buf contains tp) () else buf += tp
         }
+        parents foreach loop
+        buf.toList
       }
-      val flattened = flatten(parents).distinct
       if (decls.isEmpty && hasLength(flattened, 1)) {
         flattened.head
       } else if (flattened != parents) {
