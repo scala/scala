@@ -12,7 +12,7 @@
 
 package scala.tools.nsc
 
-import java.io.File
+import java.io.{BufferedOutputStream, File}
 import java.lang.Thread.UncaughtExceptionHandler
 import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Path, Paths}
@@ -33,7 +33,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success, Try}
-import PipelineMain.{BuildStrategy, Traditional, Pipeline}
+import PipelineMain.{BuildStrategy, Pipeline, Traditional}
 
 class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy, argFiles: Seq[Path], useJars: Boolean) {
   private val pickleCacheConfigured = System.getProperty("scala.pipeline.picklecache")
@@ -103,7 +103,12 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
         if (!written.containsKey(pickle)) {
           val base = packageDir(symbol.owner)
           val primary = base.resolve(symbol.encodedName + ".sig")
-          Files.write(primary, pickle.bytes)
+          val writer = new BufferedOutputStream(Files.newOutputStream(primary))
+          try {
+            writer.write(pickle.bytes, 0, pickle.writeIndex)
+          } finally {
+            writer.close()
+          }
           written.put(pickle, ())
         }
       }
