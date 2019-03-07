@@ -45,3 +45,7 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   def toHexString: String    = java.lang.Long.toHexString(self)
   def toOctalString: String  = java.lang.Long.toOctalString(self)
 }
+
+final class RichLongSignum(val self: Long) extends AnyVal {
+  def signum: Int = math.signum(self).toInt
+}

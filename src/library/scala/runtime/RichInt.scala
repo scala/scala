@@ -82,3 +82,7 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
     */
   def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(self, end, step)
 }
+
+final class RichIntSignum(val self: Int) extends AnyVal {
+  def signum: Int = math.signum(self)
+}

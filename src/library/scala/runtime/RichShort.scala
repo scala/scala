@@ -32,3 +32,7 @@ final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy
   override def min(that: Short): Short = math.min(self.toInt, that.toInt).toShort
   override def signum: Int             = math.signum(self.toInt)
 }
+
+final class RichShortSignum(val self: Short) extends AnyVal {
+  def signum: Int = math.signum(self.toInt)
+}

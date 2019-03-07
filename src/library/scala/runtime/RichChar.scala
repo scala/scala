@@ -69,3 +69,8 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
   // public static boolean isJavaIdentifierStart(char ch)
   // public static boolean isJavaIdentifierPart(char ch)
 }
+
+final class RichCharSignum(val self: Char) extends AnyVal {
+  def signum: Int = math.signum(self.toInt)
+}
+

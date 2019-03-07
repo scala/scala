@@ -516,23 +516,13 @@ object Predef extends LowPriorityImplicits {
 private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2 {
   import mutable.ArraySeq
 
-  /** We prefer the java.lang.* boxed types to these wrappers in
-   *  any potential conflicts.  Conflicts do exist because the wrappers
-   *  need to implement ScalaNumber in order to have a symmetric equals
-   *  method, but that implies implementing java.lang.Number as well.
-   *
-   *  Note - these are inlined because they are value classes, but
-   *  the call to xxxWrapper is not eliminated even though it does nothing.
-   *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
-   *  because maybe loading Predef has side effects!
-   */
-  @inline implicit def byteWrapper(x: Byte): runtime.RichByte          = new runtime.RichByte(x)
-  @inline implicit def shortWrapper(x: Short): runtime.RichShort       = new runtime.RichShort(x)
-  @inline implicit def intWrapper(x: Int): runtime.RichInt             = new runtime.RichInt(x)
-  @inline implicit def charWrapper(c: Char): runtime.RichChar          = new runtime.RichChar(c)
-  @inline implicit def longWrapper(x: Long): runtime.RichLong          = new runtime.RichLong(x)
-  @inline implicit def booleanWrapper(x: Boolean): runtime.RichBoolean = new runtime.RichBoolean(x)
-
+  /** signum method for primitives which is mirroring [[scala.math.signum]] behaviour
+    * (different return types for Float / Double) */
+  @inline implicit def byteSignumWrapper(x: Byte): runtime.RichByteSignum = new runtime.RichByteSignum(x)
+  @inline implicit def shortSignumWrapper(x: Short): runtime.RichShortSignum = new runtime.RichShortSignum(x)
+  @inline implicit def intSignumWrapper(x: Int): runtime.RichIntSignum = new runtime.RichIntSignum(x)
+  @inline implicit def charSignumWrapper(x: Char): runtime.RichCharSignum = new runtime.RichCharSignum(x)
+  @inline implicit def longSignumWrapper(x: Long): runtime.RichLongSignum = new runtime.RichLongSignum(x)
   @inline implicit def floatSignumWrapper(x: Float): runtime.RichFloatSignum = new runtime.RichFloatSignum(x)
   @inline implicit def doubleSignumWrapper(x: Double): runtime.RichDoubleSignum = new runtime.RichDoubleSignum(x)
 
@@ -576,8 +566,24 @@ private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2
 
 private[scala] abstract class LowPriorityImplicits2 {
 
+  /** We prefer the java.lang.* boxed types to these wrappers in
+    *  any potential conflicts.  Conflicts do exist because the wrappers
+    *  need to implement ScalaNumber in order to have a symmetric equals
+    *  method, but that implies implementing java.lang.Number as well.
+    *
+    *  Note - these are inlined because they are value classes, but
+    *  the call to xxxWrapper is not eliminated even though it does nothing.
+    *  Even inlined, every call site does a no-op retrieval of Predef's MODULE$
+    *  because maybe loading Predef has side effects!
+    */
+  @inline implicit def byteWrapper(x: Byte): runtime.RichByte          = new runtime.RichByte(x)
+  @inline implicit def shortWrapper(x: Short): runtime.RichShort       = new runtime.RichShort(x)
+  @inline implicit def intWrapper(x: Int): runtime.RichInt             = new runtime.RichInt(x)
+  @inline implicit def charWrapper(c: Char): runtime.RichChar          = new runtime.RichChar(c)
+  @inline implicit def longWrapper(x: Long): runtime.RichLong          = new runtime.RichLong(x)
   @inline implicit def floatWrapper(x: Float): runtime.RichFloat       = new runtime.RichFloat(x)
   @inline implicit def doubleWrapper(x: Double): runtime.RichDouble    = new runtime.RichDouble(x)
+  @inline implicit def booleanWrapper(x: Boolean): runtime.RichBoolean = new runtime.RichBoolean(x)
 
   @deprecated("Implicit conversions from Array to immutable.IndexedSeq are implemented by copying; Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
   implicit def copyArrayToImmutableIndexedSeq[T](xs: Array[T]): IndexedSeq[T] =

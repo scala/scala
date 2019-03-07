@@ -32,3 +32,8 @@ final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[B
   override def min(that: Byte): Byte = math.min(self, that).toByte
   override def signum: Int           = math.signum(self.toInt)
 }
+
+final class RichByteSignum(val self: Byte) extends AnyVal {
+  def signum: Int = math.signum(self.toInt)
+}
+
