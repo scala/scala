@@ -702,36 +702,40 @@ trait EntityPage extends HtmlPage {
 
     val linearization = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
-        Div(`class`= "toggleContainer block", elems=
-          Span(`class`= "toggle", elems=
-            Txt("Linear Supertypes")
-          ) ::
-          Div(`class`= "superTypes hiddenContent", elems=
-            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = Txt(", "))
-          )
-        )  :: NoElems
+        Div(`class` = "toggleContainer", elems =
+          Div(`class` = "toggle block", elems =
+            Span(elems =
+              Txt("Linear Supertypes")
+            ) ::
+              Div(`class` = "superTypes hiddenContent", elems =
+                typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = Txt(", "))
+              )
+          )) :: NoElems
       case _ => NoElems
     }
 
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced =>
         val subs = mutable.HashSet.empty[DocTemplateEntity]
+
         def transitive(dtpl: DocTemplateEntity): Unit = {
           for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
             subs add sub
             transitive(sub)
           }
         }
+
         transitive(dtpl)
         if (subs.nonEmpty)
-          Div(`class`= "toggleContainer block", elems=
-            Span(`class`= "toggle", elems=
-              Txt("Known Subclasses")
-                ) ::
-            Div(`class`= "subClasses hiddenContent", elems=
-              templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), Txt(", "))
-               )
-             )  :: NoElems
+          Div(`class` = "toggleContainer", elems =
+            Div(`class` = "toggle block", elems =
+              Span(elems =
+                Txt("Known Subclasses")
+              ) ::
+                Div(`class` = "subClasses hiddenContent", elems =
+                  templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), Txt(", "))
+                )
+            )) :: NoElems
         else NoElems
       case _ => NoElems
     }
