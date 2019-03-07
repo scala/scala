@@ -125,8 +125,6 @@ trait UnCurry {
 
     // we are using `origSym.info`, which contains the type *before* the transformation
     // so we still see repeated parameter types (uncurry replaces them with Seq)
-    val isRepeated = origSym.info.paramss.flatten.map(sym => definitions.isRepeatedParamType(sym.tpe))
-    val oldPs = newInfo.paramss.head
     def toArrayType(tp: Type, newParam: Symbol): Type = {
       val arg = elementType(SeqClass, tp)
       val elem = if (arg.typeSymbol.isTypeParameterOrSkolem && !(arg <:< AnyRefTpe)) {
@@ -148,11 +146,12 @@ trait UnCurry {
       arrayType(elem)
     }
 
-    foreach2(forwSym.paramss.flatten, isRepeated)((p, isRep) =>
-      if (isRep) {
-        p.setInfo(toArrayType(p.info, p))
+    foreach2(forwSym.paramss, origSym.info.paramss){ (fsps, origPs) =>
+      foreach2(fsps, origPs){ (p, sym) =>
+        if (definitions.isRepeatedParamType(sym.tpe))
+          p.setInfo(toArrayType(p.info, p))
       }
-    )
+    }
 
     origSym.updateAttachment(VarargsSymbolAttachment(forwSym))
     forwSym
