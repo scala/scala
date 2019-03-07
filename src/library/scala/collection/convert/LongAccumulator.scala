@@ -141,12 +141,6 @@ final class LongAccumulator
   /** Returns a `java.util.Spliterator.OfLong` over the contents of this `LongAccumulator`*/
   final def spliterator: java.util.Spliterator.OfLong = stepper
 
-  /** Produces a sequential Java 8 `LongStream` over the elements of this `LongAccumulator`*/
-  final def seqStream: java.util.stream.LongStream = java.util.stream.StreamSupport.longStream(spliterator, false)
-
-  /** Produces a parallel Java 8 `LongStream` over the elements of this `LongAccumulator`*/
-  final def parStream: java.util.stream.LongStream = java.util.stream.StreamSupport.longStream(spliterator, true)
-
   /** Copies the elements in this `LongAccumulator` into an `Array[Long]` */
   final def toArray = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)

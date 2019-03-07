@@ -147,13 +147,6 @@ final class AnyAccumulator[A]
   /** Returns a `java.util.Spliterator` over the contents of this `AnyAccumulator`*/
   final def spliterator: java.util.Spliterator[A] = stepper.spliterator
 
-  /** Produces a sequential Java 8 Stream over the elements of this `AnyAccumulator`*/
-  final def seqStream: java.util.stream.Stream[A] = java.util.stream.StreamSupport.stream(spliterator, false)
-
-  /** Produces a parallel Java 8 Stream over the elements of this `AnyAccumulator`*/
-  final def parStream: java.util.stream.Stream[A] = java.util.stream.StreamSupport.stream(spliterator, true)
-
-
   /** Copy the elements in this `AnyAccumulator` into an `Array` */
   override def toArray[B >: A : ClassTag]: Array[B] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)

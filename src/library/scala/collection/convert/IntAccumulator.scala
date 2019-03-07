@@ -144,12 +144,6 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   /** Returns a `java.util.Spliterator.OfInt` over the contents of this `IntAccumulator`*/
   final def spliterator: java.util.Spliterator.OfInt = stepper
 
-  /** Produces a sequential Java 8 `IntStream` over the elements of this `IntAccumulator`*/
-  final def seqStream: java.util.stream.IntStream = java.util.stream.StreamSupport.intStream(spliterator, false)
-
-  /** Produces a parallel Java 8 `IntStream` over the elements of this `IntAccumulator`*/
-  final def parStream: java.util.stream.IntStream = java.util.stream.StreamSupport.intStream(spliterator, true)
-
   /** Copies the elements in this `IntAccumulator` into an `Array[Int]` */
   final def toArray = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)

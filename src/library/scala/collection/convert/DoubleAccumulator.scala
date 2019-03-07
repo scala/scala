@@ -140,12 +140,6 @@ final class DoubleAccumulator
   /** Returns a `java.util.Spliterator.OfDouble` over the contents of this `DoubleAccumulator`*/
   final def spliterator: java.util.Spliterator.OfDouble = stepper
 
-  /** Produces a sequential Java 8 `DoubleStream` over the elements of this `DoubleAccumulator`*/
-  final def seqStream: java.util.stream.DoubleStream = java.util.stream.StreamSupport.doubleStream(spliterator, false)
-
-  /** Produces a parallel Java 8 `DoubleStream` over the elements of this `DoubleAccumulator`*/
-  final def parStream: java.util.stream.DoubleStream = java.util.stream.StreamSupport.doubleStream(spliterator, true)
-
   /** Copies the elements in this `DoubleAccumulator` into an `Array[Double]` */
   final def toArray = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
