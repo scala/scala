@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.partest
+package scala.tools.testing
 
 import scala.collection.JavaConverters._
 import scala.tools.asm

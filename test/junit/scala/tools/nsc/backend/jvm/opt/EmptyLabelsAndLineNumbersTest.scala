@@ -8,8 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
-import scala.tools.partest.ASMConverters
-import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ASMConverters._
 import scala.tools.testing.AssertUtil._
 import scala.tools.testing.BytecodeTesting._
 

@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4
 import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
+import language.higherKinds
 
 import scala.tools.testing.BytecodeTesting
 

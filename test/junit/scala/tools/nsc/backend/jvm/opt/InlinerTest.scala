@@ -12,7 +12,7 @@ import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 

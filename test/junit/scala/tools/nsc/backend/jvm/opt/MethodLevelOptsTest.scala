@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.partest.ASMConverters._
+import scala.tools.testing.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 

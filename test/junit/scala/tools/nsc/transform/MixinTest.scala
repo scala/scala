@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.partest.ASMConverters.LineNumber
+import scala.tools.testing.ASMConverters.LineNumber
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 
