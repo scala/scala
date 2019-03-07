@@ -1713,7 +1713,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   def createJavadoc    = false
 
-  final val closeableRegistry: CloseableRegistry = new CloseableRegistry
+  final lazy val closeableRegistry: CloseableRegistry = new CloseableRegistry
 
   def close(): Unit = {
     perRunCaches.clearAll()
