@@ -51,6 +51,8 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
 
+  override def knownSize: Int = super[IndexedSeqOps].knownSize
+
   /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit =
     array = RefArrayUtils.ensureSize(array, size0, n)

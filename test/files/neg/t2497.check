@@ -1,0 +1,6 @@
+t2497.scala:21: error: cannot override a concrete member without a third member that's overridden by both (this rule is designed to prevent ``accidental overrides'')
+def eval: Int (defined in class Foo)
+  with absoverride def eval: Int (defined in trait DebugNode)
+  (new Foo with DebugNode).eval
+       ^
+one error found
