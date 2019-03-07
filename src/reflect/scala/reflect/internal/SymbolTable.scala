@@ -368,8 +368,7 @@ abstract class SymbolTable extends macros.Universe
       }
     }
     // enter decls of parent classes
-    for (px <- container.info.parents) {
-      val p = px.typeSymbol
+    for (p <- container.parentSymbolsIterator) {
       if (p != definitions.ObjectClass) {
         openPackageModule(p, dest)
       }
