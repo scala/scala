@@ -189,6 +189,13 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 object BitSet extends BitSetFactory[BitSet] {
   def empty: BitSet = new BitSet
 
+  /** Creates a BitSet fit to contain at least the number given of elements. */
+  def ofSize(size: Int): BitSet = new BitSet(new Array[Long]({
+    val quot = (size >> 6)
+    val mod = (size & 0x3F)
+    if (mod == 0) quot else quot + 1
+  }))
+
   /** A growing builder for mutable Sets. */
   def newBuilder: Builder[Int, BitSet] = new GrowingBuilder[Int, BitSet](empty)
 

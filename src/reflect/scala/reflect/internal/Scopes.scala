@@ -16,6 +16,7 @@ package internal
 
 import scala.annotation.tailrec
 import scala.collection.generic.Clearable
+import scala.collection.mutable.BitSet
 import scala.reflect.internal.util.{Statistics, StatisticsStatics}
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
@@ -467,10 +468,60 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    */
   private[scala] def newFindMemberScope: Scope = new Scope() {
     override def sorted = {
-      val members = toList
-      val owners = members.map(_.owner).distinct
-      val grouped = members groupBy (_.owner)
-      owners.flatMap(owner => grouped(owner).reverse)
+      //val owners = members.map(_.owner).distinct
+      //val grouped = members groupBy (_.owner)
+      //owners.flatMap(owner => grouped(owner).reverse)
+      var members = toList
+      var dropped: Int = 0 // number of elements of original members of already dropped
+      val buffer: Array[Symbol] = new Array[Symbol](members.length)
+      var block: Int = 0 // where the current block ends
+      val marked: BitSet = BitSet.ofSize(buffer.length) // indexes of members already used
+
+      def nextPivot: Symbol = {
+        // find first member which is not marked: that will give next block.
+        val pix : Int = marked.nonHead
+        members = members.drop(pix-dropped)
+        val pivot: Symbol = members.head
+        addSym(pivot)
+        marked.add(pix)
+        members = members.tail
+        dropped = pix + 1
+        pivot
+      }
+      def reverseSegment(begin: Int, end: Int): Unit = {
+        var ix = begin
+        var jx = end - 1
+        while (ix < jx){
+          val swap = buffer(ix)
+          buffer(ix) = buffer(jx)
+          buffer(jx) = swap
+          ix += 1
+          jx -= 1
+        }
+      }
+      def addSym(sym: Symbol): Unit = {
+        buffer(block) = sym
+        block += 1
+      }
+      def collectBlock(pivot: Symbol): Unit = {
+        // run through the list and add elements with current block
+        var ix: Int = dropped
+        var ms = members
+        while (!ms.isEmpty){
+          if (!marked(ix) && ms.head.owner == pivot.owner){
+            addSym(ms.head)
+            marked.add(ix)
+          }
+          ix += 1
+          ms = ms.tail
+        }
+      }
+      while (block < buffer.length){
+        val lastBlock = block
+        collectBlock(nextPivot)
+        reverseSegment(lastBlock, block)
+      }
+      buffer.toList
     }
   }
 

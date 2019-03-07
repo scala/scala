@@ -216,6 +216,19 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     throw new NoSuchElementException("Empty BitSet")
   }
 
+  /** Returns the first positive integer not in the BitSet
+   */
+  def nonHead: Int = {
+    val n = nwords
+    var i = 0
+    while (i < n) {
+      val wi = word(i)
+      if (wi != -1L) return WordLength*i + java.lang.Long.numberOfTrailingZeros(~wi)
+      i += 1
+    }
+    return WordLength * nwords
+  }
+
   override def last: Int = {
     var i = nwords - 1
     while (i >= 0) {
