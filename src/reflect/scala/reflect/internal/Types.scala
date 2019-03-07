@@ -2396,7 +2396,7 @@ trait Types
     override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
       val args1 = map match {
-        case map: VariancedTypeMap if args.nonEmpty && ! map.variance.isInvariant =>
+        case map: VariancedTypeMap if !args.isEmpty && ! map.variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
             args mapConserve map

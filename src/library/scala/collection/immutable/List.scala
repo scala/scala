@@ -130,6 +130,8 @@ sealed abstract class List[+A]
     these
   }
 
+  override final def isEmpty: Boolean = this eq Nil
+
   override def prepended[B >: A](elem: B): List[B] = elem :: this
 
   // When calling prependAll with another list `prefix`, avoid copying `this`
@@ -393,6 +395,19 @@ sealed abstract class List[+A]
     None
   }
 
+  override def last: A = {
+    if (isEmpty) throw new NoSuchElementException("List.last")
+    else {
+      var these = this
+      var scout = tail
+      while (!scout.isEmpty) {
+        these = scout
+        scout = scout.tail
+      }
+      these.head
+    }
+  }
+
   override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
     case that: LinearSeq[B] =>
       var i = this
@@ -576,13 +591,11 @@ sealed abstract class List[+A]
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   releaseFence()
-  override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
 }
 
 case object Nil extends List[Nothing] {
-  override def isEmpty: Boolean = true
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
   override def headOption: None.type = None
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
