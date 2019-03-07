@@ -108,8 +108,8 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
-         (numericWeight contains sub)
-      && (numericWeight contains sup)
+         isNumericValueClass(sub)
+      && isNumericValueClass(sup)
       && (numericWeight(sup) % numericWeight(sub) == 0)
     )
 
