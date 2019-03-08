@@ -195,7 +195,7 @@ trait EntityPage extends HtmlPage {
   val content = {
     val templateName = Txt(if (tpl.isRootPackage) "root package " else tpl.name)
     val displayName: Elems = tpl.companion match {
-      case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
+      case Some(companion) if (companion.visibility.isPublic && companion.inSource.isDefined) =>
         A(href= relativeLinkTo(companion), title= docEntityKindToCompanionTitle(tpl), elems=templateName)
       case _ =>
         templateName
@@ -213,7 +213,7 @@ trait EntityPage extends HtmlPage {
           {val imageClass = docEntityImageClass(tpl)
 
           tpl.companion match {
-            case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
+            case Some(companion) if (companion.visibility.isPublic && companion.inSource.isDefined) =>
               A(href= relativeLinkTo(companion), title= docEntityKindToCompanionTitle(tpl), elems= Div(`class`= s"big-circle $imageClass", elems=Txt(imageClass.substring(0,1))))
             case _ =>
               Div(`class`= s"big-circle $imageClass", elems=Txt(imageClass.substring(0,1)))
@@ -224,7 +224,7 @@ trait EntityPage extends HtmlPage {
       ))
 
     val memberSel: Elems =
-      if (valueMembers.filterNot(_.kind == "package").isEmpty) NoElems
+      if (valueMembers.forall(_.kind == "package")) NoElems
       else List(Div(id="mbrsel", elems=
         Div(`class`="toggle") ::
         Div(id="memberfilter", elems=
@@ -362,7 +362,7 @@ trait EntityPage extends HtmlPage {
     Li(name= mbr.definitionName, visbl= if (mbr.visibility.isProtected) "prt" else "pub",
       `class`= s"indented$indentation " + (if (mbr eq inTpl) "current" else ""),
       `data-isabs`= mbr.isAbstract.toString,
-      fullComment= if(memberComment.filter(_.tagName=="div").isEmpty) "no" else "yes",
+      fullComment= if(!memberComment.exists(_.tagName == "div")) "no" else "yes",
       group= mbr.group, elems=
       { sig } ++
       (Txt(" ") :: { signature (mbr, isSelf = false) }) ++
@@ -374,7 +374,7 @@ trait EntityPage extends HtmlPage {
     mbr match {
       // comment of class itself
       case dte: DocTemplateEntity if isSelf =>
-        Div(id="comment", `class`="fullcommenttop", elems= memberToCommentBodyHtml(mbr, inTpl, isSelf = true))
+        Div(id="comment", `class`="fullcommenttop", elems= memberToCommentBodyHtml(dte, inTpl, isSelf = true))
       case _ =>
         // comment of non-class member or non-documented inner class
         val commentBody = memberToCommentBodyHtml(mbr, inTpl, isSelf = false)
@@ -605,7 +605,7 @@ trait EntityPage extends HtmlPage {
       case _ => NoElems
     }
 
-    val deprecation: Elems =
+    val deprecations: Elems =
       mbr.deprecation match {
         case Some(deprecation) if !isReduced =>
           dt("Deprecated") ::
@@ -613,7 +613,7 @@ trait EntityPage extends HtmlPage {
         case _ => NoElems
       }
 
-    val migration: Elems =
+    val migrations: Elems =
       mbr.migration match {
         case Some(migration) if !isReduced =>
           dt("Migration") ::
@@ -693,7 +693,7 @@ trait EntityPage extends HtmlPage {
     }
     // end attributes block vals ---
 
-    val attributesInfo = implicitInformation ++ attributes ++ definitionClasses ++ fullSignature ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
+    val attributesInfo = implicitInformation ++ attributes ++ definitionClasses ++ fullSignature ++ selfType ++ annotations ++ deprecations ++ migrations ++ sourceLink ++ mainComment
     val attributesBlock =
       if (attributesInfo.isEmpty)
         NoElems
@@ -702,36 +702,40 @@ trait EntityPage extends HtmlPage {
 
     val linearization = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
-        Div(`class`= "toggleContainer block", elems=
-          Span(`class`= "toggle", elems=
-            Txt("Linear Supertypes")
-          ) ::
-          Div(`class`= "superTypes hiddenContent", elems=
-            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = Txt(", "))
-          )
-        )  :: NoElems
+        Div(`class` = "toggleContainer", elems =
+          Div(`class` = "toggle block", elems =
+            Span(elems =
+              Txt("Linear Supertypes")
+            ) ::
+              Div(`class` = "superTypes hiddenContent", elems =
+                typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = Txt(", "))
+              )
+          )) :: NoElems
       case _ => NoElems
     }
 
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced =>
         val subs = mutable.HashSet.empty[DocTemplateEntity]
+
         def transitive(dtpl: DocTemplateEntity): Unit = {
           for (sub <- dtpl.directSubClasses if !(subs contains sub)) {
             subs add sub
             transitive(sub)
           }
         }
+
         transitive(dtpl)
         if (subs.nonEmpty)
-          Div(`class`= "toggleContainer block", elems=
-            Span(`class`= "toggle", elems=
-              Txt("Known Subclasses")
-                ) ::
-            Div(`class`= "subClasses hiddenContent", elems=
-              templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), Txt(", "))
-               )
-             )  :: NoElems
+          Div(`class` = "toggleContainer", elems =
+            Div(`class` = "toggle block", elems =
+              Span(elems =
+                Txt("Known Subclasses")
+              ) ::
+                Div(`class` = "subClasses hiddenContent", elems =
+                  templatesToHtml(subs.toList.sorted(Entity.EntityOrdering), Txt(", "))
+                )
+            )) :: NoElems
         else NoElems
       case _ => NoElems
     }
@@ -858,7 +862,7 @@ trait EntityPage extends HtmlPage {
                 case vl :: vls => if(vl.isImplicit) { Span(`class`= "implicit", elems= Txt("implicit ")) } else Txt("")
                 case _ => Txt("")
               }
-              vlsss map { vlss => Span(`class`= "params", elems= Txt("(") :: implicitCheck(vlss) ++ params0(vlss) :+ Txt(")")) }
+              vlsss map { vlss => Span(`class`= "params", elems = Txt("(") :: implicitCheck(vlss) ++ params0(vlss) ++ Txt(")")) }
             }
             mbr match {
               case cls: Class => paramsToHtml(cls.valueParams)
@@ -920,7 +924,7 @@ trait EntityPage extends HtmlPage {
       }
       def indentation:Elems = {
         var indentXml = NoElems
-        for (x <- 1 to indent) indentXml ++= Txt("  ") // TODO: &nbsp;&nbsp;
+        for (_ <- 1 to indent) indentXml ++= Txt("  ") // TODO: &nbsp;&nbsp;
         indentXml
       }
       goodLookingXml
@@ -977,7 +981,7 @@ trait EntityPage extends HtmlPage {
   }
 
   private def bodyToStr(body: comment.Body): String =
-    body.blocks flatMap (blockToStr(_)) mkString ""
+    body.blocks flatMap blockToStr mkString ""
 
   private def blockToStr(block: comment.Block): String = block match {
     case comment.Paragraph(in) => Page.inlineToStr(in)
