@@ -1453,7 +1453,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   def illegalSpecializedInheritance(clazz: Symbol): Boolean = (
        clazz.isSpecialized
-    && originalClass(clazz).parentSymbols.exists(p => hasSpecializedParams(p) && !p.isTrait)
+    && originalClass(clazz).parentSymbolsIterator.exists(p => hasSpecializedParams(p) && !p.isTrait)
   )
 
   class SpecializationTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
@@ -1938,7 +1938,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
       if (hasSpecializedFields) {
-        val isSpecializedInstance = sClass :: sClass.parentSymbols exists (_ hasFlag SPECIALIZED)
+        val isSpecializedInstance = (sClass hasFlag SPECIALIZED) || sClass.parentSymbolsIterator.exists(_ hasFlag SPECIALIZED)
         val sym = sClass.newMethod(nme.SPECIALIZED_INSTANCE, sClass.pos) setInfoAndEnter MethodType(Nil, BooleanTpe)
 
         mbrs += DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanTpe)).setType(NoType)

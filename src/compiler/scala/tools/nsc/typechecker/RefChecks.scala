@@ -394,11 +394,11 @@ abstract class RefChecks extends Transform {
             //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
             return
           }
-          if (clazz.parentSymbols exists (p => subOther(p) && subMember(p) && deferredCheck)) {
+          if (clazz.parentSymbolsIterator exists (p => subOther(p) && subMember(p) && deferredCheck)) {
             //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
             return
           }
-          if (clazz.parentSymbols forall (p => subOther(p) == subMember(p))) {
+          if (clazz.parentSymbolsIterator forall (p => subOther(p) == subMember(p))) {
             //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
             return
           }

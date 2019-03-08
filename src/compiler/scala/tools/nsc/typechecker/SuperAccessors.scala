@@ -184,8 +184,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           // There is no test left for this warning, as I have been unable to come up with an example that would trigger it.
           // For a `super.m` selection, there must be a direct parent from which `m` can be selected. This parent will be used
           // as receiver in the invokespecial call.
-          val receiverInBytecode = erasure.accessibleOwnerOrParentDefiningMember(sym, sup.tpe.typeSymbol.parentSymbols, localTyper.context.asInstanceOf[erasure.Context]).getOrElse(sym.owner)
-          if (!clazz.parentSymbols.contains(receiverInBytecode))
+          val receiverInBytecode = erasure.accessibleOwnerOrParentDefiningMember(sym, sup.tpe.typeSymbol.parentSymbolsIterator, localTyper.context.asInstanceOf[erasure.Context]).getOrElse(sym.owner)
+          if (!clazz.parentSymbolsIterator.contains(receiverInBytecode))
             reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }

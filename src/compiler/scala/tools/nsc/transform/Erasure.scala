@@ -1213,7 +1213,7 @@ abstract class Erasure extends InfoTransform
           // class if `m` is defined in Java. This avoids the need for having the Java class as
           // a direct parent (scala-dev#143).
           if (qual.isInstanceOf[Super]) {
-            val qualSym = accessibleOwnerOrParentDefiningMember(sym, qual.tpe.typeSymbol.parentSymbols, context) match {
+            val qualSym = accessibleOwnerOrParentDefiningMember(sym, qual.tpe.typeSymbol.parentSymbolsIterator, context) match {
               case Some(p) => p
               case None =>
                 // There is no test for this warning, I have been unable to come up with an example that would trigger it.
@@ -1395,7 +1395,7 @@ abstract class Erasure extends InfoTransform
    * - For Java-defined members we prefer a direct parent over of the owner, even if the owner is
    *   accessible. This way the owner doesn't need to be added as a direct parent, see scala-dev#143.
    */
-  final def accessibleOwnerOrParentDefiningMember(member: Symbol, parents: List[Symbol], context: Context): Option[Symbol] = {
+  final def accessibleOwnerOrParentDefiningMember(member: Symbol, parents: Iterator[Symbol], context: Context): Option[Symbol] = {
     def eraseAny(cls: Symbol) = if (cls == AnyClass || cls == AnyValClass) ObjectClass else cls
 
     if (member.isConstructor || !member.isJavaDefined) Some(eraseAny(member.owner))
