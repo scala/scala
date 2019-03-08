@@ -220,6 +220,13 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Prevents parsing and inclusion of comments from java sources."
   )
 
+  val docCanonicalBaseUrl = StringSetting (
+    "-doc-canonical-base-url",
+    "url",
+    s"A base URL to use as prefix and add `canonical` URLs to all pages. The canonical URL may be used by search engines to choose the URL that you want people to see in search results. If unset no canonical URLs are generated.",
+    ""
+  )
+
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent,
