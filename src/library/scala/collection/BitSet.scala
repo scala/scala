@@ -131,12 +131,16 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       else Iterator.empty.next()
   }
 
-  def stepper: IntStepper with EfficientSubstep =
-    scala.collection.convert.impl.BitSetStepper.from(this)
-
-  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S =
-    if (shape eq StepperShape.intStepperShape) scala.collection.convert.impl.BitSetStepper.from(this).asInstanceOf[S]
-    else super.stepper(shape)
+  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    val st = scala.collection.convert.impl.BitSetStepper.from(this)
+    val r =
+      if (shape.shape == StepperShape.IntValue) st
+      else {
+        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        Stepper.boxingParIntStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSubstep]
+  }
 
   override def size: Int = {
     var s = 0

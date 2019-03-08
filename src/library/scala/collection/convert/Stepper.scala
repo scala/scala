@@ -590,6 +590,51 @@ object Stepper {
     case _ => new OfLongSpliterator(sp)
   }
 
+  def boxingSeqDoubleStepper(st: DoubleStepper): AnyStepper[Double] = new BoxingDoubleStepper(st)
+  def boxingParDoubleStepper(st: DoubleStepper with EfficientSubstep): AnyStepper[Double] with EfficientSubstep = new BoxingDoubleStepper(st) with EfficientSubstep
+
+  def boxingSeqIntStepper(st: IntStepper): AnyStepper[Int] = new BoxingIntStepper(st)
+  def boxingParIntStepper(st: IntStepper with EfficientSubstep): AnyStepper[Int] with EfficientSubstep = new BoxingIntStepper(st) with EfficientSubstep
+
+  def boxingSeqLongStepper(st: LongStepper): AnyStepper[Long] = new BoxingLongStepper(st)
+  def boxingParLongStepper(st: LongStepper with EfficientSubstep): AnyStepper[Long] with EfficientSubstep = new BoxingLongStepper(st) with EfficientSubstep
+
+  private[convert] class BoxingDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
+    override def hasNext: Boolean = st.hasNext
+    override def next(): Double = st.next()
+    override def characteristics: Int = st.characteristics
+    override def estimateSize(): Long = st.estimateSize()
+    override def substep(): AnyStepper[Double] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxingDoubleStepper(sub)
+    }
+  }
+
+  private[convert] class BoxingIntStepper(st: IntStepper) extends AnyStepper[Int] {
+    override def hasNext: Boolean = st.hasNext
+    override def next(): Int = st.next()
+    override def characteristics: Int = st.characteristics
+    override def estimateSize(): Long = st.estimateSize()
+    override def substep(): AnyStepper[Int] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxingIntStepper(sub)
+    }
+  }
+
+  private[convert] class BoxingLongStepper(st: LongStepper) extends AnyStepper[Long] {
+    override def hasNext: Boolean = st.hasNext
+    override def next(): Long = st.next()
+    override def characteristics: Int = st.characteristics
+    override def estimateSize(): Long = st.estimateSize()
+    override def substep(): AnyStepper[Long] = {
+      val sub = st.substep()
+      if (sub == null) null
+      else new BoxingLongStepper(sub)
+    }
+  }
+
   /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
    * This provides a basis for more efficient stream processing on unboxed values provided that the original source
    * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided

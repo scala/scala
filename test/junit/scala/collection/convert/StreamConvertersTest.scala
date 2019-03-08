@@ -325,4 +325,33 @@ class StreamConvertersTest {
       (sasr: Stream[String]).count()
     }
   }
+
+  @Test
+  def bitSetStepper(): Unit = {
+    locally {
+      val ibs = collection.immutable.BitSet(1, 2, 3)
+      val s1 = ibs.stepper
+      val s2: IntStepper = ibs.stepper
+      val s3: IntStepper with EfficientSubstep = ibs.stepper
+      val s4: Stepper[Int] = ibs.stepper
+      val s5: Stepper[Int] with EfficientSubstep = ibs.stepper
+      val s6: AnyStepper[Int] = ibs.stepper[Int, AnyStepper[Int]]
+      val s7: AnyStepper[Int] with EfficientSubstep = ibs.stepper[Int, AnyStepper[Int]]
+      // val s8: Stepper[Any] = ibs.stepper  // no StepperShape instance
+      // val s9: Stepper[Long] = ibs.stepper // no StepperShape instance
+    }
+
+    locally {
+      val mbs = collection.mutable.BitSet(1, 2, 3)
+      val s1 = mbs.stepper
+      val s2: IntStepper = mbs.stepper
+      val s3: IntStepper with EfficientSubstep = mbs.stepper
+      val s4: Stepper[Int] = mbs.stepper
+      val s5: Stepper[Int] with EfficientSubstep = mbs.stepper
+      val s6: AnyStepper[Int] = mbs.stepper(impl.StepperShape.anyStepperShape[Int])
+      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(impl.StepperShape.anyStepperShape[Int])
+      // val s8: Stepper[Any] = mbs.stepper  // no StepperShape instance
+      // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
+    }
+  }
 }

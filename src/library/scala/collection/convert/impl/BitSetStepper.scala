@@ -59,7 +59,7 @@ with IntStepper {
       }
     }
 
-  def semiclone(half: Int) =
+  def semiclone(half: Int): BitSetStepper =
     if (underlying == null) {
       val ans = new BitSetStepper(null, cache0, cache1, i0, half, cacheIndex)
       ans.found = found
@@ -94,8 +94,7 @@ with IntStepper {
     else if ((bits & (1L << from)) != 0) from
     else scanLong(bits, from + 1)
 
-
-  def nextInt() = 
+  def nextInt(): Int =
     if (found || findNext()) { 
       found = false
       val ans = i0
