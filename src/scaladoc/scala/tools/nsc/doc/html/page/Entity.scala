@@ -48,6 +48,14 @@ trait EntityPage extends HtmlPage {
 
   def headers =
     <xml:group>
+      { val canonicalSetting = universe.settings.docCanonicalBaseUrl
+        if (canonicalSetting.isSetByUser) {
+          val canonicalUrl =
+          if (canonicalSetting.value.endsWith("/")) canonicalSetting.value
+            else canonicalSetting.value + "/"
+          <link href={ canonicalUrl + Page.relativeLinkTo(List("."), path) } rel="canonical"/>
+        } else NodeSeq.Empty
+      }
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
