@@ -12,11 +12,11 @@
 
 package scala.tools.nsc.interpreter
 
-import scala.reflect.internal.util.RangePosition
+import scala.reflect.internal.util.{Position, RangePosition}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.{interactive, CloseableRegistry, Settings}
+import scala.tools.nsc.{CloseableRegistry, Settings, interactive}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
 
@@ -98,10 +98,13 @@ trait PresentationCompilation {
     import compiler.CompletionResult
 
     def completionsAt(cursor: Int): CompletionResult = {
-      val pos = unit.source.position(preambleLength + cursor)
-      compiler.completionsAt(pos)
+      compiler.completionsAt(positionOf(cursor))
     }
-    def typedTreeAt(code: String, selectionStart: Int, selectionEnd: Int): compiler.Tree = {
+
+    def positionOf(cursor: Int): Position =
+      unit.source.position(preambleLength + cursor)
+
+    def typedTreeAt(selectionStart: Int, selectionEnd: Int): compiler.Tree = {
       val start = selectionStart + preambleLength
       val end   = selectionEnd + preambleLength
       val pos   = new RangePosition(unit.source, start, start, end)
