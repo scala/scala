@@ -78,8 +78,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
     shape.
-      parUnbox(collection.convert.impl.AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i))).
-      asInstanceOf[S with EfficientSubstep]
+      parUnbox(collection.convert.impl.AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i)))
 
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {
     import collection.convert.impl._
