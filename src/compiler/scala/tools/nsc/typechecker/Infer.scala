@@ -284,9 +284,8 @@ trait Infer extends Checkable {
           tree setSymbol sym1 setType (
           pre match {
               case _: SuperType =>
-                val result = owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
-                if (result ne owntype) assert(!sym.isConstructor || owntype.isInstanceOf[OverloadedType], (sym, owntype, result))
-                result
+                if (!sym.isConstructor && !owntype.isInstanceOf[OverloadedType]) owntype // OPT: avoid lambda allocation and Type.map
+                else owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
               case _            => owntype
             }
           )
