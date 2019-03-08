@@ -368,4 +368,50 @@ class StreamConvertersTest {
     // val s8: Stepper[Any] = r.stepper  // no StepperShape instance
     // val s9: Stepper[Long] = r.stepper // no StepperShape instance
   }
+
+  @Test
+  def stringStepper(): Unit = {
+    val r = "millie"
+    def s1 = r.stepper
+    def s2: IntStepper = r.stepper
+    def s3: IntStepper with EfficientSubstep = r.stepper
+    def s4: Stepper[Int] = r.stepper
+    def s5: Stepper[Int] with EfficientSubstep = r.stepper
+
+    def cs1: IntStepper with EfficientSubstep = r.charStepper
+    def ps1: IntStepper with EfficientSubstep = r.codePointStepper
+
+    locally {
+      import scala.collection.JavaConverters._
+      val rss = r.seqStream
+      (rss: IntStream).count()
+      val rps = r.parStream
+      (rps: IntStream).count()
+      val rscs = r.seqCharStream
+      (rscs: IntStream).count()
+      val rpcs = r.parCharStream
+      (rpcs: IntStream).count()
+      val rsps = r.seqCodePointStream
+      (rsps: IntStream).count()
+      val rpps = r.parCodePointStream
+      (rpps: IntStream).count()
+
+      val isss = s3.seqStream
+      (isss: IntStream).count()
+      val isps = s3.parStream
+      (isps: IntStream).count()
+
+      val siss = s5.seqStream
+      (siss: IntStream).count()
+      val sips = s5.parStream
+      (sips: IntStream).count()
+
+      cs1.seqStream.count()
+      cs1.parStream.count()
+      ps1.seqStream.count()
+      ps1.parStream.count()
+    }
+
+  }
+
 }

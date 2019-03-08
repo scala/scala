@@ -1083,11 +1083,12 @@ final class StringOps(private val s: String) extends AnyVal {
   /** Iterator can be used only once */
   def iterator: Iterator[Char] = new StringIterator(s)
 
-  /** Stepper can be used with Java 8 Streams; this method is equivalent to a call to `charStepper`.  See also `codePointStepper`. */
-  @`inline` def stepper[S <: Stepper[_]](implicit shape: StepperShape[Char, S]): S with EfficientSubstep =
-    charStepper.asInstanceOf[S with EfficientSubstep]
+  /** Stepper can be used with Java 8 Streams. This method is equivalent to a call to
+    * [[charStepper]]. See also [[codePointStepper]].
+    */
+  @`inline` def stepper: IntStepper with EfficientSubstep = charStepper
 
-  /** Steps over characters in this string.  Values are packed in `Int` for efficiency
+  /** Steps over characters in this string. Values are packed in `Int` for efficiency
     * and compatibility with Java 8 Streams which have an efficient specialization for `Int`.
     */
   @`inline` def charStepper: IntStepper with EfficientSubstep = new CharStringStepper(s, 0, s.length)

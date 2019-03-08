@@ -22,27 +22,27 @@ extends IndexedStepperBase[IntStepper, CharStringStepper](_i0, _iN)
 with IntStepper {
   def nextInt(): Int =
     if (hasNext) { val j = i0; i0 += 1; underlying.charAt(j) }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(half: Int) = new CharStringStepper(underlying, i0, half)
+  def semiclone(half: Int): CharStringStepper = new CharStringStepper(underlying, i0, half)
 }
 
 /** Implements `Stepper` on a `String` where you step through code points.
   */
 private[collection] final class CodePointStringStepper(underlying: String, private var i0: Int, private var iN: Int)
 extends IntStepper with EfficientSubstep {
-  def characteristics() = Stepper.Immutable | Stepper.NonNull | Stepper.Ordered
-  def estimateSize = iN - i0
-  def hasNext = i0 < iN
+  def characteristics(): Int = Stepper.Immutable | Stepper.NonNull | Stepper.Ordered
+  def estimateSize: Long = iN - i0
+  def hasNext: Boolean = i0 < iN
   def nextInt(): Int = {
     if (hasNext) {
       val cp = underlying.codePointAt(i0)
       i0 += charCount(cp)
       cp
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
   }
-  def substep(): IntStepper with EfficientSubstep = 
+  def substep(): CodePointStringStepper =
     if (iN - 3 > i0) {
       var half = (i0 + iN) >>> 1
       if (isLowSurrogate(underlying.charAt(half))) half -= 1

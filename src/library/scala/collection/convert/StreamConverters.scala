@@ -116,6 +116,31 @@ trait StreamConverters {
     def parStream: Stream[A] = seqStream.parallel
   }
 
+  // strings
+
+  implicit class StringHasSeqParStream(s: String) {
+    /**
+     * A sequential stream on the characters of a string, same as [[seqCharStream]]. See also
+     * [[seqCodePointStream]].
+     */
+    def seqStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ false)
+    /**
+     * A parallel stream on the characters of a string, same as [[parCharStream]]. See also
+     * [[parCodePointStream]].
+     */
+    def parStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ true)
+
+    /** A sequential stream on the characters of a string. See also  [[seqCodePointStream]]. */
+    def seqCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ false)
+    /** A parallel stream on the characters of a string. See also [[parCodePointStream]]. */
+    def parCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ true)
+
+    /** A sequential stream on the code points of a string. See also [[seqCharStream]]. */
+    def seqCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ false)
+    /** A parallel stream on the code points of a string. See also [[parCharStream]]. */
+    def parCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ true)
+  }
+
   // toScala for streams
 
   implicit class StreamHasToScala[A](stream: Stream[A]) {
