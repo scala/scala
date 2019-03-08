@@ -22,14 +22,14 @@ extends IndexedStepperBase[IntStepper, RangeStepper](_i0, _iN)
 with IntStepper {
   def nextInt(): Int = 
     if (hasNext) { 
-      val ans = myNext;
+      val ans = myNext
       myNext += myStep
       i0 += 1
       ans 
     }
     else Stepper.throwNSEE()
   protected def semiclone(half: Int): RangeStepper = new RangeStepper(myNext, myStep, i0, half)
-  override def substep() = {
+  override def substep(): IntStepper = {
     val old_i0 = i0
     val ans = super.substep()
     myNext += (i0 - old_i0) * myStep

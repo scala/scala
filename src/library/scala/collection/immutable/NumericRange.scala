@@ -62,7 +62,7 @@ sealed class NumericRange[T](
     val s = shape.shape match {
       case StepperShape.IntValue    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
       case StepperShape.LongValue   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
-      case _        => shape.parUnbox((new AnyNumericRangeStepper[T](this, 0, length)).asInstanceOf[AnyStepper[B] with EfficientSubstep])
+      case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[B] with EfficientSubstep])
     }
     s.asInstanceOf[S with EfficientSubstep]
   }

@@ -71,12 +71,16 @@ sealed abstract class Range(
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
-  final def stepper: IntStepper with EfficientSubstep = new RangeStepper(start, step, 0, length)
-
-  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
-    if (shape.shape == StepperShape.IntValue)
-      (new RangeStepper(start, step, 0, length)).asInstanceOf[S with EfficientSubstep]
-    else super.stepper(shape)
+  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    val st = new RangeStepper(start, step, 0, length)
+    val r =
+      if (shape.shape == StepperShape.IntValue) st
+      else {
+        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        Stepper.boxingParIntStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSubstep]
+  }
 
   private[this] def gap           = end.toLong - start.toLong
   private[this] def isExact       = gap % step == 0

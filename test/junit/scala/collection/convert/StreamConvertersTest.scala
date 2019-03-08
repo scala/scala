@@ -354,4 +354,18 @@ class StreamConvertersTest {
       // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
     }
   }
+
+  @Test
+  def rangeStepper(): Unit = {
+    val r = 1 to 20 by 3
+    val s1 = r.stepper
+    val s2: IntStepper = r.stepper
+    val s3: IntStepper with EfficientSubstep = r.stepper
+    val s4: Stepper[Int] = r.stepper
+    val s5: Stepper[Int] with EfficientSubstep = r.stepper
+    val s6: AnyStepper[Int] = r.stepper[Int, AnyStepper[Int]]
+    val s7: AnyStepper[Int] with EfficientSubstep = r.stepper[Int, AnyStepper[Int]]
+    // val s8: Stepper[Any] = r.stepper  // no StepperShape instance
+    // val s9: Stepper[Long] = r.stepper // no StepperShape instance
+  }
 }
