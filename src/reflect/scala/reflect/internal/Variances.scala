@@ -206,13 +206,17 @@ trait Variances {
 
   /** Compute variance of type parameter `tparam` in all types `tps`. */
   def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance =
-    fold(tps map (tp => varianceInType(tp)(tparam)))
+    Variance.foldExtract(tps)(t => varianceInType(t)(tparam))
 
   /** Compute variance of type parameter `tparam` in type `tp`. */
   def varianceInType(tp: Type)(tparam: Symbol): Variance = {
-    def inArgs(sym: Symbol, args: List[Type]): Variance = fold(map2(args, sym.typeParams)((a, p) => inType(a) * p.variance))
-    def inSyms(syms: List[Symbol]): Variance            = fold(syms map inSym)
-    def inTypes(tps: List[Type]): Variance              = fold(tps map inType)
+    def inArgs(sym: Symbol, args: List[Type]): Variance =
+      Variance.foldExtract2(args, sym.typeParams)( (a, b) => inType(a)*b.variance )
+    def inSyms(syms: List[Symbol]): Variance =
+      Variance.foldExtract(syms)(s => inSym(s))
+    def inTypes(tps: List[Type]): Variance = Variance.foldExtract(tps)(t => inType(t))
+
+    def inAnnots(anns: List[AnnotationInfo]): Variance =  Variance.foldExtract(anns)(a => inType(a.atp))
 
     def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
     def inType(tp: Type): Variance   = tp match {
@@ -229,7 +233,7 @@ trait Variances {
       case MethodType(params, restpe)                   => inSyms(params).flip         & inType(restpe)
       case PolyType(tparams, restpe)                    => inSyms(tparams).flip        & inType(restpe)
       case ExistentialType(tparams, restpe)             => inSyms(tparams)             & inType(restpe)
-      case AnnotatedType(annots, tp)                    => inTypes(annots map (_.atp)) & inType(tp)
+      case AnnotatedType(annots, tp)                    => inAnnots(annots)            & inType(tp)
     }
 
     inType(tp)
