@@ -71,15 +71,15 @@ private[collection] final class AnyTableStepper[A, I >: Null <: AnyRef](
 )
 extends TableStepperBase[A, I, AnyStepper[A], AnyTableStepper[A, I]](_maxLength, _table, _i0, _iN)
 with AnyStepper[A] {
-  def next() = 
+  def next(): A =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(half: Int) = new AnyTableStepper[A, I](maxLength, table, iterate, extract, i0, half)
+  def semiclone(half: Int): AnyTableStepper[A, I] = new AnyTableStepper[A, I](maxLength, table, iterate, extract, i0, half)
 }
 
 
@@ -88,15 +88,15 @@ private[collection] final class DoubleTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Double, I, DoubleStepper, DoubleTableStepper[I]](_maxLength, _table, _i0, _iN)
 with DoubleStepper {
-  def nextDouble() = 
+  def nextDouble(): Double =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(half: Int) = new DoubleTableStepper[I](maxLength, table, iterate, extract, i0, half)
+  def semiclone(half: Int): DoubleTableStepper[I] = new DoubleTableStepper[I](maxLength, table, iterate, extract, i0, half)
 }
 
 
@@ -105,15 +105,15 @@ private[collection] final class IntTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Int, I, IntStepper, IntTableStepper[I]](_maxLength, _table, _i0, _iN)
 with IntStepper {
-  def nextInt() = 
+  def nextInt(): Int =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(half: Int) = new IntTableStepper[I](maxLength, table, iterate, extract, i0, half)
+  def semiclone(half: Int): IntTableStepper[I] = new IntTableStepper[I](maxLength, table, iterate, extract, i0, half)
 }
 
 
@@ -122,14 +122,14 @@ private[collection] final class LongTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Long, I, LongStepper, LongTableStepper[I]](_maxLength, _table, _i0, _iN)
 with LongStepper {
-  def nextLong() = 
+  def nextLong(): Long =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(half: Int) = new LongTableStepper[I](maxLength, table, iterate, extract, i0, half)
+  def semiclone(half: Int): LongTableStepper[I] = new LongTableStepper[I](maxLength, table, iterate, extract, i0, half)
 }
 

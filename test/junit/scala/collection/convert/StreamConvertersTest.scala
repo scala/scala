@@ -411,7 +411,5 @@ class StreamConvertersTest {
       ps1.seqStream.count()
       ps1.parStream.count()
     }
-
   }
-
 }
