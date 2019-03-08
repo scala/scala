@@ -59,13 +59,13 @@ extends IndexedStepperBase[Sub, Semi](_i0, _iN) {
 private[collection] class AnyVectorStepper[A](_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[AnyStepper[A], AnyVectorStepper[A]](_i0, _iN, _displayN, _trunk)
 with AnyStepper[A] {
-  def next() = if (hasNext) {
+  def next(): A = if (hasNext) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
     leaves(index).asInstanceOf[A]
-  } else Stepper.throwNSEE
-  def semiclone(half: Int) = {
+  } else Stepper.throwNSEE()
+  def semiclone(half: Int): AnyVectorStepper[A] = {
     val ans = new AnyVectorStepper[A](i0, half, displayN, trunk)
     index = 32
     index1 = 32
@@ -77,13 +77,13 @@ with AnyStepper[A] {
 private[collection] class DoubleVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[DoubleStepper, DoubleVectorStepper](_i0, _iN, _displayN, _trunk)
 with DoubleStepper {
-  def nextDouble() = if (hasNext) {
+  def nextDouble(): Double = if (hasNext) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
     leaves(index).asInstanceOf[Double]
-  } else Stepper.throwNSEE
-  def semiclone(half: Int) = {
+  } else Stepper.throwNSEE()
+  def semiclone(half: Int): DoubleVectorStepper = {
     val ans = new DoubleVectorStepper(i0, half, displayN, trunk)
     index = 32
     index1 = 32
@@ -95,13 +95,13 @@ with DoubleStepper {
 private[collection] class IntVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[IntStepper, IntVectorStepper](_i0, _iN, _displayN, _trunk)
 with IntStepper {
-  def nextInt() = if (hasNext) {
+  def nextInt(): Int = if (hasNext) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
     leaves(index).asInstanceOf[Int]
-  } else Stepper.throwNSEE
-  def semiclone(half: Int) = {
+  } else Stepper.throwNSEE()
+  def semiclone(half: Int): IntVectorStepper = {
     val ans = new IntVectorStepper(i0, half, displayN, trunk)
     index = 32
     index1 = 32
@@ -113,13 +113,13 @@ with IntStepper {
 private[collection] class LongVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[LongStepper, LongVectorStepper](_i0, _iN, _displayN, _trunk)
 with LongStepper {
-  def nextLong() = if (hasNext) {
+  def nextLong(): Long = if (hasNext) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
     leaves(index).asInstanceOf[Long]
-  } else Stepper.throwNSEE
-  def semiclone(half: Int) = {
+  } else Stepper.throwNSEE()
+  def semiclone(half: Int): LongVectorStepper = {
     val ans = new LongVectorStepper(i0, half, displayN, trunk)
     index = 32
     index1 = 32

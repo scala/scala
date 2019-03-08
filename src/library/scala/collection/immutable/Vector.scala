@@ -116,7 +116,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
     import convert.impl._
     var depth = -1
-    val displaySource = 
+    val displaySource: VectorPointer[A] =
       if (dirty) iterator.asInstanceOf[VectorIterator[A]]
       else this
     val trunk: Array[AnyRef] =
