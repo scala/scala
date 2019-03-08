@@ -282,11 +282,11 @@ trait Infer extends Checkable {
             catch { case ex: MalformedType => malformed(ex, pre memberType underlyingSymbol(sym)) }
           )
           tree setSymbol sym1 setType (
-          pre match {
-              case _: SuperType =>
-                if (!sym.isConstructor && !owntype.isInstanceOf[OverloadedType]) owntype // OPT: avoid lambda allocation and Type.map
-                else owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
-              case _            => owntype
+            pre match {
+              // OPT: avoid lambda allocation and Type.map for super constructor calls
+              case _: SuperType if !sym.isConstructor && !owntype.isInstanceOf[OverloadedType] =>
+                owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
+              case _ => owntype
             }
           )
       }
