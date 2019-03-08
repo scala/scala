@@ -203,6 +203,16 @@ class CompletionTest {
   }
 
   @Test
+  def constructor(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "class Shazam{}; new Shaz")("Shazam")
+
+    intp.interpret("class Shazam {}")
+    checkExact(completer, "new Shaz")("Shazam")
+  }
+
+  @Test
   def performanceOfLenientMatch(): Unit = {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)
