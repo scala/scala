@@ -331,6 +331,9 @@ trait Collections {
   /** Again avoiding calling length, but the lengthCompare interface is clunky.
     */
   final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
+
+  @tailrec final def sumSize(xss: List[List[_]], acc: Int): Int =
+    if (xss.isEmpty) acc else sumSize(xss.tail, acc + xss.head.size)
 }
 
 object Collections extends Collections
