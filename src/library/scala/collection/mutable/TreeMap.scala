@@ -86,9 +86,9 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
       scala.collection.convert.impl.AnyBinaryTreeStepper.from[B, RB.Node[K, V]](
         size, tree.root, _.left, _.right, x => (x.key, x.value)
       )
-    ).asInstanceOf[S with EfficientSubstep]
+    )
 
-  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
+  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {
     import scala.collection.convert.impl._
     type T = RB.Node[K, V]
     val s = (shape.shape: @annotation.switch) match {
@@ -97,10 +97,10 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
       case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T](size, tree.root, _.left, _.right, _.key.asInstanceOf[Double])
       case _         => shape.parUnbox(AnyBinaryTreeStepper.from[K, T](size, tree.root, _.left, _.right, _.key))
     }
-    s.asInstanceOf[S]
+    s.asInstanceOf[S with EfficientSubstep]
   }
 
-  override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
+  override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSubstep = {
     import scala.collection.convert.impl._
     type T = RB.Node[K, V]
     val s = (shape.shape: @annotation.switch) match {
@@ -109,7 +109,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
       case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T] (size, tree.root, _.left, _.right, _.value.asInstanceOf[Double])
       case _         => shape.parUnbox(AnyBinaryTreeStepper.from[V1, T](size, tree.root, _.left, _.right, _.value.asInstanceOf[V1]))
     }
-    s.asInstanceOf[S]
+    s.asInstanceOf[S with EfficientSubstep]
   }
 
   def addOne(elem: (K, V)): this.type = { RB.insert(tree, elem._1, elem._2); this }

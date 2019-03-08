@@ -143,20 +143,20 @@ private[collection] final class AnyBinaryTreeStepper[A, T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[A, T, AnyStepper[A], AnyBinaryTreeStepper[A, T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with AnyStepper[A] {
-  def next() = 
+  def next(): A =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int) =
+  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): AnyBinaryTreeStepper[A, T] =
     new AnyBinaryTreeStepper[A, T](maxL, myC, stk, ix, left, right, extract)
 }
 private[collection] object AnyBinaryTreeStepper {
-  def from[A, T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => A) = {
+  def from[A, T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => A): AnyBinaryTreeStepper[A, T] = {
     val ans = new AnyBinaryTreeStepper(0, null, BinaryTreeStepper.emptyStack, -1, left, right, extract)
     ans.initialize(root, maxLength)
     ans
@@ -169,20 +169,20 @@ private[collection] final class DoubleBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Double, T, DoubleStepper, DoubleBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with DoubleStepper {
-  def nextDouble() = 
+  def nextDouble(): Double =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int) =
+  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): DoubleBinaryTreeStepper[T] =
     new DoubleBinaryTreeStepper[T](maxL, myC, stk, ix, left, right, extract)
 }
 private [collection] object DoubleBinaryTreeStepper {
-  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Double) = {
+  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Double): DoubleBinaryTreeStepper[T] = {
     val ans = new DoubleBinaryTreeStepper(0, null, BinaryTreeStepper.emptyStack, -1, left, right, extract)
     ans.initialize(root, maxLength)
     ans
@@ -195,20 +195,20 @@ private[collection] final class IntBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Int, T, IntStepper, IntBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with IntStepper {
-  def nextInt() = 
+  def nextInt(): Int =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int) =
+  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): IntBinaryTreeStepper[T] =
     new IntBinaryTreeStepper[T](maxL, myC, stk, ix, left, right, extract)
 }
 private [collection] object IntBinaryTreeStepper {
-  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Int) = {
+  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Int): IntBinaryTreeStepper[T] = {
     val ans = new IntBinaryTreeStepper(0, null, BinaryTreeStepper.emptyStack, -1, left, right, extract)
     ans.initialize(root, maxLength)
     ans
@@ -222,20 +222,20 @@ private[collection] final class LongBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Long, T, LongStepper, LongBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with LongStepper {
-  def nextLong() = 
+  def nextLong(): Long =
     if (hasNext) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
       ans
     }
-    else Stepper.throwNSEE
+    else Stepper.throwNSEE()
 
-  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int) =
+  def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): LongBinaryTreeStepper[T] =
     new LongBinaryTreeStepper[T](maxL, myC, stk, ix, left, right, extract)
 }
 private [collection] object LongBinaryTreeStepper {
-  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Long) = {
+  def from[T >: Null <: AnyRef](maxLength: Int, root: T, left: T => T, right: T => T, extract: T => Long): LongBinaryTreeStepper[T] = {
     val ans = new LongBinaryTreeStepper(0, null, BinaryTreeStepper.emptyStack, -1, left, right, extract)
     ans.initialize(root, maxLength)
     ans
