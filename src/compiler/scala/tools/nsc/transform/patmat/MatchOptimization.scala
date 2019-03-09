@@ -12,8 +12,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.language.postfixOps
-
 import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
@@ -62,7 +60,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         if (conds(False)) false // stop when we encounter a definite "no" or a "not sure"
         else {
           val nonTrivial = conds - True
-          if (nonTrivial nonEmpty) {
+          if (!nonTrivial.isEmpty) {
             tested ++= nonTrivial
 
             // is there an earlier test that checks our condition and whose dependencies are implied by ours?
@@ -468,7 +466,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
           // a switch with duplicate cases yields a verify error,
           // and a switch with duplicate cases and guards cannot soundly be rewritten to an unguarded switch
           // (even though the verify error would disappear, the behaviour would change)
-          val allReachable = unreachableCase(caseDefsWithGuards) map (cd => reportUnreachable(cd.body.pos)) isEmpty
+          val allReachable = unreachableCase(caseDefsWithGuards).map(cd => reportUnreachable(cd.body.pos)).isEmpty
 
           if (!allReachable) Nil
           else if (noGuards(caseDefsWithGuards)) {
@@ -536,7 +534,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
       if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
-        if (caseDefsWithDefault isEmpty) None // not worth emitting a switch.
+        if (caseDefsWithDefault.isEmpty) None // not worth emitting a switch.
         else {
           // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
           val scrutToInt: Tree =
@@ -586,7 +584,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     // TODO: drop null checks
     override def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] = {
       val caseDefsWithDefault = typeSwitchMaker(bindersAndCases, pt)
-      if (caseDefsWithDefault isEmpty) None
+      if (caseDefsWithDefault.isEmpty) None
       else Some(caseDefsWithDefault)
     }
   }

@@ -12,8 +12,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.language.postfixOps
-
 import scala.tools.nsc.symtab.Flags.SYNTHETIC
 import scala.reflect.internal.util.Position
 
@@ -128,11 +126,11 @@ trait MatchCodeGen extends Interface {
         // must compute catchAll after caseLabels (side-effects nextCase)
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
-        val catchAllDef = matchFailGen map { matchFailGen =>
+        val catchAllDef = matchFailGen.map { matchFailGen =>
           val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
 
-          LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
-        } toList // at most 1 element
+          LabelDef(_currCase, Nil, matchEnd APPLY matchFailGen(scrutRef))
+        }.toList // at most 1 element
 
         // scrutSym == NoSymbol when generating an alternatives matcher
         val scrutDef = scrutSym.fold(List[Tree]())(ValDef(_, scrut) :: Nil) // for alternatives

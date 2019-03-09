@@ -12,8 +12,6 @@
 
 package scala.tools.nsc.transform.patmat
 
-import scala.language.postfixOps
-
 import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
@@ -632,7 +630,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse{
           if (requireSwitch) reporter.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
-          if (casesNoSubstOnly nonEmpty) {
+          if (!casesNoSubstOnly.isEmpty) {
             // before optimizing, check casesNoSubstOnly for presence of a default case,
             // since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
             // exhaustivity and reachability must be checked before optimization as well
@@ -652,7 +650,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
             val matchRes = codegen.matcher(scrut, scrutSym, pt)(cases map combineExtractors, synthCatchAll)
 
-            if (toHoist isEmpty) matchRes else Block(toHoist, matchRes)
+            if (toHoist.isEmpty) matchRes else Block(toHoist, matchRes)
           } else {
             codegen.matcher(scrut, scrutSym, pt)(Nil, matchFailGen)
           }
