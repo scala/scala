@@ -16,7 +16,6 @@ package typechecker
 import scala.annotation.tailrec
 import scala.collection.mutable
 import symtab.Flags._
-import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
 
 /** This trait declares methods to create symbols and to enter them into scopes.
@@ -1203,7 +1202,7 @@ trait Namers extends MethodSynthesis {
         val modClass = companionSymbolOf(clazz, context).moduleClass
         modClass.attachments.get[ClassForCaseCompanionAttachment] foreach { cma =>
           val cdef = cma.caseClass
-          def hasCopy = (decls containsName nme.copy) || parents.exists(_ member nme.copy exists)
+          def hasCopy = (decls containsName nme.copy) || parents.exists(_.member(nme.copy).exists)
 
           // scala/bug#5956 needs (cdef.symbol == clazz): there can be multiple class symbols with the same name
           if (cdef.symbol == clazz && !hasCopy)

@@ -13,8 +13,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.language.postfixOps
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -71,7 +69,7 @@ trait SyntheticMethods extends ast.TreeDSL {
    */
   def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
     val syntheticsOk = (phase.id <= currentRun.typerPhase.id) && {
-      symbolsToSynthesize(clazz0) filter (_ matchingSymbol clazz0.info isSynthetic) match {
+      symbolsToSynthesize(clazz0).filter(_.matchingSymbol(clazz0.info).isSynthetic) match {
         case Nil  => true
         case syms => log("Not adding synthetic methods: already has " + syms.mkString(", ")) ; false
       }

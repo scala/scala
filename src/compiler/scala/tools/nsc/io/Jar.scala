@@ -13,7 +13,6 @@
 package scala.tools.nsc
 package io
 
-import scala.language.postfixOps
 import java.io.{DataOutputStream, InputStream, OutputStream}
 import java.util.jar._
 
@@ -51,9 +50,9 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
   def mainClass     = manifest map (f => f(Name.MAIN_CLASS))
   /** The manifest-defined classpath String if available. */
   def classPathString: Option[String] =
-    for (m <- manifest ; cp <- m.attrs get Name.CLASS_PATH) yield cp
+    for (m <- manifest ; cp <- m.attrs.get(Name.CLASS_PATH)) yield cp
   def classPathElements: List[String] = classPathString match {
-    case Some(s)  => s split "\\s+" toList
+    case Some(s)  => s.split("\\s+").toList
     case _        => Nil
   }
 

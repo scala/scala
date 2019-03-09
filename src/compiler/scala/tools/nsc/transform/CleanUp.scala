@@ -16,7 +16,6 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
-import scala.language.postfixOps
 
 abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   import global._
@@ -269,7 +268,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
 
               // try { method.invoke } catch { case e: InvocationTargetExceptionClass => throw e.getCause() }
-              fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
+              fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } FINALLY END)
             }
 
             /* A possible primitive method call, represented by methods in BoxesRunTime. */

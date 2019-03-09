@@ -14,7 +14,6 @@ package scala.tools.nsc
 package symtab
 
 import scala.language.implicitConversions
-import scala.language.postfixOps
 
 /** Printing the symbol graph (for those symbols attached to an AST node)
  *  after each phase.
@@ -176,8 +175,8 @@ trait SymbolTrackers {
       val change = Change(added, removed, prevMap, owners, flags)
 
       prevMap    = currentMap
-      prevOwners = current map (s => (s, s.owner)) toMap;
-      prevFlags  = current map (s => (s, (s.flags & flagsMask))) toMap;
+      prevOwners = current.map(s => (s, s.owner)).toMap
+      prevFlags  = current.map(s => (s, (s.flags & flagsMask))).toMap
       history    = change :: history
     }
     def show(label: String): String = {
