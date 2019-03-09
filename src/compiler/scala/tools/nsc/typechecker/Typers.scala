@@ -3516,11 +3516,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 catch { case _: IllegalArgumentException => args.map(_ => Nil) } // fail safe in case formalTypes fails to align to argslen
               else args.map(_ => Nil) // will type under argPt == WildcardType
 
-            val (args1, argTpes) = context.savingUndeterminedTypeParams() {
+            val argTpes: ListBuffer[Type] = ListBuffer.empty[Type]
+            val args1: List[Tree] = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
-
-              map2(args, altArgPts) { (arg, argPtAlts) =>
-                def typedArg0(tree: Tree) = {
+              map2Conserve(args, altArgPts) { (arg, argPtAlts) =>
+                def typedArg0(tree: Tree): Tree = {
                   // if we have an overloaded HOF such as `(f: Int => Int)Int <and> (f: Char => Char)Char`,
                   // and we're typing a function like `x => x` for the argument, try to collapse
                   // the overloaded type into a single function type from which `typedFunction`
@@ -3529,8 +3529,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     if (argPtAlts.nonEmpty && treeInfo.isFunctionMissingParamType(tree)) functionProto(argPtAlts)
                     else WildcardType
 
-                  val argTyped = typedArg(tree, amode, BYVALmode, argPt)
-                  (argTyped, argTyped.tpe.deconst)
+                  typedArg(tree, amode, BYVALmode, argPt)
                 }
 
                 arg match {
@@ -3541,22 +3540,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case AssignOrNamedArg(lhs@Ident(name), rhs) =>
                     // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                     // the assign is untyped; that's ok because we call doTypedApply
-                    typedArg0(rhs) match {
-                      case (rhsTyped, tp) => (treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
-                    }
+                    val rhsTyped = typedArg0(rhs)
+                    argTpes += NamedType(name, rhsTyped.tpe.deconst)
+                    treeCopy.AssignOrNamedArg(arg, lhs, rhsTyped)
                   case treeInfo.WildcardStarArg(_) =>
-                    typedArg0(arg) match {
-                      case (argTyped, tp) => (argTyped, RepeatedType(tp))
-                    }
+                    val argTyped = typedArg0(arg)
+                    argTpes += RepeatedType(argTyped.tpe.deconst)
+                    argTyped
                   case _ =>
-                    typedArg0(arg)
+                    val argTyped = typedArg0(arg)
+                    argTpes += argTyped.tpe.deconst
+                    argTyped
                 }
-              }.unzip
+              }
             }
             if (context.reporter.hasErrors)
               setError(tree)
             else {
-              inferMethodAlternative(fun, undetparams, argTpes, pt)
+              inferMethodAlternative(fun, undetparams, argTpes.toList, pt)
               doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
             }
           }
