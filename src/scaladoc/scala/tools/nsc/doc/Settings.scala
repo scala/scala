@@ -14,7 +14,6 @@ package scala.tools.nsc
 package doc
 
 import java.io.File
-import scala.language.postfixOps
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
   * @param error A function that prints a string to the appropriate error stream
@@ -68,7 +67,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   lazy val uncompilableFiles = docUncompilable.value match {
     case ""     => Nil
-    case path   => io.Directory(path).deepFiles filter (_ hasExtension "scala") toList
+    case path   => io.Directory(path).deepFiles.filter(_ hasExtension "scala").toList
   }
 
   /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
@@ -257,7 +256,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
 
   def stripIndex(url: String): String = url.stripSuffix("index.html").stripSuffix("/") + "/"
 
-  lazy val extUrlMapping: Map[String, String] = docExternalDoc.value flatMap { s =>
+  lazy val extUrlMapping: Map[String, String] = docExternalDoc.value.flatMap { s =>
     val idx = s.indexOf("#")
     if (idx > 0) {
       val (first, last) = s.splitAt(idx)
@@ -266,7 +265,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
       error(s"Illegal -doc-external-doc option; expected a pair with '#' separator, found: '$s'")
       None
     }
-  } toMap
+  }.toMap
 
   /**
    *  This is the hardcoded area of Scaladoc. This is where "undesirable" stuff gets eliminated. I know it's not pretty,

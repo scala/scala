@@ -19,8 +19,6 @@ import scala.annotation.tailrec
 import scala.collection._
 import scala.util.matching.Regex
 import scala.reflect.internal.util.Position
-import scala.language.postfixOps
-
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
