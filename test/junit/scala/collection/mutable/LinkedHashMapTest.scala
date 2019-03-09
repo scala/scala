@@ -22,4 +22,13 @@ class LinkedHashMapTest {
     lhm.clear()
     Assert.assertNull(lhm.lastItemRef)
   }
+
+  @Test
+  def testContains: Unit = {
+    val linkedHashMap: LinkedHashMap[String, String] = LinkedHashMap("Scala" -> "Functional and OO", "Java" ->"OO",
+      "C" -> "Procedural")
+
+    Assert.assertTrue(linkedHashMap.contains("Scala"));
+
+  }
 }

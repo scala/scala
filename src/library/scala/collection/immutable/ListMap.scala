@@ -225,7 +225,7 @@ object ListMap extends MapFactory[ListMap] {
         // by directly iterating through LinkedHashMap entries, we save creating intermediate tuples for each
         // key-value pair
         var current: ListMap[K, V] = empty[K, V]
-        var firstEntry = lhm._firstEntry
+        var firstEntry = lhm.firstEntry
         while (firstEntry ne null) {
           current = new Node(firstEntry.key, firstEntry.value, current)
           firstEntry = firstEntry.later
@@ -323,7 +323,7 @@ private[immutable] final class ListMapBuilder[K, V] extends mutable.ReusableBuil
     } else xs match {
       case lhm: collection.mutable.LinkedHashMap[K, V] =>
         // special-casing LinkedHashMap avoids creating of Iterator and tuples for each key-value
-        var firstEntry = lhm._firstEntry
+        var firstEntry = lhm.firstEntry
         while (firstEntry ne null) {
           underlying = new ListMap.Node(firstEntry.key, firstEntry.value, underlying)
           firstEntry = firstEntry.later
