@@ -10,6 +10,7 @@ object ListMapBuilderProperties extends Properties("immutable.ListMapBuilder") {
   type K = Int
   type V = Int
 
+
   sealed trait Transform
 
   object Transform {
@@ -18,8 +19,6 @@ object ListMapBuilderProperties extends Properties("immutable.ListMapBuilder") {
     case class AddAllMap(kvs: Map[K, V]) extends Transform
     case object Clear extends Transform
   }
-
-
 
   val transformGen: Gen[List[Transform]] =
     listOf(oneOf(
@@ -41,6 +40,19 @@ object ListMapBuilderProperties extends Properties("immutable.ListMapBuilder") {
   property("Multiple transforms on ListMapBuilder give same result as HashMapBuilder") =
     forAll(transformGen) { transforms: Seq[Transform] =>
       interpret(transforms, () => ListMap.newBuilder) ?= interpret(transforms, () => HashMap.newBuilder)
+  }
+
+  property("Builder is reusable") = forAll(transformGen, transformGen) { (transformsA: Seq[Transform], transformsB: Seq[Transform]) =>
+    val listMapBuilder = ListMap.newBuilder[K, V]
+    val firstListMap = interpret(transformsA, () => listMapBuilder)
+    val secondListMap = interpret(transformsB, () => listMapBuilder)
+
+    val hmMapBuilder = HashMap.newBuilder[K, V]
+    val firstHashMap = interpret(transformsA, () => hmMapBuilder)
+    val secondHashMap = interpret(transformsB, () => hmMapBuilder)
+
+    (firstListMap ?= firstHashMap).label("First Maps") &&
+      (secondListMap ?= secondHashMap).label("Second Maps")
   }
 
 }

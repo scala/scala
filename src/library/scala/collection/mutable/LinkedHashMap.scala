@@ -68,7 +68,8 @@ class LinkedHashMap[K, V]
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
-  private[mutable] type Entry = LinkedHashMap.LinkedEntry[K, V]
+  private[collection] type Entry = LinkedHashMap.LinkedEntry[K, V]
+  private[collection] def _firstEntry: Entry = firstEntry
 
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null

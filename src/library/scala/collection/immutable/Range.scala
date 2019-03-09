@@ -14,8 +14,6 @@ package scala
 package collection.immutable
 
 import collection.{AbstractIterator, Iterator}
-import java.lang.String
-
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
@@ -108,8 +106,10 @@ sealed abstract class Range(
   /** The last element of this range.  This method will return the correct value
     *  even if there are too many elements to iterate over.
     */
-  final override def last: Int = if (isEmpty) Nil.head else lastElement
-  final override def head: Int = if (isEmpty) Nil.head else start
+  final override def last: Int =
+    if (isEmpty) throw Range.emptyRangeError("last") else lastElement
+  final override def head: Int =
+    if (isEmpty) throw Range.emptyRangeError("head") else start
 
   /** Creates a new range containing all the elements of this range except the last one.
     *
@@ -117,12 +117,8 @@ sealed abstract class Range(
     *
     *  @return  a new range consisting of all the elements of this range except the last one.
     */
-  final override def init: Range = {
-    if (isEmpty)
-      Nil.init
-
-    dropRight(1)
-  }
+  final override def init: Range =
+    if (isEmpty) throw Range.emptyRangeError("init") else dropRight(1)
 
   /** Creates a new range containing all the elements of this range except the first one.
     *
@@ -131,8 +127,7 @@ sealed abstract class Range(
     *  @return  a new range consisting of all the elements of this range except the first one.
     */
   final override def tail: Range = {
-    if (isEmpty)
-      Nil.tail
+    if (isEmpty) throw Range.emptyRangeError("tail")
     if (numRangeElements == 1) newEmptyRange(end)
     else if(isInclusive) new Range.Inclusive(start + step, end, step)
     else new Range.Exclusive(start + step, end, step)
@@ -172,7 +167,7 @@ sealed abstract class Range(
     else start + (step * idx)
   }
 
-  /*@`inline`*/ final override def foreach[@specialized(Specializable.Unit) U](f: Int => U): Unit = {
+  /*@`inline`*/ final override def foreach[@specialized(Unit) U](f: Int => U): Unit = {
     // Implementation chosen on the basis of favorable microbenchmarks
     // Note--initialization catches step == 0 so we don't need to here
     if (!isEmpty) {
@@ -183,6 +178,38 @@ sealed abstract class Range(
         i += step
       }
     }
+  }
+
+  override final def indexOf[@specialized(Int) B >: Int](elem: B, from: Int = 0): Int =
+    elem match {
+      case i: Int =>
+        val pos = posOf(i)
+        if (pos >= from) pos else -1
+      case _ => super.indexOf(elem, from)
+    }
+
+  override final def lastIndexOf[@specialized(Int) B >: Int](elem: B, end: Int = length - 1): Int =
+    elem match {
+      case i: Int =>
+        val pos = posOf(i)
+        if (pos <= end) pos else -1
+      case _ => super.lastIndexOf(elem, end)
+    }
+
+  private[this] def posOf(i: Int): Int =
+    if (contains(i)) (i - start) / step else -1
+
+  override def sameElements[B >: Int](that: IterableOnce[B]): Boolean = that match {
+    case other: Range =>
+      (this.length : @annotation.switch) match {
+        case 0 => other.isEmpty
+        case 1 => other.length == 1 && this.start == other.start
+        case n => other.length == n && (
+          (this.start == other.start)
+            && (this.step == other.step)
+        )
+      }
+    case _ => super.sameElements(that)
   }
 
   /** Creates a new range containing the first `n` elements of this range.
@@ -338,6 +365,11 @@ sealed abstract class Range(
       if (x < end || x > start) false
       else (step == -1) || (((x - start) % step) == 0)
     }
+  }
+  /* Seq#contains has a type parameter so the optimised contains above doesn't override it */
+  override final def contains[B >: Int](elem: B): Boolean = elem match {
+    case i: Int => this.contains(i)
+    case _      => super.contains(elem)
   }
 
   final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
@@ -581,6 +613,8 @@ object Range {
     def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
   }
 
+  private def emptyRangeError(what: String): Throwable =
+    new NoSuchElementException(what + " on empty Range")
 }
 
 /**
