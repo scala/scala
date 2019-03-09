@@ -14,6 +14,7 @@ package scala.collection
 package immutable
 
 import mutable.{Builder, StringBuilder}
+import scala.Predef.{ wrapString => _ }  // unimport to avoid triggering accidentally
 
 /**
   *  This class serves as a wrapper augmenting `String`s with all the operations
@@ -75,18 +76,6 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
       case _       => super.lastIndexOf(elem, end)
     }
 
-  override def indexOfSlice[B >: Char](that: collection.Seq[B], from: Int = 0): Int =
-    that match {
-      case s: WrappedString => self.indexOfSlice(s.self, from)
-      case _                => super.indexOfSlice(that, from)
-    }
-
-  override def lastIndexOfSlice[B >: Char](that: collection.Seq[B], end: Int = length - 1): Int =
-    that match {
-      case s: WrappedString => self.lastIndexOfSlice(s, end)
-      case _                => super.lastIndexOfSlice(that, end)
-    }
-
   override def copyToArray[B >: Char](xs: Array[B], start: Int): Int =
     copyToArray(xs, start, length)
 
@@ -104,6 +93,11 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
       case s: WrappedString => new WrappedString(self concat s.self)
       case _                => super.appendedAll(suffix)
     }
+
+  override def sameElements[B >: Char](o: IterableOnce[B]) = o match {
+    case s: WrappedString => self == s.self
+    case _                => super.sameElements(o)
+  }
 
   override protected[this] def className = "WrappedString"
 
