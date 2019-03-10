@@ -169,33 +169,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
-    addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz).setFlag(BRIDGE))
-
-  def cloneBeforeErasure(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol = {
-    val newSym = enteringErasure {
-      // since we used `mixinMember` from the interface that represents the trait that's
-      // being mixed in, have to instantiate the interface type params (that may occur in mixinMember's
-      // info) as they are seen from the class.  We can't use the member that we get from the
-      // implementation class, as it's a clone that was made after erasure, and thus it does not
-      // know its info at the beginning of erasure anymore.
-      val sym = mixinMember cloneSymbol clazz
-
-      val erasureMap = erasure.erasure(mixinMember)
-      val erasedInterfaceInfo: Type = erasureMap(mixinMember.info)
-      val specificForwardInfo       = (clazz.thisType baseType mixinClass) memberInfo mixinMember
-      val forwarderInfo =
-        if (erasureMap(specificForwardInfo) =:= erasedInterfaceInfo)
-          specificForwardInfo
-        else {
-          erasedInterfaceInfo
-        }
-      // Optimize: no need if mixinClass has no typeparams.
-      // !!! JZ Really? What about the effect of abstract types, prefix?
-      if (mixinClass.typeParams.isEmpty) sym
-      else sym modifyInfo (_ => forwarderInfo)
-    }
-    newSym
-  }
+    addMember(clazz, mixinMember.cloneSymbol(clazz).setFlag(BRIDGE))
 
   def publicizeTraitMethods(clazz: Symbol): Unit = {
     if (treatedClassInfos(clazz) != clazz.info) {
