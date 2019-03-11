@@ -602,14 +602,14 @@ trait Namers extends MethodSynthesis {
       /* Assign the types of the class parameters to the parameters of the
        * copy method. See comment in `Unapplies.caseClassCopyMeth`
        */
-      def assignParamTypes(copyDef: DefDef, sym: Symbol) {
+      def assignParamTypes(copyDef: DefDef, sym: Symbol): Unit = {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
         val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
         val classParamss = constructorType.paramss
 
-        map2(copyDef.vparamss, classParamss)((copyParams, classParams) =>
-          map2(copyParams, classParams)((copyP, classP) =>
+        foreach2(copyDef.vparamss, classParamss)((copyParams, classParams) =>
+          foreach2(copyParams, classParams)((copyP, classP) =>
             copyP.tpt setType subst(classP.tpe)
           )
         )
