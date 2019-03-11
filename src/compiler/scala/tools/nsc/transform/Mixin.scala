@@ -169,7 +169,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
-    addMember(clazz, mixinMember.cloneSymbol(clazz).setFlag(BRIDGE))
+    addMember(clazz, mixinMember.cloneSymbol(clazz)/*.setFlag(BRIDGE)*/)
 
   def publicizeTraitMethods(clazz: Symbol): Unit = {
     if (treatedClassInfos(clazz) != clazz.info) {
