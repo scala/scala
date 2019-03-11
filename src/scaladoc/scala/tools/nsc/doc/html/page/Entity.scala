@@ -22,7 +22,6 @@ import model.diagram._
 import page.diagram._
 
 import scala.collection.mutable
-import scala.language.postfixOps
 import scala.reflect.internal.Reporter
 
 trait EntityPage extends HtmlPage {
@@ -166,7 +165,7 @@ trait EntityPage extends HtmlPage {
        )
 
   val valueMembers =
-    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject) sorted
+    (tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject)).sorted
 
   val (absValueMembers, nonAbsValueMembers) =
     valueMembers partition (_.isAbstract)
@@ -509,7 +508,7 @@ trait EntityPage extends HtmlPage {
             // see ImplicitMemberShadowing trait for more information
             val shadowingSuggestion = {
               val params = mbr match {
-                case d: Def => d.valueParams map (_ map (_ name) mkString("(", ", ", ")")) mkString
+                case d: Def => d.valueParams.map(_.map(_.name).mkString("(", ", ", ")")).mkString
                 case _      => "" // no parameters
               }
               Br ++ Txt("To access this member you can use a ") ++

@@ -15,7 +15,6 @@ package ast
 
 import java.lang.System.{lineSeparator => EOL}
 import symtab.Flags._
-import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
 
 /** The object `nodePrinter` converts the internal tree
@@ -67,8 +66,8 @@ abstract class NodePrinters {
     def showAttributes(tree: Tree): String = {
       if (infolevel == InfoLevel.Quiet) ""
       else {
-        try   { List(showSymbol(tree), showType(tree)) filterNot (_ == "") mkString ", " trim }
-        catch { case ex: Throwable => "sym= <error> " + ex.getMessage }
+        try List(showSymbol(tree), showType(tree)).filterNot(_ == "").mkString(", ").trim
+        catch { case ex: Throwable => s"sym= <error> ${ex.getMessage}" }
       }
     }
   }

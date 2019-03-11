@@ -20,7 +20,6 @@ import Tokens._
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable, mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
-import scala.language.postfixOps
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
  */
@@ -1379,7 +1378,7 @@ trait Scanners extends ScannersCommon {
     /** The source code with braces and line starts annotated with [NN] showing the index */
     private def markedSource = {
       val code   = unit.source.content
-      val braces = code.indices filter (idx => "{}\n" contains code(idx)) toSet
+      val braces = code.indices.filter(idx => "{}\n" contains code(idx)).toSet
       val mapped = code.indices map (idx => if (braces(idx)) s"${code(idx)}[$idx]" else "" + code(idx))
       mapped.mkString("")
     }
