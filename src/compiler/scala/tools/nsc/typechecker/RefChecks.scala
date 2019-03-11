@@ -422,49 +422,49 @@ abstract class RefChecks extends Transform {
             overrideErrorWithMemberInfo("classes can only override abstract types; cannot override:")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideErrorWithMemberInfo("cannot override final member:")
-          } else if (!(other.isDeferred || member.isAnyOverride) // Concrete `other` requires `override` for `member`
-                     // Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
-                     // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
-                     && !member.isSynthetic
-                     // In Java, the OVERRIDE flag is implied
-                     && !member.isJavaDefined) {
-            overrideErrorConcreteMissingOverride()
-          } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
-            overrideErrorWithMemberInfo("`abstract override' modifiers required to override:")
-          }
-          else if (member.isAnyOverride && (other hasFlag ACCESSOR) && !(other hasFlag STABLE | DEFERRED)) {
-            // The check above used to look at `field` == `other.accessed`, ensuring field.isVariable && !field.isLazy,
-            // which I think is identical to the more direct `!(other hasFlag STABLE)` (given that `other` is a method).
-            // Also, we're moving away from (looking at) underlying fields (vals in traits no longer have them, to begin with)
-            // TODO: this is not covered by the spec.
-            overrideErrorWithMemberInfo("mutable variable cannot be overridden:")
-          }
-          else if (member.isAnyOverride &&
-                     !(memberClass.thisType.baseClasses exists (_ isSubClass otherClass)) &&
-                   !member.isDeferred && !other.isDeferred &&
-                     intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
-            overrideErrorWithMemberInfo("cannot override a concrete member without a third member that's overridden by both "+
-                          "(this rule is designed to prevent ``accidental overrides'')")
-          } else if (other.isStable && !member.isStable) { // (1.4)
-            overrideErrorWithMemberInfo("stable, immutable value required to override:")
-          } else if (member.isValue && member.isLazy &&
-                     other.isValue && other.hasFlag(STABLE) && !(other.isDeferred || other.isLazy)) {
-            overrideErrorWithMemberInfo("concrete non-lazy value cannot be overridden:")
-          } else if (other.isValue && other.isLazy &&
-                     member.isValue && !member.isLazy) {
-            overrideErrorWithMemberInfo("value must be lazy when overriding concrete lazy value:")
-          } else if (other.isDeferred && member.isTermMacro && member.extendedOverriddenSymbols.forall(_.isDeferred)) { // (1.9)
-            overrideErrorWithMemberInfo("macro cannot override abstract method:")
-          } else if (other.isTermMacro && !member.isTermMacro) { // (1.10)
-            overrideErrorWithMemberInfo("macro can only be overridden by another macro:")
           } else {
-            checkOverrideTypes()
-            // Don't bother users with deprecations caused by classes they inherit.
-            // Only warn for the pair that has one leg in `clazz`.
-            if (clazz == memberClass) checkOverrideDeprecated()
-            if (settings.warnNullaryOverride) {
-              if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
-                reporter.warning(member.pos, "non-nullary method overrides nullary method")
+            // In Java, the OVERRIDE flag is implied
+            val memberOverrides = member.isAnyOverride || (member.isJavaDefined && !member.isDeferred)
+
+            // Concrete `other` requires `override` for `member`.
+            // Synthetic exclusion for (at least) default getters, fixes scala/bug#5178. We cannot assign the OVERRIDE flag to
+            // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
+            if (!(memberOverrides || other.isDeferred) && !member.isSynthetic) {
+              overrideErrorConcreteMissingOverride()
+            } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
+              overrideErrorWithMemberInfo("`abstract override' modifiers required to override:")
+            }
+            else if (memberOverrides && (other hasFlag ACCESSOR) && !(other hasFlag STABLE | DEFERRED)) {
+              // TODO: this is not covered by the spec.
+              overrideErrorWithMemberInfo("mutable variable cannot be overridden:")
+            }
+            else if (memberOverrides &&
+                     !(memberClass.thisType.baseClasses exists (_ isSubClass otherClass)) &&
+                     !member.isDeferred && !other.isDeferred &&
+                     intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
+              overrideErrorWithMemberInfo("cannot override a concrete member without a third member that's overridden by both " +
+                                          "(this rule is designed to prevent ``accidental overrides'')")
+            } else if (other.isStable && !member.isStable) { // (1.4)
+              overrideErrorWithMemberInfo("stable, immutable value required to override:")
+            } else if (member.isValue && member.isLazy &&
+                       other.isValue && other.hasFlag(STABLE) && !(other.isDeferred || other.isLazy)) {
+              overrideErrorWithMemberInfo("concrete non-lazy value cannot be overridden:")
+            } else if (other.isValue && other.isLazy &&
+                       member.isValue && !member.isLazy) {
+              overrideErrorWithMemberInfo("value must be lazy when overriding concrete lazy value:")
+            } else if (other.isDeferred && member.isTermMacro && member.extendedOverriddenSymbols.forall(_.isDeferred)) { // (1.9)
+              overrideErrorWithMemberInfo("macro cannot override abstract method:")
+            } else if (other.isTermMacro && !member.isTermMacro) { // (1.10)
+              overrideErrorWithMemberInfo("macro can only be overridden by another macro:")
+            } else {
+              checkOverrideTypes()
+              // Don't bother users with deprecations caused by classes they inherit.
+              // Only warn for the pair that has one leg in `clazz`.
+              if (clazz == memberClass) checkOverrideDeprecated()
+              if (settings.warnNullaryOverride) {
+                if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
+                  reporter.warning(member.pos, "non-nullary method overrides nullary method")
+                }
               }
             }
           }
