@@ -1,5 +1,5 @@
 import scala.tools.partest.BytecodeTest
-import scala.tools.testing.ASMConverters
+import scala.tools.testkit.ASMConverters
 
 import scala.tools.nsc.util.JavaClassPath
 import java.io.InputStream

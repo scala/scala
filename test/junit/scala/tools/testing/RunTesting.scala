@@ -1,4 +1,4 @@
-package scala.tools.testing
+package scala.tools.testkit
 
 import scala.reflect.runtime._
 import scala.tools.reflect.ToolBox

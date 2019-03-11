@@ -5,7 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.RunTesting
+import scala.tools.testkit.RunTesting
 
 @RunWith(classOf[JUnit4])
 class RunTest extends RunTesting {
@@ -14,7 +14,7 @@ class RunTest extends RunTesting {
   @Test
   def annotationInfoNotErased(): Unit = {
     val code =
-      """import scala.tools.testing.Resource
+      """import scala.tools.testkit.Resource
         |import scala.annotation.meta.getter
         |class C {
         |  type Rg = Resource @getter

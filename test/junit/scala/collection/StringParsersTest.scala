@@ -4,7 +4,7 @@ import org.junit.{Assert, Test}
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])

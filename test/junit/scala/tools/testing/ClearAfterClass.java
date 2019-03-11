@@ -1,4 +1,4 @@
-package scala.tools.testing;
+package scala.tools.testkit;
 
 import org.junit.ClassRule;
 import org.junit.rules.TestRule;

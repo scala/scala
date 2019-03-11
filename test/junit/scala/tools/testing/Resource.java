@@ -1,5 +1,5 @@
 
-package scala.tools.testing;
+package scala.tools.testkit;
 
 import java.lang.annotation.*;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;

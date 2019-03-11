@@ -3,7 +3,7 @@ package scala
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.tools.testing.RunTesting
+import scala.tools.testkit.RunTesting
 
 class OptionTest extends RunTesting {
   @Test def testSomeZipSome: Unit = assertEquals(Some("foo") zip Some("bar"), Some(("foo", "bar")))

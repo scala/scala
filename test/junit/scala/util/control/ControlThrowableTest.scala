@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 @deprecated("Test me, don't judge me", since = "forever")

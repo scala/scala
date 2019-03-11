@@ -6,7 +6,7 @@ import org.junit.Test
 import scala.collection.JavaConverters._
 import scala.tools.asm.Handle
 import scala.tools.asm.tree.InvokeDynamicInsnNode
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 class IndyLambdaTest extends BytecodeTesting {
   import compiler._
