@@ -181,16 +181,6 @@ class ListBuffer[A]
   private def getNext(p: Predecessor[A]): List[A] =
     if (p == null) first else p.next
 
-  private def setNext(p: Predecessor[A], nx: List[A]): Unit = {
-    if (p == null) first = nx else p.next = nx
-    if (nx.isEmpty) last0 = p
-    else {
-      var l = nx.asInstanceOf[::[A]]
-      while (l.next.nonEmpty) l = l.next.asInstanceOf[::[A]]
-      last0 = l
-    }
-  }
-
   def update(idx: Int, elem: A): Unit = {
     ensureUnaliased()
     if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
@@ -214,10 +204,11 @@ class ListBuffer[A]
   def insert(idx: Int, elem: A): Unit = {
     ensureUnaliased()
     if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
-    if (idx == len) +=(elem)
+    if (idx == len) addOne(elem)
     else {
       val p = locate(idx)
-      setNext(p, elem :: getNext(p))
+      val nx = elem :: getNext(p)
+      if(p eq null) first = nx else p.next = nx
       len += 1
     }
   }
@@ -233,9 +224,10 @@ class ListBuffer[A]
     while (it.hasNext) {
       len += 1
       val next = (it.next() :: follow).asInstanceOf[::[A]]
-      setNext(prev, next)
+      if(prev eq null) first = next else prev.next = next
       prev = next
     }
+    if(prev.next.isEmpty) last0 = prev
     prev
   }
 
@@ -255,7 +247,13 @@ class ListBuffer[A]
     if (idx < 0 || idx >= len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
     val p = locate(idx)
     val nx = getNext(p)
-    setNext(p, nx.tail)
+    if(p eq null) {
+      first = nx.tail
+      if(first.isEmpty) last0 = null
+    } else {
+      if(last0 eq nx) last0 = p
+      p.next = nx.tail
+    }
     len -= 1
     nx.head
   }
@@ -272,7 +270,9 @@ class ListBuffer[A]
   private def removeAfter(prev: Predecessor[A], n: Int) = {
     @tailrec def ahead(p: List[A], n: Int): List[A] =
       if (n == 0) p else ahead(p.tail, n - 1)
-    setNext(prev, ahead(getNext(prev), n))
+    val nx = ahead(getNext(prev), n)
+    if(prev eq null) first = nx else prev.next = nx
+    if(nx.isEmpty) last0 = prev
     len -= n
   }
 
@@ -286,16 +286,21 @@ class ListBuffer[A]
   }
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
-    ensureUnaliased()
-    var prev: Predecessor[A] = null
-    var cur: List[A] = first
-    while (!cur.isEmpty) {
-      val follow = cur.tail
-      setNext(prev, follow)
-      len -= 1
-      prev = insertAfter(prev, f(cur.head).iterator)
-      cur = follow
+    var src = first
+    var dst: List[A] = null
+    last0 = null
+    len = 0
+    while(!src.isEmpty) {
+      val it = f(src.head).iterator
+      while(it.hasNext) {
+        val v = new ::(it.next(), Nil)
+        if(dst eq null) dst = v else last0.next = v
+        last0 = v
+        len += 1
+      }
+      src = src.tail
     }
+    first = if(dst eq null) Nil else dst
     this
   }
 
@@ -306,13 +311,15 @@ class ListBuffer[A]
     while (!cur.isEmpty) {
       val follow = cur.tail
       if (!p(cur.head)) {
-        setNext(prev, follow)
+        if(prev eq null) first = follow
+        else prev.next = follow
         len -= 1
       } else {
         prev = cur.asInstanceOf[Predecessor[A]]
       }
       cur = follow
     }
+    last0 = prev
     this
   }
 
