@@ -249,6 +249,19 @@ sealed class NumericRange[T](
   *  @define coll numeric range
   */
 object NumericRange {
+  private def bigDecimalCheckUnderflow[T](start: T, end: T, step: T)(implicit num: Integral[T]): Unit = {
+    def FAIL(boundary: T, step: T): Unit = {
+      val msg = boundary match {
+        case bd: BigDecimal => s"Precision ${bd.mc.getPrecision}"
+        case _              => "Precision"
+      }
+      throw new IllegalArgumentException(
+        s"$msg inadequate to represent steps of size $step near $boundary"
+      )
+    }
+    if (num.minus(num.plus(start, step), start) != step) FAIL(start, step)
+    if (num.minus(end, num.minus(end, step))    != step) FAIL(end,   step)
+  }
 
   /** Calculates the number of elements in a range given start, end, step, and
     *  whether or not it is inclusive.  Throws an exception if step == 0 or
@@ -286,6 +299,9 @@ object NumericRange {
       }
       // If we reach this point, deferring to Int failed.
       // Numbers may be big.
+      if (num.isInstanceOf[Numeric.BigDecimalAsIfIntegral]) {
+        bigDecimalCheckUnderflow(start, end, step)  // Throw exception if math is inaccurate (including no progress at all)
+      }
       val one = num.one
       val limit = num.fromInt(Int.MaxValue)
       def check(t: T): T =
