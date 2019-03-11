@@ -17,6 +17,7 @@ package internal
 import Variance._
 import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.reflect.internal.util.ReusableInstance
 
 /** See comments at scala.reflect.internal.Variance.
  */
@@ -210,10 +211,14 @@ trait Variances {
 
   /** Compute variance of type parameter `tparam` in type `tp`. */
   final def varianceInType(tp: Type)(tparam: Symbol): Variance = {
-    new varianceInType(tp, tparam).apply()
+    varianceInTypeCache.using(_.apply(tp, tparam))
   }
+  private[this] val varianceInTypeCache = new ReusableInstance[varianceInType](() => new varianceInType)
 
-  private final class varianceInType(tp: Type, tparam: Symbol) {
+  private final class varianceInType {
+    private[this] var tp: Type = _
+    private[this] var tparam: Symbol = _
+
     import Variance._
     private def inArgs(sym: Symbol, args: List[Type]): Variance = foldExtract2(args, sym.typeParams)(inArgParam)
     private def inSyms(syms: List[Symbol]): Variance            = foldExtract(syms)(inSym)
@@ -226,24 +231,30 @@ trait Variances {
     private[this] lazy val inArgParam: Extractor2[Type, Symbol]       = (a, b) => inType(a) * b.variance
     private[this] lazy val inSym: Extractor[Symbol]                   = (sym: Symbol) => if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
     private[this] val inType: Extractor[Type] = {
-      case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
-      case ThisType(_) | ConstantType(_)                => Bivariant
-      case TypeRef(_, `tparam`, _)                      => Covariant
-      case BoundedWildcardType(bounds)                  => inType(bounds)
-      case NullaryMethodType(restpe)                    => inType(restpe)
-      case SingleType(pre, sym)                         => inType(pre)
-      case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)          // a type constructor cannot occur in tp's args
-      case TypeRef(pre, sym, args)                      => inType(pre)          & inArgs(sym, args)
-      case TypeBounds(lo, hi)                           => inType(lo).flip      & inType(hi)
-      case RefinedType(parents, defs)                   => inTypes(parents)     & inSyms(defs.toList)
-      case MethodType(params, restpe)                   => inSyms(params).flip  & inType(restpe)
-      case PolyType(tparams, restpe)                    => inSyms(tparams).flip & inType(restpe)
-      case ExistentialType(tparams, restpe)             => inSyms(tparams)      & inType(restpe)
-      case AnnotatedType(annots, tp)                    => inAnnots(annots)     & inType(tp)
+      case ErrorType | WildcardType | NoType | NoPrefix    => Bivariant
+      case ThisType(_) | ConstantType(_)                   => Bivariant
+      case TypeRef(_, tparam, _) if tparam eq this.tparam  => Covariant
+      case BoundedWildcardType(bounds)                     => inType(bounds)
+      case NullaryMethodType(restpe)                       => inType(restpe)
+      case SingleType(pre, sym)                            => inType(pre)
+      case TypeRef(pre, _, _) if tp.isHigherKinded         => inType(pre)          // a type constructor cannot occur in tp's args
+      case TypeRef(pre, sym, args)                         => inType(pre)          & inArgs(sym, args)
+      case TypeBounds(lo, hi)                              => inType(lo).flip      & inType(hi)
+      case RefinedType(parents, defs)                      => inTypes(parents)     & inSyms(defs.toList)
+      case MethodType(params, restpe)                      => inSyms(params).flip  & inType(restpe)
+      case PolyType(tparams, restpe)                       => inSyms(tparams).flip & inType(restpe)
+      case ExistentialType(tparams, restpe)                => inSyms(tparams)      & inType(restpe)
+      case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
     }
 
-    def apply(): Variance = {
-      inType(tp)
+    def apply(tp: Type, tparam: Symbol): Variance = {
+      this.tp = tp
+      this.tparam = tparam
+      try inType(tp)
+      finally {
+        this.tp = null
+        this.tparam = null
+      }
     }
   }
 }
