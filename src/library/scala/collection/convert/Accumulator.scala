@@ -37,7 +37,9 @@ trait Accumulator[@specialized(Double, Int, Long) A, +CC[_], +C]
     else 1 << 24
   }
 
-  final override def size: Int = if (longSize < Int.MaxValue) longSize.toInt else Int.MaxValue /* not sure.. default implementation just overflows */
+  final override def size: Int =
+    if (longSize < Int.MaxValue) longSize.toInt
+    else throw new IllegalArgumentException(s"Size too large for an Int: $longSize")
 
   final override def knownSize: Int = size
 
@@ -73,8 +75,8 @@ object Accumulator {
     * @tparam C the (inferred) specific type of the $coll
     * @return a new $coll with the elements of `source`
     */
-  def from[A, C](source: IterableOnce[A])(implicit canAccumulate: AccumulatorFactoryShape[A, C]) =
-    source.to(canAccumulate.factory)
+  def from[A, C](source: IterableOnce[A])(implicit canAccumulate: AccumulatorFactoryShape[A, C]): C =
+    source.iterator.to(canAccumulate.factory)
 
   /** An empty collection
     * @tparam A      the type of the ${coll}'s elements
@@ -255,6 +257,6 @@ object Accumulator {
     else {
       val b = canAccumulate.factory.newBuilder
       xss.foreach(b ++= _)
-      b.result
+      b.result()
     }
 }

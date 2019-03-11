@@ -12,12 +12,18 @@
 
 package scala.collection.convert
 
+import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `AnyAccumulator` with no actual
  * subclassing relationship with `AnyAccumulator`.
+ *
+ * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
+ * implemented based on length, which throws when more than MaxInt.
+ *
+ * TODO: doc performance characteristics.
  */
 final class LongAccumulator
   extends Accumulator[Long, AnyAccumulator, LongAccumulator]
@@ -28,6 +34,17 @@ final class LongAccumulator
   private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-1) }
 
   override protected[this] def className: String = "LongAccumulator"
+
+  override def stepper[B >: Long, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    val st = new LongAccumulatorStepper(this)
+    val r =
+      if (shape.shape == StepperShape.LongValue) st
+      else {
+        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        Stepper.boxingParLongStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSubstep]
+  }
 
   private def expand(): Unit = {
     if (index > 0) {
@@ -46,7 +63,7 @@ final class LongAccumulator
   }
 
   /** Appends an element to this `LongAccumulator`. */
-  final def addOne(a: Long): this.type = {
+  def addOne(a: Long): this.type = {
     totalSize += 1
     if (index+1 >= current.length) expand()
     current(index) = a
@@ -58,7 +75,7 @@ final class LongAccumulator
   override def result(): LongAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `LongAccumulator`. */
-  final def drain(that: LongAccumulator): Unit = {
+  def drain(that: LongAccumulator): Unit = {
     var h = 0
     var prev = 0L
     var more = true
@@ -121,7 +138,7 @@ final class LongAccumulator
   }
 
   /** Retrieves the `ix`th element. */
-  final def apply(ix: Long): Long = {
+  def apply(ix: Long): Long = {
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt)
     else {
       val w = seekSlot(ix)
@@ -130,19 +147,13 @@ final class LongAccumulator
   }
 
   /** Retrieves the `ix`th element, using an `Int` index. */
-  final def apply(i: Int): Long = apply(i.toLong)
-
-  /** Returns a `LongStepper` over the contents of this `LongAccumulator`. */
-  final def stepper: LongStepper = new LongAccumulatorStepper(this)
+  def apply(i: Int): Long = apply(i.toLong)
 
   /** Returns an `Iterator` over the contents of this `LongAccumulator`. The `Iterator` is not specialized. */
-  final def iterator = stepper.iterator
-
-  /** Returns a `java.util.Spliterator.OfLong` over the contents of this `LongAccumulator`*/
-  final def spliterator: java.util.Spliterator.OfLong = stepper
+  def iterator: Iterator[Long] = stepper.iterator
 
   /** Copies the elements in this `LongAccumulator` into an `Array[Long]` */
-  final def toArray = {
+  def toArray: Array[Long] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
     val a = new Array[Long](totalSize.toInt)
     var j = 0
@@ -163,7 +174,7 @@ final class LongAccumulator
   }
 
   /** Copies the elements in this `LongAccumulator` to a `List` */
-  final override def toList: List[Long] = {
+  override def toList: List[Long] = {
     var ans: List[Long] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -200,17 +211,19 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
 
   implicit def toJavaLongAccumulator(ia: LongAccumulator.type): collection.SpecificIterableFactory[java.lang.Long, LongAccumulator] = LongAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Long, LongAccumulator]]
 
+  import java.util.{function => jf}
+
   /** A `Supplier` of `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
-  def supplier = new java.util.function.Supplier[LongAccumulator]{ def get: LongAccumulator = new LongAccumulator }
+  def supplier: jf.Supplier[LongAccumulator]  = () => new LongAccumulator
 
   /** A `BiConsumer` that adds an element to an `LongAccumulator`, suitable for use with `java.util.stream.LongStream`'s `collect` method. */
-  def adder = new java.util.function.ObjLongConsumer[LongAccumulator]{ def accept(ac: LongAccumulator, a: Long): Unit = { ac addOne a } }
+  def adder: jf.ObjLongConsumer[LongAccumulator] = (ac: LongAccumulator, a: Long) => ac addOne a
 
   /** A `BiConsumer` that adds a boxed `Long` to an `LongAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def boxedAdder = new java.util.function.BiConsumer[LongAccumulator, Long]{ def accept(ac: LongAccumulator, a: Long): Unit = { ac addOne a } }
+  def boxedAdder: jf.BiConsumer[LongAccumulator, Long] = (ac: LongAccumulator, a: Long) => ac addOne a
 
   /** A `BiConsumer` that merges `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
-  def merger = new java.util.function.BiConsumer[LongAccumulator, LongAccumulator]{ def accept(a1: LongAccumulator, a2: LongAccumulator): Unit = { a1 drain a2 } }
+  def merger: jf.BiConsumer[LongAccumulator, LongAccumulator] = (a1: LongAccumulator, a2: LongAccumulator) => a1 drain a2
 
   private def fromArray(a: Array[Long]): LongAccumulator = {
     val r = new LongAccumulator
@@ -231,7 +244,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   override def newBuilder: mutable.Builder[Long, LongAccumulator] = new LongAccumulator
 }
 
-private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper {
+private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSubstep {
   import java.util.Spliterator._
 
   private var h = 0
@@ -257,11 +270,11 @@ private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) 
     i = 0
   }
 
-  def characteristics = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  def estimateSize = N
+  def estimateSize: Long = N
 
-  def hasNext = N > 0
+  def hasNext: Boolean = N > 0
 
   def nextLong(): Long =
     if (n <= 0) throw new NoSuchElementException("next on empty Stepper")

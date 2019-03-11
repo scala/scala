@@ -12,12 +12,18 @@
 
 package scala.collection.convert
 
+import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `AnyAccumulator` with no actual
  * subclassing relationship with `AnyAccumulator`.
+ *
+ * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
+ * implemented based on length, which throws when more than MaxInt.
+ *
+ * TODO: doc performance characteristics.
  */
 final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulator] {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
@@ -26,6 +32,17 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-2).toLong << 32 | (x(x.length-1)&0xFFFFFFFFL) }
 
   override protected[this] def className: String = "IntAccumulator"
+
+  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    val st = new IntAccumulatorStepper(this)
+    val r =
+      if (shape.shape == StepperShape.IntValue) st
+      else {
+        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        Stepper.boxingParIntStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSubstep]
+  }
 
   private def expand(): Unit = {
     if (index > 0) {
@@ -46,7 +63,7 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   }
 
   /** Appends an element to this `IntAccumulator`. */
-  final def addOne(a: Int): this.type = {
+  def addOne(a: Int): this.type = {
     totalSize += 1
     if (index+2 >= current.length) expand()
     current(index) = a
@@ -58,7 +75,7 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   override def result(): IntAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `IntAccumulator`. */
-  final def drain(that: IntAccumulator): Unit = {
+  def drain(that: IntAccumulator): Unit = {
     var h = 0
     var prev = 0L
     var more = true
@@ -124,7 +141,7 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   }
 
   /** Retrieves the `ix`th element. */
-  final def apply(ix: Long): Int = {
+  def apply(ix: Long): Int = {
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt)
     else {
       val w = seekSlot(ix)
@@ -133,19 +150,13 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   }
 
   /** Retrieves the `ix`th element, using an `Int` index. */
-  final def apply(i: Int): Int = apply(i.toLong)
-
-  /** Returns an `IntStepper` over the contents of this `IntAccumulator` */
-  final def stepper: IntStepper = new IntAccumulatorStepper(this)
+  def apply(i: Int): Int = apply(i.toLong)
 
   /** Returns an `Iterator` over the contents of this `IntAccumulator`. The `Iterator` is not specialized. */
-  final def iterator = stepper.iterator
-
-  /** Returns a `java.util.Spliterator.OfInt` over the contents of this `IntAccumulator`*/
-  final def spliterator: java.util.Spliterator.OfInt = stepper
+  def iterator: Iterator[Int] = stepper.iterator
 
   /** Copies the elements in this `IntAccumulator` into an `Array[Int]` */
-  final def toArray = {
+  def toArray: Array[Int] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
     val a = new Array[Int](totalSize.toInt)
     var j = 0
@@ -166,7 +177,7 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
   }
 
   /** Copies the elements in this `IntAccumulator` to a `List` */
-  final override def toList: List[Int] = {
+  override def toList: List[Int] = {
     var ans: List[Int] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -203,17 +214,19 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
 
   implicit def toJavaIntegerAccumulator(ia: IntAccumulator.type): collection.SpecificIterableFactory[java.lang.Integer, IntAccumulator] = IntAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Integer, IntAccumulator]]
 
+  import java.util.{function => jf}
+
   /** A `Supplier` of `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
-  def supplier = new java.util.function.Supplier[IntAccumulator]{ def get: IntAccumulator = new IntAccumulator }
+  def supplier: jf.Supplier[IntAccumulator]  = () => new IntAccumulator
 
   /** A `BiConsumer` that adds an element to an `IntAccumulator`, suitable for use with `java.util.stream.IntStream`'s `collect` method. */
-  def adder = new java.util.function.ObjIntConsumer[IntAccumulator]{ def accept(ac: IntAccumulator, a: Int): Unit = { ac addOne a } }
+  def adder: jf.ObjIntConsumer[IntAccumulator] = (ac: IntAccumulator, a: Int) => ac addOne a
 
   /** A `BiConsumer` that adds a boxed `Int` to an `IntAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def boxedAdder = new java.util.function.BiConsumer[IntAccumulator, Int]{ def accept(ac: IntAccumulator, a: Int): Unit = { ac addOne a } }
+  def boxedAdder: jf.BiConsumer[IntAccumulator, Int] = (ac: IntAccumulator, a: Int) => ac addOne a
 
   /** A `BiConsumer` that merges `IntAccumulator`s, suitable for use with `java.util.stream.IntStream`'s `collect` method.  Suitable for `Stream[Int]` also. */
-  def merger = new java.util.function.BiConsumer[IntAccumulator, IntAccumulator]{ def accept(a1: IntAccumulator, a2: IntAccumulator): Unit = { a1 drain a2 } }
+  def merger: jf.BiConsumer[IntAccumulator, IntAccumulator] = (a1: IntAccumulator, a2: IntAccumulator) => a1 drain a2
 
   private def fromArray(a: Array[Int]): IntAccumulator = {
     val r = new IntAccumulator
@@ -234,7 +247,7 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   override def newBuilder: mutable.Builder[Int, IntAccumulator] = new IntAccumulator
 }
 
-private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper {
+private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper with EfficientSubstep {
   import java.util.Spliterator._
 
   private var h = 0
@@ -260,11 +273,11 @@ private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) ex
     i = 0
   }
 
-  def characteristics = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  def estimateSize = N
+  def estimateSize: Long = N
 
-  def hasNext = N > 0
+  def hasNext: Boolean = N > 0
 
   def nextInt(): Int =
     if (N <= 0) throw new NoSuchElementException("next on empty Stepper")

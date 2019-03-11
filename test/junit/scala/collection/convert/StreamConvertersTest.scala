@@ -412,4 +412,28 @@ class StreamConvertersTest {
       ps1.parStream.count()
     }
   }
+
+  @Test
+  def accumulatorStepper(): Unit = {
+    val ia = Accumulator(1, 2, 3)
+    val sa = Accumulator("a", "b", "c")
+
+    locally {
+      import scala.collection.JavaConverters._
+
+      val ias = ia.stepper
+      (ias: IntStepper with EfficientSubstep).parStream.count()
+      val iass = ia.seqStream
+      (iass: IntStream).count()
+      val iaps = ia.parStream
+      (iaps: IntStream).count()
+
+      val sas = sa.stepper
+      (sas: Stepper[String] with EfficientSubstep).parStream.count()
+      val sass = sa.seqStream
+      (sass: Stream[String]).count()
+      val saps = sa.parStream
+      (saps: Stream[String]).count()
+    }
+  }
 }

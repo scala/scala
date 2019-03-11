@@ -11,12 +11,19 @@
  */
 
 package scala.collection.convert
+
+import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
  * This is a manually specialized variant of `AnyAccumulator` with no actual
  * subclassing relationship with `AnyAccumulator`.
+ *
+ * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
+ * implemented based on length, which throws when more than MaxInt.
+ *
+ * TODO: doc performance characteristics.
  */
 final class DoubleAccumulator
   extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
@@ -27,6 +34,17 @@ final class DoubleAccumulator
   private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-1).toLong }
 
   override protected[this] def className: String = "DoubleAccumulator"
+
+  override def stepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+    val st = new DoubleAccumulatorStepper(this)
+    val r =
+      if (shape.shape == StepperShape.DoubleValue) st
+      else {
+        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        Stepper.boxingParDoubleStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSubstep]
+  }
 
   private def expand(): Unit = {
     if (index > 0) {
@@ -45,7 +63,7 @@ final class DoubleAccumulator
   }
 
   /** Appends an element to this `DoubleAccumulator`. */
-  final def addOne(a: Double): this.type = {
+  def addOne(a: Double): this.type = {
     totalSize += 1
     if (index+1 >= current.length) expand()
     current(index) = a
@@ -57,7 +75,7 @@ final class DoubleAccumulator
   override def result(): DoubleAccumulator = this
 
   /** Removes all elements from `that` and appends them to this `DoubleAccumulator`. */
-  final def drain(that: DoubleAccumulator): Unit = {
+  def drain(that: DoubleAccumulator): Unit = {
     var h = 0
     var prev = 0L
     var more = true
@@ -120,7 +138,7 @@ final class DoubleAccumulator
   }
 
   /** Retrieves the `ix`th element. */
-  final def apply(ix: Long): Double = {
+  def apply(ix: Long): Double = {
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt)
     else {
       val w = seekSlot(ix)
@@ -129,19 +147,13 @@ final class DoubleAccumulator
   }
 
   /** Retrieves the `ix`th element, using an `Int` index. */
-  final def apply(i: Int): Double = apply(i.toLong)
-
-  /** Returns a `DoubleStepper` over the contents of this `DoubleAccumulator`. */
-  final def stepper: DoubleStepper = new DoubleAccumulatorStepper(this)
+  def apply(i: Int): Double = apply(i.toLong)
 
   /** Returns an `Iterator` over the contents of this `DoubleAccumulator`. The `Iterator` is not specialized. */
-  final def iterator = stepper.iterator
-
-  /** Returns a `java.util.Spliterator.OfDouble` over the contents of this `DoubleAccumulator`*/
-  final def spliterator: java.util.Spliterator.OfDouble = stepper
+  def iterator: Iterator[Double] = stepper.iterator
 
   /** Copies the elements in this `DoubleAccumulator` into an `Array[Double]` */
-  final def toArray = {
+  def toArray: Array[Double] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
     val a = new Array[Double](totalSize.toInt)
     var j = 0
@@ -162,7 +174,7 @@ final class DoubleAccumulator
   }
 
   /** Copies the elements in this `DoubleAccumulator` to a `List` */
-  final override def toList: List[Double] = {
+  override def toList: List[Double] = {
     var ans: List[Double] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -182,7 +194,6 @@ final class DoubleAccumulator
     ans
   }
 
-
   /**
    * Copy the elements in this `DoubleAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
@@ -193,23 +204,26 @@ final class DoubleAccumulator
     factory.fromSpecific(iterator)
   }
 }
+
 object DoubleAccumulator extends collection.SpecificIterableFactory[Double, DoubleAccumulator] {
   private val emptyDoubleArray = new Array[Double](0)
   private val emptyDoubleArrayArray = new Array[Array[Double]](0)
 
   implicit def toJavaDoubleAccumulator(ia: DoubleAccumulator.type): collection.SpecificIterableFactory[java.lang.Double, DoubleAccumulator] = DoubleAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Double, DoubleAccumulator]]
 
+  import java.util.{function => jf}
+
   /** A `Supplier` of `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
-  def supplier = new java.util.function.Supplier[DoubleAccumulator]{ def get: DoubleAccumulator = new DoubleAccumulator }
+  def supplier: jf.Supplier[DoubleAccumulator]  = () => new DoubleAccumulator
 
   /** A `BiConsumer` that adds an element to an `DoubleAccumulator`, suitable for use with `java.util.stream.DoubleStream`'s `collect` method. */
-  def adder = new java.util.function.ObjDoubleConsumer[DoubleAccumulator]{ def accept(ac: DoubleAccumulator, a: Double): Unit = { ac addOne a } }
+  def adder: jf.ObjDoubleConsumer[DoubleAccumulator] = (ac: DoubleAccumulator, a: Double) => ac addOne a
 
   /** A `BiConsumer` that adds a boxed `Double` to an `DoubleAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def boxedAdder = new java.util.function.BiConsumer[DoubleAccumulator, Double]{ def accept(ac: DoubleAccumulator, a: Double): Unit = { ac addOne a } }
+  def boxedAdder: jf.BiConsumer[DoubleAccumulator, Double] = (ac: DoubleAccumulator, a: Double) => ac addOne a
 
   /** A `BiConsumer` that merges `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
-  def merger = new java.util.function.BiConsumer[DoubleAccumulator, DoubleAccumulator]{ def accept(a1: DoubleAccumulator, a2: DoubleAccumulator): Unit = { a1 drain a2 } }
+  def merger: jf.BiConsumer[DoubleAccumulator, DoubleAccumulator] = (a1: DoubleAccumulator, a2: DoubleAccumulator) => a1 drain a2
 
   private def fromArray(a: Array[Double]): DoubleAccumulator = {
     val r = new DoubleAccumulator
@@ -230,7 +244,7 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   override def newBuilder: mutable.Builder[Double, DoubleAccumulator] = new DoubleAccumulator
 }
 
-private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper {
+private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSubstep {
   import java.util.Spliterator._
 
   private var h = 0
@@ -256,11 +270,11 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
     i = 0
   }
 
-  def characteristics = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  def estimateSize = N
+  def estimateSize: Long = N
 
-  def hasNext = N > 0
+  def hasNext: Boolean = N > 0
 
   def nextDouble(): Double =
     if (n <= 0) throw new NoSuchElementException("next on empty Stepper")

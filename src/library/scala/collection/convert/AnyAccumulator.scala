@@ -12,6 +12,7 @@
 
 package scala.collection.convert
 
+import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -20,6 +21,9 @@ import scala.reflect.ClassTag
  * An `AnyAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging Accumulators.
  * Accumulators can contain more than `Int.MaxValue` elements.
+ *
+ * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
+ * implemented based on length, which throws when more than MaxInt.
  *
  * TODO: doc performance characteristics.
  */
@@ -36,6 +40,9 @@ final class AnyAccumulator[A]
   private[convert] def cumulative(i: Int): Long = cumul(i)
 
   override protected[this] def className: String = "AnyAccumulator"
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
+    shape.parUnbox(new AnyAccumulatorStepper[B](this.asInstanceOf[AnyAccumulator[B]]))
 
   private def expand(): Unit = {
     if (index > 0) {
@@ -60,7 +67,7 @@ final class AnyAccumulator[A]
   }
 
   /** Appends an element to this `AnyAccumulator`. */
-  final def addOne(a: A): this.type = {
+  def addOne(a: A): this.type = {
     totalSize += 1
     if (index >= current.length) expand()
     current(index) = a.asInstanceOf[AnyRef]
@@ -72,7 +79,7 @@ final class AnyAccumulator[A]
   override def result(): AnyAccumulator[A] = this
 
   /** Removes all elements from `that` and appends them to this `AnyAccumulator`. */
-  final def drain[A1 <: A](that: AnyAccumulator[A1]): Unit = {
+  def drain[A1 <: A](that: AnyAccumulator[A1]): Unit = {
     var h = 0
     var prev = 0L
     var more = true
@@ -127,7 +134,7 @@ final class AnyAccumulator[A]
   }
 
   /** Retrieves the `ix`th element. */
-  final def apply(ix: Long): A = {
+  def apply(ix: Long): A = {
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt).asInstanceOf[A]
     else {
       val w = seekSlot(ix)
@@ -136,16 +143,10 @@ final class AnyAccumulator[A]
   }
 
   /** Retrieves the `ix`th element, using an `Int` index. */
-  final def apply(i: Int): A = apply(i.toLong)
-
-  /** Returns a `Stepper` over the contents of this `AnyAccumulator`*/
-  final def stepper: AnyStepper[A] = new AnyAccumulatorStepper[A](this)
+  def apply(i: Int): A = apply(i.toLong)
 
   /** Returns an `Iterator` over the contents of this `AnyAccumulator`. */
-  final def iterator = stepper.iterator
-
-  /** Returns a `java.util.Spliterator` over the contents of this `AnyAccumulator`*/
-  final def spliterator: java.util.Spliterator[A] = stepper.spliterator
+  def iterator: Iterator[A] = stepper.iterator
 
   /** Copy the elements in this `AnyAccumulator` into an `Array` */
   override def toArray[B >: A : ClassTag]: Array[B] = {
@@ -176,7 +177,7 @@ final class AnyAccumulator[A]
   }
 
   /** Copies the elements in this `AnyAccumulator` to a `List` */
-  final override def toList: List[A] = {
+  override def toList: List[A] = {
     var ans: List[A] = Nil
     var i = index - 1
     while (i >= 0) {
@@ -196,7 +197,6 @@ final class AnyAccumulator[A]
     ans
   }
 
-
   /**
    * Copy the elements in this `AnyAccumulator` to a specified collection. Example use:
    * `acc.to(Vector)`.
@@ -212,23 +212,25 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   private val emptyAnyRefArrayArray = new Array[Array[AnyRef]](0)
   private val emptyLongArray = new Array[Long](0)
 
+  import java.util.{function => jf}
+
   /** A `Supplier` of `AnyAccumulator`s, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def supplier[A] = new java.util.function.Supplier[AnyAccumulator[A]]{ def get: AnyAccumulator[A] = new AnyAccumulator[A] }
+  def supplier[A]: jf.Supplier[AnyAccumulator[A]] = () => new AnyAccumulator[A]
 
   /** A `BiConsumer` that adds an element to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def adder[A] = new java.util.function.BiConsumer[AnyAccumulator[A], A]{ def accept(ac: AnyAccumulator[A], a: A): Unit = { ac addOne a } }
+  def adder[A]: jf.BiConsumer[AnyAccumulator[A], A] = (ac: AnyAccumulator[A], a: A) => ac addOne a
 
   /** A `BiConsumer` that adds an `Int` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedIntAdder = new java.util.function.ObjIntConsumer[AnyAccumulator[Int]]{ def accept(ac: AnyAccumulator[Int], a: Int): Unit = { ac addOne a } }
+  def unboxedIntAdder: jf.ObjIntConsumer[AnyAccumulator[Int]] = (ac: AnyAccumulator[Int], a: Int) => ac addOne a
 
   /** A `BiConsumer` that adds a `Long` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedLongAdder = new java.util.function.ObjLongConsumer[AnyAccumulator[Long]]{ def accept(ac: AnyAccumulator[Long], a: Long): Unit = { ac addOne a } }
+  def unboxedLongAdder: jf.ObjLongConsumer[AnyAccumulator[Long]] = (ac: AnyAccumulator[Long], a: Long) => ac addOne a
 
   /** A `BiConsumer` that adds a `Double` to an `AnyAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def unboxedDoubleAdder = new java.util.function.ObjDoubleConsumer[AnyAccumulator[Double]]{ def accept(ac: AnyAccumulator[Double], a: Double): Unit = { ac addOne a } }
+  def unboxedDoubleAdder: jf.ObjDoubleConsumer[AnyAccumulator[Double]] = (ac: AnyAccumulator[Double], a: Double) => ac addOne a
 
   /** A `BiConsumer` that merges `AnyAccumulator`s, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def merger[A] = new java.util.function.BiConsumer[AnyAccumulator[A], AnyAccumulator[A]]{ def accept(a1: AnyAccumulator[A], a2: AnyAccumulator[A]): Unit = { a1 drain a2 } }
+  def merger[A]: jf.BiConsumer[AnyAccumulator[A], AnyAccumulator[A]] = (a1: AnyAccumulator[A], a2: AnyAccumulator[A]) => a1 drain a2
 
   def from[A](source: IterableOnce[A]): AnyAccumulator[A] = source match {
     case acc: AnyAccumulator[A] => acc
@@ -240,7 +242,7 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   def newBuilder[A]: mutable.Builder[A, AnyAccumulator[A]] = new AnyAccumulator[A]
 }
 
-private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] {
+private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSubstep {
   import java.util.Spliterator._
 
   private var h = 0
@@ -266,11 +268,11 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
     i = 0
   }
 
-  def characteristics = ORDERED | SIZED | SUBSIZED
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED
 
-  def estimateSize = N
+  def estimateSize: Long = N
 
-  def hasNext = N > 0
+  def hasNext: Boolean = N > 0
 
   def next(): A =
     if (N <= 0) throw new NoSuchElementException("Next in empty Stepper")
