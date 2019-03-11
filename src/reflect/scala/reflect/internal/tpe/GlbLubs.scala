@@ -276,12 +276,10 @@ private[internal] trait GlbLubs {
         // the type constructor of the calculated lub instead.  This
         // is because lubbing type constructors tends to result in types
         // which have been applied to dummies or Nothing.
-        ts.map(_.typeParams.size).distinct match {
-          case x :: Nil if res.typeParams.size != x =>
-            logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
-          case _                                    =>
-            res
-        }
+        val hs = ts.head.typeParams.size
+        if (hs != res.typeParams.size && ts.tail.forall(t => hasLength(t.typeParams, hs)))
+          logResult(s"Stripping type args from lub because $res is not consistent with $ts")(res.typeConstructor)
+        else res
       }
       finally {
         lubResults.clear()
