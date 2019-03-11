@@ -1,6 +1,4 @@
-package scala
-package tools
-package testing
+package scala.tools.testkit
 
 import java.io.OutputStreamWriter
 import java.net.URI

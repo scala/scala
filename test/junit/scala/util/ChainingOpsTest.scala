@@ -4,7 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import scala.tools.reflect.ToolBoxError
-import scala.tools.testing.RunTesting
+import scala.tools.testkit.RunTesting
 
 class ChainingOpsTest extends RunTesting {
   import scala.util.chaining._

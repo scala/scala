@@ -10,8 +10,8 @@ import org.junit.runners.JUnit4
 import scala.collection.JavaConverters._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class ScalaInlineInfoTest extends BytecodeTesting {

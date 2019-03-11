@@ -1,4 +1,4 @@
-package scala.tools.testing
+package scala.tools.testkit
 
 import java.io.{IOException, File}
 

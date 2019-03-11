@@ -1,7 +1,7 @@
 package scala.util
 
 import org.junit.{Assert, Test}
-import tools.testing.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.assertThrows
 
 class RandomUtilTest {
   @Test def testBetween: Unit = {

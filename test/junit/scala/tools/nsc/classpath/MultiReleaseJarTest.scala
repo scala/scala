@@ -8,7 +8,7 @@ import java.util.jar.Attributes.Name
 import org.junit.{Assert, Test}
 
 import scala.tools.nsc.{Global, Settings}
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 import scala.util.Properties
 
 class MultiReleaseJarTest extends BytecodeTesting {

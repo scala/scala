@@ -6,7 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.nsc.settings.ScalaVersion
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 class A
 class B extends A

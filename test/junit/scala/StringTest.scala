@@ -1,7 +1,7 @@
 package scala
 
 import scala.tools.reflect.ToolBoxError
-import scala.tools.testing.RunTesting
+import scala.tools.testkit.RunTesting
 
 import org.junit.Test
 import org.junit.runner.RunWith

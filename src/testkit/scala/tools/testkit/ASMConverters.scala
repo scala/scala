@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.testing
+package scala.tools.testkit
 
 import scala.collection.JavaConverters._
 import scala.tools.asm

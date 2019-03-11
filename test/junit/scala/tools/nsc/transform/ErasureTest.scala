@@ -4,8 +4,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting.{assertNoInvoke, getMethod}
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting.{assertNoInvoke, getMethod}
 
 class ErasureTest extends BytecodeTesting {
   object symbolTable extends SymbolTableForUnitTesting

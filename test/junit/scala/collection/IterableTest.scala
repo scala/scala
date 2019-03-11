@@ -6,7 +6,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
 import scala.language.higherKinds
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 import org.junit.Assert.assertEquals
 
 @RunWith(classOf[JUnit4])

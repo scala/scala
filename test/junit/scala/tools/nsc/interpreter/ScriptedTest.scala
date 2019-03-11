@@ -2,7 +2,7 @@ package scala.tools.nsc
 package interpreter
 
 import org.junit._, Assert._, runner.RunWith, runners.JUnit4
-import scala.tools.testing.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 class ScriptedTest {

@@ -1,4 +1,4 @@
-package scala.util
+package scala.tools.testkit
 
 import java.lang.management.ManagementFactory
 

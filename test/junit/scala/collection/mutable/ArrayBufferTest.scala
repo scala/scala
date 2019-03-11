@@ -6,8 +6,8 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 
 
-import scala.tools.testing.AssertUtil
-import scala.tools.testing.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil
+import scala.tools.testkit.AssertUtil.assertThrows
 
 /* Test for scala/bug#9043 */
 @RunWith(classOf[JUnit4])

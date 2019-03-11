@@ -7,9 +7,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.ASMConverters._
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.testing.ClearAfterClass
+import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.BytecodeTesting._
+import scala.tools.testkit.ClearAfterClass
 
 @RunWith(classOf[JUnit4])
 class CompactLocalVariablesTest extends ClearAfterClass {

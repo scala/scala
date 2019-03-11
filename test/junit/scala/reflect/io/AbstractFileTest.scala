@@ -6,7 +6,7 @@ import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.TempDir
+import scala.tools.testkit.TempDir
 
 @RunWith(classOf[JUnit4])
 class AbstractFileTest {

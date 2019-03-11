@@ -4,7 +4,7 @@ import org.junit._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.VirtualCompiler
+import scala.tools.testkit.VirtualCompiler
 import scala.language.reflectiveCalls
 
 @RunWith(classOf[JUnit4])

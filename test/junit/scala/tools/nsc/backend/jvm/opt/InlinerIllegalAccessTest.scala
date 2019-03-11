@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.AsmUtils._
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class InlinerIllegalAccessTest extends BytecodeTesting {

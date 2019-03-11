@@ -1,7 +1,7 @@
 // scalac: -Ydelambdafy:method -opt:l:inline -opt-inline-from:**
 //
 import scala.tools.partest.BytecodeTest
-import scala.tools.testing.ASMConverters.instructionsFromMethod
+import scala.tools.testkit.ASMConverters.instructionsFromMethod
 import scala.tools.asm
 import scala.tools.asm.util._
 import scala.collection.JavaConverters._

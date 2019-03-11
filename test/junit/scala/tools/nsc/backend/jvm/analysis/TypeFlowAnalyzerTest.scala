@@ -10,8 +10,8 @@ import org.junit.runners.JUnit4
 import scala.tools.asm.Type
 import scala.tools.asm.tree.analysis.BasicValue
 import scala.tools.nsc.backend.jvm.analysis.TypeFlowInterpreter.{AaloadValue, LMFValue, ParamValue}
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class TypeFlowAnalyzerTest extends BytecodeTesting {

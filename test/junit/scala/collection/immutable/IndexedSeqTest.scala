@@ -5,8 +5,8 @@ import Assert._
 
 import scala.collection.Seq.empty
 import scala.language.postfixOps
-import scala.tools.testing.AssertUtil._
-import scala.util.AllocationTest
+import scala.tools.testkit.AssertUtil._
+import scala.tools.testkit.AllocationTest
 
 class IndexedSeqTest extends AllocationTest {
 

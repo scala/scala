@@ -50,15 +50,9 @@ getSimpleName / getCanonicalName / isAnonymousClass / isLocalClass / isSynthetic
     will change some day).
 */
 
-import scala.tools.nsc.settings.ScalaVersion
-import scala.util.Properties.javaSpecVersion
+import scala.tools.testkit.AssertUtil.assert8
 
 object Test {
-
-  def assert8(b: => Boolean, msg: => Any) = {
-    if (ScalaVersion(javaSpecVersion) == ScalaVersion("1.8")) assert(b, msg)
-    else if (!b) println(s"assert not $msg")
-  }
 
   def tr[T](m: => T): String = try {
     val r = m

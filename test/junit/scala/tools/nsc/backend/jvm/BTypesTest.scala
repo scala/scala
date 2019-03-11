@@ -8,7 +8,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.mutable
 import scala.tools.asm.Opcodes
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class BTypesTest extends BytecodeTesting {

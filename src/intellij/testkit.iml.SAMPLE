@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/testkit" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/testkit" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../testkit">
+      <sourceFolder url="file://$MODULE_DIR$/../testkit" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="library" />
+    <orderEntry type="library" name="testkit-deps" level="project" />
+    <orderEntry type="library" name="starr" level="project" />
+  </component>
+</module>
