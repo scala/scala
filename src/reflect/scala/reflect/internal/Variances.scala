@@ -205,37 +205,45 @@ trait Variances {
   }
 
   /** Compute variance of type parameter `tparam` in all types `tps`. */
-  def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance =
+  final def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance =
     Variance.foldExtract(tps)(t => varianceInType(t)(tparam))
 
   /** Compute variance of type parameter `tparam` in type `tp`. */
-  def varianceInType(tp: Type)(tparam: Symbol): Variance = {
-    def inArgs(sym: Symbol, args: List[Type]): Variance =
-      Variance.foldExtract2(args, sym.typeParams)( (a, b) => inType(a)*b.variance )
-    def inSyms(syms: List[Symbol]): Variance =
-      Variance.foldExtract(syms)(s => inSym(s))
-    def inTypes(tps: List[Type]): Variance = Variance.foldExtract(tps)(t => inType(t))
+  final def varianceInType(tp: Type)(tparam: Symbol): Variance = {
+    new varianceInType(tp, tparam).apply()
+  }
 
-    def inAnnots(anns: List[AnnotationInfo]): Variance =  Variance.foldExtract(anns)(a => inType(a.atp))
+  private final class varianceInType(tp: Type, tparam: Symbol) {
+    import Variance._
+    private def inArgs(sym: Symbol, args: List[Type]): Variance = foldExtract2(args, sym.typeParams)(inArgParam)
+    private def inSyms(syms: List[Symbol]): Variance            = foldExtract(syms)(inSym)
+    private def inTypes(tps: List[Type]): Variance              = foldExtract(tps)(inType)
+    private def inAnnots(anns: List[AnnotationInfo]): Variance  = foldExtract(anns)(inAnnotationAtp)
 
-    def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
-    def inType(tp: Type): Variance   = tp match {
+    // OPT these extractors are hoisted to fields to reduce allocation. We're also avoiding Function1[_, Variance] to
+    //     avoid value class boxing.
+    private[this] lazy val inAnnotationAtp: Extractor[AnnotationInfo] = (a: AnnotationInfo) => inType(a.atp)
+    private[this] lazy val inArgParam: Extractor2[Type, Symbol]       = (a, b) => inType(a) * b.variance
+    private[this] lazy val inSym: Extractor[Symbol]                   = (sym: Symbol) => if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
+    private[this] val inType: Extractor[Type] = {
       case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
       case ThisType(_) | ConstantType(_)                => Bivariant
       case TypeRef(_, `tparam`, _)                      => Covariant
       case BoundedWildcardType(bounds)                  => inType(bounds)
       case NullaryMethodType(restpe)                    => inType(restpe)
       case SingleType(pre, sym)                         => inType(pre)
-      case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)                 // a type constructor cannot occur in tp's args
-      case TypeRef(pre, sym, args)                      => inType(pre)                 & inArgs(sym, args)
-      case TypeBounds(lo, hi)                           => inType(lo).flip             & inType(hi)
-      case RefinedType(parents, defs)                   => inTypes(parents)            & inSyms(defs.toList)
-      case MethodType(params, restpe)                   => inSyms(params).flip         & inType(restpe)
-      case PolyType(tparams, restpe)                    => inSyms(tparams).flip        & inType(restpe)
-      case ExistentialType(tparams, restpe)             => inSyms(tparams)             & inType(restpe)
-      case AnnotatedType(annots, tp)                    => inAnnots(annots)            & inType(tp)
+      case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)          // a type constructor cannot occur in tp's args
+      case TypeRef(pre, sym, args)                      => inType(pre)          & inArgs(sym, args)
+      case TypeBounds(lo, hi)                           => inType(lo).flip      & inType(hi)
+      case RefinedType(parents, defs)                   => inTypes(parents)     & inSyms(defs.toList)
+      case MethodType(params, restpe)                   => inSyms(params).flip  & inType(restpe)
+      case PolyType(tparams, restpe)                    => inSyms(tparams).flip & inType(restpe)
+      case ExistentialType(tparams, restpe)             => inSyms(tparams)      & inType(restpe)
+      case AnnotatedType(annots, tp)                    => inAnnots(annots)     & inType(tp)
     }
 
-    inType(tp)
+    def apply(): Variance = {
+      inType(tp)
+    }
   }
 }
