@@ -79,7 +79,7 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     else loop(0, coll)
   }
 
-  override def sizeCompare(that: Iterable[_]): Int = {
+  override def lengthCompare(that: Iterable[_]): Int = {
     val thatKnownSize = that.knownSize
 
     if (thatKnownSize >= 0) this lengthCompare thatKnownSize

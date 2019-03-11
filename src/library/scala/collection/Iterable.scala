@@ -258,9 +258,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *        x == 0       if this.size == otherSize
     *        x >  0       if this.size >  otherSize
     *   }}}
+    *
     *  The method as implemented here does not call `size` directly; its running time
-    *  is `O(size min _size)` instead of `O(size)`. The method should be overwritten
-    *  if computing `size` is cheap.
+    *  is `O(size min otherSize)` instead of `O(size)`. The method should be overridden
+    *  if computing `size` is cheap and `knownSize` returns `-1`.
+    *
+    *  @see [[sizeIs]]
     */
   def sizeCompare(otherSize: Int): Int = {
     if (otherSize < 0) 1
@@ -299,14 +302,16 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /** Compares the size of this $coll to the size of another `Iterable`.
     *
     *   @param   that the `Iterable` whose size is compared with this $coll's size.
+    *   @return  A value `x` where
     *   {{{
     *        x <  0       if this.size <  that.size
     *        x == 0       if this.size == that.size
     *        x >  0       if this.size >  that.size
     *   }}}
+    *
     *  The method as implemented here does not call `size` directly; its running time
     *  is `O(this.size min that.size)` instead of `O(this.size + that.size)`.
-    *  The method should be overwritten if computing `size` is cheap.
+    *  The method should be overridden if computing `size` is cheap and `knownSize` returns `-1`.
     */
   def sizeCompare(that: Iterable[_]): Int = {
     val thatKnownSize = that.knownSize

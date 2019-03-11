@@ -239,6 +239,18 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     */
   def lastOption: Option[A] = if(isEmpty) None else Some(last)
 
+  /** Compares the size of this array to a test value.
+    *
+    *   @param   otherSize the test value that gets compared with the size.
+    *   @return  A value `x` where
+    *   {{{
+    *        x <  0       if this.size <  otherSize
+    *        x == 0       if this.size == otherSize
+    *        x >  0       if this.size >  otherSize
+    *   }}}
+    */
+  def sizeCompare(otherSize: Int): Int = Integer.compare(xs.length, otherSize)
+
   /** Compares the length of this array to a test value.
     *
     *   @param   len   the test value that gets compared with the length.
@@ -250,6 +262,40 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *   }}}
     */
   def lengthCompare(len: Int): Int = Integer.compare(xs.length, len)
+
+  /** Method mirroring [[SeqOps.sizeIs]] for consistency, except it returns an `Int`
+    * because `size` is known and comparison is constant-time.
+    *
+    * These operations are equivalent to [[sizeCompare(Int) `sizeCompare(Int)`]], and
+    * allow the following more readable usages:
+    *
+    * {{{
+    * this.sizeIs < size     // this.sizeCompare(size) < 0
+    * this.sizeIs <= size    // this.sizeCompare(size) <= 0
+    * this.sizeIs == size    // this.sizeCompare(size) == 0
+    * this.sizeIs != size    // this.sizeCompare(size) != 0
+    * this.sizeIs >= size    // this.sizeCompare(size) >= 0
+    * this.sizeIs > size     // this.sizeCompare(size) > 0
+    * }}}
+    */
+  def sizeIs: Int = xs.length
+
+  /** Method mirroring [[SeqOps.lengthIs]] for consistency, except it returns an `Int`
+    * because `length` is known and comparison is constant-time.
+    *
+    * These operations are equivalent to [[lengthCompare(Int) `lengthCompare(Int)`]], and
+    * allow the following more readable usages:
+    *
+    * {{{
+    * this.lengthIs < len     // this.lengthCompare(len) < 0
+    * this.lengthIs <= len    // this.lengthCompare(len) <= 0
+    * this.lengthIs == len    // this.lengthCompare(len) == 0
+    * this.lengthIs != len    // this.lengthCompare(len) != 0
+    * this.lengthIs >= len    // this.lengthCompare(len) >= 0
+    * this.lengthIs > len     // this.lengthCompare(len) > 0
+    * }}}
+    */
+  def lengthIs: Int = xs.length
 
   /** Selects an interval of elements. The returned array is made up
     * of all elements `x` which satisfy the invariant:
