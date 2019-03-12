@@ -118,7 +118,9 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *
     *  @param  elem        the element to insert
     */
-  def enqueue[B >: A](elem: B): Queue[B] = new Queue(elem :: in, out)
+  def enqueue[B >: A](elem: B): Queue[B] =
+    if (isEmpty) new Queue(Nil, out :+ elem)
+    else new Queue(elem :: in, out)
 
   /** Creates a new queue with all elements provided by an `Iterable` object
     *  added at the end of the old queue.
@@ -148,7 +150,10 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @return the first element of the queue.
     */
   def dequeue: (A, Queue[A]) = out match {
-    case Nil if !in.isEmpty => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
+    case Nil if !in.isEmpty => in match {
+      case x :: Nil => (x, new Queue(Nil, Nil))
+      case _ => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
+    }
     case x :: xs            => (x, new Queue(in, xs))
     case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
