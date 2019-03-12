@@ -27,6 +27,9 @@ class StreamConvertersTest {
 
     val m1 = Map(1 -> "a")
     val m2 = collection.mutable.LinkedHashMap('c' -> 35f)
+    val s1 = Set("3", "4")
+    val s2 = collection.mutable.LinkedHashSet('a', 'b')
+
 
     val m1ks = m1.keyStepper
     (m1ks: IntStepper /*with EfficientSubstep*/).nextStep()
@@ -55,11 +58,21 @@ class StreamConvertersTest {
     val m2svs = m2.seqValueStream
     (m2svs: DoubleStream).count()
 
-    // val m2pps = m2.parStream // Not available because LinkedHashMap doesn't override stepper to be `with EfficientSubstep`
+    val m2pps = m2.parStream
+    (m2pps: Stream[(Char, Float)]).count()
     val m2pks = m2.parKeyStream
     (m2pks: IntStream).sum()
     val m2pvs = m2.parValueStream
     (m2pvs: DoubleStream).count()
+
+    val s1sps = s1.seqStream
+    (s1sps: Stream[String]).count()
+//    val s1pps = s1.parStream
+
+    val s2sps = s2.seqStream
+    (s2sps: IntStream).count()
+    val s2pps = s2.parStream
+    (s2pps: IntStream).count()
   }
 
   @Test

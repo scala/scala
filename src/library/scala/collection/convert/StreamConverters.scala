@@ -36,7 +36,7 @@ trait StreamConverters {
     def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[A, S, St],
         st: StepperShape[A, St],
-        @implicitNotFound("parStream can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
+        @implicitNotFound("`parStream` can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: C <:< IterableOnceWithEfficientStepper[A]): S =
       s.fromStepper(ev(c).stepper, par = true)
   }

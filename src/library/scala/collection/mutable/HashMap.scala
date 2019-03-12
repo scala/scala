@@ -267,7 +267,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
   override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
     shape.
-      parUnbox(new convert.impl.AnyTableStepper[B, Node[K, V]](size, table, _.next, node => ((node.key, node.value): B),      0, table.length)).
+      parUnbox(new convert.impl.AnyTableStepper[B, Node[K, V]](size, table, _.next, node => (node.key, node.value), 0, table.length)).
       asInstanceOf[S with EfficientSubstep]
 
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {

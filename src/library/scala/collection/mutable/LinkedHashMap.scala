@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.collection.convert.{EfficientSubstep, Stepper}
+import scala.collection.convert.impl.StepperShape
 import scala.collection.generic.DefaultSerializable
 
 
@@ -68,11 +70,31 @@ class LinkedHashMap[K, V]
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
-  // TODO implement efficient stepper
-  override def keyStepper[S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[K, S]): S with convert.EfficientSubstep = super.keyStepper(shape).asInstanceOf[S with convert.EfficientSubstep]
+  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
+    shape.parUnbox(
+      new convert.impl.AnyTableStepper[B, HashEntry[K, Entry]](size, table.table, _.next, { case node: LinkedHashMap.LinkedEntry[K, V] => (node.key, node.value) }, 0, table.table.length))
 
-  // TODO implement efficient stepper
-  override def valueStepper[V1 >: V, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[V1, S]): S with convert.EfficientSubstep = super.valueStepper(shape).asInstanceOf[S with convert.EfficientSubstep]
+  override def keyStepper[S <: convert.Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {
+    import convert.impl._
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => new IntTableStepper[HashEntry[K, Entry]]   (size, table.table, _.next, _.key.asInstanceOf[Int],    0, table.table.length)
+      case StepperShape.LongValue   => new LongTableStepper[HashEntry[K, Entry]]  (size, table.table, _.next, _.key.asInstanceOf[Long],   0, table.table.length)
+      case StepperShape.DoubleValue => new DoubleTableStepper[HashEntry[K, Entry]](size, table.table, _.next, _.key.asInstanceOf[Double], 0, table.table.length)
+      case _         => shape.parUnbox(new AnyTableStepper[K, HashEntry[K, Entry]](size, table.table, _.next, _.key,                      0, table.table.length))
+    }
+    s.asInstanceOf[S with EfficientSubstep]
+  }
+
+  override def valueStepper[V1 >: V, S <: convert.Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSubstep = {
+    import convert.impl._
+    val s = (shape.shape: @annotation.switch) match {
+      case StepperShape.IntValue    => new IntTableStepper[HashEntry[K, Entry]]    (size, table.table, _.next, _.asInstanceOf[LinkedHashMap.LinkedEntry[K, Int]].value,    0, table.table.length)
+      case StepperShape.LongValue   => new LongTableStepper[HashEntry[K, Entry]]   (size, table.table, _.next, _.asInstanceOf[LinkedHashMap.LinkedEntry[K, Long]].value,   0, table.table.length)
+      case StepperShape.DoubleValue => new DoubleTableStepper[HashEntry[K, Entry]] (size, table.table, _.next, _.asInstanceOf[LinkedHashMap.LinkedEntry[K, Double]].value, 0, table.table.length)
+      case _         => shape.parUnbox(new AnyTableStepper[V1, HashEntry[K, Entry]](size, table.table, _.next, _.asInstanceOf[LinkedHashMap.LinkedEntry[K, V]].value,      0, table.table.length))
+    }
+    s.asInstanceOf[S with EfficientSubstep]
+  }
 
   private[collection] type Entry = LinkedHashMap.LinkedEntry[K, V]
   private[collection] def _firstEntry: Entry = firstEntry
