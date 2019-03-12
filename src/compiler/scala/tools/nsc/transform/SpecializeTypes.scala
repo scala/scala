@@ -696,7 +696,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
         // they are never needed.
-        mapParamss(sym)(_ resetFlag DEFAULTPARAM)
+        foreachParamss(sym)(_ resetFlag DEFAULTPARAM)
         decls1 enter subst(fullEnv)(sym)
       }
 

@@ -481,9 +481,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val code = DefDef(newAcc, {
           val (receiver :: _) :: tail = newAcc.paramss
           val base: Tree              = Select(Ident(receiver), sym)
-          val allParamTypes           = mapParamss(sym)(_.tpe)
-          val args = map2(tail, allParamTypes)((params, tpes) => map2(params, tpes)(makeArg(_, receiver, _)))
-          args.foldLeft(base)(Apply(_, _))
+          foldLeft2(tail, sym.info.paramss)(base){ (acc, params, pps) =>
+            val y = map2(params, pps)( (param, pp) =>  makeArg(param, receiver, pp.tpe))
+            Apply(acc, y)
+          }
         })
 
         debuglog("created protected accessor: " + code)
