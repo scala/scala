@@ -582,20 +582,24 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      def noDuplicates(names: List[Name], check: DuplicatesErrorKinds.Value) {
-        def loop(xs: List[Name]): Unit = xs match {
-          case Nil      => ()
-          case hd :: tl =>
-            if (hd == nme.WILDCARD || !(tl contains hd)) loop(tl)
-            else DuplicatesError(tree, hd, check)
-        }
-        loop(names filterNot (x => x == null || x == nme.WILDCARD))
-      }
       selectors foreach checkSelector
 
+      def noDuplicates(): Unit = {
+        @inline def isRename(hd: ImportSelector): Boolean =
+          hd.rename != null && hd.rename != nme.WILDCARD && hd.rename != hd.name
+        def loop(xs: List[ImportSelector]): Unit = xs match {
+          case Nil      => ()
+          case hd :: tl =>
+            if (hd.name != nme.WILDCARD && tl.exists(x => ! (x.name == nme.WILDCARD) && x.name == hd.name))
+              DuplicatesError(tree, hd.name, RenamedTwice)
+            else if (isRename(hd) && tl.exists(x => isRename(hd) && x.rename == hd.rename))
+              DuplicatesError(tree, hd.rename, AppearsTwice)
+            else loop(tl)
+        }
+        loop(selectors)
+      }
       // checks on the whole set
-      noDuplicates(selectors map (_.name), RenamedTwice)
-      noDuplicates(selectors map (_.rename), AppearsTwice)
+      noDuplicates()
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
