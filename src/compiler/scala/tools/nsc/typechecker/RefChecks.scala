@@ -1357,9 +1357,9 @@ abstract class RefChecks extends Transform {
       }
 
       // types of the value parameters
-      mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
+      foreachParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.upperBound.widen) foreach checkAccessibilityOfType
+      member.typeParams.foreach(tp => checkAccessibilityOfType(tp.info.upperBound.widen))
     }
 
     private def checkByNameRightAssociativeDef(tree: DefDef) {
