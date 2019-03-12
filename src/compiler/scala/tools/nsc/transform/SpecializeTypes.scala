@@ -568,7 +568,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (env.contains(orig))
         cln modifyInfo (info => TypeBounds(info.lowerBound, AnyRefTpe))
     }
-    cloned map (_ substInfo (syms, cloned))
+    cloned.foreach(_.substInfo(syms, cloned))
+    cloned
   }
 
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
