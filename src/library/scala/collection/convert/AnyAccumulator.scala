@@ -25,6 +25,10 @@ import scala.reflect.ClassTag
  * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
  * implemented based on length, which throws when more than MaxInt.
  *
+ * TODO doc: two main uses.
+ *   - copy existing collection into new accumulator to support efficient splitting (could use array as well)
+ *   - build the result of a stream pipeline into an accumulator because it supports parallel building
+ *
  * TODO: doc performance characteristics.
  */
 final class AnyAccumulator[A]
@@ -307,7 +311,7 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
     }
 
   // Overridden for efficiency
-  override def foreach(f: A => Unit): Unit = {
+  override def foreach[U](f: A => U): Unit = {
     while (N > 0) {
       if (i >= n) loadMore()
       val i0 = i

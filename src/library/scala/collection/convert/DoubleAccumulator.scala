@@ -41,7 +41,7 @@ final class DoubleAccumulator
       if (shape.shape == StepperShape.DoubleValue) st
       else {
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
-        Stepper.boxingParDoubleStepper(st)
+        AnyStepper.ofParDoubleStepper(st)
       }
     r.asInstanceOf[S with EfficientSubstep]
   }
@@ -309,7 +309,7 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
     }
 
   // Overridden for efficiency
-  override def foreach(f: Double => Unit): Unit = {
+  override def foreach[U](f: Double => U): Unit = {
     while (N > 0) {
       if (i >= n) loadMore()
       val i0 = i

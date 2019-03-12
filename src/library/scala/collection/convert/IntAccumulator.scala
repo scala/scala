@@ -39,7 +39,7 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
       if (shape.shape == StepperShape.IntValue) st
       else {
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
-        Stepper.boxingParIntStepper(st)
+        AnyStepper.ofParIntStepper(st)
       }
     r.asInstanceOf[S with EfficientSubstep]
   }
@@ -312,7 +312,7 @@ private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) ex
     }
 
   // Overridden for efficiency
-  override def foreach(f: Int => Unit): Unit = {
+  override def foreach[U](f: Int => U): Unit = {
     while (N > 0) {
       if (i >= n) loadMore()
       val i0 = i

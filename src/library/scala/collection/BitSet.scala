@@ -16,9 +16,9 @@ package collection
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.mutable.Builder
-import scala.collection.convert.{Stepper, IntStepper, EfficientSubstep}
 import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{AnyStepper, EfficientSubstep, Stepper}
+import scala.collection.mutable.Builder
 
 
 /** Base type of bitsets.
@@ -137,7 +137,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       if (shape.shape == StepperShape.IntValue) st
       else {
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
-        Stepper.boxingParIntStepper(st)
+        AnyStepper.ofParIntStepper(st)
       }
     r.asInstanceOf[S with EfficientSubstep]
   }

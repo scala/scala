@@ -41,7 +41,7 @@ final class LongAccumulator
       if (shape.shape == StepperShape.LongValue) st
       else {
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
-        Stepper.boxingParLongStepper(st)
+        AnyStepper.ofParLongStepper(st)
       }
     r.asInstanceOf[S with EfficientSubstep]
   }
@@ -309,7 +309,7 @@ private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) 
     }
 
   // Overridden for efficiency
-  override def foreach(f: Long => Unit): Unit = {
+  override def foreach[U](f: Long => U): Unit = {
     while (N > 0) {
       if (i >= n) loadMore()
       val i0 = i

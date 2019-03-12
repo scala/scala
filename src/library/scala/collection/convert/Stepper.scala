@@ -18,44 +18,46 @@ import scala.collection.convert.impl.AccumulatorFactoryInfo
 import scala.reflect.ClassTag
 
 /**
- * A Stepper is a specialized collection that can step through its contents once.  It provides the
- * same test-and-get methods as `Iterator`, named `hasStep` and `nextStep` so they can coexist with
- * iterator methods.  However, like `Spliterator`, steppers provide a `tryStep` method to call a
- * closure if another element exists, a `substep()` method to split into pieces, and
- * `characteristics` and size-reporting methods that implement the subdivision and report what is
- * known about the remaining size of the `Stepper`. `Stepper` thus naturally implements both
- * `Iterator` and `Spliterator`.
- *
- * A `Stepper` can present itself as a Spliterator via the `spliterator` method, or as a Scala
- * `Iterator` via the `iterator` method.  The `Stepper` trait is compatible with both `Spliterator`
- * and Java's generic and primitive iterators, so a `Stepper` may already be one or both.
- *
- * Subtraits `NextStepper` and `TryStepper` fill in the basic capability by either implementing
- * `tryStep` in terms of `hasStep` and `nextStep`, or vice versa.
- *
- * Subtraits `AnyStepper`, `DoubleStepper`, `IntStepper`, and `LongStepper` implement both the
- * `Stepper` trait and the corresponding Java `Spliterator` and `Iterator`/`PrimitiveIterator`.
- *
- * Example:
- * {{{
- * val s = Vector(1,2,3,4).stepper
- * if (s.hasStep) println(s.nextStep())    //  Prints 1
- * println(s.tryStep(i => println(i*i)))   //  Prints 2, then true
- * s.substep.foreach(println)              //  Prints 3
- * println(s.count(_ > 3))                 //  Prints 4
- * println(s.hasStep)                      //  Prints `false`
- * }}}
- */
+  * A Stepper is a specialized collection that can step through its contents once.  It provides the
+  * same test-and-get methods as `Iterator`, named `hasStep` and `nextStep` so they can coexist with
+  * iterator methods.  However, like `Spliterator`, steppers provide a `tryStep` method to call a
+  * closure if another element exists, a `substep()` method to split into pieces, and
+  * `characteristics` and size-reporting methods that implement the subdivision and report what is
+  * known about the remaining size of the `Stepper`. `Stepper` thus naturally implements both
+  * `Iterator` and `Spliterator`.
+  *
+  * Example:
+  * {{{
+  * val s = Vector(1,2,3,4).stepper
+  * if (s.hasStep) println(s.nextStep())    //  Prints 1
+  * println(s.tryStep(i => println(i*i)))   //  Prints 2, then true
+  * s.substep.foreach(println)              //  Prints 3
+  * println(s.count(_ > 3))                 //  Prints 4
+  * println(s.hasStep)                      //  Prints `false`
+  * }}}
+  *
+  * A `Stepper` can present itself as a Spliterator via the `spliterator` method, or as a Scala
+  * `Iterator` via the `iterator` method.  The `Stepper` trait is compatible with both `Spliterator`
+  * and Java's generic and primitive iterators, so a `Stepper` may already be one or both.
+  *
+  * Subtraits `AnyStepper`, `DoubleStepper`, `IntStepper`, and `LongStepper` implement both the
+  * `Stepper` trait and the corresponding Java `Spliterator` and `Iterator`/`PrimitiveIterator`.
+  *
+  * The `Stepper` class provides some methods that overlap with iterator, for example,
+  * `stepper.find(p)` has the same semantics as `stepper.iterator.find(p)`. The difference is that
+  * the operations defined inj [[Stepper]] are specialized, so they act on primitive steppers
+  * ([[IntStepper]], etc.) without boxing the elements.
+  */
 trait Stepper[@specialized(Double, Int, Long) A] extends StepperOps[A, Stepper[A]]
 
 /** An (optional) marker trait that indicates that a `Stepper` can call `substep` with
- * at worst O(log N) time and space complexity, and that the division is likely to
- * be reasonably even.
- */
+  * at worst O(log N) time and space complexity, and that the division is likely to
+  * be reasonably even.
+  */
 trait EfficientSubstep
 
 /** Provides functionality for Stepper while keeping track of a more precise type of the collection.
- */
+  */
 trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
   /** Characteristics are bit flags that indicate runtime characteristics of this Stepper.
    *
@@ -94,58 +96,140 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
   def substep(): CC
 
 
-  ////
-  // Terminal operations (do not produce another Stepper)
-  ////
-
-  /** Consumes all remaining elements in this `Stepper` and counts how many there are.
-   * This is a terminal operation, though if `knownSize` is non-negative, it won't actually
-   * iterate over the elements.
+  /* Terminal operations (do not produce another Stepper). These operations are specialized, so they
+   * operate on primitive steppers without boxing. Other than that, every operation `stepper.op`
+   * has the same semantics as `stepper.iterator.op`.
    */
-  def count(): Long = knownSize match {
+
+  /** Apply `f` to each element for its side effects.
+    * This is a terminal operation.
+    * Note: [U] parameter needed to help scalac's type inference.
+    */
+  def foreach[U](f: A => U): Unit =
+    while (hasStep) f(nextStep())
+
+  /** Tests whether a predicate holds for all elements of this Stepper.
+    * This is a terminal operation.
+    *
+    *  @param  p      the predicate used to test elements.
+    *  @return        `true` if this Stepper is empty or the given predicate `p`
+    *                 holds for all elements of this Stepper, otherwise `false`.
+    */
+  def forall(p: A => Boolean): Boolean = {
+    while(hasStep) {
+      if (p(nextStep())) return true
+    }
+    false
+  }
+
+  /** Tests whether a predicate holds for at least one element of this Stepper.
+    * This is a terminal operation.
+    *
+    *  @param  p      the predicate used to test elements.
+    *  @return        `true` if the given predicate `p` is satisfied by at least one element of this
+    *                 Stepper, otherwise `false`
+    */
+  def exists(p: A => Boolean): Boolean = {
+    while(hasStep) {
+      if (p(nextStep())) return true
+    }
+    false
+  }
+
+  /** Counts the number of elements in the Stepper which satisfy a predicate.
+    * This is a terminal operation.
+    *
+    *  @param p       the predicate  used to test elements.
+    *  @return        the number of elements satisfying the predicate `p`.
+    */
+  def count(p: A => Boolean): Long = {
+    var n = 0L
+    while (hasStep) {
+      if (p(nextStep())) n += 1
+    }
+    n
+  }
+
+  /** Finds the first element of the Stepper satisfying a predicate, if any.
+    * This is a terminal operation.
+    *
+    *  @param p       the predicate used to test elements.
+    *  @return        an option value containing the first element in the Stepper
+    *                 that satisfies `p`, or `None` if none exists.
+    */
+  def find(p: A => Boolean): Option[A] = {
+    while (hasStep) {
+      val a = nextStep()
+      if (p(a)) return Some(a)
+    }
+    None
+  }
+
+
+  /** Applies a binary operator to a start value and all elements of this Stepper,
+    * going left to right.
+    * This is a terminal operation.
+    *
+    *  @param   zero the start value.
+    *  @param   op   the binary operator.
+    *  @tparam  B    the result type of the binary operator.
+    *  @return  the result of inserting `op` between consecutive elements of this Stepper,
+    *           going left to right with the start value `z` on the left:
+    *           {{{
+    *             op(...op(z, x_1), x_2, ..., x_n)
+    *           }}}
+    *           where `x,,1,,, ..., x,,n,,` are the elements of this Stepper.
+    *           Returns `z` if this Stepper is empty.
+    */
+  def foldLeft[@specialized(Double, Int, Long) B](zero: B)(op: (B, A) => B): B = {
+    var b = zero
+    while (hasStep) { b = op(b, nextStep()) }
+    b
+  }
+
+  /** This method is an alias for [[foldLeft]].
+    * This is a terminal operation.
+    */
+  def fold[@specialized(Double, Int, Long) B](zero: B)(op: (B, A) => B): B = foldLeft(zero)(op)
+
+  /** Applies a binary operator to all elements of this Stepper, going left to right.
+    * This is a terminal operation.
+    *
+    *  @param  op    the binary operator.
+    *  @return  the result of inserting `op` between consecutive elements of this Stepper,
+    *           going left to right:
+    *           {{{
+    *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
+    *           }}}
+    *           where `x,,1,,, ..., x,,n,,` are the elements of this Stepper.
+    *  @throws UnsupportedOperationException if this Stepper is empty.
+    */
+  def reduceLeft(op: (A, A) => A): A = {
+    var a = nextStep()
+    while (hasStep) {
+      a = op(a, nextStep())
+    }
+    a
+  }
+
+  /** This method is an alias for [[reduceLeft]].
+    * This is a terminal operation.
+    */
+  def reduce(op: (A, A) => A): A = reduceLeft(op)
+
+  final def isEmpty: Boolean = !hasStep
+
+  final def nonEmpty: Boolean = hasStep
+
+    /**
+    * Consumes all remaining elements in this `Stepper` and counts how many there are.
+    * This is a terminal operation, though if `knownSize` is non-negative, it won't actually
+    * iterate over the elements.
+    */
+  def size: Long = knownSize match {
     case x if x < 0 => var n = 0L; while (hasStep) { nextStep(); n += 1 }; n
     case x => x
   }
-
-  /** Consumes all remaining elements in this `Stepper` and counts how many satisfy condition `p`.
-   * This is a terminal operation.
-   */
-  def count(p: A => Boolean): Long = { var n = 0L; while (hasStep) { if (p(nextStep())) n += 1 }; n }
-
-  /** Searches for an element that satisfies condition `p`. If none are found, it returns `false`.
-   * This is a terminal operation.
-   */
-  def exists(p: A => Boolean): Boolean = { while(hasStep) { if (p(nextStep())) return true }; false }
-
-  /** Searches for an element that satisifes condition `p`, returning it wrapped in `Some` if one is found, or `None` otherwise.
-   * This is a terminal operation.
-   */
-  def find(p: A => Boolean): Option[A] = { while (hasStep) { val a = nextStep(); if (p(a)) return Some(a) }; None }
-
-  /** Repeatedly applies `op` to propagate an initial value `zero` through all elements of the collection.
-   * Traversal order is left-to-right.
-   * This is a terminal operation.
-   */
-  def fold[@specialized(Double, Int, Long) B](zero: B)(op: (B, A) => B) = { var b = zero; while (hasStep) { b = op(b, nextStep()) }; b }
-
-  /** Repeatedly applies `op` to propagate an initial value `zero` through the collection until a condition `p` is met.
-   * If `p` is never met, the result of the last operation is returned.
-   * This is a terminal operation.
-   */
-  def foldTo[@specialized(Double, Int, Long) B](zero: B)(op: (B, A) => B)(p: B => Boolean) = { var b = zero; while (!p(b) && hasStep) { b = op(b, nextStep()) }; b }
-
-  /** Applies `f` to every remaining element in the collection.
-   * This is a terminal operation.
-   */
-  def foreach(f: A => Unit): Unit = { while (hasStep) f(nextStep()) }
-
-  /** Repeatedly merges elements with `op` until only a single element remains.
-   * Throws an exception if the `Stepper` is empty.
-   * Merging occurs from left to right.
-   * This is a terminal operation.
-   */
-  def reduce(op: (A, A) => A): A = { var a = nextStep(); while (hasStep) { a = op(a, nextStep()) }; a }
-
 
   ////
   // Operations that convert to another related type
@@ -160,8 +244,8 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
    * This is a terminal operation.
    */
   def iterator: Iterator[A] = new scala.collection.AbstractIterator[A] {
-    def hasNext = self.hasStep
-    def next() = self.nextStep()
+    def hasNext: Boolean = self.hasStep
+    def next(): A = self.nextStep()
   }
 
   /**
@@ -194,14 +278,14 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
 /** Any `AnyStepper` combines the functionality of a Java `Iterator`, a Java `Spliterator`, and a `Stepper`. */
 trait AnyStepper[A] extends Stepper[A] with java.util.Iterator[A] with Spliterator[A] with StepperOps[A, AnyStepper[A]] {
   override def forEachRemaining(c: java.util.function.Consumer[_ >: A]): Unit = { while (hasNext) { c.accept(next()) } }
-  def hasStep = hasNext
-  def knownSize = getExactSizeIfKnown
-  def nextStep() = next()
+  def hasStep: Boolean = hasNext
+  def knownSize: Long = getExactSizeIfKnown
+  def nextStep(): A = next()
   def tryAdvance(c: java.util.function.Consumer[_ >: A]): Boolean = if (hasNext) { c.accept(next()); true } else false
   def tryStep(f: A => Unit): Boolean = if (hasNext) { f(next()); true } else false
-  def trySplit() = substep()
+  def trySplit(): AnyStepper[A] = substep()
   override def spliterator: Spliterator[A] = this
-  def toArray[B >: A : ClassTag] = {
+  def toArray[B >: A : ClassTag]: Array[B] = {
     if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
     else if (knownSize > 0) {
       val a = new Array[B](knownSize.toInt)
@@ -212,8 +296,17 @@ trait AnyStepper[A] extends Stepper[A] with java.util.Iterator[A] with Spliterat
   }
 }
 
-private[convert] object AnyStepper {
-  final class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
+object AnyStepper {
+  def ofSeqDoubleStepper(st: DoubleStepper): AnyStepper[Double] = new BoxedDoubleStepper(st)
+  def ofParDoubleStepper(st: DoubleStepper with EfficientSubstep): AnyStepper[Double] with EfficientSubstep = new BoxedDoubleStepper(st) with EfficientSubstep
+
+  def ofSeqIntStepper(st: IntStepper): AnyStepper[Int] = new BoxedIntStepper(st)
+  def ofParIntStepper(st: IntStepper with EfficientSubstep): AnyStepper[Int] with EfficientSubstep = new BoxedIntStepper(st) with EfficientSubstep
+
+  def ofSeqLongStepper(st: LongStepper): AnyStepper[Long] = new BoxedLongStepper(st)
+  def ofParLongStepper(st: LongStepper with EfficientSubstep): AnyStepper[Long] with EfficientSubstep = new BoxedLongStepper(st) with EfficientSubstep
+
+  private[convert] class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
     def hasNext: Boolean = st.hasNext
     def next(): Double = st.next()
     def characteristics: Int = st.characteristics
@@ -225,7 +318,7 @@ private[convert] object AnyStepper {
     }
   }
 
-  final class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
+  private[convert] class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
     def hasNext: Boolean = st.hasNext
     def next(): Int = st.next()
     def characteristics: Int = st.characteristics
@@ -237,7 +330,7 @@ private[convert] object AnyStepper {
     }
   }
 
-  final class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
+  private[convert] class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
     def hasNext: Boolean = st.hasNext
     def next(): Long = st.next()
     def characteristics: Int = st.characteristics
@@ -257,16 +350,16 @@ trait DoubleStepper extends Stepper[Double] with java.util.PrimitiveIterator.OfD
     case _ => while (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)) }
   }
   override def forEachRemaining(c: java.util.function.DoubleConsumer): Unit = { while (hasNext) { c.accept(nextDouble) } }
-  def hasStep = hasNext
-  def knownSize = getExactSizeIfKnown
-  def nextStep() = nextDouble
+  def hasStep: Boolean = hasNext
+  def knownSize: Long = getExactSizeIfKnown
+  def nextStep(): Double = nextDouble
   override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Double]): Boolean = (c: AnyRef) match {
     case dc: java.util.function.DoubleConsumer => tryAdvance(dc)
     case _ => if (hasNext) { c.accept(java.lang.Double.valueOf(nextDouble)); true } else false
   }
   def tryAdvance(c: java.util.function.DoubleConsumer): Boolean = if (hasNext) { c.accept(nextDouble); true } else false
   def tryStep(f: Double => Unit): Boolean = if (hasNext) { f(nextDouble); true } else false
-  def trySplit() = substep()
+  def trySplit(): DoubleStepper = substep()
   override def spliterator: Spliterator[Double] = this.asInstanceOf[Spliterator[Double]]  // Scala and Java disagree about whether it's java.lang.Double or double
   def toArray: Array[Double] = {
     if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
@@ -286,16 +379,16 @@ trait IntStepper extends Stepper[Int] with java.util.PrimitiveIterator.OfInt wit
     case _ => while (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)) }
   }
   override def forEachRemaining(c: java.util.function.IntConsumer): Unit = { while (hasNext) { c.accept(nextInt) } }
-  def hasStep = hasNext
-  def knownSize = getExactSizeIfKnown
-  def nextStep() = nextInt
+  def hasStep: Boolean = hasNext
+  def knownSize: Long = getExactSizeIfKnown
+  def nextStep(): Int = nextInt
   override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Integer]): Boolean = (c: AnyRef) match {
     case ic: java.util.function.IntConsumer => tryAdvance(ic)
     case _ => if (hasNext) { c.accept(java.lang.Integer.valueOf(nextInt)); true } else false
   }
   def tryAdvance(c: java.util.function.IntConsumer): Boolean = if (hasNext) { c.accept(nextInt); true } else false
   def tryStep(f: Int => Unit): Boolean = if (hasNext) { f(nextInt); true } else false
-  def trySplit() = substep()
+  def trySplit(): IntStepper = substep()
   override def spliterator: Spliterator[Int] = this.asInstanceOf[Spliterator[Int]]  // Scala and Java disagree about whether it's java.lang.Integer or int
   def toArray: Array[Int] = {
     if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
@@ -315,16 +408,16 @@ trait LongStepper extends Stepper[Long] with java.util.PrimitiveIterator.OfLong 
     case _ => while (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)) }
   }
   override def forEachRemaining(c: java.util.function.LongConsumer): Unit = { while (hasNext) { c.accept(nextLong) } }
-  def hasStep = hasNext
-  def knownSize = getExactSizeIfKnown
-  def nextStep() = nextLong
+  def hasStep: Boolean = hasNext
+  def knownSize: Long = getExactSizeIfKnown
+  def nextStep(): Long = nextLong
   override def tryAdvance(c: java.util.function.Consumer[_ >: java.lang.Long]): Boolean = (c: AnyRef) match {
     case lc: java.util.function.LongConsumer => tryAdvance(lc)
     case _ => if (hasNext) { c.accept(java.lang.Long.valueOf(nextLong)); true } else false
   }
   def tryAdvance(c: java.util.function.LongConsumer): Boolean = if (hasNext) { c.accept(nextLong); true } else false
   def tryStep(f: Long => Unit): Boolean = if (hasNext) { f(nextLong); true } else false
-  def trySplit() = substep()
+  def trySplit(): LongStepper = substep()
   override def spliterator: Spliterator[Long] = this.asInstanceOf[Spliterator[Long]]  // Scala and Java disagree about whether it's java.lang.Long or long
   def toArray: Array[Long] = {
     if (knownSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements for an array: " + knownSize.toString)
@@ -339,22 +432,22 @@ trait LongStepper extends Stepper[Long] with java.util.PrimitiveIterator.OfLong 
 
 object Stepper {
   /** Indicates that a Stepper delivers distinct values (e.g. is backed by a `Set`) */
-  val Distinct = Spliterator.DISTINCT
+  val Distinct: Int = Spliterator.DISTINCT
 
   /** Indicates that a Stepper runs over an immutable collection */
-  val Immutable = Spliterator.IMMUTABLE
+  val Immutable: Int = Spliterator.IMMUTABLE
 
   /** Indicates that a Stepper will not return any `null` values */
-  val NonNull = Spliterator.NONNULL
+  val NonNull: Int = Spliterator.NONNULL
 
   /** Indicates that a Stepper delivers elements in a particular order that should be maintained */
-  val Ordered = Spliterator.ORDERED
+  val Ordered: Int = Spliterator.ORDERED
 
   /** Indicates that a Stepper knows exactly how many elements it contains */
-  val Sized = Spliterator.SIZED
+  val Sized: Int = Spliterator.SIZED
 
   /** Indicates that a Stepper's children (created with substep()) will all know their size.  Steppers that are SubSized must also be Sized. */
-  val SubSized = Spliterator.SUBSIZED
+  val SubSized: Int = Spliterator.SUBSIZED
 
   private[convert] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
 
@@ -376,8 +469,8 @@ object Stepper {
       else false
     }
 
-    def characteristics = sp.characteristics
-    def estimateSize = {
+    def characteristics: Int = sp.characteristics
+    def estimateSize: Long = {
       val sz = sp.estimateSize
       if (cached && sz < Long.MaxValue && sz >= 0) sz + 1
       else sz
@@ -386,8 +479,8 @@ object Stepper {
       useCache(c)
       sp.forEachRemaining(c)
     }
-    def hasNext = cached || loadCache
-    def next() = {
+    def hasNext: Boolean = cached || loadCache
+    def next(): A = {
       if (!hasNext) throwNSEE()
       val ans = cache
       cache = null.asInstanceOf[A]
@@ -408,7 +501,7 @@ object Stepper {
         sub
       }
     }
-    override def tryAdvance(c: java.util.function.Consumer[_ >: A]) = useCache(c) || sp.tryAdvance(c)
+    override def tryAdvance(c: java.util.function.Consumer[_ >: A]): Boolean = useCache(c) || sp.tryAdvance(c)
   }
 
   private class OfDoubleSpliterator(sp: Spliterator.OfDouble)
@@ -427,8 +520,8 @@ object Stepper {
       else false
     }
 
-    def characteristics = sp.characteristics
-    def estimateSize = {
+    def characteristics: Int = sp.characteristics
+    def estimateSize: Long = {
       val sz = sp.estimateSize
       if (cached && sz < Long.MaxValue && sz >= 0) sz + 1
       else sz
@@ -437,8 +530,8 @@ object Stepper {
       useCache(c)
       sp.forEachRemaining(c)
     }
-    def hasNext = cached || loadCache
-    def nextDouble() = {
+    def hasNext: Boolean = cached || loadCache
+    def nextDouble(): Double = {
       if (!hasNext) throwNSEE()
       val ans = cache
       cached = false
@@ -457,7 +550,7 @@ object Stepper {
         sub
       }
     }
-    override def tryAdvance(c: java.util.function.DoubleConsumer) = useCache(c) || sp.tryAdvance(c)
+    override def tryAdvance(c: java.util.function.DoubleConsumer): Boolean = useCache(c) || sp.tryAdvance(c)
   }
 
   private class OfIntSpliterator(sp: Spliterator.OfInt)
@@ -476,8 +569,8 @@ object Stepper {
       else false
     }
 
-    def characteristics = sp.characteristics
-    def estimateSize = {
+    def characteristics: Int = sp.characteristics
+    def estimateSize: Long = {
       val sz = sp.estimateSize
       if (cached && sz < Long.MaxValue && sz >= 0) sz + 1
       else sz
@@ -486,8 +579,8 @@ object Stepper {
       useCache(c)
       sp.forEachRemaining(c)
     }
-    def hasNext = cached || loadCache
-    def nextInt() = {
+    def hasNext: Boolean = cached || loadCache
+    def nextInt(): Int = {
       if (!hasNext) throwNSEE()
       val ans = cache
       cached = false
@@ -506,7 +599,7 @@ object Stepper {
         sub
       }
     }
-    override def tryAdvance(c: java.util.function.IntConsumer) = useCache(c) || sp.tryAdvance(c)
+    override def tryAdvance(c: java.util.function.IntConsumer): Boolean = useCache(c) || sp.tryAdvance(c)
   }
 
   private class OfLongSpliterator(sp: Spliterator.OfLong)
@@ -525,8 +618,8 @@ object Stepper {
       else false
     }
 
-    def characteristics = sp.characteristics
-    def estimateSize = {
+    def characteristics: Int = sp.characteristics
+    def estimateSize: Long = {
       val sz = sp.estimateSize
       if (cached && sz < Long.MaxValue && sz >= 0) sz + 1
       else sz
@@ -535,8 +628,8 @@ object Stepper {
       useCache(c)
       sp.forEachRemaining(c)
     }
-    def hasNext = cached || loadCache
-    def nextLong() = {
+    def hasNext: Boolean = cached || loadCache
+    def nextLong(): Long = {
       if (!hasNext) throwNSEE()
       val ans = cache
       cached = false
@@ -555,7 +648,7 @@ object Stepper {
         sub
       }
     }
-    override def tryAdvance(c: java.util.function.LongConsumer) = useCache(c) || sp.tryAdvance(c)
+    override def tryAdvance(c: java.util.function.LongConsumer): Boolean = useCache(c) || sp.tryAdvance(c)
   }
 
   /** Creates a `Stepper` over a generic `Spliterator`. */
@@ -585,51 +678,6 @@ object Stepper {
   def ofSpliterator(sp: Spliterator.OfLong): LongStepper = sp match {
     case ls: LongStepper => ls
     case _ => new OfLongSpliterator(sp)
-  }
-
-  def boxingSeqDoubleStepper(st: DoubleStepper): AnyStepper[Double] = new BoxingDoubleStepper(st)
-  def boxingParDoubleStepper(st: DoubleStepper with EfficientSubstep): AnyStepper[Double] with EfficientSubstep = new BoxingDoubleStepper(st) with EfficientSubstep
-
-  def boxingSeqIntStepper(st: IntStepper): AnyStepper[Int] = new BoxingIntStepper(st)
-  def boxingParIntStepper(st: IntStepper with EfficientSubstep): AnyStepper[Int] with EfficientSubstep = new BoxingIntStepper(st) with EfficientSubstep
-
-  def boxingSeqLongStepper(st: LongStepper): AnyStepper[Long] = new BoxingLongStepper(st)
-  def boxingParLongStepper(st: LongStepper with EfficientSubstep): AnyStepper[Long] with EfficientSubstep = new BoxingLongStepper(st) with EfficientSubstep
-
-  private[convert] class BoxingDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
-    override def hasNext: Boolean = st.hasNext
-    override def next(): Double = st.next()
-    override def characteristics: Int = st.characteristics
-    override def estimateSize(): Long = st.estimateSize()
-    override def substep(): AnyStepper[Double] = {
-      val sub = st.substep()
-      if (sub == null) null
-      else new BoxingDoubleStepper(sub)
-    }
-  }
-
-  private[convert] class BoxingIntStepper(st: IntStepper) extends AnyStepper[Int] {
-    override def hasNext: Boolean = st.hasNext
-    override def next(): Int = st.next()
-    override def characteristics: Int = st.characteristics
-    override def estimateSize(): Long = st.estimateSize()
-    override def substep(): AnyStepper[Int] = {
-      val sub = st.substep()
-      if (sub == null) null
-      else new BoxingIntStepper(sub)
-    }
-  }
-
-  private[convert] class BoxingLongStepper(st: LongStepper) extends AnyStepper[Long] {
-    override def hasNext: Boolean = st.hasNext
-    override def next(): Long = st.next()
-    override def characteristics: Int = st.characteristics
-    override def estimateSize(): Long = st.estimateSize()
-    override def substep(): AnyStepper[Long] = {
-      val sub = st.substep()
-      if (sub == null) null
-      else new BoxingLongStepper(sub)
-    }
   }
 
   /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.

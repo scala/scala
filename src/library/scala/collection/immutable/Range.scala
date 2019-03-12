@@ -13,11 +13,9 @@
 package scala
 package collection.immutable
 
-import collection.{AbstractIterator, Iterator}
-
-import scala.collection.convert.{IntStepper, EfficientSubstep, Stepper}
 import scala.collection.convert.impl.{RangeStepper, StepperShape}
-
+import scala.collection.convert.{AnyStepper, EfficientSubstep, Stepper}
+import scala.collection.{AbstractIterator, Iterator}
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
@@ -77,7 +75,7 @@ sealed abstract class Range(
       if (shape.shape == StepperShape.IntValue) st
       else {
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
-        Stepper.boxingParIntStepper(st)
+        AnyStepper.ofParIntStepper(st)
       }
     r.asInstanceOf[S with EfficientSubstep]
   }
