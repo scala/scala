@@ -162,10 +162,11 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaNumericValueClassesSet: SymbolSet = new SymbolSet(ScalaNumericValueClasses)
     final class SymbolSet(syms: List[Symbol]) {
       private[this] val ids: Array[Symbol] = syms.toArray
-      private[this] val commonOwner = syms.map(_.rawowner).distinct match {
-        case common :: Nil => common
-        case _ => null
-      }
+      private[this] val commonOwner =
+        if (syms.isEmpty) null else {
+          val hhOwner = syms.head.rawowner
+          if (syms.tail.forall(_.rawowner == hhOwner)) hhOwner else null
+        }
       final def contains(sym: Symbol): Boolean = {
         if (commonOwner != null && (commonOwner ne sym.rawowner))
           return false
