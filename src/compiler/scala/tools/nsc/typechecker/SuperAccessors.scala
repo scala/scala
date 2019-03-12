@@ -157,8 +157,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (mix == tpnme.EMPTY && !owner.isTrait) {
           // scala/bug#4989 Check if an intermediate class between `clazz` and `owner` redeclares the method as abstract.
           val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != owner)
-          intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
-            absSym =>
+          intermediateClasses.foreach { icls =>
+            val absSym = sym.overridingSymbol(icls)
+            if (absSym.isDeferred && !absSym.isAbstractOverride && !absSym.owner.isTrait)
               reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
           }
         }
