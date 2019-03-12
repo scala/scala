@@ -15,9 +15,9 @@ package tools.nsc
 package transform
 
 import scala.annotation.tailrec
-
 import symtab.Flags._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
@@ -250,12 +250,12 @@ abstract class UnCurry extends InfoTransform
     def transformArgs(pos: Position, fun: Symbol, args: List[Tree], params: List[Symbol]): List[Tree] = {
       val isJava = fun.isJavaDefined
 
-      def transformVarargs(varargsElemType: Type) = {
+      def transformVarargs(varargsElemType: Type): List[Tree] = {
         def mkArrayValue(ts: List[Tree], elemtp: Type) =
           ArrayValue(TypeTree(elemtp), ts) setType arrayType(elemtp)
 
         // when calling into scala varargs, make sure it's a sequence.
-        def arrayToSequence(tree: Tree, elemtp: Type, copy: Boolean) = {
+        def arrayToSequence(tree: Tree, elemtp: Type, copy: Boolean): Tree = {
           exitingUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
@@ -274,7 +274,7 @@ abstract class UnCurry extends InfoTransform
         }
 
         // when calling into java varargs, make sure it's an array - see bug #1360
-        def sequenceToArray(tree: Tree) = {
+        def sequenceToArray(tree: Tree): Tree = {
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
           def getClassTag(tp: Type): Tree = {
@@ -329,7 +329,10 @@ abstract class UnCurry extends InfoTransform
             }
           }
         }
-        args.take(params.length - 1) :+ (suffix setType params.last.info)
+        val args1 = ListBuffer[Tree]()
+        args1 ++= args.iterator.take(params.length - 1)
+        args1 += suffix setType params.last.info
+        args1.toList
       }
 
       val isVarargs = isVarArgsList(params)
