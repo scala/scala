@@ -21,6 +21,12 @@ package policy.stale {
     def z = 42
   }
 }
+package api.escalated {
+  object XXX {
+    @deprecatedError("So bad we made it a hard deprecation", since="Policy 1.0", label="escalated")
+    def xxx() = ???
+  }
+}
 
 package trial {
   trait T {
@@ -32,5 +38,13 @@ package oldtrial {
   trait T {
     // TODO
     def old = policy.stale.Z.z
+  }
+}
+package app {
+  import api.escalated._
+  object Main {
+    def main(args: Array[String]) = println {
+      XXX.xxx()
+    }
   }
 }

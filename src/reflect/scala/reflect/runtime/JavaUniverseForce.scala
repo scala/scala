@@ -414,6 +414,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BooleanBeanPropertyAttr
     definitions.CompileTimeOnlyAttr
     definitions.DeprecatedAttr
+    definitions.DeprecatedErrorAttr
     definitions.DeprecatedNameAttr
     definitions.DeprecatedInheritanceAttr
     definitions.DeprecatedOverridingAttr

@@ -1,7 +1,10 @@
-reportage.scala:27: error: method x in object X is deprecated (since Policy 1.0): Badly done (since Policy 1.0)
+reportage.scala:33: error: method x in object X is deprecated (since Policy 1.0): Badly done (since Policy 1.0)
     def f = policy.test.X.x
                           ^
-reportage.scala:28: method y in object Y is deprecated (since Policy 1.0): Also pretty bad but salvageable (since Policy 1.0)
+reportage.scala:34: method y in object Y is deprecated (since Policy 1.0): Also pretty bad but salvageable (since Policy 1.0)
     def g = policy.reprieve.Y.y
                               ^
-one error found
+reportage.scala:47: error: method xxx in object XXX is deprecated (since Policy 1.0): So bad we made it a hard deprecation (since Policy 1.0)
+      XXX.xxx()
+          ^
+two errors found

@@ -15,13 +15,17 @@ package tools
 package nsc
 
 import scala.collection.mutable
+import scala.reflect.internal.{Reporting => IReporting, Symbols, SymbolTable}
 import scala.reflect.internal.util.StringOps.countElementsAsString
 import nsc.settings.{NoScalaVersion, ScalaVersion}
 
 /** Provides delegates to the reporter doing the actual work.
  *  PerRunReporting implements per-Run stateful info tracking and reporting.
  */
-trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.internal.Symbols =>
+//trait Reporting extends IReporting { self: ast.Positions with CompilationUnits with Symbols with SymbolTable =>
+trait Reporting extends IReporting { self: Global =>
+  import definitions._
+
   def settings: Settings
 
   // not deprecated yet, but a method called "error" imported into
@@ -30,7 +34,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
   object policy extends Enumeration {
     val Silent, Info, Warn, Error = Value
-    case class Philter(pkg: String, esc: Value, isInfractor: Boolean, label: String, version: ScalaVersion, matcher: ScalaVersion => Boolean) {
+    case class Philter(pkg: String, escalation: Value, isInfractor: Boolean, label: String, version: ScalaVersion, matcher: ScalaVersion => Boolean) {
       def matches(sym: Symbol, since: String, infractor: String): Boolean = {
         val (lib, v) = splitVersion(since)
         (pkg.isEmpty || sym.fullName.startsWith(pkg)) &&
@@ -77,8 +81,10 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     }
     private def versionOf(vstr: String) = ScalaVersion(vstr, x => reporter.error(NoPosition, s"bad version '$x'"))
 
-    def apply(pos: Position, sym: Symbol, msg: String, since: String, infractor: String): Value =
-      config.find(_.matches(sym, since, infractor)).map(_.esc).getOrElse(Warn)
+    def apply(pos: Position, sym: Symbol, msg: String, since: String, label: String, infractor: String): Value =
+      config.find(_.matches(sym, since, infractor)).map(_.escalation).getOrElse(
+        if (sym.hasAnnotation(DeprecatedErrorAttr)) Error else Warn
+      )
   }
 
   // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
@@ -94,7 +100,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
         if (doReport) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, (msg, since)))
       def summarize() =
-        if (warnings.nonEmpty && (setting.isDefault || doReport)) {
+        if (!warnings.isEmpty && (setting.isDefault || doReport)) {
           val sinceAndAmount = mutable.TreeMap[String, Int]()
           warnings.valuesIterator.foreach { case (_, since) =>
             val value = sinceAndAmount.get(since)
@@ -103,7 +109,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
           }
           val deprecationSummary = sinceAndAmount.size > 1
           sinceAndAmount.foreach { case (since, numWarnings) =>
-            val warningsSince = if (since.nonEmpty) s" (since $since)" else ""
+            val warningsSince = if (!since.isEmpty) s" (since $since)" else ""
             val warningVerb   = if (numWarnings == 1) "was" else "were"
             val warningCount  = countElementsAsString(numWarnings, s"$what warning")
             val rerun         = if (deprecationSummary) "" else reporter.rerunWithDetails(setting, setting.name)
@@ -140,9 +146,9 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
     def allConditionalWarnings = _allConditionalWarnings flatMap (_.warnings)
 
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit = {
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String, label: String = "deprecated"): Unit = {
       val infractor = ""
-      policy(pos, sym, msg, since, infractor) match {
+      policy(pos, sym, msg, since, label, infractor) match {
         case policy.Silent =>
         case policy.Info   => reporter.echo(pos, s"$msg (since $since)")
         case policy.Warn   => _deprecationWarnings.warn(pos, msg, since)
@@ -153,7 +159,8 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       val version = sym.deprecationVersion.getOrElse("")
       val since   = if (version.isEmpty) version else s" (since $version)"
       val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
-      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version)
+      val label   = sym.deprecationLabel.getOrElse("deprecated")
+      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version, label)
     }
 
     private[this] var reportedFeature = Set[Symbol]()
