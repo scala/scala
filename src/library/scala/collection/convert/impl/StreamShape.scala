@@ -16,9 +16,7 @@ package impl
 import java.util.stream._
 
 sealed trait StreamShape[T, S <: BaseStream[_, S], St <: Stepper[_]] {
-  final def fromStepper(st: St, par: Boolean): S = stream(st, par)
-
-  private def stream(st: St, par: Boolean): S = mkStream(if (par) st.anticipateParallelism() else st, par)
+  final def fromStepper(st: St, par: Boolean): S = mkStream(st, par)
   protected def mkStream(st: St, par: Boolean): S
 }
 

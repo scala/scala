@@ -93,9 +93,6 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
    */
   def substep(): CC
 
-  /** Warns this `Stepper` that it is likely to be used in a parallel context (used for efficiency only) */
-  def anticipateParallelism(): this.type = this
-
 
   ////
   // Terminal operations (do not produce another Stepper)
