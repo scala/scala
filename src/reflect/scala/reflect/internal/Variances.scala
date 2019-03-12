@@ -17,6 +17,7 @@ package internal
 import Variance._
 import scala.collection.mutable
 import scala.annotation.tailrec
+import scala.reflect.internal.util.ReusableInstance
 
 /** See comments at scala.reflect.internal.Variance.
  */
@@ -205,33 +206,55 @@ trait Variances {
   }
 
   /** Compute variance of type parameter `tparam` in all types `tps`. */
-  def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance =
-    fold(tps map (tp => varianceInType(tp)(tparam)))
+  final def varianceInTypes(tps: List[Type])(tparam: Symbol): Variance =
+    Variance.foldExtract(tps)(t => varianceInType(t)(tparam))
 
   /** Compute variance of type parameter `tparam` in type `tp`. */
-  def varianceInType(tp: Type)(tparam: Symbol): Variance = {
-    def inArgs(sym: Symbol, args: List[Type]): Variance = fold(map2(args, sym.typeParams)((a, p) => inType(a) * p.variance))
-    def inSyms(syms: List[Symbol]): Variance            = fold(syms map inSym)
-    def inTypes(tps: List[Type]): Variance              = fold(tps map inType)
+  final def varianceInType(tp: Type)(tparam: Symbol): Variance = {
+    varianceInTypeCache.using(_.apply(tp, tparam))
+  }
+  private[this] val varianceInTypeCache = new ReusableInstance[varianceInType](() => new varianceInType)
 
-    def inSym(sym: Symbol): Variance = if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
-    def inType(tp: Type): Variance   = tp match {
-      case ErrorType | WildcardType | NoType | NoPrefix => Bivariant
-      case ThisType(_) | ConstantType(_)                => Bivariant
-      case TypeRef(_, `tparam`, _)                      => Covariant
-      case BoundedWildcardType(bounds)                  => inType(bounds)
-      case NullaryMethodType(restpe)                    => inType(restpe)
-      case SingleType(pre, sym)                         => inType(pre)
-      case TypeRef(pre, _, _) if tp.isHigherKinded      => inType(pre)                 // a type constructor cannot occur in tp's args
-      case TypeRef(pre, sym, args)                      => inType(pre)                 & inArgs(sym, args)
-      case TypeBounds(lo, hi)                           => inType(lo).flip             & inType(hi)
-      case RefinedType(parents, defs)                   => inTypes(parents)            & inSyms(defs.toList)
-      case MethodType(params, restpe)                   => inSyms(params).flip         & inType(restpe)
-      case PolyType(tparams, restpe)                    => inSyms(tparams).flip        & inType(restpe)
-      case ExistentialType(tparams, restpe)             => inSyms(tparams)             & inType(restpe)
-      case AnnotatedType(annots, tp)                    => inTypes(annots map (_.atp)) & inType(tp)
+  private final class varianceInType {
+    private[this] var tp: Type = _
+    private[this] var tparam: Symbol = _
+
+    import Variance._
+    private def inArgs(sym: Symbol, args: List[Type]): Variance = foldExtract2(args, sym.typeParams)(inArgParam)
+    private def inSyms(syms: List[Symbol]): Variance            = foldExtract(syms)(inSym)
+    private def inTypes(tps: List[Type]): Variance              = foldExtract(tps)(inType)
+    private def inAnnots(anns: List[AnnotationInfo]): Variance  = foldExtract(anns)(inAnnotationAtp)
+
+    // OPT these extractors are hoisted to fields to reduce allocation. We're also avoiding Function1[_, Variance] to
+    //     avoid value class boxing.
+    private[this] lazy val inAnnotationAtp: Extractor[AnnotationInfo] = (a: AnnotationInfo) => inType(a.atp)
+    private[this] lazy val inArgParam: Extractor2[Type, Symbol]       = (a, b) => inType(a) * b.variance
+    private[this] lazy val inSym: Extractor[Symbol]                   = (sym: Symbol) => if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
+    private[this] val inType: Extractor[Type] = {
+      case ErrorType | WildcardType | NoType | NoPrefix    => Bivariant
+      case ThisType(_) | ConstantType(_)                   => Bivariant
+      case TypeRef(_, tparam, _) if tparam eq this.tparam  => Covariant
+      case BoundedWildcardType(bounds)                     => inType(bounds)
+      case NullaryMethodType(restpe)                       => inType(restpe)
+      case SingleType(pre, sym)                            => inType(pre)
+      case TypeRef(pre, _, _) if tp.isHigherKinded         => inType(pre)          // a type constructor cannot occur in tp's args
+      case TypeRef(pre, sym, args)                         => inType(pre)          & inArgs(sym, args)
+      case TypeBounds(lo, hi)                              => inType(lo).flip      & inType(hi)
+      case RefinedType(parents, defs)                      => inTypes(parents)     & inSyms(defs.toList)
+      case MethodType(params, restpe)                      => inSyms(params).flip  & inType(restpe)
+      case PolyType(tparams, restpe)                       => inSyms(tparams).flip & inType(restpe)
+      case ExistentialType(tparams, restpe)                => inSyms(tparams)      & inType(restpe)
+      case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
     }
 
-    inType(tp)
+    def apply(tp: Type, tparam: Symbol): Variance = {
+      this.tp = tp
+      this.tparam = tparam
+      try inType(tp)
+      finally {
+        this.tp = null
+        this.tparam = null
+      }
+    }
   }
 }
