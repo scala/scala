@@ -603,6 +603,10 @@ case object Nil extends List[Nothing] {
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
   override def knownSize: Int = 0
   override def iterator: Iterator[Nothing] = Iterator.empty
+  override def unzip[A1, A2](implicit asPair: Nothing => (A1, A2)): (List[A1], List[A2]) = EmptyUnzip
+
+  @transient
+  private[this] val EmptyUnzip = (Nil, Nil)
 }
 
 /**
@@ -626,4 +630,5 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   @transient
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
+
 }
