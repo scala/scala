@@ -550,7 +550,14 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
-  def signum: Int = this.bigDecimal.signum
+  def signum: Int = this.bigDecimal.signum()
+
+  /** Returns the sign of this BigDecimal;
+   *   -1 if it is less than 0,
+   *   +1 if it is greater than 0,
+   *   0  if it is equal to 0.
+   */
+  def sign: BigDecimal = signum
 
   /** Returns the precision of this `BigDecimal`.
    */

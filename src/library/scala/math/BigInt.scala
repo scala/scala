@@ -280,6 +280,13 @@ final class BigInt(val bigInteger: BigInteger)
    */
   def signum: Int = this.bigInteger.signum()
 
+  /** Returns the sign of this BigInt;
+   *   -1 if it is less than 0,
+   *   +1 if it is greater than 0,
+   *   0  if it is equal to 0.
+   */
+  def sign: BigInt = signum
+
   /** Returns the bitwise complement of this BigInt
    */
   def unary_~ : BigInt = new BigInt(this.bigInteger.not())

@@ -40,8 +40,15 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   def max(that: T): T = num.max(self, that)
   /** Returns the absolute value of `'''this'''`. */
   def abs             = num.abs(self)
+  /**
+   * Returns the sign of `'''this'''`.
+   * zero if the argument is zero, -zero if the argument is -zero,
+   * one if the argument is greater than zero, -one if the argument is less than zero,
+   * and NaN if the argument is NaN where applicable.
+   */
+  def sign: T         = num.sign(self)
   /** Returns the signum of `'''this'''`. */
-  def signum: T       = num.signum(self)
+  @deprecated("use `sign` method instead", since = "2.13.0") def signum: Int = num.signum(self)
 }
 trait ScalaWholeNumberProxy[T] extends Any with ScalaNumberProxy[T] {
   def isWhole = true

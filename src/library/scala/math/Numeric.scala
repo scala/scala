@@ -65,6 +65,7 @@ object Numeric {
     def toFloat(x: Int): Float = x.toFloat
     def toDouble(x: Int): Double = x.toDouble
     override def signum(x: Int): Int = math.signum(x)
+    override def sign(x: Int): Int = math.signum(x)
   }
   implicit object IntIsIntegral extends IntIsIntegral with Ordering.IntOrdering
 
@@ -81,7 +82,8 @@ object Numeric {
     def toLong(x: Short): Long = x.toLong
     def toFloat(x: Short): Float = x.toFloat
     def toDouble(x: Short): Double = x.toDouble
-    override def signum(x: Short): Short = math.signum(x.toInt).toShort
+    override def signum(x: Short): Int = math.signum(x.toInt)
+    override def sign(x: Short): Short = math.signum(x.toInt).toShort
   }
   implicit object ShortIsIntegral extends ShortIsIntegral with Ordering.ShortOrdering
 
@@ -98,7 +100,8 @@ object Numeric {
     def toLong(x: Byte): Long = x.toLong
     def toFloat(x: Byte): Float = x.toFloat
     def toDouble(x: Byte): Double = x.toDouble
-    override def signum(x: Byte): Byte = math.signum(x.toInt).toByte
+    override def signum(x: Byte): Int = math.signum(x.toInt)
+    override def sign(x: Byte): Byte = math.signum(x.toInt).toByte
   }
   implicit object ByteIsIntegral extends ByteIsIntegral with Ordering.ByteOrdering
 
@@ -115,7 +118,8 @@ object Numeric {
     def toLong(x: Char): Long = x.toLong
     def toFloat(x: Char): Float = x.toFloat
     def toDouble(x: Char): Double = x.toDouble
-    override def signum(x: Char): Char = math.signum(x.toInt).toChar
+    override def signum(x: Char): Int = math.signum(x.toInt)
+    override def sign(x: Char): Char = math.signum(x.toInt).toChar
   }
   implicit object CharIsIntegral extends CharIsIntegral with Ordering.CharOrdering
 
@@ -132,7 +136,8 @@ object Numeric {
     def toLong(x: Long): Long = x
     def toFloat(x: Long): Float = x.toFloat
     def toDouble(x: Long): Double = x.toDouble
-    override def signum(x: Long): Long = math.signum(x)
+    override def signum(x: Long): Int = math.signum(x).toInt
+    override def sign(x: Long): Long = math.signum(x)
   }
   implicit object LongIsIntegral extends LongIsIntegral with Ordering.LongOrdering
 
@@ -150,7 +155,8 @@ object Numeric {
     def div(x: Float, y: Float): Float = x / y
     // logic in Numeric base trait mishandles abs(-0.0f)
     override def abs(x: Float): Float = math.abs(x)
-    override def signum(x: Float): Float = math.signum(x)
+    // logic in Numeric base trait mishandles sign(-0.0f) and sign(Float.NaN)
+    override def sign(x: Float): Float = math.signum(x)
   }
   implicit object FloatIsFractional extends FloatIsFractional with Ordering.Float.IeeeOrdering
 
@@ -168,7 +174,8 @@ object Numeric {
     def div(x: Double, y: Double): Double = x / y
     // logic in Numeric base trait mishandles abs(-0.0)
     override def abs(x: Double): Double = math.abs(x)
-    override def signum(x: Double): Double = math.signum(x)
+    // logic in Numeric base trait mishandles sign(-0.0) and sign(Double.NaN)
+    override def sign(x: Double): Double = math.signum(x)
   }
   implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.Double.IeeeOrdering
 
@@ -215,7 +222,12 @@ trait Numeric[T] extends Ordering[T] {
   def one = fromInt(1)
 
   def abs(x: T): T = if (lt(x, zero)) negate(x) else x
-  def signum(x: T): T =
+
+  @deprecated("use `sign` method instead", since = "2.13.0") def signum(x: T): Int =
+    if (lt(x, zero)) -1
+    else if (gt(x, zero)) 1
+    else 0
+  def sign(x: T): T =
     if (lt(x, zero)) negate(one)
     else if (gt(x, zero)) one
     else zero
@@ -226,7 +238,8 @@ trait Numeric[T] extends Ordering[T] {
     def *(rhs: T) = times(lhs, rhs)
     def unary_- = negate(lhs)
     def abs: T = Numeric.this.abs(lhs)
-    def signum: T = Numeric.this.signum(lhs)
+    @deprecated("use `sign` method instead", since = "2.13.0") def signum: Int = Numeric.this.signum(lhs)
+    def sign: T = Numeric.this.sign(lhs)
     def toInt: Int = Numeric.this.toInt(lhs)
     def toLong: Long = Numeric.this.toLong(lhs)
     def toFloat: Float = Numeric.this.toFloat(lhs)
