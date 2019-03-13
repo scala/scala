@@ -21,7 +21,7 @@ class CompletionTest {
     new IMain(settings, new ReplReporterImpl(settings, new PrintWriter(new StringWriter)))
   }
 
-  private def setup(sources: SourceFile*): Completion = {
+  private def setup(sources: SourceFile*): ReplCompletion = {
     val intp = newIMain()
     intp.compileSources(sources: _*)
     val completer = new ReplCompletion(intp)
@@ -44,7 +44,7 @@ class CompletionTest {
   @Test
   def t4438_arrayCompletion(): Unit = {
     val completer = setup()
-    assert(completer.complete("Array(1, 2, 3) rev").candidates.contains("reverseMap"))
+    assert(completer.complete("Array(1, 2, 3) red").candidates.contains("reduceLeft"))
   }
 
   @Test
@@ -271,7 +271,7 @@ class CompletionTest {
          |  .map(_ + 1) /* then we do reverse */
          |  .rev""".stripMargin
     assert(
-      completer.complete(withMultilineCommit).candidates.contains("reverseMap")
+      completer.complete(withMultilineCommit).candidates.contains("reverseIterator")
     )
 
     val withInlineCommit =
@@ -279,7 +279,7 @@ class CompletionTest {
          |  .map(_ + 1) // then we do reverse
          |  .rev""".stripMargin
     assert(
-      completer.complete(withInlineCommit).candidates.contains("reverseMap")
+      completer.complete(withInlineCommit).candidates.contains("reverseIterator")
     )
   }
 
@@ -325,7 +325,54 @@ object Test2 {
     checkExact(completer, "test.Test.withoutParens.charA")("charAt")
   }
 
+  @Test def typeCompletions(): Unit = {
+    val completer = setup()
+    checkExact(completer, "trait Foo1; trait Foo2; val x: Foo")("Foo1", "Foo2")
+  }
+
   def checkExact(completer: Completion, before: String, after: String = "")(expected: String*): Unit = {
     assertEquals(expected.toSet, completer.complete(before, after).candidates.toSet)
   }
+
+  def checkDeprecated(input: String, deprecatedName: String): Unit = {
+    val completer = setup()
+    def candidates(s: String) = completer.complete(s).candidates
+    // ReplCompletion has internal state that tracks whether the same request
+    // is sent again, so we just need to ask twice to get different answers
+    def tryTwice(b: => Boolean): Unit =
+      { assert(!b, "try 1"); assert(b, "try 2") }
+    tryTwice(candidates(input).contains(deprecatedName))
+  }
+
+  @Test def hideDeprecatedMethod(): Unit =
+    checkDeprecated("List(1).toS", "toStream")
+  @Test def hideDeprecatedClass(): Unit =
+    checkDeprecated("val x: collection.immutable.Str", "Stream")
+  @Test def hideDeprecatedClassCompanion1(): Unit =
+    checkDeprecated("Str", "Stream")
+  @Test def hideDeprecatedClassCompanion2(): Unit =
+    checkDeprecated("collection.immutable.Str", "Stream")
+  @Test def hideDeprecatedAlias1(): Unit =
+    checkDeprecated("val x: TraversableOnc", "TraversableOnce")
+  @Test def hideDeprecatedAlias2(): Unit =
+    checkDeprecated("val x: scala.TraversableOnc", "TraversableOnce")
+  @Test def hideDeprecatedAlias3(): Unit =
+    checkDeprecated("val x: scala.Str", "Stream")
+  @Test def hideDeprecatedVal(): Unit =
+    checkDeprecated("object O { object P; @deprecated var p1 = P; var p2 = P }; O.p", "p1")
+  @Test def hideDeprecatedTypeAliasToNormalType1(): Unit =
+    checkDeprecated("val x: Traversabl", "Traversable")
+  @Test def hideDeprecatedTypeAliasToNormalType2(): Unit =
+    checkDeprecated("val x: scala.Traversabl", "Traversable")
+  @Test def hideDeprecatedImplicitDef(): Unit =
+    checkDeprecated("class C; class D { def foo = 0 }; @deprecated implicit def c2d(c: C) = new D; (new C).f", "foo")
+  @Test def hideDeprecatedMemberOfImplicitClass(): Unit =
+    checkDeprecated("class C; implicit class D(val c: C) { @deprecated def foo = 0 }; (new C).f", "foo")
+  @Test def hideDeprecatedTrait1(): Unit =
+    checkDeprecated("@deprecated trait T1; val x: T", "T1")
+  @Test def hideDeprecatedTrait2(): Unit =
+    checkDeprecated("null: scala.collection.D", "DefaultMap")
+  @Test def hideDeprecatedTrait3(): Unit =
+    checkDeprecated("scala.collection.D", "DefaultMap")
+
 }

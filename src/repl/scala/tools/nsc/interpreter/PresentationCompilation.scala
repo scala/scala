@@ -163,9 +163,17 @@ trait PresentationCompilation { self: IMain =>
               case t: TypeMember if t.implicitlyAdded && t.viaView.info.params.head.info.bounds.isEmptyBounds => true
               case _ => false
             }
+            def isDeprecated(m: Member) = m match {
+              case tm: TypeMember if tm.viaView.isDeprecated || tm.viaView != NoSymbol && tm.viaView.owner.isDeprecated || !m.sym.exists =>
+                true
+              case _ =>
+                m.sym.isDeprecated ||
+                m.sym.hasGetter && m.sym.getterIn(m.sym.owner).isDeprecated
+            }
             (
               isUniversal && nme.isReplWrapperName(m.prefix.typeSymbol.name)
                 || isUniversal && tabCount == 0 && r.name.isEmpty
+                || isDeprecated(m) && tabCount == 0
                 || viaUniversalExtensionMethod && tabCount == 0 && r.name.isEmpty
               )
           }
