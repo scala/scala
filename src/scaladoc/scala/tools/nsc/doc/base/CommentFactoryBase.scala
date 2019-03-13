@@ -526,7 +526,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       else
         jump("}}}")
       blockEnded("code block")
-      Code(normalizeIndentation(str))
+      Code(normalizeIndentation(str).filterNot(_ == safeTagMarker))
     }
 
     /** {{{ title ::= ('=' inline '=' | "==" inline "==" | ...) '\n' }}} */
