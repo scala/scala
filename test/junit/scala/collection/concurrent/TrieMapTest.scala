@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 
 import scala.util.hashing.Hashing
-import scala.tools.testing.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.assertThrows
 
 class TrieMapTest {
 

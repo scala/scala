@@ -36,7 +36,6 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.{BackendStats, GenBCode}
-import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
@@ -756,7 +755,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   private def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String): String = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
-    val maxName = phaseNames map (_.length) max
+    val maxName = phaseNames.map(_.length).max
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
     val fmt     = if (settings.verbose || !elliptically) s"%${maxName}s  %2s  %s%n"
@@ -806,13 +805,12 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   /** Returns List of (phase, value) pairs, including only those
    *  where the value compares unequal to the previous phase's value.
    */
-  def afterEachPhase[T](op: => T): List[(Phase, T)] = { // used in tests
+  def afterEachPhase[T](op: => T): List[(Phase, T)] = // used in tests
     phaseDescriptors.map(_.ownPhase).filterNot(_ eq NoPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
       val value = exitingPhase(ph)(op)
       if (res.nonEmpty && res.head._2 == value) res
       else ((ph, value)) :: res
-    } reverse
-  }
+    }.reverse
 
   // ------------ REPL utilities ---------------------------------
 
@@ -1420,7 +1418,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
           case -1   => mkName(str)
           case idx  =>
             val phasePart = str drop (idx + 1)
-            settings.Yshow.tryToSetColon(phasePart split ',' toList)
+            settings.Yshow.tryToSetColon(phasePart.split(',').toList)
             mkName(str take idx)
         }
       }
@@ -1699,7 +1697,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val syms = findMemberFromRoot(fullName) match {
       // The name as given was not found, so we'll sift through every symbol in
       // the run looking for plausible matches.
-      case NoSymbol => phased(currentRun.symSource.keys map (sym => findNamedMember(fullName, sym)) filterNot (_ == NoSymbol) toList)
+      case NoSymbol => phased(currentRun.symSource.keys.map(findNamedMember(fullName, _)).filterNot(_ == NoSymbol).toList)
       // The name as given matched, so show only that.
       case sym      => List(sym)
     }

@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class PicklerTest extends BytecodeTesting {

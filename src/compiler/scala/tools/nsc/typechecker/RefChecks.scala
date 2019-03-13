@@ -13,8 +13,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.language.postfixOps
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.settings.ScalaVersion
@@ -22,7 +20,6 @@ import scala.tools.nsc.settings.NoScalaVersion
 
 import symtab.Flags._
 import transform.Transform
-
 
 /** <p>
  *    Post-attribution checking and transformation.
@@ -1038,7 +1035,7 @@ abstract class RefChecks extends Transform {
       def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
       // used to short-circuit unrelatedTypes check if both sides are special
       def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
-      val nullCount            = onSyms(_ filter (_ == NullClass) size)
+      val nullCount            = onSyms(_.filter(_ == NullClass).size)
       def isNonsenseValueClassCompare = (
            !haveSubclassRelationship
         && isUsingDefaultScalaOp

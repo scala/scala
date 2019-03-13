@@ -15,8 +15,8 @@ package scalax
 package rules
 package scalasig
 
-import scala.language.postfixOps
 import scala.language.implicitConversions
+import scala.language.postfixOps
 
 import ClassFileParser._
 import scala.reflect.internal.pickling.ByteCodecs
@@ -92,7 +92,7 @@ object ScalaSigAttributeParsers extends ByteCodeReader  {
   val scalaSig = nat ~ nat ~ symtab ^~~^ ScalaSig
 
   val utf8 = read(x => x.fromUTF8StringAndBytes.string)
-  val longValue = read(_ toLong)
+  val longValue = read(_.toLong)
 }
 
 case class ScalaSig(majorVersion: Int, minorVersion: Int, table: Seq[Int ~ ByteCode]) extends DefaultMemoisable {

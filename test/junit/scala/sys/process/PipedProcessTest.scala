@@ -11,8 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.control.Exception.ignoring
 import org.junit.Assert._
 
-import scala.tools.testing.AssertUtil.{readyOrNot, waitForIt}
-import scala.tools.testing.TestDuration
+import scala.tools.testkit.AssertUtil.{readyOrNot, waitForIt}
+import scala.tools.testkit.TestDuration
 
 @RunWith(classOf[JUnit4])
 class PipedProcessTest {

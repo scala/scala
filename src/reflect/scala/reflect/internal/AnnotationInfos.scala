@@ -16,7 +16,6 @@ package internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
-import scala.language.postfixOps
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
@@ -339,7 +338,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
       def encodeJavaArg(arg: Tree): ClassfileAnnotArg = arg match {
         case Literal(const) => LiteralAnnotArg(const)
-        case Apply(ArrayModule, args) => ArrayAnnotArg(args map encodeJavaArg toArray)
+        case Apply(ArrayModule, args) => ArrayAnnotArg(args.map(encodeJavaArg).toArray)
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) => NestedAnnotArg(treeToAnnotation(arg))
         case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
       }

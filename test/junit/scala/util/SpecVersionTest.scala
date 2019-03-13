@@ -6,7 +6,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 
 /** The java version property uses the spec version
  *  and must work for legacy "major.minor" and plain version_number,

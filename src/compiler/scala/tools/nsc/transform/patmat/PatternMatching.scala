@@ -15,7 +15,6 @@ package scala.tools.nsc.transform.patmat
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.Global
 import scala.tools.nsc.ast
-import scala.language.postfixOps
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.reflect.internal.util.Statistics
@@ -207,7 +206,7 @@ trait Interface extends ast.TreeDSL {
       def apply(from: Symbol, to: Tree): Substitution = new Substitution(from :: Nil, to :: Nil)
       // requires sameLength(from, to)
       def apply(from: List[Symbol], to: List[Tree]): Substitution =
-        if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
+        if (from.isEmpty) EmptySubstitution else new Substitution(from, to)
     }
 
     class Substitution(val from: List[Symbol], val to: List[Tree]) {

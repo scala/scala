@@ -1,17 +1,14 @@
-package scala.tools
-package testing
+package scala.tools.testkit
 
-import org.junit.Assert
-import Assert._
+import org.junit.Assert, Assert._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.GenIterable
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable, SyncVar, TimeoutException}
-import scala.tools.nsc.settings.ScalaVersion
 import scala.util.Try
-import scala.util.Properties.javaSpecVersion
+import scala.util.Properties.isJavaAtLeast
 import scala.util.control.NonFatal
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
@@ -21,6 +18,14 @@ import java.util.IdentityHashMap
  *  that are ultimately based on junit.Assert primitives.
  */
 object AssertUtil {
+
+  /** Assert on Java 8, but on later versions, just print if assert would fail. */
+  def assert8(b: => Boolean, msg: => Any) =
+    if (!isJavaAtLeast("9"))
+      assert(b, msg)
+    else if (!b)
+      println(s"assert not $msg")
+
   private final val timeout = 60 * 1000L                 // wait a minute
 
   private implicit class `ref helper`[A](val r: Reference[A]) extends AnyVal {
@@ -109,13 +114,6 @@ object AssertUtil {
       assertFalse(s"Root $r held reference", refs(r) contains wkref.get)
     }
   }
-
-  private[this] val version8 = ScalaVersion("8")
-
-  /** Assert on Java 8, but on later versions, just print if assert would fail. */
-  def assert8(b: => Boolean, msg: => Any) =
-    if (ScalaVersion(javaSpecVersion) == version8) assert(b, msg)
-    else if (!b) println(s"assert not $msg")
 
   /** Assert no new threads, with some margin for arbitrary threads to exit. */
   def assertZeroNetThreads(body: => Unit): Unit = {

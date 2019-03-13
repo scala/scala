@@ -7,7 +7,7 @@ import org.junit.Test
 import scala.collection.mutable
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
-import scala.tools.testing.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.assertThrows
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7568  */

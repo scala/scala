@@ -7,8 +7,8 @@ import org.junit.runners.JUnit4
 
 import scala.reflect.io.Path.jfile2path
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.testing.BytecodeTesting._
-import scala.tools.testing.TempDir
+import scala.tools.testkit.BytecodeTesting._
+import scala.tools.testkit.TempDir
 
 @RunWith(classOf[JUnit4])
 class DelambdafyTest {

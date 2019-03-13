@@ -536,7 +536,7 @@ lazy val scalap = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val partest = configureAsSubproject(project)
-  .dependsOn(library, reflect, compiler, scalap, scaladoc, junit % "compile->test")
+  .dependsOn(library, reflect, compiler, replFrontend, scalap, scaladoc, testkit)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
@@ -614,8 +614,21 @@ lazy val bench = project.in(file("test") / "benchmarks")
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
+lazy val testkit = project.in(file("src") / "testkit")
+  .dependsOn(library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(skip in publish := true)
+  .settings(
+    scalacOptions += "-feature",
+    libraryDependencies ++= Seq(junitDep, asmDep),
+    unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+  )
+
+
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, replFrontend, scaladoc)
+  .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
@@ -627,7 +640,7 @@ lazy val junit = project.in(file("test") / "junit")
     (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     scalacOptions += "-feature",
-    libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
+    libraryDependencies ++= Seq(junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)

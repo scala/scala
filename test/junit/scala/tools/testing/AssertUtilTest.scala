@@ -1,5 +1,4 @@
-package scala.tools
-package testing
+package scala.tools.testkit
 
 import org.junit.Assert._
 import org.junit.Test

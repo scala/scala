@@ -3080,9 +3080,9 @@ self =>
       val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
       // we can't easily check this later, because `gen.mkParents` adds the default AnyRef parent, and we need to warn based on what the user wrote
-      if (name == nme.PACKAGEkw && parents.nonEmpty)
+      if (name == nme.PACKAGEkw && parents.nonEmpty && settings.isScala214)
         deprecationWarning(tstart, s"package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);\n" +
-                                   s"drop the `extends` clause or use a regular object instead", "2.13.0")
+                                   s"drop the `extends` clause or use a regular object instead", "2.14.0")
 
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
