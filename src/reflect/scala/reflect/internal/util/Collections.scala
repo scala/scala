@@ -15,7 +15,7 @@ package reflect.internal.util
 
 import scala.collection.{ mutable, immutable }
 import scala.annotation.tailrec
-import mutable.ListBuffer
+import mutable.{LinkedHashMap, ListBuffer}
 import java.util.NoSuchElementException
 
 /** Profiler driven changes.
@@ -213,10 +213,23 @@ trait Collections {
   }
 
   final def mapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): Map[A1, B] = {
-    Map[A1, B](xs map (x => (x, f(x))): _*)
+    val buf = immutable.Map.newBuilder[A1, B]
+    var ys = xs
+    while (!ys.isEmpty) {
+      val x = ys.head
+      buf += ((x, f(x)))
+      ys = ys.tail
+    }
+    buf.result()
   }
   final def linkedMapFrom[A, A1 >: A, B](xs: List[A])(f: A => B): mutable.LinkedHashMap[A1, B] = {
-    mutable.LinkedHashMap[A1, B](xs map (x => (x, f(x))): _*)
+    val res: LinkedHashMap[A1, B] = LinkedHashMap.empty
+    var ys = xs
+    while (!ys.isEmpty){
+      res.put(ys.head, f(ys.head))
+      ys = ys.tail
+    }
+    res
   }
 
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {
