@@ -152,7 +152,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
       case Some(ann @ AnnotationInfo(_, args, _)) => {
         args map (_.tpe) flatMap { tp =>
-          tp baseType GroupOfSpecializable match {
+          exitingTyper(tp baseType GroupOfSpecializable) match {
             case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
               arg.typeArgs map (_.typeSymbol)
             case _ =>
@@ -652,14 +652,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        * specialized subclass of "clazz" throughout this file.
        */
 
-      // scala/bug#5545: Eliminate classes with the same name loaded from the bytecode already present - all we need to do is
-      // to force .info on them, as their lazy type will be evaluated and the symbols will be eliminated. Unfortunately
-      // evaluating the info after creating the specialized class will mess the specialized class signature, so we'd
-      // better evaluate it before creating the new class symbol
+      // scala/bug#5545: Eliminate classes with the same name loaded from the bytecode already present
       val clazzName = specializedName(clazz, env0.value).toTypeName
       val bytecodeClazz = clazz.owner.info.decl(clazzName)
       // debuglog("Specializing " + clazz + ", but found " + bytecodeClazz + " already there")
-      bytecodeClazz.info
+      def unlink(sym: Symbol): Unit = {
+        if (sym != NoSymbol) sym.owner.info.decls.unlink(sym)
+      }
+      unlink(bytecodeClazz)
+      unlink(bytecodeClazz.companionSymbol)
 
       val sClass = clazz.owner.newClass(clazzName, clazz.pos, (clazz.flags | SPECIALIZED) & ~CASE)
       sClass.setAnnotations(clazz.annotations) // scala/bug#8574 important that the subclass picks up @SerialVersionUID, @strictfp, etc.
@@ -1321,8 +1322,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             )
           }
           val newScope = newScopeWith(specializeClass(clazz, TypeEnvWrapper(typeEnv(clazz))) ++ specialOverrides(clazz): _*)
-          // If tparams.isEmpty, this is just the ClassInfoType.
-          GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
+          if ((parents eq parents1) && decls.sameElements(newScope))
+            tpe
+          else
+            // If tparams.isEmpty, this is just the ClassInfoType.
+            GenPolyType(tparams, ClassInfoType(parents1, newScope, clazz))
         }
       case _ =>
         tpe
