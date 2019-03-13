@@ -5600,7 +5600,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedApplyDynamic(tree: ApplyDynamic) = {
-        assert(phase.erasedTypes)
         val qual1 = typed(tree.qual, AnyRefTpe)
         val args1 = tree.args mapConserve (arg => typed(arg, AnyRefTpe))
         treeCopy.ApplyDynamic(tree, qual1, args1) setType AnyRefTpe

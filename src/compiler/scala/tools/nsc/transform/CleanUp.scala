@@ -136,8 +136,9 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
             val methodSym = reflMethodSym.newVariable(mkTerm("method"), ad.pos) setInfo MethodClass.tpe
 
             val dummyMethodType = MethodType(NoSymbol.newSyntheticValueParams(paramTypes), AnyTpe)
+            val invokedSym = Static_dummy(definitions.StructuralCallSite.tpe)
             BLOCK(
-              ValDef(methodCache, ApplyDynamic(gen.mkAttributedIdent(StructuralCallSite_dummy), LIT(StructuralCallSite_bootstrap) :: LIT(dummyMethodType) :: Nil).setType(StructuralCallSite.tpe)),
+              ValDef(methodCache, ApplyDynamic(gen.mkAttributedIdent(invokedSym), LIT(Static_bootstrap) :: LIT(StructuralCallSite.companionModule.info.decl(nme.apply)) :: LIT(dummyMethodType) :: Nil).setType(StructuralCallSite.tpe)),
               ValDef(methodSym, (REF(methodCache) DOT StructuralCallSite_find)(REF(forReceiverSym))),
               IF (REF(methodSym) OBJ_NE NULL) .
                 THEN (Return(REF(methodSym)))
@@ -467,7 +468,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case Apply(fn @ Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
         if treeInfo.isQualifierSafeToElide(qual) && fn.symbol == Symbol_apply && !currentClass.isTrait =>
 
-        treeCopy.ApplyDynamic(tree, atPos(fn.pos)(Ident(SymbolLiteral_dummy).setType(SymbolLiteral_dummy.info)), LIT(SymbolLiteral_bootstrap) :: arg :: Nil).transform(this)
+        val invokedSym = Static_dummy(SymbolClass.tpe)
+        treeCopy.ApplyDynamic(tree, atPos(fn.pos)(Ident(Static_dummy(SymbolClass.tpe)).setType(invokedSym.info)), LIT(Static_bootstrap) :: LIT(SymbolModule.info.decl(nme.apply)) :: arg :: Nil).transform(this)
 
       // Drop the TypeApply, which was used in Erasure to make `synchronized { ... } ` erase like `...`
       // (and to avoid boxing the argument to the polymorphic `synchronized` method).

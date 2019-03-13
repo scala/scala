@@ -1293,7 +1293,8 @@ abstract class Erasure extends InfoTransform
 
             treeCopy.Literal(cleanLiteral, Constant(erased))
           } else cleanLiteral
-
+        case ApplyDynamic(qual, (lit @ Literal(Constant(bootstrapMethodRef: Symbol))) :: args) =>
+          treeCopy.ApplyDynamic(tree, transform(qual), lit :: transformTrees(args))
         case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           copyClassDef(tree)(tparams = Nil)
@@ -1349,8 +1350,8 @@ abstract class Erasure extends InfoTransform
 
               try super.transform(tree1).clearType()
               finally tpt setType specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
-            case ApplyDynamic(qual, Literal(Constant(bootstrapMethodRef: Symbol)) :: _) =>
-              tree
+            case ApplyDynamic(qual, (lit @ Literal(Constant(bootstrapMethodRef: Symbol))) :: args) =>
+              treeCopy.ApplyDynamic(tree, transform(qual), lit :: args).modifyType(scalaErasure(_))
             case _: Apply if tree1 ne tree =>
               /* some Apply trees get replaced (in `preEraseApply`) with one of
                * their subtrees, which needs to be `preErase`d in its entirety,

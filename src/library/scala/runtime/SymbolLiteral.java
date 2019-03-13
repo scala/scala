@@ -18,9 +18,7 @@ public final class SymbolLiteral {
     private SymbolLiteral() {
     }
 
-    public static CallSite bootstrap(MethodHandles.Lookup lookup, String invokedName,
-                                     MethodType invokedType,
-                                     String value) throws Throwable {
+    public static CallSite bootstrap(MethodHandles.Lookup lookup, String invokedName, MethodType invokedType, String value) throws Throwable {
         ClassLoader classLoader = lookup.lookupClass().getClassLoader();
         MethodType type = MethodType.fromMethodDescriptorString("(Ljava/lang/String;)Lscala/Symbol;", classLoader);
         Class<?> symbolClass = Class.forName("scala.Symbol", false, classLoader);

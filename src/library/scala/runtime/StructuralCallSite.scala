@@ -39,6 +39,8 @@ final class StructuralCallSite private (callType: MethodType) {
 }
 
 object StructuralCallSite {
+  def apply(callType: MethodType) = new StructuralCallSite(callType)
+
   def bootstrap(lookup: MethodHandles.Lookup, invokedName: String, invokedType: MethodType, reflectiveCallType: MethodType): CallSite = {
     val structuralCallSite = new StructuralCallSite(reflectiveCallType)
     new ConstantCallSite(MethodHandles.constant(classOf[StructuralCallSite], structuralCallSite))

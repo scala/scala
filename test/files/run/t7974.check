@@ -4,8 +4,10 @@ warning: there were four deprecation warnings (since 2.13.0); re-run with -depre
   public someSymbol1()Lscala/Symbol;
     INVOKEDYNAMIC apply()Lscala/Symbol; [
       // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      scala/runtime/Static.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;
       // arguments:
+      // handle kind 0x6 : INVOKESTATIC
+      scala/Symbol.apply(Ljava/lang/String;)Lscala/Symbol;, 
       "Symbolic1"
     ]
     ARETURN
@@ -17,8 +19,10 @@ warning: there were four deprecation warnings (since 2.13.0); re-run with -depre
   public someSymbol2()Lscala/Symbol;
     INVOKEDYNAMIC apply()Lscala/Symbol; [
       // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      scala/runtime/Static.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;
       // arguments:
+      // handle kind 0x6 : INVOKESTATIC
+      scala/Symbol.apply(Ljava/lang/String;)Lscala/Symbol;, 
       "Symbolic2"
     ]
     ARETURN
@@ -30,8 +34,10 @@ warning: there were four deprecation warnings (since 2.13.0); re-run with -depre
   public sameSymbol1()Lscala/Symbol;
     INVOKEDYNAMIC apply()Lscala/Symbol; [
       // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      scala/runtime/Static.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;
       // arguments:
+      // handle kind 0x6 : INVOKESTATIC
+      scala/Symbol.apply(Ljava/lang/String;)Lscala/Symbol;, 
       "Symbolic1"
     ]
     ARETURN
@@ -55,8 +61,10 @@ warning: there were four deprecation warnings (since 2.13.0); re-run with -depre
     ALOAD 0
     INVOKEDYNAMIC apply()Lscala/Symbol; [
       // handle kind 0x6 : INVOKESTATIC
-      scala/runtime/SymbolLiteral.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;)Ljava/lang/invoke/CallSite;
+      scala/runtime/Static.bootstrap(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;
       // arguments:
+      // handle kind 0x6 : INVOKESTATIC
+      scala/Symbol.apply(Ljava/lang/String;)Lscala/Symbol;, 
       "Symbolic3"
     ]
     PUTFIELD Symbols.someSymbol3 : Lscala/Symbol;

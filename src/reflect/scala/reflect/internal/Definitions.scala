@@ -499,15 +499,13 @@ trait Definitions extends api.StandardDefinitions {
       def methodCache_find          = getMemberMethod(MethodCacheClass, nme.find_)
       def methodCache_add           = getMemberMethod(MethodCacheClass, nme.add_)
     lazy val StructuralCallSite     = getClassIfDefined("scala.runtime.StructuralCallSite")
-      def StructuralCallSite_bootstrap = getMemberMethod(StructuralCallSite.linkedClassOfClass, sn.Bootstrap)
-    // Marker for invokedynamic runtime.StructuralCall.bootstrap
-    lazy val StructuralCallSite_dummy = NoSymbol.newMethodSymbol(nme.apply).setInfo(NullaryMethodType(StructuralCallSite.tpe))
       def StructuralCallSite_find              = getMemberIfDefined(StructuralCallSite, nme.find_)
       def StructuralCallSite_add               = getMemberIfDefined(StructuralCallSite, nme.add_)
       def StructuralCallSite_getParameterTypes = getMemberIfDefined(StructuralCallSite, nme.parameterTypes)
     lazy val SymbolLiteral        = getClassIfDefined("scala.runtime.SymbolLiteral")
-      def SymbolLiteral_bootstrap = getMemberIfDefined(SymbolLiteral.linkedClassOfClass, sn.Bootstrap)
-      def SymbolLiteral_dummy     = NoSymbol.newMethodSymbol(nme.apply).setInfo(NullaryMethodType(SymbolModule.companionClass.tpe))
+    lazy val Static        = getClassIfDefined("scala.runtime.Static")
+      def Static_bootstrap = getMemberIfDefined(Static.linkedClassOfClass, sn.Bootstrap)
+      def Static_dummy(tpe: Type)    = NoSymbol.newTermSymbol(nme.apply).setInfo(NullaryMethodType(tpe))
 
     // XML
     lazy val ScalaXmlTopScope = getModuleIfDefined("scala.xml.TopScope")

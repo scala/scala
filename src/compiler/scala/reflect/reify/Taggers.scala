@@ -44,8 +44,16 @@ abstract class Taggers {
     val tagModule = ClassTagModule
     materializeTag(EmptyTree, tpe, tagModule, {
       val erasure = c.reifyRuntimeClass(tpe, concrete = true)
-      val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
-      Apply(factory, List(erasure))
+      val canUseIndy = erasure.isInstanceOf[Literal] && settings.YclassTagInvokeDynamic.value && Static_bootstrap != NoSymbol && !tpe.typeSymbol.isPrimitiveValueClass
+      if (canUseIndy) {
+        // Emit an invokedynamic which will cache this context-independent classtag
+        val resultType = appliedType(ClassTagClass, tpe :: Nil)
+        val invokedSym = Static_dummy(resultType)
+        ApplyDynamic(Ident(invokedSym).setType(invokedSym.info), Literal(Constant(Static_bootstrap)).setType(NoType) :: Literal(Constant(ClassTagModule.info.decl(nme.apply))).setType(NoType) :: erasure :: Nil).setType(resultType).setSymbol(invokedSym)
+      } else {
+        val factory = TypeApply(Select(Ident(tagModule), nme.apply), List(TypeTree(tpe)))
+        Apply(factory, List(erasure))
+      }
     })
   }
 
