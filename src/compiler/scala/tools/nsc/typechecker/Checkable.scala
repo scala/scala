@@ -15,6 +15,7 @@ package typechecker
 
 import Checkability._
 import scala.language.postfixOps
+import scala.collection.mutable.ListBuffer
 
 /** On pattern matcher checkability:
  *
@@ -85,9 +86,8 @@ trait Checkable {
     def tparams  = to.typeParams
     val tvars    = tparams map (p => TypeVar(p))
     val tvarType = appliedType(to, tvars)
-    val bases    = from.baseClasses filter (to.baseClasses contains _)
 
-    bases foreach { bc =>
+    from.baseClasses foreach { bc => if (to.baseClasses.contains(bc)){
       val tps1 = (from baseType bc).typeArgs
       val tps2 = (tvarType baseType bc).typeArgs
       devWarningIf(!sameLength(tps1, tps2)) {
@@ -106,9 +106,9 @@ trait Checkable {
       //   else if (tparam.isContravariant) tp2 <:< tp1
       //   else tp1 =:= tp2
       // )
-    }
+    }}
 
-    val resArgs = tparams zip tvars map {
+    val resArgs = map2(tparams, tvars){
       case (_, tvar) if tvar.instValid => tvar.constr.inst
       case (tparam, _)                 => tparam.tpeHK
     }
@@ -127,14 +127,23 @@ trait Checkable {
   private def uncheckedOk(tp: Type) = tp hasAnnotation UncheckedClass
 
   private def typeArgsInTopLevelType(tp: Type): List[Type] = {
-    val tps = tp match {
-      case RefinedType(parents, _)              => parents flatMap typeArgsInTopLevelType
-      case TypeRef(_, ArrayClass, arg :: Nil)   => if (arg.typeSymbol.isAbstractType) arg :: Nil else typeArgsInTopLevelType(arg)
-      case TypeRef(pre, sym, args)              => typeArgsInTopLevelType(pre) ++ args
-      case ExistentialType(tparams, underlying) => tparams.map(_.tpe) ++ typeArgsInTopLevelType(underlying)
-      case _                                    => Nil
+    val res: ListBuffer[Type] = ListBuffer.empty[Type]
+    def add(t: Type) = if (!isUnwarnableTypeArg(t)) res += t
+    def loop(tp: Type): Unit = tp match {
+      case RefinedType(parents, _) =>
+        parents foreach loop
+      case TypeRef(_, ArrayClass, arg :: Nil) =>
+        if (arg.typeSymbol.isAbstractType) add(arg) else loop(arg)
+      case TypeRef(pre, sym, args) =>
+        loop(pre)
+        args.foreach(add)
+      case ExistentialType(tparams, underlying) =>
+        tparams.foreach(tp => add(tp.tpe))
+        loop(underlying)
+      case _ => ()
     }
-    tps filterNot isUnwarnableTypeArg
+    loop(tp)
+    res.toList
   }
 
   private def scrutConformsToPatternType(scrut: Type, pattTp: Type): Boolean = {
@@ -219,13 +228,12 @@ trait Checkable {
       && !(sym2 isSubClass sym1)
     )
     /** Are all children of these symbols pairwise irreconcilable? */
-    def allChildrenAreIrreconcilable(sym1: Symbol, sym2: Symbol) = (
-      sym1.sealedChildren.toList forall (c1 =>
-        sym2.sealedChildren.toList forall (c2 =>
-          areIrreconcilableAsParents(c1, c2)
-        )
-      )
-    )
+    def allChildrenAreIrreconcilable(sym1: Symbol, sym2: Symbol) = {
+      val sc1 = sym1.sealedChildren
+      val sc2 = sym2.sealedChildren
+      sc1.forall(c1 => sc2.forall(c2 => areIrreconcilableAsParents(c1, c2)))
+    }
+
     /** Is it impossible for the given symbols to be parents in the same class?
      *  This means given A and B, can there be an instance of A with B? This is the
      *  case if neither A nor B is a subclass of the other, and one of the following
@@ -255,13 +263,14 @@ trait Checkable {
     def isNeverSubClass(sym1: Symbol, sym2: Symbol) = areIrreconcilableAsParents(sym1, sym2)
 
     private def isNeverSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = /*logResult(s"isNeverSubArgs($tps1, $tps2, $tparams)")*/ {
-      def isNeverSubArg(t1: Type, t2: Type, variance: Variance) = (
+      def isNeverSubArg(t1: Type, t2: Type, tparam: Symbol) = {
+        val variance = tparam.variance
         if (variance.isInvariant) isNeverSameType(t1, t2)
         else if (variance.isCovariant) isNeverSubType(t2, t1)
         else if (variance.isContravariant) isNeverSubType(t1, t2)
         else false
-      )
-      exists3(tps1, tps2, tparams map (_.variance))(isNeverSubArg)
+      }
+      exists3(tps1, tps2, tparams)(isNeverSubArg)
     }
     private def isNeverSameType(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
       case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
