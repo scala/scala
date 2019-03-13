@@ -10,7 +10,13 @@ class DoubleTest {
 
   /* Test for scala/bug#11386 */
   @Test
-  def tesDoubleSignumNaN: Unit = {
+  def tesDoubleSignum: Unit = {
     assertTrue(Double.NaN.signum.isNaN)
+    assertEquals("1.0", Double.MaxValue.signum.toString)
+    assertEquals("1.0", Double.PositiveInfinity.signum.toString)
+    assertEquals("-1.0", Double.MinValue.signum.toString)
+    assertEquals("-1.0", Double.NegativeInfinity.signum.toString)
+    assertEquals("0.0", 0.0.signum.toString)
+    assertEquals("-0.0", -0.0.signum.toString)
   }
 }

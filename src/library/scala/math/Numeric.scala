@@ -81,7 +81,6 @@ object Numeric {
     def toLong(x: Short): Long = x.toLong
     def toFloat(x: Short): Float = x.toFloat
     def toDouble(x: Short): Double = x.toDouble
-    // delegate to math.signum(Int)
     override def signum(x: Short): Short = math.signum(x.toInt).toShort
   }
   implicit object ShortIsIntegral extends ShortIsIntegral with Ordering.ShortOrdering
@@ -99,7 +98,6 @@ object Numeric {
     def toLong(x: Byte): Long = x.toLong
     def toFloat(x: Byte): Float = x.toFloat
     def toDouble(x: Byte): Double = x.toDouble
-    // delegate to math.signum(Int)
     override def signum(x: Byte): Byte = math.signum(x.toInt).toByte
   }
   implicit object ByteIsIntegral extends ByteIsIntegral with Ordering.ByteOrdering
@@ -117,7 +115,6 @@ object Numeric {
     def toLong(x: Char): Long = x.toLong
     def toFloat(x: Char): Float = x.toFloat
     def toDouble(x: Char): Double = x.toDouble
-    // delegate to math.signum(Int)
     override def signum(x: Char): Char = math.signum(x.toInt).toChar
   }
   implicit object CharIsIntegral extends CharIsIntegral with Ordering.CharOrdering
