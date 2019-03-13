@@ -23,6 +23,20 @@ import scala.collection.mutable.StringBuilder
   * A template trait for collections which can be traversed either once only
   * or one or more times.
   *
+  * Note: `IterableOnce` does not extend [[IterableOnceOps]]. This is different than the general
+  * design of the collections library, which uses the following pattern:
+  * {{{
+  *   trait Seq extends Iterable with SeqOps
+  *   trait SeqOps extends IterableOps
+  *
+  *   trait IndexedSeq extends Seq with IndexedSeqOps
+  *   trait IndexedSeqOps extends SeqOps
+  * }}}
+  *
+  * The goal is to provide a minimal interface without any sequential operations. This allows
+  * third-party extension like Scala parallel collections to integrate at the level of IterableOnce
+  * without inheriting unwanted implementations.
+  *
   * @define coll collection
   */
 trait IterableOnce[+A] extends Any {
