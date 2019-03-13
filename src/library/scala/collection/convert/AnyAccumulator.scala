@@ -12,6 +12,8 @@
 
 package scala.collection.convert
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 import scala.language.higherKinds
@@ -33,7 +35,8 @@ import scala.reflect.ClassTag
  */
 final class AnyAccumulator[A]
   extends Accumulator[A, AnyAccumulator, AnyAccumulator[A]]
-    with collection.IterableOps[A, AnyAccumulator, AnyAccumulator[A]] {
+    with collection.IterableOps[A, AnyAccumulator, AnyAccumulator[A]]
+    with Serializable {
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
   // created with `nextBlockSize` (which depends on `totalSize`).
   // `cumul(i)` is `(0 until i).map(history(_).length)`
@@ -209,6 +212,8 @@ final class AnyAccumulator[A]
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  private def writeReplace(): AnyRef = new AnyAccumulator.SerializationProxy(this)
 }
 
 object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
@@ -244,6 +249,32 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   def empty[A]: AnyAccumulator[A] = new AnyAccumulator[A]
 
   def newBuilder[A]: mutable.Builder[A, AnyAccumulator[A]] = new AnyAccumulator[A]
+
+  class SerializationProxy[A](@transient private val acc: AnyAccumulator[A]) extends Serializable {
+    @transient private var result: AnyAccumulator[AnyRef] = _
+
+    private def writeObject(out: ObjectOutputStream): Unit = {
+      out.defaultWriteObject()
+      val size = acc.longSize
+      out.writeLong(size)
+      val st = acc.stepper
+      while (st.hasStep)
+        out.writeObject(st.nextStep())
+    }
+
+    private def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      val res = new AnyAccumulator[AnyRef]()
+      var elems = in.readLong()
+      while (elems > 0) {
+        res += in.readObject()
+        elems -= 1l
+      }
+      result = res
+    }
+
+    private def readResolve(): AnyRef = result
+  }
 }
 
 private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSubstep {

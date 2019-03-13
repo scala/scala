@@ -12,6 +12,8 @@
 
 package scala.collection.convert
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 
@@ -27,7 +29,8 @@ import scala.collection.{Factory, mutable}
  */
 final class DoubleAccumulator
   extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
-    with collection.IterableOps[Double, AnyAccumulator, DoubleAccumulator] {
+    with collection.IterableOps[Double, AnyAccumulator, DoubleAccumulator]
+    with Serializable {
   private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
   private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
 
@@ -203,6 +206,8 @@ final class DoubleAccumulator
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  private def writeReplace(): AnyRef = new DoubleAccumulator.SerializationProxy(this)
 }
 
 object DoubleAccumulator extends collection.SpecificIterableFactory[Double, DoubleAccumulator] {
@@ -242,6 +247,32 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   override def empty: DoubleAccumulator = new DoubleAccumulator
 
   override def newBuilder: mutable.Builder[Double, DoubleAccumulator] = new DoubleAccumulator
+
+  class SerializationProxy[A](@transient private val acc: DoubleAccumulator) extends Serializable {
+    @transient private var result: DoubleAccumulator = _
+
+    private def writeObject(out: ObjectOutputStream): Unit = {
+      out.defaultWriteObject()
+      val size = acc.longSize
+      out.writeLong(size)
+      val st = acc.stepper
+      while (st.hasStep)
+        out.writeDouble(st.nextStep())
+    }
+
+    private def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      val res = new DoubleAccumulator()
+      var elems = in.readLong()
+      while (elems > 0) {
+        res += in.readDouble()
+        elems -= 1l
+      }
+      result = res
+    }
+
+    private def readResolve(): AnyRef = result
+  }
 }
 
 private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSubstep {

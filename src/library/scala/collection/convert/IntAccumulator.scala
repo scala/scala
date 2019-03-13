@@ -12,6 +12,8 @@
 
 package scala.collection.convert
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
 import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
 
@@ -25,7 +27,10 @@ import scala.collection.{Factory, mutable}
  *
  * TODO: doc performance characteristics.
  */
-final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulator] {
+final class IntAccumulator
+  extends Accumulator[Int, AnyAccumulator, IntAccumulator]
+    with collection.IterableOps[Int, AnyAccumulator, IntAccumulator]
+    with Serializable {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
   private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
 
@@ -206,6 +211,8 @@ final class IntAccumulator extends Accumulator[Int, AnyAccumulator, IntAccumulat
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  private def writeReplace(): AnyRef = new IntAccumulator.SerializationProxy(this)
 }
 
 object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumulator] {
@@ -245,6 +252,32 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   override def empty: IntAccumulator = new IntAccumulator
 
   override def newBuilder: mutable.Builder[Int, IntAccumulator] = new IntAccumulator
+
+  class SerializationProxy[A](@transient private val acc: IntAccumulator) extends Serializable {
+    @transient private var result: IntAccumulator = _
+
+    private def writeObject(out: ObjectOutputStream): Unit = {
+      out.defaultWriteObject()
+      val size = acc.longSize
+      out.writeLong(size)
+      val st = acc.stepper
+      while (st.hasStep)
+        out.writeInt(st.nextStep())
+    }
+
+    private def readObject(in: ObjectInputStream): Unit = {
+      in.defaultReadObject()
+      val res = new IntAccumulator()
+      var elems = in.readLong()
+      while (elems > 0) {
+        res += in.readInt()
+        elems -= 1l
+      }
+      result = res
+    }
+
+    private def readResolve(): AnyRef = result
+  }
 }
 
 private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper with EfficientSubstep {
