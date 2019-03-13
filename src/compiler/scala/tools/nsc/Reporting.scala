@@ -34,28 +34,37 @@ trait Reporting extends IReporting { self: Global =>
 
   object policy extends Enumeration {
     val Silent, Info, Warn, Error = Value
+    // match a sym's full name against a prefix; if isInfractor, match the infractor.
+    // For library "shapeless 2.1", the rule can supply the name, version, or both to match.
     case class Philter(pkg: String, escalation: Value, isInfractor: Boolean, label: String, version: ScalaVersion, matcher: ScalaVersion => Boolean) {
-      def matches(sym: Symbol, since: String, infractor: String): Boolean = {
+      def matches(sym: Symbol, since: String, infractor: Symbol): Boolean = {
         val (lib, v) = splitVersion(since)
-        (pkg.isEmpty || sym.fullName.startsWith(pkg)) &&
+        (pkg.isEmpty || {
+          val checked = if (isInfractor) infractor else sym
+          checked.fullName.startsWith(pkg)
+        }) &&
         (label.isEmpty || label == lib) &&
         ((version eq NoScalaVersion) || matcher(v))
       }
     }
     val NoPhilter = Philter("", Silent, false, "", NoScalaVersion, _ => false)
     val config: List[Philter] = {
+      // +sym since<1.0 or +'sym to mean warnings with use site context owner sym
       val regex = raw"([+-]{0,2})(?:\s*([\w.']*))?(?:\s*since([<>=])([\w. -]+))?".r
+      // extractors aren't allowed to receive nulls, thereby crippling java regex
       object Maybes {
         def unapplySeq(s: String): Option[Seq[String]] =
           regex.unapplySeq(s).map(ss => ss.map { case null => "" case x => x })
       }
       def parse(s: String) =
         s match {
-          case Maybes(esc,pkg,op,vers) =>
+          case Maybes(esc, pkg, op, vers) =>
             val infr = pkg.startsWith("'")
             val name = if (infr) pkg.substring(1) else pkg
-            val warn = esc match { case "+" => Error case "-" => Info case "--" => Silent case "" => Warn
-              case _ => reporter.error(NoPosition, s"bad escalation '$esc'") ; Warn }
+            val warn = esc match {
+              case "+" => Error case "-" => Info case "--" => Silent case "" => Warn
+              case _ => reporter.error(NoPosition, s"bad escalation '$esc'") ; Warn
+            }
             val (label, version) = splitVersion(vers)
             Philter(name, warn, infr, label, version,
               op match {
@@ -81,7 +90,7 @@ trait Reporting extends IReporting { self: Global =>
     }
     private def versionOf(vstr: String) = ScalaVersion(vstr, x => reporter.error(NoPosition, s"bad version '$x'"))
 
-    def apply(pos: Position, sym: Symbol, msg: String, since: String, label: String, infractor: String): Value =
+    def apply(pos: Position, infractor: Symbol, sym: Symbol, msg: String, since: String, label: String): Value =
       config.find(_.matches(sym, since, infractor)).map(_.escalation).getOrElse(
         if (sym.hasAnnotation(DeprecatedErrorAttr)) Error else Warn
       )
@@ -133,8 +142,6 @@ trait Reporting extends IReporting { self: Global =>
     private val _inlinerWarnings        = new ConditionalWarning("inliner", !settings.optWarningsSummaryOnly, settings.optWarnings)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
-    // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)
-    def deprecationWarning(pos: Position, msg: String, since: String): Unit = deprecationWarning(pos, NoSymbol, msg, since)
     def uncheckedWarning(pos: Position, msg: String): Unit   = _uncheckedWarnings.warn(pos, msg)
     def featureWarning(pos: Position, msg: String): Unit     = _featureWarnings.warn(pos, msg)
     def inlinerWarning(pos: Position, msg: String): Unit     = _inlinerWarnings.warn(pos, msg)
@@ -146,22 +153,25 @@ trait Reporting extends IReporting { self: Global =>
 
     def allConditionalWarnings = _allConditionalWarnings flatMap (_.warnings)
 
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String, label: String = "deprecated"): Unit = {
-      val infractor = ""
-      policy(pos, sym, msg, since, label, infractor) match {
+    // useful for syntax deprecations? There is neither a subject symbol nor an infractor.
+    def deprecationWarning(pos: Position, msg: String, since: String): Unit = deprecationWarning(pos, NoSymbol, NoSymbol, msg, since)
+
+    // the given infractor (context owner) used the given symbol deprecatedly
+    def deprecationWarning(pos: Position, infractor: Symbol, sym: Symbol): Unit = {
+      val version = sym.deprecationVersion.getOrElse("")
+      val since   = if (version.isEmpty) version else s" (since $version)"
+      val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
+      val label   = sym.deprecationLabel.getOrElse("deprecated")
+      deprecationWarning(pos, infractor, sym, s"$sym${sym.locationString} is deprecated$since$message", version, label)
+    }
+    // issue, escalate, or silence the given deprecation
+    def deprecationWarning(pos: Position, infractor: Symbol, sym: Symbol, msg: String, since: String, label: String = "deprecated"): Unit =
+      policy(pos, infractor, sym, msg, since, label) match {
         case policy.Silent =>
         case policy.Info   => reporter.echo(pos, s"$msg (since $since)")
         case policy.Warn   => _deprecationWarnings.warn(pos, msg, since)
         case policy.Error  => reporter.error(pos, s"$msg (since $since)")
       }
-    }
-    def deprecationWarning(pos: Position, sym: Symbol): Unit = {
-      val version = sym.deprecationVersion.getOrElse("")
-      val since   = if (version.isEmpty) version else s" (since $version)"
-      val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
-      val label   = sym.deprecationLabel.getOrElse("deprecated")
-      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version, label)
-    }
 
     private[this] var reportedFeature = Set[Symbol]()
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit = {

@@ -552,7 +552,7 @@ abstract class RefChecks extends Transform {
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
             val report  = s"overriding ${other.fullLocationString} is deprecated$since$message"
-            currentRun.reporting.deprecationWarning(member.pos, other, report, version)
+            currentRun.reporting.deprecationWarning(member.pos, member, other, report, version)
           }
         }
       }
@@ -1259,7 +1259,7 @@ abstract class RefChecks extends Transform {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
-        currentRun.reporting.deprecationWarning(pos, sym)
+        currentRun.reporting.deprecationWarning(pos, currentOwner, sym)
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
@@ -1357,19 +1357,17 @@ abstract class RefChecks extends Transform {
 
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then
-      * deprecation is meaningless.
+      * deprecation is meaningless. TODO: this error is not itself a deprecation. Is it lint?
       */
     private def checkDeprecatedOvers(tree: Tree): Unit = {
       val symbol = tree.symbol
       if (symbol.isDeprecated) {
-        val concrOvers =
-          symbol.allOverriddenSymbols.filter(sym =>
-            !sym.isDeprecated && !sym.isDeferred && !sym.hasDeprecatedOverridingAnnotation && !sym.enclClass.hasDeprecatedInheritanceAnnotation)
-        if(!concrOvers.isEmpty)
-          currentRun.reporting.deprecationWarning(
-            tree.pos,
-            symbol,
-            s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", "")
+        val concrOvers = symbol.allOverriddenSymbols.filter(sym =>
+          !sym.isDeprecated && !sym.isDeferred && !sym.hasDeprecatedOverridingAnnotation && !sym.enclClass.hasDeprecatedInheritanceAnnotation
+        )
+        if (!concrOvers.isEmpty) currentRun.reporting.deprecationWarning(tree.pos, symbol, symbol,
+            s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", ""
+        )
       }
     }
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
