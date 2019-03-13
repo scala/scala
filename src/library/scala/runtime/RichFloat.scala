@@ -44,7 +44,6 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   override def abs: Float              = math.abs(self)
   override def max(that: Float): Float = math.max(self, that)
   override def min(that: Float): Float = math.min(self, that)
-  override def signum: Int             = math.signum(self).toInt  // !!! NaN
 
   def round: Int   = math.round(self)
   def ceil: Float  = math.ceil(self.toDouble).toFloat

@@ -139,6 +139,7 @@ def isValidLong: Boolean
 def longValue(): Long
 def round: Long
 def shortValue(): Short
+def signum: Double
 def to(end: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Int, step: Int): scala.collection.immutable.Range.Inclusive
 def to(end: Long): scala.collection.immutable.NumericRange.Inclusive[Long]
@@ -196,6 +197,5 @@ override def min(that: Double): Double
 override def min(that: Float): Float
 override def min(that: Int): Int
 override def min(that: Long): Long
-override def signum: Int
 private[this] val self: Double
 ================================================================================

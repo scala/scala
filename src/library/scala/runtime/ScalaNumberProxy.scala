@@ -41,7 +41,7 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   /** Returns the absolute value of `'''this'''`. */
   def abs             = num.abs(self)
   /** Returns the signum of `'''this'''`. */
-  def signum          = num.signum(self)
+  def signum: T       = num.signum(self)
 }
 trait ScalaWholeNumberProxy[T] extends Any with ScalaNumberProxy[T] {
   def isWhole = true
