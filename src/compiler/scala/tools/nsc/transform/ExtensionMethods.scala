@@ -36,9 +36,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     new Extender(unit)
 
   /** Generate stream of possible names for the extension version of given instance method `imeth`.
-   *  If the method is not overloaded, this stream consists of just "extension$imeth".
-   *  If the method is overloaded, the stream has as first element "extensionX$imeth", where X is the
-   *  index of imeth in the sequence of overloaded alternatives with the same name. This choice will
+   *  If the method is not overloaded, this stream consists of just "imeth$extension".
+   *  If the method is overloaded, the stream has as first element:
+   *    - "imeth$extension", if the index of imeth is 0,
+   *    - "imeth$extensionX", otherwise
+   *  where X is index in the sequence of overloaded alternatives with the same name. This choice will
    *  always be picked as the name of the generated extension method.
    *  After this first choice, all other possible indices in the range of 0 until the number
    *  of overloaded alternatives are returned. The secondary choices are used to find a matching method
@@ -60,7 +62,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
         assert(index >= 0, alts+" does not contain "+imeth)
-        def altName(index: Int) = newTermName(imeth.name+"$extension"+index)
+        def altName(index: Int) =
+          if (index == 0) newTermName(imeth.name+"$extension")
+          else newTermName(imeth.name+"$extension"+index)
         altName(index) #:: ((0 until alts.length).toStream filter (index != _) map altName)
       case tpe =>
         assert(tpe != NoType, imeth.name+" not found in "+imeth.owner+"'s decls: "+imeth.owner.info.decls)
