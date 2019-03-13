@@ -630,5 +630,4 @@ object List extends StrictOptimizedSeqFactory[List] {
 
   @transient
   private[collection] val partialNotApplied = new Function1[Any, Any] { def apply(x: Any): Any = this }
-
 }
