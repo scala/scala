@@ -257,6 +257,11 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
     }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      if (walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) this.asInstanceOf[Map[K, W]]
+      else new Map1(key1, walue1)
+    }
   }
 
   @SerialVersionUID(3L)
@@ -311,6 +316,13 @@ object Map extends MapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
+    }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map2(key1, walue1, key2, walue2)
     }
   }
 
@@ -372,6 +384,15 @@ object Map extends MapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
+    }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      val walue3 = f(key3, value3)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) &&
+          (walue3.asInstanceOf[AnyRef] eq value3.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map3(key1, walue1, key2, walue2, key3, walue3)
     }
   }
 
@@ -442,7 +463,17 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
-
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      val walue3 = f(key3, value3)
+      val walue4 = f(key4, value4)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) &&
+          (walue3.asInstanceOf[AnyRef] eq value3.asInstanceOf[AnyRef]) &&
+          (walue4.asInstanceOf[AnyRef] eq value4.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map4(key1, walue1, key2, walue2, key3, walue3, key4, walue4)
+    }
     private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): builder.type =
       builder.addOne(key1, value1).addOne(key2, value2).addOne(key3, value3).addOne(key4, value4)
   }
