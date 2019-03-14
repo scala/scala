@@ -2930,10 +2930,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
               fun.tpe <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
 
-              val variances = tparams map varianceInType(sam.info)
-
               // solve constraints tracked by tvars
-              val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
+              val targs = solvedTypes(tvars, tparams, varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
 
               debuglog(s"sam infer: $pt --> ${appliedType(samTyCon, targs)} by ${fun.tpe} <:< $samInfoWithTVars --> $targs for $tparams")
 

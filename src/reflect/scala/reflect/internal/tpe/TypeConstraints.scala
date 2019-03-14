@@ -17,6 +17,7 @@ package tpe
 
 import scala.collection.{ generic }
 import generic.Clearable
+import scala.collection.mutable.BitSet
 
 private[internal] trait TypeConstraints {
   self: SymbolTable =>
@@ -195,22 +196,30 @@ private[internal] trait TypeConstraints {
 
   /** Solve constraint collected in types `tvars`.
     *
-    *  @param tvars      All type variables to be instantiated.
-    *  @param tparams    The type parameters corresponding to `tvars`
-    *  @param variances  The variances of type parameters; need to reverse
+    *  @param tvars    All type variables to be instantiated.
+    *  @param tparams  The type parameters corresponding to `tvars`
+    *  @param getVariance Function to extract variances of type parameters; we need to reverse
     *                    solution direction for all contravariant variables.
-    *  @param upper      When `true` search for max solution else min.
+    *  @param upper    When `true` search for max solution else min.
     */
-  def solve(tvars: List[TypeVar], tparams: List[Symbol], variances: List[Variance], upper: Boolean, depth: Depth): Boolean = {
+  def solve(tvars: List[TypeVar], tparams: List[Symbol], getVariance: Variance.Extractor[Symbol], upper: Boolean, depth: Depth): Boolean = {
+    assert(tvars.corresponds(tparams)((tvar, tparam) => tvar.origin.typeSymbol eq tparam), (tparams, tvars.map(_.origin.typeSymbol)))
+    val areContravariant: BitSet = BitSet.empty
+    foreachWithIndex(tparams){(tparam, ix) =>
+      if (getVariance(tparam).isContravariant) areContravariant += ix
+    }
 
-    def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance) {
+    def solveOne(tvar: TypeVar, ix: Int): Unit = {
+      val tparam = tvar.origin.typeSymbol
+      val isContravariant = areContravariant(ix)
       if (tvar.constr.inst == NoType) {
-        val up = if (variance.isContravariant) !upper else upper
+        val up = if (isContravariant) !upper else upper
         tvar.constr.inst = null
         val bound: Type = if (up) tparam.info.upperBound else tparam.info.lowerBound
         //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
         var cyclic = bound contains tparam
-        foreach3(tvars, tparams, variances)((tvar2, tparam2, variance2) => {
+        foreachWithIndex(tvars){ (tvar2, jx) =>
+          val tparam2 = tvar2.origin.typeSymbol
           val ok = (tparam2 != tparam) && (
             (bound contains tparam2)
               ||  up && (tparam2.info.lowerBound =:= tparam.tpeHK)
@@ -218,9 +227,9 @@ private[internal] trait TypeConstraints {
             )
           if (ok) {
             if (tvar2.constr.inst eq null) cyclic = true
-            solveOne(tvar2, tparam2, variance2)
+            solveOne(tvar2, jx)
           }
-        })
+        }
         if (!cyclic) {
           if (up) {
             if (bound.typeSymbol != AnyClass) {
@@ -260,7 +269,7 @@ private[internal] trait TypeConstraints {
             if (depth.isAnyDepth) lub(tvar.constr.loBounds)
             else lub(tvar.constr.loBounds, depth)
           }
-          )
+        )
 
         debuglog(s"$tvar setInst $newInst")
         tvar setInst newInst
@@ -269,7 +278,7 @@ private[internal] trait TypeConstraints {
     }
 
     // println("solving "+tvars+"/"+tparams+"/"+(tparams map (_.info)))
-    foreach3(tvars, tparams, variances)(solveOne)
+    foreachWithIndex(tvars)(solveOne)
 
     def logBounds(tv: TypeVar) = log {
       val what = if (!tv.instValid) "is invalid" else s"does not conform to bounds: ${tv.constr}"
