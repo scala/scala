@@ -686,16 +686,20 @@ abstract class RefChecks extends Transform {
               val matchingArity      = matchingName filter { m =>
                 !m.isDeferred &&
                 (m.name == underlying.name) &&
-                (m.paramLists.length == abstractParamLists.length) &&
-                (m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum) &&
-                (m.tpe.typeParams.size == underlying.tpe.typeParams.size)
+                sameLength(m.paramLists, abstractParamLists) &&
+                sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
+                sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
               }
 
               matchingArity match {
                 // So far so good: only one candidate method
                 case Scope(concrete)   =>
-                  val mismatches  = abstractParamLists.flatten.map(_.tpe) zip concrete.paramLists.flatten.map(_.tpe) filterNot { case (x, y) => x =:= y }
-                  mismatches match {
+                  val aplIter = abstractParamLists .iterator.flatten
+                  val cplIter = concrete.paramLists.iterator.flatten
+                  def mismatch(apl: Symbol, cpl: Symbol): Option[(Type, Type)] =
+                    if (apl.tpe =:= cpl.tpe) None else Some(apl.tpe -> cpl.tpe)
+                  
+                  mapFilter2(aplIter, cplIter)(mismatch).take(2).toList match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
                       val abstractSym = pa.typeSymbol
@@ -724,7 +728,7 @@ abstract class RefChecks extends Transform {
                       )
 
                       undefined("\n(Note that %s does not match %s%s)".format(pa, pc, addendum))
-                    case xs =>
+                    case _ =>
                       undefined("")
                   }
                 case _ =>

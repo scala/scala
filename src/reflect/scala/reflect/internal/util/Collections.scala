@@ -16,6 +16,7 @@ package reflect.internal.util
 import scala.collection.{ mutable, immutable }
 import scala.annotation.tailrec
 import mutable.ListBuffer
+import java.util.NoSuchElementException
 
 /** Profiler driven changes.
  *  TODO - inlining doesn't work from here because of the bug that
@@ -307,6 +308,29 @@ trait Collections {
     }
     true
   }
+
+  final def mapFilter2[A, B, C](itA: Iterator[A], itB: Iterator[B])(f: (A, B) => Option[C]): Iterator[C] =
+    new Iterator[C] {
+      private[this] var head: Option[C] = None
+      private[this] def advanceHead(): Unit =
+        while (head.isEmpty && itA.hasNext && itB.hasNext) {
+          val x = itA.next
+          val y = itB.next
+          head = f(x, y)
+        }
+
+      def hasNext: Boolean = {
+        advanceHead()
+        ! head.isEmpty
+      }
+
+      def next(): C = {
+        advanceHead()
+        val res = head getOrElse (throw new NoSuchElementException("next on empty Iterator"))
+        head = None
+        res
+      }
+    }
 
   // "Opt" suffix or traverse clashes with the various traversers' traverses
   final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
