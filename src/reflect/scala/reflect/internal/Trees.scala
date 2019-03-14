@@ -15,6 +15,7 @@ package reflect
 package internal
 
 import Flags._
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
@@ -957,6 +958,7 @@ trait Trees extends api.Trees {
 
     def original: Tree = orig
     def setOriginal(tree: Tree): this.type = {
+      @tailrec
       def followOriginal(t: Tree): Tree = t match {
         case tt: TypeTree => followOriginal(tt.original)
         case t => t
@@ -1671,6 +1673,7 @@ trait Trees extends api.Trees {
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends InternalTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
+        @tailrec
         def subst(from: List[Symbol], to: List[Tree]): Tree =
           if (from.isEmpty) tree
           else if (tree.symbol == from.head) to.head.shallowDuplicate // TODO: does it ever make sense *not* to perform a shallowDuplicate on `to.head`?
@@ -1730,6 +1733,7 @@ trait Trees extends api.Trees {
     val symSubst = new SubstSymMap(from, to)
     private[this] var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
+      @tailrec
       def subst(from: List[Symbol], to: List[Symbol]): Unit = {
         if (!from.isEmpty)
           if (tree.symbol == from.head) tree setSymbol to.head

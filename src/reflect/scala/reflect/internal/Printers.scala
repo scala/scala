@@ -16,9 +16,12 @@ package scala
 package reflect
 package internal
 
-import java.io.{ OutputStream, PrintWriter, Writer }
+import java.io.{OutputStream, PrintWriter, Writer}
+
 import Flags._
 import java.lang.System.{lineSeparator => EOL}
+
+import scala.annotation.tailrec
 
 trait Printers extends api.Printers { self: SymbolTable =>
 
@@ -278,7 +281,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     protected def printCaseDef(tree: CaseDef) = {
       val CaseDef(pat, guard, body) = tree
       print("case ")
-      def patConstr(pat: Tree): Tree = pat match {
+      @tailrec def patConstr(pat: Tree): Tree = pat match {
         case Apply(fn, args) => patConstr(fn)
         case _ => pat
       }
@@ -629,6 +632,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     val defaultClasses = List(tpnme.AnyRef, tpnme.Object)
     val defaultTraitsForCase = List(tpnme.Product, tpnme.Serializable)
     protected def removeDefaultTypesFromList(trees: List[Tree])(classesToRemove: List[Name] = defaultClasses)(traitsToRemove: List[Name]) = {
+      @tailrec
       def removeDefaultTraitsFromList(trees: List[Tree], traitsToRemove: List[Name]): List[Tree] =
         trees match {
           case Nil => trees
@@ -1028,6 +1032,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(qual)
 
         case Select(qual, name) =>
+          @tailrec
           def checkRootPackage(tr: Tree): Boolean =
             (currentParent match { //check that Select is not for package def name
               case Some(_: PackageDef) => false

@@ -15,9 +15,10 @@ package reflect
 package io
 
 import scala.language.implicitConversions
+import java.io.{RandomAccessFile, File => JFile}
+import java.net.{URI, URL}
 
-import java.io.{ RandomAccessFile, File => JFile }
-import java.net.{ URI, URL }
+import scala.annotation.tailrec
 import scala.util.Random.alphanumeric
 
 /** An abstraction for filesystem paths.  The differences between
@@ -135,6 +136,7 @@ class Path private[io] (val jfile: JFile) {
   def relativize(other: Path) = {
     assert(isAbsolute == other.isAbsolute, "Paths not of same type: "+this+", "+other)
 
+    @tailrec
     def createRelativePath(baseSegs: List[String], otherSegs: List[String]) : String = {
       (baseSegs, otherSegs) match {
         case (b :: bs, o :: os) if b == o => createRelativePath(bs, os)

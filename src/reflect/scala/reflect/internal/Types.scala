@@ -545,7 +545,8 @@ trait Types
      *  !!! - and yet it is still inadequate, because aliases and singletons
      *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = {
+    @tailrec
+    final def dealiasWiden: Type = {
       val widened = widen
       if (this ne widened) widened.dealiasWiden
       else {
@@ -2003,6 +2004,7 @@ trait Types
 
     /** The ClassInfoType which belongs to the class containing given type parameter
      */
+    @tailrec
     private def classInfo(tparam: Symbol): ClassInfoType =
       tparam.owner.info.resultType match {
         case ci: ClassInfoType => ci
@@ -3057,7 +3059,8 @@ trait Types
 
   /** A creator for existential types which flattens nested existentials.
    */
-  def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
+  @tailrec
+  final def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
     if (quantified.isEmpty) underlying
     else underlying match {
       case ExistentialType(qs, restpe) => newExistentialType(quantified ::: qs, restpe)
@@ -3525,7 +3528,8 @@ trait Types
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
     private[this] var _suspended: Type = ConstantFalse
-    private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
+    @tailrec
+    private[Types] final def suspended: Boolean = (_suspended: @unchecked) match {
       case ConstantFalse => false
       case ConstantTrue  => true
       case tv: TypeVar   => tv.suspended
@@ -4057,7 +4061,8 @@ trait Types
   /** The canonical creator for typerefs
    *  todo: see how we can clean this up a bit
    */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+  @tailrec
+  final def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
     // type alias selections are rebound in TypeMap ("coevolved",
     // actually -- see #3731) e.g., when type parameters that are
     // referenced by the alias are instantiated in the prefix. See
@@ -4520,7 +4525,8 @@ trait Types
     check(tp1, tp2) && check(tp2, tp1)
   }
 
-  def normalizePlus(tp: Type): Type = {
+  @tailrec
+  final def normalizePlus(tp: Type): Type = {
     if (isRawType(tp)) rawToExistential(tp)
     else tp.normalize match {
       // Unify the representations of module classes
@@ -4569,7 +4575,8 @@ trait Types
    *  type selections with the same name of equal (as determined by `=:=`) prefixes are
    *  considered equal in regard to `=:=`.
    */
-  def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
+  @tailrec
+  final def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
     case SingleType(pre, sym)  => !(sym hasFlag PACKAGE) && isEligibleForPrefixUnification(pre)
     case tv@TypeVar(_, constr) => !tv.instValid || isEligibleForPrefixUnification(constr.inst)
     case RefinedType(_, _)     => true
@@ -4593,7 +4600,8 @@ trait Types
     case _                       => false
   }
 
-  def isExistentialType(tp: Type): Boolean = tp match {
+  @tailrec
+  final def isExistentialType(tp: Type): Boolean = tp match {
     case _: ExistentialType           => true
     case tp: Type if tp.dealias ne tp => isExistentialType(tp.dealias)
     case _                            => false
@@ -4665,6 +4673,7 @@ trait Types
    *  can be given: true == value type, false == non-value type.  Otherwise,
    *  an exception is thrown.
    */
+  @tailrec
   private def isValueElseNonValue(tp: Type): Boolean = tp match {
     case tp if isAlwaysValueType(tp)           => true
     case tp if isAlwaysNonValueType(tp)        => false
@@ -5272,7 +5281,7 @@ trait Types
   private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded
 
   /** The maximum depth of type `tp` */
-  def typeDepth(tp: Type): Depth = tp match {
+  final def typeDepth(tp: Type): Depth = tp match {
     case TypeRef(pre, sym, args)          => typeDepth(pre) max maxDepth(args).incr
     case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepth(decls.toList).incr
     case TypeBounds(lo, hi)               => typeDepth(lo) max typeDepth(hi)

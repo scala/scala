@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.{meta, migration}
+import scala.annotation.{meta, migration, tailrec}
 import scala.collection.mutable
 import Flags._
 import scala.reflect.api.{Universe => ApiUniverse}
@@ -269,7 +269,8 @@ trait Definitions extends api.StandardDefinitions {
     def isUnitType(tp: Type) = tp.typeSymbol == UnitClass && tp.annotations.isEmpty
 
     def hasMultipleNonImplicitParamLists(member: Symbol): Boolean = hasMultipleNonImplicitParamLists(member.info)
-    def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
+    @tailrec
+    final def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
       case PolyType(_, restpe)                                   => hasMultipleNonImplicitParamLists(restpe)
       case MethodType(_, MethodType(p :: _, _)) if !p.isImplicit => true
       case _                                                     => false
@@ -432,7 +433,8 @@ trait Definitions extends api.StandardDefinitions {
       case _             => false
     }
 
-    def hasRepeatedParam(tp: Type): Boolean = tp match {
+    @tailrec
+    final def hasRepeatedParam(tp: Type): Boolean = tp match {
       case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
       case PolyType(_, restpe)         => hasRepeatedParam(restpe)
       case _                           => false
@@ -792,7 +794,7 @@ trait Definitions extends api.StandardDefinitions {
       *  Implicit parameters are skipped.
       *  This method seems to be performance critical.
       */
-    def methodToExpressionTp(tp: Type): Type = tp match {
+    final def methodToExpressionTp(tp: Type): Type = tp match {
       case PolyType(_, restpe) =>
         logResult(sm"""|Normalizing PolyType in infer:
                        |  was: $restpe
@@ -845,7 +847,8 @@ trait Definitions extends api.StandardDefinitions {
      *  Type helps ensure people can't come to depend on accidental
      *  aspects of its behavior. This is all of it!
      */
-    def finalResultType(tp: Type): Type = tp match {
+    @tailrec
+    final def finalResultType(tp: Type): Type = tp match {
       case PolyType(_, restpe)       => finalResultType(restpe)
       case MethodType(_, restpe)     => finalResultType(restpe)
       case NullaryMethodType(restpe) => finalResultType(restpe)
@@ -855,7 +858,8 @@ trait Definitions extends api.StandardDefinitions {
      *  This makes it like 1000x easier to see the overall logic
      *  of the method.
      */
-    def isStable(tp: Type): Boolean = tp match {
+    @tailrec
+    final def isStable(tp: Type): Boolean = tp match {
       case _: SingletonType                             => true
       case NoPrefix                                     => true
       case TypeRef(_, NothingClass | SingletonClass, _) => true
@@ -867,7 +871,7 @@ trait Definitions extends api.StandardDefinitions {
       case _: SimpleTypeProxy                           => isStable(tp.underlying)
       case _                                            => false
     }
-    def isVolatile(tp: Type): Boolean = {
+    final def isVolatile(tp: Type): Boolean = {
       // need to be careful not to fall into an infinite recursion here
       // because volatile checking is done before all cycles are detected.
       // the case to avoid is an abstract type directly or
@@ -877,7 +881,7 @@ trait Definitions extends api.StandardDefinitions {
         def volatileUpperBound = isVolatile(tp.upperBound)
         def safeIsVolatile = (
           if (volatileRecursions < TypeConstants.LogVolatileThreshold)
-            volatileUpperBound
+            isVolatile(tp.upperBound)
           // we can return true when pendingVolatiles contains sym, because
           // a cycle will be detected afterwards and an error will result anyway.
           else pendingVolatiles(sym) || {
@@ -1302,7 +1306,8 @@ trait Definitions extends api.StandardDefinitions {
     // Language features
     lazy val languageFeatureModule      = getRequiredModule("scala.languageFeature")
 
-    def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
+    @tailrec
+    final def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
       // Trying to allow for deprecated locations
       sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
     )
@@ -1350,7 +1355,8 @@ trait Definitions extends api.StandardDefinitions {
       if (segs.isEmpty || segs.head != root.simpleName) NoSymbol
       else findNamedMember(segs.tail, root)
     }
-    def findNamedMember(segs: List[Name], root: Symbol): Symbol =
+    @tailrec
+    final def findNamedMember(segs: List[Name], root: Symbol): Symbol =
       if (segs.isEmpty) root
       else findNamedMember(segs.tail, root.info member segs.head)
 
@@ -1533,7 +1539,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // todo: reconcile with javaSignature!!!
     def signature(tp: Type): String = {
-      def erasure(tp: Type): Type = tp match {
+      @tailrec def erasure(tp: Type): Type = tp match {
         case st: SubType => erasure(st.supertype)
         case RefinedType(parents, _) => erasure(parents.head)
         case _ => tp

@@ -14,6 +14,7 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.tailrec
 import util._
 
 trait TypeDebugging {

@@ -15,6 +15,8 @@ package reflect
 package internal
 package transform
 
+import scala.annotation.tailrec
+
 trait Erasure {
 
   val global: SymbolTable
@@ -27,6 +29,7 @@ trait Erasure {
     /** Is `tp` an unbounded generic type (i.e. which could be instantiated
      *  with primitive as well as class types)?.
      */
+    @tailrec
     private def genericCore(tp: Type): Type = tp.dealiasWiden match {
       /* A Java Array<T> is erased to Array[Object] (T can only be a reference type), where as a Scala Array[T] is
        * erased to Object. However, there is only symbol for the Array class. So to make the distinction between

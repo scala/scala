@@ -17,6 +17,8 @@ package util
 
 import java.lang.System.{lineSeparator => EOL}
 
+import scala.annotation.tailrec
+
 /** This object provides utility methods to extract elements
  *  from Strings.
  *

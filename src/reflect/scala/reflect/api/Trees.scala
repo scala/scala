@@ -14,6 +14,8 @@ package scala
 package reflect
 package api
 
+import scala.annotation.tailrec
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
@@ -57,8 +59,7 @@ package api
  *  @groupprio Factories 1
  *  @groupname Copying   Tree Copying
  *  @groupprio Copying   1
- *
- *  @contentDiagram hideNodes "*Api"
+  *  @contentDiagram hideNodes "*Api"
  *  @group ReflectionAPI
  */
 trait Trees { self: Universe =>
@@ -2559,14 +2560,14 @@ trait Trees { self: Universe =>
 
     /** The enclosing method of the currently transformed tree. */
     protected def currentMethod = {
-      def enclosingMethod(sym: Symbol): Symbol =
+      @tailrec def enclosingMethod(sym: Symbol): Symbol =
         if (sym.isMethod || sym == NoSymbol) sym else enclosingMethod(sym.owner)
       enclosingMethod(currentOwner)
     }
 
     /** The enclosing class of the currently transformed tree. */
     protected def currentClass = {
-      def enclosingClass(sym: Symbol): Symbol =
+      @tailrec def enclosingClass(sym: Symbol): Symbol =
         if (sym.isClass || sym == NoSymbol) sym else enclosingClass(sym.owner)
       enclosingClass(currentOwner)
     }

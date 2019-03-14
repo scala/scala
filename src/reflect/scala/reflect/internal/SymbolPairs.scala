@@ -284,7 +284,8 @@ abstract class SymbolPairs {
 
     // Note that next is called once during object initialization to
     // populate the fields tracking the current symbol pair.
-    def next(): Unit = {
+    @tailrec
+    final def next(): Unit = {
       if (curEntry ne null) {
         lowSymbol = curEntry.sym
         advanceNextEntry()        // sets highSymbol
