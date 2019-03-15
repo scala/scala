@@ -23,7 +23,7 @@ import scala.language.higherKinds
 /** Wrappers for exposing Scala collections as Java collections and vice-versa */
 @SerialVersionUID(3L)
 // not private[convert] because `WeakHashMap` uses JMapWrapper
-private[collection] object JavaCollectionWrappers {
+private[collection] object JavaCollectionWrappers extends Serializable {
   @SerialVersionUID(3L)
   case class IteratorWrapper[A](underlying: Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] with Serializable {
     def hasNext = underlying.hasNext
