@@ -40,38 +40,38 @@ class StreamConvertersTest {
     val m2vs = m2.valueStepper
     (m2vs: DoubleStepper with EfficientSubstep).nextStep()
 
-    val m1sps = m1.seqStream
+    val m1sps = m1.asJavaSeqStream
     (m1sps: Stream[(Int, String)]).count()
-    val m1sks = m1.seqKeyStream
+    val m1sks = m1.asJavaSeqKeyStream
     (m1sks: IntStream).sum()
-    val m1svs = m1.seqValueStream
+    val m1svs = m1.asJavaSeqValueStream
     (m1svs: Stream[String]).count()
 
     // val m1pps = m1.parStream // Not available
     // val m1pks = m1.parKeyStream // Not available
     // val m1pvs = m1.parValueStream // Not available
 
-    val m2sps = m2.seqStream
+    val m2sps = m2.asJavaSeqStream
     (m2sps: Stream[(Char, Float)]).count()
-    val m2sks = m2.seqKeyStream
+    val m2sks = m2.asJavaSeqKeyStream
     (m2sks: IntStream).sum()
-    val m2svs = m2.seqValueStream
+    val m2svs = m2.asJavaSeqValueStream
     (m2svs: DoubleStream).count()
 
-    val m2pps = m2.parStream
+    val m2pps = m2.asJavaParStream
     (m2pps: Stream[(Char, Float)]).count()
-    val m2pks = m2.parKeyStream
+    val m2pks = m2.asJavaParKeyStream
     (m2pks: IntStream).sum()
-    val m2pvs = m2.parValueStream
+    val m2pvs = m2.asJavaParValueStream
     (m2pvs: DoubleStream).count()
 
-    val s1sps = s1.seqStream
+    val s1sps = s1.asJavaSeqStream
     (s1sps: Stream[String]).count()
 //    val s1pps = s1.parStream
 
-    val s2sps = s2.seqStream
+    val s2sps = s2.asJavaSeqStream
     (s2sps: IntStream).count()
-    val s2pps = s2.parStream
+    val s2pps = s2.asJavaParStream
     (s2pps: IntStream).count()
   }
 
@@ -82,11 +82,11 @@ class StreamConvertersTest {
     val ia = Array(1,2,3)
     val sa = Array("")
 
-    val ias = ia.seqStream.spliterator.stepper
+    val ias = ia.asJavaSeqStream.spliterator.asScalaStepper
     (ias: IntStepper).nextStep()
-    val iasb = ias.seqStream.boxed.spliterator.stepper
+    val iasb = ias.asJavaSeqStream.boxed.spliterator.asScalaStepper
     (iasb: Stepper[Integer]).nextStep()
-    val sas = sa.seqStream.spliterator.stepper
+    val sas = sa.asJavaSeqStream.spliterator.asScalaStepper
     (sas: Stepper[String]).nextStep()
   }
 
@@ -115,14 +115,14 @@ class StreamConvertersTest {
     import scala.jdk.CollectionConverters.Ops._
 
     for (par <- List(false, true)) {
-      def is = { val s = Vector(1).seqStream; if (par) s.parallel else s }
+      def is = { val s = Vector(1).asJavaSeqStream; if (par) s.parallel else s }
       (is: IntStream).sum()
       def isbj: Stream[Integer] = is.boxed()
       def isbs: Stream[Int] = isbj.asInstanceOf[Stream[Int]]
 
-      val isJavaUnboxed = isbj.unboxed
+      val isJavaUnboxed = isbj.asJavaPrimitiveStream
       (isJavaUnboxed: IntStream).sum
-      val isUnboxed = isbs.unboxed
+      val isUnboxed = isbs.asJavaPrimitiveStream
       (isUnboxed: IntStream).sum
       // Vector("").seqStream.unboxed // should not and does not compile, no unboxer available
 
@@ -275,66 +275,66 @@ class StreamConvertersTest {
       val sas = sa.stepper
       (sas: AnyStepper[String] with EfficientSubstep).nextStep(): String
 
-      val ilq = il.seqStream
+      val ilq = il.asJavaSeqStream
       (ilq: IntStream).sum()
       // val ilp = il.parStream // Not available
-      val ivq = iv.seqStream
+      val ivq = iv.asJavaSeqStream
       (ivq: IntStream).sum()
-      val ivr = iv.parStream
+      val ivr = iv.asJavaParStream
       (ivr: IntStream).sum()
-      val iaq = ia.seqStream
+      val iaq = ia.asJavaSeqStream
       (iaq: IntStream).sum()
-      val iar = ia.parStream
+      val iar = ia.asJavaParStream
       (iar: IntStream).sum()
 
-      val bvq = bv.seqStream
+      val bvq = bv.asJavaSeqStream
       (bvq: IntStream).sum()
-      val bvr = bv.parStream
+      val bvr = bv.asJavaParStream
       (bvr: IntStream).sum()
       // val baq = ba.seqStream // Not available - though .stepper.seqStream is (tested below)
       // val bar = ba.parStream // Same
 
-      val slq = sl.seqStream
+      val slq = sl.asJavaSeqStream
       (slq: Stream[String]).count()
       // val slr = sl.parStream // Not available
-      val svq = sv.seqStream
+      val svq = sv.asJavaSeqStream
       (svq: Stream[String]).count()
-      val svr = sv.parStream
+      val svr = sv.asJavaParStream
       (svr: Stream[String]).count()
-      val saq = sa.seqStream
+      val saq = sa.asJavaSeqStream
       (saq: Stream[String]).count()
-      val sar = sa.parStream
+      val sar = sa.asJavaParStream
       (sar: Stream[String]).count()
 
-      val ilsq = ils.seqStream
+      val ilsq = ils.asJavaSeqStream
       (ilsq: IntStream).sum()
       // val ilsr = ils.parStream // Not available
-      val ivsq = ivs.seqStream
+      val ivsq = ivs.asJavaSeqStream
       (ivsq: IntStream).sum()
-      val ivsr = ivs.parStream
+      val ivsr = ivs.asJavaParStream
       (ivsr: IntStream).sum()
-      val iasq = ias.seqStream
+      val iasq = ias.asJavaSeqStream
       (iasq: IntStream).sum()
-      val iasr = ias.parStream
+      val iasr = ias.asJavaParStream
       (iasr: IntStream).sum()
-      val bvsq = bvs.seqStream
+      val bvsq = bvs.asJavaSeqStream
       (bvsq: IntStream).sum()
-      val bvsr = bvs.parStream
+      val bvsr = bvs.asJavaParStream
       (bvsr: IntStream).sum()
-      val basq = bas.seqStream
+      val basq = bas.asJavaSeqStream
       (basq: IntStream).sum()
-      val basr = bas.parStream
+      val basr = bas.asJavaParStream
       (basr: IntStream).sum()
-      val slsq = sls.seqStream
+      val slsq = sls.asJavaSeqStream
       (slsq: Stream[String]).count()
       // val slsr = sls.parStream // Not available
-      val svsq = svs.seqStream
+      val svsq = svs.asJavaSeqStream
       (svsq: Stream[String]).count()
-      val svsr = svs.parStream
+      val svsr = svs.asJavaParStream
       (svsr: Stream[String]).count()
-      val sasq = sas.seqStream
+      val sasq = sas.asJavaSeqStream
       (sasq: Stream[String]).count()
-      val sasr = sas.parStream
+      val sasr = sas.asJavaParStream
       (sasr: Stream[String]).count()
     }
   }
@@ -396,33 +396,33 @@ class StreamConvertersTest {
 
     locally {
       import scala.jdk.CollectionConverters.Ops._
-      val rss = r.seqStream
+      val rss = r.asJavaSeqStream
       (rss: IntStream).count()
-      val rps = r.parStream
+      val rps = r.asJavaParStream
       (rps: IntStream).count()
-      val rscs = r.seqCharStream
+      val rscs = r.asJavaSeqCharStream
       (rscs: IntStream).count()
-      val rpcs = r.parCharStream
+      val rpcs = r.asJavaParCharStream
       (rpcs: IntStream).count()
-      val rsps = r.seqCodePointStream
+      val rsps = r.asJavaSeqCodePointStream
       (rsps: IntStream).count()
-      val rpps = r.parCodePointStream
+      val rpps = r.asJavaParCodePointStream
       (rpps: IntStream).count()
 
-      val isss = s3.seqStream
+      val isss = s3.asJavaSeqStream
       (isss: IntStream).count()
-      val isps = s3.parStream
+      val isps = s3.asJavaParStream
       (isps: IntStream).count()
 
-      val siss = s5.seqStream
+      val siss = s5.asJavaSeqStream
       (siss: IntStream).count()
-      val sips = s5.parStream
+      val sips = s5.asJavaParStream
       (sips: IntStream).count()
 
-      cs1.seqStream.count()
-      cs1.parStream.count()
-      ps1.seqStream.count()
-      ps1.parStream.count()
+      cs1.asJavaSeqStream.count()
+      cs1.asJavaParStream.count()
+      ps1.asJavaSeqStream.count()
+      ps1.asJavaParStream.count()
     }
   }
 
@@ -435,17 +435,17 @@ class StreamConvertersTest {
       import scala.jdk.CollectionConverters.Ops._
 
       val ias = ia.stepper
-      (ias: IntStepper with EfficientSubstep).parStream.count()
-      val iass = ia.seqStream
+      (ias: IntStepper with EfficientSubstep).asJavaParStream.count()
+      val iass = ia.asJavaSeqStream
       (iass: IntStream).count()
-      val iaps = ia.parStream
+      val iaps = ia.asJavaParStream
       (iaps: IntStream).count()
 
       val sas = sa.stepper
-      (sas: Stepper[String] with EfficientSubstep).parStream.count()
-      val sass = sa.seqStream
+      (sas: Stepper[String] with EfficientSubstep).asJavaParStream.count()
+      val sass = sa.asJavaSeqStream
       (sass: Stream[String]).count()
-      val saps = sa.parStream
+      val saps = sa.asJavaParStream
       (saps: Stream[String]).count()
     }
   }

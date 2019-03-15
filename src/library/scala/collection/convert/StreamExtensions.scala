@@ -20,11 +20,15 @@ import scala.annotation.implicitNotFound
 import scala.collection.AnyConstr
 import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
 
-trait StreamConverters {
+trait StreamExtensions {
   // collections
 
   implicit class IterableHasSeqStream[A](cc: IterableOnce[A]) {
-    def seqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for this collection. If the
+      * collection contains primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaSeqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(cc.stepper, par = false)
   }
 
@@ -34,7 +38,11 @@ trait StreamConverters {
 
   // Not `CC[X] <: IterableOnce[X]`, but `C` with an extra constraint, to support non-parametric classes like IntAccumulator
   implicit class IterableNonGenericHasParStream[A, C <: IterableOnce[_]](c: C)(implicit ev: C <:< IterableOnce[A]) {
-    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for this collection. If the
+      * collection contains primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[A, S, St],
         st: StepperShape[A, St],
         @implicitNotFound("`parStream` can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
@@ -45,10 +53,18 @@ trait StreamConverters {
   // maps
 
   implicit class MapHasSeqKeyValueStream[K, V](cc: collection.MapOps[K, V, AnyConstr, _]) {
-    def seqKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for the keys of this map. If
+      * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaSeqKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
       s.fromStepper(cc.keyStepper, par = false)
 
-    def seqValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for the values of this map. If
+      * the values are primitives, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaSeqValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
       s.fromStepper(cc.valueStepper, par = false)
   }
 
@@ -57,22 +73,33 @@ trait StreamConverters {
   private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSubstep }
 
   implicit class MapHasParKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, AnyConstr, _]](cc: CC[K, V]) {
-    def parKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for the keys of this map. If
+      * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaParKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[K, S, St],
         st: StepperShape[K, St],
         @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientKeyStepper[K, V]): S =
       s.fromStepper(cc.keyStepper, par = true)
 
-    def parValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for the values of this map. If
+      * the values are primitives, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaParValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[V, S, St],
         st: StepperShape[V, St],
         @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSubstep`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientValueStepper[K, V]): S =
       s.fromStepper(cc.valueStepper, par = true)
 
-    // The parStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
-    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    // The asJavaParStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for the `(key, value)` pairs of
+      * this map.
+      */
+    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[(K, V), S, St],
         st: StepperShape[(K, V), St],
         @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSubstep`")
@@ -83,12 +110,20 @@ trait StreamConverters {
   // steppers
 
   implicit class StepperHasSeqStream[A](stepper: Stepper[A]) {
-    def seqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for this stepper. If the
+      * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaSeqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(stepper.asInstanceOf[St], par = false)
   }
 
   implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSubstep) {
-    def parStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for this stepper. If the
+      * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
+      * [[java.util.stream.IntStream `IntStream`]]).
+      */
+    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(stepper.asInstanceOf[St], par = true)
   }
 
@@ -99,48 +134,56 @@ trait StreamConverters {
   // JDK spliterators only for double/int/long/reference.
 
   implicit class DoubleArrayHasSeqParStream(a: Array[Double]) {
-    def seqStream: DoubleStream = java.util.Arrays.stream(a)
-    def parStream: DoubleStream = seqStream.parallel
+    /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaSeqStream: DoubleStream = java.util.Arrays.stream(a)
+    /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaParStream: DoubleStream = asJavaSeqStream.parallel
   }
 
   implicit class IntArrayHasSeqParStream(a: Array[Int]) {
-    def seqStream: IntStream = java.util.Arrays.stream(a)
-    def parStream: IntStream = seqStream.parallel
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = java.util.Arrays.stream(a)
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = asJavaSeqStream.parallel
   }
 
   implicit class LongArrayHasSeqParStream(a: Array[Long]) {
-    def seqStream: LongStream = java.util.Arrays.stream(a)
-    def parStream: LongStream = seqStream.parallel
+    /** Create a sequential [[java.util.stream.LongStream Java LongStream]] for this array. */
+    def asJavaSeqStream: LongStream = java.util.Arrays.stream(a)
+    /** Create a parallel [[java.util.stream.LongStream Java LongStream]] for this array. */
+    def asJavaParStream: LongStream = asJavaSeqStream.parallel
   }
 
   implicit class AnyArrayHasSeqParStream[A <: AnyRef](a: Array[A]) {
-    def seqStream: Stream[A] = java.util.Arrays.stream(a)
-    def parStream: Stream[A] = seqStream.parallel
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for this array. */
+    def asJavaSeqStream: Stream[A] = java.util.Arrays.stream(a)
+    /** Create a parallel [[java.util.stream.Stream Java Stream]] for this array. */
+    def asJavaParStream: Stream[A] = asJavaSeqStream.parallel
   }
 
   // strings
 
   implicit class StringHasSeqParStream(s: String) {
     /**
-     * A sequential stream on the characters of a string, same as [[seqCharStream]]. See also
-     * [[seqCodePointStream]].
+     * A sequential stream on the characters of a string, same as [[asJavaSeqCharStream]]. See also
+     * [[asJavaSeqCodePointStream]].
      */
-    def seqStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ false)
+    def asJavaSeqStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ false)
     /**
-     * A parallel stream on the characters of a string, same as [[parCharStream]]. See also
-     * [[parCodePointStream]].
+     * A parallel stream on the characters of a string, same as [[asJavaParCharStream]]. See also
+     * [[asJavaParCodePointStream]].
      */
-    def parStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ true)
+    def asJavaParStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ true)
 
-    /** A sequential stream on the characters of a string. See also  [[seqCodePointStream]]. */
-    def seqCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ false)
-    /** A parallel stream on the characters of a string. See also [[parCodePointStream]]. */
-    def parCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ true)
+    /** A sequential stream on the characters of a string. See also  [[asJavaSeqCodePointStream]]. */
+    def asJavaSeqCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ false)
+    /** A parallel stream on the characters of a string. See also [[asJavaParCodePointStream]]. */
+    def asJavaParCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ true)
 
-    /** A sequential stream on the code points of a string. See also [[seqCharStream]]. */
-    def seqCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ false)
-    /** A parallel stream on the code points of a string. See also [[parCharStream]]. */
-    def parCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ true)
+    /** A sequential stream on the code points of a string. See also [[asJavaSeqCharStream]]. */
+    def asJavaSeqCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ false)
+    /** A parallel stream on the code points of a string. See also [[asJavaParCharStream]]. */
+    def asJavaParCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ true)
   }
 
   // toScala for streams
@@ -174,7 +217,10 @@ trait StreamConverters {
       else factory.fromSpecific(stream.iterator.asScala)
     }
 
-    def unboxed[S](implicit unboxer: StreamUnboxer[A, S]): S = unboxer(stream)
+    /** Convert a generic Java Stream wrapping a primitive type to a corresponding primitive
+      * Stream.
+      */
+    def asJavaPrimitiveStream[S](implicit unboxer: StreamUnboxer[A, S]): S = unboxer(stream)
   }
 
   implicit class IntStreamHasToScala(stream: IntStream) {
@@ -259,18 +305,22 @@ trait StreamConverters {
   }
 
   implicit class SpliteratorHasStepper[A](s: Spliterator[A]) {
-    def stepper: Stepper[A] = Stepper.ofSpliterator(s)
+    /** Create a Stepper for this Spliterator */
+    def asScalaStepper: Stepper[A] = Stepper.ofSpliterator(s)
   }
 
   implicit class DoubleSpliteratorHasStepper(s: Spliterator.OfDouble) {
-    def stepper: DoubleStepper = Stepper.ofSpliterator(s)
+    /** Create a Stepper for this Spliterator */
+    def asScalaStepper: DoubleStepper = Stepper.ofSpliterator(s)
   }
 
   implicit class IntSpliteratorHasStepper(s: Spliterator.OfInt) {
-    def stepper: IntStepper = Stepper.ofSpliterator(s)
+    /** Create a Stepper for this Spliterator */
+    def asScalaStepper: IntStepper = Stepper.ofSpliterator(s)
   }
 
   implicit class LongSpliteratorHasStepper(s: Spliterator.OfLong) {
-    def stepper: LongStepper = Stepper.ofSpliterator(s)
+    /** Create a Stepper for this Spliterator */
+    def asScalaStepper: LongStepper = Stepper.ofSpliterator(s)
   }
 }

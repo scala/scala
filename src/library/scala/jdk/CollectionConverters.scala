@@ -108,5 +108,5 @@ object CollectionConverters extends AsJavaConverters with AsScalaConverters {
   /** This object provides extension methods that enable converting between Scala and Java
     * collections, see [[CollectionConverters]].
     */
-  object Ops extends AsJavaExtensions with AsScalaExtensions with StreamConverters
+  object Ops extends AsJavaExtensions with AsScalaExtensions with StreamExtensions
 }
