@@ -13,11 +13,11 @@
 package scala
 package util
 
-import scala.annotation.migration
+import scala.annotation.{migration, tailrec}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.BuildFrom
-import scala.collection.immutable.{ List, LazyList }
-import scala.language.{implicitConversions, higherKinds}
+import scala.collection.immutable.{LazyList, List}
+import scala.language.{higherKinds, implicitConversions}
 
 /**
  *  @author Stephane Micheloud
@@ -113,6 +113,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       /* The interval size here is greater than Int.MaxValue,
        * so the loop will exit with a probability of at least 1/2.
        */
+      @tailrec
       def loop(): Int = {
         val n = nextInt()
         if (n >= minInclusive && n < maxExclusive) n
@@ -172,6 +173,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       /* The interval size here is greater than Long.MaxValue,
        * so the loop will exit with a probability of at least 1/2.
        */
+      @tailrec
       def loop(): Long = {
         val n = nextLong()
         if (n >= minInclusive && n < maxExclusive) n

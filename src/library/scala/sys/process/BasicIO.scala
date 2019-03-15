@@ -195,6 +195,7 @@ object BasicIO {
   def processLinesFully(processLine: String => Unit)(readLine: () => String): Unit = {
     def working = (Thread.currentThread.isInterrupted == false)
     def halting = { Thread.currentThread.interrupt(); null }
+    @tailrec
     def readFully(): Unit =
       if (working) {
         val line =

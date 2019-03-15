@@ -13,8 +13,10 @@
 package scala
 package util
 
-import java.io.{ IOException, PrintWriter }
-import java.util.jar.Attributes.{ Name => AttributeName }
+import java.io.{IOException, PrintWriter}
+import java.util.jar.Attributes.{Name => AttributeName}
+
+import scala.annotation.tailrec
 
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
@@ -208,6 +210,7 @@ private[scala] trait PropertiesTrait {
           val n = if (depth < 2 && r.isEmpty) -2 else s.substring(0, i).toInt
           (n, r)
       }
+    @tailrec
     def compareVersions(s: String, v: String, depth: Int): Int = {
       if (depth >= 3) 0
       else {

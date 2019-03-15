@@ -14,6 +14,7 @@ package scala.collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.LazyList
 
@@ -169,6 +170,7 @@ object View extends IterableFactory[View] {
       private[this] var hd: A1 = _
       private[this] var hdDefined: Boolean = false
       def hasNext = hdDefined || {
+        @tailrec
         def findNext(): Boolean =
           if (self.hasNext) {
             f(self.next()) match {
@@ -193,6 +195,7 @@ object View extends IterableFactory[View] {
         private[this] var hd: A2 = _
         private[this] var hdDefined: Boolean = false
         def hasNext = hdDefined || {
+          @tailrec
           def findNext(): Boolean =
             if (self.hasNext) {
               f(self.next()) match {

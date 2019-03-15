@@ -13,8 +13,10 @@
 package scala
 package reflect
 
-import scala.collection.mutable.{ ArraySeq, ArrayBuilder }
-import java.lang.{ Class => jClass }
+import scala.collection.mutable.{ArrayBuilder, ArraySeq}
+import java.lang.{Class => jClass}
+
+import scala.annotation.tailrec
 
 @deprecated("use scala.reflect.ClassTag instead", "2.10.0")
 trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
@@ -25,6 +27,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
   def erasure: jClass[_] = runtimeClass
 
   private def subtype(sub: jClass[_], sup: jClass[_]): Boolean = {
+    @tailrec
     def loop(left: Set[jClass[_]], seen: Set[jClass[_]]): Boolean = {
       left.nonEmpty && {
         val next = left.head
