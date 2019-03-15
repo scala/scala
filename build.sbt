@@ -207,7 +207,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
   incOptions := (incOptions in LocalProject("root")).value,
-  apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
+  apiURL := Some(url("https://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
     val base =
@@ -276,9 +276,9 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
     "/project/organization" ->
       <organization>
         <name>LAMP/EPFL</name>
-        <url>http://lamp.epfl.ch/</url>
+        <url>https://lamp.epfl.ch/</url>
       </organization>,
-    "/project/url" -> <url>http://www.scala-lang.org/</url>
+    "/project/url" -> <url>https://www.scala-lang.org/</url>
   ) ++ extra) }
 }
 
