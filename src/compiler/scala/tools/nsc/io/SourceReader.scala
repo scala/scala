@@ -17,7 +17,6 @@ import java.io.{FileInputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
-
 import scala.annotation.tailrec
 import scala.reflect.internal.Reporter
 

@@ -15,7 +15,6 @@ package scala.tools.nsc.fsc
 import scala.tools.util.SystemExit
 import java.io.{BufferedReader, PrintStream, PrintWriter}
 import java.net.{ServerSocket, SocketException, SocketTimeoutException}
-
 import scala.annotation.tailrec
 
 trait CompileOutputCommon {

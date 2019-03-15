@@ -15,9 +15,9 @@ package reflect
 package io
 
 import scala.language.implicitConversions
+
 import java.io.{RandomAccessFile, File => JFile}
 import java.net.{URI, URL}
-
 import scala.annotation.tailrec
 import scala.util.Random.alphanumeric
 

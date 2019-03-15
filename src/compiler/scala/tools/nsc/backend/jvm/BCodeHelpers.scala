@@ -19,6 +19,7 @@ import BackendReporting._
 import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
+
 import PartialFunction.cond
 import scala.annotation.tailrec
 

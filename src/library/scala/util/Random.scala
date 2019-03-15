@@ -16,8 +16,8 @@ package util
 import scala.annotation.{migration, tailrec}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.BuildFrom
-import scala.collection.immutable.{LazyList, List}
-import scala.language.{higherKinds, implicitConversions}
+import scala.collection.immutable.{ List, LazyList }
+import scala.language.{implicitConversions, higherKinds}
 
 /**
  *  @author Stephane Micheloud

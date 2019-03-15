@@ -15,15 +15,15 @@ package tools.nsc
 package ast
 
 import scala.language.implicitConversions
+
 import java.awt.{List => _, _}
 import java.awt.event._
 import java.io.{StringWriter, Writer}
-
 import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
-import java.util.concurrent.locks._
 
+import java.util.concurrent.locks._
 import scala.annotation.tailrec
 
 /**

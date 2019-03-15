@@ -41,7 +41,6 @@ import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 import scala.util.control.NonFatal
 import java.io.Closeable
-
 import scala.annotation.tailrec
 
 class Global(var currentSettings: Settings, reporter0: LegacyReporter)

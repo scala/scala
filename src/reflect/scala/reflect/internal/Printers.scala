@@ -17,10 +17,8 @@ package reflect
 package internal
 
 import java.io.{OutputStream, PrintWriter, Writer}
-
 import Flags._
 import java.lang.System.{lineSeparator => EOL}
-
 import scala.annotation.tailrec
 
 trait Printers extends api.Printers { self: SymbolTable =>

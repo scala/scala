@@ -13,9 +13,8 @@
 package scala
 package reflect
 
-import scala.collection.mutable.{ArrayBuilder, ArraySeq}
+import scala.collection.mutable.{ ArraySeq, ArrayBuilder }
 import java.lang.{Class => jClass}
-
 import scala.annotation.tailrec
 
 @deprecated("use scala.reflect.ClassTag instead", "2.10.0")

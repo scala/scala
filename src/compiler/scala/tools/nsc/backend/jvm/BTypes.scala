@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.{util => ju}
-
 import scala.annotation.tailrec
 import scala.collection.concurrent
 import scala.tools.asm

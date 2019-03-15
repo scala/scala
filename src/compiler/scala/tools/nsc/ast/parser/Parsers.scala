@@ -19,7 +19,7 @@ package ast.parser
 import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
-import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
+import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator, ListOfNil }
 import Tokens._
 import scala.annotation.tailrec
 

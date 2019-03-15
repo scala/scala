@@ -15,7 +15,6 @@ package util
 
 import java.io.{IOException, PrintWriter}
 import java.util.jar.Attributes.{Name => AttributeName}
-
 import scala.annotation.tailrec
 
 /** Loads `library.properties` from the jar. */

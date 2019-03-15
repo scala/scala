@@ -13,7 +13,7 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.annotation.tailrec
-import scala.tools.nsc.symtab.Flags.{ARTIFACT, SYNTHETIC}
+import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
 
