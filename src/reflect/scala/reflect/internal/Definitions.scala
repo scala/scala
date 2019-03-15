@@ -881,7 +881,7 @@ trait Definitions extends api.StandardDefinitions {
         def volatileUpperBound = isVolatile(tp.upperBound)
         def safeIsVolatile = (
           if (volatileRecursions < TypeConstants.LogVolatileThreshold)
-            isVolatile(tp.upperBound)
+            volatileUpperBound
           // we can return true when pendingVolatiles contains sym, because
           // a cycle will be detected afterwards and an error will result anyway.
           else pendingVolatiles(sym) || {

@@ -59,7 +59,8 @@ import scala.annotation.tailrec
  *  @groupprio Factories 1
  *  @groupname Copying   Tree Copying
  *  @groupprio Copying   1
-  *  @contentDiagram hideNodes "*Api"
+ *
+ *  @contentDiagram hideNodes "*Api"
  *  @group ReflectionAPI
  */
 trait Trees { self: Universe =>
