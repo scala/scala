@@ -39,7 +39,6 @@ trait Contexts { self: Analyzer =>
     enclMethod = this
 
     override val depth = 0
-    override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
     override def imports: List[ImportInfo] = Nil
@@ -463,7 +462,8 @@ trait Contexts { self: Analyzer =>
     var savedTypeBounds: List[(Symbol, Type)] = List()
 
     /** The next enclosing context (potentially `this`) that is owned by a class or method */
-    def enclClassOrMethod: Context =
+    @tailrec
+    final def enclClassOrMethod: Context =
       if (!owner.exists || owner.isClass || owner.isMethod) this
       else outer.enclClassOrMethod
 
@@ -810,8 +810,9 @@ trait Contexts { self: Analyzer =>
       scopingCtx.outer
     }
 
-    def nextEnclosing(p: Context => Boolean): Context =
-      if (p(this)) this else outer.nextEnclosing(p)
+    @tailrec
+    final def nextEnclosing(p: Context => Boolean): Context =
+      if (this eq NoContext) this else if (p(this)) this else outer.nextEnclosing(p)
 
     final def outermostContextAtCurrentPos: Context = {
       var pos = tree.pos
@@ -1016,7 +1017,8 @@ trait Contexts { self: Analyzer =>
     private var implicitsCache: List[ImplicitInfo] = null
     private var implicitsRunId = NoRunId
 
-    def resetCache(): Unit = {
+    @tailrec
+    final def resetCache(): Unit = {
       implicitsRunId = NoRunId
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache()
@@ -1772,6 +1774,7 @@ trait Contexts { self: Analyzer =>
     def allImportedSymbols: Iterable[Symbol] =
       importableMembers(qual.tpe) flatMap (transformImport(tree.selectors, _))
 
+    @tailrec
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case Nil => Nil
       case sel :: Nil if sel.isWildcard => List(sym)

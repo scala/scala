@@ -15,6 +15,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /**
@@ -133,7 +134,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   class Extender(unit: CompilationUnit) extends TypingTransformer(unit) {
     private val extensionDefs = mutable.Map[Symbol, mutable.ListBuffer[Tree]]()
 
-    def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
+    @tailrec
+    final def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
       if (seen contains clazz)
         reporter.error(pos, "value class may not unbox to itself")
       else {

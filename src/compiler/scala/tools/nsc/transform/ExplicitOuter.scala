@@ -16,6 +16,7 @@ package transform
 
 import symtab._
 import Flags.{CASE => _, _}
+import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 
 /** This class ...
@@ -268,7 +269,8 @@ abstract class ExplicitOuter extends InfoTransform
      *  which refers to the outer instance of class to of
      *  value base. The result is typed but not positioned.
      */
-    protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
+    @tailrec
+    protected final def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       if (from == to) base
       else {

@@ -23,6 +23,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.collection.mutable
 import PickleFormat._
 import Flags._
+import scala.annotation.tailrec
 
 /**
  * Serialize a top-level module and/or class.
@@ -125,6 +126,7 @@ abstract class Pickler extends SubComponent {
      *  anyway? This is the case if symbol is a refinement class,
      *  an existentially bound variable, or a higher-order type parameter.
      */
+    @tailrec
     private def isLocalToPickle(sym: Symbol): Boolean = (sym != NoSymbol) && !sym.isPackageClass && (
          isRootSym(sym)
       || sym.isRefinementClass

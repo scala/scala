@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.tools.asm
 import scala.tools.asm.tree.MethodInsnNode
@@ -226,6 +226,7 @@ abstract class BCodeIdiomatic {
      *
      * can-multi-thread
      */
+    @tailrec
     final def emitT2T(from: BType, to: BType): Unit = {
 
       assert(

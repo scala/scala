@@ -42,6 +42,8 @@ import scala.tools.nsc.profile.Profiler
 import scala.util.control.NonFatal
 import java.io.Closeable
 
+import scala.annotation.tailrec
+
 class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     extends SymbolTable
     with Closeable
@@ -1381,7 +1383,8 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
     //       Here we work around that wrinkle by claiming that a pre-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
-    def compiles(sym: Symbol): Boolean =
+    @tailrec
+    final def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
       else if (!sym.isTopLevel) compiles(sym.originalEnclosingTopLevelClassOrDummy)
@@ -1637,6 +1640,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     /** Reset package class to state at typer (not sure what this is needed for?)
      */
+    @tailrec
     private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase(firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))

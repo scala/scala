@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.tailrec
 import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
@@ -406,9 +407,10 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
       // must do this before removing guards from cases and collapsing (scala/bug#6011, scala/bug#6048)
       def unreachableCase(cases: List[CaseDef]): Option[CaseDef] = {
+        @tailrec
         def loop(cases: List[CaseDef]): Option[CaseDef] = cases match {
           case head :: next :: _ if isDefault(head)                                    => Some(next) // subsumed by the next case, but faster
-          case head :: rest if !isGuardedCase(head) || head.guard.tpe =:= ConstantTrue => rest find caseImplies(head) orElse loop(rest)
+          case head :: rest if !isGuardedCase(head) || head.guard.tpe =:= ConstantTrue => rest find caseImplies(head) match { case s @ Some(_) => s case None => loop(rest) }
           case head :: _ if head.guard.tpe =:= ConstantFalse                           => Some(head)
           case _ :: rest                                                               => loop(rest)
           case _                                                                       => None

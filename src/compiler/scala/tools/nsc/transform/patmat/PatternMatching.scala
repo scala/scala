@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.Global
 import scala.tools.nsc.ast
@@ -252,6 +253,7 @@ trait Interface extends ast.TreeDSL {
 
 
           override def transform(tree: Tree): Tree = {
+            @tailrec
             def subst(from: List[Symbol], to: List[Tree]): Tree =
               if (from.isEmpty) tree
               else if (tree.symbol == from.head) typedIfOrigTyped(typedStable(to.head).setPos(tree.pos), tree.tpe)

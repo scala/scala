@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package ast
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import scala.reflect.internal.util.FreshNameCreator
@@ -265,6 +266,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   // used to create the lifted method that holds a function's body
   def mkLiftedFunctionBodyMethod(localTyper: global.analyzer.Typer)(owner: global.Symbol, fun: global.Function) = {
+    @tailrec
     def nonLocalEnclosingMember(sym: Symbol): Symbol = {
       if (sym.isLocalDummy) sym.enclClass.primaryConstructor
       else if (sym.isLocalToBlock) nonLocalEnclosingMember(sym.originalOwner)

@@ -15,15 +15,16 @@ package tools.nsc
 package ast
 
 import scala.language.implicitConversions
-
 import java.awt.{List => _, _}
 import java.awt.event._
 import java.io.{StringWriter, Writer}
+
 import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
-
 import java.util.concurrent.locks._
+
+import scala.annotation.tailrec
 
 /**
  * Tree browsers can show the AST in a graphical and interactive
@@ -683,6 +684,7 @@ object TreeBrowsers {
     def format(width: Int, writer: Writer): Unit = {
       type FmtState = (Int, Boolean, Document)
 
+      @tailrec
       def fits(w: Int, state: List[FmtState]): Boolean = state match {
         case _ if w < 0 =>
           false
@@ -713,6 +715,7 @@ object TreeBrowsers {
         if (rem == 1)     { writer write " " }
       }
 
+      @tailrec
       def fmt(k: Int, state: List[FmtState]): Unit = state match {
         case List() => ()
         case (_, _, DocNil) :: z =>

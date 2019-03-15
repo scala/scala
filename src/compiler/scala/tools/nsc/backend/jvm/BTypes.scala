@@ -14,6 +14,8 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.{util => ju}
+
+import scala.annotation.tailrec
 import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -892,6 +894,7 @@ abstract class BTypes {
       case _ => 1
     }
 
+    @tailrec
     def elementType: BType = componentType match {
       case a: ArrayBType => a.elementType
       case t => t

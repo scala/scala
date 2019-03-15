@@ -16,6 +16,8 @@ import scala.tools.util.SystemExit
 import java.io.{BufferedReader, PrintStream, PrintWriter}
 import java.net.{ServerSocket, SocketException, SocketTimeoutException}
 
+import scala.annotation.tailrec
+
 trait CompileOutputCommon {
   def verbose: Boolean
 
@@ -87,6 +89,7 @@ abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
   def run(): Unit = {
     info("Starting SocketServer run() loop.")
 
+    @tailrec
     def loop(): Unit = {
       acceptBox.either match {
         case Right(clientSocket) =>

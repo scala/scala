@@ -19,8 +19,8 @@ import BackendReporting._
 import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
-
 import PartialFunction.cond
+import scala.annotation.tailrec
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -131,7 +131,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     }
   }
 
-  def nextEnclosingClass(sym: Symbol): Symbol =
+  @tailrec
+  final def nextEnclosingClass(sym: Symbol): Symbol =
     if (sym.isClass) sym
     else nextEnclosingClass(nextEnclosing(sym))
 
@@ -173,6 +174,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       exitingPickler(enclCls.isDerivedValueClass) && method.owner != enclCls
     }
 
+    @tailrec
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
       else if (sym.isMethod && !sym.isGetter) {
@@ -226,7 +228,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    *   object T { def f { object U } }
    * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
    */
-  def isOriginallyStaticOwner(sym: Symbol): Boolean =
+  @tailrec
+  final def isOriginallyStaticOwner(sym: Symbol): Boolean =
     sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
 
   /**
