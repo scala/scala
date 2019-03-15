@@ -17,7 +17,7 @@ class JSetWrapperTest {
     val jSet: ju.Set[Int] = new ju.HashSet(ju.Arrays.asList(1, 2, 3))
     val sSet: Set[Int] = jSet.asScala
 
-    assertTrue(sSet.isInstanceOf[Wrappers.JSetWrapper[_]])
+    assertTrue(sSet.isInstanceOf[JavaCollectionWrappers.JSetWrapper[_]])
     assertTrue(sSet.iterator.sameElements(Set(1, 2, 3)))
   }
 

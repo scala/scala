@@ -15,6 +15,7 @@ package scala.collection.convert
 import java.util.Spliterator
 import java.util.stream._
 
+import scala.jdk.CollectionConverters.Ops._
 import scala.annotation.implicitNotFound
 import scala.collection.AnyConstr
 import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
@@ -170,7 +171,7 @@ trait StreamConverters {
       else if (info.companion == LongAccumulator) stream.asInstanceOf[Stream[Long]].collect(LongAccumulator.supplier, LongAccumulator.boxedAdder, LongAccumulator.merger).asInstanceOf[C1]
       else if (info.companion == DoubleAccumulator) stream.asInstanceOf[Stream[Double]].collect(DoubleAccumulator.supplier, DoubleAccumulator.boxedAdder, DoubleAccumulator.merger).asInstanceOf[C1]
       else if (stream.isParallel) anyAcc.to(factory)
-      else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator))
+      else factory.fromSpecific(stream.iterator.asScala)
     }
 
     def unboxed[S](implicit unboxer: StreamUnboxer[A, S]): S = unboxer(stream)
@@ -199,7 +200,7 @@ trait StreamConverters {
       if (info.companion == AnyAccumulator) stream.collect(AnyAccumulator.supplier[Int], AnyAccumulator.unboxedIntAdder, AnyAccumulator.merger[Int]).asInstanceOf[C1]
       else if (info.companion == IntAccumulator) intAcc.asInstanceOf[C1]
       else if (stream.isParallel) intAcc.to(factory)
-      else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator.asInstanceOf[java.util.Iterator[Int]]))
+      else factory.fromSpecific(stream.iterator.asInstanceOf[java.util.Iterator[Int]].asScala)
     }
   }
 
@@ -226,7 +227,7 @@ trait StreamConverters {
       if (info.companion == AnyAccumulator) stream.collect(AnyAccumulator.supplier[Long], AnyAccumulator.unboxedLongAdder, AnyAccumulator.merger[Long]).asInstanceOf[C1]
       else if (info.companion == LongAccumulator) intAcc.asInstanceOf[C1]
       else if (stream.isParallel) intAcc.to(factory)
-      else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator.asInstanceOf[java.util.Iterator[Long]]))
+      else factory.fromSpecific(stream.iterator.asInstanceOf[java.util.Iterator[Long]].asScala)
     }
   }
 
@@ -253,7 +254,7 @@ trait StreamConverters {
       if (info.companion == AnyAccumulator) stream.collect(AnyAccumulator.supplier[Double], AnyAccumulator.unboxedDoubleAdder, AnyAccumulator.merger[Double]).asInstanceOf[C1]
       else if (info.companion == DoubleAccumulator) intAcc.asInstanceOf[C1]
       else if (stream.isParallel) intAcc.to(factory)
-      else factory.fromSpecific(collection.JavaConverters.asScalaIterator(stream.iterator.asInstanceOf[java.util.Iterator[Double]]))
+      else factory.fromSpecific(stream.iterator.asInstanceOf[java.util.Iterator[Double]].asScala)
     }
   }
 

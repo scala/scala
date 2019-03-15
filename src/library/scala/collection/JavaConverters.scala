@@ -73,4 +73,5 @@ import convert._
  *
  *  @since  2.8.1
  */
-object JavaConverters extends DecorateAsJava with DecorateAsScala with StreamConverters
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
+object JavaConverters extends AsJavaConverters with AsJavaExtensions with AsScalaConverters with AsScalaExtensions

@@ -14,10 +14,11 @@ package scala
 package collection
 package convert
 
-import java.{ lang => jl, util => ju }, java.util.{ concurrent => juc }
-import scala.language.implicitConversions
+import java.util.{concurrent => juc}
+import java.{lang => jl, util => ju}
 
-import JavaConverters._
+import scala.jdk.CollectionConverters._
+import scala.language.implicitConversions
 
 /** Defines implicit converter methods from Java to Scala collections. */
 trait ToScalaImplicits {

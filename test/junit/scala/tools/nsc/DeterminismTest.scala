@@ -8,7 +8,7 @@ import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 import javax.tools.ToolProvider
 import org.junit.Test
 
-import scala.collection.JavaConverters.{asScalaIteratorConverter, seqAsJavaListConverter}
+import scala.jdk.CollectionConverters.Ops._
 import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}

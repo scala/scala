@@ -28,7 +28,7 @@ import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters
 import scala.reflect.internal.Chars.isIdentifierStart
 
 /**
@@ -168,18 +168,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
-  val unitOfFile = mapAsScalaMapConverter(new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
-    override def put(key: AbstractFile, value: RichCompilationUnit) = {
-      val r = super.put(key, value)
-      if (r == null) debugLog("added unit for "+key)
-      r
+  val unitOfFile: mutable.Map[AbstractFile, RichCompilationUnit] = {
+    val m = new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
+      override def put(key: AbstractFile, value: RichCompilationUnit) = {
+        val r = super.put(key, value)
+        if (r == null) debugLog("added unit for "+key)
+        r
+      }
+      override def remove(key: Any) = {
+        val r = super.remove(key)
+        if (r != null) debugLog("removed unit for "+key)
+        r
+      }
     }
-    override def remove(key: Any) = {
-      val r = super.remove(key)
-      if (r != null) debugLog("removed unit for "+key)
-      r
-    }
-  }).asScala
+    CollectionConverters.asScala(m)
+  }
 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.

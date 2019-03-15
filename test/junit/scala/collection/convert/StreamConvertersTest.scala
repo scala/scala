@@ -23,7 +23,7 @@ import org.junit.runners.JUnit4
 class StreamConvertersTest {
   @Test
   def keyValueSteppers(): Unit = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters.Ops._
 
     val m1 = Map(1 -> "a")
     val m2 = collection.mutable.LinkedHashMap('c' -> 35f)
@@ -77,7 +77,7 @@ class StreamConvertersTest {
 
   @Test
   def spliteratorHasStepper(): Unit = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters.Ops._
 
     val ia = Array(1,2,3)
     val sa = Array("")
@@ -112,7 +112,7 @@ class StreamConvertersTest {
 
   @Test
   def convertStreamToScala(): Unit = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters.Ops._
 
     for (par <- List(false, true)) {
       def is = { val s = Vector(1).seqStream; if (par) s.parallel else s }
@@ -257,7 +257,7 @@ class StreamConvertersTest {
     }
 
     locally {
-      import collection.JavaConverters._
+      import scala.jdk.CollectionConverters.Ops._
       val ils = il.stepper
       (ils: IntStepper /*with EfficientSubstep*/).nextStep(): Int
       val ivs = iv.stepper
@@ -395,7 +395,7 @@ class StreamConvertersTest {
     def ps1: IntStepper with EfficientSubstep = r.codePointStepper
 
     locally {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters.Ops._
       val rss = r.seqStream
       (rss: IntStream).count()
       val rps = r.parStream
@@ -432,7 +432,7 @@ class StreamConvertersTest {
     val sa = Accumulator("a", "b", "c")
 
     locally {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters.Ops._
 
       val ias = ia.stepper
       (ias: IntStepper with EfficientSubstep).parStream.count()

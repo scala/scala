@@ -14,7 +14,7 @@ package scala
 package collection
 package mutable
 
-import convert.Wrappers._
+import scala.collection.convert.JavaCollectionWrappers.{JMapWrapper, JMapWrapperLike}
 
 /** A hash map with references to entries which are weakly reachable. Entries are
  *  removed from this map when the key is no longer (strongly) referenced. This class wraps

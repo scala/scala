@@ -16,7 +16,7 @@ object WrapperProperties extends Properties("Wrappers") {
     val actual: collection.Set[Int] = {
       val jset = new java.util.HashSet[Int]()
       hs.foreach(jset.add)
-      Wrappers.JSetWrapper(jset)
+      JavaCollectionWrappers.JSetWrapper(jset)
     }.filterInPlace(p)
     actual ?= expected
   }
