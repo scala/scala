@@ -224,9 +224,10 @@ trait TypeDiagnostics {
         val params    = req.typeConstructor.typeParams
 
         if (foundArgs.nonEmpty && foundArgs.length == reqArgs.length) {
-          val relationships = (foundArgs, reqArgs, params).zipped map {
-            case (arg, reqArg, param) =>
-              def mkMsg(isSubtype: Boolean) = {
+          val messages = {
+            val messagesBuf: ListBuffer[String] = ListBuffer.empty
+            foreach3(foundArgs, reqArgs, params){ (arg, reqArg, param) =>
+              def mkMsg(isSubtype: Boolean): Unit = {
                 val op      = if (isSubtype) "<:" else ">:"
                 val suggest = if (isSubtype) "+" else "-"
                 val reqsym  = req.typeSymbol
@@ -257,7 +258,7 @@ trait TypeDiagnostics {
                     "define %s as %s%s instead. (SLS 4.5)".format(param.name, suggest, param.name)
                 )
 
-                Some("Note: " + explainFound + explainDef + suggestChange)
+                messagesBuf += ("Note: " + explainFound + explainDef + suggestChange)
               }
               // In these cases the arg is OK and needs no explanation.
               val conforms = (
@@ -267,12 +268,13 @@ trait TypeDiagnostics {
               )
               val invariant = param.variance.isInvariant
 
-              if (conforms)                             Some("")
+              if (conforms)                             messagesBuf += ""
               else if ((arg <:< reqArg) && invariant)   mkMsg(isSubtype = true)   // covariant relationship
               else if ((reqArg <:< arg) && invariant)   mkMsg(isSubtype = false)  // contravariant relationship
-              else None // we assume in other cases our ham-fisted advice will merely serve to confuse
+              else () // we assume in other cases our ham-fisted advice will merely serve to confuse
+            }
+            messagesBuf.toList
           }
-          val messages = relationships.flatten
           // the condition verifies no type argument came back None
           if (messages.size == foundArgs.size)
             return messages filterNot (_ == "") mkString ("\n", "\n", "")
