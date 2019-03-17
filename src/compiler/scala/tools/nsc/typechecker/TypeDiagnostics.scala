@@ -217,13 +217,13 @@ trait TypeDiagnostics {
    *  TODO: handle type aliases better.
    */
   def explainVariance(found: Type, req: Type): String = {
-    found.baseTypeSeq.toList foreach { tp =>
+    val reqArgs   = req.typeArgs
+    val params    = req.typeConstructor.typeParams
+    found.baseTypeSeq.toIterator foreach { tp =>
       if (tp.typeSymbol isSubClass req.typeSymbol) {
         val foundArgs = tp.typeArgs
-        val reqArgs   = req.typeArgs
-        val params    = req.typeConstructor.typeParams
-
         if (foundArgs.nonEmpty && foundArgs.length == reqArgs.length) {
+          var mustBreak: Boolean = false
           val messages = {
             val messagesBuf: ListBuffer[String] = ListBuffer.empty
             foreach3(foundArgs, reqArgs, params){ (arg, reqArg, param) =>
@@ -268,16 +268,16 @@ trait TypeDiagnostics {
               )
               val invariant = param.variance.isInvariant
 
-              if (conforms)                             messagesBuf += ""
+              if (conforms)                            ()
               else if ((arg <:< reqArg) && invariant)   mkMsg(isSubtype = true)   // covariant relationship
               else if ((reqArg <:< arg) && invariant)   mkMsg(isSubtype = false)  // contravariant relationship
-              else () // we assume in other cases our ham-fisted advice will merely serve to confuse
+              else mustBreak = true // we assume in other cases our ham-fisted advice will merely serve to confuse
             }
             messagesBuf.toList
           }
           // the condition verifies no type argument came back None
-          if (messages.size == foundArgs.size)
-            return messages filterNot (_ == "") mkString ("\n", "\n", "")
+          if (! mustBreak)
+            return messages mkString ("\n", "\n", "")
         }
       }
     }
