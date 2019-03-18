@@ -19,7 +19,7 @@ import java.{lang => jl, util => ju}
 
 import scala.language.implicitConversions
 
-/** Defines `asJava` extension methods for [[scala.jdk.CollectionConverters]]. */
+/** Defines `asJava` extension methods, available through [[scala.jdk.CollectionConverters.Ops]]. */
 trait AsJavaExtensions {
   import scala.jdk.{CollectionConverters => conv}
 

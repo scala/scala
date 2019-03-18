@@ -20,6 +20,9 @@ import scala.annotation.implicitNotFound
 import scala.collection.AnyConstr
 import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
 
+/** Defines extension methods to create Java Streams for Scala collections, available through
+  * [[scala.jdk.StreamConverters.Ops]].
+  */
 trait StreamExtensions {
   // collections
 

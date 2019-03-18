@@ -17,9 +17,8 @@ import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
 /** This object contains methods that enable converting between Scala `Option` and Java `Optional`
   * types.
   *
-  * The [[OptionConverters.Ops]] object contains extension methods that are recommended to be used
-  * when writing Scala code. The explicit conversion methods in [[OptionConverters]] are practical
-  * when writing Java code.
+  * The explicit conversion methods defined here are practical when writing Java code. For Scala
+  * code, it is recommended to use the extension methods defined in [[OptionConverters.Ops]].
   *
   * Scala `Option` is extended with a `toJava` method that creates a corresponding `Optional`, and
   * a `toJavaPrimitive` method that creates a specialized variant (e.g., `OptionalInt`) if
@@ -45,6 +44,10 @@ import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
   * }}}
   */
 object OptionConverters {
+
+  /** This object provides extension methods that enable converting between Scala `Option` and Java
+    * `Optional` types, see [[OptionConverters]].
+    */
   object Ops {
     /** Provides conversions from Java `Optional` to Scala `Option` and specialized `Optional` types */
     implicit class RichOptional[A](val o: java.util.Optional[A]) extends AnyVal {

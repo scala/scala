@@ -16,10 +16,11 @@ import scala.collection.convert._
 
 /** This object contains methods that enable converting between Scala and Java collections.
   *
-  * TODO: mention streams
+  * Note: to create [[java.util.stream.Stream Java Streams]] that operate on Scala collections
+  * (sequentially or in parallel), use [[StreamConverters]].
   *
-  * The [[CollectionConverters.Ops]] object contains extension methods that correspond 1:1 to the
-  * explicit conversion methods defined in this object.
+  * The explicit conversion methods defined here are practical when writing Java code. For Scala
+  * code, it is recommended to use the extension methods defined in [[CollectionConverters.Ops]].
   *
   * {{{
   *   // Scala code
@@ -108,5 +109,5 @@ object CollectionConverters extends AsJavaConverters with AsScalaConverters {
   /** This object provides extension methods that enable converting between Scala and Java
     * collections, see [[CollectionConverters]].
     */
-  object Ops extends AsJavaExtensions with AsScalaExtensions with StreamExtensions
+  object Ops extends AsJavaExtensions with AsScalaExtensions
 }
