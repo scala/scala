@@ -1,5 +1,3 @@
-// scalac: -Yclass-tag-invoke-dynamic
-//
 import reflect.ClassTag
 
 object Test {
