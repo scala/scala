@@ -155,8 +155,6 @@ trait Types
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
     override def typeParams = underlying.typeParams
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = underlying.boundSyms
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
     override def widen = underlying.widen
@@ -480,11 +478,6 @@ trait Types
     /** For a (potentially wrapped) poly type, its type parameters,
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
-
-    /** For a (potentially wrapped) poly, method or existential type, its directly bound symbols,
-     *  the empty set for all other types */
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    def boundSyms: immutable.Set[Symbol] = emptySymbolSet
 
     /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
      *
@@ -1096,7 +1089,6 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def boundSyms: Set[Symbol] = emptySymbolSet
  }
 
   /** A base class for types that represent a single value
@@ -1115,8 +1107,6 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms: Set[Symbol] = emptySymbolSet
   }
 
   /** An object representing an erroneous type */
@@ -2891,9 +2881,6 @@ trait Types
 
     override def paramTypes = mapList(params)(symTpe) // OPT use mapList rather than .map
 
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = resultType.boundSyms ++ params
-
     override def resultType(actuals: List[Type]) =
       if (isTrivial || phase.erasedTypes) resultType
       else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
@@ -2962,8 +2949,6 @@ trait Types
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = resultType.boundSyms
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
     override def mapOver(map: TypeMap): Type = {
@@ -3002,8 +2987,6 @@ trait Types
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = immutable.Set[Symbol](typeParams ++ resultType.boundSyms: _*)
     override def prefix: Type = resultType.prefix
     override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
@@ -3074,8 +3057,6 @@ trait Types
     override def lowerBound = maybeRewrap(underlying.lowerBound)
     override def upperBound = maybeRewrap(underlying.upperBound)
     override def parents = underlying.parents map maybeRewrap
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = quantified.toSet
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def params = underlying.params mapConserve { param =>
