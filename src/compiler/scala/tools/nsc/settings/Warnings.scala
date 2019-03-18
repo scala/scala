@@ -22,6 +22,54 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
+  /**
+   * -W "Warning" settings
+   */
+  val warningConfigs  = MultiStringSetting(name="-Wconfig", arg="configs", descr="Configure the severity of using @restricted API.", helpText=Some(
+    """Configure the severity of @restricted API usages, using warning config expressions.
+      |A warning config expression may be <label>, <label>:<severity>, or <label>:<prefix>:<severity>
+      |
+      |<label> is a String passed into @restricted.
+      |<severity> must be one of "error", "warning", "info", or "none": default: warning.
+      |<prefix> denotes the prefix of the restricted API. For example, "foo.*" will denote
+      |that this config would apply only to calls under foo package/object.
+      |Note: "*" is simply ignored.
+      |
+      |The following configuration would escalate apiMayChange restriction to an error:
+      |    -Wconfig apiMayChange:foo.*:error
+      |
+    """.stripMargin
+  ))
+  def restrictionSeverity(label: String, symFullName: String, defaultSeverity: String): String =
+    if (wconfigs.isEmpty) defaultSeverity
+    else
+      wconfigs.find(_.isHit(label, symFullName)) match {
+        case Some(x) => x.severity
+        case _       => defaultSeverity
+      }
+  private[scala] final class WarningConfig(val label: String, val prefix0: String, val severity: String) {
+    val prefix = prefix0.replaceAllLiterally("*", "")
+    def isHit(lbl: String, symFullName: String): Boolean =
+      (lbl == this.label) && (prefix.isEmpty || symFullName.startsWith(prefix))
+    severity match {
+      case "error" | "warning" | "info" | "none" => ()
+      case _ => throw new IllegalArgumentException(s"invalid severity '$severity' in warning config")
+    }
+  }
+  private[scala] lazy val wconfigs: List[WarningConfig] = {
+    def parse(str: String): WarningConfig = {
+      str.split(":").toList match {
+        case List(l)       => new WarningConfig(l, "", "warning")
+        case List(l, s)    => new WarningConfig(l, "", s)
+        case List(l, p, s) => new WarningConfig(l, p, s)
+        case _             => throw new IllegalArgumentException(s"invalid warning config: $str")
+      }
+    }
+    warningConfigs.value map { str =>
+      parse(str)
+    }
+  }
+
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
     name    = "-Ywarn-macros",

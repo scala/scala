@@ -418,6 +418,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DeprecatedInheritanceAttr
     definitions.DeprecatedOverridingAttr
     definitions.DeprecatedErrorAttr
+    definitions.RestrictedAttr
     definitions.NativeAttr
     definitions.ScalaInlineClass
     definitions.ScalaNoInlineClass

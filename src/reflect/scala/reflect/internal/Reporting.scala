@@ -91,7 +91,36 @@ abstract class Reporter {
   def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
   def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
 
+  private[scala] def handleRestriction(pos: Position, symbolFullNameStr: String, symbolStr: String,
+      msg: String, since: String, label: String, severity: String): Unit =
+    handleRestriction(pos, symbolFullNameStr, symbolStr, msg, since, label,
+      severity.toLowerCase match {
+        case "info"    => INFO
+        case "warning" => WARNING
+        case "error"   => ERROR
+        case _         => NO_SEVERITY
+      })
+
+  def handleRestriction(pos: Position, symbolFullNameStr: String, symbolStr: String,
+      msg: String, since: String, label: String, severity: Severity): Unit = {
+    val sinceX = if (since.isEmpty) "" else s" (since $since)"
+    val msgX = if (msg.isEmpty) "" else s": $msg"
+    def message(what: String) = s"$symbolStr is $what$sinceX$msgX"
+    val svr = customSeverity(pos, symbolFullNameStr, msg, since, label, severity)
+    svr match {
+      case INFO    => echo(pos, message("restricted"))
+      case WARNING => warning(pos, message("restricted"))
+      case ERROR   => error(pos, message("unsupported"))
+      case _ => ()
+    }
+  }
+
+  /** override this to customize the severity */
+  def customSeverity(pos: Position, symbolFullNameStr: String, msg: String,
+    since: String, label: String, severity: Severity): Severity = severity
+
   class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
+  object NO_SEVERITY extends Severity(-1)("NO_SEVERITY")
   object INFO    extends Severity(0)("INFO")
   object WARNING extends Severity(1)("WARNING")
   object ERROR   extends Severity(2)("ERROR")

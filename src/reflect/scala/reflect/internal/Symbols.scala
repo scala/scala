@@ -908,7 +908,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isStrictFP: Boolean    = !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
     def isDeprecated           = hasAnnotation(DeprecatedAttr)
-    def isDeprecatedError      = hasAnnotation(DeprecatedErrorAttr)
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (ann => ann.symbolArg(0).orElse(ann.stringArg(0).map(newTermName)).orElse(Some(nme.NO_NAME)))
@@ -925,6 +924,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
                                = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 0)
     def deprecatedOverridingVersion
                                = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
+    def isRestricted           = hasAnnotation(RestrictedAttr)
+    def restrictionMessage     = getAnnotation(RestrictedAttr) flatMap (_ stringArg 0)
+    def restrictionVersion     = getAnnotation(RestrictedAttr) flatMap (_ stringArg 1)
+    def restrictionLabel       = getAnnotation(RestrictedAttr) flatMap (_ stringArg 2)
+    def restrictionDefaultSeverity
+                               = getAnnotation(RestrictedAttr) flatMap (_ stringArg 3)
+    def isDeprecatedError      = hasAnnotation(DeprecatedErrorAttr)
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as

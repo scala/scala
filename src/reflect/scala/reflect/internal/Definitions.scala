@@ -1267,7 +1267,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val DeprecatedNameAttr         = requiredClass[scala.deprecatedName]
     lazy val DeprecatedInheritanceAttr  = requiredClass[scala.deprecatedInheritance]
     lazy val DeprecatedOverridingAttr   = requiredClass[scala.deprecatedOverriding]
-    lazy val DeprecatedErrorAttr        = getClassIfDefined("scala.deprecatedError")
+    lazy val DeprecatedErrorAttr        = getClassIfDefined("scala.annotation.deprecatedError")
+    lazy val RestrictedAttr             = getClassIfDefined("scala.annotation.restricted")
     lazy val NativeAttr                 = requiredClass[scala.native]
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]

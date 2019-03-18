@@ -1,0 +1,6 @@
+report-apiMayChange.scala:16: warning: method FooDSL in object syntax is restricted (since foo-lib 1.0): foo DSL is incubating
+  "bar" should "something"
+  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

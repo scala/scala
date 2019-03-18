@@ -1,3 +1,5 @@
+import scala.annotation.deprecatedError
+
 package foo {
   object syntax {
     @deprecatedError("use := syntax instead", since="foo-lib 1.0")

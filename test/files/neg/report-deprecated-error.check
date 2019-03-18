@@ -1,4 +1,4 @@
-report-deprecated-error.scala:10: error: method <<= in object syntax is unsupported (since foo-lib 1.0): use := syntax instead
+report-deprecated-error.scala:12: error: method <<= in object syntax is unsupported (since foo-lib 1.0): use := syntax instead
   <<=()
   ^
 one error found

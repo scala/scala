@@ -1,0 +1,4 @@
+report-apiMayChange-error.scala:16: error: method FooDSL in object syntax is unsupported (since foo-lib 1.0): foo DSL is incubating
+  "bar" should "something"
+  ^
+one error found
