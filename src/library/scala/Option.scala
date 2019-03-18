@@ -202,6 +202,21 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def getOrElse[B >: A](default: => B): B =
     if (isEmpty) default else this.get
 
+  /** Returns the option's value if the option is nonempty, otherwise
+    * return the implicit value found at the place.
+    *
+    * This is equivalent to:
+    * {{{
+    * option match {
+    *   case Some(x) => x
+    *   case None    => implicitValue
+    * }
+    * }}}
+    *
+    *  @param implicitValue  the implicit value.
+    */
+  def byImplicit[A](implicit implicitValue: A): A = this.fold(implicitValue)(item => item)
+
   /** Returns the option's value if it is nonempty,
    * or `null` if it is empty.
    *
