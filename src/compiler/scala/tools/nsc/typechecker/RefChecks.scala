@@ -1258,8 +1258,10 @@ abstract class RefChecks extends Transform {
     private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
-      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
-        currentRun.reporting.deprecationWarning(pos, sym)
+      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated)) {
+        if (sym.isDeprecatedError) currentRun.reporting.deprecationError(pos, sym)
+        else currentRun.reporting.deprecationWarning(pos, sym)
+      }
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.

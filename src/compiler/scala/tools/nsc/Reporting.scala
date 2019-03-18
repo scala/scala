@@ -97,6 +97,13 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version)
     }
 
+    def deprecationError(pos: Position, sym: Symbol): Unit = {
+      val version = sym.deprecationVersion.getOrElse("")
+      val since   = if (version.isEmpty) version else s" (since $version)"
+      val message = sym.deprecationMessage match { case Some(msg) => s": $msg"        case _ => "" }
+      reporter.error(pos, s"$sym${sym.locationString} is unsupported$since$message")
+    }
+
     private[this] var reportedFeature = Set[Symbol]()
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit = {
       val req     = if (required) "needs to" else "should"

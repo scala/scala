@@ -56,7 +56,21 @@ import scala.annotation.meta._
  *  @see    [[scala.deprecatedInheritance]]
  *  @see    [[scala.deprecatedOverriding]]
  *  @see    [[scala.deprecatedName]]
+ *  @see    [[scala.deprecatedError]]
  */
 @getter @setter @beanGetter @beanSetter
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being sealed in 2.14", "2.13.0")
 class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
+
+/** An annotation that designates that an annottee should no longer be used.
+ *
+ *  This can be used as a next step to deprecation. Instead of removing
+ *  the methods, this can be used to display a more helpful migration message.
+ *
+ *  @param  message the error message to print during compilation if a reference remains in code
+ *  @param  since   a string identifying the first version in which the definition was deprecated
+ *  @since  2.13.0
+ *  @see    [[scala.deprecated]]
+ */
+@getter @setter @beanGetter @beanSetter
+final class deprecatedError(message: String, since: String) extends deprecated(message, since)
