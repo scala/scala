@@ -147,14 +147,14 @@ sealed class NumericRange[T](
   //   (Integral <: Ordering). This can happen for custom Integral types.
   // - The Ordering is the default Ordering of a well-known Integral type.
     if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
-      if (num.signum(step) > 0) head
+      if (num.sign(step) > zero) head
       else last
     } else super.min(ord)
 
   override def max[T1 >: T](implicit ord: Ordering[T1]): T =
   // See comment for fast path in min().
     if ((ord eq num) || defaultOrdering.get(num).exists(ord eq _)) {
-      if (num.signum(step) > 0) last
+      if (num.sign(step) > zero) last
       else head
     } else super.max(ord)
 
@@ -308,10 +308,10 @@ object NumericRange {
         if (num.gt(t, limit)) throw new IllegalArgumentException("More than Int.MaxValue elements.")
         else t
       // If the range crosses zero, it might overflow when subtracted
-      val startside = num.signum(start)
-      val endside = num.signum(end)
+      val startside = num.sign(start)
+      val endside = num.sign(end)
       num.toInt{
-        if (startside*endside >= 0) {
+        if (num.gteq(num.times(startside, endside), zero)) {
           // We're sure we can subtract these numbers.
           // Note that we do not use .rem because of different conventions for Long and BigInt
           val diff = num.minus(end, start)
