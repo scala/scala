@@ -266,7 +266,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
       var elems = in.readLong()
       while (elems > 0) {
         res += in.readLong()
-        elems -= 1l
+        elems -= 1L
       }
       result = res
     }

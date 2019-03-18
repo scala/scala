@@ -266,7 +266,7 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
       var elems = in.readLong()
       while (elems > 0) {
         res += in.readDouble()
-        elems -= 1l
+        elems -= 1L
       }
       result = res
     }

@@ -43,7 +43,7 @@ extends EfficientSubstep {
       nodes = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
     }
   }
-  protected def effectiveRootLevel(): Int =
+  protected def effectiveRootLevel: Int =
     if (currentStackLevel < 0) -1
     else {
       var erl = 0
@@ -156,7 +156,7 @@ extends EfficientSubstep {
   final def substep(): Sub =
     if (!hasNext) null
     else {
-      val root = effectiveRootLevel()
+      val root = effectiveRootLevel
       if (root < 0) {
         if (currentValueCursor > currentValueLength-2) null
         else {

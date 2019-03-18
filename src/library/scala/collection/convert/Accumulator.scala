@@ -41,7 +41,7 @@ trait Accumulator[@specialized(Double, Int, Long) A, +CC[_], +C]
     if (longSize < Int.MaxValue) longSize.toInt
     else throw new IllegalArgumentException(s"Size too large for an Int: $longSize")
 
-  final override def knownSize: Int = size
+  final override def knownSize: Int = if (longSize < Int.MaxValue) size else -1
 
   /** Size of the accumulated collection, as a `Long` */
   final def longSize: Long = totalSize

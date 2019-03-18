@@ -271,7 +271,7 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
       var elems = in.readLong()
       while (elems > 0) {
         res += in.readInt()
-        elems -= 1l
+        elems -= 1L
       }
       result = res
     }

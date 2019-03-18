@@ -268,7 +268,7 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
       var elems = in.readLong()
       while (elems > 0) {
         res += in.readObject()
-        elems -= 1l
+        elems -= 1L
       }
       result = res
     }
