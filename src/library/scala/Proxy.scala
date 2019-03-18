@@ -26,6 +26,7 @@ package scala
  *  @author  Matthias Zenger
  *  @since   1.0
  */
+@deprecated("Explicitly override hashCode, equals and toString instead.", "2.13.0")
 trait Proxy extends Any {
   def self: Any
 
@@ -39,9 +40,11 @@ trait Proxy extends Any {
   override def toString = "" + self
 }
 
+@deprecated("All members of this object are deprecated.", "2.13.0")
 object Proxy {
   /** A proxy which exposes the type it is proxying for via a type parameter.
    */
+  @deprecated("Explicitly override hashCode, equals and toString instead.", "2.13.0")
   trait Typed[T] extends Any with Proxy {
     def self: T
   }
