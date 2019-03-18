@@ -96,6 +96,24 @@ object OptionConverters {
     case _ => Optional.empty[A]
   }
 
+  /** Convert a Scala `Option[Double]` to a Java `OptionalDouble` */
+  def toJavaOptionalDouble(o: Option[Double]): OptionalDouble = o match {
+    case Some(a) => OptionalDouble.of(a)
+    case _ => OptionalDouble.empty
+  }
+
+  /** Convert a Scala `Option[Int]` to a Java `OptionalInt` */
+  def toJavaOptionalInt(o: Option[Int]): OptionalInt = o match {
+    case Some(a) => OptionalInt.of(a)
+    case _ => OptionalInt.empty
+  }
+
+  /** Convert a Scala `Option[Long]` to a Java `OptionalLong` */
+  def toJavaOptionalLong(o: Option[Long]): OptionalLong = o match {
+    case Some(a) => OptionalLong.of(a)
+    case _ => OptionalLong.empty
+  }
+
   /** Convert a Java `Optional` to a Scala `Option` */
   def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
