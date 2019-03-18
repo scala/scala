@@ -177,6 +177,17 @@ class CompletionTest {
   }
 
   @Test
+  def defStringConstructor(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "class Shazam(i: Int); new Shaza")("Shazam")
+    checkExact(completer, "class Shazam(i: Int); new Shazam")(EmptyString, "def <init>(i: Int): Shazam")
+
+    checkExact(completer, "class Shazam(i: Int) { def this(x: String) = this(0) }; new Shaza")("Shazam")
+    checkExact(completer, "class Shazam(i: Int) { def this(x: String) = this(0) }; new Shazam")(EmptyString, "def <init>(i: Int): Shazam", "def <init>(x: String): Shazam")
+  }
+
+  @Test
   def treePrint(): Unit = {
     val intp = newIMain()
     val completer = new PresentationCompilerCompleter(intp)
@@ -200,6 +211,16 @@ class CompletionTest {
     checkExact(completer, "p1.p2.p")("p3")
     checkExact(completer, "p1.p2.p3.P")("Ping")
     checkExact(completer, "p1.p2.p3.Ping.Po")("Pong")
+  }
+
+  @Test
+  def constructor(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "class Shazam{}; new Shaz")("Shazam")
+
+    intp.interpret("class Shazam {}")
+    checkExact(completer, "new Shaz")("Shazam")
   }
 
   @Test

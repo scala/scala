@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.interpreter
 
-import scala.reflect.internal.util.StringOps
+import scala.reflect.internal.util.{RangePosition, StringOps}
 import scala.tools.nsc.interpreter.Completion.Candidates
 import scala.util.control.NonFatal
 
@@ -57,17 +57,17 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
       Candidates(cursor, "" :: printed :: Nil)
     }
     def typeAt(result: Result, start: Int, end: Int) = {
-      val tpString = result.compiler.exitingTyper(result.typedTreeAt(buf, start, end).tpe.toString)
+      val tpString = result.compiler.exitingTyper(result.typedTreeAt(start, end).tpe.toString)
       Candidates(cursor, "" :: tpString :: Nil)
     }
     def candidates(result: Result): Candidates = {
       import result.compiler._
       import CompletionResult._
-      def defStringCandidates(matching: List[Member], name: Name): Candidates = {
+      def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean): Candidates = {
         val defStrings = for {
           member <- matching
           if member.symNameDropLocal == name
-          sym <- member.sym.alternatives
+          sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
             val tp = member.prefix memberType sym
@@ -94,8 +94,25 @@ class PresentationCompilerCompleter(intp: IMain) extends Completion {
           val matching = r.matchingResults().filterNot(shouldHide)
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(0, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
-          if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
-          else if (matching.isEmpty) {
+          if (tabAfterCommonPrefixCompletion || doubleTab) {
+            val offset = result.preambleLength
+            val pos1 = result.positionOf(cursor)
+            import result.compiler._
+            val locator = new Locator(pos1)
+            val tree = locator locateIn result.unit.body
+            var isNew = false
+            new TreeStackTraverser {
+              override def traverse(t: Tree): Unit = {
+                if (t eq tree) {
+                  isNew = path.dropWhile { case _: Select | _: Annotated => true; case _ => false}.headOption match {
+                    case Some(_: New) => true
+                    case _ => false
+                  }
+                } else super.traverse(t)
+              }
+            }.traverse(result.unit.body)
+            defStringCandidates(matching, r.name, isNew)
+          } else if (matching.isEmpty) {
             // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
             val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
             val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted
