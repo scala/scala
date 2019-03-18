@@ -43,9 +43,6 @@ trait AsJavaConverters {
     case _                          => IteratorWrapper(i)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def asJavaIterator[A](i: Iterator[A]): ju.Iterator[A] = asJava(i)
-
   /**
    * Converts a Scala `Iterator` to a Java `Enumeration`.
    *
@@ -82,9 +79,6 @@ trait AsJavaConverters {
     case _                          => IterableWrapper(i)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def asJavaIterable[A](i: Iterable[A]): jl.Iterable[A] = asJava(i)
-
   /**
    * Converts a Scala `Iterable` to an immutable Java `Collection`.
    *
@@ -118,9 +112,6 @@ trait AsJavaConverters {
     case _                      => MutableBufferWrapper(b)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def bufferAsJavaList[A](b: mutable.Buffer[A]): ju.List[A] = asJava(b)
-
   /**
    * Converts a Scala mutable `Seq` to a Java `List`.
    *
@@ -138,9 +129,6 @@ trait AsJavaConverters {
     case JListWrapper(wrapped)  => wrapped
     case _                      => MutableSeqWrapper(s)
   }
-
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def mutableSeqAsJavaList[A](s: mutable.Seq[A]): ju.List[A] = asJava(s)
 
   /**
    * Converts a Scala `Seq` to a Java `List`.
@@ -160,9 +148,6 @@ trait AsJavaConverters {
     case _                      => SeqWrapper(s)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def seqAsJavaList[A](s: Seq[A]): ju.List[A] = asJava(s)
-
   /**
    * Converts a Scala mutable `Set` to a Java `Set`.
    *
@@ -180,9 +165,6 @@ trait AsJavaConverters {
     case JSetWrapper(wrapped) => wrapped
     case _                    => MutableSetWrapper(s)
   }
-
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def mutableSetAsJavaSet[A](s: mutable.Set[A]): ju.Set[A] = asJava(s)
 
     /**
    * Converts a Scala `Set` to a Java `Set`.
@@ -202,9 +184,6 @@ trait AsJavaConverters {
     case _                    => new SetWrapper(s)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def setAsJavaSet[A](s: Set[A]): ju.Set[A] = asJava(s)
-
   /**
    * Converts a Scala mutable `Map` to a Java `Map`.
    *
@@ -222,9 +201,6 @@ trait AsJavaConverters {
     case w: JMapWrapper[K @uc, V @uc] => w.underlying
     case _                            => MutableMapWrapper(m)
   }
-
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def mutableMapAsJavaMap[K, V](m: mutable.Map[K, V]): ju.Map[K, V] = asJava(m)
 
   /**
    * Converts a Scala mutable `Map` to a Java `Dictionary`.
@@ -263,9 +239,6 @@ trait AsJavaConverters {
     case _                            => new MapWrapper(m)
   }
 
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def mapAsJavaMap[K, V](m: Map[K, V]): ju.Map[K, V] = asJava(m)
-
   /**
    * Converts a Scala mutable `concurrent.Map` to a Java `ConcurrentMap`.
    *
@@ -284,7 +257,4 @@ trait AsJavaConverters {
     case JConcurrentMapWrapper(wrapped) => wrapped
     case _                              => new ConcurrentMapWrapper(m)
   }
-
-  @deprecated("Use `asJava` instead", "2.13.0")
-  def mapAsJavaConcurrentMap[K, V](m: concurrent.Map[K, V]): juc.ConcurrentMap[K, V] = asJava(m)
 }

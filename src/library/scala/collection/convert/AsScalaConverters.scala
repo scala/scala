@@ -41,9 +41,6 @@ trait AsScalaConverters {
     case _                        => JIteratorWrapper(i)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def asScalaIterator[A](i: ju.Iterator[A]): Iterator[A] = asScala(i)
-
   /**
    * Converts a Java `Enumeration` to a Scala `Iterator`.
    *
@@ -61,9 +58,6 @@ trait AsScalaConverters {
     case IteratorWrapper(wrapped) => wrapped
     case _                        => JEnumerationWrapper(e)
   }
-
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def enumerationAsScalaIterator[A](i: ju.Enumeration[A]): Iterator[A] = asScala(i)
 
   /**
    * Converts a Java `Iterable` to a Scala `Iterable`.
@@ -83,9 +77,6 @@ trait AsScalaConverters {
     case _                        => JIterableWrapper(i)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def iterableAsScalaIterable[A](i: jl.Iterable[A]): Iterable[A] = asScala(i)
-
   /**
    * Converts a Java `Collection` to a Scala `Iterable`.
    *
@@ -100,9 +91,6 @@ trait AsScalaConverters {
     case IterableWrapper(wrapped) => wrapped
     case _                        => JCollectionWrapper(c)
   }
-
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def collectionAsScalaIterable[A](i: ju.Collection[A]): Iterable[A] = asScala(i)
 
   /**
    * Converts a Java `List` to a Scala mutable `Buffer`.
@@ -122,9 +110,6 @@ trait AsScalaConverters {
     case _                              => new JListWrapper(l)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def asScalaBuffer[A](l: ju.List[A]): mutable.Buffer[A] = asScala(l)
-
   /**
    * Converts a Java `Set` to a Scala mutable `Set`.
    *
@@ -142,9 +127,6 @@ trait AsScalaConverters {
     case MutableSetWrapper(wrapped) => wrapped
     case _                          => new JSetWrapper(s)
   }
-
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def asScalaSet[A](s: ju.Set[A]): mutable.Set[A] = asScala(s)
 
   /**
    * Converts a Java `Map` to a Scala mutable `Map`.
@@ -169,9 +151,6 @@ trait AsScalaConverters {
     case _                          => new JMapWrapper(m)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def mapAsScalaMap[A, B](m: ju.Map[A, B]): mutable.Map[A, B] = asScala(m)
-
   /**
    * Converts a Java `ConcurrentMap` to a Scala mutable `ConcurrentMap`.
    *
@@ -191,9 +170,6 @@ trait AsScalaConverters {
     case _                                => new JConcurrentMapWrapper(m)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def mapAsScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): concurrent.Map[A, B] = asScala(m)
-
     /**
    * Converts a Java `Dictionary` to a Scala mutable `Map`.
    *
@@ -212,9 +188,6 @@ trait AsScalaConverters {
     case _                          => new JDictionaryWrapper(d)
   }
 
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def dictionaryAsScalaMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = asScala(p)
-
   /**
    * Converts a Java `Properties` to a Scala mutable `Map[String, String]`.
    *
@@ -229,7 +202,4 @@ trait AsScalaConverters {
     case null => null
     case _    => new JPropertiesWrapper(p)
   }
-
-  @deprecated("Use `asScala` instead", "2.13.0")
-  def propertiesAsScalaMap(p: ju.Properties): mutable.Map[String, String] = asScala(p)
 }
