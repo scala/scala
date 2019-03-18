@@ -10,13 +10,15 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
+package scala.jdk
+
+import java.util._
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import java.util._
+
 import scala.jdk.OptionConverters.Ops._
 
 @RunWith(classOf[JUnit4])
