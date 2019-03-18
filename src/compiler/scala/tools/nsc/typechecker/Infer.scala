@@ -17,6 +17,7 @@ import scala.collection.{ mutable, immutable }
 import scala.util.control.ControlThrowable
 import symtab.Flags._
 import scala.reflect.internal.Depth
+import scala.collection.mutable.ListBuffer
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -703,7 +704,7 @@ trait Infer extends Checkable {
       )
       def tryInstantiating(args: List[Type]) = falseIfNoInstance {
         val restpe = mt resultType args
-        val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(EmptyTree, undetparams, formals, restpe, args, pt)
+        val (okparams, okargs, leftUndet) = AdjustedTypeArgs.splitUndets( methTypeArgs(EmptyTree, undetparams, formals, restpe, args, pt))
         val restpeInst = restpe.instantiateTypeParams(okparams, okargs)
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
         exprTypeArgs(leftUndet, restpeInst, pt, useWeaklyCompatible = true) match {
@@ -911,7 +912,7 @@ trait Infer extends Checkable {
         substExpr(tree, tparams, targsStrict, pt)
         List()
       } else {
-        val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targsStrict)
+        val (okParams, okArgs, leftUndet) = AdjustedTypeArgs.splitUndets(adjustTypeArgs(tparams, tvars, targsStrict))
         def solved_s = map2(okParams, okArgs)((p, a) => s"$p=$a") mkString ","
         def undet_s = leftUndet match {
           case Nil => ""
@@ -956,8 +957,9 @@ trait Infer extends Checkable {
           val argtpes = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
           val restpe  = fn.tpe.resultType(argtpes)
 
-          val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
+          val (okparams, okargs, allargs, leftUndet) = AdjustedTypeArgs.splitAllArgsAndUndets(
             methTypeArgs(fn, undetparams, formals, restpe, argtpes, pt)
+          )
 
           if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okparams, okargs)
@@ -1434,28 +1436,38 @@ trait Infer extends Checkable {
     val Result  = mutable.LinkedHashMap
     type Result = mutable.LinkedHashMap[Symbol, Option[Type]]
 
-    def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
-      (m collect {case (p, Some(a)) => (p, a)}).unzip  ))
-
-    object Undets {
-      def unapply(m: Result): Some[(List[Symbol], List[Type], List[Symbol])] = Some(toLists{
-        val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
-        val (okArgs, okTparams) = ok.unzip
-        (okArgs, okTparams, nok.keys)
-      })
+    def split(m: Result): (List[Symbol], List[Type]) = {
+      val keys: ListBuffer[Symbol] = ListBuffer.empty
+      val vals: ListBuffer[Type]   = ListBuffer.empty
+      m foreach {
+        case (p, Some(a)) => keys += p ; vals += a
+        case _ =>
+      }
+      (keys.toList, vals.toList)
     }
 
-    object AllArgsAndUndets {
-      def unapply(m: Result): Some[(List[Symbol], List[Type], List[Type], List[Symbol])] = Some(toLists{
-        val (ok, nok) = m.map{case (p, a) => (p, a.getOrElse(null))}.partition(_._2 ne null)
-        val (okArgs, okTparams) = ok.unzip
-        (okArgs, okTparams, m.values.map(_.getOrElse(NothingTpe)), nok.keys)
-      })
+    def splitUndets(m: Result): (List[Symbol], List[Type], List[Symbol]) = {
+      val okArgs: ListBuffer[Symbol] = ListBuffer.empty
+      val okTparams: ListBuffer[Type]   = ListBuffer.empty
+      val nokArs: ListBuffer[Symbol] = ListBuffer.empty
+      m foreach {
+        case (p, Some(a)) => okArgs += p ; okTparams += a
+        case (p, None)    => nokArs += p
+      }
+      (okArgs.toList, okTparams.toList, nokArs.toList)
     }
 
-    private def toLists[A1, A2](pxs: (Iterable[A1], Iterable[A2])) = (pxs._1.toList, pxs._2.toList)
-    private def toLists[A1, A2, A3](pxs: (Iterable[A1], Iterable[A2], Iterable[A3])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList)
-    private def toLists[A1, A2, A3, A4](pxs: (Iterable[A1], Iterable[A2], Iterable[A3], Iterable[A4])) = (pxs._1.toList, pxs._2.toList, pxs._3.toList, pxs._4.toList)
+    def splitAllArgsAndUndets(m: Result): (List[Symbol], List[Type], List[Type], List[Symbol]) = {
+      val oksKeys: ListBuffer[Symbol] = ListBuffer.empty
+      val nokKeys: ListBuffer[Symbol] = ListBuffer.empty
+      val okTparams: ListBuffer[Type] = ListBuffer.empty
+      val valsOrNothing: ListBuffer[Type] = ListBuffer.empty
+      m foreach {
+        case (p, Some(a) ) => oksKeys += p ; valsOrNothing += a         ; okTparams += a
+        case (p, None    ) => nokKeys += p ; valsOrNothing += NothingTpe
+      }
+      (oksKeys.toList, okTparams.toList, valsOrNothing.toList, nokKeys.toList)
+    }
   }
 
 }
