@@ -29,7 +29,7 @@ object GenerateFunctionConverters {
        |// GENERATED CODE: DO NOT EDIT.
        |""".stripMargin
 
-  val packaging = "package scala"
+  val packaging = "package scala.jdk"
 
   import scala.tools.nsc._
   val settings = new Settings(msg => sys.error(msg))
@@ -109,7 +109,7 @@ object GenerateFunctionConverters {
     def withPriority(i: Int): SamConversionCode = copy(implicitToJava = implicitToJava.withPriority(i))
   }
   object SamConversionCode {
-    def apply(scc: SamConversionCode*): (Vector[String], Vector[Vector[String]]) = {
+    def apply(scc: SamConversionCode*): (Vector[String], Vector[String], Vector[Vector[String]]) = {
       val sccDepthSet = scc.map(_.implicitToJava.priority).toSet
       val codes =
         {
@@ -121,12 +121,12 @@ object GenerateFunctionConverters {
         }.toVector.sortBy(_.base)
       def priorityName(n: Int, pure: Boolean = false): String = {
         val pre =
-          if (pure) s"Priority${n}FunctionConverters"
+          if (pure) s"Priority${n}FunctionExtensions"
           else s"trait ${priorityName(n, pure = true)}"
         if (!pure && n < (sccDepthSet.size-1)) s"$pre extends ${priorityName(n+1, pure = true)}" else pre
       }
       val impls =
-        "object Wrappers {" +: {
+        "object FunctionWrappers {" +: {
           codes.map(_.impls).mkVecVec().indent
         } :+ "}"
       val explicitDefs = codes.map(_.defs).mkVecVec()
@@ -134,14 +134,10 @@ object GenerateFunctionConverters {
         s"import language.implicitConversions" +:
         "" +:
         s"${priorityName(k)} {" +:
-          s"  import Wrappers._" +:
+          s"  import FunctionWrappers._" +:
           s"  " +:
           {
-            (
-              if (k == 0) explicitDefs.indent ++ Vector.fill(3)("  ")
-              else Vector()
-            ) ++
-              vs.map(_.implicitToJava.lines).mkVec().indent ++
+            vs.map(_.implicitToJava.lines).mkVec().indent ++
               (
                 if (k == 0) Vector.fill(3)("  ") ++ codes.map(_.implicitToScala).mkVec().indent
                 else Vector()
@@ -149,7 +145,7 @@ object GenerateFunctionConverters {
           } :+
           s"}"
       }
-      (impls, traits)
+      (impls, explicitDefs, traits)
     }
   }
 
@@ -196,6 +192,7 @@ object GenerateFunctionConverters {
       val j2sImpN = TermName("enrichAsScalaFrom" + jfn.title)
 
       // Names for Scala conversions to Java
+      val s2jAsJavaTitle = TermName("asJava" + jfn.title)
       val s2jClassN = TypeName("AsJava" + jfn.title)
       val s2jValCN = TypeName("Rich" + scalaType.name.encoded + "As" + jfn.title)
       val s2jDefN = TermName("asJava" + jfn.title)
@@ -208,12 +205,12 @@ object GenerateFunctionConverters {
       val vParamRefs = vParams.map(_.name).map(Ident(_))
 
       val j2sClassTree =
-        q"""private[convert] class $j2sClassN[..$tdParams](jf: $javaType[..$javaTargs]) extends $scalaType[..$scalaTargs] {
+        q"""class $j2sClassN[..$tdParams](jf: $javaType[..$javaTargs]) extends $scalaType[..$scalaTargs] {
           def apply(..$vParams) = jf.${jfn.name}(..$vParamRefs)
         }"""
 
       val j2sValCTree =
-        q"""private[convert] class $j2sValCN[..$tdParams](private val underlying: $javaType[..$javaTargs]) extends AnyVal {
+        q"""class $j2sValCN[..$tdParams](private val underlying: $javaType[..$javaTargs]) extends AnyVal {
           @inline def asScala: $scalaType[..$scalaTargs] = new $j2sClassN[..$tnParams](underlying)
         }"""
 
@@ -224,13 +221,8 @@ object GenerateFunctionConverters {
         q"""@inline implicit def $j2sImpN[..$tdParams](jf: $javaType[..$javaTargs]): $j2sValCN[..$tnParams] = new $j2sValCN[..$tnParams](jf)"""
 
       val s2jClassTree =
-        q"""private[convert] class $s2jClassN[..$tdParams](sf: $scalaType[..$scalaTargs]) extends $javaType[..$javaTargs] {
+        q"""class $s2jClassN[..$tdParams](sf: $scalaType[..$scalaTargs]) extends $javaType[..$javaTargs] {
           def ${jfn.name}(..$vParams) = sf.apply(..$vParamRefs)
-        }"""
-
-      val s2jValCTree =
-        q"""private[convert] class $s2jValCN[..$tdParams](private val underlying: $scalaType[..$scalaTargs]) extends AnyVal {
-          @inline def asJava: $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](underlying)
         }"""
 
       val s2jDefTree =
@@ -238,7 +230,7 @@ object GenerateFunctionConverters {
 
       // This is especially tricky because functions are contravariant in their arguments
       // Need to prevent e.g. Any => String from "downcasting" itself to Int => String; we want the more exact conversion
-      val s2jImpTree: (Tree, Int) =
+      val (s2jImpTree, priority) =
       if (jfn.pTypes.forall(! _.isFinalType) && jfn.sig == jfn.sam.typeSignature)
         (
           q"""@inline implicit def $s2jImpN[..$tdParams](sf: $scalaType[..$scalaTargs]): $s2jValCN[..$tnParams] = new $s2jValCN[..$tnParams](sf)""",
@@ -275,6 +267,16 @@ object GenerateFunctionConverters {
         (tree, tdParams.length)
       }
 
+      val s2jValFullNameAsJavaMethodTree =
+        if (priority > 0) q"@inline def $s2jAsJavaTitle: $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](underlying)"
+        else EmptyTree
+
+      val s2jValCTree =
+        q"""class $s2jValCN[..$tdParams](private val underlying: $scalaType[..$scalaTargs]) extends AnyVal {
+          @inline def asJava: $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](underlying)
+          $s2jValFullNameAsJavaMethodTree
+        }"""
+
       SamConversionCode(
         base = jfn.title,
         wrappedAsScala = j2sClassTree.text,
@@ -283,7 +285,7 @@ object GenerateFunctionConverters {
         asScalaDef = j2sDefTree.text,
         wrappedAsJava = s2jClassTree.text,
         asJavaAnyVal = s2jValCTree.text,
-        implicitToJava = s2jImpTree match { case (t,d) => Prioritized(t.text, d) },
+        implicitToJava = Prioritized(s2jImpTree.text, priority),
         asJavaDef = s2jDefTree.text
       )
     }
@@ -315,9 +317,55 @@ object GenerateFunctionConverters {
   }
 
   def run(outDir: java.io.File): Unit = {
-    write(outDir, Artifact("JavaConverters.scala", sourceFile("", "object JavaConverters extends scala.convert.Priority0FunctionConverters")))
-    val (impls, defss) = SamConversionCode(buildWrappersViaReflection: _*)
-    write(outDir, Artifact("convert/Wrappers.scala", sourceFile(".convert", impls.mkString("\n"))))
-    write(outDir, Artifact("convert/FunctionConverters.scala", sourceFile(".convert", defss.map(_.mkString("\n")).mkString("\n\n\n\n"))))
+    val (impls, explicitDefs, defss) = SamConversionCode(buildWrappersViaReflection: _*)
+    val funConvs =
+      s"""/** This object contains methods that enable converting between Scala and Java function types.
+         |  *
+         |  * The explicit conversion methods defined here are practical when writing Java code. For Scala
+         |  * code, it is recommended to use the extension methods defined in [[FunctionConverters.Ops]].
+         |  *
+         |  * Using the `.asJava` extension method (from [[FunctionConverters.Ops]]) on a Scala function
+         |  * produces the most specific possible Java function type:
+         |  *
+         |  * {{{
+         |  *   scala> import scala.jdk.FunctionConverters; import FunctionConverters.Ops._
+         |  *   scala> val f = (x: Int) => x + 1
+         |  *
+         |  *   scala> val jf1 = f.asJava
+         |  *   jf1: java.util.function.IntUnaryOperator = ...
+         |  * }}}
+         |  *
+         |  * More generic Java function types can be created using the corresponding `asJavaXYZ` extension
+         |  * method:
+         |  *
+         |  * {{{
+         |  *   scala> val jf2 = f.asJavaFunction
+         |  *   jf2: java.util.function.Function[Int,Int] = ...
+         |  *
+         |  *   scala> val jf3 = f.asJavaUnaryOperator
+         |  *   jf3: java.util.function.UnaryOperator[Int] = ...
+         |  * }}}
+         |  *
+         |  * Converting a Java function to Scala is done using the `asScala` extension method:
+         |  *
+         |  * {{{
+         |  *   scala> List(1,2,3).map(jf2.asScala)
+         |  *   res1: List[Int] = List(2, 3, 4)
+         |  * }}}
+         |  */
+         |object FunctionConverters {
+         |  /** This object provides extension methods that enable converting between Scala and Java function
+         |    * types, see [[FunctionConverters]].
+         |    */
+         |  object Ops extends Priority0FunctionExtensions
+         |
+         |  import FunctionWrappers._
+         |
+         |${explicitDefs.indent.mkString("\n")}
+         |}
+      """.stripMargin
+    write(outDir, Artifact("jdk/FunctionConverters.scala", sourceFile("", funConvs)))
+    write(outDir, Artifact("jdk/FunctionWrappers.scala", sourceFile("", impls.mkString("\n"))))
+    write(outDir, Artifact("jdk/FunctionExtensions.scala", sourceFile("", defss.map(_.mkString("\n")).mkString("\n\n\n\n"))))
   }
 }
