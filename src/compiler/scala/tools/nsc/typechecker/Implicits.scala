@@ -21,10 +21,10 @@ package typechecker
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import mutable.{ LinkedHashMap, ListBuffer }
+import mutable.{LinkedHashMap, ListBuffer}
 import scala.util.matching.Regex
 import symtab.Flags._
-import scala.reflect.internal.util.{TriState, Statistics, StatisticsStatics}
+import scala.reflect.internal.util.{ReusableInstance, Statistics, StatisticsStatics, TriState}
 import scala.reflect.internal.TypesStats
 import scala.language.implicitConversions
 
@@ -919,8 +919,6 @@ trait Implicits {
      *                             enclosing scope, and so on.
      */
     class ImplicitComputation(iss: Infoss, isLocalToCallsite: Boolean) {
-      private val shadower: Shadower = if (isLocalToCallsite) new LocalShadower else NoShadower
-
       private var best: SearchResult = SearchFailure
 
       private def isIneligible(info: ImplicitInfo) = (
@@ -931,7 +929,7 @@ trait Implicits {
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
-      def survives(info: ImplicitInfo) = (
+      def survives(info: ImplicitInfo, shadower: Shadower) = (
            !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
         && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
@@ -987,9 +985,9 @@ trait Implicits {
 
       /** Sorted list of eligible implicits.
        */
-      val eligible = {
+      val eligible = Shadower.using(isLocalToCallsite){ shadower =>
         val matches = iss flatMap { is =>
-          val result = is filter (info => checkValid(info.sym) && survives(info))
+          val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
           shadower addInfos is
           result
         }
@@ -1655,14 +1653,26 @@ trait Implicits {
     def addInfos(infos: Infos): Unit
     def isShadowed(name: Name): Boolean
   }
+  object Shadower {
+    private[this] val localShadowerCache = new ReusableInstance[LocalShadower](() => new LocalShadower)
+
+    def using[T](local: Boolean)(f: Shadower => T): T =
+      if (local) localShadowerCache.using { shadower =>
+        shadower.clear()
+        f(shadower)
+      }
+      else f(NoShadower)
+  }
 
   /** Used for exclude implicits from outer scopes that are shadowed by same-named implicits */
   private final class LocalShadower extends Shadower {
-    val shadowed = util.HashSet[Name](512)
+    // OPT: using j.l.HashSet as that retains the internal array on clear(), which makes it worth caching.
+    val shadowed = new java.util.HashSet[Name](512)
     def addInfos(infos: Infos): Unit = {
-      infos.foreach(i => shadowed.addEntry(i.name))
+      infos.foreach(i => shadowed.add(i.name))
     }
-    def isShadowed(name: Name) = shadowed(name)
+    def isShadowed(name: Name) = shadowed.contains(name)
+    def clear(): Unit = shadowed.clear()
   }
   /** Used for the implicits of expected type, when no shadowing checks are needed. */
   private object NoShadower extends Shadower {
