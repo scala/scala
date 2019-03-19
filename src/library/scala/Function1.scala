@@ -15,6 +15,34 @@
 package scala
 
 
+object Function1 {
+
+  implicit final class UnliftOps[A, B] private[Function1](private val f: A => Option[B]) extends AnyVal {
+    /** Converts an optional function to a partial function.
+      *
+      * @example Unlike [[Function.unlift]], this [[UnliftOps.unlift]] method can be used in extractors.
+      *          {{{
+      *          val of: Int => Option[String] = { i =>
+      *            if (i == 2) {
+      *              Some("matched by an optional function")
+      *            } else {
+      *              None
+      *            }
+      *          }
+      *
+      *          util.Random.nextInt(4) match {
+      *            case of.unlift(m) => // Convert an optional function to a pattern
+      *              println(m)
+      *            case _ =>
+      *              println("Not matched")
+      *          }
+      *          }}}
+      */
+    def unlift: PartialFunction[A, B] = Function.unlift(f)
+  }
+
+}
+
 /** A function of 1 parameter.
  *  
  *  In the following example, the definition of succ is a
