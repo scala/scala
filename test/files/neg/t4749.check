@@ -37,13 +37,13 @@ t4749.scala:28: warning: Fail6 has a valid main method (args: Array[String])Unit
 
   object Fail6 {
          ^
-t4749.scala:44: warning: not a valid main method for bippy.Win3,
-  because main methods must have the exact signature (Array[String])Unit.
+t4749.scala:42: warning: not a valid main method for bippy.Win3,
+  because main methods cannot refer to type parameters or abstract types.
   To define an entry point, please define the main method as:
     def main(args: Array[String]): Unit
 
-  object Win3 extends WinBippy[Unit] { }
-         ^
+    def main(args: Array[String]): T = null.asInstanceOf[T]
+        ^
 error: No warnings can be incurred under -Xfatal-warnings.
 7 warnings found
 one error found
