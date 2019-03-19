@@ -15,6 +15,7 @@ package mutable
 
 import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.collection.mutable
 import scala.runtime.Statics
@@ -62,6 +63,11 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   }
 
   @`inline` private[this] final def index(hash: Int) = hash & (table.length - 1)
+
+  override protected def fromSpecific(coll: IterableOnce[(K, V)] @uncheckedVariance): CollisionProofHashMap[K, V] @uncheckedVariance = CollisionProofHashMap.from(coll)
+  override protected def newSpecificBuilder: Builder[(K, V), CollisionProofHashMap[K, V]] @uncheckedVariance = CollisionProofHashMap.newBuilder[K, V]
+
+  override def empty: CollisionProofHashMap[K, V] = new CollisionProofHashMap[K, V]
 
   override def contains(key: K): Boolean = findNode(key) ne null
 
