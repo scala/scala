@@ -14,7 +14,7 @@ package scala.jdk
 
 import scala.collection.convert._
 
-/** This object contains methods that enable converting between Scala and Java collections.
+/** This object contains methods that convert between Scala and Java collections.
   *
   * Note: to create [[java.util.stream.Stream Java Streams]] that operate on Scala collections
   * (sequentially or in parallel), use [[StreamConverters]].
@@ -106,8 +106,8 @@ import scala.collection.convert._
   */
 object CollectionConverters extends AsJavaConverters with AsScalaConverters {
 
-  /** This object provides extension methods that enable converting between Scala and Java
-    * collections, see [[CollectionConverters]].
+  /** This object provides extension methods that convert between Scala and Java collections,
+    * see [[CollectionConverters]].
     */
   object Ops extends AsJavaExtensions with AsScalaExtensions
 }

@@ -15,7 +15,7 @@
 
 package scala.jdk
 
-/** This object contains methods that enable converting between Scala and Java function types.
+/** This object contains methods that convert between Scala and Java function types.
   *
   * The explicit conversion methods defined here are practical when writing Java code. For Scala
   * code, it is recommended to use the extension methods defined in [[FunctionConverters.Ops]].
@@ -50,8 +50,8 @@ package scala.jdk
   * }}}
   */
 object FunctionConverters {
-  /** This object provides extension methods that enable converting between Scala and Java function
-    * types, see [[FunctionConverters]].
+  /** This object provides extension methods that convert between Scala and Java function types,
+    * see [[FunctionConverters]].
     */
   object Ops extends Priority0FunctionExtensions
 

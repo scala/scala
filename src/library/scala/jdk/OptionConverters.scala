@@ -14,8 +14,7 @@ package scala.jdk
 
 import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
 
-/** This object contains methods that enable converting between Scala `Option` and Java `Optional`
-  * types.
+/** This object contains methods that convert between Scala `Option` and Java `Optional` types.
   *
   * The explicit conversion methods defined here are practical when writing Java code. For Scala
   * code, it is recommended to use the extension methods defined in [[OptionConverters.Ops]].
@@ -45,8 +44,8 @@ import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
   */
 object OptionConverters {
 
-  /** This object provides extension methods that enable converting between Scala `Option` and Java
-    * `Optional` types, see [[OptionConverters]].
+  /** This object provides extension methods that convert between Scala `Option` and Java `Optional`
+    * types, see [[OptionConverters]].
     */
   object Ops {
     /** Provides conversions from Java `Optional` to Scala `Option` and specialized `Optional` types */

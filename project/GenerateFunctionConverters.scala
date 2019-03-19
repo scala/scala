@@ -319,7 +319,7 @@ object GenerateFunctionConverters {
   def run(outDir: java.io.File): Unit = {
     val (impls, explicitDefs, defss) = SamConversionCode(buildWrappersViaReflection: _*)
     val funConvs =
-      s"""/** This object contains methods that enable converting between Scala and Java function types.
+      s"""/** This object contains methods that convert between Scala and Java function types.
          |  *
          |  * The explicit conversion methods defined here are practical when writing Java code. For Scala
          |  * code, it is recommended to use the extension methods defined in [[FunctionConverters.Ops]].
@@ -354,8 +354,8 @@ object GenerateFunctionConverters {
          |  * }}}
          |  */
          |object FunctionConverters {
-         |  /** This object provides extension methods that enable converting between Scala and Java function
-         |    * types, see [[FunctionConverters]].
+         |  /** This object provides extension methods that convert between Scala and Java function types,
+         |    * see [[FunctionConverters]].
          |    */
          |  object Ops extends Priority0FunctionExtensions
          |
