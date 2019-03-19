@@ -604,24 +604,32 @@ private[internal] trait GlbLubs {
     }
 
     // Since ptHead = PolyType(tparamsHead, _), no need to normalize it or unify tpaams
-    val ntps: List[PolyType]   = ptHead :: ptRest.map(normalizeIter)
+    val ntpRest: List[PolyType] = ptRest.map(normalizeIter)
+    val ntps: List[PolyType]   = ptHead :: ntpRest
 
-    val tparams1: List[Symbol] = {
-      def unifyBounds(ntp: PolyType): List[Type] = {
+    // Let M = length(ptRest), and N = length(tparamsHead), ix in 0..M, jx in 0..N
+    val tparamsJoined: List[Symbol] = {
+      val substSymMaps: Array[SubstSymMap] = new Array[SubstSymMap](ptRest.length)
+      foreachWithIndex(ntpRest) { (ntp, ix) =>
         val tparams1 = ntp.typeParams
-        tparams1 map (tparam => tparam.info.substSym(tparams1, tparamsHead))
+        if (! ((tparams1 eq tparamsHead) || tparams1.isEmpty))
+          substSymMaps(ix) = new SubstSymMap(tparams1, tparamsHead)
       }
-      val boundsTts : List[List[Type]] = ntps.tail.map(unifyBounds).transpose
-      map2(tparamsHead, boundsTts){ (tparam, bounds) =>
+      mapWithIndex(tparamsHead){ (tparam, jx) =>
+        val bounds = mapWithIndex(ntpRest){ (ntp, ix) =>
+          val binfo = ntp.typeParams(jx).info
+          val ssm = substSymMaps(ix)
+          if (ssm == null) binfo else ssm.apply(binfo)
+        }
         tparam.cloneSymbol.setInfo(infoBoundTop(tparam.info :: bounds, depth))
       }
     }
     // Do we also need to apply substSym(typeParams, tparams1) to ptHead.resultType ??
-    val matchingInstTypes: List[Type] = ntps.map { ntp =>
-      ntp.resultType.substSym(ntp.typeParams, tparams1)
-    }
+    val matchingInstTypes: List[Type] =
+      ptHead.resultType.substSym(tparamsHead, tparamsJoined) ::
+        ntpRest.map(ntp => ntp.resultType.substSym(ntp.typeParams, tparamsJoined))
 
-    PolyType(tparams1, resultTypeBottom(matchingInstTypes))
+    PolyType(tparamsJoined, resultTypeBottom(matchingInstTypes))
   }
 
   /** All types in list must be method types with equal parameter types.
