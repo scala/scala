@@ -40,12 +40,15 @@ trait Names extends api.Names {
   /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
   private[this] var nc = 0
+  final def nameTableSize: Int = nc
 
   /** Hashtable for finding term names quickly. */
   private[this] val termHashtable = new Array[TermName](HASH_SIZE)
 
   /** Hashtable for finding type names quickly. */
   private[this] val typeHashtable = new Array[TypeName](HASH_SIZE)
+
+  final def allNames(): Iterator[TermName] = termHashtable.iterator.filter(_ ne null).flatMap(n => Iterator.iterate(n)(_.next).takeWhile(_ ne null))
 
   /**
    * The hashcode of a name depends on the first, the last and the middle character,

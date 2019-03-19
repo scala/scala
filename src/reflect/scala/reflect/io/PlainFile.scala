@@ -14,6 +14,10 @@ package scala
 package reflect
 package io
 
+import java.nio.ByteBuffer
+import java.nio.file.StandardOpenOption
+import java.util
+
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true
@@ -49,6 +53,20 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   override def input = givenPath.toFile.inputStream()
   override def output = givenPath.toFile.outputStream()
   override def sizeOption = Some(givenPath.length.toInt)
+  override def toByteBuffer: ByteBuffer = {
+    val chan = java.nio.file.Files.newByteChannel(file.toPath, util.EnumSet.of(StandardOpenOption.READ))
+    try {
+      import java.nio.ByteBuffer
+      val buffer: ByteBuffer = ByteBuffer.allocate(chan.size.toInt)
+      var endOfInput = false
+      while (!endOfInput ) {
+        endOfInput = chan.read(buffer) < 0
+        buffer.compact()
+      }
+      buffer.flip()
+      buffer
+    } finally chan.close()
+  }
 
   override def hashCode(): Int = fpath.hashCode()
   override def equals(that: Any): Boolean = that match {

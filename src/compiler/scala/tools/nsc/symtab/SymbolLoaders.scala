@@ -13,12 +13,12 @@
 package scala.tools.nsc
 package symtab
 
-import classfile.ClassfileParser
+import classfile.{ClassfileParser, ReusableDataReader}
 import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
-import scala.reflect.internal.util.StatisticsStatics
+import scala.reflect.internal.util.{ReusableInstance, StatisticsStatics}
 
 /** This class ...
  *
@@ -294,11 +294,11 @@ abstract class SymbolLoaders {
       }
     }
   }
-
+  private val classFileDataReader: ReusableInstance[ReusableDataReader] = new ReusableInstance[ReusableDataReader](() => new ReusableDataReader())
   class ClassfileLoader(val classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
       val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable
-    } with ClassfileParser {
+    } with ClassfileParser(classFileDataReader) {
       override protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol =
         SymbolLoaders.this.lookupMemberAtTyperPhaseIfPossible(sym, name)
       /*
