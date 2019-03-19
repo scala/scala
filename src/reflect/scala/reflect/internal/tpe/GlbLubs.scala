@@ -553,12 +553,18 @@ private[internal] trait GlbLubs {
     val ntps: List[PolyType]   = ptHead :: ptRest.map(normalizeIter)
 
     val tparams1: List[Symbol] = {
-      def unifyBounds(ntp: PolyType): List[Type] = {
+      val substSymMaps: Array[SubstSymMap] = new Array[SubstSymMap](ptRest.length)
+      foreachWithIndex(ntps.tail) { (ntp, ix) =>
         val tparams1 = ntp.typeParams
-        tparams1 map (tparam => tparam.info.substSym(tparams1, tparamsHead))
+        if (! ((tparams1 eq tparamsHead) || tparams1.isEmpty))
+          substSymMaps(ix) = new SubstSymMap(tparams1, tparamsHead)
       }
-      val boundsTts : List[List[Type]] = ntps.tail.map(unifyBounds).transpose
-      map2(tparamsHead, boundsTts){ (tparam, bounds) =>
+      mapWithIndex(tparamsHead){ (tparam, ix) =>
+        val bounds = mapWithIndex(ntps.tail){ (ntp, ix) =>
+          val binfo = ntp.typeParams(ix).info
+          val ssm = substSymMaps(ix)
+          if (ssm == null) binfo else ssm.apply(binfo)
+        }
         tparam.cloneSymbol.setInfo(infoBoundTop(tparam.info :: bounds, depth))
       }
     }
