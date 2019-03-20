@@ -986,14 +986,21 @@ trait Implicits {
       /** Sorted list of eligible implicits.
        */
       val eligible = Shadower.using(isLocalToCallsite){ shadower =>
-        val matches = iss flatMap { is =>
-          val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
+        var matches: mutable.ListBuffer[ImplicitInfo] = null
+        iss.foreach { is =>
+          is.foreach { info =>
+            if (checkValid(info.sym) && survives(info, shadower)){
+              if (matches == null) matches = mutable.ListBuffer.empty
+              matches += info
+            }
+          }
           shadower addInfos is
-          result
         }
 
         // most frequent one first
-        matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        if (matches ne null)
+          matches.toList.sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        else Nil
       }
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
