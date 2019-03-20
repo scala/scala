@@ -13,7 +13,7 @@ import sbt.librarymanagement.{
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "0.14.0-bin-20190226-afc03c9-NIGHTLY"
+  val dottyVersion = "0.14.0-bin-20190320-b213f24-NIGHTLY"
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(
