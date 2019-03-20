@@ -280,6 +280,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
           val arr    = if (len == 0) Array.emptyByteArray else new Array[Byte](len)
           var offset = 0
 
+          @tailrec
           def loop(): Unit = {
             if (offset < len) {
               val read = in.read(arr, offset, len - offset)

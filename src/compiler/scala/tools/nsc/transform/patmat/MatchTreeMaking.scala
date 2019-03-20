@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.tailrec
 import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
@@ -374,6 +375,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // Check if a type is defined in a static location. Unlike `tp.isStatic` before `flatten`,
           // this also includes methods and (possibly nested) objects inside of methods.
           def definedInStaticLocation(tp: Type): Boolean = {
+            @tailrec
             def isStatic(tp: Type): Boolean =
               if (tp == NoType || tp.typeSymbol.isPackageClass || tp == NoPrefix) true
               else if (tp.typeSymbol.isModuleClass) isStatic(tp.prefix)

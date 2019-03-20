@@ -16,7 +16,7 @@ package internal
 
 import java.net.URLClassLoader
 
-import scala.annotation.elidable
+import scala.annotation.{elidable, tailrec}
 import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
@@ -325,6 +325,7 @@ abstract class SymbolTable extends macros.Universe
     }
 
   final def isValidForBaseClasses(period: Period): Boolean = {
+    @tailrec
     def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
       it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)

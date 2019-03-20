@@ -530,6 +530,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     private[this] var nextElementDefined: Boolean = false
     private[this] var nextElement: A = _
 
+    @tailrec
     def hasNext: Boolean = nextElementDefined || (self.hasNext && {
       val a = self.next()
       if (traversedValues.add(f(a))) {
@@ -637,7 +638,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
      * iterator is referring (the finish() method) and thus triggering
      * handling of structural calls. It's not what's intended here.
      */
-    class Leading extends AbstractIterator[A] {
+    final class Leading extends AbstractIterator[A] {
       private[this] var lookahead: mutable.Queue[A] = null
       private[this] var hd: A = _
       /* Status is kept with magic numbers
@@ -670,6 +671,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
         }
         else Iterator.empty.next()
       }
+      @tailrec
       def finish(): Boolean = status match {
         case -2 => status = -1 ; true
         case -1 => false

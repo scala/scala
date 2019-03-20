@@ -18,9 +18,10 @@ package ast.parser
 
 import scala.collection.mutable
 import mutable.ListBuffer
-import scala.reflect.internal.{ Precedence, ModifierFlags => Flags }
+import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
 import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator, ListOfNil }
 import Tokens._
+import scala.annotation.tailrec
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -519,7 +520,8 @@ self =>
       t
     }
 
-    def isWildcard(t: Tree): Boolean = t match {
+    @tailrec
+    final def isWildcard(t: Tree): Boolean = t match {
       case Ident(name1) => !placeholderParams.isEmpty && name1 == placeholderParams.head.name
       case Typed(t1, _) => isWildcard(t1)
       case Annotated(t1, _) => isWildcard(t1)
@@ -955,6 +957,7 @@ self =>
       if (samePrecedence)
         checkHeadAssoc(leftAssoc)
 
+      @tailrec
       def loop(top: Tree): Tree = if (canReduce) {
         val info = popOpInfo()
         if (!isExpr && info.targs.nonEmpty) {
@@ -1087,7 +1090,8 @@ self =>
         val point      = if (name == tpnme.ERROR) hashOffset else nameOffset
         atPos(t.pos.start, point)(SelectFromTypeTree(t, name))
       }
-      def simpleTypeRest(t: Tree): Tree = in.token match {
+      @tailrec
+      final def simpleTypeRest(t: Tree): Tree = in.token match {
         case HASH     => simpleTypeRest(typeProjection(t))
         case LBRACKET => simpleTypeRest(atPos(t.pos.start, t.pos.point)(AppliedTypeTree(t, typeArgs())))
         case _        => t
@@ -1249,7 +1253,8 @@ self =>
       t
     }
 
-    def selectors(t: Tree, typeOK: Boolean, dotOffset: Offset): Tree =
+    @tailrec
+    final def selectors(t: Tree, typeOK: Boolean, dotOffset: Offset): Tree =
       if (typeOK && in.token == TYPE) {
         in.nextToken()
         atPos(t.pos.start, dotOffset) { SingletonTypeTree(t) }
@@ -1682,6 +1687,7 @@ self =>
       val start = in.offset
       val base  = opstack
 
+      @tailrec
       def loop(top: Tree): Tree = if (!isIdent) top else {
         pushOpInfo(reduceExprStack(base, top))
         newLineOptWhenFollowing(isExprIntroToken)
@@ -1762,7 +1768,8 @@ self =>
       simpleExprRest(t, canApply = canApply)
     }
 
-    def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
+    @tailrec
+    final def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
       if (canApply) newLineOptWhenFollowedBy(LBRACE)
       in.token match {
         case DOT =>
@@ -2047,6 +2054,7 @@ self =>
           )
           case _ => EmptyTree
         }
+        @tailrec
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
           case next if isIdent && !isRawBar => pushOpInfo(next) ; loop(simplePattern(() => badPattern3()))
           case next                         => next
@@ -2171,6 +2179,7 @@ self =>
     /** Drop `private` modifier when followed by a qualifier.
      *  Contract `abstract` and `override` to ABSOVERRIDE
      */
+    @tailrec
     private def normalizeModifiers(mods: Modifiers): Modifiers =
       if (mods.isPrivate && mods.hasAccessBoundary)
         normalizeModifiers(mods &~ Flags.PRIVATE)
@@ -2235,6 +2244,7 @@ self =>
      *  }}}
      */
     def modifiers(): Modifiers = normalizeModifiers {
+      @tailrec
       def loop(mods: Modifiers): Modifiers = in.token match {
         case PRIVATE | PROTECTED =>
           loop(accessQualifierOpt(addMod(mods, flagTokens(in.token), tokenRange(in))))
@@ -2255,6 +2265,7 @@ self =>
      *  }}}
      */
     def localModifiers(): Modifiers = {
+      @tailrec
       def loop(mods: Modifiers): Modifiers =
         if (isLocalModifier) loop(addMod(mods, flagTokens(in.token), tokenRange(in)))
         else mods

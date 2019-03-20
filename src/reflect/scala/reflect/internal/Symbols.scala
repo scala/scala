@@ -698,6 +698,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  to be the case if it is final, and any type parameters are invariant.
      */
     def hasOnlyBottomSubclasses = {
+      @tailrec
       def loop(tparams: List[Symbol]): Boolean = tparams match {
         case Nil     => true
         case x :: xs => x.variance.isInvariant && loop(xs)
@@ -864,7 +865,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def skipPackageObject: Symbol = this
 
     /** The package object symbol corresponding to this package or package class symbol, or NoSymbol otherwise */
-    def packageObject: Symbol =
+    @tailrec
+    final def packageObject: Symbol =
       if (isPackageClass) tpe.packageObject
       else if (hasPackageFlag) moduleClass.packageObject
       else NoSymbol
@@ -905,7 +907,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         )
       }
 
-    def isStrictFP: Boolean    = !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
+    @tailrec
+    final def isStrictFP: Boolean    = this != NoSymbol && !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
     def isDeprecated           = hasAnnotation(DeprecatedAttr)
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
@@ -1089,6 +1092,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (2) it is abstract override and its super symbol in `base` is
      *      nonexistent or incomplete.
      */
+    @tailrec
     final def isIncompleteIn(base: Symbol): Boolean =
       this.isDeferred ||
       (this hasFlag ABSOVERRIDE) && {
@@ -1936,6 +1940,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (this isNestedIn that) holds iff this symbol is defined within
      *  a class or method defining that symbol
      */
+    @tailrec
     final def isNestedIn(that: Symbol): Boolean =
       owner == that || owner != NoSymbol && (owner isNestedIn that)
 
@@ -2133,6 +2138,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  This is the enclosing class, except for classes defined locally to constructors,
      *  where it is the outer class of the enclosing class.
      */
+    @tailrec
     final def outerClass: Symbol =
       if (this == NoSymbol) {
         // ideally we shouldn't get here, but it's better to harden against this than suffer the infinite loop in scala/bug#9133
@@ -2236,20 +2242,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (or, for traits: `$init`) of `C`.
      *
      */
+    @tailrec
     final def logicallyEnclosingMember: Symbol =
       if (isLocalDummy) enclClass.primaryConstructor
       else if (isMethod || isClass || this == NoSymbol) this
       else owner.logicallyEnclosingMember
 
     /** The top-level class containing this symbol, using the current owner chain. */
-    def enclosingTopLevelClass: Symbol =
-      if (isTopLevel) {
+    @tailrec
+    final def enclosingTopLevelClass: Symbol =
+      if (this eq NoSymbol) this
+      else if (isTopLevel) {
         if (isClass) this else moduleClass
       } else owner.enclosingTopLevelClass
 
     /** The top-level class or local dummy symbol containing this symbol, using the original owner chain. */
-    def originalEnclosingTopLevelClassOrDummy: Symbol =
-      if (isTopLevel) {
+    @tailrec
+    final def originalEnclosingTopLevelClassOrDummy: Symbol =
+      if (this eq NoSymbol) this
+      else if (isTopLevel) {
         if (isClass) this else moduleClass.orElse(this)
       } else originalOwner.originalEnclosingTopLevelClassOrDummy
 
@@ -2532,6 +2543,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  is not a constructor nor a static module rename it by expanding its name to avoid name clashes
      *  @param base  the fully qualified name of this class will be appended if name expansion is needed
      */
+    @tailrec
     final def makeNotPrivate(base: Symbol): Unit = {
       if (this.isPrivate) {
         setFlag(notPRIVATE) // this makes it effectively final (isEffectivelyFinal)
@@ -3022,6 +3034,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
     override def returnType: Type = {
+      @tailrec
       def loop(tpe: Type): Type =
         tpe match {
           case NullaryMethodType(ret) => loop(ret)
@@ -3586,7 +3599,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def flagMask = AllFlags
     override def exists = false
     override def isHigherOrderTypeParameter = false
-    override def isStrictFP = false
     override def companionClass = NoSymbol
     override def companionModule = NoSymbol
     override def companionSymbol = NoSymbol
@@ -3596,8 +3608,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def locationString: String = ""
     override def enclClassChain = Nil
     override def enclClass: Symbol = this
-    override def enclosingTopLevelClass: Symbol = this
-    override def originalEnclosingTopLevelClassOrDummy: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile
@@ -3727,6 +3737,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** Return closest enclosing method, unless shadowed by an enclosing class. */
   // TODO Move back to ExplicitOuter when the other call site is removed.
   // no use of closures here in the interest of speed.
+  @tailrec
   final def closestEnclMethod(from: Symbol): Symbol =
     if (from.isSourceMethod) from
     else if (from.isClass) NoSymbol
@@ -3739,7 +3750,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for type histories */
-  private case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
+  private final case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
     assert((prev eq null) || phaseId(validFrom) > phaseId(prev.validFrom), this)
     assert(validFrom != NoPeriod, this)
 
@@ -3751,7 +3762,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
 
-    def oldest: TypeHistory = if (prev == null) this else prev.oldest
+    @tailrec def oldest: TypeHistory = if (prev == null) this else prev.oldest
   }
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------

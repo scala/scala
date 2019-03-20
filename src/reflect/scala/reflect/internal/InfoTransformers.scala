@@ -14,6 +14,8 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.tailrec
+
 trait InfoTransformers {
   self: SymbolTable =>
 
@@ -27,7 +29,8 @@ trait InfoTransformers {
     val changesBaseClasses: Boolean
     def transform(sym: Symbol, tpe: Type): Type
 
-    def insert(that: InfoTransformer): Unit = {
+    @tailrec
+    final def insert(that: InfoTransformer): Unit = {
       assert(this.pid != that.pid, this.pid)
 
       if (that.pid < this.pid) {
@@ -47,7 +50,8 @@ trait InfoTransformers {
      *  If no such exists, the InfoTransformer with the next
      *  higher pid.
      */
-    def nextFrom(from: Phase#Id): InfoTransformer =
+    @tailrec
+    final def nextFrom(from: Phase#Id): InfoTransformer =
       if (from == this.pid) this
       else if (from < this.pid)
         if (prev.pid < from) this

@@ -17,6 +17,7 @@ import java.io.{FileInputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
 import java.nio.channels.{Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
+import scala.annotation.tailrec
 import scala.reflect.internal.Reporter
 
 /** This class implements methods to read and decode source files. */
@@ -115,6 +116,7 @@ object SourceReader {
    * argument indicates whether the byte buffer contains the last
    * chunk of the input file.
    */
+  @tailrec
   def decode(decoder: CharsetDecoder, bytes: ByteBuffer, chars: CharBuffer,
              endOfInput: Boolean): CharBuffer =
   {
@@ -134,6 +136,7 @@ object SourceReader {
    * allocating bigger ones if necessary and then flips and returns
    * the last allocated char buffer.
    */
+  @tailrec
   def flush(decoder: CharsetDecoder, chars: CharBuffer): CharBuffer = {
     val result: CoderResult = decoder.flush(chars)
     if (result.isUnderflow()) {

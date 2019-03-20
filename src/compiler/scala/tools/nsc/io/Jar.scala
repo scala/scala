@@ -19,6 +19,7 @@ import java.util.jar._
 import scala.collection.JavaConverters._
 import Attributes.Name
 
+import scala.annotation.tailrec
 import scala.collection.AbstractIterable
 
 // Attributes.Name instances:
@@ -123,6 +124,7 @@ class JarWriter(val file: File, val manifest: Manifest) {
 
   private def transfer(in: InputStream, out: OutputStream) = {
     val buf = new Array[Byte](10240)
+    @tailrec
     def loop(): Unit = in.read(buf, 0, buf.length) match {
       case -1 => in.close()
       case n  => out.write(buf, 0, n) ; loop()

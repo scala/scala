@@ -49,6 +49,7 @@ private[scala] object Parser {
       while (!done && !terminal) pos += 1
       !done
     }
+    @tailrec
     def skipToDelim(): Boolean =
       cur match {
         case q @ (DQ | SQ)        => { qpos += pos; bump(); skipToQuote(q) } && { qpos += pos; bump(); skipToDelim() }

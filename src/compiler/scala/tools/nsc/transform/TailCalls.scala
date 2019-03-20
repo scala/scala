@@ -16,6 +16,7 @@ package transform
 
 import symtab.Flags
 import Flags.SYNTHETIC
+import scala.annotation.tailrec
 
 /** Perform tail recursive call elimination.
  *
@@ -139,7 +140,8 @@ abstract class TailCalls extends Transform {
 
       final def noTailContext() = clonedTailContext(false)
       final def yesTailContext() = clonedTailContext(true)
-      protected def clonedTailContext(tailPos: Boolean): TailContext = this match {
+      @tailrec
+      protected final def clonedTailContext(tailPos: Boolean): TailContext = this match {
         case _ if this.tailPos == tailPos => this
         case clone: ClonedTailContext => clone.that.clonedTailContext(tailPos)
         case _ => new ClonedTailContext(this, tailPos)

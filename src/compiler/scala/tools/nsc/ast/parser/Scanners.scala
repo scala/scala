@@ -439,6 +439,7 @@ trait Scanners extends ScannersCommon {
 
     /** read next token, filling TokenData fields of Scanner.
      */
+    @tailrec
     protected final def fetchToken(): Unit = {
       offset = charOffset - 1
       (ch: @switch) match {
@@ -682,6 +683,7 @@ trait Scanners extends ScannersCommon {
       else syntaxError("unclosed quoted identifier")
     }
 
+    @tailrec
     private def getIdentRest(): Unit = (ch: @switch) match {
       case 'A' | 'B' | 'C' | 'D' | 'E' |
            'F' | 'G' | 'H' | 'I' | 'J' |
@@ -716,6 +718,7 @@ trait Scanners extends ScannersCommon {
         }
     }
 
+    @tailrec
     private def getOperatorRest(): Unit = (ch: @switch) match {
       case '~' | '!' | '@' | '#' | '%' |
            '^' | '*' | '+' | '-' | '<' |
@@ -1484,6 +1487,7 @@ trait Scanners extends ScannersCommon {
     var tabSeen = false
 
     def line(offset: Offset): Int = {
+      @tailrec
       def findLine(lo: Int, hi: Int): Int = {
         val mid = (lo + hi) / 2
         if (offset < lineStart(mid)) findLine(lo, mid - 1)

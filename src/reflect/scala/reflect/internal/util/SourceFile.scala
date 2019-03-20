@@ -193,6 +193,7 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
    */
   def offsetToLine(offset: Int): Int = {
     val lines = lineIndices
+    @tailrec
     def findLine(lo: Int, hi: Int, mid: Int): Int = (
       if (mid < lo || hi < mid) mid // minimal sanity check - as written this easily went into infinite loopyland
       else if (offset < lines(mid)) findLine(lo, mid - 1, (lo + mid - 1) / 2)

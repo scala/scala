@@ -277,6 +277,7 @@ abstract class UnCurry extends InfoTransform
         def sequenceToArray(tree: Tree): Tree = {
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
+          @tailrec
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (scala/bug#4024)

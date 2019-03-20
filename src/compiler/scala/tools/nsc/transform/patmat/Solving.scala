@@ -14,6 +14,7 @@ package scala.tools.nsc.transform.patmat
 
 import java.util
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.util.{Position, StatisticsStatics}
@@ -443,6 +444,7 @@ trait Solving extends Logic {
         def projectToSolution(symForVar: Map[Int, Sym]) = Solution(projectToModel(model, symForVar), unassigned map symForVar)
       }
 
+      @tailrec
       def findAllModels(clauses: Array[Clause],
                         models: List[TseitinSolution],
                         recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[TseitinSolution]=

@@ -15,8 +15,9 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.collection.mutable.{ LinkedHashMap, LinkedHashSet }
+import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -122,6 +123,7 @@ abstract class LambdaLift extends InfoTransform {
      * `logicallyEnclosingMember` in this case to return a temporary symbol corresponding to that
      * method.
      */
+    @tailrec
     private def logicallyEnclosingMember(sym: Symbol): Symbol = {
       if (sym.isLocalDummy) {
         val enclClass = sym.enclClass
