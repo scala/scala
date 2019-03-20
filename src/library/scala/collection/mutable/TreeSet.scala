@@ -194,7 +194,7 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         new TreeSet[E](RB.fromOrderedKeys(ss.iterator, ss.size))
       case r: Range if (ordering eq Ordering.Int) || (ordering eq Ordering.Int.reverse) =>
         val it = if((ordering eq Ordering.Int) == (r.step > 0)) r.iterator else r.reverseIterator
-        new TreeSet[E](RB.fromOrderedKeys(it, r.size))
+        new TreeSet[E](RB.fromOrderedKeys(it.asInstanceOf[Iterator[E]], r.size))
       case _ =>
         val t: RB.Tree[E, Null] = RB.Tree.empty
         val i = it.iterator
