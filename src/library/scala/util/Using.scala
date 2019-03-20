@@ -379,7 +379,9 @@ object Using {
 
   object Releasable {
     /** An implicit `Releasable` for [[java.lang.AutoCloseable `AutoCloseable`s]]. */
-    implicit val autoCloseableIsReleasable: Releasable[AutoCloseable] = (resource: AutoCloseable) => resource.close()
+    implicit object AutoCloseableIsReleasable extends Releasable[AutoCloseable] {
+      def release(resource: AutoCloseable): Unit = resource.close()
+    }
   }
 
 }
