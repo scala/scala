@@ -160,13 +160,13 @@ object ExecutionContext {
    *
    * Any `NonFatal` or `InterruptedException`s will be reported to the `defaultReporter`.
    */
-  final object parasitic extends ExecutionContextExecutor with BatchingExecutor {
+  object parasitic extends ExecutionContextExecutor with BatchingExecutor {
     override final def submitForExecution(runnable: Runnable): Unit = runnable.run()
     override final def execute(runnable: Runnable): Unit = submitSyncBatched(runnable)
     override final def reportFailure(t: Throwable): Unit = defaultReporter(t)
   }
 
-  final object Implicits {
+  object Implicits {
     /**
      * The implicit global `ExecutionContext`. Import `global` when you want to provide the global
      * `ExecutionContext` implicitly.

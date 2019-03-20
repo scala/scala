@@ -78,7 +78,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     newHashSetOrThis(newRootNode)
   }
 
-  override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] =
+  override def concat(that: IterableOnce[A]): HashSet[A] =
     that match {
       case hs: HashSet[A] => newHashSetOrThis(rootNode.concat(hs.rootNode, 0))
       case _ => super.concat(that)
