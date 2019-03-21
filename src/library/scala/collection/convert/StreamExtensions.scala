@@ -171,22 +171,22 @@ trait StreamExtensions {
      * A sequential stream on the characters of a string, same as [[asJavaSeqCharStream]]. See also
      * [[asJavaSeqCodePointStream]].
      */
-    def asJavaSeqStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ false)
+    def asJavaSeqStream: IntStream = StreamSupport.intStream(s.stepper.spliterator, /* par = */ false)
     /**
      * A parallel stream on the characters of a string, same as [[asJavaParCharStream]]. See also
      * [[asJavaParCodePointStream]].
      */
-    def asJavaParStream: IntStream = StreamSupport.intStream(s.stepper, /* par = */ true)
+    def asJavaParStream: IntStream = StreamSupport.intStream(s.stepper.spliterator, /* par = */ true)
 
     /** A sequential stream on the characters of a string. See also  [[asJavaSeqCodePointStream]]. */
-    def asJavaSeqCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ false)
+    def asJavaSeqCharStream: IntStream = StreamSupport.intStream(s.charStepper.spliterator, /* par = */ false)
     /** A parallel stream on the characters of a string. See also [[asJavaParCodePointStream]]. */
-    def asJavaParCharStream: IntStream = StreamSupport.intStream(s.charStepper, /* par = */ true)
+    def asJavaParCharStream: IntStream = StreamSupport.intStream(s.charStepper.spliterator, /* par = */ true)
 
     /** A sequential stream on the code points of a string. See also [[asJavaSeqCharStream]]. */
-    def asJavaSeqCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ false)
+    def asJavaSeqCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper.spliterator, /* par = */ false)
     /** A parallel stream on the code points of a string. See also [[asJavaParCharStream]]. */
-    def asJavaParCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper, /* par = */ true)
+    def asJavaParCodePointStream: IntStream = StreamSupport.intStream(s.codePointStepper.spliterator, /* par = */ true)
   }
 
   // toScala for streams
@@ -306,7 +306,7 @@ trait StreamExtensions {
       else factory.fromSpecific(stream.iterator.asInstanceOf[java.util.Iterator[Double]].asScala)
     }
   }
-
+  /*
   implicit class SpliteratorHasStepper[A](s: Spliterator[A]) {
     /** Create a Stepper for this Spliterator */
     def asScalaStepper: Stepper[A] = Stepper.ofSpliterator(s)
@@ -326,4 +326,5 @@ trait StreamExtensions {
     /** Create a Stepper for this Spliterator */
     def asScalaStepper: LongStepper = Stepper.ofSpliterator(s)
   }
+  */
 }

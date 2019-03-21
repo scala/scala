@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import java.util.Spliterator
+
 import annotation.tailrec
 
 
@@ -99,11 +101,11 @@ extends EfficientSubstep {
 
   protected def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): Semi
 
-  def characteristics: Int = Stepper.Ordered
+  private[collection] def characteristics: Int = Spliterator.ORDERED
 
-  def estimateSize: Long = if (hasNext) maxLength else 0
+  private[collection] def estimateSize: Long = if (hasStep) maxLength else 0
 
-  def hasNext: Boolean = (myCurrent ne null) || (maxLength > 0 && {
+  def hasStep: Boolean = (myCurrent ne null) || (maxLength > 0 && {
     if (index < 0) { maxLength = 0; stack = BinaryTreeStepper.emptyStack; false }
     else {
       val ans = stack(index).asInstanceOf[T]
@@ -118,8 +120,8 @@ extends EfficientSubstep {
     *
     * If the tree is empty or only has one element left, it returns `null` instead of splitting.
     */
-  def substep(): Sub =
-    if (!hasNext || index < 0) null
+  private[collection] def trySplit(): Sub =
+    if (!hasStep || index < 0) null
     else {
       val root = stack(0).asInstanceOf[T]
       val leftStack = 
@@ -143,8 +145,8 @@ private[collection] final class AnyBinaryTreeStepper[A, T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[A, T, AnyStepper[A], AnyBinaryTreeStepper[A, T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with AnyStepper[A] {
-  def next(): A =
-    if (hasNext) {
+  def nextStep(): A =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
@@ -169,8 +171,8 @@ private[collection] final class DoubleBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Double, T, DoubleStepper, DoubleBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with DoubleStepper {
-  def nextDouble(): Double =
-    if (hasNext) {
+  def nextStep(): Double =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
@@ -195,8 +197,8 @@ private[collection] final class IntBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Int, T, IntStepper, IntBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with IntStepper {
-  def nextInt(): Int =
-    if (hasNext) {
+  def nextStep(): Int =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1
@@ -222,8 +224,8 @@ private[collection] final class LongBinaryTreeStepper[T >: Null <: AnyRef](
 )
 extends BinaryTreeStepperBase[Long, T, LongStepper, LongBinaryTreeStepper[T]](_maxLength, _myCurrent, _stack, _index, _left, _right)
 with LongStepper {
-  def nextLong(): Long =
-    if (hasNext) {
+  def nextStep(): Long =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = null
       maxLength -= 1

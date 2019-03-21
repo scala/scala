@@ -13,6 +13,9 @@
 package scala.collection.convert
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.util.Spliterator
+import java.util.function.{Consumer, LongConsumer}
+import java.{lang => jl}
 
 import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
@@ -100,7 +103,7 @@ final class LongAccumulator
     else {
       val slots = (if (index > 0) 1 else 0) + that.hIndex - h
       if (hIndex + slots > history.length) {
-        val n = math.max(4, 1 << (32 - java.lang.Integer.numberOfLeadingZeros(1 + hIndex + slots)))
+        val n = math.max(4, 1 << (32 - jl.Integer.numberOfLeadingZeros(1 + hIndex + slots)))
         history = java.util.Arrays.copyOf(history, n)
       }
       var pv = if (hIndex > 0) cumulative(hIndex-1) else 0L
@@ -214,7 +217,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   private val emptyLongArray = new Array[Long](0)
   private val emptyLongArrayArray = new Array[Array[Long]](0)
 
-  implicit def toJavaLongAccumulator(ia: LongAccumulator.type): collection.SpecificIterableFactory[java.lang.Long, LongAccumulator] = LongAccumulator.asInstanceOf[collection.SpecificIterableFactory[java.lang.Long, LongAccumulator]]
+  implicit def toJavaLongAccumulator(ia: LongAccumulator.type): collection.SpecificIterableFactory[jl.Long, LongAccumulator] = LongAccumulator.asInstanceOf[collection.SpecificIterableFactory[jl.Long, LongAccumulator]]
 
   import java.util.{function => jf}
 
@@ -301,13 +304,13 @@ private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) 
     i = 0
   }
 
-  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
+  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  def estimateSize: Long = N
+  private[collection] def estimateSize: Long = N
 
-  def hasNext: Boolean = N > 0
+  def hasStep: Boolean = N > 0
 
-  def nextLong(): Long =
+  def nextStep(): Long =
     if (n <= 0) throw new NoSuchElementException("next on empty Stepper")
     else {
       if (i >= n) loadMore()
@@ -317,57 +320,7 @@ private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) 
       ans
     }
 
-  // Overridden for efficiency
-  override def tryStep(f: Long => Unit): Boolean =
-    if (N <= 0) false
-    else {
-      if (i >= n) loadMore()
-      f(a(i))
-      i += 1
-      N -= 1
-      true
-    }
-
-  // Overridden for efficiency
-  override def tryAdvance(f: java.util.function.LongConsumer): Boolean =
-    if (N <= 0) false
-    else {
-      if (i >= n) loadMore()
-      f.accept(a(i))
-      i += 1
-      N -= 1
-      true
-    }
-
-  // Overridden for efficiency
-  override def foreach[U](f: Long => U): Unit = {
-    while (N > 0) {
-      if (i >= n) loadMore()
-      val i0 = i
-      if ((n-i) > N) n = i + N.toInt
-      while (i < n) {
-        f(a(i))
-        i += 1
-      }
-      N -= (n - i0)
-    }
-  }
-
-  // Overridden for efficiency
-  override def forEachRemaining(f: java.util.function.LongConsumer): Unit = {
-    while (N > 0) {
-      if (i >= n) loadMore()
-      val i0 = i
-      if ((n-i) > N) n = i + N.toInt
-      while (i < n) {
-        f.accept(a(i))
-        i += 1
-      }
-      N -= (n - i0)
-    }
-  }
-
-  def substep(): LongStepper =
+  private[collection] def trySplit(): LongStepper =
     if (N <= 1) null
     else {
       val half = N >> 1
@@ -391,4 +344,60 @@ private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) 
       N -= half
       ans
     }
+
+  override def spliterator: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this) {
+    // Overridden for efficiency
+    override def tryAdvance(c: LongConsumer): Boolean =
+      if (N <= 0) false
+      else {
+        if (i >= n) loadMore()
+        c.accept(a(i))
+        i += 1
+        N -= 1
+        true
+      }
+
+    // Overridden for efficiency
+    override def tryAdvance(c: Consumer[_ >: jl.Long]): Boolean = (c: AnyRef) match {
+      case ic: LongConsumer => tryAdvance(ic)
+      case _ =>
+        if (N <= 0) false
+        else {
+          if (i >= n) loadMore()
+          c.accept(a(i))
+          i += 1
+          N -= 1
+          true
+        }
+    }
+
+    // Overridden for efficiency
+    override def forEachRemaining(c: LongConsumer): Unit =
+      while (N > 0) {
+        if (i >= n) loadMore()
+        val i0 = i
+        if ((n-i) > N) n = i + N.toInt
+        while (i < n) {
+          c.accept(a(i))
+          i += 1
+        }
+        N -= (n - i0)
+      }
+
+    // Overridden for efficiency
+    override def forEachRemaining(c: Consumer[_ >: jl.Long]): Unit = (c: AnyRef) match {
+      case ic: LongConsumer => forEachRemaining(ic)
+      case _ =>
+        while (N > 0) {
+          if (i >= n) loadMore()
+          val i0 = i
+          if ((n-i) > N) n = i + N.toInt
+          while (i < n) {
+            c.accept(a(i))
+            i += 1
+          }
+          N -= (n - i0)
+        }
+    }
+  }
 }

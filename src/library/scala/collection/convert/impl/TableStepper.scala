@@ -36,13 +36,13 @@ extends EfficientSubstep {
 
   protected def semiclone(half: Int): Semi
 
-  def characteristics: Int = 0
+  private[collection] def characteristics: Int = 0
 
-  def estimateSize: Long = if (!hasNext) { maxLength = 0; 0 } else maxLength
+  private[collection] def estimateSize: Long = if (!hasStep) { maxLength = 0; 0 } else maxLength
 
-  def hasNext: Boolean = (myCurrent ne null) || findNextCurrent()
+  def hasStep: Boolean = (myCurrent ne null) || findNextCurrent()
 
-  def substep(): Sub = {
+  private[collection] def trySplit(): Sub = {
     if (iN-1 > i0 && maxLength > 0) {
       val half = (i0 + iN) >>> 1
       val ans = semiclone(half)
@@ -71,8 +71,8 @@ private[collection] final class AnyTableStepper[A, I >: Null <: AnyRef](
 )
 extends TableStepperBase[A, I, AnyStepper[A], AnyTableStepper[A, I]](_maxLength, _table, _i0, _iN)
 with AnyStepper[A] {
-  def next(): A =
-    if (hasNext) {
+  def nextStep(): A =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
@@ -88,8 +88,8 @@ private[collection] final class DoubleTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Double, I, DoubleStepper, DoubleTableStepper[I]](_maxLength, _table, _i0, _iN)
 with DoubleStepper {
-  def nextDouble(): Double =
-    if (hasNext) {
+  def nextStep(): Double =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
@@ -105,8 +105,8 @@ private[collection] final class IntTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Int, I, IntStepper, IntTableStepper[I]](_maxLength, _table, _i0, _iN)
 with IntStepper {
-  def nextInt(): Int =
-    if (hasNext) {
+  def nextStep(): Int =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans
@@ -122,8 +122,8 @@ private[collection] final class LongTableStepper[I >: Null <: AnyRef](
 )
 extends TableStepperBase[Long, I, LongStepper, LongTableStepper[I]](_maxLength, _table, _i0, _iN)
 with LongStepper {
-  def nextLong(): Long =
-    if (hasNext) {
+  def nextStep(): Long =
+    if (hasStep) {
       val ans = extract(myCurrent)
       myCurrent = iterate(myCurrent)
       ans

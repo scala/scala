@@ -13,21 +13,23 @@
 package scala.collection.convert
 package impl
 
+import java.util.Spliterator
+
 private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
   extends IteratorStepperBase[A, AnyStepper[A], AnyIteratorStepper[A]](_underlying)
     with AnyStepper[A] {
   protected def semiclone(): AnyIteratorStepper[A] = new AnyIteratorStepper(null)
 
-  def next(): A = if (proxied ne null) proxied.nextStep() else underlying.next()
+  def nextStep(): A = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  override def substep(): AnyStepper[A] = if (proxied ne null) proxied.substep() else {
+  private[collection] def trySplit(): AnyStepper[A] = if (proxied ne null) proxied.trySplit() else {
     val acc = new AnyAccumulator[A]
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
     while (i < n && underlying.hasNext) { acc += underlying.next(); i += 1 }
     if (i < n || !underlying.hasNext) {
       proxied = acc.stepper
-      proxied.substep()
+      proxied.trySplit()
     }
     else {
       val ans = semiclone()
@@ -43,16 +45,16 @@ private[collection] class DoubleIteratorStepper(_underlying: Iterator[Double])
     with DoubleStepper {
   protected def semiclone(): DoubleIteratorStepper = new DoubleIteratorStepper(null)
 
-  def nextDouble(): Double = if (proxied ne null) proxied.nextStep() else underlying.next()
+  def nextStep(): Double = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  override def substep(): DoubleStepper = if (proxied ne null) proxied.substep() else {
+  private[collection] def trySplit(): DoubleStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new DoubleAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
     while (i < n && underlying.hasNext) { acc += underlying.next(); i += 1 }
     if (i < n || !underlying.hasNext) {
       proxied = acc.stepper
-      proxied.substep()
+      proxied.trySplit()
     }
     else {
       val ans = semiclone()
@@ -68,16 +70,16 @@ private[collection] class IntIteratorStepper(_underlying: Iterator[Int])
     with IntStepper {
   protected def semiclone(): IntIteratorStepper = new IntIteratorStepper(null)
 
-  def nextInt(): Int = if (proxied ne null) proxied.nextStep() else underlying.next()
+  def nextStep(): Int = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  override def substep(): IntStepper = if (proxied ne null) proxied.substep() else {
+  private[collection] def trySplit(): IntStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new IntAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
     while (i < n && underlying.hasNext) { acc += underlying.next(); i += 1 }
     if (i < n || !underlying.hasNext) {
       proxied = acc.stepper
-      proxied.substep()
+      proxied.trySplit()
     }
     else {
       val ans = semiclone()
@@ -93,16 +95,16 @@ private[collection] class LongIteratorStepper(_underlying: Iterator[Long])
     with LongStepper {
   protected def semiclone(): LongIteratorStepper = new LongIteratorStepper(null)
 
-  def nextLong(): Long = if (proxied ne null) proxied.nextStep() else underlying.next()
+  def nextStep(): Long = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  override def substep(): LongStepper = if (proxied ne null) proxied.substep() else {
+  private[collection] def trySplit(): LongStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new LongAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
     while (i < n && underlying.hasNext) { acc += underlying.next(); i += 1 }
     if (i < n || !underlying.hasNext) {
       proxied = acc.stepper
-      proxied.substep()
+      proxied.trySplit()
     }
     else {
       val ans = semiclone()
@@ -118,7 +120,7 @@ private[convert] abstract class IteratorStepperBase[A, SP >: Null <: Stepper[A],
   final protected var nextChunkSize = 16
   final protected var proxied: SP = null
   protected def semiclone(): Semi        // Must initialize with null iterator!
-  def characteristics: Int = if (proxied ne null) Stepper.Ordered | Stepper.Sized | Stepper.SubSized else Stepper.Ordered
-  def estimateSize(): Long = if (proxied ne null) proxied.knownSize else Long.MaxValue
-  def hasNext: Boolean = if (proxied ne null) proxied.hasStep else underlying.hasNext
+  private[collection] def characteristics: Int = if (proxied ne null) Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED else Spliterator.ORDERED
+  private[collection] def estimateSize: Long = if (proxied ne null) proxied.estimateSize else Long.MaxValue
+  def hasStep: Boolean = if (proxied ne null) proxied.hasStep else underlying.hasNext
 }

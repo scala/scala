@@ -16,62 +16,62 @@ package impl
 private[collection] class ObjectArrayStepper[A <: Object](underlying: Array[A], _i0: Int, _iN: Int)
   extends IndexedStepperBase[AnyStepper[A], ObjectArrayStepper[A]](_i0, _iN)
     with AnyStepper[A] {
-  def next(): A = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): A = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): ObjectArrayStepper[A] = new ObjectArrayStepper[A](underlying, i0, half)
 }
 
 private[collection] class BoxedBooleanArrayStepper(underlying: Array[Boolean], _i0: Int, _iN: Int)
   extends IndexedStepperBase[AnyStepper[Boolean], BoxedBooleanArrayStepper](_i0, _iN)
     with AnyStepper[Boolean] {
-  def next(): Boolean = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Boolean = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): BoxedBooleanArrayStepper = new BoxedBooleanArrayStepper(underlying, i0, half)
 }
 
 private[collection] class WidenedByteArrayStepper(underlying: Array[Byte], _i0: Int, _iN: Int)
   extends IndexedStepperBase[IntStepper, WidenedByteArrayStepper](_i0, _iN)
     with IntStepper {
-  def nextInt(): Int = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Int = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): WidenedByteArrayStepper = new WidenedByteArrayStepper(underlying, i0, half)
 }
 
 private[collection] class WidenedCharArrayStepper(underlying: Array[Char], _i0: Int, _iN: Int)
   extends IndexedStepperBase[IntStepper, WidenedCharArrayStepper](_i0, _iN)
     with IntStepper {
-  def nextInt(): Int = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Int = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): WidenedCharArrayStepper = new WidenedCharArrayStepper(underlying, i0, half)
 }
 
 private[collection] class WidenedShortArrayStepper(underlying: Array[Short], _i0: Int, _iN: Int)
   extends IndexedStepperBase[IntStepper, WidenedShortArrayStepper](_i0, _iN)
     with IntStepper {
-  def nextInt(): Int = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Int = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): WidenedShortArrayStepper = new WidenedShortArrayStepper(underlying, i0, half)
 }
 
 private[collection] class WidenedFloatArrayStepper(underlying: Array[Float], _i0: Int, _iN: Int)
   extends IndexedStepperBase[DoubleStepper, WidenedFloatArrayStepper](_i0, _iN)
     with DoubleStepper {
-  def nextDouble(): Double = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Double = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): WidenedFloatArrayStepper = new WidenedFloatArrayStepper(underlying, i0, half)
 }
 
 private[collection] class DoubleArrayStepper(underlying: Array[Double], _i0: Int, _iN: Int)
   extends IndexedStepperBase[DoubleStepper, DoubleArrayStepper](_i0, _iN)
     with DoubleStepper {
-  def nextDouble(): Double = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Double = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): DoubleArrayStepper = new DoubleArrayStepper(underlying, i0, half)
 }
 
 private[collection] class IntArrayStepper(underlying: Array[Int], _i0: Int, _iN: Int)
   extends IndexedStepperBase[IntStepper, IntArrayStepper](_i0, _iN)
     with IntStepper {
-  def nextInt(): Int = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Int = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): IntArrayStepper = new IntArrayStepper(underlying, i0, half)
 }
 
 private[collection] class LongArrayStepper(underlying: Array[Long], _i0: Int, _iN: Int)
   extends IndexedStepperBase[LongStepper, LongArrayStepper](_i0, _iN)
     with LongStepper {
-  def nextLong(): Long = if (hasNext) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
+  def nextStep(): Long = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()
   protected def semiclone(half: Int): LongArrayStepper = new LongArrayStepper(underlying, i0, half)
 }

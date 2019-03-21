@@ -13,6 +13,8 @@
 package scala.collection.convert
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.util.Spliterator
+import java.util.function.Consumer
 
 import scala.collection.convert.impl.StepperShape
 import scala.collection.{Factory, mutable}
@@ -303,13 +305,13 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
     i = 0
   }
 
-  def characteristics: Int = ORDERED | SIZED | SUBSIZED
+  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED
 
-  def estimateSize: Long = N
+  private[collection] def estimateSize: Long = N
 
-  def hasNext: Boolean = N > 0
+  def hasStep: Boolean = N > 0
 
-  def next(): A =
+  def nextStep(): A =
     if (N <= 0) throw new NoSuchElementException("Next in empty Stepper")
     else {
       if (i >= n) loadMore()
@@ -319,57 +321,7 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
       ans
     }
 
-  // Overidden for efficiency
-  override def tryStep(f: A => Unit): Boolean =
-    if (N <= 0) false
-    else {
-      if (i >= n) loadMore()
-      f(a(i).asInstanceOf[A])
-      i += 1
-      N -= 1
-      true
-    }
-
-  // Overidden for efficiency
-  override def tryAdvance(f: java.util.function.Consumer[_ >: A]): Boolean =
-    if (N <= 0) false
-    else {
-      if (i >= n) loadMore()
-      f.accept(a(i).asInstanceOf[A])
-      i += 1
-      N -= 1
-      true
-    }
-
-  // Overridden for efficiency
-  override def foreach[U](f: A => U): Unit = {
-    while (N > 0) {
-      if (i >= n) loadMore()
-      val i0 = i
-      if ((n-i) > N) n = i + N.toInt
-      while (i < n) {
-        f(a(i).asInstanceOf[A])
-        i += 1
-      }
-      N -= (n - i0)
-    }
-  }
-
-  // Overridden for efficiency
-  override def forEachRemaining(f: java.util.function.Consumer[_ >: A]): Unit = {
-    while (N > 0) {
-      if (i >= n) loadMore()
-      val i0 = i
-      if ((n-i) > N) n = i + N.toInt
-      while (i < n) {
-        f.accept(a(i).asInstanceOf[A])
-        i += 1
-      }
-      N -= (n - i0)
-    }
-  }
-
-  def substep(): AnyStepper[A] =
+  private[collection] def trySplit(): AnyStepper[A] =
     if (N <= 1) null
     else {
       val half = N >> 1
@@ -394,5 +346,31 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
       ans
     }
 
-  override def toString = s"$h $i ${a.mkString("{",",","}")} $n $N"
+  override def spliterator: Spliterator[A] = new AnyStepper.AnyStepperSpliterator(this) {
+    // Overridden for efficiency
+    override def tryAdvance(c: Consumer[_ >: A]): Boolean = {
+      if (N <= 0) false
+      else {
+        if (i >= n) loadMore()
+        c.accept(a(i).asInstanceOf[A])
+        i += 1
+        N -= 1
+        true
+      }
+    }
+
+    // Overridden for efficiency
+    override def forEachRemaining(f: java.util.function.Consumer[_ >: A]): Unit = {
+      while (N > 0) {
+        if (i >= n) loadMore()
+        val i0 = i
+        if ((n-i) > N) n = i + N.toInt
+        while (i < n) {
+          f.accept(a(i).asInstanceOf[A])
+          i += 1
+        }
+        N -= (n - i0)
+      }
+    }
+  }
 }

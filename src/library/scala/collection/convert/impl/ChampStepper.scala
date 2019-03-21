@@ -141,20 +141,20 @@ extends EfficientSubstep {
     false
   }
 
-  def characteristics: Int = 0
+  private[collection] def characteristics: Int = 0
 
-  def estimateSize: Long = if (hasNext) maxSize else 0L
+  private[collection] def estimateSize: Long = if (hasStep) maxSize else 0L
 
   def semiclone(): Semi
 
-  final def hasNext: Boolean = maxSize > 0 && {
+  final def hasStep: Boolean = maxSize > 0 && {
     val ans = (currentValueCursor < currentValueLength) || searchNextValueNode()
     if (!ans) maxSize = 0
     ans
   }
 
-  final def substep(): Sub =
-    if (!hasNext) null
+  final private[collection] def trySplit(): Sub =
+    if (!hasStep) null
     else {
       val root = effectiveRootLevel
       if (root < 0) {
@@ -177,8 +177,8 @@ extends EfficientSubstep {
 private[collection] final class AnyChampStepper[A, T >: Null <: Node[T]](_maxSize: Int, protected val extract: (T, Int) => A)
 extends ChampStepperBase[A, T, AnyStepper[A], AnyChampStepper[A, T]](_maxSize)
 with AnyStepper[A] {
-  def next(): A =
-    if (hasNext) {
+  def nextStep(): A =
+    if (hasStep) {
       val ans = extract(currentValueNode, currentValueCursor)
       currentValueCursor += 1
       maxSize -= 1
@@ -199,8 +199,8 @@ private[collection] object AnyChampStepper {
 private[collection] final class DoubleChampStepper[T >: Null <: Node[T]](_maxSize: Int, protected val extract: (T, Int) => Double)
 extends ChampStepperBase[Double, T, DoubleStepper, DoubleChampStepper[T]](_maxSize)
 with DoubleStepper {
-  def nextDouble(): Double =
-    if (hasNext) {
+  def nextStep(): Double =
+    if (hasStep) {
       val ans = extract(currentValueNode, currentValueCursor)
       currentValueCursor += 1
       maxSize -= 1
@@ -221,8 +221,8 @@ private[collection] object DoubleChampStepper {
 private[collection] final class IntChampStepper[T >: Null <: Node[T]](_maxSize: Int, protected val extract: (T, Int) => Int)
 extends ChampStepperBase[Int, T, IntStepper, IntChampStepper[T]](_maxSize)
 with IntStepper {
-  def nextInt(): Int =
-    if (hasNext) {
+  def nextStep(): Int =
+    if (hasStep) {
       val ans = extract(currentValueNode, currentValueCursor)
       currentValueCursor += 1
       maxSize -= 1
@@ -243,8 +243,8 @@ private[collection] object IntChampStepper {
 private[collection] final class LongChampStepper[T >: Null <: Node[T]](_maxSize: Int, protected val extract: (T, Int) => Long)
 extends ChampStepperBase[Long, T, LongStepper, LongChampStepper[T]](_maxSize)
 with LongStepper {
-  def nextLong(): Long =
-    if (hasNext) {
+  def nextStep(): Long =
+    if (hasStep) {
       val ans = extract(currentValueNode, currentValueCursor)
       currentValueCursor += 1
       maxSize -= 1

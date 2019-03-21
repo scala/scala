@@ -36,15 +36,15 @@ trait StreamShapeLowPriority1 extends StreamShapeLowPriority2 {
   implicit val floatStreamShape: StreamShape[Float, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Float]
 
   protected def mkIntStreamShape[T]: StreamShape[T, IntStream, IntStepper] = new StreamShape[T, IntStream, IntStepper] {
-    protected def mkStream(st: IntStepper, par: Boolean): IntStream = StreamSupport.intStream(st, par)
+    protected def mkStream(st: IntStepper, par: Boolean): IntStream = StreamSupport.intStream(st.spliterator, par)
   }
 
   protected def mkLongStreamShape[T]: StreamShape[T, LongStream, LongStepper] = new StreamShape[T, LongStream, LongStepper] {
-    protected def mkStream(st: LongStepper, par: Boolean): LongStream = StreamSupport.longStream(st, par)
+    protected def mkStream(st: LongStepper, par: Boolean): LongStream = StreamSupport.longStream(st.spliterator, par)
   }
 
   protected def mkDoubleStreamShape[T]: StreamShape[T, DoubleStream, DoubleStepper] = new StreamShape[T, DoubleStream, DoubleStepper] {
-    protected def mkStream(st: DoubleStepper, par: Boolean): DoubleStream = StreamSupport.doubleStream(st, par)
+    protected def mkStream(st: DoubleStepper, par: Boolean): DoubleStream = StreamSupport.doubleStream(st.spliterator, par)
   }
 }
 
@@ -53,6 +53,6 @@ trait StreamShapeLowPriority2 {
   implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShape.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
 
   private[this] val anyStreamShape: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
-    def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s, par)
+    def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator, par)
   }
 }

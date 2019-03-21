@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import java.util.Spliterator
+
 /** Abstracts all the generic operations of stepping over a collection
   * that has an indexable ordering but may have gaps.
   *
@@ -31,13 +33,13 @@ extends EfficientSubstep {
 
   protected def semiclone(half: Int): Semi
 
-  def characteristics: Int = Stepper.Ordered 
+  final def hasStep: Boolean = found || findNext()
 
-  def estimateSize(): Long = iN - i0
+  private[collection] def characteristics: Int = Spliterator.ORDERED
 
-  final def hasNext: Boolean = found || findNext()
+  private[collection] def estimateSize: Long = iN - i0
 
-  def substep(): Sub = {
+  private[collection] def trySplit(): Sub = {
     if (iN-1 > i0) {
       val half = (i0 + iN) >>> 1
       val ans = semiclone(half)

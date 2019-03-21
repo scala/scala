@@ -75,6 +75,7 @@ class StreamConvertersTest {
     (s2pps: IntStream).count()
   }
 
+  /*
   @Test
   def spliteratorHasStepper(): Unit = {
     import scala.jdk.StreamConverters.Ops._
@@ -89,6 +90,7 @@ class StreamConvertersTest {
     val sas = sa.asJavaSeqStream.spliterator.asScalaStepper
     (sas: Stepper[String]).nextStep()
   }
+  */
 
   @Test
   def toArrayTests(): Unit = {
@@ -97,17 +99,21 @@ class StreamConvertersTest {
 
     def f(a: Any) = ()
 
+    /*
     val ias = ia.stepper
     (ias: IntStepper).toArray : Array[Int]
     val bas = ba.stepper
     (bas: IntStepper).toArray : Array[Int]
+    */
 
     val iaa = ia.to(Accumulator)
     (iaa: IntAccumulator).toArray : Array[Int]
     val baa = ba.to(Accumulator)
     (baa: AnyAccumulator[Byte]).toArray : Array[Byte]
+    /*
     val baai = ba.stepper.to(Accumulator)
     (baai: IntAccumulator).toArray : Array[Int]
+    */
   }
 
   @Test
@@ -208,6 +214,7 @@ class StreamConvertersTest {
     val is = il.stepper
     val ss = sl.stepper
 
+    /*
     val isa1 = is.to(AnyAccumulator)
     (isa1: AnyAccumulator[Int]).clear()
     val isa2 = is.to(IntAccumulator)
@@ -219,6 +226,7 @@ class StreamConvertersTest {
     (ssa1: AnyAccumulator[String]).clear()
     val ssa2 = ss.to(Accumulator)
     (ssa2: AnyAccumulator[String]).clear()
+    */
   }
 
   // check that `stepper` returns the right type

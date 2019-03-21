@@ -94,7 +94,7 @@ with IntStepper {
     else if ((bits & (1L << from)) != 0) from
     else scanLong(bits, from + 1)
 
-  def nextInt(): Int =
+  def nextStep(): Int =
     if (found || findNext()) { 
       found = false
       val ans = i0

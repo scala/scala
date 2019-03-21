@@ -14,14 +14,15 @@ package scala.collection.convert
 package impl
 
 import java.lang.Character.{charCount, isLowSurrogate}
+import java.util.Spliterator
 
 /** Implements `Stepper` on a `String` where you step through chars packed into `Int`.
   */
 private[collection] final class CharStringStepper(underlying: String, _i0: Int, _iN: Int)
 extends IndexedStepperBase[IntStepper, CharStringStepper](_i0, _iN)
 with IntStepper {
-  def nextInt(): Int =
-    if (hasNext) { val j = i0; i0 += 1; underlying.charAt(j) }
+  def nextStep(): Int =
+    if (hasStep) { val j = i0; i0 += 1; underlying.charAt(j) }
     else Stepper.throwNSEE()
 
   def semiclone(half: Int): CharStringStepper = new CharStringStepper(underlying, i0, half)
@@ -31,18 +32,18 @@ with IntStepper {
   */
 private[collection] final class CodePointStringStepper(underlying: String, private var i0: Int, private var iN: Int)
 extends IntStepper with EfficientSubstep {
-  def characteristics(): Int = Stepper.Immutable | Stepper.NonNull | Stepper.Ordered
-  def estimateSize: Long = iN - i0
-  def hasNext: Boolean = i0 < iN
-  def nextInt(): Int = {
-    if (hasNext) {
+  private[collection] def characteristics: Int = Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED
+  private[collection] def estimateSize: Long = iN - i0
+  def hasStep: Boolean = i0 < iN
+  def nextStep(): Int = {
+    if (hasStep) {
       val cp = underlying.codePointAt(i0)
       i0 += charCount(cp)
       cp
     }
     else Stepper.throwNSEE()
   }
-  def substep(): CodePointStringStepper =
+  private[collection] def trySplit(): CodePointStringStepper =
     if (iN - 3 > i0) {
       var half = (i0 + iN) >>> 1
       if (isLowSurrogate(underlying.charAt(half))) half -= 1

@@ -59,7 +59,7 @@ extends IndexedStepperBase[Sub, Semi](_i0, _iN) {
 private[collection] class AnyVectorStepper[A](_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[AnyStepper[A], AnyVectorStepper[A]](_i0, _iN, _displayN, _trunk)
 with AnyStepper[A] {
-  def next(): A = if (hasNext) {
+  def nextStep(): A = if (hasStep) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
@@ -77,7 +77,7 @@ with AnyStepper[A] {
 private[collection] class DoubleVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[DoubleStepper, DoubleVectorStepper](_i0, _iN, _displayN, _trunk)
 with DoubleStepper {
-  def nextDouble(): Double = if (hasNext) {
+  def nextStep(): Double = if (hasStep) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
@@ -95,7 +95,7 @@ with DoubleStepper {
 private[collection] class IntVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[IntStepper, IntVectorStepper](_i0, _iN, _displayN, _trunk)
 with IntStepper {
-  def nextInt(): Int = if (hasNext) {
+  def nextStep(): Int = if (hasStep) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1
@@ -113,7 +113,7 @@ with IntStepper {
 private[collection] class LongVectorStepper(_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[LongStepper, LongVectorStepper](_i0, _iN, _displayN, _trunk)
 with LongStepper {
-  def nextLong(): Long = if (hasNext) {
+  def nextStep(): Long = if (hasStep) {
     index += 1
     if (index >= 32) advanceData(i0)
     i0 += 1

@@ -20,8 +20,8 @@ package impl
 private[collection] final class RangeStepper(protected var myNext: Int, myStep: Int, _i0: Int, _iN: Int)
 extends IndexedStepperBase[IntStepper, RangeStepper](_i0, _iN)
 with IntStepper {
-  def nextInt(): Int = 
-    if (hasNext) { 
+  def nextStep(): Int =
+    if (hasStep) {
       val ans = myNext
       myNext += myStep
       i0 += 1
@@ -29,9 +29,9 @@ with IntStepper {
     }
     else Stepper.throwNSEE()
   protected def semiclone(half: Int): RangeStepper = new RangeStepper(myNext, myStep, i0, half)
-  override def substep(): IntStepper = {
+  override private[collection] def trySplit(): IntStepper = {
     val old_i0 = i0
-    val ans = super.substep()
+    val ans = super.trySplit()
     myNext += (i0 - old_i0) * myStep
     ans
   }

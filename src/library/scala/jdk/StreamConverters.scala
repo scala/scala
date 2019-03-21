@@ -50,24 +50,24 @@ object StreamConverters {
   /////////////////////////////////////
 
   /** Create a sequential [[java.util.stream.Stream Java Stream]] for a Scala collection. */
-  def asJavaSeqStream[A](cc: IterableOnce[A]): Stream[A] = StreamSupport.stream(cc.stepper, false)
+  def asJavaSeqStream[A](cc: IterableOnce[A]): Stream[A] = StreamSupport.stream(cc.stepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for a Scala collection. */
-  def asJavaSeqIntStream         (cc: IterableOnce[Int]):   IntStream = StreamSupport.intStream(cc.stepper, false)
+  def asJavaSeqIntStream         (cc: IterableOnce[Int]):   IntStream = StreamSupport.intStream(cc.stepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for a Scala collection. */
-  def asJavaSeqIntStreamFromByte (cc: IterableOnce[Byte]):  IntStream = StreamSupport.intStream(cc.stepper, false)
+  def asJavaSeqIntStreamFromByte (cc: IterableOnce[Byte]):  IntStream = StreamSupport.intStream(cc.stepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for a Scala collection. */
-  def asJavaSeqIntStreamFromShort(cc: IterableOnce[Short]): IntStream = StreamSupport.intStream(cc.stepper, false)
+  def asJavaSeqIntStreamFromShort(cc: IterableOnce[Short]): IntStream = StreamSupport.intStream(cc.stepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for a Scala collection. */
-  def asJavaSeqIntStreamFromChar (cc: IterableOnce[Char]):  IntStream = StreamSupport.intStream(cc.stepper, false)
+  def asJavaSeqIntStreamFromChar (cc: IterableOnce[Char]):  IntStream = StreamSupport.intStream(cc.stepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for a Scala collection. */
-  def asJavaSeqDoubleStream         (cc: IterableOnce[Double]): DoubleStream = StreamSupport.doubleStream(cc.stepper, false)
+  def asJavaSeqDoubleStream         (cc: IterableOnce[Double]): DoubleStream = StreamSupport.doubleStream(cc.stepper.spliterator, false)
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for a Scala collection. */
-  def asJavaSeqDoubleStreamFromFloat(cc: IterableOnce[Float]):  DoubleStream = StreamSupport.doubleStream(cc.stepper, false)
+  def asJavaSeqDoubleStreamFromFloat(cc: IterableOnce[Float]):  DoubleStream = StreamSupport.doubleStream(cc.stepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.LongStream Java LongStream]] for a Scala collection. */
-  def asJavaSeqLongStream(cc: IterableOnce[Long]): LongStream = StreamSupport.longStream(cc.stepper, false)
+  def asJavaSeqLongStream(cc: IterableOnce[Long]): LongStream = StreamSupport.longStream(cc.stepper.spliterator, false)
 
   ///////////////////////////////////
   // parallel streams for collections
@@ -77,43 +77,43 @@ object StreamConverters {
     *
     * $parNote
     */
-  def asJavaParStream[A](cc: IterableOnce[A]): Stream[A] = StreamSupport.stream(cc.stepper, true)
+  def asJavaParStream[A](cc: IterableOnce[A]): Stream[A] = StreamSupport.stream(cc.stepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParIntStream         (cc: IterableOnce[Int]):   IntStream = StreamSupport.intStream(cc.stepper, true)
+  def asJavaParIntStream         (cc: IterableOnce[Int]):   IntStream = StreamSupport.intStream(cc.stepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParIntStreamFromByte (cc: IterableOnce[Byte]):  IntStream = StreamSupport.intStream(cc.stepper, true)
+  def asJavaParIntStreamFromByte (cc: IterableOnce[Byte]):  IntStream = StreamSupport.intStream(cc.stepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParIntStreamFromShort(cc: IterableOnce[Short]): IntStream = StreamSupport.intStream(cc.stepper, true)
+  def asJavaParIntStreamFromShort(cc: IterableOnce[Short]): IntStream = StreamSupport.intStream(cc.stepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParIntStreamFromChar (cc: IterableOnce[Char]):  IntStream = StreamSupport.intStream(cc.stepper, true)
+  def asJavaParIntStreamFromChar (cc: IterableOnce[Char]):  IntStream = StreamSupport.intStream(cc.stepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParDoubleStream         (cc: IterableOnce[Double]): DoubleStream = StreamSupport.doubleStream(cc.stepper, true)
+  def asJavaParDoubleStream         (cc: IterableOnce[Double]): DoubleStream = StreamSupport.doubleStream(cc.stepper.spliterator, true)
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParDoubleStreamFromFloat(cc: IterableOnce[Float]):  DoubleStream = StreamSupport.doubleStream(cc.stepper, true)
+  def asJavaParDoubleStreamFromFloat(cc: IterableOnce[Float]):  DoubleStream = StreamSupport.doubleStream(cc.stepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.LongStream Java LongStream]] for a Scala collection.
     *
     * $parNote
     */
-  def asJavaParLongStream(cc: IterableOnce[Long]): LongStream = StreamSupport.longStream(cc.stepper, true)
+  def asJavaParLongStream(cc: IterableOnce[Long]): LongStream = StreamSupport.longStream(cc.stepper.spliterator, true)
 }
