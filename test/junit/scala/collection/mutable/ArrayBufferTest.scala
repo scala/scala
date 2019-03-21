@@ -361,7 +361,7 @@ class ArrayBufferTest {
 
   @Test def trimToSize: Unit = {
     val b = ArrayBuffer(1,2,3)
-    assertEquals(8, b.array.length)
+    assertEquals(16, b.array.length)
     b ++= (1 to 1000)
     assertEquals(1024, b.array.length)
     b.remove(200, 803)

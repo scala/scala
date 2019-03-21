@@ -45,7 +45,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with DefaultSerializable {
 
-  def this() = this(new Array[AnyRef](ArrayBuffer.minimalBufferSize), 0)
+  def this() = this(new Array[AnyRef](ArrayBuffer.DefaultInitialSize), 0)
 
   def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
 
@@ -69,8 +69,23 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   /** Trims the ArrayBuffer to an appropriate size for the current number of elements (rounding up to the next
     * natural size), which may replace the array by a shorter one. This allows releasing some unused memory. */
-  def trimToSize(): Unit =
-    array = ArrayBuffer.reduceSize(array, size0)
+  def trimToSize(): Unit = resize(length)
+
+  /** Trims the `array` buffer size down to either a power of 2
+    * or Int.MaxValue while keeping first `requiredLength` elements. */
+  private[this] def resize(requiredLength: Int): Unit = {
+    var newSize: Long = array.length
+    if (newSize == Int.MaxValue) {
+      newSize += 1 // ensure that newSize is a power of 2
+    }
+    val minLength = ArrayBuffer.DefaultInitialSize max requiredLength
+    while (newSize / 2 >= minLength) newSize /= 2
+    if (newSize != array.length && newSize < Int.MaxValue) {
+      val newArray: Array[AnyRef] = new Array(newSize.toInt)
+      Array.copy(array, 0, newArray, 0, requiredLength)
+      array = newArray
+    }
+  }
 
   @inline private def checkWithinBounds(lo: Int, hi: Int) = {
     if (lo < 0) throw new IndexOutOfBoundsException(s"$lo is out of bounds (min 0, max ${size0-1})")
@@ -93,7 +108,21 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
+  /** Note: This does not actually resize the internal representation.
+    * See clearAndShrink if you want to also resize internally
+    */
   def clear(): Unit = reduceToSize(0)
+
+  /**
+    * Clears this buffer and shrinks to @param size (rounding up to the next
+    * natural size)
+    * @param size
+    */
+  def clearAndShrink(size: Int = ArrayBuffer.DefaultInitialSize): this.type = {
+    clear()
+    resize(size)
+    this
+  }
 
   def addOne(elem: A): this.type = {
     val i = size0
@@ -152,6 +181,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     }
   }
 
+  /** Note: This does not actually resize the internal representation.
+    * See trimToSize if you want to also resize internally
+    */
   def remove(@deprecatedName("n", "2.13.0") index: Int): A = {
     checkWithinBounds(index, index + 1)
     val res = this(index)
@@ -160,6 +192,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     res
   }
 
+  /** Note: This does not actually resize the internal representation.
+    * See trimToSize if you want to also resize internally
+    */
   def remove(@deprecatedName("n", "2.13.0") index: Int, count: Int): Unit =
     if (count > 0) {
       checkWithinBounds(index, index + count)
@@ -212,12 +247,13 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   */
 @SerialVersionUID(3L)
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
+  final val DefaultInitialSize = 16
 
   // Avoid reallocation of buffer if length is known.
   def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] = {
     val k = coll.knownSize
     if (k >= 0) {
-      val array = new Array[AnyRef](k max minimalBufferSize)
+      val array = new Array[AnyRef](k max DefaultInitialSize)
       val it = coll.iterator
       for (i <- 0 until k) array(i) = it.next().asInstanceOf[AnyRef]
       new ArrayBuffer[B](array, k)
@@ -232,33 +268,11 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
 
-  // We chose 8 as a good size for the minimum array
-  private final val minimalBufferSize = 8
-
-  /**
-    * Reduce the `array` buffer size down to either a power of 2
-    * or Int.MaxValue while keeping first `n` elements.
-    */
-  private def reduceSize(array: Array[AnyRef], n: Int): Array[AnyRef] = {
-    var newSize: Long = array.length
-    if (newSize == Int.MaxValue) {
-      newSize += 1 // ensure that newSize is a power of 2
-    }
-    val minLength = minimalBufferSize max n
-    while (newSize / 2 >= minLength) newSize /= 2
-    if (newSize != array.length && newSize < Int.MaxValue) {
-      val newArray: Array[AnyRef] = new Array(newSize.toInt)
-      Array.copy(array, 0, newArray, 0, n)
-      newArray
-    }
-    else array
-  }
-
   private def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     def growArray = {
-      var newSize: Long = math.max(arrayLength * 2, minimalBufferSize)
+      var newSize: Long = math.max(arrayLength * 2, DefaultInitialSize)
       while (n > newSize)
         newSize = newSize * 2
       // Clamp newSize to Int.MaxValue
