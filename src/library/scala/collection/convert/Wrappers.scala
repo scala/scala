@@ -353,6 +353,14 @@ private[collection] trait Wrappers {
       def next() = { val e = ui.next(); (e.getKey, e.getValue) }
     }
 
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      val i = underlying.entrySet().iterator()
+      while (i.hasNext) {
+        val entry = i.next()
+        f(entry.getKey, entry.getValue)
+      }
+    }
+
     override def clear() = underlying.clear()
 
   }

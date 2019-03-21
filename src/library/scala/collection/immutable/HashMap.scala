@@ -136,6 +136,8 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def foreach[U](f: ((K, V)) => U): Unit = rootNode.foreach(f)
 
+  override def foreachEntry[U](f: (K, V) => U): Unit = rootNode.foreachEntry(f)
+
   /** Applies a function to each key, value, and **original** hash value in this Map */
   @`inline` private[collection] def foreachWithHash(f: (K, V, Int) => Unit): Unit = rootNode.foreachWithHash(f)
 
@@ -331,6 +333,7 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def size: Int
 
   def foreach[U](f: ((K, V)) => U): Unit
+  def foreachEntry[U](f: (K, V) => U): Unit
 
   def foreachWithHash(f: (K, V, Int) => Unit): Unit
 
@@ -729,6 +732,22 @@ private final class BitmapIndexedMapNode[K, +V](
     var j = 0
     while (j < jN) {
       getNode(j).foreach(f)
+      j += 1
+    }
+  }
+
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
+    val iN = payloadArity // arity doesn't change during this operation
+    var i = 0
+    while (i < iN) {
+      f(getKey(i), getValue(i))
+      i += 1
+    }
+
+    val jN = nodeArity // arity doesn't change during this operation
+    var j = 0
+    while (j < jN) {
+      getNode(j).foreachEntry(f)
       j += 1
     }
   }
@@ -1352,6 +1371,8 @@ private final class HashCollisionMapNode[K, +V ](
   override def getHash(index: Int): Int = originalHash
 
   def foreach[U](f: ((K, V)) => U): Unit = content.foreach(f)
+
+  def foreachEntry[U](f: (K, V) => U): Unit = content.foreach { case (k, v) => f(k, v)}
 
   override def foreachWithHash(f: (K, V, Int) => Unit): Unit = {
     val iter = content.iterator

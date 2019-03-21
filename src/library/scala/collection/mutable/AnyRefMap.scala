@@ -367,6 +367,20 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     }
   }
 
+  override def foreachEntry[U](f: (K,V) => U): Unit = {
+    var i = 0
+    var e = _size
+    while (e > 0) {
+      while(i < _hashes.length && { val h = _hashes(i); h+h == 0 && i < _hashes.length}) i += 1
+      if (i < _hashes.length) {
+        f(_keys(i).asInstanceOf[K], _values(i).asInstanceOf[V])
+        i += 1
+        e -= 1
+      }
+      else return
+    }
+  }
+
   override def clone(): AnyRefMap[K, V] = {
     val hz = java.util.Arrays.copyOf(_hashes, _hashes.length)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
