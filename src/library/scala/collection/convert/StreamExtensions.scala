@@ -12,13 +12,12 @@
 
 package scala.collection.convert
 
-import java.util.Spliterator
 import java.util.stream._
 
-import scala.jdk.CollectionConverters.Ops._
 import scala.annotation.implicitNotFound
-import scala.collection.{AnyConstr, EfficientSubstep, Stepper}
 import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
+import scala.collection.{AnyConstr, EfficientSubstep, Stepper}
+import scala.jdk.CollectionConverters.Ops._
 
 /** Defines extension methods to create Java Streams for Scala collections, available through
   * [[scala.jdk.StreamConverters.Ops]].
@@ -306,25 +305,4 @@ trait StreamExtensions {
       else factory.fromSpecific(stream.iterator.asInstanceOf[java.util.Iterator[Double]].asScala)
     }
   }
-  /*
-  implicit class SpliteratorHasStepper[A](s: Spliterator[A]) {
-    /** Create a Stepper for this Spliterator */
-    def asScalaStepper: Stepper[A] = Stepper.ofSpliterator(s)
-  }
-
-  implicit class DoubleSpliteratorHasStepper(s: Spliterator.OfDouble) {
-    /** Create a Stepper for this Spliterator */
-    def asScalaStepper: DoubleStepper = Stepper.ofSpliterator(s)
-  }
-
-  implicit class IntSpliteratorHasStepper(s: Spliterator.OfInt) {
-    /** Create a Stepper for this Spliterator */
-    def asScalaStepper: IntStepper = Stepper.ofSpliterator(s)
-  }
-
-  implicit class LongSpliteratorHasStepper(s: Spliterator.OfLong) {
-    /** Create a Stepper for this Spliterator */
-    def asScalaStepper: LongStepper = Stepper.ofSpliterator(s)
-  }
-  */
 }
