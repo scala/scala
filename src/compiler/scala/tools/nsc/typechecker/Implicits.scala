@@ -599,10 +599,9 @@ trait Implicits {
                 false
               } else {
                 val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
-                val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(allUndetparams, tvars, targs)
-                val remainingUndet = allUndetparams diff okParams
-                val tpSubst = deriveTypeWithWildcards(remainingUndet)(tp.instantiateTypeParams(okParams, okArgs))
-                if(!matchesPt(tpSubst, wildPt, remainingUndet)) {
+                val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
+                val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
+                if(!matchesPt(tpSubst, wildPt, adjusted.undetParams)) {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
                 } else true
@@ -820,7 +819,8 @@ trait Implicits {
             // filter out failures from type inference, don't want to remove them from undetParams!
             // we must be conservative in leaving type params in undetparams
             // prototype == WildcardType: want to remove all inferred Nothings
-            val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, tvars, targs)
+            val adjusted = adjustTypeArgs(undetParams, tvars, targs)
+            import adjusted.{okParams, okArgs}
 
             val subst: TreeTypeSubstituter =
               if (okParams.isEmpty) EmptyTreeTypeSubstituter
