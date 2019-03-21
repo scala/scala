@@ -364,14 +364,14 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     }
   }
 
-  override def foreachKeyValue[U](f: (K, V) => U): Unit = {
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
     val len = table.length
     var i = 0
     while(i < len) {
       val n = table(i)
       if(n ne null) n match {
-        case n: LLNode => n.foreachKeyValue(f)
-        case n: RBNode => n.foreachKeyValue(f)
+        case n: LLNode => n.foreachEntry(f)
+        case n: RBNode => n.foreachEntry(f)
       }
       i += 1
     }
@@ -749,10 +749,10 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
       if(right ne null) right.foreach(f)
     }
 
-    def foreachKeyValue[U](f: (K, V) => U): Unit = {
-      if(left ne null) left.foreachKeyValue(f)
+    def foreachEntry[U](f: (K, V) => U): Unit = {
+      if(left ne null) left.foreachEntry(f)
       f(key, value)
-      if(right ne null) right.foreachKeyValue(f)
+      if(right ne null) right.foreachEntry(f)
     }
 
     def foreachNode[U](f: RBNode[K, V] => U): Unit = {
@@ -818,9 +818,9 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
       if(next ne null) next.foreach(f)
     }
 
-    @tailrec def foreachKeyValue[U](f: (K, V) => U): Unit = {
+    @tailrec def foreachEntry[U](f: (K, V) => U): Unit = {
       f(key, value)
-      if(next ne null) next.foreachKeyValue(f)
+      if(next ne null) next.foreachEntry(f)
     }
 
     @tailrec def foreachNode[U](f: LLNode[K, V] => U): Unit = {

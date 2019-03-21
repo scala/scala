@@ -367,7 +367,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
     }
   }
 
-  override def foreachKeyValue[U](f: (K,V) => U): Unit = {
+  override def foreachEntry[U](f: (K,V) => U): Unit = {
     var i = 0
     var e = _size
     while (e > 0) {

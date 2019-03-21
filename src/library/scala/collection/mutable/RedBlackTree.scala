@@ -456,7 +456,7 @@ private[collection] object RedBlackTree {
     if(r ne null) g(r)
   }
 
-  def foreachKeyValue[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
+  def foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
     def g(node: Node[A, B]): Unit = {
       val l = node.left
       if(l ne null) g(l)

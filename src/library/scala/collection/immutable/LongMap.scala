@@ -219,8 +219,8 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
-  override final def foreachKeyValue[U](f: (Long, T) => U): Unit = this match {
-    case LongMap.Bin(_, _, left, right) => { left.foreachKeyValue(f); right.foreachKeyValue(f) }
+  override final def foreachEntry[U](f: (Long, T) => U): Unit = this match {
+    case LongMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
     case LongMap.Tip(key, value) => f(key, value)
     case LongMap.Nil =>
   }

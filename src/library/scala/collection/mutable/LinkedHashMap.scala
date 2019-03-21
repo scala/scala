@@ -191,7 +191,7 @@ class LinkedHashMap[K, V]
     }
   }
 
-  override def foreachKeyValue[U](f: (K, V) => U): Unit = {
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
     var cur = firstEntry
     while (cur ne null) {
       f(cur.key, cur.value)

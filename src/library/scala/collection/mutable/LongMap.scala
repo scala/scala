@@ -439,7 +439,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
     }
   }
 
-  override def foreachKeyValue[U](f: (Long,V) => U): Unit = {
+  override def foreachEntry[U](f: (Long,V) => U): Unit = {
     if ((extraKeys & 1) == 1) f(0L, zeroValue.asInstanceOf[V])
     if ((extraKeys & 2) == 2) f(Long.MinValue, minValue.asInstanceOf[V])
     var i,j = 0

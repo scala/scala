@@ -282,7 +282,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
       f((entry.key, entry.value.get))}
     )
   }
-  override def foreachKeyValue[U](f : (Key, Value) => U): Unit = {
+  override def foreachEntry[U](f : (Key, Value) => U): Unit = {
     val startModCount = modCount
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) throw new ConcurrentModificationException
