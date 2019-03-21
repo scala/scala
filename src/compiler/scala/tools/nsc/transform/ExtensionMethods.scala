@@ -46,6 +46,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
    *  in `extensionMethod` if the first name has the wrong type. We thereby gain a level of insensitivity
    *  of how overloaded types are ordered between phases and picklings.
    */
+  // TODO 2.13.1 Remove the $N variants, just return the one and only name.
   private def extensionNames(imeth: Symbol): Stream[Name] = {
     val decl = imeth.owner.info.decl(imeth.name)
 
@@ -61,12 +62,15 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       case OverloadedType(_, alts) =>
         val index = alts indexOf imeth
         assert(index >= 0, alts+" does not contain "+imeth)
-        def altName(index: Int) = newTermName(imeth.name+"$extension"+index)
-        altName(index) #:: ((0 until alts.length).toStream filter (index != _) map altName)
+        def altName(index: Int) = extensionName(imeth.name).append(index.toString)
+        extensionName(imeth.name) #:: ((0 until alts.length).toStream map altName)
       case tpe =>
         assert(tpe != NoType, imeth.name+" not found in "+imeth.owner+"'s decls: "+imeth.owner.info.decls)
-        Stream(newTermName(imeth.name+"$extension"))
+        Stream(extensionName(imeth.name))
     }
+  }
+  private def extensionName(name: Name): TermName = {
+    name.append("$extension").toTermName
   }
 
   private def companionModuleForce(sym: Symbol) = {
@@ -77,7 +81,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   /** Return the extension method that corresponds to given instance method `meth`. */
   def extensionMethod(imeth: Symbol): Symbol = enteringPhase(currentRun.refchecksPhase) {
     val companionInfo = companionModuleForce(imeth.owner).info
-    val candidates = extensionNames(imeth) map (companionInfo.decl(_)) filter (_.exists)
+    val candidates = extensionNames(imeth).map(companionInfo.decl(_)).filter(_.exists).flatMap(_.alternatives)
     val matching = candidates filter (alt => normalize(alt.tpe, imeth.owner) matches imeth.tpe)
     assert(matching.nonEmpty,
       sm"""|no extension method found for:
@@ -215,9 +219,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val companion     = origThis.companionModule
 
           def makeExtensionMethodSymbol = {
-            val extensionName = extensionNames(origMeth).head.toTermName
             val extensionMeth = (
-              companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
+              companion.moduleClass.newMethod(extensionName(origMeth.name), tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
                 setAnnotations origMeth.annotations
             )
             defineOriginalOwner(extensionMeth, origMeth.owner)
