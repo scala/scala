@@ -58,7 +58,10 @@ object AnyStepper {
   class AnyStepperSpliterator[A](s: AnyStepper[A]) extends Spliterator[A] {
     def tryAdvance(c: Consumer[_ >: A]): Boolean =
       if (s.hasStep) { c.accept(s.nextStep()); true } else false
-    def trySplit(): Spliterator[A] = s.trySplit().spliterator
+    def trySplit(): Spliterator[A] = {
+      val sp = s.trySplit()
+      if (sp == null) null else sp.spliterator
+    }
     def estimateSize(): Long = s.estimateSize
     def characteristics(): Int = s.characteristics
     // Override for efficiency: implement with hasStep / nextStep instead of tryAdvance
@@ -82,8 +85,7 @@ object AnyStepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): AnyStepper[Double] = {
       val s = st.trySplit()
-      if (s == null) null
-      else new BoxedDoubleStepper(s)
+      if (s == null) null else new BoxedDoubleStepper(s)
     }
   }
 
@@ -94,8 +96,7 @@ object AnyStepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): AnyStepper[Int] = {
       val s = st.trySplit()
-      if (s == null) null
-      else new BoxedIntStepper(s)
+      if (s == null) null else new BoxedIntStepper(s)
     }
   }
 
@@ -106,8 +107,7 @@ object AnyStepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): AnyStepper[Long] = {
       val s = st.trySplit()
-      if (s == null) null
-      else new BoxedLongStepper(s)
+      if (s == null) null else new BoxedLongStepper(s)
     }
   }
 }
@@ -132,7 +132,10 @@ object IntStepper {
       case ic: IntConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(jl.Integer.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfInt = s.trySplit().spliterator
+    def trySplit(): Spliterator.OfInt = {
+      val sp = s.trySplit()
+      if (sp == null) null else sp.spliterator
+    }
     def estimateSize(): Long = s.estimateSize
     def characteristics(): Int = s.characteristics
     // Override for efficiency: implement with hasStep / nextStep instead of tryAdvance
@@ -166,7 +169,10 @@ object DoubleStepper {
       case ic: DoubleConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(java.lang.Double.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfDouble = s.trySplit().spliterator
+    def trySplit(): Spliterator.OfDouble = {
+      val sp = s.trySplit()
+      if (sp == null) null else sp.spliterator
+    }
     def estimateSize(): Long = s.estimateSize
     def characteristics(): Int = s.characteristics
     // Override for efficiency: implement with hasStep / nextStep instead of tryAdvance
@@ -200,7 +206,10 @@ object LongStepper {
       case ic: LongConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(java.lang.Long.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfLong = s.trySplit().spliterator
+    def trySplit(): Spliterator.OfLong = {
+      val sp = s.trySplit()
+      if (sp == null) null else sp.spliterator
+    }
     def estimateSize(): Long = s.estimateSize
     def characteristics(): Int = s.characteristics
     // Override for efficiency: implement with hasStep / nextStep instead of tryAdvance
@@ -683,8 +692,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): DoubleStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingDoubleStepper(s)
+      if (s == null) null else new UnboxingDoubleStepper(s)
     }
   }
 
@@ -695,8 +703,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): IntStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingIntStepper(s)
+      if (s == null) null else new UnboxingIntStepper(s)
     }
   }
 
@@ -707,8 +714,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): LongStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingLongStepper(s)
+      if (s == null) null else new UnboxingLongStepper(s)
     }
   }
 
@@ -719,8 +725,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): IntStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingByteStepper(s)
+      if (s == null) null else new UnboxingByteStepper(s)
     }
   }
 
@@ -731,8 +736,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): IntStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingCharStepper(s)
+      if (s == null) null else new UnboxingCharStepper(s)
     }
   }
 
@@ -743,8 +747,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): IntStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingShortStepper(s)
+      if (s == null) null else new UnboxingShortStepper(s)
     }
   }
 
@@ -755,8 +758,7 @@ object Stepper {
     private[collection] def characteristics: Int = st.characteristics
     private[collection] def trySplit(): DoubleStepper = {
       val s = st.trySplit()
-      if (s == null) null
-      else new UnboxingFloatStepper(s)
+      if (s == null) null else new UnboxingFloatStepper(s)
     }
   }
 }
