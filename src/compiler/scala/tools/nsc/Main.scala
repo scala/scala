@@ -13,14 +13,12 @@
 package scala.tools
 package nsc
 
-import scala.language.postfixOps
-
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
 class MainClass extends Driver with EvalLoop {
   def resident(compiler: Global): Unit = loop { line =>
-    val command = new CompilerCommand(line split "\\s+" toList, new Settings(scalacError))
+    val command = new CompilerCommand(line.split("\\s+").toList, new Settings(scalacError))
     compiler.reporter.reset()
     new compiler.Run() compile command.files
   }

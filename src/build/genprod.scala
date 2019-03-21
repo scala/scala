@@ -59,6 +59,7 @@ object genprod extends App {
 
     def genprodString       = " See scala.Function0 for timestamp."
     def moreMethods         = ""
+    def companionObject     = ""
     def packageDef          = "scala"
     def imports             = ""
 
@@ -151,6 +152,36 @@ object FunctionOne extends Function(1) {
    */
   @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 """
+  override def companionObject =
+"""
+object Function1 {
+
+  implicit final class UnliftOps[A, B] private[Function1](private val f: A => Option[B]) extends AnyVal {
+    /** Converts an optional function to a partial function.
+      *
+      * @example Unlike [[Function.unlift]], this [[UnliftOps.unlift]] method can be used in extractors.
+      *          {{{
+      *          val of: Int => Option[String] = { i =>
+      *            if (i == 2) {
+      *              Some("matched by an optional function")
+      *            } else {
+      *              None
+      *            }
+      *          }
+      *
+      *          util.Random.nextInt(4) match {
+      *            case of.unlift(m) => // Convert an optional function to a pattern
+      *              println(m)
+      *            case _ =>
+      *              println("Not matched")
+      *          }
+      *          }}}
+      */
+    def unlift: PartialFunction[A, B] = Function.unlift(f)
+  }
+
+}
+"""
 }
 
 object FunctionTwo extends Function(2) {
@@ -192,7 +223,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
   def toStr() = "\"" + ("<function%d>" format i) + "\""
   def apply() = {
 <file name={fileName}>{header}
-
+{companionObject}
 /** A function of {i} parameter{s}.
  *{descriptiveComment}
  */

@@ -10,8 +10,8 @@ import org.junit.runners.JUnit4
 import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.analysis.{AliasingAnalyzer, AliasingFrame}
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class AnalyzerTest extends BytecodeTesting {

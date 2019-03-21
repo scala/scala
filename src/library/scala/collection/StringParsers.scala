@@ -178,6 +178,7 @@ private[scala] object StringParsers {
     //some utilities for working with index bounds into the original string
     @inline
     def forAllBetween(start: Int, end: Int, pred: Char => Boolean): Boolean = {
+      @tailrec
       def rec(i: Int): Boolean = i >= end || pred(format.charAt(i)) && rec(i + 1)
       rec(start)
     }

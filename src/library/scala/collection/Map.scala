@@ -196,6 +196,17 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     def next() = iter.next()._2
   }
 
+  /** Apply `f` to each key/value pair for its side effects
+   *  Note: [U] parameter needed to help scalac's type inference.
+   */
+  def foreachEntry[U](f: (K, V) => U): Unit = {
+    val it = iterator
+    while (it.hasNext) {
+      val next = it.next()
+      f(next._1, next._2)
+    }
+  }
+
   /** Filters this map by retaining only keys satisfying a predicate.
     *  @param  p   the predicate used to test keys
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
@@ -311,12 +322,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     fromSpecific(this.view.filterKeys(k => !keysSet.contains(k)))
   }
 
-  // The implicit dummy parameter is necessary to avoid erased signature clashes
-  // between this `++:` and the overload overriden below.
-  // Note that these clashes only happen in Dotty because it adds mixin
-  // forwarders before erasure unlike Scala 2.
   @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
-  def ++: [V1 >: V](that: IterableOnce[(K,V1)])(implicit dummy: DummyImplicit): CC[K,V1] = {
+  def ++: [V1 >: V](that: IterableOnce[(K,V1)]): CC[K,V1] = {
     val thatIterable: Iterable[(K, V1)] = that match {
       case that: Iterable[(K, V1)] => that
       case that => View.from(that)

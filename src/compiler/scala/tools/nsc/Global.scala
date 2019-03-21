@@ -36,12 +36,12 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.{BackendStats, GenBCode}
-import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 import scala.util.control.NonFatal
 import java.io.Closeable
+import scala.annotation.tailrec
 
 class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     extends SymbolTable
@@ -760,7 +760,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   private def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String): String = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens
-    val maxName = phaseNames map (_.length) max
+    val maxName = phaseNames.map(_.length).max
     val width   = maxName min Limit
     val maxDesc = MaxCol - (width + 6)  // descriptions not novels
     val fmt     = if (settings.verbose || !elliptically) s"%${maxName}s  %2s  %s%n"
@@ -810,13 +810,12 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   /** Returns List of (phase, value) pairs, including only those
    *  where the value compares unequal to the previous phase's value.
    */
-  def afterEachPhase[T](op: => T): List[(Phase, T)] = { // used in tests
+  def afterEachPhase[T](op: => T): List[(Phase, T)] = // used in tests
     phaseDescriptors.map(_.ownPhase).filterNot(_ eq NoPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
       val value = exitingPhase(ph)(op)
       if (res.nonEmpty && res.head._2 == value) res
       else ((ph, value)) :: res
-    } reverse
-  }
+    }.reverse
 
   // ------------ REPL utilities ---------------------------------
 
@@ -1387,7 +1386,8 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
     //       Here we work around that wrinkle by claiming that a pre-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
-    def compiles(sym: Symbol): Boolean =
+    @tailrec
+    final def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
       else if (!sym.isTopLevel) compiles(sym.originalEnclosingTopLevelClassOrDummy)
@@ -1424,7 +1424,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
           case -1   => mkName(str)
           case idx  =>
             val phasePart = str drop (idx + 1)
-            settings.Yshow.tryToSetColon(phasePart split ',' toList)
+            settings.Yshow.tryToSetColon(phasePart.split(',').toList)
             mkName(str take idx)
         }
       }
@@ -1556,6 +1556,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
       reporting.summarizeErrors()
 
+      // val allNamesArray: Array[String] = allNames().map(_.toString).toArray.sorted
+      // allNamesArray.foreach(println(_))
+
       if (traceSymbolActivity)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
 
@@ -1583,6 +1586,8 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
+      if (settings.verbose)
+        println("Name table size after compilation: " + nameTableSize + " chars")
     }
 
     /** Compile list of abstract files. */
@@ -1643,6 +1648,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     /** Reset package class to state at typer (not sure what this is needed for?)
      */
+    @tailrec
     private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase(firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
@@ -1703,7 +1709,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val syms = findMemberFromRoot(fullName) match {
       // The name as given was not found, so we'll sift through every symbol in
       // the run looking for plausible matches.
-      case NoSymbol => phased(currentRun.symSource.keys map (sym => findNamedMember(fullName, sym)) filterNot (_ == NoSymbol) toList)
+      case NoSymbol => phased(currentRun.symSource.keys.map(findNamedMember(fullName, _)).filterNot(_ == NoSymbol).toList)
       // The name as given matched, so show only that.
       case sym      => List(sym)
     }

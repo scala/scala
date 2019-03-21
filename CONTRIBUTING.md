@@ -83,7 +83,7 @@ It might take a few minutes the first time you run `junit/testQuick`, but from t
 sbt will only run the tests that is affected by the code change since the last run.
 See `test/junit/` for examples of JUnit tests.
 
-JUnit tests will be compiled with the `starr` compiler, and run against the `quick` library. Some JUnit tests (search for `BytecodeTest`) invoke the compiler programmatically and test its behavior or output, these tests use the `quick` compiler. 
+JUnit tests will be compiled with the `starr` compiler, and run against the `quick` library. Some JUnit tests (search for `BytecodeTesting`) invoke the compiler programmatically and test its behavior or output, these tests use the `quick` compiler. 
 
 `starr` is the Scala release used to build the compiler and library, usually the last release. `quick` is the result of that compilation. See also ["Build Setup"](https://github.com/scala/scala#build-setup) in the README.
 
@@ -162,7 +162,7 @@ root> partest --help
 Partests are compiled by the `quick` compiler (and `run` partests executed with the `quick` library),
 and therefore:
 
-* if you're working on the compiler, you must write a partest, or a `BytecodeTest` JUnit test which invokes the compiler programmatically; however
+* if you're working on the compiler, you must write a partest, or a `BytecodeTesting` JUnit test which invokes the compiler programmatically; however
 * if you're working on the library, a JUnit and/or ScalaCheck is better.
 
 #### exploring with REPL
@@ -204,8 +204,14 @@ Consider updating the package-level doc (in the package object), if appropriate.
 
 Please follow these standard code standards, though in moderation (scouts quickly learn to let sleeping dogs lie):
 
-* Don't violate [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
-* Follow the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule).
+Don't violate [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+* DRY means: "Don't repeat yourself". 
+* Every piece of knowledge must have a single, unambiguous, authoritative representation within a system. 
+* Try to only write functionality or algorithms once and reference them (Abstraction) instead of Copy&Paste
+
+Follow the [Boy Scout Rule](https://martinfowler.com/bliki/OpportunisticRefactoring.html).
+* "Always leave the code behind in a better state than you found it"
+* This translates to using any opportunity possible to improve and cleanup the code in front of you
 
 Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 

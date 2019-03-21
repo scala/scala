@@ -14,6 +14,8 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.tailrec
+
 
 /** The name of this trait defines the eventual intent better than
  *  it does the initial contents.
@@ -55,7 +57,7 @@ trait ExistentialsAndSkolems {
    *  the typeSymbol is not amongst the symbols being hidden.
    */
   private def existentialBoundsExcludingHidden(hidden: List[Symbol]): Map[Symbol, Type] = {
-    def safeBound(t: Type): Type =
+    @tailrec def safeBound(t: Type): Type =
       if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.upperBound) else t
 
     def hiBound(s: Symbol): Type = safeBound(s.existentialBound.upperBound).resultType match {

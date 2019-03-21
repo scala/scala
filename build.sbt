@@ -98,7 +98,12 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
 // to be locked down sometime around the time of 2.13.0-RC1
 Global / mimaReferenceVersion := None
 
-Global / scalaVersion      := versionProps("starr.version")
+Global / scalaVersion      := {
+  if (DottySupport.compileWithDotty)
+    DottySupport.dottyVersion
+  else
+    versionProps("starr.version")
+}
 
 lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
@@ -167,7 +172,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   ),
   //maxErrors := 10,
   setIncOptions,
-  apiURL := Some(url("http://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
+  apiURL := Some(url("https://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {
     <scm>
@@ -200,7 +205,12 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
   outputStrategy in run := Some(StdoutOutput)
-) ++ removePomDependencies ++ setForkedWorkingDirectory
+) ++ removePomDependencies ++ setForkedWorkingDirectory ++ (
+  if (DottySupport.compileWithDotty)
+    DottySupport.commonSettings
+  else
+    Seq()
+)
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the old Ant build. In the long term this should be removed and
@@ -223,9 +233,9 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
     "/project/organization" ->
       <organization>
         <name>LAMP/EPFL</name>
-        <url>http://lamp.epfl.ch/</url>
+        <url>https://lamp.epfl.ch/</url>
       </organization>,
-    "/project/url" -> <url>http://www.scala-lang.org/</url>
+    "/project/url" -> <url>https://www.scala-lang.org/</url>
   ) ++ extra) }
 }
 
@@ -279,13 +289,6 @@ val disableDocs = Seq[Setting[_]](
   publishArtifact in (Compile, packageDoc) := false
 )
 
-val disablePublishing = Seq[Setting[_]](
-  publishArtifact := false,
-  // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
-  publish := {},
-  publishLocal := {}
-)
-
 lazy val setJarLocation: Setting[_] =
   artifactPath in packageBin in Compile := {
     // two lines below are copied over from sbt's sources:
@@ -318,7 +321,7 @@ def regexFileFilter(s: String): FileFilter = new FileFilter {
 
 def setForkedWorkingDirectory: Seq[Setting[_]] = {
   // When we fork subprocesses, use the base directory as the working directory.
-  // This“ enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
+  // This enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
   val setting = (forkOptions in Compile) := (forkOptions in Compile).value.withWorkingDirectory((baseDirectory in ThisBuild).value)
   setting ++ inTask(run)(setting)
 }
@@ -364,6 +367,12 @@ lazy val library = configureAsSubproject(project)
     mimaCheckDirection := "both"
   )
   .settings(filterDocSources("*.scala" -- regexFileFilter(".*/scala/runtime/.*")))
+  .settings(
+    if (DottySupport.compileWithDotty)
+      DottySupport.librarySettings
+    else
+      Seq()
+  )
 
 lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
@@ -395,7 +404,7 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
@@ -477,7 +486,7 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler"
@@ -486,12 +495,12 @@ lazy val interactive = configureAsSubproject(project)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies += jlineDep,
     name := "scala-repl-frontend"
@@ -505,7 +514,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
@@ -543,7 +552,7 @@ lazy val scalap = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val partest = configureAsSubproject(project)
-  .dependsOn(library, reflect, compiler, scalap, replFrontend, scaladoc)
+  .dependsOn(library, reflect, compiler, replFrontend, scalap, scaladoc, testkit)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
@@ -563,7 +572,7 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     name := "scalacheck-lib",
     libraryDependencies += testInterfaceDep
@@ -575,7 +584,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     sourceGenerators in Compile += Def.task {
       import scala.collection.JavaConverters._
@@ -606,7 +615,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
   .dependsOn((if (benchmarkScalaVersion == "") Seq[sbt.ClasspathDep[sbt.ProjectReference]](library, compiler) else Nil): _*)
   .settings(if (benchmarkScalaVersion == "") instanceSettings else Seq(scalaVersion := benchmarkScalaVersion, crossPaths := false))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "test-benchmarks",
@@ -621,19 +630,33 @@ lazy val bench = project.in(file("test") / "benchmarks")
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
+lazy val testkit = project.in(file("src") / "testkit")
+  .dependsOn(library)
+  .settings(clearSourceAndResourceDirectories)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(skip in publish := true)
+  .settings(
+    scalacOptions += "-feature",
+    libraryDependencies ++= Seq(junitDep, asmDep),
+    unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+  )
+
+
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, partest, scaladoc)
+  .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     fork in Test := true,
     javaOptions in Test += "-Xss1M",
     (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    libraryDependencies ++= Seq(junitDep, junitInterfaceDep, jolDep),
+    scalacOptions += "-feature",
+    libraryDependencies ++= Seq(junitInterfaceDep, jolDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
@@ -645,7 +668,7 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     // Enable forking to workaround https://github.com/sbt/sbt/issues/4009. We also need a lazy Framework
     // written in Java to further reduce ClassLoader problems when bootstrapping:
@@ -661,9 +684,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
     testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.LazyFramework"), "-verbosity", "2"),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
-  ).settings(
-    // Workaround for https://github.com/sbt/sbt/pull/3985
-    List(Keys.test, Keys.testOnly).map(task => parallelExecution in task := false) : _*
   )
 
 lazy val osgiTestFelix = osgiTestProject(
@@ -679,7 +699,7 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     fork in Test := true,
     parallelExecution in Test := false,
@@ -743,7 +763,7 @@ lazy val test = project
   .settings(commonSettings)
   //.settings(scalacOptions in Compile -= "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_") // as in common settings
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep),
@@ -796,7 +816,7 @@ lazy val test = project
 
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     classDirectory in Compile := (target in Compile).value / "classes"
@@ -856,7 +876,7 @@ def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
 
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(skip in publish := true)
   .settings(generateBuildCharacterFileSettings)
   .settings(
     commands ++= ScriptCommands.all,

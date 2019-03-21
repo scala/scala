@@ -32,8 +32,6 @@ import scala.runtime.Statics.releaseFence
   *  This class is optimal for last-in-first-out (LIFO), stack-like access patterns. If you need another access
   *  pattern, for example, random access or FIFO, consider using a collection more suited to this than `List`.
   *
-  *  $usesMutableState
-  *
   *  ==Performance==
   *  '''Time:''' `List` has `O(1)` prepend and head/tail access. Most other operations are `O(n)` on the number of elements in the list.
   *  This includes the index-based lookup of elements, `length`, `append` and `reverse`.
@@ -131,6 +129,8 @@ sealed abstract class List[+A]
     }
     these
   }
+
+  override final def isEmpty: Boolean = this eq Nil
 
   override def prepended[B >: A](elem: B): List[B] = elem :: this
 
@@ -395,6 +395,19 @@ sealed abstract class List[+A]
     None
   }
 
+  override def last: A = {
+    if (isEmpty) throw new NoSuchElementException("List.last")
+    else {
+      var these = this
+      var scout = tail
+      while (!scout.isEmpty) {
+        these = scout
+        scout = scout.tail
+      }
+      these.head
+    }
+  }
+
   override def corresponds[B](that: collection.Seq[B])(p: (A, B) => Boolean): Boolean = that match {
     case that: LinearSeq[B] =>
       var i = this
@@ -424,7 +437,7 @@ sealed abstract class List[+A]
   @`inline` final def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
     // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
     // If any successful optimization attempts or other changes are made, please rehash them there too.
-    //@tailrec
+    @tailrec
     def loop(mappedHead: List[B], mappedLast: ::[B], unchanged: List[A], pending: List[A]): List[B] = {
       if (pending.isEmpty) {
         if (mappedHead eq null) unchanged
@@ -578,13 +591,11 @@ sealed abstract class List[+A]
 final case class :: [+A](override val head: A, private[scala] var next: List[A @uncheckedVariance]) // sound because `next` is used only locally
   extends List[A] {
   releaseFence()
-  override def isEmpty: Boolean = false
   override def headOption: Some[A] = Some(head)
   override def tail: List[A] = next
 }
 
 case object Nil extends List[Nothing] {
-  override def isEmpty: Boolean = true
   override def head: Nothing = throw new NoSuchElementException("head of empty list")
   override def headOption: None.type = None
   override def tail: Nothing = throw new UnsupportedOperationException("tail of empty list")
@@ -592,6 +603,10 @@ case object Nil extends List[Nothing] {
   override def init: Nothing = throw new UnsupportedOperationException("init of empty list")
   override def knownSize: Int = 0
   override def iterator: Iterator[Nothing] = Iterator.empty
+  override def unzip[A1, A2](implicit asPair: Nothing => (A1, A2)): (List[A1], List[A2]) = EmptyUnzip
+
+  @transient
+  private[this] val EmptyUnzip = (Nil, Nil)
 }
 
 /**

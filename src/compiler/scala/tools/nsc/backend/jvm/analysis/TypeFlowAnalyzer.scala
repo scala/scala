@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
+import scala.annotation.tailrec
 import scala.tools.asm.{Opcodes, Type}
 import scala.tools.asm.tree.{AbstractInsnNode, InsnNode, MethodNode}
 import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter, BasicValue}
@@ -55,7 +56,8 @@ abstract class TypeFlowInterpreter extends BasicInterpreter(scala.tools.asm.Opco
 
   def refLub(a: BasicValue, b: BasicValue): BasicValue
 
-  override def merge(a: BasicValue, b: BasicValue): BasicValue = {
+  @tailrec
+  override final def merge(a: BasicValue, b: BasicValue): BasicValue = {
     if (a == b) a
     else if (a.isInstanceOf[SpecialValue] || b.isInstanceOf[SpecialValue]) merge(new SpecialAwareBasicValue(a.getType), new SpecialAwareBasicValue(b.getType))
     else if (isRef(a.getType) && isRef(b.getType)) refLub(a, b)

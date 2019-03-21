@@ -155,8 +155,6 @@ trait Types
     override def termSymbol = underlying.termSymbol
     override def termSymbolDirect = underlying.termSymbolDirect
     override def typeParams = underlying.typeParams
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = underlying.boundSyms
     override def typeSymbol = underlying.typeSymbol
     override def typeSymbolDirect = underlying.typeSymbolDirect
     override def widen = underlying.widen
@@ -481,11 +479,6 @@ trait Types
      *  the empty list for all other types */
     def typeParams: List[Symbol] = List()
 
-    /** For a (potentially wrapped) poly, method or existential type, its directly bound symbols,
-     *  the empty set for all other types */
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    def boundSyms: immutable.Set[Symbol] = emptySymbolSet
-
     /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
      *
      * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
@@ -545,7 +538,8 @@ trait Types
      *  !!! - and yet it is still inadequate, because aliases and singletons
      *  might lurk in the upper bounds of an abstract type. See scala/bug#7051.
      */
-    def dealiasWiden: Type = {
+    @tailrec
+    final def dealiasWiden: Type = {
       val widened = widen
       if (this ne widened) widened.dealiasWiden
       else {
@@ -1096,7 +1090,6 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def boundSyms: Set[Symbol] = emptySymbolSet
  }
 
   /** A base class for types that represent a single value
@@ -1115,8 +1108,6 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms: Set[Symbol] = emptySymbolSet
   }
 
   /** An object representing an erroneous type */
@@ -1774,53 +1765,9 @@ trait Types
       throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
   }
 
-  object baseClassesCycleMonitor {
-    private[this] var open: List[Symbol] = Nil
-    @inline private def cycleLog(msg: => String): Unit = {
-      if (settings.debug)
-        Console.err.println(msg)
-    }
-    def size = open.size
-    def push(clazz: Symbol): Unit = {
-      cycleLog("+ " + ("  " * size) + clazz.fullNameString)
-      open ::= clazz
-    }
-    def pop(clazz: Symbol): Unit = {
-      assert(open.head eq clazz, (clazz, open))
-      open = open.tail
-    }
-    def isOpen(clazz: Symbol) = open contains clazz
-  }
-
-  protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
-    def define() = defineBaseClassesOfCompoundType(tpe, force = false)
-    if (!breakCycles || isPastTyper) define()
-    else tpe match {
-      // non-empty parents helpfully excludes all package classes
-      case tpe @ ClassInfoType(_ :: _, _, clazz) if !clazz.isAnonOrRefinementClass =>
-        // Cycle: force update
-        if (baseClassesCycleMonitor isOpen clazz)
-          defineBaseClassesOfCompoundType(tpe, force = true)
-        else {
-          baseClassesCycleMonitor push clazz
-          try define()
-          finally baseClassesCycleMonitor pop clazz
-        }
-      case _ =>
-        define()
-    }
-  }
-  private def defineBaseClassesOfCompoundType(tpe: CompoundType, force: Boolean): Unit = {
+  protected def defineBaseClassesOfCompoundType(tpe: CompoundType) {
     val period = tpe.baseClassesPeriod
-    if (period == currentPeriod) {
-      if (force && breakCycles) {
-        def what = tpe.typeSymbol.toString + " in " + tpe.typeSymbol.owner.fullNameString
-        val bcs  = computeBaseClasses(tpe)
-        tpe.baseClassesCache = bcs
-        warning(s"Breaking cycle in base class computation of $what ($bcs)")
-      }
-    }
-    else {
+    if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod
       if (!isValidForBaseClasses(period)) {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.pushTimer(typeOpsStack, baseClassesNanos) else null
@@ -2003,6 +1950,7 @@ trait Types
 
     /** The ClassInfoType which belongs to the class containing given type parameter
      */
+    @tailrec
     private def classInfo(tparam: Symbol): ClassInfoType =
       tparam.owner.info.resultType match {
         case ci: ClassInfoType => ci
@@ -2396,7 +2344,7 @@ trait Types
     override def mapOver(map: TypeMap): Type = {
       val pre1 = map(pre)
       val args1 = map match {
-        case map: VariancedTypeMap if args.nonEmpty && ! map.variance.isInvariant =>
+        case map: VariancedTypeMap if !args.isEmpty && ! map.variance.isInvariant =>
           val tparams = sym.typeParams
           if (tparams.isEmpty)
             args mapConserve map
@@ -2891,9 +2839,6 @@ trait Types
 
     override def paramTypes = mapList(params)(symTpe) // OPT use mapList rather than .map
 
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = resultType.boundSyms ++ params
-
     override def resultType(actuals: List[Type]) =
       if (isTrivial || phase.erasedTypes) resultType
       else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
@@ -2962,8 +2907,6 @@ trait Types
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = resultType.boundSyms
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
     override def mapOver(map: TypeMap): Type = {
@@ -3002,8 +2945,6 @@ trait Types
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = immutable.Set[Symbol](typeParams ++ resultType.boundSyms: _*)
     override def prefix: Type = resultType.prefix
     override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
@@ -3057,7 +2998,8 @@ trait Types
 
   /** A creator for existential types which flattens nested existentials.
    */
-  def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
+  @tailrec
+  final def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
     if (quantified.isEmpty) underlying
     else underlying match {
       case ExistentialType(qs, restpe) => newExistentialType(quantified ::: qs, restpe)
@@ -3074,8 +3016,6 @@ trait Types
     override def lowerBound = maybeRewrap(underlying.lowerBound)
     override def upperBound = maybeRewrap(underlying.upperBound)
     override def parents = underlying.parents map maybeRewrap
-    @deprecated("No longer used in the compiler implementation", since = "2.12.3")
-    override def boundSyms = quantified.toSet
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def params = underlying.params mapConserve { param =>
@@ -3525,7 +3465,8 @@ trait Types
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
     private[this] var _suspended: Type = ConstantFalse
-    private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
+    @tailrec
+    private[Types] final def suspended: Boolean = (_suspended: @unchecked) match {
       case ConstantFalse => false
       case ConstantTrue  => true
       case tv: TypeVar   => tv.suspended
@@ -3964,6 +3905,8 @@ trait Types
     override def complete(sym: Symbol): Unit
     override def safeToString = "<?>"
     override def kind = "LazyType"
+    def isJavaVarargsMethod: Boolean = false
+    def javaThrownExceptions: List[Symbol] = Nil
   }
 
   /** A marker trait representing an as-yet unevaluated type
@@ -4057,7 +4000,8 @@ trait Types
   /** The canonical creator for typerefs
    *  todo: see how we can clean this up a bit
    */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
+  @tailrec
+  final def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
     // type alias selections are rebound in TypeMap ("coevolved",
     // actually -- see #3731) e.g., when type parameters that are
     // referenced by the alias are instantiated in the prefix. See
@@ -4520,7 +4464,8 @@ trait Types
     check(tp1, tp2) && check(tp2, tp1)
   }
 
-  def normalizePlus(tp: Type): Type = {
+  @tailrec
+  final def normalizePlus(tp: Type): Type = {
     if (isRawType(tp)) rawToExistential(tp)
     else tp.normalize match {
       // Unify the representations of module classes
@@ -4569,7 +4514,8 @@ trait Types
    *  type selections with the same name of equal (as determined by `=:=`) prefixes are
    *  considered equal in regard to `=:=`.
    */
-  def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
+  @tailrec
+  final def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
     case SingleType(pre, sym)  => !(sym hasFlag PACKAGE) && isEligibleForPrefixUnification(pre)
     case tv@TypeVar(_, constr) => !tv.instValid || isEligibleForPrefixUnification(constr.inst)
     case RefinedType(_, _)     => true
@@ -4593,7 +4539,8 @@ trait Types
     case _                       => false
   }
 
-  def isExistentialType(tp: Type): Boolean = tp match {
+  @tailrec
+  final def isExistentialType(tp: Type): Boolean = tp match {
     case _: ExistentialType           => true
     case tp: Type if tp.dealias ne tp => isExistentialType(tp.dealias)
     case _                            => false
@@ -4665,6 +4612,7 @@ trait Types
    *  can be given: true == value type, false == non-value type.  Otherwise,
    *  an exception is thrown.
    */
+  @tailrec
   private def isValueElseNonValue(tp: Type): Boolean = tp match {
     case tp if isAlwaysValueType(tp)           => true
     case tp if isAlwaysNonValueType(tp)        => false
@@ -5272,7 +5220,7 @@ trait Types
   private[scala] val typeIsHigherKinded = (tp: Type) => tp.isHigherKinded
 
   /** The maximum depth of type `tp` */
-  def typeDepth(tp: Type): Depth = tp match {
+  final def typeDepth(tp: Type): Depth = tp match {
     case TypeRef(pre, sym, args)          => typeDepth(pre) max maxDepth(args).incr
     case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepth(decls.toList).incr
     case TypeBounds(lo, hi)               => typeDepth(lo) max typeDepth(hi)

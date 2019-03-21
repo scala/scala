@@ -215,5 +215,16 @@ class ListBufferTest {
     testPatchInPlace(from = 2, replaced = 1, expectation = ListBuffer(0, 1, -3, -2, -1))
     testPatchInPlace(from = 10, replaced = 10, expectation = ListBuffer(0, 1, 2, -3, -2, -1))
     testPatchInPlace(from = 0, replaced = 100, expectation = ListBuffer(-3, -2, -1))
+    assertEquals(ListBuffer(), ListBuffer().patchInPlace(0, Nil, -1)) // scala/bug#11438
+  }
+
+  @Test
+  def testUpdate(): Unit = {
+    val b = ListBuffer.empty[String] += "a"
+    assertEquals(Seq("a"), b)
+    b.update(0, "a1")
+    assertEquals(Seq("a1"), b)
+    b += "b"
+    assertEquals(Seq("a1", "b"), b)
   }
 }

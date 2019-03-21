@@ -17,6 +17,7 @@
     <orderEntry type="module" module-name="interactive" />
     <orderEntry type="module" module-name="scaladoc" />
     <orderEntry type="module" module-name="partest" />
+    <orderEntry type="module" module-name="testkit" />
     <orderEntry type="library" name="junit-deps" level="project" />
     <orderEntry type="library" name="starr" level="project" />
   </component>

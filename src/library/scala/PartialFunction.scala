@@ -52,12 +52,36 @@ package scala
  *  val numbers = sample map (isEven orElse isOdd)
  *  }}}
  *
+ *  @note Optional [[Function]]s, [[PartialFunction]]s and extractor objects
+ *        can be converted to each other as shown in the following table.
+ *
+ *        | How to convert ... | to a [[PartialFunction]] | to an optional [[Function]] | to an extractor |
+ *        | :---:  | ---  | --- | --- |
+ *        | from a [[PartialFunction]] | [[Predef.identity]] | [[lift]] | [[Predef.identity]] |
+ *        | from optional [[Function]] | [[Function.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function.UnliftOps#unlift]] |
+ *        | from an extractor | `{ case extractor(x) => x }` | `extractor.unapply _` | [[Predef.identity]] |
  *
  *  @author  Martin Odersky, Pavel Pavlov, Adriaan Moors
  *  @since   1.0
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
   import PartialFunction._
+
+  /** Tries to extract a `B` from an `A` in a pattern matching expression. */
+  def unapply(a: A): Option[B] = lift(a)
+
+  /** Returns an extractor object with a `unapplySeq` method, which extracts each element of a sequence data.
+   *
+   *  @example {{{
+   *           val firstChar: String => Option[Char] = _.headOption
+   *
+   *           Seq("foo", "bar", "baz") match {
+   *             case firstChar.unlift.elementWise(c0, c1, c2) =>
+   *               println(s"$c0, $c1, $c2") // Output: f, b, b
+   *           }
+   *           }}}
+   */
+  def elementWise = new ElementWiseExtractor(this)
 
   /** Checks if a value is contained in the function's domain.
    *
@@ -202,6 +226,16 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
  *  @since   2.8
  */
 object PartialFunction {
+
+  final class ElementWiseExtractor[-A, +B] private[PartialFunction] (private val pf: PartialFunction[A, B]) extends AnyVal {
+    def unapplySeq(seq: Seq[A]): Option[Seq[B]] = {
+      Some(seq.map {
+        case pf(b) => b
+        case _ => return None
+      })
+    }
+  }
+
   /** Composite function produced by `PartialFunction#orElse` method
    */
   private class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B])

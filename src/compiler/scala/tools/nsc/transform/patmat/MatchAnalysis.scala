@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.internal.util.StatisticsStatics
 
@@ -125,6 +126,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             // enumerate only direct subclasses,
             // subclasses of subclasses are enumerated in the next iteration
             // and added to a new group
+            @tailrec
             def groupChildren(wl: List[Symbol],
                               acc: List[List[Type]]): List[List[Type]] = wl match {
               case hd :: tl =>

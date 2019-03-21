@@ -1207,9 +1207,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree.isType)
           adaptType()
         else if (mode.typingExprNotFun &&
-                 (treeInfo.isMacroApplication(tree) ||
-                  !tree.isDef && tree.symbol != null && currentRun.runDefinitions.treatLikeMacro(tree.symbol) // TODO: remove once we bootstrap and StringContext.s/raw are defined as macro ???
-                 ) && !isMacroExpansionSuppressed(tree))
+                 treeInfo.isMacroApplication(tree) &&
+                 !isMacroExpansionSuppressed(tree))
           macroExpand(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
           typedConstructorPattern(tree, pt)
@@ -5762,13 +5761,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Extract and insert stabilizing ValDefs (if any) which might have been
       // introduced during the typing of the original expression.
-      def insertStabilizer(tree: Tree, original: Tree): Tree =
-        stabilizingDefinitions(original) match {
+      def insertStabilizer(tree: Tree, original: Tree): Tree = {
+        if (phase.erasedTypes) tree
+        else stabilizingDefinitions(original) match {
           case Nil => tree
           case vdefs =>
             removeStabilizingDefinitions(tree)
             Block(vdefs.reverse, tree) setType tree.tpe setPos tree.pos
         }
+      }
 
       // Trees not allowed during pattern mode.
       def typedOutsidePatternMode(tree: Tree): Tree = tree match {

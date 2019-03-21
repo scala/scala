@@ -22,13 +22,13 @@ object Test {
 // it uses the package private "diagnostics" method
 package scala.reflect.internal.util {
 
-  object WeakHashSetTest {
-    // a class guaranteed to provide hash collisions
-    case class Collider(x : String) extends Comparable[Collider] with Serializable {
-      override def hashCode = 0
-      def compareTo(y : Collider) = this.x compareTo y.x
-    }
+  // a class guaranteed to provide hash collisions
+  case class Collider(x : String) extends Comparable[Collider] with Serializable {
+    override def hashCode = 0
+    def compareTo(y : Collider) = this.x compareTo y.x
+  }
 
+  object WeakHashSetTest {
     // basic emptiness check
     def checkEmpty: Unit = {
       val hs = new WeakHashSet[String]()

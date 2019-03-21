@@ -49,13 +49,16 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   override def size: Int = contentSize
 
-  @`inline` private[this] def computeHash(o: A): Int = {
-    val h = o.##
+  /** Computes the improved hash of an original (`any.##`) hash. */
+  private[this] def improveHash(originalHash: Int): Int = {
     // Improve the hash by xoring the high 16 bits into the low 16 bits just in case entropy is skewed towards the
     // high-value bits. We only use the lowest bits to determine the hash bucket. This is the same improvement
     // algorithm as in java.util.HashMap.
-    h ^ (h >>> 16)
+    originalHash ^ (originalHash >>> 16)
   }
+
+  /** Computes the improved hash of this element */
+  @`inline` private[this] def computeHash(o: A): Int = improveHash(o.##)
 
   @`inline` private[this] def index(hash: Int) = hash & (table.length - 1)
 
@@ -81,9 +84,50 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   override def addAll(xs: IterableOnce[A]): this.type = {
     sizeHint(xs.knownSize)
+    xs match {
+      case hm: immutable.HashSet[A] =>
+        hm.foreachWithHash((k, h) => addElem(k, improveHash(h)))
+        this
+      case hm: mutable.HashSet[A] =>
+        val iter = hm.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          addElem(next.key, next.hash)
+        }
+        this
+      case _ => super.addAll(xs)
+    }
     super.addAll(xs)
   }
 
+  override def subtractAll(xs: IterableOnce[A]): this.type = {
+    if (size == 0) {
+      return this
+    }
+
+    xs match {
+      case hs: immutable.HashSet[A] =>
+        hs.foreachWithHashWhile { (k, h) =>
+          remove(k, improveHash(h))
+          size > 0
+        }
+        this
+      case hs: mutable.HashSet[A] =>
+        val iter = hs.nodeIterator
+        while (iter.hasNext) {
+          val next = iter.next()
+          remove(next.key, next.hash)
+          if (size == 0) return this
+        }
+        this
+      case _ => super.subtractAll(xs)
+    }
+  }
+
+  /** Adds an element to this set
+    * @param elem element to add
+    * @param hash the **improved** hash of `elem` (see computeHash)
+    */
   private[this] def addElem(elem: A, hash: Int) : Boolean = {
     val idx = index(hash)
     table(idx) match {
@@ -106,9 +150,8 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     true
   }
 
-  override def remove(elem: A) : Boolean = {
-    val hash = computeHash(elem)
-    var idx = index(hash)
+  private[this] def remove(elem: A, hash: Int): Boolean = {
+    val idx = index(hash)
     table(idx) match {
       case null => false
       case nd if nd.hash == hash && nd.key == elem =>
@@ -133,10 +176,14 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     }
   }
 
-  override def iterator: Iterator[A] = new AbstractIterator[A] {
+  override def remove(elem: A) : Boolean = remove(elem, computeHash(elem))
+
+  private[this] abstract class HashSetIterator[B] extends AbstractIterator[B] {
     private[this] var i = 0
     private[this] var node: Node[A] = null
     private[this] val len = table.length
+
+    protected[this] def extract(nd: Node[A]): B
 
     def hasNext: Boolean = {
       if(node ne null) true
@@ -150,13 +197,22 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
       }
     }
 
-    def next(): A =
+    def next(): B =
       if(!hasNext) Iterator.empty.next()
       else {
-        val r = node.key
+        val r = extract(node)
         node = node.next
         r
       }
+  }
+
+  override def iterator: Iterator[A] = new HashSetIterator[A] {
+    override protected[this] def extract(nd: Node[A]): A = nd.key
+  }
+
+  /** Returns an iterator over the nodes stored in this HashSet */
+  private[collection] def nodeIterator: Iterator[Node[A]] = new HashSetIterator[Node[A]] {
+    override protected[this] def extract(nd: Node[A]): Node[A] = nd
   }
 
   private[this] def growTable(newlen: Int) = {
@@ -330,7 +386,7 @@ object HashSet extends IterableFactory[HashSet] {
     def newBuilder: Builder[A, HashSet[A]] = HashSet.newBuilder(tableLength, loadFactor)
   }
 
-  private final class Node[K](_key: K, _hash: Int, private[this] var _next: Node[K]) {
+  private[collection] final class Node[K](_key: K, _hash: Int, private[this] var _next: Node[K]) {
     def key: K = _key
     def hash: Int = _hash
     def next: Node[K] = _next

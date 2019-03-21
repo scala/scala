@@ -127,6 +127,9 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
       }
       if (pt =:= UnitTpe) {
         // See scala/bug#4731 for one example of how this occurs.
+        // TODO: that initial fix was quite symptomatic (the real problem was that it allowed an illegal override,
+        // which resulted in types being so out of whack that'd case something to unit where we shouldn't),
+        // so I'm not sure this case actually still arises.
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
       } else if (tree.tpe != null && tree.tpe.typeSymbol == ArrayClass && pt.typeSymbol == ArrayClass) {

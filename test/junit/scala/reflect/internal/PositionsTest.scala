@@ -5,7 +5,7 @@ import org.junit.Test
 import scala.reflect.internal.util.NoSourceFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
-import scala.tools.testing.AssertUtil
+import scala.tools.testkit.AssertUtil
 
 class PositionsTest {
 

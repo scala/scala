@@ -1,0 +1,21 @@
+BoxUnboxTest.scala:55: warning: comparing values of types Int and Null using `==` will always yield false
+    val n6 = null.asInstanceOf[Int] == null
+                                    ^
+BoxUnboxTest.scala:59: warning: comparing values of types Int and Null using `!=` will always yield true
+    val n8 = null.asInstanceOf[Int] != null
+                                    ^
+BoxUnboxTest.scala:65: warning: comparing values of types Int and Null using `==` will always yield false
+    val n10 = mp.get(0) == null                    // scala/bug#602
+                        ^
+BoxUnboxTest.scala:114: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
+    assert(eff() == b); chk()
+                 ^
+BoxUnboxTest.scala:116: warning: comparing values of types scala.runtime.BoxedUnit and scala.runtime.BoxedUnit using `==` will always yield true
+    assert(boxing(eff()) == b); chk()
+                         ^
+BoxUnboxTest.scala:129: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
+    assert(n1 == b)
+              ^
+BoxUnboxTest.scala:131: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
+    val n2 = null.asInstanceOf[Unit] == b
+                                     ^

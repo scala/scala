@@ -1069,7 +1069,8 @@ abstract class Inliner {
    *  (A1) C is public
    *  (A2) C and D are members of the same run-time package
    */
-  def classIsAccessible(accessed: BType, from: ClassBType): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
+  @tailrec
+  final def classIsAccessible(accessed: BType, from: ClassBType): Either[OptimizerWarning, Boolean] = (accessed: @unchecked) match {
     // TODO: A2 requires "same run-time package", which seems to be package + classloader (JVMS 5.3.). is the below ok?
     case c: ClassBType     => c.isPublic.map(_ || c.packageInternalName == from.packageInternalName)
     case a: ArrayBType     => classIsAccessible(a.elementType, from)

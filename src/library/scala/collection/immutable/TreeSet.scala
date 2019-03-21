@@ -141,7 +141,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   def excl(elem: A): TreeSet[A] =
     newSetOrSelf(RB.delete(tree, elem))
 
-  override def concat(that: collection.IterableOnce[A])(implicit dummy: DummyImplicit): TreeSet[A] = {
+  override def concat(that: collection.IterableOnce[A]): TreeSet[A] = {
     val t = that match {
       case ts: TreeSet[A] if ordering == ts.ordering =>
         RB.union(tree, ts.tree)

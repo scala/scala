@@ -19,6 +19,7 @@ package javac
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.ListOfNil
@@ -251,7 +252,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       t
     }
 
-    def optArrayBrackets(tpt: Tree): Tree =
+    @tailrec
+    final def optArrayBrackets(tpt: Tree): Tree =
       if (in.token == LBRACKET) {
         val tpt1 = atPos(in.pos) { arrayOf(tpt) }
         in.nextToken()
@@ -653,6 +655,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(IMPORT)
       val pos = in.currentPos
       val buf = new ListBuffer[Name]
+      @tailrec
       def collectIdents() : Int = {
         if (in.token == ASTERISK) {
           val starOffset = in.pos
@@ -756,6 +759,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
           val decls = joinComment(memberDecl(mods, parentToken))
 
+          @tailrec
           def isDefDef(tree: Tree): Boolean = tree match {
             case _: DefDef => true
             case DocDef(_, defn) => isDefDef(defn)
@@ -768,18 +772,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
              members) ++= decls
         }
       }
-      def forwarders(sdef: Tree): List[Tree] = sdef match {
-        case ClassDef(mods, name, tparams, _) if (parentToken == INTERFACE) =>
-          val tparams1: List[TypeDef] = tparams map (_.duplicate)
-          var rhs: Tree = Select(Ident(parentName.toTermName), name)
-          if (!tparams1.isEmpty) rhs = AppliedTypeTree(rhs, tparams1 map (tp => Ident(tp.name)))
-          List(TypeDef(Modifiers(Flags.PROTECTED), name, tparams1, rhs))
-        case _ =>
-          List()
-      }
-      val sdefs = statics.toList
-      val idefs = members.toList ::: (sdefs flatMap forwarders)
-      (sdefs, idefs)
+      (statics.toList, members.toList)
     }
     def annotationParents = Select(javaLangDot(nme.annotation), tpnme.Annotation) :: Nil
     def annotationDecl(mods: Modifiers): List[Tree] = {
@@ -806,6 +799,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(LBRACE)
       val buf = new ListBuffer[Tree]
       var enumIsFinal = true
+      @tailrec
       def parseEnumConsts(): Unit = {
         if (in.token != RBRACE && in.token != SEMI && in.token != EOF) {
           val (const, hasClassBody) = enumConst(enumType)

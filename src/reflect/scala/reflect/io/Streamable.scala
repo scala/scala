@@ -15,11 +15,12 @@ package reflect
 package io
 
 import java.net.URL
-import java.io.{ BufferedInputStream, InputStream }
-import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
+import java.io.{BufferedInputStream, InputStream}
+import java.io.{BufferedReader, InputStreamReader, Closeable => JCloseable}
 import scala.io.{ Codec, BufferedSource, Source }
 import scala.collection.mutable.ArrayBuffer
 import Path.fail
+import scala.annotation.tailrec
 
 /** Traits for objects which can be represented as Streams.
  *
@@ -63,6 +64,7 @@ object Streamable {
       lazy val in = bufferedInput()
       var offset = 0
 
+      @tailrec
       def loop(): Unit = {
         if (offset < len) {
           val read = in.read(arr, offset, len - offset)

@@ -15,6 +15,7 @@ package scala.tools.nsc.fsc
 import java.math.BigInteger
 import java.security.SecureRandom
 
+import scala.annotation.tailrec
 import scala.io.Codec
 import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.reflect.internal.util.StringOps.splitWhere
@@ -37,6 +38,7 @@ trait HasCompileSocket {
       out println (compileSocket getPassword sock.getPort())
       out println (args mkString "\u0000")
 
+      @tailrec
       def loop(): Boolean = in.readLine() match {
         case null => noErrors
         case line =>
@@ -156,6 +158,7 @@ class CompileSocket extends CompileOutputCommon {
     val retryDelay = 50L
     val maxAttempts = (maxMillis / retryDelay).toInt
 
+    @tailrec
     def getsock(attempts: Int): Option[Socket] = attempts match {
       case 0    => warn("Unable to establish connection to compilation daemon") ; None
       case num  =>

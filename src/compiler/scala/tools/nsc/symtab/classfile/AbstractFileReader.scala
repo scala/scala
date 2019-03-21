@@ -14,8 +14,10 @@ package scala.tools.nsc
 package symtab
 package classfile
 
-import java.lang.Float.intBitsToFloat
+import java.io.{ByteArrayInputStream, DataInputStream}
 import java.lang.Double.longBitsToDouble
+import java.lang.Float.intBitsToFloat
+import java.util
 
 import scala.tools.nsc.io.AbstractFile
 
@@ -25,8 +27,11 @@ import scala.tools.nsc.io.AbstractFile
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-class AbstractFileReader(val file: AbstractFile, val buf: Array[Byte]) {
-  def this(file: AbstractFile) = this(file, file.toByteArray)
+final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
+  @deprecated("Use other constructor", "2.13.0")
+  def this(file: AbstractFile) {
+    this(file.toByteArray)
+  }
 
   /** the current input pointer
    */
@@ -59,17 +64,25 @@ class AbstractFileReader(val file: AbstractFile, val buf: Array[Byte]) {
     ((nextByte & 0xff) << 24) + ((nextByte & 0xff) << 16) +
     ((nextByte & 0xff) <<  8) +  (nextByte & 0xff)
 
+  /** extract a byte at position bp from buf
+   */
+  def getByte(mybp: Int): Byte =
+    buf(mybp)
+
+  def getBytes(mybp: Int, bytes: Array[Byte]): Unit = {
+    System.arraycopy(buf, mybp, bytes, 0, bytes.length)
+  }
 
   /** extract a character at position bp from buf
    */
   def getChar(mybp: Int): Char =
-    (((buf(mybp) & 0xff) << 8) + (buf(mybp+1) & 0xff)).toChar
+    (((getByte(mybp) & 0xff) << 8) + (getByte(mybp+1) & 0xff)).toChar
 
   /** extract an integer at position bp from buf
    */
   def getInt(mybp: Int): Int =
-    ((buf(mybp  ) & 0xff) << 24) + ((buf(mybp+1) & 0xff) << 16) +
-    ((buf(mybp+2) & 0xff) << 8) + (buf(mybp+3) & 0xff)
+    ((getByte(mybp) & 0xff) << 24) + ((getByte(mybp + 1) & 0xff) << 16) +
+    ((getByte(mybp + 2) & 0xff) << 8) + (getByte(mybp + 3) & 0xff)
 
   /** extract a long integer at position bp from buf
    */
@@ -84,8 +97,11 @@ class AbstractFileReader(val file: AbstractFile, val buf: Array[Byte]) {
    */
   def getDouble(mybp: Int): Double = longBitsToDouble(getLong(mybp))
 
+  def getUTF(mybp: Int, len: Int): String = {
+    new DataInputStream(new ByteArrayInputStream(buf, mybp, len)).readUTF
+  }
+
   /** skip next 'n' bytes
    */
   def skip(n: Int): Unit = { bp += n }
-
 }

@@ -8,7 +8,7 @@ import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class ParamAliasTest extends BytecodeTesting {

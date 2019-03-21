@@ -8,8 +8,8 @@ import scala.collection.JavaConverters._
 import scala.reflect.internal.Flags
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 class DefaultMethodTest extends BytecodeTesting {
   import compiler._

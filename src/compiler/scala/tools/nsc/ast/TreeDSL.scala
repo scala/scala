@@ -128,8 +128,10 @@ trait TreeDSL {
     }
     class TryStart(body: Tree, catches: List[CaseDef], fin: Tree) {
       def CATCH(xs: CaseDef*) = new TryStart(body, xs.toList, fin)
-      def ENDTRY              = Try(body, catches, fin)
+      def FINALLY(end: END.type) = Try(body, catches, fin)
+      def FINALLY(fin1: Tree) = Try(body, catches, fin1)
     }
+    object END
 
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
     def DEFAULT: CaseStart          = new CaseStart(Ident(nme.WILDCARD), EmptyTree)

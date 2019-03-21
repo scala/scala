@@ -1,8 +1,5 @@
-S_3.scala:1: error: class Sub needs to be abstract, since:
-it has 2 unimplemented members.
-/** As seen from class Sub, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+S_3.scala:1: error: class Sub needs to be abstract.
+Missing implementations for 2 members. Stub implementations follow:
   def raw(x$1: M_1[_ <: String]): Unit = ???
   def raw(x$1: Any): Unit = ???
 

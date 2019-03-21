@@ -7,9 +7,9 @@ import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
 import scala.tools.nsc.backend.jvm.AsmUtils
-import scala.tools.partest.ASMConverters._
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class BytecodeTest extends BytecodeTesting {

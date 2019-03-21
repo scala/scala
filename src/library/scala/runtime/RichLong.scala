@@ -35,7 +35,6 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   override def abs: Long             = math.abs(self)
   override def max(that: Long): Long = math.max(self, that)
   override def min(that: Long): Long = math.min(self, that)
-  override def signum: Int           = math.signum(self).toInt
 
   /** There is no reason to round a `Long`, but this method is provided to avoid accidental conversion to `Int` through `Float`. */
   @deprecated("this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?", "2.11.0")

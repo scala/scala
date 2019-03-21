@@ -191,9 +191,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
   // Make `concat` an alias for `appendedAll` so that it benefits from performance
   // overrides of this method
-  // TODO https://github.com/scala/bug/issues/10853 Uncomment final
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  @`inline` /*final*/ override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
+  @`inline` final override def concat[B >: A](suffix: IterableOnce[B]): CC[B] = appendedAll(suffix)
 
  /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -774,10 +772,29 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *        x >  0       if this.length >  len
     *   }}}
     *  The method as implemented here does not call `length` directly; its running time
-    *  is `O(length min len)` instead of `O(length)`. The method should be overwritten
-    *  if computing `length` is cheap.
+    *  is `O(length min len)` instead of `O(length)`. The method should be overridden
+    *  if computing `length` is cheap and `knownSize` returns `-1`.
+    *
+    *  @see [[lengthIs]]
     */
   def lengthCompare(len: Int): Int = super.sizeCompare(len)
+
+  override final def sizeCompare(that: Iterable[_]): Int = lengthCompare(that)
+
+  /** Compares the length of this $coll to the size of another `Iterable`.
+    *
+    *   @param   that the `Iterable` whose size is compared with this $coll's length.
+    *   @return  A value `x` where
+    *   {{{
+    *        x <  0       if this.length <  that.size
+    *        x == 0       if this.length == that.size
+    *        x >  0       if this.length >  that.size
+    *   }}}
+    *  The method as implemented here does not call `length` or `size` directly; its running time
+    *  is `O(this.length min that.size)` instead of `O(this.length + that.size)`.
+    *  The method should be overridden if computing `size` is cheap and `knownSize` returns `-1`.
+    */
+  def lengthCompare(that: Iterable[_]): Int = super.sizeCompare(that)
 
   /** Returns a value class containing operations for comparing the length of this $coll to a test value.
     *
@@ -969,25 +986,6 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 }
 
 object SeqOps {
-  /** Operations for comparing the length of a collection to a test value.
-    *
-    * These operations are implemented in terms of
-    * [[scala.collection.SeqOps.lengthCompare(Int) `lengthCompare(Int)`]].
-    */
-  final class LengthCompareOps private[SeqOps](val seq: SeqOps[_, AnyConstr, _]) extends AnyVal {
-    /** Tests if the length of the collection is less than some value. */
-    @inline def <(len: Int): Boolean = seq.lengthCompare(len) < 0
-    /** Tests if the length of the collection is less than or equal to some value. */
-    @inline def <=(len: Int): Boolean = seq.lengthCompare(len) <= 0
-    /** Tests if the length of the collection is equal to some value. */
-    @inline def ==(len: Int): Boolean = seq.lengthCompare(len) == 0
-    /** Tests if the length of the collection is not equal to some value. */
-    @inline def !=(len: Int): Boolean = seq.lengthCompare(len) != 0
-    /** Tests if the length of the collection is greater than or equal to some value. */
-    @inline def >=(len: Int): Boolean = seq.lengthCompare(len) >= 0
-    /** Tests if the length of the collection is greater than some value. */
-    @inline def >(len: Int): Boolean = seq.lengthCompare(len) > 0
-  }
 
   // KMP search utilities
 

@@ -506,7 +506,7 @@ class SetMapConsistencyTest {
       else None
     }
     assert(f() match {
-      case Some((a,b)) if (a==null || b==null) => false
+      case Some((null, _)) => false
       case _ => true
     })
   }
@@ -535,7 +535,7 @@ class SetMapConsistencyTest {
 
   @Test
   def test_SI8727(): Unit = {
-    import scala.tools.testing.AssertUtil._
+    import scala.tools.testkit.AssertUtil._
     type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
     val m = map.view.filterKeys(i => if (map contains i) true else throw new NSEE).toMap

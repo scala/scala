@@ -17,6 +17,7 @@ package io
 import java.io.{BufferedOutputStream, ByteArrayOutputStream, IOException, InputStream, OutputStream}
 import java.io.{File => JFile}
 import java.net.URL
+import java.nio.ByteBuffer
 
 import scala.collection.AbstractIterable
 
@@ -194,6 +195,7 @@ abstract class AbstractFile extends AbstractIterable[AbstractFile] {
         out.toByteArray()
     }
   }
+  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toByteArray)
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]

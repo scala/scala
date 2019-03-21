@@ -133,6 +133,7 @@ private[immutable] abstract class IntMapIterator[V, T](it: IntMap[V]) extends Ab
   def valueOf(tip: IntMap.Tip[V]): T
 
   def hasNext = index != 0
+  @tailrec
   final def next(): T =
     pop match {
       case IntMap.Bin(_,_, t@IntMap.Tip(_, _), right) => {
@@ -223,6 +224,12 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Nil =>
   }
 
+  override def foreachEntry[U](f: (IntMapUtils.Int, T) => U): Unit = this match {
+    case IntMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
+    case IntMap.Tip(key, value) => f(key, value)
+    case IntMap.Nil =>
+  }
+
   override def keysIterator: Iterator[Int] = this match {
     case IntMap.Nil => Iterator.empty
     case _ => new IntMapKeyIterator(this)
@@ -285,12 +292,14 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
     case IntMap.Bin(_, _, left, right) => left.size + right.size
   }
 
+  @tailrec
   final def get(key: Int): Option[T] = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left.get(key) else right.get(key)
     case IntMap.Tip(key2, value) => if (key == key2) Some(value) else None
     case IntMap.Nil => None
   }
 
+  @tailrec
   final override def getOrElse[S >: T](key: Int, default: => S): S = this match {
     case IntMap.Nil => default
     case IntMap.Tip(key2, value) => if (key == key2) value else default
@@ -298,6 +307,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
       if (zero(key, mask)) left.getOrElse(key, default) else right.getOrElse(key, default)
   }
 
+  @tailrec
   final override def apply(key: Int): T = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key)
     case IntMap.Tip(key2, value) => if (key == key2) value else throw new IllegalArgumentException("Key not found")

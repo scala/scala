@@ -37,13 +37,6 @@ abstract class SymbolPairs {
   val global: SymbolTable
   import global._
 
-  /** Are types tp1 and tp2 equivalent seen from the perspective
-   *  of `baseClass`? For instance List[Int] and Seq[Int] are =:=
-   *  when viewed from IterableClass.
-   */
-  def sameInBaseClass(baseClass: Symbol)(tp1: Type, tp2: Type) =
-    tp1.baseType(baseClass).typeSymbol == tp2.baseType(baseClass).typeSymbol
-
   final case class SymbolPair(base: Symbol, low: Symbol, high: Symbol) {
     private[this] val self  = base.thisType
 
@@ -113,33 +106,7 @@ abstract class SymbolPairs {
      */
     protected def matches(high: Symbol): Boolean
 
-    /** The parents and base classes of `base`.  Can be refined in subclasses.
-     */
-    protected def parents: List[Type] = base.info.parents
     protected def bases: List[Symbol] = base.info.baseClasses
-
-    /** An implementation of BitSets as arrays (maybe consider collection.BitSet
-     *  for that?) The main purpose of this is to implement
-     *  intersectionContainsElement efficiently.
-     */
-    private type BitSet = Array[Int]
-
-    /** A mapping from all base class indices to a bitset
-     *  which indicates whether parents are subclasses.
-     *
-     *   i \in subParents(j)   iff
-     *   exists p \in parents, b \in baseClasses:
-     *     i = index(p)
-     *     j = index(b)
-     *     p isSubClass b
-     *     p.baseType(b).typeSymbol == self.baseType(b).typeSymbol
-     */
-    private[this] val subParents = new Array[BitSet](size)
-
-    /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
-     *  linearization order. Symbols that are not baseclasses map to -1.
-     */
-    private[this] val index = new mutable.HashMap[Symbol, Int]().withDefaultValue(-1)
 
     /** The scope entries that have already been visited as highSymbol
      *  (but may have been excluded via hasCommonParentAsSubclass.)
@@ -187,59 +154,16 @@ abstract class SymbolPairs {
           }
         }
       }
-      var i = 0
-      for (bc <- bases) {
-        index(bc) = i
-        subParents(i) = new BitSet(size)
-        i += 1
-      }
-      for (p <- parents) {
-        val pIndex = index(p.typeSymbol)
-        if (pIndex >= 0)
-          for (bc <- p.baseClasses ; if sameInBaseClass(bc)(p, self)) {
-            val bcIndex = index(bc)
-            if (bcIndex >= 0)
-              include(subParents(bcIndex), pIndex)
-          }
-      }
+
       // first, deferred (this will need to change if we change lookup rules!)
       fillDecls(bases, deferred = true)
       // then, concrete.
       fillDecls(bases, deferred = false)
     }
 
-    private def include(bs: BitSet, n: Int): Unit = {
-      val nshifted = n >> 5
-      val nmask    = 1 << (n & 31)
-      bs(nshifted) |= nmask
-    }
-
-    /** Implements `bs1 * bs2 * {0..n} != 0`.
-     *  Used in hasCommonParentAsSubclass */
-    private def intersectionContainsElementLeq(bs1: BitSet, bs2: BitSet, n: Int): Boolean = {
-      val nshifted = n >> 5
-      val nmask = 1 << (n & 31)
-      var i = 0
-      while (i < nshifted) {
-        if ((bs1(i) & bs2(i)) != 0) return true
-        i += 1
-      }
-      (bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0
-    }
-
-    /** Do `sym1` and `sym2` have a common subclass in `parents`?
-     *  In that case we do not follow their pairs.
-     */
-    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = {
-      val index1 = index(sym1.owner)
-      (index1 >= 0) && {
-        val index2 = index(sym2.owner)
-        (index2 >= 0) && {
-          intersectionContainsElementLeq(
-            subParents(index1), subParents(index2), index1 min index2)
-        }
-      }
-    }
+    // We can only draw conclusions about linearisation from a non-trait parent; skip Object, being the top of the lattice.
+    private lazy val nonTraitParent: Symbol =
+      base.info.firstParent.typeSymbol.filter(sym => !sym.isTrait && sym != definitions.ObjectClass)
 
     @tailrec private def advanceNextEntry(): Unit = {
       if (nextEntry ne null) {
@@ -248,12 +172,14 @@ abstract class SymbolPairs {
           val high    = nextEntry.sym
           val isMatch = matches(high) && { visited addEntry nextEntry ; true } // side-effect visited on all matches
 
-          // skip nextEntry if a class in `parents` is a subclass of the
-          // owners of both low and high.
-          if (isMatch && !hasCommonParentAsSubclass(lowSymbol, high))
-            highSymbol = high
-          else
+          // Skip nextEntry if the (non-trait) class in `parents` is a subclass of the owners of both low and high.
+          // this means we'll come back to this entry when we consider `nonTraitParent`, and the linearisation order will be the same
+          // (this only works for non-trait classes, since subclassing on traits does not imply one's linearisation is contained in the other's)
+          // This is not just an optimization -- bridge generation relies on visiting each such class only once.
+          if (!isMatch || (nonTraitParent.isNonBottomSubClass(low.owner) && nonTraitParent.isNonBottomSubClass(high.owner)))
             advanceNextEntry()
+          else
+            highSymbol = high
         }
       }
     }
@@ -284,7 +210,8 @@ abstract class SymbolPairs {
 
     // Note that next is called once during object initialization to
     // populate the fields tracking the current symbol pair.
-    def next(): Unit = {
+    @tailrec
+    final def next(): Unit = {
       if (curEntry ne null) {
         lowSymbol = curEntry.sym
         advanceNextEntry()        // sets highSymbol

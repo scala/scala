@@ -15,7 +15,6 @@ package scala.tools.util
 import scala.tools.nsc.io._
 import java.net.URLClassLoader
 import scala.collection.JavaConverters._
-import scala.language.postfixOps
 
 object VerifyClass {
 
@@ -30,14 +29,14 @@ object VerifyClass {
     }
   }
 
-  def checkClassesInJar(name: String, cl: ClassLoader) = new Jar(File(name)) filter (_.getName.endsWith(".class")) map { x =>
+  def checkClassesInJar(name: String, cl: ClassLoader) = new Jar(File(name)).filter(_.getName.endsWith(".class")).map { x =>
     checkClass(x.getName.stripSuffix(".class").replace('/', '.'), cl)
-  } toMap
+  }.toMap
 
   def checkClassesInDir(name: String, cl: ClassLoader) = (for {
     file <- Path(name).walk
     if file.name endsWith ".class"
-  } yield checkClass(name, cl)) toMap
+  } yield checkClass(name, cl)).toMap
 
   def checkClasses(name: String, cl: ClassLoader) =
     if (name endsWith ".jar")  checkClassesInJar(name, cl)

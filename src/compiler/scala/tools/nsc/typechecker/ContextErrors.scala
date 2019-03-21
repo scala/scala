@@ -15,6 +15,7 @@ package typechecker
 
 import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
 import java.lang.System.{lineSeparator => EOL}
+import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.{ControlThrowable, NonFatal}
@@ -188,6 +189,7 @@ trait ContextErrors {
         // scala/bug#3971 unwrapping to the outermost Apply helps prevent confusion with the
         // error message point.
         def callee = {
+          @tailrec
           def unwrap(t: Tree): Tree = t match {
             case Apply(app: Apply, _) => unwrap(app)
             case _                    => t

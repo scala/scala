@@ -13,7 +13,6 @@
 package scala
 package tools.nsc.transform.patmat
 
-import scala.language.postfixOps
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
@@ -21,7 +20,7 @@ import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsSta
 trait Logic extends Debugging  {
   import global.statistics
 
-  private def max(xs: Seq[Int]) = if (xs isEmpty) 0 else xs max
+  private def max(xs: Seq[Int]) = if (xs.isEmpty) 0 else xs.max
   private def alignedColumns(cols: Seq[Any]): Seq[String] = {
     def toString(x: Any) = if (x == null) "" else x.toString
     if (cols.isEmpty || cols.tails.isEmpty) cols map toString

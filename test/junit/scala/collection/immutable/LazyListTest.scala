@@ -8,7 +8,7 @@ import org.junit.Assert._
 
 import scala.collection.mutable.{Builder, ListBuffer}
 import scala.ref.WeakReference
-import scala.tools.testing.AssertUtil
+import scala.tools.testkit.AssertUtil
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])

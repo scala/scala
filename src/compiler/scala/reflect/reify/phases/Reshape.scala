@@ -13,6 +13,7 @@
 package scala.reflect.reify
 package phases
 
+import scala.annotation.tailrec
 import scala.tools.nsc.symtab.Flags._
 
 trait Reshape {
@@ -189,6 +190,7 @@ trait Reshape {
       CompoundTypeTree(Template(parents1, self, stats1))
     }
 
+    @tailrec
     private def toPreTyperTypedOrAnnotated(tree: Tree): Tree = tree match {
       case ty @ Typed(expr1, tpt) =>
         if (reifyDebug) println("reify typed: " + tree)
@@ -197,6 +199,7 @@ trait Reshape {
           case tpt => tpt
         }
         val annotatedArg = {
+          @tailrec
           def loop(tree: Tree): Tree = tree match {
             case annotated1 @ Annotated(ann, annotated2 @ Annotated(_, _)) => loop(annotated2)
             case annotated1 @ Annotated(ann, arg) => arg

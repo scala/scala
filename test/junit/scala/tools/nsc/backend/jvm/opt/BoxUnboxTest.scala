@@ -8,9 +8,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
-import scala.tools.partest.ASMConverters._
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.ASMConverters._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 /**
   * Tests for boxing/unboxing optimizations.

@@ -1,5 +1,4 @@
-package scala.tools
-package testing
+package scala.tools.testkit
 
 import org.junit.Assert._
 import org.junit.Test
@@ -48,7 +47,7 @@ class AssertThrowsTest {
     } catch {
       case ae: AssertionError =>
         assertEquals(1, ae.getSuppressed.length)
-        assertEquals("Exception failed check: scala.tools.testing.AssertThrowsTest$Foo", ae.getMessage)
+        assertEquals("Exception failed check: scala.tools.testkit.AssertThrowsTest$Foo", ae.getMessage)
         assertEquals(classOf[Foo], ae.getSuppressed.head.getClass)
       case t: Throwable => fail("Expected an AssertionError: $t")
     }
@@ -60,7 +59,7 @@ class AssertThrowsTest {
     } catch {
       case ae: AssertionError =>
         assertEquals(1, ae.getSuppressed.length)
-        assertEquals("Exception not a scala.tools.testing.AssertThrowsTest$Foo: scala.tools.testing.AssertThrowsTest$Bar", ae.getMessage)
+        assertEquals("Exception not a scala.tools.testkit.AssertThrowsTest$Foo: scala.tools.testkit.AssertThrowsTest$Bar", ae.getMessage)
         assertEquals(classOf[Bar], ae.getSuppressed.head.getClass)
       case t: Throwable => fail("Expected an AssertionError: $t")
     }

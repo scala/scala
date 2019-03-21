@@ -56,6 +56,7 @@ private[internal] trait TypeMaps {
 
   /** Type with all top-level occurrences of abstract types replaced by their bounds */
   object abstractTypesToBounds extends TypeMap {
+    @tailrec
     def apply(tp: Type): Type = tp match {
       case TypeRef(_, sym, _) if sym.isAliasType    => apply(tp.dealias)
       case TypeRef(_, sym, _) if sym.isAbstractType => apply(tp.upperBound)
@@ -444,6 +445,7 @@ private[internal] trait TypeMaps {
     // isBaseClassOfEnclosingClassOrInfoIsNotYetComplete would be a more accurate
     // but less succinct name.
     private def isBaseClassOfEnclosingClass(base: Symbol) = {
+      @tailrec
       def loop(encl: Symbol): Boolean = (
         isPossiblePrefix(encl)
           && ((encl isSubClass base) || loop(encl.owner.enclClass))
@@ -623,6 +625,7 @@ private[internal] trait TypeMaps {
     }
 
     private def thisTypeAsSeen(tp: ThisType): Type = {
+      @tailrec
       def loop(pre: Type, clazz: Symbol): Type = {
         val pre1 = pre match {
           case SuperType(thistpe, _) => thistpe
@@ -1132,6 +1135,7 @@ private[internal] trait TypeMaps {
           throw new MissingTypeControl // For build manager and presentation compiler purposes
         }
         /* The two symbols have the same fully qualified name */
+        @tailrec
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {

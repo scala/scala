@@ -16,11 +16,12 @@ package scala.tools
 package nsc
 package settings
 
-import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
+import io.{AbstractFile, Jar, Path, PlainFile, VirtualDirectory}
+import scala.annotation.tailrec
 import scala.collection.mutable.Clearable
 import scala.io.Source
-import scala.reflect.internal.util.{ SomeOfNil, StringOps }
-import scala.reflect.{ ClassTag, classTag }
+import scala.reflect.internal.util.{SomeOfNil, StringOps}
+import scala.reflect.{ClassTag, classTag}
 
 /** A mutable Settings object.
  */
@@ -65,6 +66,7 @@ class MutableSettings(val errorFn: String => Unit)
    *  Returns (success, List of unprocessed arguments)
    */
   def processArguments(arguments: List[String], processAll: Boolean): (Boolean, List[String]) = {
+    @tailrec
     def loop(args: List[String], residualArgs: List[String]): (Boolean, List[String]) = args match {
       case Nil        =>
         (checkDependencies, residualArgs)
@@ -738,6 +740,7 @@ class MutableSettings(val errorFn: String => Unit)
         case s if isChoice(s) => added += s // this case also adds "_"
         case s                => badChoice(s)
       }
+      @tailrec
       def loop(args: List[String]): List[String] = args match {
         case arg :: _ if halting && (!isPos(arg) || !isChoice(arg)) => args
         case arg :: rest => tryArg(arg) ; loop(rest)
@@ -810,6 +813,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // try to set. halting means halt at first non-arg
     protected def tryToSetArgs(args: List[String], halting: Boolean) = {
+      @tailrec
       def loop(args: List[String]): List[String] = args match {
         case arg :: rest =>
           if (halting && (arg startsWith "-")) args

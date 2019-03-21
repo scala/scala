@@ -15,7 +15,9 @@ package scala.tools.reflect
 trait FastStringInterpolator extends FormatInterpolator {
   import c.universe._
 
+  // fast track entry for StringContext.s
   def interpolateS: Tree = interpolated(c.macroApplication, false)
+  // fast track entry for StringContext.raw
   def interpolateRaw: Tree = interpolated(c.macroApplication, true)
 
   // rewrite a tree like `scala.StringContext.apply("hello \\n ", " ", "").s("world", Test.this.foo)`
@@ -62,13 +64,9 @@ trait FastStringInterpolator extends FormatInterpolator {
 
       result
 
-    // We know we're selecting either the s or raw method on our own StringContext (as far as we know, statically).
-    // Once we turn them into fast tracked macros (and make the standardInterpolator public), we'll inline their
-    // old implementation. Until we do, we can just expand to the original tree, but suppress macro expansion.
-    // After the bootstrap is complete, the first branch of the if can be removed.
+    // Fallback -- inline the original implementation of the `s` or `raw` interpolator.
     case t@Apply(Select(someStringContext, _interpol), args) =>
-      if (!t.symbol.isTermMacro) global.analyzer.suppressMacroExpansion(t)
-      else q"""{
+      q"""{
         val sc = $someStringContext
         _root_.scala.StringContext.standardInterpolator(
           ${if(isRaw) q"_root_.scala.Predef.identity" else q"_root_.scala.StringContext.processEscapes"},

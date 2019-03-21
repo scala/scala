@@ -15,9 +15,9 @@ package tools.nsc
 package transform
 
 import scala.annotation.tailrec
-
 import symtab.Flags._
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
@@ -247,14 +247,15 @@ abstract class UnCurry extends InfoTransform
         }
       }
 
-    def transformArgs(pos: Position, fun: Symbol, args: List[Tree], formals: List[Type]): List[Tree] = {
+    def transformArgs(pos: Position, fun: Symbol, args: List[Tree], params: List[Symbol]): List[Tree] = {
       val isJava = fun.isJavaDefined
-      def transformVarargs(varargsElemType: Type) = {
+
+      def transformVarargs(varargsElemType: Type): List[Tree] = {
         def mkArrayValue(ts: List[Tree], elemtp: Type) =
           ArrayValue(TypeTree(elemtp), ts) setType arrayType(elemtp)
 
         // when calling into scala varargs, make sure it's a sequence.
-        def arrayToSequence(tree: Tree, elemtp: Type, copy: Boolean) = {
+        def arrayToSequence(tree: Tree, elemtp: Type, copy: Boolean): Tree = {
           exitingUncurry {
             localTyper.typedPos(pos) {
               val pt = arrayType(elemtp)
@@ -273,9 +274,10 @@ abstract class UnCurry extends InfoTransform
         }
 
         // when calling into java varargs, make sure it's an array - see bug #1360
-        def sequenceToArray(tree: Tree) = {
+        def sequenceToArray(tree: Tree): Tree = {
           val toArraySym = tree.tpe member nme.toArray
           assert(toArraySym != NoSymbol)
+          @tailrec
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)
             // Don't want bottom types getting any further than this (scala/bug#4024)
@@ -314,7 +316,7 @@ abstract class UnCurry extends InfoTransform
               else arrayToSequence(tree, varargsElemType, copy = isNewCollections) // existing array, make a defensive copy
           }
           else {
-            def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
+            def mkArray = mkArrayValue(args drop (params.length - 1), varargsElemType)
             if (javaStyleVarArgs) mkArray
             else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
             else arrayToSequence(mkArray, varargsElemType, copy = false) // fresh array, no need to copy
@@ -328,18 +330,22 @@ abstract class UnCurry extends InfoTransform
             }
           }
         }
-        args.take(formals.length - 1) :+ (suffix setType formals.last)
+        val args1 = ListBuffer[Tree]()
+        args1 ++= args.iterator.take(params.length - 1)
+        args1 += suffix setType params.last.info
+        args1.toList
       }
 
-      val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head.widen) else args
+      val isVarargs = isVarArgsList(params)
+      val args1 = if (isVarargs) transformVarargs(params.last.info.typeArgs.head.widen) else args
 
-      map2(formals, args1) { (formal, arg) =>
-        if (!isByNameParamType(formal)) arg
+      map2Conserve(args1, params) { (arg, param) =>
+        if (!isByNameParamType(param.info)) arg
         else if (isByNameRef(arg)) { // thunk does not need to be forced because it's a reference to a by-name arg passed to a by-name param
           byNameArgs += arg
           arg setType functionType(Nil, arg.tpe)
         } else {
-          log(s"Argument '$arg' at line ${arg.pos.line} is $formal from ${fun.fullName}")
+          log(s"Argument '$arg' at line ${arg.pos.line} is ${param.info} from ${fun.fullName}")
           def canUseDirectly(qual: Tree) = qual.tpe.typeSymbol.isSubClass(FunctionClass(0)) && treeInfo.isExprSafeToInline(qual)
           arg match {
             // don't add a thunk for by-name argument if argument already is an application of
@@ -482,16 +488,16 @@ abstract class UnCurry extends InfoTransform
               super.transform(tree)
 
           case Apply(fn, args) =>
-            // Read formals before `transform(fn)`, because UnCurry replaces T* by Seq[T] (see DesugaredParameterType).
+            // Read the param symbols before `transform(fn)`, because UnCurry replaces T* by Seq[T] (see DesugaredParameterType).
             // The call to `transformArgs` below needs `formals` that still have varargs.
-            val formals = fn.tpe.paramTypes
+            val fnParams = fn.tpe.params
             val transformedFn = transform(fn)
             // scala/bug#6479: no need to lift in args to label jumps
             // scala/bug#11127: boolean && / || are emitted using jumps, the lhs stack value is consumed by the conditional jump
             val noReceiverOnStack = fn.symbol.isLabel || fn.symbol == currentRun.runDefinitions.Boolean_and || fn.symbol == currentRun.runDefinitions.Boolean_or
             val needLift = needTryLift || !noReceiverOnStack
             withNeedLift(needLift) {
-              treeCopy.Apply(tree, transformedFn, transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
+              treeCopy.Apply(tree, transformedFn, transformTrees(transformArgs(tree.pos, fn.symbol, args, fnParams)))
             }
 
           case Assign(_: RefTree, _) =>

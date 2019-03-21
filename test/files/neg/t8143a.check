@@ -1,5 +1,6 @@
-t8143a.scala:2: error: overriding method f in class Foo of type => Int;
-  method f has weaker access privileges; it should not be private
+t8143a.scala:2: error: weaker access privileges in overriding
+def f: Int (defined in class Foo)
+  override should not be private
 class Bar extends Foo { private def f = 10 }
                                     ^
 one error found

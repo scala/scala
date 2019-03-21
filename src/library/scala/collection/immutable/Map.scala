@@ -73,8 +73,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def removed(key: K): C
 
   /** Alias for `remove` */
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /*@`inline` final*/ def - (key: K): C = removed(key)
+  @`inline` final def - (key: K): C = removed(key)
 
   @deprecated("Use -- with an explicit collection", "2.13.0")
   def - (key1: K, key2: K, keys: K*): C = removed(key1).removed(key2).removedAll(keys)
@@ -91,8 +90,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
   def removedAll(keys: IterableOnce[K]): C = keys.iterator.foldLeft[C](coll)(_ - _)
 
   /** Alias for `removeAll` */
-  @deprecatedOverriding("This method should be final, but is not due to scala/bug#10853", "2.13.0")
-  /* @`inline` final */ override def -- (keys: IterableOnce[K]): C = removedAll(keys)
+  @`inline` final override def -- (keys: IterableOnce[K]): C = removedAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.
     *  @param    key the key
@@ -257,6 +255,11 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
     }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      if (walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) this.asInstanceOf[Map[K, W]]
+      else new Map1(key1, walue1)
+    }
   }
 
   @SerialVersionUID(3L)
@@ -311,6 +314,13 @@ object Map extends MapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
+    }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map2(key1, walue1, key2, walue2)
     }
   }
 
@@ -372,6 +382,15 @@ object Map extends MapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
+    }
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      val walue3 = f(key3, value3)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) &&
+          (walue3.asInstanceOf[AnyRef] eq value3.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map3(key1, walue1, key2, walue2, key3, walue3)
     }
   }
 
@@ -442,7 +461,17 @@ object Map extends MapFactory[Map] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
-
+    override def transform[W](f: (K, V) => W): Map[K, W] = {
+      val walue1 = f(key1, value1)
+      val walue2 = f(key2, value2)
+      val walue3 = f(key3, value3)
+      val walue4 = f(key4, value4)
+      if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
+          (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) &&
+          (walue3.asInstanceOf[AnyRef] eq value3.asInstanceOf[AnyRef]) &&
+          (walue4.asInstanceOf[AnyRef] eq value4.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
+      else new Map4(key1, walue1, key2, walue2, key3, walue3, key4, walue4)
+    }
     private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): builder.type =
       builder.addOne(key1, value1).addOne(key2, value2).addOne(key3, value3).addOne(key4, value4)
   }

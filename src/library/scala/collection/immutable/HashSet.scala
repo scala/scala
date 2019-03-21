@@ -78,7 +78,7 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
     newHashSetOrThis(newRootNode)
   }
 
-  override def concat(that: IterableOnce[A])(implicit dummy: DummyImplicit): HashSet[A] =
+  override def concat(that: IterableOnce[A]): HashSet[A] =
     that match {
       case hs: HashSet[A] => newHashSetOrThis(rootNode.concat(hs.rootNode, 0))
       case _ => super.concat(that)
@@ -93,6 +93,13 @@ final class HashSet[A] private[immutable] (val rootNode: SetNode[A])
   override def last: A = reverseIterator.next()
 
   override def foreach[U](f: A => U): Unit = rootNode.foreach(f)
+
+  /** Applies a function f to each element, and its corresponding **original** hash, in this Set */
+  @`inline` private[collection] def foreachWithHash(f: (A, Int) => Unit): Unit = rootNode.foreachWithHash(f)
+
+  /** Applies a function f to each element, and its corresponding **original** hash, in this Set
+    * Stops iterating the first time that f returns `false`.*/
+  @`inline` private[collection] def foreachWithHashWhile(f: (A, Int) => Boolean): Unit = rootNode.foreachWithHashWhile(f)
 
   def subsetOf(that: Set[A]): Boolean = if (that.isEmpty) true else that match {
     case set: HashSet[A] => rootNode.subsetOf(set.rootNode, 0)
@@ -286,6 +293,9 @@ private[immutable] sealed abstract class SetNode[A] extends Node[SetNode[A]] {
 
   def concat(that: SetNode[A], shift: Int): SetNode[A]
 
+  def foreachWithHash(f: (A, Int) => Unit): Unit
+
+  def foreachWithHashWhile(f: (A, Int) => Boolean): Boolean
 }
 
 private final class BitmapIndexedSetNode[A](
@@ -589,14 +599,16 @@ private final class BitmapIndexedSetNode[A](
   }
 
   def foreach[U](f: A => U): Unit = {
+    val thisPayloadArity = payloadArity
     var i = 0
-    while (i < payloadArity) {
+    while (i < thisPayloadArity) {
       f(getPayload(i))
       i += 1
     }
 
+    val thisNodeArity = nodeArity
     var j = 0
-    while (j < nodeArity) {
+    while (j < thisNodeArity) {
       getNode(j).foreach(f)
       j += 1
     }
@@ -1276,6 +1288,40 @@ private final class BitmapIndexedSetNode[A](
       // should never happen -- hash collisions are never at the same level as bitmapIndexedSetNodes
       throw new UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode")
   }
+
+  override def foreachWithHash(f: (A, Int) => Unit): Unit = {
+    val iN = payloadArity // arity doesn't change during this operation
+    var i = 0
+    while (i < iN) {
+      f(getPayload(i), getHash(i))
+      i += 1
+    }
+
+    val jN = nodeArity // arity doesn't change during this operation
+    var j = 0
+    while (j < jN) {
+      getNode(j).foreachWithHash(f)
+      j += 1
+    }
+  }
+
+  override def foreachWithHashWhile(f: (A, Int) => Boolean): Boolean = {
+    val thisPayloadArity = payloadArity
+    var pass = true
+    var i = 0
+    while (i < thisPayloadArity && pass) {
+      pass &&= f(getPayload(i), getHash(i))
+      i += 1
+    }
+
+    val thisNodeArity = nodeArity
+    var j = 0
+    while (j < thisNodeArity && pass) {
+      pass &&= getNode(j).foreachWithHashWhile(f)
+      j += 1
+    }
+    pass
+  }
 }
 
 private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int, var content: Vector[A]) extends SetNode[A] {
@@ -1399,6 +1445,24 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
     case _: BitmapIndexedSetNode[A] =>
       // should never happen -- hash collisions are never at the same level as bitmapIndexedSetNodes
       throw new UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode")
+  }
+
+  override def foreachWithHash(f: (A, Int) => Unit): Unit = {
+    val iter = content.iterator
+    while (iter.hasNext) {
+      val next = iter.next()
+      f(next.asInstanceOf[A], originalHash)
+    }
+  }
+
+  override def foreachWithHashWhile(f: (A, Int) => Boolean): Boolean = {
+    var stillGoing = true
+    val iter = content.iterator
+    while (iter.hasNext && stillGoing) {
+      val next = iter.next()
+      stillGoing &&= f(next.asInstanceOf[A], originalHash)
+    }
+    stillGoing
   }
 }
 

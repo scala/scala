@@ -91,7 +91,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def s(args: Any*): String = standardInterpolator(processEscapes, args, parts)
+  def s(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateS
   object s {
     /** The simple string matcher.
      *
@@ -152,7 +152,7 @@ case class StringContext(parts: String*) {
    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
    *          use of a StringBuilder.
    */
-  def raw(args: Any*): String = standardInterpolator(identity, args, parts)
+  def raw(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateRaw
 
   /** Shorthand symbol constructor.
    *
@@ -220,9 +220,7 @@ case class StringContext(parts: String*) {
    *   2. Any `%` characters not in formatting positions must begin one of the conversions
    *      `%%` (the literal percent) or `%n` (the platform-specific line separator).
    */
-  // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
-  // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
-  def f[A >: Any](args: A*): String = macro ???
+  def f[A >: Any](args: A*): String = macro ??? // fasttracked to scala.tools.reflect.FormatInterpolator::interpolateF
 }
 
 object StringContext {
@@ -417,7 +415,7 @@ object StringContext {
     }
   }
 
-  private def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
+  def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
     StringContext.checkLengths(args, parts)
     val pi = parts.iterator
     val ai = args.iterator

@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package ast
 
+import scala.annotation.tailrec
 import symtab._
 import util.DocStrings._
 import scala.collection.mutable
@@ -302,7 +303,8 @@ trait DocComments { self: Global =>
    *  @param vble  The variable for which a definition is searched
    *  @param site  The class for which doc comments are generated
    */
-  def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
+  @tailrec
+  final def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
     case NoSymbol => None
     case _        =>
       val searchList =
@@ -311,7 +313,8 @@ trait DocComments { self: Global =>
 
       searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
         case Some(str) if str startsWith "$" => lookupVariable(str.tail, site)
-        case res                             => res orElse lookupVariable(vble, site.owner)
+        case s @ Some(str)                   => s
+        case None                            => lookupVariable(vble, site.owner)
       }
   }
 
@@ -326,6 +329,7 @@ trait DocComments { self: Global =>
   protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
     val expandLimit = 10
 
+    @tailrec
     def expandInternal(str: String, depth: Int): String = {
       if (depth >= expandLimit)
         throw new ExpansionLimitExceeded(str)
@@ -528,6 +532,7 @@ trait DocComments { self: Global =>
               (typeRef(NoPrefix, alias, Nil), false)
           }
 
+      @tailrec
       def subst(sym: Symbol, from: List[Symbol], to: List[(Type, Boolean)]): (Type, Boolean) =
         if (from.isEmpty) (sym.tpe, false)
         else if (from.head == sym) to.head

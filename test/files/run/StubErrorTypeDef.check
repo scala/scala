@@ -1,5 +1,7 @@
-error: newSource1.scala:4: overriding type D in class B with bounds <: stuberrors.A;
-  type D has incompatible type
+error: newSource1.scala:4: incompatible type in overriding
+type D <: stuberrors.A (defined in class B);
+ found   : stuberrors.E
+ required:  <: stuberrors.A
       new B { type D = E }
                    ^
 error: newSource1.scala:4: Symbol 'type stuberrors.A' is missing from the classpath.

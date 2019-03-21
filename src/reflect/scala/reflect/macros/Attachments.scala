@@ -50,8 +50,14 @@ abstract class Attachments { self =>
     classTag[T].runtimeClass.isInstance(datum)
 
   /** An underlying payload of the given class type `T`. */
-  def get[T: ClassTag]: Option[T] =
-    (all find matchesTag[T]).asInstanceOf[Option[T]]
+  def get[T: ClassTag]: Option[T] = {
+    val it = all.iterator
+    while (it.hasNext) { // OPT: hotspot, hand roll `Set.find`.
+      val datum = it.next()
+      if (matchesTag[T](datum)) return Some(datum.asInstanceOf[T])
+    }
+    None
+  }
 
   /** Check underlying payload contains an instance of type `T`. */
   def contains[T: ClassTag]: Boolean =

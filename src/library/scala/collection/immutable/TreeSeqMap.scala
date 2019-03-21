@@ -13,7 +13,9 @@
 package scala
 package collection
 package immutable
- 
+
+import scala.annotation.tailrec
+
 /** This class implements an immutable map that preserves order using
   * a hash map for the key to value mapping to provide efficient lookup,
   * and a tree for the ordering of the keys to provide efficient
@@ -383,6 +385,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
       if (it != Zero) push(it)
 
       def hasNext = index != 0
+      @tailrec
       def next(): V =
         pop match {
           case Bin(_,_, Tip(_, v), right) =>

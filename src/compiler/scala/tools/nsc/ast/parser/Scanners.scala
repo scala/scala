@@ -20,7 +20,6 @@ import Tokens._
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable, mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
-import scala.language.postfixOps
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
  */
@@ -440,6 +439,7 @@ trait Scanners extends ScannersCommon {
 
     /** read next token, filling TokenData fields of Scanner.
      */
+    @tailrec
     protected final def fetchToken(): Unit = {
       offset = charOffset - 1
       (ch: @switch) match {
@@ -683,6 +683,7 @@ trait Scanners extends ScannersCommon {
       else syntaxError("unclosed quoted identifier")
     }
 
+    @tailrec
     private def getIdentRest(): Unit = (ch: @switch) match {
       case 'A' | 'B' | 'C' | 'D' | 'E' |
            'F' | 'G' | 'H' | 'I' | 'J' |
@@ -717,6 +718,7 @@ trait Scanners extends ScannersCommon {
         }
     }
 
+    @tailrec
     private def getOperatorRest(): Unit = (ch: @switch) match {
       case '~' | '!' | '@' | '#' | '%' |
            '^' | '*' | '+' | '-' | '<' |
@@ -1379,7 +1381,7 @@ trait Scanners extends ScannersCommon {
     /** The source code with braces and line starts annotated with [NN] showing the index */
     private def markedSource = {
       val code   = unit.source.content
-      val braces = code.indices filter (idx => "{}\n" contains code(idx)) toSet
+      val braces = code.indices.filter(idx => "{}\n" contains code(idx)).toSet
       val mapped = code.indices map (idx => if (braces(idx)) s"${code(idx)}[$idx]" else "" + code(idx))
       mapped.mkString("")
     }
@@ -1485,6 +1487,7 @@ trait Scanners extends ScannersCommon {
     var tabSeen = false
 
     def line(offset: Offset): Int = {
+      @tailrec
       def findLine(lo: Int, hi: Int): Int = {
         val mid = (lo + hi) / 2
         if (offset < lineStart(mid)) findLine(lo, mid - 1)

@@ -46,19 +46,23 @@ trait Mirrors extends api.Mirrors {
     }
 
     /** Todo: organize similar to mkStatic in scala.reflect.Base */
-    private def getModuleOrClass(path: Name, len: Int): Symbol = {
-      val point = path lastPos('.', len - 1)
+    private def getModuleOrClass(path: Name, len: Int): Symbol =
+      getModuleOrClass(path.toString, len, path.newName(_))
+
+    private def getModuleOrClass(path: String, len: Int, toName: String => Name): Symbol = {
+      val point = path lastIndexOf ('.', len - 1)
       val owner =
-        if (point > 0) getModuleOrClass(path.toTermName, point)
+        if (point > 0) getModuleOrClass(path, point, newTermName(_))
         else RootClass
-      val name = path subName (point + 1, len)
+
+      val name = toName(path.substring(point + 1, len))
       val sym = owner.info member name
-      val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
+      val result = if (name.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
         if (settings.debug) { log(sym.info); log(sym.info.members) }//debug
         thisMirror.missingHook(owner, name) orElse {
-          MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
+          MissingRequirementError.notFound((if (name.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }
       }
     }
@@ -69,8 +73,8 @@ trait Mirrors extends api.Mirrors {
      *  Unlike `getModuleOrClass`, this function
      *  loads unqualified names from the root package.
      */
-    private def getModuleOrClass(path: Name): Symbol =
-      getModuleOrClass(path, path.length)
+    private def getModuleOrClass(path: String, toName: String => Name): Symbol =
+      getModuleOrClass(path, path.length, toName)
 
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.
@@ -78,10 +82,10 @@ trait Mirrors extends api.Mirrors {
      *  Unlike `getModuleOrClass`, this function
      *  loads unqualified names from the empty package.
      */
-    private def staticModuleOrClass(path: Name): Symbol = {
-      val isPackageless = path.pos('.') == path.length
-      if (isPackageless) EmptyPackageClass.info decl path
-      else getModuleOrClass(path)
+    private def staticModuleOrClass(path: String, toName: String => Name): Symbol = {
+      val isPackageless = !path.contains('.')
+      if (isPackageless) EmptyPackageClass.info decl toName(path)
+      else getModuleOrClass(path, toName)
     }
 
     protected def mirrorMissingHook(owner: Symbol, name: Name): Symbol = NoSymbol
@@ -102,20 +106,33 @@ trait Mirrors extends api.Mirrors {
         case _              => MissingRequirementError.notFound("class " + fullname)
       }
 
+    @deprecated("Use overload that accepts a String.", "2.13.0")
     def getClassByName(fullname: Name): ClassSymbol =
-      ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toTypeName))
+      ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toString, fullname.length, newTypeName(_)))
+
+    def getClassByName(fullname: String): ClassSymbol =
+      getRequiredClass(fullname)
+
+    // TODO_NAMES
+    def getRequiredClass(fullname: String, toName: String => Name): ClassSymbol =
+      ensureClassSymbol(fullname, getModuleOrClass(fullname, fullname.length, toName))
 
     def getRequiredClass(fullname: String): ClassSymbol =
-      getClassByName(newTypeNameCached(fullname))
+      ensureClassSymbol(fullname, getModuleOrClass(fullname, fullname.length, newTypeName(_)))
 
     def requiredClass[T: ClassTag] : ClassSymbol =
-      getRequiredClass(erasureName[T])
+      getRequiredClass(erasureName[T], newTypeName(_))
 
     def getClassIfDefined(fullname: String): Symbol =
-      getClassIfDefined(newTypeNameCached(fullname))
+      getClassIfDefined(fullname, newTypeName(_))
 
+    @deprecated("Use overload that accepts a String.", "2.13.0")
     def getClassIfDefined(fullname: Name): Symbol =
       wrapMissing(getClassByName(fullname.toTypeName))
+
+    // TODO_NAMES
+    def getClassIfDefined(fullname: String, toName: String => Name): Symbol =
+      wrapMissing(getRequiredClass(fullname, toName))
 
     /** @inheritdoc
      *
@@ -123,7 +140,7 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticClass(fullname: String): ClassSymbol =
-      try ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
+      try ensureClassSymbol(fullname, staticModuleOrClass(fullname, newTypeName(_)))
       catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of module symbols ************************/
@@ -134,11 +151,15 @@ trait Mirrors extends api.Mirrors {
         case _                                                     => MissingRequirementError.notFound("object " + fullname)
       }
 
+    @deprecated("Use overload that accepts a String.", "2.13.0")
     def getModuleByName(fullname: Name): ModuleSymbol =
-      ensureModuleSymbol(fullname.toString, getModuleOrClass(fullname.toTermName), allowPackages = true)
+      getModuleByName(fullname.toString)
+
+    def getModuleByName(fullname: String): ModuleSymbol =
+      ensureModuleSymbol(fullname, getModuleOrClass(fullname, fullname.length, newTermName(_)), allowPackages = true)
 
     def getRequiredModule(fullname: String): ModuleSymbol =
-      getModuleByName(newTermNameCached(fullname))
+      getModuleByName(fullname)
 
     // TODO: What syntax do we think should work here? Say you have an object
     // like scala.Predef.  You can't say requiredModule[scala.Predef] since there's
@@ -151,10 +172,11 @@ trait Mirrors extends api.Mirrors {
       getRequiredModule(erasureName[T] stripSuffix "$")
 
     def getModuleIfDefined(fullname: String): Symbol =
-      getModuleIfDefined(newTermNameCached(fullname))
+      wrapMissing(getModuleByName(fullname))
 
+    @deprecated("Use overload that accepts a String.", "2.13.0")
     def getModuleIfDefined(fullname: Name): Symbol =
-      wrapMissing(getModuleByName(fullname.toTermName))
+      getModuleIfDefined(fullname.toString)
 
     /** @inheritdoc
      *
@@ -162,7 +184,7 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticModule(fullname: String): ModuleSymbol =
-      try ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
+      try ensureModuleSymbol(fullname, staticModuleOrClass(fullname, newTermName(_)), allowPackages = false)
       catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of package symbols ************************/
@@ -173,8 +195,11 @@ trait Mirrors extends api.Mirrors {
         case _                                                   => MissingRequirementError.notFound("package " + fullname)
       }
 
+    @deprecated("Use overload that accepts a String.", "2.13.0")
     def getPackage(fullname: TermName): ModuleSymbol =
-      ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
+      getPackage(fullname.toString)
+    def getPackage(fullname: String): ModuleSymbol =
+      ensurePackageSymbol(fullname, getModuleOrClass(fullname, newTermName(_)), allowModules = true)
 
     def getPackageIfDefined(fullname: TermName): Symbol =
       wrapMissing(getPackage(fullname))
@@ -196,7 +221,7 @@ trait Mirrors extends api.Mirrors {
       wrapMissing(getPackageObject(fullname))
 
     override def staticPackage(fullname: String): ModuleSymbol =
-      try ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
+      try ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname, fullname.length, newTermName(_)), allowModules = false)
       catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ helpers ************************/

@@ -83,6 +83,7 @@ trait Variances {
           else if (sym.isAliasType) Invariant
           else v
 
+        @tailrec
         def loop(sym: Symbol, v: Variance): Variance = (
           if (sym == tvar.owner || v.isBivariant) v
           else loop(sym.owner, nextVariance(sym, v))

@@ -13,13 +13,13 @@
 package scala.tools.nsc
 package io
 
-import scala.language.postfixOps
 import java.io.{DataOutputStream, InputStream, OutputStream}
 import java.util.jar._
 
 import scala.collection.JavaConverters._
 import Attributes.Name
 
+import scala.annotation.tailrec
 import scala.collection.AbstractIterable
 
 // Attributes.Name instances:
@@ -51,9 +51,9 @@ class Jar(file: File) extends AbstractIterable[JarEntry] {
   def mainClass     = manifest map (f => f(Name.MAIN_CLASS))
   /** The manifest-defined classpath String if available. */
   def classPathString: Option[String] =
-    for (m <- manifest ; cp <- m.attrs get Name.CLASS_PATH) yield cp
+    for (m <- manifest ; cp <- m.attrs.get(Name.CLASS_PATH)) yield cp
   def classPathElements: List[String] = classPathString match {
-    case Some(s)  => s split "\\s+" toList
+    case Some(s)  => s.split("\\s+").toList
     case _        => Nil
   }
 
@@ -124,6 +124,7 @@ class JarWriter(val file: File, val manifest: Manifest) {
 
   private def transfer(in: InputStream, out: OutputStream) = {
     val buf = new Array[Byte](10240)
+    @tailrec
     def loop(): Unit = in.read(buf, 0, buf.length) match {
       case -1 => in.close()
       case n  => out.write(buf, 0, n) ; loop()

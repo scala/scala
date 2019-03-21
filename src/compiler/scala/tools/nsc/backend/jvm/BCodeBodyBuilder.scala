@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.reflect.internal.Flags
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -692,6 +692,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               // Check if the Apply tree has an InlineAnnotatedAttachment, added by the typer
               // for callsites marked `f(): @inline/noinline`. For nullary calls, the attachment
               // is on the Select node (not on the Apply node added by UnCurry).
+              @tailrec
               def recordInlineAnnotated(t: Tree): Unit = {
                 if (t.hasAttachment[InlineAnnotatedAttachment]) lastInsn match {
                   case m: MethodInsnNode =>
@@ -1115,6 +1116,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emit code to compare the two top-most stack values using the 'op' operator. */
+    @tailrec
     private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false): Unit = {
       if (targetIfNoJump == success) genCJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {
@@ -1136,6 +1138,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Emits code to compare (and consume) stack-top and zero using the 'op' operator */
+    @tailrec
     private def genCZJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType, targetIfNoJump: asm.Label, negated: Boolean = false): Unit = {
       if (targetIfNoJump == success) genCZJUMP(failure, success, op.negate, tk, targetIfNoJump, negated = !negated)
       else {

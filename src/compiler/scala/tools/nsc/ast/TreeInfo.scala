@@ -95,7 +95,7 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo with MacroAnnoti
     case _ => super.isInterfaceMember(tree)
   }
 
-  override def isConstructorWithDefault(t: Tree) = t match {
+  override def isConstructorWithDefault(t: Tree): Boolean = t match {
     case DocDef(_, definition) => isConstructorWithDefault(definition)
     case _ => super.isConstructorWithDefault(t)
   }

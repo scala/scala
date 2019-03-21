@@ -130,6 +130,7 @@ private[immutable] abstract class LongMapIterator[V, T](it: LongMap[V]) extends 
   def valueOf(tip: LongMap.Tip[V]): T
 
   def hasNext = index != 0
+  @tailrec
   final def next(): T =
     pop() match {
       case LongMap.Bin(_,_, t@LongMap.Tip(_, _), right) => {
@@ -218,6 +219,12 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Nil =>
   }
 
+  override final def foreachEntry[U](f: (Long, T) => U): Unit = this match {
+    case LongMap.Bin(_, _, left, right) => { left.foreachEntry(f); right.foreachEntry(f) }
+    case LongMap.Tip(key, value) => f(key, value)
+    case LongMap.Nil =>
+  }
+
   override def keysIterator: Iterator[Long] = this match {
     case LongMap.Nil => Iterator.empty
     case _ => new LongMapKeyIterator(this)
@@ -280,12 +287,14 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
     case LongMap.Bin(_, _, left, right) => left.size + right.size
   }
 
+  @tailrec
   final def get(key: Long): Option[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left.get(key) else right.get(key)
     case LongMap.Tip(key2, value) => if (key == key2) Some(value) else None
     case LongMap.Nil => None
   }
 
+  @tailrec
   final override def getOrElse[S >: T](key: Long, default: => S): S = this match {
     case LongMap.Nil => default
     case LongMap.Tip(key2, value) => if (key == key2) value else default
@@ -293,6 +302,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
       if (zero(key, mask)) left.getOrElse(key, default) else right.getOrElse(key, default)
   }
 
+  @tailrec
   final override def apply(key: Long): T = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key)
     case LongMap.Tip(key2, value) => if (key == key2) value else throw new IllegalArgumentException("Key not found")

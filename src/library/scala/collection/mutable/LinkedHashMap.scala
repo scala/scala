@@ -68,7 +68,8 @@ class LinkedHashMap[K, V]
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
-  private[mutable] type Entry = LinkedHashMap.LinkedEntry[K, V]
+  private[collection] type Entry = LinkedHashMap.LinkedEntry[K, V]
+  private[collection] def _firstEntry: Entry = firstEntry
 
   @transient protected var firstEntry: Entry = null
   @transient protected var lastEntry: Entry = null
@@ -186,6 +187,14 @@ class LinkedHashMap[K, V]
     var cur = firstEntry
     while (cur ne null) {
       f((cur.key, cur.value))
+      cur = cur.later
+    }
+  }
+
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
+    var cur = firstEntry
+    while (cur ne null) {
+      f(cur.key, cur.value)
       cur = cur.later
     }
   }

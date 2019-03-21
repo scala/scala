@@ -4,6 +4,7 @@ import scala.concurrent.duration.Duration.Inf
 import scala.collection._
 import scala.runtime.NonLocalReturnControl
 import scala.util.{Try,Success,Failure}
+import scala.util.control.NoStackTrace
 import java.util.concurrent.ForkJoinPool
 
 class FutureTests extends MinimalScalaTest {
@@ -190,6 +191,39 @@ class FutureTests extends MinimalScalaTest {
       ECNotUsed(ec => test.andThen({ case _ => fail("andThen should not have been called")})(ec) eq test)
       ECNotUsed(ec => test.zipWith(test)({ (_,_) => fail("zipWith should not have been called")})(ec) eq test)
     }
+  }
+
+  "The parasitic ExecutionContext" should {
+     "run Runnables on the calling thread" in {
+       val t = Thread.currentThread
+       var rt: Thread = null
+       ExecutionContext.parasitic.execute(() => rt = Thread.currentThread)
+       t mustBe rt
+     }
+
+     "not rethrow non-fatal exceptions" in {
+       ExecutionContext.parasitic.execute(() => throw new RuntimeException("do not rethrow") with NoStackTrace)
+     }
+
+     "rethrow fatal exceptions" in {
+       val oome = new OutOfMemoryError("test")
+       intercept[OutOfMemoryError] {
+         ExecutionContext.parasitic.execute(() => throw oome)
+       } mustBe oome
+     }
+
+     "continue after non-fatal exceptions" in {
+       var value = ""
+       ExecutionContext.parasitic.execute(() => throw new RuntimeException("expected") with NoStackTrace)
+       ExecutionContext.parasitic.execute(() => value = "test")
+       value mustBe "test"
+     }
+
+     "not blow the stack" in {
+       def recur(i: Int): Unit = if (i > 0) ExecutionContext.parasitic.execute(() => recur(i - 1)) else ()
+
+       recur(100000)
+     }
   }
 
   "The default ExecutionContext" should {

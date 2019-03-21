@@ -4,7 +4,7 @@ import org.junit.Assert.{assertEquals, assertSame}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class HashSetTest {

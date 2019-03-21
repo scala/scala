@@ -15,6 +15,7 @@ package reflect.runtime
 
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
+import scala.annotation.tailrec
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.io._
 
@@ -22,6 +23,7 @@ import scala.reflect.io._
  */
 object ReflectionUtils {
   // Unwraps some chained exceptions which arise during reflective calls.
+  @tailrec
   def unwrapThrowable(x: Throwable): Throwable = x match {
     case  _: InvocationTargetException |      // thrown by reflectively invoked method or constructor
           _: ExceptionInInitializerError |    // thrown when running a static initializer (e.g. a scala module constructor)
@@ -41,6 +43,7 @@ object ReflectionUtils {
   def show(cl: ClassLoader): String = {
     import scala.language.reflectiveCalls
 
+    @tailrec
     def isAbstractFileClassLoader(clazz: Class[_]): Boolean = {
       if (clazz == null) return false
       if (clazz == classOf[AbstractFileClassLoader]) return true

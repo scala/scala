@@ -14,7 +14,6 @@ package scala.tools.nsc
 package typechecker
 
 import Checkability._
-import scala.language.postfixOps
 
 /** On pattern matcher checkability:
  *
@@ -292,7 +291,7 @@ trait Checkable {
         case TypeRef(_, NothingClass | NullClass | AnyValClass, _) => false
         case RefinedType(_, decls) if !decls.isEmpty               => false
         case RefinedType(parents, _)                               => parents forall isCheckable
-        case p                                                     => new CheckabilityChecker(AnyTpe, p) isCheckable
+        case p                                                     => new CheckabilityChecker(AnyTpe, p).isCheckable
       })
     )
 

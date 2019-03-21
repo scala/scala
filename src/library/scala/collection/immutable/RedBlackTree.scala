@@ -156,6 +156,14 @@ private[collection] object RedBlackTree {
     if (tree.right ne null) _foreachKey(tree.right, f)
   }
 
+  def foreachEntry[A, B, U](tree:Tree[A,B], f: (A, B) => U):Unit = if (tree ne null) _foreachEntry(tree,f)
+
+  private[this] def _foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
+    if (tree.left ne null) _foreachEntry(tree.left, f)
+    f(tree.key, tree.value)
+    if (tree.right ne null) _foreachEntry(tree.right, f)
+  }
+
   def iterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[(A, B)] = new EntriesIterator(tree, start)
   def keysIterator[A: Ordering](tree: Tree[A, _], start: Option[A] = None): Iterator[A] = new KeysIterator(tree, start)
   def valuesIterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[B] = new ValuesIterator(tree, start)

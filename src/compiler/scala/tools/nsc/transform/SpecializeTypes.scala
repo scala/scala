@@ -569,17 +569,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
    *  the specialized symbol (class (specialization) or member (normalization)), leaves everything else as-is.
    */
-  private def mapAnyRefsInSpecSym(env: TypeEnv, origsym: Symbol, specsym: Symbol): TypeEnv = env map {
-    case (sym, AnyRefTpe) if sym.owner == origsym => (sym, typeParamSubAnyRef(sym, specsym))
-    case x => x
+  private def mapAnyRefsInSpecSym(env: TypeEnv, origsym: Symbol, specsym: Symbol): TypeEnv = env transform {
+    case (sym, AnyRefTpe) if sym.owner == origsym => typeParamSubAnyRef(sym, specsym)
+    case (k, v) => v
   }
 
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
    *  the original class, leaves everything else as-is.
    */
-  private def mapAnyRefsInOrigCls(env: TypeEnv, origcls: Symbol): TypeEnv = env map {
-    case (sym, AnyRefTpe) if sym.owner == origcls => (sym, sym.tpe)
-    case x                                        => x
+  private def mapAnyRefsInOrigCls(env: TypeEnv, origcls: Symbol): TypeEnv = env transform {
+    case (sym, AnyRefTpe) if sym.owner == origcls => sym.tpe
+    case (k, v) => v
   }
 
   /** Specialize 'clazz', in the environment `outerEnv`. The outer

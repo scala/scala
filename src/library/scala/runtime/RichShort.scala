@@ -30,5 +30,4 @@ final class RichShort(val self: Short) extends AnyVal with ScalaWholeNumberProxy
   override def abs: Short              = math.abs(self.toInt).toShort
   override def max(that: Short): Short = math.max(self.toInt, that.toInt).toShort
   override def min(that: Short): Short = math.min(self.toInt, that.toInt).toShort
-  override def signum: Int             = math.signum(self.toInt)
 }

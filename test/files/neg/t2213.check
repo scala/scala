@@ -1,8 +1,5 @@
-t2213.scala:9: error: class C needs to be abstract, since:
-it has 4 unimplemented members.
-/** As seen from class C, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+t2213.scala:9: error: class C needs to be abstract.
+Missing implementations for 4 members. Stub implementations follow:
   def f: Int = ???
   def g: Int = ???
   val x: Int = ???
@@ -10,11 +7,8 @@ it has 4 unimplemented members.
 
 class C extends A {}
       ^
-t2213.scala:11: error: object creation impossible, since:
-it has 4 unimplemented members.
-/** As seen from object Q, the missing signatures are as follows.
- *  For convenience, these are usable as stub implementations.
- */
+t2213.scala:11: error: object creation impossible.
+Missing implementations for 4 members. Stub implementations follow:
   def f: Int = ???
   def g: Int = ???
   val x: Int = ???

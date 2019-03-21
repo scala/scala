@@ -1,4 +1,4 @@
-package org.junit;
+package org.junitlike;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -13,7 +13,8 @@ logImplicits.scala:21: applied implicit conversion from Int(1) to ?{def ->: ?} =
 logImplicits.scala:21: applied implicit conversion from (Int, Int) to ?{def +: ?} = final implicit def any2stringadd[A](self: A): any2stringadd[A]
   def f = (1 -> 2) + "c"
              ^
-logImplicits.scala:24: error: class Un needs to be abstract, since method unimplemented is not defined
+logImplicits.scala:24: error: class Un needs to be abstract. Missing implementation for:
+  def unimplemented: Int
 class Un {
       ^
 one error found

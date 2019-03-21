@@ -3,7 +3,7 @@ package scala.collection.immutable
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.tools.testing.AssertUtil
+import scala.tools.testkit.AssertUtil
 
 @RunWith(classOf[JUnit4])
 class RangeTest {
@@ -103,5 +103,10 @@ class RangeTest {
     assertEquals(4, (1 to 4).iterator.drop(-4).toList.size)
   }
 
+  @Test
+  def `startsWith should not throw an exception when out of range`(): Unit = {
+    assertTrue((1 to 5).startsWith(Nil, 7))
+    assertFalse((1 to 5).startsWith(1 to 1, 8))
+  }
 
 }

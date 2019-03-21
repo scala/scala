@@ -1,12 +1,14 @@
 package scala.collection.immutable
 
 import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop.forAll
+import org.scalacheck.Prop._
 import org.scalacheck._
 
 import scala.collection.Hashing
 
-object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
+object ImmutableChampHashMapProperties extends Properties("HashMap") {
+
+  override def overrideParameters(p: Test.Parameters): Test.Parameters = p.withInitialSeed(42L)
 
   type K = Int
   type V = Int
@@ -15,7 +17,7 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
   //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
   //    p.withMinSuccessfulTests(1000)
 
-  property("convertToScalaMapAndCheckSize") = forAll { (input: HashMap[K, V]) =>
+  property("convertToScalaMapAndCheckSize") = forAll { input: HashMap[K, V] =>
     convertToScalaMapAndCheckSize(input)
   }
 
@@ -205,5 +207,37 @@ object ImmutableChampHashMapProperties extends Properties("immutable.HashMap") {
   property("xs.removeAll(ys) == xs.filterNot(kv => ys.toSet.contains(kv._1))") = forAll { (xs: HashMap[K, V], ys: Iterable[K]) =>
     val ysSet = ys.toSet
     xs.removedAll(ys) == xs.filterNot { case (k, _) => ysSet.contains(k) }
+  }
+  property("concat(HashMap)") = forAll { (left: HashMap[Int, Int], right: HashMap[Int, Int]) =>
+    val expected: collection.Map[Int, Int] = left concat right
+    val actual: collection.Map[Int, Int] = (left.toSeq ++ right.toSeq).to(HashMap)
+
+    actual ?= expected
+  }
+
+  property("concat(mutable.HashMap)") = forAll { (left: HashMap[Int, Int], right: HashMap[Int, Int]) =>
+    val expected: collection.Map[Int, Int] = left concat right
+    val actual: collection.Map[Int, Int] = left.concat(right.to(collection.mutable.HashMap.mapFactory))
+    actual ?= expected
+  }
+  property("concat(Vector)") = forAll { (left: HashMap[Int, Int], right: Vector[(Int, Int)]) =>
+    val expected: collection.Map[Int, Int] = left.mapFactory.newBuilder.addAll(left).addAll(right).result()
+    val actual: collection.Map[Int, Int] = left.concat(right)
+    actual ?= expected
+  }
+  property("removedAll(HashSet)") = forAll { (left: HashMap[Int, Int], right: HashSet[Int]) =>
+    val expected: collection.Map[Int, Int] = left.view.filterKeys(!right.contains(_)).toMap
+    val actual: collection.Map[Int, Int] = left -- right
+    actual ?= expected
+  }
+  property("removedAll(mutable.HashSet)") = forAll { (left: HashMap[Int, Int], right: HashSet[Int]) =>
+    val expected: collection.Map[Int, Int] = left -- right
+    val actual: collection.Map[Int, Int] = left -- right.to(collection.mutable.HashSet)
+    actual ?= expected
+  }
+  property("removedAll(Vector)") = forAll { (left: HashMap[Int, Int], right: Vector[Int]) =>
+    val expected: collection.Map[Int, Int] = left.view.filterKeys(!right.contains(_)).toMap
+    val actual: collection.Map[Int, Int] = left -- right
+    actual ?= expected
   }
 }

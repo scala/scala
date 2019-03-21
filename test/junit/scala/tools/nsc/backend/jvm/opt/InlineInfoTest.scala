@@ -11,7 +11,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.internal.util.JavaClearable
 import scala.tools.nsc.backend.jvm.BTypes.MethodInlineInfo
 import scala.tools.nsc.backend.jvm.BackendReporting._
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
 class InlineInfoTest extends BytecodeTesting {

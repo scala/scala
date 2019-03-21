@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.language.implicitConversions
-import scala.tools.testing.AssertUtil._
+import scala.tools.testkit.AssertUtil._
 
 object StringContextTestUtils {
   private val decimalSeparator: Char = new DecimalFormat().getDecimalFormatSymbols().getDecimalSeparator()

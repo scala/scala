@@ -560,7 +560,7 @@ trait Infer extends Checkable {
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
       def canWarnAboutAny = {
-        val coll = new ContainsAnyCollector(List(AnyClass, AnyValClass, ObjectClass))
+        val coll = new ContainsAnyCollector(topTypes)
         def containsAny(t: Type) = t.dealiasWidenChain.exists(coll.collect)
         val hasAny = containsAny(pt) || containsAny(restpe) ||
           formals.exists(containsAny) ||
@@ -570,7 +570,7 @@ trait Infer extends Checkable {
       }
       if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
         targs.foreach(_.typeSymbol match {
-          case sym @ (AnyClass | AnyValClass | ObjectClass) =>
+          case sym if topTypes contains sym =>
             reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
           case _ =>
         })
@@ -1514,6 +1514,8 @@ trait Infer extends Checkable {
       case _                                          => mapOver(tp)
     }
   }
+
+  private lazy val topTypes: List[Symbol] = List(AnyClass, AnyValClass, ObjectClass)
 
   /** [Martin] Can someone comment this please? I have no idea what it's for
     *  and the code is not exactly readable.
