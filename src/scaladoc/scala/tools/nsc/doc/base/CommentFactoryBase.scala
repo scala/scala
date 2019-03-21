@@ -220,7 +220,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val javadoclessComment = JavadocTags.replaceAllIn(safeComment, { javadocReplacement(_) })
       val markedTagComment =
         SafeTags.replaceAllIn(javadoclessComment, { mtch =>
-          java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
+          java.util.regex.Matcher.quoteReplacement(s"$safeTagMarker${mtch.matched}$safeTagMarker")
         })
       markedTagComment.linesIterator.toList map cleanLine
     }
@@ -238,7 +238,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
     def parse0 (
       docBody: StringBuilder,
-      tags: Map[TagKey, List[String]],
+      tags: immutable.Map[TagKey, List[String]],
       lastTagKey: Option[TagKey],
       remaining: List[String],
       inCodeBlock: Boolean
@@ -258,7 +258,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
-            parse0(docBody, tags ++ Map(key -> value), lastTagKey, ls, inCodeBlock = true)
+            parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock = true)
           case None =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = true)
         }
@@ -277,7 +277,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
-            parse0(docBody, tags ++ Map(key -> value), lastTagKey, ls, inCodeBlock = false)
+            parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock = false)
           case None =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = false)
         }
@@ -285,17 +285,17 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       case SymbolTagRegex(name, sym, body) :: ls if !inCodeBlock =>
         val key = SymbolTagKey(name, sym)
         val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags ++ Map(key -> value), Some(key), ls, inCodeBlock)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case SimpleTagRegex(name, body) :: ls if !inCodeBlock =>
         val key = SimpleTagKey(name)
         val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags ++ Map(key -> value), Some(key), ls, inCodeBlock)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case SingleTagRegex(name) :: ls if !inCodeBlock =>
         val key = SimpleTagKey(name)
         val value = "" :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags ++ Map(key -> value), Some(key), ls, inCodeBlock)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case line :: ls if lastTagKey.isDefined =>
         val newtags = if (!line.isEmpty || inCodeBlock) {
@@ -305,7 +305,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
               case Some(b :: bs) => (b + endOfLine + line) :: bs
               case None => oops("lastTagKey set when no tag exists for key")
             }
-          tags ++ Map(key -> value)
+          tags + (key -> value)
         } else tags
         parse0(docBody, newtags, lastTagKey, ls, inCodeBlock)
 
@@ -336,7 +336,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           tagsWithoutDiagram.view.mapValues(_.map(parseWikiAtSymbol(_, pos, site))).to(mutable.Map)
 
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
-          (bodyTags remove key: @unchecked) match {
+          bodyTags remove key match {
             case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
               if (rs.nonEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
               Some(r)
@@ -413,7 +413,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         com
     }
 
-    parse0(new StringBuilder(comment.length), Map.empty, None, clean(comment), inCodeBlock = false)
+    parse0(new StringBuilder(comment.length), immutable.Map.empty, None, clean(comment), inCodeBlock = false)
 
   }
 
@@ -1089,7 +1089,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     final def nextChar(): Unit = offset += 1
 
-    final def prevChar() {
+    final def prevChar(): Unit =  {
       offset -= 1
     }
 
