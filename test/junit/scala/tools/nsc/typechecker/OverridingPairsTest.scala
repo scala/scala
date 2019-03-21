@@ -3,7 +3,7 @@ package scala.tools.nsc.typechecker
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-import scala.tools.testing.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting
 
 class OverridingPairsTest extends BytecodeTesting {
   override def compilerArgs = "-Ystop-after:typer"
