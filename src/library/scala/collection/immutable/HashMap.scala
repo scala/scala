@@ -18,14 +18,12 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
+import scala.collection.convert.impl.StepperShape
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.ReusableBuilder
-import scala.collection.{Iterator, MapFactory, mutable}
-import scala.util.hashing.MurmurHash3
+import scala.collection.{EfficientSubstep, Iterator, MapFactory, Stepper, mutable}
 import scala.runtime.Statics.releaseFence
-
-import scala.collection.convert.{EfficientSubstep, Stepper}
-import scala.collection.convert.impl.StepperShape
+import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable maps using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
@@ -2012,8 +2010,8 @@ object HashMap extends MapFactory[HashMap] {
   * $multipleResults
   */
 private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, V), HashMap[K, V]] {
-  import Node._
   import MapNode._
+  import Node._
 
   private def newEmptyRootNode = new BitmapIndexedMapNode[K, V](0, 0, Array.emptyObjectArray.asInstanceOf[Array[Any]], Array.emptyIntArray, 0, 0)
 

@@ -23,7 +23,6 @@ import scala.collection.generic.DefaultSerializable
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence
 
-import scala.collection.convert.{EfficientSubstep, Stepper}
 import scala.collection.convert.impl.StepperShape
 
 /** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.

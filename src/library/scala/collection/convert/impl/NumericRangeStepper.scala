@@ -13,6 +13,7 @@
 package scala.collection.convert
 package impl
 
+import scala.collection.{AnyStepper, IntStepper, LongStepper, Stepper}
 import scala.collection.immutable.NumericRange
 
 private[collection] class AnyNumericRangeStepper[A](underlying: NumericRange[A], _i0: Int, _iN: Int)

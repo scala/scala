@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import scala.collection.{IntStepper, Stepper}
+
 /** Implements Stepper on an integer Range.  You don't actually need the Range to do this,
   * so only the relevant parts are included.  Because the arguments are protected, they are
   * not error-checked; `Range` is required to provide valid arguments.

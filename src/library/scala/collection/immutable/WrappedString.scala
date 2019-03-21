@@ -16,7 +16,6 @@ package immutable
 import mutable.{Builder, StringBuilder}
 import scala.Predef.{ wrapString => _ }  // unimport to avoid triggering accidentally
 
-import scala.collection.convert.{EfficientSubstep, Stepper}
 import scala.collection.convert.impl.{CharStringStepper, StepperShape}
 
 /**

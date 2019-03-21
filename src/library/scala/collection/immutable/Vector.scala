@@ -20,7 +20,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
 
-import scala.collection.convert.{EfficientSubstep, Stepper}
 import scala.collection.convert.impl.StepperShape
 
 /** $factoryInfo

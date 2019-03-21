@@ -15,6 +15,8 @@ package impl
 
 import java.util.stream._
 
+import scala.collection._
+
 sealed trait StreamShape[T, S <: BaseStream[_, S], St <: Stepper[_]] {
   final def fromStepper(st: St, par: Boolean): S = mkStream(st, par)
   protected def mkStream(st: St, par: Boolean): S

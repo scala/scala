@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import scala.collection._
+
 private[collection] abstract class TableStepperBase[A, I >: Null <: AnyRef, Sub >: Null, Semi <: Sub with TableStepperBase[A, I, _, _]](
   protected var maxLength: Int, protected val table: Array[I], protected var i0: Int, protected val iN: Int
 )

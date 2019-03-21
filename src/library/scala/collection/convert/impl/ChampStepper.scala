@@ -14,7 +14,7 @@ package scala.collection.convert
 package impl
 
 import annotation.tailrec
-
+import scala.collection._
 import scala.collection.immutable.Node
 
 /** A stepper that is a slightly elaborated version of the ChampBaseIterator;

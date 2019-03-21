@@ -14,7 +14,8 @@ package scala.jdk
 
 import java.util.stream.{DoubleStream, IntStream, LongStream, Stream, StreamSupport}
 
-import scala.collection.convert.{Stepper, StreamExtensions}
+import scala.collection.Stepper
+import scala.collection.convert.StreamExtensions
 
 /** This object contains methods to create [[java.util.stream.Stream Java Streams]] that operate on
   * Scala collections (sequentially or in parallel).

@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import scala.collection._
+
 private[collection] class AnyIndexedSeqStepper[A](underlying: collection.IndexedSeqOps[A, Any, _], _i0: Int, _iN: Int)
   extends IndexedStepperBase[AnyStepper[A], AnyIndexedSeqStepper[A]](_i0, _iN)
     with AnyStepper[A] {

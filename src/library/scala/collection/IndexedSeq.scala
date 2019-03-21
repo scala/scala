@@ -17,7 +17,6 @@ import scala.annotation.{switch, tailrec}
 import scala.language.higherKinds
 import scala.math.Ordering
 import Searching.{Found, InsertionPoint, SearchResult}
-import scala.collection.convert.{EfficientSubstep, Stepper}
 import scala.collection.convert.impl.StepperShape
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
@@ -35,7 +34,7 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
   def iterator: Iterator[A] = view.iterator
 
   /**
-   * @return a [[convert.Stepper]] that can be used to operate on the elements of this collections
+   * @return a [[Stepper]] that can be used to operate on the elements of this collections
    *         with the java Streams API. TODO reference to more documentation.
    */
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {

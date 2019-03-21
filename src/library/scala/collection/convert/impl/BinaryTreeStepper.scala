@@ -16,6 +16,7 @@ package impl
 import java.util.Spliterator
 
 import annotation.tailrec
+import scala.collection._
 
 
 private[collection] object BinaryTreeStepper {

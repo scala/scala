@@ -22,7 +22,6 @@ import scala.math.{ScalaNumber, max, min}
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
-import scala.collection.convert.{IntStepper, EfficientSubstep, Stepper}
 import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper, StepperShape}
 
 object StringOps {

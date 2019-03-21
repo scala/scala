@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import scala.collection._
+
 private[convert] abstract class VectorStepperBase[Sub >: Null, Semi <: Sub](
   _i0: Int,
   _iN: Int,

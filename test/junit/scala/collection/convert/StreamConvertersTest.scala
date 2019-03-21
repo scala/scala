@@ -19,6 +19,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.{AnyStepper, DoubleStepper, IntStepper, Stepper, EfficientSubstep}
+
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
   @Test

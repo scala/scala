@@ -13,7 +13,7 @@
 package scala.collection.convert
 package impl
 
-import scala.collection.BitSetOps
+import scala.collection.{BitSetOps, EfficientSubstep, IntStepper, Stepper}
 
 
 private[collection] final class BitSetStepper(

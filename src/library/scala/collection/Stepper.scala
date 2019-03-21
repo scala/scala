@@ -10,14 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.collection
 
 import java.util.function.{Consumer, DoubleConsumer, IntConsumer, LongConsumer}
 import java.util.{PrimitiveIterator, Spliterator, Iterator => JIterator}
 import java.{lang => jl}
-
-import scala.collection.AbstractIterator
-import scala.collection.convert.impl.AccumulatorFactoryInfo
 
 trait Stepper[@specialized(Double, Int, Long) A] {
   def hasStep: Boolean
@@ -78,7 +75,7 @@ object AnyStepper {
   def ofSeqLongStepper(st: LongStepper): AnyStepper[Long] = new BoxedLongStepper(st)
   def ofParLongStepper(st: LongStepper with EfficientSubstep): AnyStepper[Long] with EfficientSubstep = new BoxedLongStepper(st) with EfficientSubstep
 
-  private[convert] class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
+  private[collection] class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -89,7 +86,7 @@ object AnyStepper {
     }
   }
 
-  private[convert] class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
+  private[collection] class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -100,7 +97,7 @@ object AnyStepper {
     }
   }
 
-  private[convert] class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
+  private[collection] class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Long = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -448,7 +445,7 @@ trait StepperOps[@specialized(Double, Int, Long) A, +CC] { self: CC =>
 */
 
 object Stepper {
-  private[convert] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
+  private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
 
 /*
   private class OfSpliterator[A](sp: Spliterator[A])
@@ -685,7 +682,7 @@ object Stepper {
    * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided
    * (see for example StepsIntArray and StepsWidenedByteArray). */
 
-  private[convert] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
+  private[collection] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -696,7 +693,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
+  private[collection] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -707,7 +704,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
+  private[collection] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Long = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -718,7 +715,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
+  private[collection] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -729,7 +726,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
+  private[collection] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -740,7 +737,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
+  private[collection] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize
@@ -751,7 +748,7 @@ object Stepper {
     }
   }
 
-  private[convert] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
+  private[collection] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
     private[collection] def estimateSize: Long = st.estimateSize

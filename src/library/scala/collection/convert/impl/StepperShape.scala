@@ -13,6 +13,8 @@
 package scala.collection.convert
 package impl
 
+import scala.collection._
+
 /** Encodes the translation from an element type `T` to the corresponding Stepper type `S` */
 sealed trait StepperShape[T, S <: Stepper[_]] {
   /** Return the Int constant (as defined in the `StepperShape` companion object) for this `StepperShape`. */

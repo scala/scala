@@ -16,6 +16,8 @@ package impl
 import java.lang.Character.{charCount, isLowSurrogate}
 import java.util.Spliterator
 
+import scala.collection.{EfficientSubstep, IntStepper, Stepper}
+
 /** Implements `Stepper` on a `String` where you step through chars packed into `Int`.
   */
 private[collection] final class CharStringStepper(underlying: String, _i0: Int, _iN: Int)

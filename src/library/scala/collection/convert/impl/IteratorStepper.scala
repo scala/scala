@@ -15,6 +15,8 @@ package impl
 
 import java.util.Spliterator
 
+import scala.collection.{AnyStepper, DoubleStepper, IntStepper, LongStepper, Stepper}
+
 private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
   extends IteratorStepperBase[A, AnyStepper[A], AnyIteratorStepper[A]](_underlying)
     with AnyStepper[A] {

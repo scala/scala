@@ -18,7 +18,7 @@ import java.util.function.{Consumer, DoubleConsumer}
 import java.{lang => jl}
 
 import scala.collection.convert.impl.StepperShape
-import scala.collection.{Factory, mutable}
+import scala.collection.{AnyStepper, DoubleStepper, EfficientSubstep, Factory, Stepper, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.

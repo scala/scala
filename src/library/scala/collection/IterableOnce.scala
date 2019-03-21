@@ -45,10 +45,10 @@ trait IterableOnce[+A] extends Any {
   def iterator: Iterator[A]
 
   /**
-   * @return a [[convert.Stepper]] that can be used to operate on the elements of this collections
+   * @return a [[Stepper]] that can be used to operate on the elements of this collections
    *         with the java Streams API. TODO reference to more documentation.
    */
-  def stepper[B >: A, S <: convert.Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
+  def stepper[B >: A, S <: Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
     import convert.impl._
     val s = (shape.shape: @switch) match {
       case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])

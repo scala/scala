@@ -15,6 +15,8 @@ package impl
 
 import java.util.Spliterator
 
+import scala.collection.EfficientSubstep
+
 /** Abstracts all the generic operations of stepping over a collection
   * that has an indexable ordering but may have gaps.
   *

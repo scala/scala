@@ -49,7 +49,6 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   _
 }
 import scala.collection.convert.impl.StepperShape
-import scala.collection.convert.{EfficientSubstep, Stepper}
 
 object ArrayOps {
 

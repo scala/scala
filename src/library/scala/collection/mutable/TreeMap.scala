@@ -17,7 +17,6 @@ package mutable
 import collection.mutable.{RedBlackTree => RB}
 import scala.collection.generic.DefaultSerializable
 
-import scala.collection.convert.{EfficientSubstep, Stepper}
 import scala.collection.convert.impl.StepperShape
 
 /**
