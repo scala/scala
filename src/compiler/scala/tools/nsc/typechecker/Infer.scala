@@ -476,7 +476,7 @@ trait Infer extends Checkable {
         }
       }
 
-      new AdjustedTypeArgs(tparams, okParams.toList, okArgs.toList, undetParams.toList, allArgs.toList)
+      AdjustedTypeArgs(okParams.toList, okArgs.toList, undetParams.toList, allArgs.toList)
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
@@ -952,13 +952,13 @@ trait Infer extends Checkable {
      *  `fn(args)`, given prototype `pt`.
      *
      *  @param fn          fn: the function that needs to be instantiated.
-     *  @param undetparams the parameters that need to be determined
+     *  @param undetParams the parameters that need to be determined
      *  @param args        the actual arguments supplied in the call.
      *  @param pt0         the expected type of the function application
      *  @return            The type parameters that remain uninstantiated,
      *                     and that thus have not been substituted.
      */
-    def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
+    def inferMethodInstance(fn: Tree, undetParams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
       case mt @ MethodType(params0, _) =>
         try {
@@ -967,15 +967,15 @@ trait Infer extends Checkable {
           val argtpes = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
           val restpe  = fn.tpe.resultType(argtpes)
 
-          val adjusted = methTypeArgs(fn, undetparams, formals, restpe, argtpes, pt)
-          import adjusted.{okParams, okArgs, allArgs, undetParams}
+          val adjusted = methTypeArgs(fn, undetParams, formals, restpe, argtpes, pt)
+          import adjusted.{okParams, okArgs, allArgs}
 
-          if (checkBounds(fn, NoPrefix, NoSymbol, undetparams, allArgs, "inferred ")) {
+          if (checkBounds(fn, NoPrefix, NoSymbol, undetParams, allArgs, "inferred ")) {
             val treeSubst = new TreeTypeSubstituter(okParams, okArgs)
             treeSubst traverseTrees fn :: args
             notifyUndetparamsInferred(okParams, okArgs)
 
-            undetParams match {
+            adjusted.undetParams match {
               case Nil  => Nil
               case xs   =>
                 // #3890
@@ -1438,5 +1438,5 @@ trait Infer extends Checkable {
     }
   }
 
-  case class AdjustedTypeArgs(tparams: List[Symbol], okParams: List[Symbol], okArgs: List[Type], undetParams: List[Symbol], allArgs: List[Type])
+  final case class AdjustedTypeArgs(okParams: List[Symbol], okArgs: List[Type], undetParams: List[Symbol], allArgs: List[Type])
 }

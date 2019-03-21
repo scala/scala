@@ -600,9 +600,8 @@ trait Implicits {
               } else {
                 val targs = solvedTypes(tvars, allUndetparams, allUndetparams map varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
-                val remainingUndet = allUndetparams diff adjusted.okParams
-                val tpSubst = deriveTypeWithWildcards(remainingUndet)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
-                if(!matchesPt(tpSubst, wildPt, remainingUndet)) {
+                val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
+                if(!matchesPt(tpSubst, wildPt, adjusted.undetParams)) {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
                 } else true
