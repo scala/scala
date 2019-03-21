@@ -28,7 +28,7 @@ class PriorityQueueTest {
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
 
-  @Test
+  @Test /* Regression for https://github.com/scala/bug/issues/11439 */
   def emptyMapInPlace(): Unit = {
     val pq = mutable.PriorityQueue.empty[String].mapInPlace(_.toUpperCase) // used to crash because of the weird resarr implementation
     assert(pq.isEmpty)
