@@ -16,7 +16,7 @@ package collection
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.mutable.Builder
 
 
@@ -130,7 +130,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       else Iterator.empty.next()
   }
 
-  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = scala.collection.convert.impl.BitSetStepper.from(this)
     val r =
       if (shape.shape == StepperShape.IntValue) st
@@ -138,7 +138,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
         AnyStepper.ofParIntStepper(st)
       }
-    r.asInstanceOf[S with EfficientSubstep]
+    r.asInstanceOf[S with EfficientSplit]
   }
 
   override def size: Int = {

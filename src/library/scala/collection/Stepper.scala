@@ -16,7 +16,7 @@ import java.util.function.{Consumer, DoubleConsumer, IntConsumer, LongConsumer}
 import java.util.{PrimitiveIterator, Spliterator, Iterator => JIterator}
 import java.{lang => jl}
 
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 
 trait Stepper[@specialized(Double, Int, Long) A] {
   def hasStep: Boolean
@@ -43,6 +43,13 @@ trait Stepper[@specialized(Double, Int, Long) A] {
 }
 
 object Stepper {
+  /** A marker trait that indicates that a `Stepper` can call `trySplit` with at worst O(log N) time
+    * and space complexity, and that the division is likely to be reasonably even. Steppers marked
+    * with `EfficientSplit` can be converted to parallel streams with the `asJavaParStream` method
+    * defined in [[scala.jdk.StreamConverters]].
+    */
+  trait EfficientSplit
+
   private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
 
   /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
@@ -155,13 +162,13 @@ object AnyStepper {
   }
 
   def ofSeqDoubleStepper(st: DoubleStepper): AnyStepper[Double] = new BoxedDoubleStepper(st)
-  def ofParDoubleStepper(st: DoubleStepper with EfficientSubstep): AnyStepper[Double] with EfficientSubstep = new BoxedDoubleStepper(st) with EfficientSubstep
+  def ofParDoubleStepper(st: DoubleStepper with EfficientSplit): AnyStepper[Double] with EfficientSplit = new BoxedDoubleStepper(st) with EfficientSplit
 
   def ofSeqIntStepper(st: IntStepper): AnyStepper[Int] = new BoxedIntStepper(st)
-  def ofParIntStepper(st: IntStepper with EfficientSubstep): AnyStepper[Int] with EfficientSubstep = new BoxedIntStepper(st) with EfficientSubstep
+  def ofParIntStepper(st: IntStepper with EfficientSplit): AnyStepper[Int] with EfficientSplit = new BoxedIntStepper(st) with EfficientSplit
 
   def ofSeqLongStepper(st: LongStepper): AnyStepper[Long] = new BoxedLongStepper(st)
-  def ofParLongStepper(st: LongStepper with EfficientSubstep): AnyStepper[Long] with EfficientSubstep = new BoxedLongStepper(st) with EfficientSubstep
+  def ofParLongStepper(st: LongStepper with EfficientSplit): AnyStepper[Long] with EfficientSplit = new BoxedLongStepper(st) with EfficientSplit
 
   private[collection] class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
     def hasStep: Boolean = st.hasStep

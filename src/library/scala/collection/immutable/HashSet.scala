@@ -14,15 +14,15 @@ package scala
 package collection
 package immutable
 
-import mutable.ReusableBuilder
-import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Hashing.improve
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-import scala.util.hashing.MurmurHash3
+import scala.collection.mutable.ReusableBuilder
 import scala.runtime.Statics.releaseFence
+import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
@@ -59,7 +59,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
     val s = (shape.shape: @annotation.switch) match {
       case StepperShape.IntValue    => IntChampStepper.from[   SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Int])
@@ -67,7 +67,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
       case StepperShape.DoubleValue => DoubleChampStepper.from[SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Double])
       case _         => shape.parUnbox(AnyChampStepper.from[B, SetNode[A]](size, rootNode, (node, i) => node.getPayload(i)))
     }
-    s.asInstanceOf[S with EfficientSubstep]    
+    s.asInstanceOf[S with EfficientSplit]
   }
 
   def contains(element: A): Boolean = {

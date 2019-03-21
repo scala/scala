@@ -13,9 +13,8 @@
 package scala.collection
 package mutable
 
-import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable sets using a hashtable.
@@ -219,7 +218,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     override protected[this] def extract(nd: Node[A]): Node[A] = nd
   }
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
     val s = (shape.shape: @annotation.switch) match {
       case StepperShape.IntValue    => new IntTableStepper[Node[A]]   (size, table, _.next, _.key.asInstanceOf[Int],    0, table.length)
@@ -227,7 +226,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
       case StepperShape.DoubleValue => new DoubleTableStepper[Node[A]](size, table, _.next, _.key.asInstanceOf[Double], 0, table.length)
       case _         => shape.parUnbox(new AnyTableStepper[B, Node[A]](size, table, _.next, _.key.asInstanceOf[B],      0, table.length))
     }
-    s.asInstanceOf[S with EfficientSubstep]    
+    s.asInstanceOf[S with EfficientSplit]
   }
 
   private[this] def growTable(newlen: Int) = {

@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 
 @RunWith(classOf[JUnit4])
@@ -38,9 +39,9 @@ class StreamConvertersTest {
     val m1vs = m1.valueStepper
     (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
     val m2ks = m2.keyStepper
-    (m2ks: IntStepper with EfficientSubstep).nextStep()
+    (m2ks: IntStepper with EfficientSplit).nextStep()
     val m2vs = m2.valueStepper
-    (m2vs: DoubleStepper with EfficientSubstep).nextStep()
+    (m2vs: DoubleStepper with EfficientSplit).nextStep()
 
     val m1sps = m1.asJavaSeqStream
     (m1sps: Stream[(Int, String)]).count()
@@ -251,19 +252,19 @@ class StreamConvertersTest {
       val ils = il.stepper
       (ils: IntStepper /*with EfficientSubstep*/).nextStep(): Int
       val ivs = iv.stepper
-      (ivs: IntStepper with EfficientSubstep).nextStep(): Int
+      (ivs: IntStepper with EfficientSplit).nextStep(): Int
       val ias = ia.stepper
-      (ias: IntStepper with EfficientSubstep).nextStep(): Int
+      (ias: IntStepper with EfficientSplit).nextStep(): Int
       val bvs = bv.stepper
-      (bvs: IntStepper with EfficientSubstep).nextStep(): Int
+      (bvs: IntStepper with EfficientSplit).nextStep(): Int
       val bas = ba.stepper
-      (bas: IntStepper with EfficientSubstep).nextStep(): Int
+      (bas: IntStepper with EfficientSplit).nextStep(): Int
       val sls = sl.stepper
       (sls: AnyStepper[String] /*with EfficientSubstep*/).nextStep(): String
       val svs = sv.stepper
-      (svs: AnyStepper[String] with EfficientSubstep).nextStep(): String
+      (svs: AnyStepper[String] with EfficientSplit).nextStep(): String
       val sas = sa.stepper
-      (sas: AnyStepper[String] with EfficientSubstep).nextStep(): String
+      (sas: AnyStepper[String] with EfficientSplit).nextStep(): String
     }
 
     locally {
@@ -271,19 +272,19 @@ class StreamConvertersTest {
       val ils = il.stepper
       (ils: IntStepper /*with EfficientSubstep*/).nextStep(): Int
       val ivs = iv.stepper
-      (ivs: IntStepper with EfficientSubstep).nextStep(): Int
+      (ivs: IntStepper with EfficientSplit).nextStep(): Int
       val ias = ia.stepper
-      (ias: IntStepper with EfficientSubstep).nextStep(): Int
+      (ias: IntStepper with EfficientSplit).nextStep(): Int
       val bvs = bv.stepper
-      (bvs: IntStepper with EfficientSubstep).nextStep(): Int
+      (bvs: IntStepper with EfficientSplit).nextStep(): Int
       val bas = ba.stepper
-      (bas: IntStepper with EfficientSubstep).nextStep(): Int
+      (bas: IntStepper with EfficientSplit).nextStep(): Int
       val sls = sl.stepper
       (sls: AnyStepper[String] /*with EfficientSubstep*/).nextStep(): String
       val svs = sv.stepper
-      (svs: AnyStepper[String] with EfficientSubstep).nextStep(): String
+      (svs: AnyStepper[String] with EfficientSplit).nextStep(): String
       val sas = sa.stepper
-      (sas: AnyStepper[String] with EfficientSubstep).nextStep(): String
+      (sas: AnyStepper[String] with EfficientSplit).nextStep(): String
 
       val ilq = il.asJavaSeqStream
       (ilq: IntStream).sum()
@@ -355,11 +356,11 @@ class StreamConvertersTest {
       val ibs = immutable.BitSet(1, 2, 3)
       val s1 = ibs.stepper
       val s2: IntStepper = ibs.stepper
-      val s3: IntStepper with EfficientSubstep = ibs.stepper
+      val s3: IntStepper with EfficientSplit = ibs.stepper
       val s4: Stepper[Int] = ibs.stepper
-      val s5: Stepper[Int] with EfficientSubstep = ibs.stepper
+      val s5: Stepper[Int] with EfficientSplit = ibs.stepper
       val s6: AnyStepper[Int] = ibs.stepper[Int, AnyStepper[Int]]
-      val s7: AnyStepper[Int] with EfficientSubstep = ibs.stepper[Int, AnyStepper[Int]]
+      val s7: AnyStepper[Int] with EfficientSplit = ibs.stepper[Int, AnyStepper[Int]]
       // val s8: Stepper[Any] = ibs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = ibs.stepper // no StepperShape instance
     }
@@ -368,11 +369,11 @@ class StreamConvertersTest {
       val mbs = mutable.BitSet(1, 2, 3)
       val s1 = mbs.stepper
       val s2: IntStepper = mbs.stepper
-      val s3: IntStepper with EfficientSubstep = mbs.stepper
+      val s3: IntStepper with EfficientSplit = mbs.stepper
       val s4: Stepper[Int] = mbs.stepper
-      val s5: Stepper[Int] with EfficientSubstep = mbs.stepper
+      val s5: Stepper[Int] with EfficientSplit = mbs.stepper
       val s6: AnyStepper[Int] = mbs.stepper(StepperShape.anyStepperShape[Int])
-      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(StepperShape.anyStepperShape[Int])
+      val s7: AnyStepper[Int] with EfficientSplit = mbs.stepper(StepperShape.anyStepperShape[Int])
       // val s8: Stepper[Any] = mbs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
     }
@@ -383,11 +384,11 @@ class StreamConvertersTest {
     val r = 1 to 20 by 3
     val s1 = r.stepper
     val s2: IntStepper = r.stepper
-    val s3: IntStepper with EfficientSubstep = r.stepper
+    val s3: IntStepper with EfficientSplit = r.stepper
     val s4: Stepper[Int] = r.stepper
-    val s5: Stepper[Int] with EfficientSubstep = r.stepper
+    val s5: Stepper[Int] with EfficientSplit = r.stepper
     val s6: AnyStepper[Int] = r.stepper[Int, AnyStepper[Int]]
-    val s7: AnyStepper[Int] with EfficientSubstep = r.stepper[Int, AnyStepper[Int]]
+    val s7: AnyStepper[Int] with EfficientSplit = r.stepper[Int, AnyStepper[Int]]
     // val s8: Stepper[Any] = r.stepper  // no StepperShape instance
     // val s9: Stepper[Long] = r.stepper // no StepperShape instance
   }
@@ -397,12 +398,12 @@ class StreamConvertersTest {
     val r = "millie"
     def s1 = r.stepper
     def s2: IntStepper = r.stepper
-    def s3: IntStepper with EfficientSubstep = r.stepper
+    def s3: IntStepper with EfficientSplit = r.stepper
     def s4: Stepper[Int] = r.stepper
-    def s5: Stepper[Int] with EfficientSubstep = r.stepper
+    def s5: Stepper[Int] with EfficientSplit = r.stepper
 
-    def cs1: IntStepper with EfficientSubstep = r.charStepper
-    def ps1: IntStepper with EfficientSubstep = r.codePointStepper
+    def cs1: IntStepper with EfficientSplit = r.charStepper
+    def ps1: IntStepper with EfficientSplit = r.codePointStepper
 
     locally {
       import scala.jdk.StreamConverters.Ops._
@@ -445,14 +446,14 @@ class StreamConvertersTest {
       import scala.jdk.StreamConverters.Ops._
 
       val ias = ia.stepper
-      (ias: IntStepper with EfficientSubstep).asJavaParStream.count()
+      (ias: IntStepper with EfficientSplit).asJavaParStream.count()
       val iass = ia.asJavaSeqStream
       (iass: IntStream).count()
       val iaps = ia.asJavaParStream
       (iaps: IntStream).count()
 
       val sas = sa.stepper
-      (sas: Stepper[String] with EfficientSubstep).asJavaParStream.count()
+      (sas: Stepper[String] with EfficientSplit).asJavaParStream.count()
       val sass = sa.asJavaSeqStream
       (sass: Stream[String]).count()
       val saps = sa.asJavaParStream

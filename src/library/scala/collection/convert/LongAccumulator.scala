@@ -17,6 +17,7 @@ import java.util.Spliterator
 import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, LongStepper, Stepper, StepperShape, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
@@ -40,7 +41,7 @@ final class LongAccumulator
 
   override protected[this] def className: String = "LongAccumulator"
 
-  override def stepper[B >: Long, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: Long, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new LongAccumulatorStepper(this)
     val r =
       if (shape.shape == StepperShape.LongValue) st
@@ -48,7 +49,7 @@ final class LongAccumulator
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
         AnyStepper.ofParLongStepper(st)
       }
-    r.asInstanceOf[S with EfficientSubstep]
+    r.asInstanceOf[S with EfficientSplit]
   }
 
   private def expand(): Unit = {
@@ -277,7 +278,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   }
 }
 
-private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSubstep {
+private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSplit {
   import java.util.Spliterator._
 
   private var h = 0

@@ -13,6 +13,7 @@
 package scala.collection.convert
 package impl
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{BitSetOps, IntStepper, Stepper}
 
 
@@ -105,7 +106,7 @@ with IntStepper {
 }
 
 private[collection] object BitSetStepper {
-  def from(bs: scala.collection.BitSetOps[_]): IntStepper with EfficientSubstep =
+  def from(bs: scala.collection.BitSetOps[_]): IntStepper with EfficientSplit =
     new BitSetStepper(
       if (bs.nwords <= 2) null else bs,
       if (bs.nwords <= 0) -1L else bs.word(0),

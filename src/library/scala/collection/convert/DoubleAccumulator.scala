@@ -17,6 +17,7 @@ import java.util.Spliterator
 import java.util.function.{Consumer, DoubleConsumer}
 import java.{lang => jl}
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, DoubleStepper, Factory, Stepper, StepperShape, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
@@ -40,7 +41,7 @@ final class DoubleAccumulator
 
   override protected[this] def className: String = "DoubleAccumulator"
 
-  override def stepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new DoubleAccumulatorStepper(this)
     val r =
       if (shape.shape == StepperShape.DoubleValue) st
@@ -48,7 +49,7 @@ final class DoubleAccumulator
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
         AnyStepper.ofParDoubleStepper(st)
       }
-    r.asInstanceOf[S with EfficientSubstep]
+    r.asInstanceOf[S with EfficientSplit]
   }
 
   private def expand(): Unit = {
@@ -277,7 +278,7 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   }
 }
 
-private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSubstep {
+private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSplit {
   import java.util.Spliterator._
 
   private var h = 0

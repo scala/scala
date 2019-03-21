@@ -14,6 +14,7 @@ package scala.collection.convert
 package impl
 
 import annotation.tailrec
+import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 import scala.collection.immutable.Node
 
@@ -24,7 +25,7 @@ import scala.collection.immutable.Node
 private[collection] abstract class ChampStepperBase[
   A, T <: Node[T], Sub >: Null, Semi <: Sub with ChampStepperBase[A, T, _, _]
 ](protected var maxSize: Int)
-extends EfficientSubstep {
+extends EfficientSplit {
   import Node.MaxDepth
 
   // Most of this code is identical to ChampBaseIterator.  If you change that, look here too!

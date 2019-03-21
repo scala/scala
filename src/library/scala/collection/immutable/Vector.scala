@@ -14,11 +14,11 @@ package scala
 package collection
 package immutable
 
-import scala.collection.mutable.ReusableBuilder
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
+import scala.collection.mutable.ReusableBuilder
 import scala.runtime.Statics.releaseFence
 
 /** $factoryInfo
@@ -111,7 +111,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     }
   }
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
     var depth = -1
     val displaySource: VectorPointer[A] =
@@ -130,7 +130,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       case StepperShape.DoubleValue => new DoubleVectorStepper(startIndex, endIndex, depth, trunk)
       case _         => shape.parUnbox(new AnyVectorStepper[B](startIndex, endIndex, depth, trunk))
     }
-    s.asInstanceOf[S with EfficientSubstep]
+    s.asInstanceOf[S with EfficientSplit]
   }
 
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.

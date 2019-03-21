@@ -16,6 +16,7 @@ package impl
 import java.util.Spliterator
 
 import annotation.tailrec
+import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 
 
@@ -47,7 +48,7 @@ private[collection] abstract class BinaryTreeStepperBase[A, T >: Null <: AnyRef,
   protected var maxLength: Int, protected var myCurrent: T, protected var stack: Array[AnyRef], protected var index: Int,
   protected val left: T => T, protected val right: T => T
 )
-extends EfficientSubstep {
+extends EfficientSplit {
   /** Unrolls a subtree onto the stack starting from a particular node, returning
     * the last node found.  This final node is _not_ placed on the stack, and
     * may have things to its right.

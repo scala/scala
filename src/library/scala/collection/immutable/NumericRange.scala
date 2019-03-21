@@ -12,10 +12,8 @@
 
 package scala.collection.immutable
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper, StepperShape}
-import java.lang.String
-
-import scala.collection.convert.EfficientSubstep
 
 /** `NumericRange` is a more generic version of the
   *  `Range` class which works with arbitrary types.
@@ -55,14 +53,15 @@ sealed class NumericRange[T](
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
 
-  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
-    import scala.collection.convert._, impl._
+  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    import scala.collection.convert._
+    import impl._
     val s = shape.shape match {
       case StepperShape.IntValue    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
       case StepperShape.LongValue   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
-      case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[B] with EfficientSubstep])
+      case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[B] with EfficientSplit])
     }
-    s.asInstanceOf[S with EfficientSubstep]
+    s.asInstanceOf[S with EfficientSplit]
   }
 
 

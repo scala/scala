@@ -15,6 +15,7 @@ package scala.collection.convert
 import java.util.stream._
 
 import scala.annotation.implicitNotFound
+import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 import scala.collection.convert.StreamExtensions.{AccumulatorFactoryInfo, StreamShape, StreamUnboxer}
 import scala.jdk.CollectionConverters.Ops._
@@ -35,7 +36,7 @@ trait StreamExtensions {
   }
 
   protected type IterableOnceWithEfficientStepper[A] = IterableOnce[A] {
-    def stepper[B >: A, S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSubstep
+    def stepper[B >: A, S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSplit
   }
 
   // Not `CC[X] <: IterableOnce[X]`, but `C` with an extra constraint, to support non-parametric classes like IntAccumulator
@@ -70,9 +71,9 @@ trait StreamExtensions {
       s.fromStepper(cc.valueStepper, par = false)
   }
 
-  private type MapOpsWithEfficientKeyStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def keyStepper[S <: Stepper[_]](implicit shape : StepperShape[K, S]) : S with EfficientSubstep }
-  private type MapOpsWithEfficientValueStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape : StepperShape[V1, S]) : S with EfficientSubstep }
-  private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSubstep }
+  private type MapOpsWithEfficientKeyStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def keyStepper[S <: Stepper[_]](implicit shape : StepperShape[K, S]) : S with EfficientSplit }
+  private type MapOpsWithEfficientValueStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape : StepperShape[V1, S]) : S with EfficientSplit }
+  private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSplit }
 
   implicit class MapHasParKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, AnyConstr, _]](cc: CC[K, V]) {
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for the keys of this map. If
@@ -120,7 +121,7 @@ trait StreamExtensions {
       s.fromStepper(stepper.asInstanceOf[St], par = false)
   }
 
-  implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSubstep) {
+  implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSplit) {
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for this stepper. If the
       * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).

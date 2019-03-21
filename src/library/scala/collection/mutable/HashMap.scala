@@ -14,7 +14,7 @@ package scala.collection
 package mutable
 
 import scala.annotation.tailrec
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable maps using a hashtable.
@@ -263,12 +263,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
       protected[this] def extract(nd: Node[K, V]) = nd
     }
 
-  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
+  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
     shape.
       parUnbox(new convert.impl.AnyTableStepper[B, Node[K, V]](size, table, _.next, node => (node.key, node.value), 0, table.length)).
-      asInstanceOf[S with EfficientSubstep]
+      asInstanceOf[S with EfficientSplit]
 
-  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSubstep = {
+  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import convert.impl._
     val s = (shape.shape: @annotation.switch) match {
       case StepperShape.IntValue    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.key.asInstanceOf[Int],    0, table.length)
@@ -276,10 +276,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
       case StepperShape.DoubleValue => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.key.asInstanceOf[Double], 0, table.length)
       case _         => shape.parUnbox(new AnyTableStepper[K, Node[K, V]](size, table, _.next, _.key,                      0, table.length))
     }
-    s.asInstanceOf[S with EfficientSubstep]    
+    s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
     val s = (shape.shape: @annotation.switch) match {
       case StepperShape.IntValue    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.value.asInstanceOf[Int],    0, table.length)
@@ -287,7 +287,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
       case StepperShape.DoubleValue => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.value.asInstanceOf[Double], 0, table.length)
       case _         => shape.parUnbox(new AnyTableStepper[B, Node[K, V]](size, table, _.next, _.value.asInstanceOf[B],      0, table.length))
     }
-    s.asInstanceOf[S with EfficientSubstep]    
+    s.asInstanceOf[S with EfficientSplit]
   }
 
   private[this] def growTable(newlen: Int) = {

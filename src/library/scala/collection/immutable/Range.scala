@@ -13,7 +13,7 @@
 package scala
 package collection.immutable
 
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl.RangeStepper
 import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper, StepperShape}
 import scala.util.hashing.MurmurHash3
@@ -69,7 +69,7 @@ sealed abstract class Range(
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
-  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep = {
+  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new RangeStepper(start, step, 0, length)
     val r =
       if (shape.shape == StepperShape.IntValue) st
@@ -77,7 +77,7 @@ sealed abstract class Range(
         assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
         AnyStepper.ofParIntStepper(st)
       }
-    r.asInstanceOf[S with EfficientSubstep]
+    r.asInstanceOf[S with EfficientSplit]
   }
 
   private[this] def gap           = end.toLong - start.toLong

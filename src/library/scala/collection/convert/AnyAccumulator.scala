@@ -16,6 +16,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
 import java.util.function.Consumer
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, Stepper, StepperShape, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -49,7 +50,7 @@ final class AnyAccumulator[A]
 
   override protected[this] def className: String = "AnyAccumulator"
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSubstep =
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
     shape.parUnbox(new AnyAccumulatorStepper[B](this.asInstanceOf[AnyAccumulator[B]]))
 
   private def expand(): Unit = {
@@ -278,7 +279,7 @@ object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
   }
 }
 
-private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSubstep {
+private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
   import java.util.Spliterator._
 
   private var h = 0

@@ -16,6 +16,7 @@ package impl
 import java.lang.Character.{charCount, isLowSurrogate}
 import java.util.Spliterator
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.{IntStepper, Stepper}
 
 /** Implements `Stepper` on a `String` where you step through chars packed into `Int`.
@@ -33,7 +34,7 @@ with IntStepper {
 /** Implements `Stepper` on a `String` where you step through code points.
   */
 private[collection] final class CodePointStringStepper(underlying: String, private var i0: Int, private var iN: Int)
-extends IntStepper with EfficientSubstep {
+extends IntStepper with EfficientSplit {
   private[collection] def characteristics: Int = Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED
   private[collection] def estimateSize: Long = iN - i0
   def hasStep: Boolean = i0 < iN

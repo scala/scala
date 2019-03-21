@@ -15,11 +15,11 @@ package impl
 
 import java.util.Spliterator
 
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
 
 /** Abstracts all the generic operations of stepping over an indexable collection */
 private[convert] abstract class IndexedStepperBase[Sub >: Null, Semi <: Sub](protected var i0: Int, protected var iN: Int)
-  extends EfficientSubstep {
+  extends EfficientSplit {
   protected def semiclone(half: Int): Semi
 
   def hasStep: Boolean = i0 < iN

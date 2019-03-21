@@ -16,11 +16,6 @@ package collection
 import java.lang.Math.{max, min}
 import java.util.Arrays
 
-import mutable.ArrayBuilder
-import immutable.Range
-import scala.reflect.ClassTag
-import scala.math.Ordering
-import scala.util.Sorting
 import scala.Predef.{ // unimport all array-related implicit conversions to avoid triggering them accidentally
   genericArrayOps => _,
   booleanArrayOps => _,
@@ -48,7 +43,12 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   copyArrayToImmutableIndexedSeq => _,
   _
 }
-import scala.collection.convert.EfficientSubstep
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.immutable.Range
+import scala.collection.mutable.ArrayBuilder
+import scala.math.Ordering
+import scala.reflect.ClassTag
+import scala.util.Sorting
 
 object ArrayOps {
 
@@ -408,7 +408,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       case null               => throw new NullPointerException
     }).asInstanceOf[Iterator[A]]
 
-  def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSubstep = {
+  def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import convert.impl._
     val s = shape.shape match {
       case StepperShape.Reference => (xs: Any) match {
@@ -423,7 +423,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       case StepperShape.CharValue   => new WidenedCharArrayStepper   (xs.asInstanceOf[Array[Char   ]], 0, xs.length)
       case StepperShape.FloatValue  => new WidenedFloatArrayStepper  (xs.asInstanceOf[Array[Float  ]], 0, xs.length)
     }
-    s.asInstanceOf[S with EfficientSubstep]
+    s.asInstanceOf[S with EfficientSplit]
   }
 
   /** Partitions elements in fixed size arrays.

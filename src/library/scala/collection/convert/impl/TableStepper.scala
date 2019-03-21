@@ -13,12 +13,13 @@
 package scala.collection.convert
 package impl
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 
 private[collection] abstract class TableStepperBase[A, I >: Null <: AnyRef, Sub >: Null, Semi <: Sub with TableStepperBase[A, I, _, _]](
   protected var maxLength: Int, protected val table: Array[I], protected var i0: Int, protected val iN: Int
 )
-extends EfficientSubstep {
+extends EfficientSplit {
   // Always holds table(i0); if `null` it is time to switch to the next element
   protected var myCurrent: I = if (i0 < iN) table(i0) else null
 
