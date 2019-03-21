@@ -16,8 +16,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
 import java.util.function.Consumer
 
-import scala.collection.convert.impl.StepperShape
-import scala.collection.{AnyStepper, EfficientSubstep, Factory, Stepper, mutable}
+import scala.collection.{AnyStepper, Factory, Stepper, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 

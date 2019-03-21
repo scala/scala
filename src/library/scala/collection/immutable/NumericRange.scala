@@ -12,9 +12,10 @@
 
 package scala.collection.immutable
 
-import scala.collection.{AbstractIterator, AnyStepper, EfficientSubstep, Iterator, Stepper}
-import scala.collection.convert.impl.StepperShape
+import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper}
 import java.lang.String
+
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 
 /** `NumericRange` is a more generic version of the
   *  `Range` class which works with arbitrary types.

@@ -48,7 +48,7 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   copyArrayToImmutableIndexedSeq => _,
   _
 }
-import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 
 object ArrayOps {
 

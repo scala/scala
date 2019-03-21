@@ -15,9 +15,8 @@ package collection
 package mutable
 
 import collection.mutable.{RedBlackTree => RB}
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
-
-import scala.collection.convert.impl.StepperShape
 
 /**
   * A mutable sorted map implemented using a mutable red-black tree as underlying data structure.

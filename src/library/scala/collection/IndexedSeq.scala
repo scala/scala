@@ -17,7 +17,7 @@ import scala.annotation.{switch, tailrec}
 import scala.language.higherKinds
 import scala.math.Ordering
 import Searching.{Found, InsertionPoint, SearchResult}
-import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {

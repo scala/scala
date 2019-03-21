@@ -14,9 +14,9 @@ package scala.collection
 package immutable
 
 import mutable.{Builder, StringBuilder}
-import scala.Predef.{ wrapString => _ }  // unimport to avoid triggering accidentally
-
-import scala.collection.convert.impl.{CharStringStepper, StepperShape}
+import scala.Predef.{wrapString => _}
+import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.impl.CharStringStepper
 
 /**
   *  This class serves as a wrapper augmenting `String`s with all the operations

@@ -16,13 +16,13 @@ package collection
 import java.lang.{StringBuilder => JStringBuilder}
 import java.util.NoSuchElementException
 
+import scala.collection.convert.EfficientSubstep
 import scala.collection.immutable.{ArraySeq, WrappedString}
 import scala.collection.mutable.StringBuilder
 import scala.math.{ScalaNumber, max, min}
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
-
-import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper, StepperShape}
+import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper}
 
 object StringOps {
   // just statics for companion class.

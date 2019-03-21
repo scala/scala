@@ -15,8 +15,8 @@ package scala.collection.convert
 import java.util.stream._
 
 import scala.annotation.implicitNotFound
-import scala.collection.convert.impl.{AccumulatorFactoryInfo, StepperShape, StreamShape, StreamUnboxer}
-import scala.collection.{AnyConstr, EfficientSubstep, Stepper}
+import scala.collection.convert.impl.{AccumulatorFactoryInfo, StreamShape, StreamUnboxer}
+import scala.collection.{AnyConstr, Stepper}
 import scala.jdk.CollectionConverters.Ops._
 
 /** Defines extension methods to create Java Streams for Scala collections, available through

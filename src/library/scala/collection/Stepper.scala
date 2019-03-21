@@ -16,6 +16,8 @@ import java.util.function.{Consumer, DoubleConsumer, IntConsumer, LongConsumer}
 import java.util.{PrimitiveIterator, Spliterator, Iterator => JIterator}
 import java.{lang => jl}
 
+import scala.collection.convert.EfficientSubstep
+
 trait Stepper[@specialized(Double, Int, Long) A] {
   def hasStep: Boolean
 
@@ -37,6 +39,92 @@ trait Stepper[@specialized(Double, Int, Long) A] {
   def iterator: Iterator[A] = new AbstractIterator[A] {
     def hasNext: Boolean = hasStep
     def next(): A = nextStep()
+  }
+}
+
+object Stepper {
+  private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
+
+  /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
+   * This provides a basis for more efficient stream processing on unboxed values provided that the original source
+   * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided
+   * (see for example StepsIntArray and StepsWidenedByteArray). */
+
+  private[collection] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Double = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): DoubleStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingDoubleStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Int = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): IntStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingIntStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Long = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): LongStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingLongStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Int = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): IntStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingByteStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Int = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): IntStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingCharStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Int = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): IntStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingShortStepper(s)
+    }
+  }
+
+  private[collection] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
+    def hasStep: Boolean = st.hasStep
+    def nextStep(): Double = st.nextStep()
+    private[collection] def estimateSize: Long = st.estimateSize
+    private[collection] def characteristics: Int = st.characteristics
+    private[collection] def trySplit(): DoubleStepper = {
+      val s = st.trySplit()
+      if (s == null) null else new UnboxingFloatStepper(s)
+    }
   }
 }
 
@@ -216,98 +304,6 @@ object LongStepper {
     override def forEachRemaining(c: Consumer[_ >: jl.Long]): Unit = (c: AnyRef) match {
       case ic: LongConsumer => forEachRemaining(ic)
       case _ => while (s.hasStep) { c.accept(jl.Long.valueOf(s.nextStep())) }
-    }
-  }
-}
-
-/** An (optional) marker trait that indicates that a `Stepper` can call `substep` with
-  * at worst O(log N) time and space complexity, and that the division is likely to
-  * be reasonably even.
-  */
-trait EfficientSubstep
-
-object Stepper {
-  private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
-
-  /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
-   * This provides a basis for more efficient stream processing on unboxed values provided that the original source
-   * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided
-   * (see for example StepsIntArray and StepsWidenedByteArray). */
-
-  private[collection] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Double = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): DoubleStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingDoubleStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingIntStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Long = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): LongStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingLongStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingByteStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingCharStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingShortStepper(s)
-    }
-  }
-
-  private[collection] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
-    def hasStep: Boolean = st.hasStep
-    def nextStep(): Double = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): DoubleStepper = {
-      val s = st.trySplit()
-      if (s == null) null else new UnboxingFloatStepper(s)
     }
   }
 }

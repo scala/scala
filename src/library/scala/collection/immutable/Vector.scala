@@ -17,10 +17,9 @@ package immutable
 import scala.collection.mutable.ReusableBuilder
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
-
-import scala.collection.convert.impl.StepperShape
 
 /** $factoryInfo
   * @define Coll `Vector`

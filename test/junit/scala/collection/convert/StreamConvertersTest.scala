@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.{AnyStepper, DoubleStepper, IntStepper, Stepper, EfficientSubstep}
+import scala.collection._
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
@@ -371,8 +371,8 @@ class StreamConvertersTest {
       val s3: IntStepper with EfficientSubstep = mbs.stepper
       val s4: Stepper[Int] = mbs.stepper
       val s5: Stepper[Int] with EfficientSubstep = mbs.stepper
-      val s6: AnyStepper[Int] = mbs.stepper(impl.StepperShape.anyStepperShape[Int])
-      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(impl.StepperShape.anyStepperShape[Int])
+      val s6: AnyStepper[Int] = mbs.stepper(StepperShape.anyStepperShape[Int])
+      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(convert.StepperShape.anyStepperShape[Int])
       // val s8: Stepper[Any] = mbs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
     }

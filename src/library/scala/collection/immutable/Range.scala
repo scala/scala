@@ -13,8 +13,9 @@
 package scala
 package collection.immutable
 
-import scala.collection.convert.impl.{RangeStepper, StepperShape}
-import scala.collection.{AbstractIterator, AnyStepper, EfficientSubstep, Iterator, Stepper}
+import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.impl.RangeStepper
+import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper}
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range

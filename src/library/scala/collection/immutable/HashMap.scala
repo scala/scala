@@ -18,10 +18,10 @@ import java.lang.System.arraycopy
 
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import scala.collection.Hashing.improve
-import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.ReusableBuilder
-import scala.collection.{EfficientSubstep, Iterator, MapFactory, Stepper, mutable}
+import scala.collection.{Iterator, MapFactory, Stepper, mutable}
 import scala.runtime.Statics.releaseFence
 import scala.util.hashing.MurmurHash3
 

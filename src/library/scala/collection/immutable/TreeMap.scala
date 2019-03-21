@@ -14,11 +14,10 @@ package scala
 package collection
 package immutable
 
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}
 import scala.collection.mutable.{Builder, ReusableBuilder}
-
-import scala.collection.convert.impl.StepperShape
 
 /** This class implements immutable maps using a tree.
   *

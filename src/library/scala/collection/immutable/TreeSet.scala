@@ -16,9 +16,8 @@ package immutable
 
 import mutable.{Builder, ReusableBuilder}
 import immutable.{RedBlackTree => RB}
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
-
-import scala.collection.convert.impl.StepperShape
 
 
 /** This class implements immutable sorted sets using a tree.

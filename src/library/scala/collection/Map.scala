@@ -15,6 +15,7 @@ package collection
 
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.convert.StepperShape
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
@@ -91,7 +92,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override def view: MapView[K, V] = new MapView.Id(this)
 
-  def keyStepper[S <: Stepper[_]](implicit shape: convert.impl.StepperShape[K, S]): S = {
+  def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
     import convert.impl._
     val s = (shape.shape: @switch) match {
       case StepperShape.IntValue    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
@@ -102,7 +103,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     s.asInstanceOf[S]
   }
 
-  def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: convert.impl.StepperShape[V1, S]): S = {
+  def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
     import convert.impl._
     val s = (shape.shape: @switch) match {
       case StepperShape.IntValue    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])

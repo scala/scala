@@ -16,6 +16,7 @@ package collection
 import scala.annotation.switch
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.convert.StepperShape
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 import scala.collection.mutable.StringBuilder
@@ -48,7 +49,7 @@ trait IterableOnce[+A] extends Any {
    * @return a [[Stepper]] that can be used to operate on the elements of this collections
    *         with the java Streams API. TODO reference to more documentation.
    */
-  def stepper[B >: A, S <: Stepper[_]](implicit shape: convert.impl.StepperShape[B, S]): S = {
+  def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S = {
     import convert.impl._
     val s = (shape.shape: @switch) match {
       case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])

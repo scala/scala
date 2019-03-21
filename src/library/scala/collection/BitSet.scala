@@ -16,7 +16,7 @@ package collection
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.convert.impl.StepperShape
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.mutable.Builder
 
 

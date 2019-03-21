@@ -11,7 +11,6 @@
  */
 
 package scala.collection.convert
-package impl
 
 import scala.collection._
 
@@ -28,6 +27,7 @@ sealed trait StepperShape[T, S <: Stepper[_]] {
    * This is an identity operation for reference shapes. */
   def parUnbox(st: AnyStepper[T] with EfficientSubstep): S with EfficientSubstep
 }
+
 object StepperShape extends StepperShapeLowPriority {
   // reference
   final val Reference   = 0
@@ -79,6 +79,7 @@ object StepperShape extends StepperShapeLowPriority {
     def parUnbox(st: AnyStepper[Float] with EfficientSubstep): DoubleStepper with EfficientSubstep = new Stepper.UnboxingFloatStepper(st) with EfficientSubstep
   }
 }
+
 trait StepperShapeLowPriority {
   implicit def anyStepperShape[T] = anyStepperShapePrototype.asInstanceOf[StepperShape[T, AnyStepper[T]]]
 

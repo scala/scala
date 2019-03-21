@@ -14,9 +14,8 @@ package scala.collection
 package mutable
 
 import scala.annotation.tailrec
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializationProxy
-
-import scala.collection.convert.impl.StepperShape
 
 /** This class implements mutable maps using a hashtable.
   *

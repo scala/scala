@@ -19,11 +19,10 @@ import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
+import scala.collection.convert.{EfficientSubstep, StepperShape}
 import scala.collection.generic.DefaultSerializable
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence
-
-import scala.collection.convert.impl.StepperShape
 
 /** This class implements immutable sets using a Compressed Hash-Array Mapped Prefix-tree.
   * See paper https://michael.steindorfer.name/publications/oopsla15.pdf for more details.
