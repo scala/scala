@@ -227,7 +227,7 @@ class ListBuffer[A]
       if(prev eq null) first = next else prev.next = next
       prev = next
     }
-    if(prev.next.isEmpty) last0 = prev
+    if ((prev ne null) && prev.next.isEmpty) last0 = prev
     prev
   }
 
