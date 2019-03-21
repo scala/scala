@@ -27,7 +27,13 @@ class PriorityQueueTest {
     val pq = new mutable.PriorityQueue[Nothing]()((_,_)=>42)
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
-  
+
+  @Test /* Regression for https://github.com/scala/bug/issues/11439 */
+  def emptyMapInPlace(): Unit = {
+    val pq = mutable.PriorityQueue.empty[String].mapInPlace(_.toUpperCase) // used to crash because of the weird resarr implementation
+    assert(pq.isEmpty)
+  }
+
   @Test
   def canSerialize(): Unit = {
     val outputStream = new ByteArrayOutputStream()
