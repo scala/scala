@@ -10,11 +10,13 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.collection
 
-import scala.collection._
+import scala.collection.convert.EfficientSubstep
 
-/** Encodes the translation from an element type `T` to the corresponding Stepper type `S` */
+/** An implicit StepperShape instance is used in the [[IterableOnce.stepper]] to return a possibly
+  * specialized Stepper `S` according to the element type `T`.
+  */
 sealed trait StepperShape[T, S <: Stepper[_]] {
   /** Return the Int constant (as defined in the `StepperShape` companion object) for this `StepperShape`. */
   def shape: Int

@@ -14,7 +14,7 @@ package scala
 package collection
 package mutable
 
-import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.EfficientSubstep
 import scala.collection.generic.DefaultSerializable
 
 

@@ -14,7 +14,7 @@ package scala
 package collection
 package immutable
 
-import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.EfficientSubstep
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}
 import scala.collection.mutable.{Builder, ReusableBuilder}

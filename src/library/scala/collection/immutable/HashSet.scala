@@ -19,7 +19,7 @@ import Hashing.improve
 import java.lang.Integer.{bitCount, numberOfTrailingZeros}
 import java.lang.System.arraycopy
 
-import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.EfficientSubstep
 import scala.collection.generic.DefaultSerializable
 import scala.util.hashing.MurmurHash3
 import scala.runtime.Statics.releaseFence

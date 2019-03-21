@@ -16,7 +16,6 @@ package collection
 import scala.annotation.switch
 import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.convert.StepperShape
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 import scala.collection.mutable.StringBuilder

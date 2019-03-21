@@ -15,9 +15,8 @@ package scala.collection.convert
 import java.util.stream._
 
 import scala.annotation.implicitNotFound
-import scala.collection.convert.StreamExtensions.AccumulatorFactoryInfo
-import scala.collection.convert.impl.{StreamShape, StreamUnboxer}
-import scala.collection.{AnyConstr, Stepper}
+import scala.collection._
+import scala.collection.convert.StreamExtensions.{AccumulatorFactoryInfo, StreamShape, StreamUnboxer}
 import scala.jdk.CollectionConverters.Ops._
 
 /** Defines extension methods to create Java Streams for Scala collections, available through
@@ -309,6 +308,75 @@ trait StreamExtensions {
 }
 
 object StreamExtensions {
+  /** An implicit StreamShape instance connects element types with the corresponding specialized
+    * Stream and Stepper types. This is used in `asJavaStream` extension methods to create
+    * generic or primitive streams according to the element type.
+    */
+  sealed trait StreamShape[T, S <: BaseStream[_, S], St <: Stepper[_]] {
+    final def fromStepper(st: St, par: Boolean): S = mkStream(st, par)
+    protected def mkStream(st: St, par: Boolean): S
+  }
+
+  object StreamShape extends StreamShapeLowPriority1 {
+    // primitive
+    implicit val intStreamShape   : StreamShape[Int   , IntStream   , IntStepper]    = mkIntStreamShape[Int]
+    implicit val longStreamShape  : StreamShape[Long  , LongStream  , LongStepper]   = mkLongStreamShape[Long]
+    implicit val doubleStreamShape: StreamShape[Double, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Double]
+  }
+
+  trait StreamShapeLowPriority1 extends StreamShapeLowPriority2 {
+
+    // widening
+    implicit val byteStreamShape : StreamShape[Byte , IntStream   , IntStepper]    = mkIntStreamShape[Byte]
+    implicit val shortStreamShape: StreamShape[Short, IntStream   , IntStepper]    = mkIntStreamShape[Short]
+    implicit val charStreamShape : StreamShape[Char , IntStream   , IntStepper]    = mkIntStreamShape[Char]
+    implicit val floatStreamShape: StreamShape[Float, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Float]
+
+    protected def mkIntStreamShape[T]: StreamShape[T, IntStream, IntStepper] = new StreamShape[T, IntStream, IntStepper] {
+      protected def mkStream(st: IntStepper, par: Boolean): IntStream = StreamSupport.intStream(st.spliterator, par)
+    }
+
+    protected def mkLongStreamShape[T]: StreamShape[T, LongStream, LongStepper] = new StreamShape[T, LongStream, LongStepper] {
+      protected def mkStream(st: LongStepper, par: Boolean): LongStream = StreamSupport.longStream(st.spliterator, par)
+    }
+
+    protected def mkDoubleStreamShape[T]: StreamShape[T, DoubleStream, DoubleStepper] = new StreamShape[T, DoubleStream, DoubleStepper] {
+      protected def mkStream(st: DoubleStepper, par: Boolean): DoubleStream = StreamSupport.doubleStream(st.spliterator, par)
+    }
+  }
+
+  trait StreamShapeLowPriority2 {
+    // reference
+    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShape.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
+
+    private[this] val anyStreamShape: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
+      def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator, par)
+    }
+  }
+
+
+
+  sealed trait StreamUnboxer[A, S] {
+    def apply(s: Stream[A]): S
+  }
+  object StreamUnboxer {
+    implicit val intStreamUnboxer: StreamUnboxer[Int, IntStream] = new StreamUnboxer[Int, IntStream] {
+      def apply(s: Stream[Int]): IntStream = s.mapToInt(x => x)
+    }
+    implicit val javaIntegerStreamUnboxer: StreamUnboxer[java.lang.Integer, IntStream] = intStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Integer, IntStream]]
+
+    implicit val longStreamUnboxer: StreamUnboxer[Long, LongStream] = new StreamUnboxer[Long, LongStream] {
+      def apply(s: Stream[Long]): LongStream = s.mapToLong(x => x)
+    }
+    implicit val javaLongStreamUnboxer: StreamUnboxer[java.lang.Long, LongStream] = longStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Long, LongStream]]
+
+    implicit val doubleStreamUnboxer: StreamUnboxer[Double, DoubleStream] = new StreamUnboxer[Double, DoubleStream] {
+      def apply(s: Stream[Double]): DoubleStream = s.mapToDouble(x => x)
+    }
+    implicit val javaDoubleStreamUnboxer: StreamUnboxer[java.lang.Double, DoubleStream] = doubleStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Double, DoubleStream]]
+  }
+
+
 
   /** An implicit `AccumulatorFactoryInfo` connects primitive element types to the corresponding
     * specialized [[Accumulator]] factory. This is used in the `stream.toScala` extension methods

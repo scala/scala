@@ -13,11 +13,11 @@
 package scala
 package collection.mutable
 
-import collection.{SortedIterableFactory, Stepper, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
+import collection.{SortedIterableFactory, Stepper, StepperShape, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
 import collection.mutable.{RedBlackTree => RB}
 import java.lang.String
 
-import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.EfficientSubstep
 import scala.collection.generic.DefaultSerializable
 
 /**

@@ -17,7 +17,7 @@ import java.util.Spliterator
 import java.util.function.{Consumer, IntConsumer}
 import java.{lang => jl}
 
-import scala.collection.{AnyStepper, Factory, IntStepper, Stepper, mutable}
+import scala.collection.{AnyStepper, Factory, IntStepper, Stepper, StepperShape, mutable}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.

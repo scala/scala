@@ -15,7 +15,6 @@ package collection
 
 import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.convert.StepperShape
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds

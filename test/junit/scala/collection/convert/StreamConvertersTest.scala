@@ -28,9 +28,9 @@ class StreamConvertersTest {
     import scala.jdk.StreamConverters.Ops._
 
     val m1 = Map(1 -> "a")
-    val m2 = collection.mutable.LinkedHashMap('c' -> 35f)
+    val m2 = mutable.LinkedHashMap('c' -> 35f)
     val s1 = Set("3", "4")
-    val s2 = collection.mutable.LinkedHashSet('a', 'b')
+    val s2 = mutable.LinkedHashSet('a', 'b')
 
 
     val m1ks = m1.keyStepper
@@ -352,7 +352,7 @@ class StreamConvertersTest {
   @Test
   def bitSetStepper(): Unit = {
     locally {
-      val ibs = collection.immutable.BitSet(1, 2, 3)
+      val ibs = immutable.BitSet(1, 2, 3)
       val s1 = ibs.stepper
       val s2: IntStepper = ibs.stepper
       val s3: IntStepper with EfficientSubstep = ibs.stepper
@@ -365,14 +365,14 @@ class StreamConvertersTest {
     }
 
     locally {
-      val mbs = collection.mutable.BitSet(1, 2, 3)
+      val mbs = mutable.BitSet(1, 2, 3)
       val s1 = mbs.stepper
       val s2: IntStepper = mbs.stepper
       val s3: IntStepper with EfficientSubstep = mbs.stepper
       val s4: Stepper[Int] = mbs.stepper
       val s5: Stepper[Int] with EfficientSubstep = mbs.stepper
       val s6: AnyStepper[Int] = mbs.stepper(StepperShape.anyStepperShape[Int])
-      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(convert.StepperShape.anyStepperShape[Int])
+      val s7: AnyStepper[Int] with EfficientSubstep = mbs.stepper(StepperShape.anyStepperShape[Int])
       // val s8: Stepper[Any] = mbs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
     }

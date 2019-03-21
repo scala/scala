@@ -15,7 +15,7 @@ package mutable
 
 import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
-import scala.collection.convert.{EfficientSubstep, StepperShape}
+import scala.collection.convert.EfficientSubstep
 import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable sets using a hashtable.

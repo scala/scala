@@ -17,7 +17,7 @@ import java.util.Spliterator
 import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
-import scala.collection.{AnyStepper, Factory, LongStepper, Stepper, mutable}
+import scala.collection.{AnyStepper, Factory, LongStepper, Stepper, StepperShape, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
