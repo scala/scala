@@ -9,8 +9,10 @@ names-defaults-neg-ref.scala:17: error: in class C, multiple overloaded alternat
 The members with defaults are defined in class C and class B.
 class C extends B {
       ^
-names-defaults-neg-ref.scala:21: error: overriding method bar$default$1 in class B of type => String;
-  method bar$default$1 has incompatible type
+names-defaults-neg-ref.scala:21: error: incompatible type in overriding
+def bar$default$1: String (defined in class B);
+ found   : => Int
+ required: => String
   def bar(i: Int = 129083) = i
           ^
 four errors found

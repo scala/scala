@@ -1,0 +1,6 @@
+t2497b.scala:6: error: cannot override a concrete member without a third member that's overridden by both (this rule is designed to prevent ``accidental overrides'')
+def f: Int (defined in trait B)
+  with override def f: Int (defined in trait AAA)
+class C extends B with AAA
+      ^
+one error found

@@ -120,8 +120,8 @@ trait StrictOptimizedIterableOps[+A, +CC[_], +C]
     b.result()
   }
 
-  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] =
-    strictOptimizedConcat(suffix, iterableFactory.newBuilder[B])
+//  override def concat[B >: A](suffix: IterableOnce[B]): CC[B] =
+//    strictOptimizedConcat(suffix, iterableFactory.newBuilder[B])
 
   /**
     * @param that Elements to concatenate to this collection

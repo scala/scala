@@ -1,12 +1,15 @@
-accesses2.scala:6: error: overriding method f2 in class A of type ()Int;
-  method f2 has weaker access privileges; it should not be private
+accesses2.scala:6: error: weaker access privileges in overriding
+private[package p2] def f2(): Int (defined in class A)
+  override should not be private
     private def f2(): Int = 1
                 ^
-accesses2.scala:5: error: class B1 needs to be abstract, since method f2 in class A of type ()Int is not defined
+accesses2.scala:5: error: class B1 needs to be abstract. Missing implementation for:
+  private[package p2] def f2(): Int // inherited from class A
   class B1 extends A {
         ^
-accesses2.scala:9: error: overriding method f2 in class A of type ()Int;
-  method f2 has weaker access privileges; it should not be private
+accesses2.scala:9: error: weaker access privileges in overriding
+private[package p2] def f2(): Int (defined in class A)
+  override should not be private
     private def f2(): Int = 1
                 ^
 three errors found

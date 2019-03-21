@@ -1,5 +1,5 @@
-volatile_no_override.scala:13: error: overriding value x in class A of type Volatile.this.D;
-  value x has a volatile type; cannot override a member with non-volatile type
+volatile_no_override.scala:13: error: member with volatile type cannot override member with non-volatile type:
+val x: Volatile.this.D (defined in class A)
   val x: A with D = null
       ^
 one error found

@@ -1,4 +1,5 @@
-t4431.scala:5: error: class BB needs to be abstract, since there is a deferred declaration of method f which is not implemented in a subclass
+t4431.scala:5: error: class BB needs to be abstract. No implementation found in a subclass for deferred declaration
+def f(): Unit
   class BB extends B { def f (): Unit }
         ^
 t4431.scala:8: error: trait cannot redefine final method from class AnyRef

@@ -772,18 +772,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
              members) ++= decls
         }
       }
-      def forwarders(sdef: Tree): List[Tree] = sdef match {
-        case ClassDef(mods, name, tparams, _) if (parentToken == INTERFACE) =>
-          val tparams1: List[TypeDef] = tparams map (_.duplicate)
-          var rhs: Tree = Select(Ident(parentName.toTermName), name)
-          if (!tparams1.isEmpty) rhs = AppliedTypeTree(rhs, tparams1 map (tp => Ident(tp.name)))
-          List(TypeDef(Modifiers(Flags.PROTECTED), name, tparams1, rhs))
-        case _ =>
-          List()
-      }
-      val sdefs = statics.toList
-      val idefs = members.toList ::: (sdefs flatMap forwarders)
-      (sdefs, idefs)
+      (statics.toList, members.toList)
     }
     def annotationParents = Select(javaLangDot(nme.annotation), tpnme.Annotation) :: Nil
     def annotationDecl(mods: Modifiers): List[Tree] = {
