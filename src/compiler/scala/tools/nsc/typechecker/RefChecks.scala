@@ -664,7 +664,7 @@ abstract class RefChecks extends Transform {
                   val aplIter = abstractParamLists .iterator.flatten
                   val cplIter = concrete.paramLists.iterator.flatten
                   def mismatch(apl: Symbol, cpl: Symbol): Option[(Type, Type)] =
-                    if (apl.tpe =:= cpl.tpe) None else Some(apl.tpe -> cpl.tpe)
+                    if (apl.tpe.asSeenFrom(clazz.tpe, underlying.owner) =:= cpl.tpe) None else Some(apl.tpe -> cpl.tpe)
 
                   val mismatches = mapFilter2(aplIter, cplIter)(mismatch).take(2).toList
                   mismatches match {
