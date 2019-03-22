@@ -226,10 +226,9 @@ trait Variances {
     private[this] lazy val inSym: Extractor[Symbol]                   = (sym: Symbol) => if (sym.isAliasType) inType(sym.info).cut else inType(sym.info)
     private[this] val inType: Extractor[Type] = {
       case pt: ProtoType                                   => inType(pt.toVariantType)
-      case ErrorType | WildcardType | NoType | NoPrefix    => Bivariant
+      case ErrorType | NoType | NoPrefix                   => Bivariant
       case ThisType(_) | ConstantType(_)                   => Bivariant
       case TypeRef(_, tparam, _) if tparam eq this.tparam  => Covariant
-      case BoundedWildcardType(bounds)                     => inType(bounds)
       case NullaryMethodType(restpe)                       => inType(restpe)
       case SingleType(pre, sym)                            => inType(pre)
       case TypeRef(pre, _, _) if tp.isHigherKinded         => inType(pre)          // a type constructor cannot occur in tp's args
