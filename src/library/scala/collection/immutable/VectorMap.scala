@@ -62,6 +62,8 @@ final class VectorMap[K, +V] private (
     }
   }
 
+  override def concat[V1 >: V](that: IterableOnce[(K, V1)]): VectorMap[K, V1] = super.concat(that)
+
   override def withDefault[V1 >: V](d: K => V1): Map[K, V1] =
     new Map.WithDefault(this, d)
 
@@ -263,4 +265,6 @@ private[immutable] final class VectorMapBuilder[K, V] extends mutable.Builder[(K
   }
 
   override def addOne(elem: (K, V)): this.type = addOne(elem._1, elem._2)
+
+  override def addAll(xs: IterableOnce[(K, V)]): this.type = super.addAll(xs)
 }
