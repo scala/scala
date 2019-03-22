@@ -218,7 +218,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
               def genForwarder(required: Boolean): Unit = {
                 val owner = member.owner
                 val isJavaInterface = owner.isJavaDefined && owner.isInterface
-                if (isJavaInterface && !clazz.parentSymbols.contains(owner)) {
+                if (isJavaInterface && !clazz.parentSymbolsIterator.contains(owner)) {
                   if (required) {
                     val text = s"Unable to implement a mixin forwarder for $member in $clazz unless interface ${owner.name} is directly extended by $clazz."
                     reporter.error(clazz.pos, text)
@@ -295,7 +295,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
                 mixinMember.alias, mixinClass))
             case alias1 =>
               if (alias1.owner.isJavaDefined && alias1.owner.isInterface) {
-                if (!clazz.parentSymbols.contains(alias1.owner)) {
+                if (!clazz.parentSymbolsIterator.contains(alias1.owner)) {
                   val suggestedParent = exitingTyper(clazz.info.baseType(alias1.owner))
                   reporter.error(clazz.pos, s"Unable to implement a super accessor required by trait ${mixinClass.name} unless $suggestedParent is directly extended by $clazz.")
                 } else

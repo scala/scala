@@ -2385,10 +2385,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           StarWithDefaultError(meth)
 
         if (!isPastTyper) {
-          val allParams = meth.paramss.flatten
-          for (p <- allParams) {
+          for (pp <- meth.paramss ; p <- pp){
             for (n <- p.deprecatedParamName) {
-              if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
+              if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
                 DeprecatedParamNameError(p, n)
             }
           }
@@ -4019,8 +4018,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
               reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
           }
-
-          if (annTypeSym == DeprecatedAttr && argss.flatten.size < 2)
+          if (annTypeSym == DeprecatedAttr && sumSize(argss, 0) < 2)
             context.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.", "2.11.0")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
