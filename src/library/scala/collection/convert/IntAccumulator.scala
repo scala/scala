@@ -31,8 +31,8 @@ import scala.collection.{AnyStepper, Factory, IntStepper, Stepper, StepperShape,
  * TODO: doc performance characteristics.
  */
 final class IntAccumulator
-  extends Accumulator[Int, AnyAccumulator, IntAccumulator]
-    with collection.IterableOps[Int, AnyAccumulator, IntAccumulator]
+  extends Accumulator[Int, IntAccumulator]
+    with collection.IterableOps[Int, ({type A[T] = Accumulator[T, IntAccumulator]})#A, IntAccumulator]
     with Serializable {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
   private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
@@ -214,6 +214,9 @@ final class IntAccumulator
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  override protected def fromSpecific(coll: IterableOnce[Int]): IntAccumulator = IntAccumulator.fromSpecific(coll)
+  override protected def newSpecificBuilder: mutable.Builder[Int, IntAccumulator] = IntAccumulator.newBuilder
 
   private def writeReplace(): AnyRef = new IntAccumulator.SerializationProxy(this)
 }

@@ -31,8 +31,8 @@ import scala.collection.{AnyStepper, Factory, LongStepper, Stepper, StepperShape
  * TODO: doc performance characteristics.
  */
 final class LongAccumulator
-  extends Accumulator[Long, AnyAccumulator, LongAccumulator]
-    with collection.IterableOps[Long, AnyAccumulator, LongAccumulator]
+  extends Accumulator[Long, LongAccumulator]
+    with collection.IterableOps[Long, ({type A[T] = Accumulator[T, LongAccumulator]})#A, LongAccumulator]
     with Serializable {
   private[convert] var current: Array[Long] = LongAccumulator.emptyLongArray
   private[convert] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
@@ -209,6 +209,9 @@ final class LongAccumulator
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  override protected def fromSpecific(coll: IterableOnce[Long]): LongAccumulator = LongAccumulator.fromSpecific(coll)
+  override protected def newSpecificBuilder: mutable.Builder[Long, LongAccumulator] = LongAccumulator.newBuilder
 
   private def writeReplace(): AnyRef = new LongAccumulator.SerializationProxy(this)
 }

@@ -36,7 +36,7 @@ import scala.reflect.ClassTag
  * TODO: doc performance characteristics.
  */
 final class AnyAccumulator[A]
-  extends Accumulator[A, AnyAccumulator, AnyAccumulator[A]]
+  extends Accumulator[A, AnyAccumulator[A]]
     with collection.IterableOps[A, AnyAccumulator, AnyAccumulator[A]]
     with Serializable {
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is

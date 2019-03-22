@@ -31,8 +31,8 @@ import scala.collection.{AnyStepper, DoubleStepper, Factory, Stepper, StepperSha
  * TODO: doc performance characteristics.
  */
 final class DoubleAccumulator
-  extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
-    with collection.IterableOps[Double, AnyAccumulator, DoubleAccumulator]
+  extends Accumulator[Double, DoubleAccumulator]
+    with collection.IterableOps[Double, ({type A[T] = Accumulator[T, DoubleAccumulator]})#A, DoubleAccumulator]
     with Serializable {
   private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
   private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
@@ -209,6 +209,9 @@ final class DoubleAccumulator
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  override protected def fromSpecific(coll: IterableOnce[Double]): DoubleAccumulator = DoubleAccumulator.fromSpecific(coll)
+  override protected def newSpecificBuilder: mutable.Builder[Double, DoubleAccumulator] = DoubleAccumulator.newBuilder
 
   private def writeReplace(): AnyRef = new DoubleAccumulator.SerializationProxy(this)
 }
