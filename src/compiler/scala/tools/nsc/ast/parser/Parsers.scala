@@ -2675,7 +2675,7 @@ self =>
         } else {
           accept(EQUALS)
           expr() match {
-            case x if !tp.isEmpty && newmods.isMutable && lhs.toList.forall(_.isInstanceOf[Ident]) && isWildcard(x) =>
+            case x if !tp.isEmpty && newmods.isMutable && lhs.forall(_.isInstanceOf[Ident]) && isWildcard(x) =>
               tp match {
                 case SingletonTypeTree(Literal(Constant(_))) =>
                   syntaxError(tp.pos, "default initialization prohibited for literal-typed vars", skipIt = false)
