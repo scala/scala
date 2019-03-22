@@ -55,7 +55,7 @@ trait StreamExtensions {
 
   // maps
 
-  implicit class MapHasSeqKeyValueStream[K, V](cc: collection.MapOps[K, V, AnyConstr, _]) {
+  implicit class MapHasSeqKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, CC, _]](cc: CC[K, V]) {
     /** Create a sequential [[java.util.stream.Stream Java Stream]] for the keys of this map. If
       * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
@@ -71,11 +71,12 @@ trait StreamExtensions {
       s.fromStepper(cc.valueStepper, par = false)
   }
 
-  private type MapOpsWithEfficientKeyStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def keyStepper[S <: Stepper[_]](implicit shape : StepperShape[K, S]) : S with EfficientSplit }
-  private type MapOpsWithEfficientValueStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape : StepperShape[V1, S]) : S with EfficientSplit }
-  private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, AnyConstr, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSplit }
 
-  implicit class MapHasParKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, AnyConstr, _]](cc: CC[K, V]) {
+  implicit class MapHasParKeyValueStream[K, V, CC[X, Y] <: collection.MapOps[X, Y, CC, _]](cc: CC[K, V]) {
+    private type MapOpsWithEfficientKeyStepper[K, V] = collection.MapOps[K, V, CC, _] { def keyStepper[S <: Stepper[_]](implicit shape : StepperShape[K, S]) : S with EfficientSplit }
+    private type MapOpsWithEfficientValueStepper[K, V] = collection.MapOps[K, V, CC, _] { def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape : StepperShape[V1, S]) : S with EfficientSplit }
+    private type MapOpsWithEfficientStepper[K, V] = collection.MapOps[K, V, CC, _] { def stepper[B >: (K, V), S <: Stepper[_]](implicit shape : StepperShape[B, S]) : S with EfficientSplit }
+
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for the keys of this map. If
       * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
