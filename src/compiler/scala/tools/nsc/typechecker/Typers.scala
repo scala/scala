@@ -26,6 +26,7 @@ import scala.reflect.internal.TypesStats
 import mutable.{ArrayBuffer, ListBuffer}
 import symtab.Flags._
 import Mode._
+import PartialFunction.cond
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -1567,8 +1568,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *    <the same three calls>
      */
     private def typedParentType(encodedtpt: Tree, templ: Template, inMixinPosition: Boolean): Tree = {
-      val app = treeInfo.dissectApplied(encodedtpt)
-      val (treeInfo.Applied(core, _, argss), decodedtpt) = ((app, app.callee))
+      val app @ treeInfo.Applied(core, _, argss) = treeInfo.dissectApplied(encodedtpt)
+      val decodedtpt = app.callee
       val argssAreTrivial = argss == Nil || argss == ListOfNil
 
       // we cannot avoid cyclic references with `initialize` here, because when type macros arrive,
@@ -3937,93 +3938,112 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val annTypeSym = annType.typeSymbol
       val isJava = annType != null && annTypeSym.isJavaDefined
 
+      @inline def constantly = {
+        // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
+        // stored in the `assocs` field of the resulting AnnotationInfo
+        if (argss.lengthIs > 1) {
+          reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
+        } else {
+          // TODO: annType may have undetermined type params -- can we infer them?
+          val annScopeJava =
+            if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
+            else EmptyScope // annScopeJava is only used if isJava
+
+          val names = mutable.Set[Symbol]()
+          names ++= (if (isJava) annScopeJava.iterator
+                     else typedFun.tpe.params.iterator)
+
+          def hasValue = names exists (_.name == nme.value)
+          val namedArgs = argss match {
+            case List(List(arg)) if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
+            case List(args) => args
+          }
+
+          val nvPairs = namedArgs map {
+            case arg @ NamedArg(Ident(name), rhs) =>
+              val sym = if (isJava) annScopeJava.lookup(name)
+                        else findSymbol(typedFun.tpe.params)(_.name == name)
+              if (sym == NoSymbol) {
+                reportAnnotationError(UnknownAnnotationNameError(arg, name))
+                (nme.ERROR, None)
+              } else if (!names.contains(sym)) {
+                reportAnnotationError(DuplicateValueAnnotationError(arg, name))
+                (nme.ERROR, None)
+              } else {
+                names -= sym
+                if (isJava) sym.cookJavaRawInfo() // #3429
+                val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
+                (sym.name, annArg)
+              }
+            case arg =>
+              reportAnnotationError(ClassfileAnnotationsAsNamedArgsError(arg))
+              (nme.ERROR, None)
+          }
+          for (sym <- names) {
+            // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
+            sym.initialize
+            if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefault)
+              reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
+          }
+
+          if (hasError) ErroneousAnnotation
+          else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
+        }
+      }
+      @inline def statically = {
+        val typedAnn: Tree = {
+          // local dummy fixes scala/bug#5544
+          val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
+          localTyper.typed(ann, mode, deriveTypeWithWildcards(context.undetparams)(annType))
+        }
+        def annInfo(t: Tree): AnnotationInfo = t match {
+          case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
+            // `tpt.tpe` is more precise than `annType`, since it incorporates the types of `args`
+            AnnotationInfo(tpt.tpe, args, List()).setOriginal(typedAnn).setPos(t.pos)
+
+          case Block(stats, expr) =>
+            context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
+                              "constructor call into a block. The corresponding AnnotationInfo\n"+
+                              "will contain references to local values and default getters instead\n"+
+                              "of the actual argument trees")
+            annInfo(expr)
+
+          case Apply(fun, args) =>
+            context.warning(t.pos, "Implementation limitation: multiple argument lists on annotations are\n"+
+                                   "currently not supported; ignoring arguments "+ args)
+            annInfo(fun)
+
+          case _ =>
+            reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
+        }
+
+        if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
+        else {
+          val info = annInfo(typedAnn)
+          // check message and since args to deprecated
+          // when deprecated gets more params, those other args may also be defaults.
+          def oneTwoPunch(p: Tree => Boolean) = (0 to 1).exists(info.argAtIndex(_).map(p).getOrElse(false))
+          def usesDefault = oneTwoPunch(treeInfo.isDefaultGetter)
+          def blockUsesDefault = cond(typedAnn) {
+            case Block(vals, _) => oneTwoPunch(cond(_) {
+              case Ident(n) =>
+                vals.exists(cond(_) { case ValDef(_, `n`, _, rhs) => treeInfo.isDefaultGetter(rhs) })
+            })
+          }
+          if (annTypeSym == DeprecatedAttr && argss.head.size < 2 && settings.lintDeprecation)
+            if (usesDefault || blockUsesDefault)
+              context.deprecationWarning(ann.pos, DeprecatedAttr, """Specify both message and version: @deprecated("message", since = "1.0")""", "2.11.0")
+          info
+        }
+      }
+
       finish(
         if (typedFun.isErroneous || annType == null)
           ErroneousAnnotation
-        else if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass)) {
-          // Arguments of Java annotations and ConstantAnnotations are checked to be constants and
-          // stored in the `assocs` field of the resulting AnnotationInfo
-          if (argss.lengthIs > 1) {
-            reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
-          } else {
-            // TODO: annType may have undetermined type params -- can we infer them?
-            val annScopeJava =
-              if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
-              else EmptyScope // annScopeJava is only used if isJava
-
-            val names = mutable.Set[Symbol]()
-            names ++= (if (isJava) annScopeJava.iterator
-                       else typedFun.tpe.params.iterator)
-
-            def hasValue = names exists (_.name == nme.value)
-            val namedArgs = argss match {
-              case List(List(arg)) if !isNamedArg(arg) && hasValue => gen.mkNamedArg(nme.value, arg) :: Nil
-              case List(args) => args
-            }
-
-            val nvPairs = namedArgs map {
-              case arg @ NamedArg(Ident(name), rhs) =>
-                val sym = if (isJava) annScopeJava.lookup(name)
-                          else findSymbol(typedFun.tpe.params)(_.name == name)
-                if (sym == NoSymbol) {
-                  reportAnnotationError(UnknownAnnotationNameError(arg, name))
-                  (nme.ERROR, None)
-                } else if (!names.contains(sym)) {
-                  reportAnnotationError(DuplicateValueAnnotationError(arg, name))
-                  (nme.ERROR, None)
-                } else {
-                  names -= sym
-                  if (isJava) sym.cookJavaRawInfo() // #3429
-                  val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
-                  (sym.name, annArg)
-                }
-              case arg =>
-                reportAnnotationError(ClassfileAnnotationsAsNamedArgsError(arg))
-                (nme.ERROR, None)
-            }
-            for (sym <- names) {
-              // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
-              sym.initialize
-              if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefault)
-                reportAnnotationError(AnnotationMissingArgError(ann, annType, sym))
-            }
-
-            if (hasError) ErroneousAnnotation
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
-          }
-        } else {
-          val typedAnn: Tree = {
-            // local dummy fixes scala/bug#5544
-            val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
-            localTyper.typed(ann, mode, deriveTypeWithWildcards(context.undetparams)(annType))
-          }
-          def annInfo(t: Tree): AnnotationInfo = t match {
-            case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              // `tpt.tpe` is more precise than `annType`, since it incorporates the types of `args`
-              AnnotationInfo(tpt.tpe, args, List()).setOriginal(typedAnn).setPos(t.pos)
-
-            case Block(stats, expr) =>
-              context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
-                                "constructor call into a block. The corresponding AnnotationInfo\n"+
-                                "will contain references to local values and default getters instead\n"+
-                                "of the actual argument trees")
-              annInfo(expr)
-
-            case Apply(fun, args) =>
-              context.warning(t.pos, "Implementation limitation: multiple argument lists on annotations are\n"+
-                                     "currently not supported; ignoring arguments "+ args)
-              annInfo(fun)
-
-            case _ =>
-              reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
-          }
-
-          if (annTypeSym == DeprecatedAttr && argss.flatten.size < 2)
-            context.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.", "2.11.0")
-
-          if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
-          else annInfo(typedAnn)
-        }
+        else if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass))
+          constantly
+        else
+          statically
       )
     }
 
