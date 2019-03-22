@@ -217,7 +217,6 @@ trait Names extends api.Names {
     def toTermName: TermName
     def toTypeName: TypeName
     def companionName: Name
-    def bothNames: List[Name] = List(toTermName, toTypeName)
 
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name with ThisNameType

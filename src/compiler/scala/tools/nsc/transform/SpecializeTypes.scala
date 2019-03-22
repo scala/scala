@@ -563,7 +563,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (env.contains(orig))
         cln modifyInfo (info => TypeBounds(info.lowerBound, AnyRefTpe))
     }
-    cloned map (_ substInfo (syms, cloned))
+    cloned.foreach(_.substInfo(syms, cloned))
+    cloned
   }
 
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
@@ -691,7 +692,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
         // they are never needed.
-        mapParamss(sym)(_ resetFlag DEFAULTPARAM)
+        foreachParamss(sym)(_ resetFlag DEFAULTPARAM)
         decls1 enter subst(fullEnv)(sym)
       }
 
@@ -1190,13 +1191,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv = {
     if (tp1.isEmpty || tp2.isEmpty) env
-    else (tp1 zip tp2).foldLeft(env) { (env, args) =>
-      if (!strict) unify(args._1, args._2, env, strict)
+    else foldLeft2(tp1, tp2)(env) { (env, arg1, arg2) =>
+      if (!strict) unify(arg1, arg2, env, strict)
       else {
-        val nenv = unify(args._1, args._2, emptyEnv, strict)
+        val nenv = unify(arg1, arg2, emptyEnv, strict)
         if (env.keySet.intersect(nenv.keySet).isEmpty) env ++ nenv
         else {
-          debuglog(s"could not unify: u(${args._1}, ${args._2}) yields $nenv, env: $env")
+          debuglog(s"could not unify: u($arg1, $arg2) yields $nenv, env: $env")
           unifyError(tp1, tp2)
         }
       }
@@ -1454,7 +1455,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   def illegalSpecializedInheritance(clazz: Symbol): Boolean = (
        clazz.isSpecialized
-    && originalClass(clazz).parentSymbols.exists(p => hasSpecializedParams(p) && !p.isTrait)
+    && originalClass(clazz).parentSymbolsIterator.exists(p => hasSpecializedParams(p) && !p.isTrait)
   )
 
   class SpecializationTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
@@ -1939,7 +1940,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
       if (hasSpecializedFields) {
-        val isSpecializedInstance = sClass :: sClass.parentSymbols exists (_ hasFlag SPECIALIZED)
+        val isSpecializedInstance = (sClass hasFlag SPECIALIZED) || sClass.parentSymbolsIterator.exists(_ hasFlag SPECIALIZED)
         val sym = sClass.newMethod(nme.SPECIALIZED_INSTANCE, sClass.pos) setInfoAndEnter MethodType(Nil, BooleanTpe)
 
         mbrs += DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanTpe)).setType(NoType)

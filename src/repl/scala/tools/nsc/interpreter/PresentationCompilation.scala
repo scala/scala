@@ -13,6 +13,7 @@
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.{Position, RangePosition, StringOps}
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{CloseableRegistry, Settings, interactive}
@@ -96,9 +97,12 @@ trait PresentationCompilation { self: IMain =>
     }
     import compiler.CompletionResult
 
-    def completionsAt(cursor: Int): CompletionResult = compiler.completionsAt(unit.source.position(cursor))
+    def completionsAt(cursor: Int): CompletionResult = compiler.completionsAt(positionOf(cursor))
 
-    def typedTreeAt(code: String, selectionStart: Int, selectionEnd: Int): compiler.Tree =
+    def positionOf(cursor: Int): Position =
+      unit.source.position(cursor)
+
+    def typedTreeAt(selectionStart: Int, selectionEnd: Int): compiler.Tree =
       compiler.typedTreeAt(new RangePosition(unit.source, selectionStart, selectionStart, selectionEnd))
 
     // offsets are 0-based
@@ -127,7 +131,7 @@ trait PresentationCompilation { self: IMain =>
 
 
     override def typeAt(start: Int, end: Int) =
-      typeString(typedTreeAt(buf, start, end))
+      typeString(typedTreeAt(start, end))
 
     val NoCandidates = (-1, Nil)
     type Candidates = (Int, List[String])
@@ -136,11 +140,11 @@ trait PresentationCompilation { self: IMain =>
       import compiler._
       import CompletionResult.NoResults
 
-      def defStringCandidates(matching: List[Member], name: Name): Candidates = {
+      def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean): Candidates = {
         val defStrings = for {
           member <- matching
           if member.symNameDropLocal == name
-          sym <- member.sym.alternatives
+          sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
           val tp = member.prefix memberType sym
@@ -167,8 +171,24 @@ trait PresentationCompilation { self: IMain =>
           val matching = r.matchingResults().filterNot(shouldHide)
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(inputRange.start, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
-          if (tabAfterCommonPrefixCompletion || doubleTab) defStringCandidates(matching, r.name)
-          else if (matching.isEmpty) {
+          if (tabAfterCommonPrefixCompletion || doubleTab) {
+            val pos1 = positionOf(cursor)
+            import compiler._
+            val locator = new Locator(pos1)
+            val tree = locator locateIn unit.body
+            var isNew = false
+            new TreeStackTraverser {
+              override def traverse(t: Tree): Unit = {
+                if (t eq tree) {
+                  isNew = path.dropWhile { case _: Select | _: Annotated => true; case _ => false}.headOption match {
+                    case Some(_: New) => true
+                    case _ => false
+                  }
+                } else super.traverse(t)
+              }
+            }.traverse(unit.body)
+            defStringCandidates(matching, r.name, isNew)
+          } else if (matching.isEmpty) {
             // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
             val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
             val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted

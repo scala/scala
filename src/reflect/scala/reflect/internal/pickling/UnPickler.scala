@@ -250,6 +250,9 @@ abstract class UnPickler {
           else NoSymbol
         }
 
+        if (owner == definitions.ScalaPackageClass && name == tpnme.AnyRef)
+          return definitions.AnyRefClass
+
         // (1) Try name.
         localDummy orElse fromName(name) orElse {
           // (2) Try with expanded name.  Can happen if references to private

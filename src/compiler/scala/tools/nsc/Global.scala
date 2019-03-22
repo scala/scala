@@ -398,12 +398,16 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
     def apply(unit: CompilationUnit): Unit
 
+    // run only the phases needed
+    protected def shouldSkipThisPhaseForJava: Boolean = {
+      this.id > (if (createJavadoc) currentRun.typerPhase.id
+      else currentRun.namerPhase.id)
+    }
+
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
-      // run the typer only if in `createJavadoc` mode
-      val maxJavaPhase = if (createJavadoc) currentRun.typerPhase.id else currentRun.namerPhase.id
       if (Thread.interrupted()) reporter.cancelled = true
-      reporter.cancelled || unit.isJava && this.id > maxJavaPhase
+      reporter.cancelled || unit.isJava && shouldSkipThisPhaseForJava
     }
 
     private def beforeUnit(unit: CompilationUnit): Unit = {
@@ -1723,7 +1727,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
   def createJavadoc    = false
 
-  final val closeableRegistry: CloseableRegistry = new CloseableRegistry
+  final lazy val closeableRegistry: CloseableRegistry = new CloseableRegistry
 
   def close(): Unit = {
     perRunCaches.clearAll()

@@ -150,12 +150,19 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         this.staticModule = module
         this.isScala      = false
 
-        parseHeader()
-        this.pool = new ConstantPool
-        parseClass()
-        pool = null
-        in = null
+        val magic = in.getInt(in.bp)
+        if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
+          currentClass = clazz.javaClassName
+          isScala = true
+          unpickler.unpickle(in.buf, 0, clazz, staticModule, file.name)
+        } else {
+          parseHeader()
+          this.pool = new ConstantPool
+          parseClass()
+          pool = null
+        }
       }
+      in = null
     }
   }
 

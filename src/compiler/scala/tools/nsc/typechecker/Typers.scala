@@ -671,6 +671,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
+    @deprecated("Use the overload accepting a Type.", "2.12.9")
+    def member(qual: Tree, name: Name): Symbol = member(qual.tpe, name)
     /** The member with given name of given qualifier type */
     def member(qual: Type, name: Name): Symbol = {
       def callSiteWithinClass(clazz: Symbol) = context.enclClass.owner hasTransOwner clazz
@@ -2101,7 +2103,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     // use typedValDef instead. this version is called after creating a new context for the ValDef
-    private def typedValDefImpl(vdef: ValDef) = {
+    private def typedValDefImpl(vdef: ValDef): ValDef = {
       val sym = vdef.symbol.initialize
       val typedMods = if (nme.isLocalName(sym.name) && sym.isPrivateThis && !vdef.mods.isPrivateLocal) {
         // scala/bug#10009 This tree has been given a field symbol by `enterGetterSetter`, patch up the
@@ -2384,10 +2386,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           StarWithDefaultError(meth)
 
         if (!isPastTyper) {
-          val allParams = meth.paramss.flatten
-          for (p <- allParams) {
+          for (pp <- meth.paramss ; p <- pp){
             for (n <- p.deprecatedParamName) {
-              if (allParams.exists(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
+              if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
                 DeprecatedParamNameError(p, n)
             }
           }
@@ -3511,13 +3512,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def handleOverloaded = {
             val undetparams = context.undetparams
 
-            val (args1, argTpes) = context.savingUndeterminedTypeParams() {
+            val argTpes: ListBuffer[Type] = ListBuffer.empty[Type]
+            val args1: List[Tree] = context.savingUndeterminedTypeParams() {
               val amode = forArgMode(fun, mode)
 
               mapWithIndex(args) { (arg, argIdx) =>
                 def typedArg0(tree: Tree, argIdxOrName: Either[Int, Name] = Left(argIdx)) = {
-                  val argTyped = typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts))
-                  (argTyped, argTyped.tpe.deconst)
+                  typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts))
                 }
 
                 arg match {
@@ -3528,22 +3529,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   case NamedArg(lhs@Ident(name), rhs) =>
                     // named args: only type the righthand sides ("unknown identifier" errors otherwise)
                     // the assign is untyped; that's ok because we call doTypedApply
-                    typedArg0(rhs, Right(name)) match {
-                      case (rhsTyped, tp) => (treeCopy.NamedArg(arg, lhs, rhsTyped), NamedType(name, tp))
-                    }
+                    val rhsTyped = typedArg0(rhs, Right(name))
+                    argTpes += NamedType(name, rhsTyped.tpe.deconst)
+                    treeCopy.NamedArg(arg, lhs, rhsTyped)
                   case treeInfo.WildcardStarArg(_) =>
-                    typedArg0(arg) match {
-                      case (argTyped, tp) => (argTyped, RepeatedType(tp))
-                    }
+                    val argTyped = typedArg0(arg)
+                    argTpes += RepeatedType(argTyped.tpe.deconst)
+                    argTyped
                   case _ =>
-                    typedArg0(arg)
+                    val argTyped = typedArg0(arg)
+                    argTpes += argTyped.tpe.deconst
+                    argTyped
                 }
-              }.unzip
+              }
             }
             if (context.reporter.hasErrors)
               setError(tree)
             else {
-              inferMethodAlternative(fun, undetparams, argTpes, pt)
+              inferMethodAlternative(fun, undetparams, argTpes.toList, pt)
               doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
             }
           }
@@ -4812,28 +4815,29 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           // TODO: case to recurse into Function?
-          def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
-            case Block(_, r)                        => treesInResult(r)
-            case Match(_, cases)                    => cases
-            case CaseDef(_, _, r)                   => treesInResult(r)
-            case Annotated(_, r)                    => treesInResult(r)
-            case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
-            case Try(b, catches, _)                 => treesInResult(b) ++ catches
-            case MethodValue(r)                     => treesInResult(r)
-            case Select(qual, name)                 => treesInResult(qual)
-            case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
-            case _                                  => Nil
-          })
           /* Only retry if the error hails from a result expression of `tree`
            * (for instance, it makes no sense to retry on an error from a block statement)
            * compare with `samePointAs` since many synthetic trees are made with
            * offset positions even under -Yrangepos.
            */
-          def errorInResult(tree: Tree) =
-            treesInResult(tree).exists(err => typeErrors.exists(_.errPos samePointAs err.pos))
-
-          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
+          def errorInResult(tree: Tree): Boolean = {
+            def pred(tree: Tree) = typeErrors.exists(_.errPos samePointAs tree.pos)
+            def loop(tree: Tree): Boolean = pred(tree) || (tree match {
+              case Block(_, r)          => loop(r)
+              case Match(_, cases)      => cases.exists(pred)
+              case CaseDef(_, _, r)     => loop(r)
+              case Annotated(_, r)      => loop(r)
+              case If(_, t, e)          => loop(t) || loop(e)
+              case Try(b, catches, _)   => loop(b) || catches.exists(pred)
+              case MethodValue(r)       => loop(r)
+              case Select(qual, name)   => loop(qual)
+              case Apply(fun, args)     => loop(fun) || args.exists(loop)
+              case TypeApply(fun, args) => loop(fun) || args.exists(loop)
+              case _                    => false
+            })
+            loop(tree)
+          }
+          val retry = typeErrors.forall(_.errPos != null) && (errorInResult(fun) || errorInResult(tree) || args.exists(errorInResult))
           typingStack.printTyping({
             val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
             if (retry) "second try: " + funStr

@@ -157,8 +157,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         if (mix == tpnme.EMPTY && !owner.isTrait) {
           // scala/bug#4989 Check if an intermediate class between `clazz` and `owner` redeclares the method as abstract.
           val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != owner)
-          intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
-            absSym =>
+          intermediateClasses.foreach { icls =>
+            val absSym = sym.overridingSymbol(icls)
+            if (absSym.isDeferred && !absSym.isAbstractOverride && !absSym.owner.isTrait)
               reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from $clazz because ${absSym.owner} redeclares it as abstract")
           }
         }
@@ -184,8 +185,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           // There is no test left for this warning, as I have been unable to come up with an example that would trigger it.
           // For a `super.m` selection, there must be a direct parent from which `m` can be selected. This parent will be used
           // as receiver in the invokespecial call.
-          val receiverInBytecode = erasure.accessibleOwnerOrParentDefiningMember(sym, sup.tpe.typeSymbol.parentSymbols, localTyper.context.asInstanceOf[erasure.Context]).getOrElse(sym.owner)
-          if (!clazz.parentSymbols.contains(receiverInBytecode))
+          val receiverInBytecode = erasure.accessibleOwnerOrParentDefiningMember(sym, sup.tpe.typeSymbol.parentSymbolsIterator, localTyper.context.asInstanceOf[erasure.Context]).getOrElse(sym.owner)
+          if (!clazz.parentSymbolsIterator.contains(receiverInBytecode))
             reporter.error(sel.pos, s"unable to emit super call unless interface ${owner.name} (which declares $sym) is directly extended by $clazz.")
         }
       }
@@ -480,9 +481,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val code = DefDef(newAcc, {
           val (receiver :: _) :: tail = newAcc.paramss
           val base: Tree              = Select(Ident(receiver), sym)
-          val allParamTypes           = mapParamss(sym)(_.tpe)
-          val args = map2(tail, allParamTypes)((params, tpes) => map2(params, tpes)(makeArg(_, receiver, _)))
-          args.foldLeft(base)(Apply(_, _))
+          foldLeft2(tail, sym.info.paramss)(base){ (acc, params, pps) =>
+            val y = map2(params, pps)( (param, pp) =>  makeArg(param, receiver, pp.tpe))
+            Apply(acc, y)
+          }
         })
 
         debuglog("created protected accessor: " + code)

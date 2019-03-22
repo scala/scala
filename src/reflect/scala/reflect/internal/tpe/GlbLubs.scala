@@ -449,30 +449,34 @@ private[internal] trait GlbLubs {
       try {
         val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
         val glbOwner = commonOwner(ts)
-        def refinedToParents(t: Type): List[Type] = t match {
-          case RefinedType(ps, _) => ps flatMap refinedToParents
-          case _ => List(t)
+        val ts1 = {
+          val res = mutable.ListBuffer.empty[Type]
+          def loop(ty: Type): Unit = ty match {
+            case RefinedType(ps, _) => ps.foreach(loop)
+            case _ => res += ty
+          }
+          ts foreach loop
+          res.toList
         }
-        def refinedToDecls(t: Type): List[Scope] = t match {
-          case RefinedType(ps, decls) =>
-            val dss = ps flatMap refinedToDecls
-            if (decls.isEmpty) dss else decls :: dss
-          case _ => List()
-        }
-        val ts1 = ts flatMap refinedToParents
-        val glbBase = intersectionType(ts1, glbOwner)
         val glbType =
-          if (phase.erasedTypes || depth.isZero) glbBase
+          if (phase.erasedTypes || depth.isZero)
+            intersectionType(ts1, glbOwner)
           else {
             val glbRefined = refinedType(ts1, glbOwner)
             val glbThisType = glbRefined.typeSymbol.thisType
             def glbsym(proto: Symbol): Symbol = {
               val prototp = glbThisType.memberInfo(proto)
-              val syms = for (t <- ts;
-                              alt <- (t.nonPrivateMember(proto.name).alternatives)
-                              if glbThisType.memberInfo(alt) matches prototp
-              ) yield alt
-              val symtypes = syms map glbThisType.memberInfo
+              val symtypes: List[Type] = {
+                val res = mutable.ListBuffer.empty[Type]
+                ts foreach { t =>
+                  t.nonPrivateMember(proto.name).alternatives foreach { alt =>
+                    val mi = glbThisType.memberInfo(alt)
+                    if (mi matches prototp)
+                      res += mi
+                  }
+                }
+                res.toList
+              }
               assert(!symtypes.isEmpty)
               proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
                 if (proto.isTerm) glb(symtypes, depth.decr)
@@ -501,18 +505,25 @@ private[internal] trait GlbLubs {
             if (globalGlbDepth < globalGlbLimit)
               try {
                 globalGlbDepth = globalGlbDepth.incr
-                val dss = ts flatMap refinedToDecls
-                for (ds <- dss; sym <- ds.iterator)
-                  if (globalGlbDepth < globalGlbLimit && !specializesSym(glbThisType, sym, depth))
-                    try {
-                      addMember(glbThisType, glbRefined, glbsym(sym), depth)
-                    } catch {
-                      case ex: NoCommonType =>
-                    }
+                def foreachRefinedDecls(ty: Type): Unit = ty match {
+                  case RefinedType(ps, decls) =>
+                    ps foreach foreachRefinedDecls
+                    if (! decls.isEmpty)
+                      decls.iterator.foreach { sym =>
+                        if (globalGlbDepth < globalGlbLimit && !specializesSym(glbThisType, sym, depth))
+                          try {
+                            addMember(glbThisType, glbRefined, glbsym(sym), depth)
+                          } catch {
+                            case ex: NoCommonType =>
+                          }
+                      }
+                  case _ =>
+                }
+                ts foreach foreachRefinedDecls
               } finally {
                 globalGlbDepth = globalGlbDepth.decr
               }
-            if (glbRefined.decls.isEmpty) glbBase else glbRefined
+            if (glbRefined.decls.isEmpty) intersectionType(ts1, glbOwner) else glbRefined
           }
         existentialAbstraction(tparams, glbType)
       } catch {

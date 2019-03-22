@@ -944,7 +944,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def isAndroidParcelableClass(sym: Symbol) =
       (AndroidParcelableInterface != NoSymbol) &&
-      (sym.parentSymbols contains AndroidParcelableInterface)
+      (sym.parentSymbolsIterator contains AndroidParcelableInterface)
 
     /*
      * must-single-thread

@@ -18,7 +18,7 @@ import java.util.Objects
 
 import scala.collection.{immutable, mutable}
 import scala.ref.WeakReference
-import mutable.ListBuffer
+import mutable.{ListBuffer, LinkedHashSet}
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
@@ -1815,18 +1815,17 @@ trait Types
     private def normalizeImpl = {
       // TODO see comments around def intersectionType and def merge
       // scala/bug#8575 The dealias is needed here to keep subtyping transitive, example in run/t8575b.scala
-      def flatten(tps: List[Type]): List[Type] = {
-        def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
-        tps map dealiasRefinement flatMap {
-          case RefinedType(parents, ds) if ds.isEmpty => flatten(parents)
-          case tp => List(tp)
-        }
+      val flattened: LinkedHashSet[Type] = LinkedHashSet.empty[Type]
+      def dealiasRefinement(tp: Type) = if (tp.dealias.isInstanceOf[RefinedType]) tp.dealias else tp
+      def loop(tp: Type): Unit = dealiasRefinement(tp) match {
+        case RefinedType(parents, ds) if ds.isEmpty => parents.foreach(loop)
+        case tp => flattened.add(tp)
       }
-      val flattened = flatten(parents).distinct
-      if (decls.isEmpty && hasLength(flattened, 1)) {
+      parents foreach loop
+      if (decls.isEmpty && flattened.size == 1) {
         flattened.head
-      } else if (flattened != parents) {
-        refinedType(flattened, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
+      } else if (!flattened.sameElements(parents)) {
+        refinedType(flattened.toList, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
       } else if (isHigherKinded) {
         etaExpand
       } else super.normalize
@@ -3636,7 +3635,7 @@ trait Types
             (tp.parents exists unifyFull) || (
               // @PP: Is it going to be faster to filter out the parents we just checked?
               // That's what's done here but I'm not sure it matters.
-              tp.baseTypeSeq.toList.tail filterNot (tp.parents contains _) exists unifyFull
+              tp.baseTypeSeq.toIterator.drop(1).exists(bt => !tp.parents.contains(bt) && unifyFull(bt))
             )
           )
         )
@@ -4322,7 +4321,8 @@ trait Types
     val eparams = tparams map (tparam =>
       clazz.newExistential(tparam.name.toTypeName, clazz.pos) setInfo tparam.info.bounds)
 
-    eparams map (_ substInfo (tparams, eparams))
+    eparams foreach (_.substInfo(tparams, eparams))
+    eparams
   }
   def typeParamsToExistentials(clazz: Symbol): List[Symbol] =
     typeParamsToExistentials(clazz, clazz.typeParams)

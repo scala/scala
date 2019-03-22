@@ -24,7 +24,7 @@ object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
     def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.name)
 
-    def isClass: Boolean = !file.isDirectory && file.hasExtension("class")
+    def isClass: Boolean = !file.isDirectory && (file.hasExtension("class") || file.hasExtension("sig"))
 
     def isScalaOrJavaSource: Boolean = !file.isDirectory && (file.hasExtension("scala") || file.hasExtension("java"))
 

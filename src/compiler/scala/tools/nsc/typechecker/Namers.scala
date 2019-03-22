@@ -569,7 +569,8 @@ trait Namers extends MethodSynthesis {
       def checkSelector(s: ImportSelector) = {
         val ImportSelector(from, fromPos, to, _) = s
         def isValid(original: Name) =
-          original.bothNames forall (x => (base nonLocalMember x) == NoSymbol)
+          (base nonLocalMember original.toTermName) == NoSymbol &&
+            (base nonLocalMember original.toTypeName) == NoSymbol
 
         if (!s.isWildcard && base != ErrorType) {
           if (isValid(from)) {
@@ -618,8 +619,8 @@ trait Namers extends MethodSynthesis {
         val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
         val classParamss = constructorType.paramss
 
-        map2(copyDef.vparamss, classParamss)((copyParams, classParams) =>
-          map2(copyParams, classParams)((copyP, classP) =>
+        foreach2(copyDef.vparamss, classParamss)((copyParams, classParams) =>
+          foreach2(copyParams, classParams)((copyP, classP) =>
             copyP.tpt setType subst(classP.tpe)
           )
         )

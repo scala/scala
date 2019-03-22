@@ -16,6 +16,7 @@ package reflect.internal.util
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
+import java.util.NoSuchElementException
 import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
@@ -162,6 +163,19 @@ trait Collections {
     if (lb eq null) Nil else lb.result
   }
 
+  // compare to foldLeft[A, B](xs)
+  final def foldLeft2[A1, A2, B](xs1: List[A1], xs2: List[A2])(z0: B)(f: (B, A1, A2) => B): B = {
+    var ys1 = xs1
+    var ys2 = xs2
+    var res = z0
+    while (!ys1.isEmpty && !ys2.isEmpty) {
+      res = f(res, ys1.head, ys2.head)
+      ys1 = ys1.tail
+      ys2 = ys2.tail
+    }
+    res
+  }
+
   final def flatCollect[A, B](elems: List[A])(pf: PartialFunction[A, Iterable[B]]): List[B] = {
     val lb = new ListBuffer[B]
     for (x <- elems ; if pf isDefinedAt x)
@@ -299,6 +313,29 @@ trait Collections {
     true
   }
 
+  final def mapFilter2[A, B, C](itA: Iterator[A], itB: Iterator[B])(f: (A, B) => Option[C]): Iterator[C] =
+    new Iterator[C] {
+      private[this] var head: Option[C] = None
+      private[this] def advanceHead(): Unit =
+        while (head.isEmpty && itA.hasNext && itB.hasNext) {
+          val x = itA.next
+          val y = itB.next
+          head = f(x, y)
+        }
+
+      def hasNext: Boolean = {
+        advanceHead()
+        ! head.isEmpty
+      }
+
+      def next(): C = {
+        advanceHead()
+        val res = head getOrElse (throw new NoSuchElementException("next on empty Iterator"))
+        head = None
+        res
+      }
+    }
+
   // "Opt" suffix or traverse clashes with the various traversers' traverses
   final def sequenceOpt[A](as: List[Option[A]]): Option[List[A]] = traverseOpt(as)(identity)
   final def traverseOpt[A, B](as: List[A])(f: A => Option[B]): Option[List[B]] =
@@ -357,6 +394,9 @@ trait Collections {
   /** Again avoiding calling length, but the lengthCompare interface is clunky.
     */
   final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
+
+  @tailrec final def sumSize(xss: List[List[_]], acc: Int): Int =
+    if (xss.isEmpty) acc else sumSize(xss.tail, acc + xss.head.size)
 }
 
 object Collections extends Collections

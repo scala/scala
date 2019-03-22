@@ -39,6 +39,8 @@ final class ReusableDataReader() extends DataReader {
     new DataInputStream(stream)
   }
 
+  def buf: Array[Byte] = data
+
   private def nextPositivePowerOfTwo(target: Int): Int = 1 << -Integer.numberOfLeadingZeros(target - 1)
 
   def reset(file: scala.reflect.io.AbstractFile): this.type = {
