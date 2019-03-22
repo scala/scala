@@ -160,7 +160,10 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
 
   override protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable =
     if (zipFile.file == null) createWithoutUnderlyingFile(zipFile)
-    else ZipArchiveClassPath(zipFile.file, release)
+    else {
+      JrtClassPath
+      ZipArchiveClassPath(zipFile.file, release)
+    }
 
   private def createWithoutUnderlyingFile(zipFile: AbstractFile) = zipFile match {
     case manifestRes: ManifestResources =>
