@@ -15,6 +15,7 @@ package collection
 package mutable
 
 import scala.collection.generic.DefaultSerializable
+import java.util.Arrays
 
 /** An implementation of the `Buffer` class using an array to
   *  represent the assembled sequence internally. Append, update and random
@@ -44,7 +45,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with DefaultSerializable {
 
-  def this() = this(new Array[AnyRef](16), 0)
+  def this() = this(new Array[AnyRef](ArrayBuffer.DefaultInitialSize), 0)
 
   def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
 
@@ -55,15 +56,35 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int): Unit =
-    array = RefArrayUtils.ensureSize(array, size0, n)
+    array = ArrayBuffer.ensureSize(array, size0, n)
 
   def sizeHint(size: Int): Unit =
     if(size > length && size >= 1) ensureSize(size)
 
   /** Reduce length to `n`, nulling out all dropped elements */
   private def reduceToSize(n: Int): Unit = {
-    RefArrayUtils.nullElems(array, n, size0)
+    Arrays.fill(array, n, size0, null)
     size0 = n
+  }
+
+  /** Trims the ArrayBuffer to an appropriate size for the current number of elements (rounding up to the next
+    * natural size), which may replace the array by a shorter one. This allows releasing some unused memory. */
+  def trimToSize(): Unit = resize(length)
+
+  /** Trims the `array` buffer size down to either a power of 2
+    * or Int.MaxValue while keeping first `requiredLength` elements. */
+  private[this] def resize(requiredLength: Int): Unit = {
+    var newSize: Long = array.length
+    if (newSize == Int.MaxValue) {
+      newSize += 1 // ensure that newSize is a power of 2
+    }
+    val minLength = ArrayBuffer.DefaultInitialSize max requiredLength
+    while (newSize / 2 >= minLength) newSize /= 2
+    if (newSize != array.length && newSize < Int.MaxValue) {
+      val newArray: Array[AnyRef] = new Array(newSize.toInt)
+      Array.copy(array, 0, newArray, 0, requiredLength)
+      array = newArray
+    }
   }
 
   @inline private def checkWithinBounds(lo: Int, hi: Int) = {
@@ -87,7 +108,21 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override def iterableFactory: SeqFactory[ArrayBuffer] = ArrayBuffer
 
+  /** Note: This does not actually resize the internal representation.
+    * See clearAndShrink if you want to also resize internally
+    */
   def clear(): Unit = reduceToSize(0)
+
+  /**
+    * Clears this buffer and shrinks to @param size (rounding up to the next
+    * natural size)
+    * @param size
+    */
+  def clearAndShrink(size: Int = ArrayBuffer.DefaultInitialSize): this.type = {
+    clear()
+    resize(size)
+    this
+  }
 
   def addOne(elem: A): this.type = {
     val i = size0
@@ -146,6 +181,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     }
   }
 
+  /** Note: This does not actually resize the internal representation.
+    * See trimToSize if you want to also resize internally
+    */
   def remove(@deprecatedName("n", "2.13.0") index: Int): A = {
     checkWithinBounds(index, index + 1)
     val res = this(index)
@@ -154,6 +192,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     res
   }
 
+  /** Note: This does not actually resize the internal representation.
+    * See trimToSize if you want to also resize internally
+    */
   def remove(@deprecatedName("n", "2.13.0") index: Int, count: Int): Unit =
     if (count > 0) {
       checkWithinBounds(index, index + count)
@@ -206,16 +247,19 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   */
 @SerialVersionUID(3L)
 object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
+  final val DefaultInitialSize = 16
 
   // Avoid reallocation of buffer if length is known.
-  def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] =
-    if (coll.knownSize >= 0) {
-      val array = new Array[AnyRef](coll.knownSize)
+  def from[B](coll: collection.IterableOnce[B]): ArrayBuffer[B] = {
+    val k = coll.knownSize
+    if (k >= 0) {
+      val array = new Array[AnyRef](k max DefaultInitialSize)
       val it = coll.iterator
-      for (i <- 0 until array.length) array(i) = it.next().asInstanceOf[AnyRef]
-      new ArrayBuffer[B](array, array.length)
+      for (i <- 0 until k) array(i) = it.next().asInstanceOf[AnyRef]
+      new ArrayBuffer[B](array, k)
     }
     else new ArrayBuffer[B] ++= coll
+  }
 
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] =
     new GrowableBuilder[A, ArrayBuffer[A]](empty) {
@@ -223,22 +267,12 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     }
 
   def empty[A]: ArrayBuffer[A] = new ArrayBuffer[A]()
-}
 
-final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
-  @throws[ArrayIndexOutOfBoundsException]
-  def apply(n: Int) = if (n < length) array(n).asInstanceOf[A] else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${length - 1})")
-  override protected[this] def className = "ArrayBufferView"
-}
-
-/** An object used internally by collections backed by an extensible Array[AnyRef] */
-object RefArrayUtils {
-
-  def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
+  private def ensureSize(array: Array[AnyRef], end: Int, n: Int): Array[AnyRef] = {
     // Use a Long to prevent overflows
     val arrayLength: Long = array.length
     def growArray = {
-      var newSize: Long = math.max(arrayLength * 2, 8)
+      var newSize: Long = math.max(arrayLength * 2, DefaultInitialSize)
       while (n > newSize)
         newSize = newSize * 2
       // Clamp newSize to Int.MaxValue
@@ -253,16 +287,10 @@ object RefArrayUtils {
     }
     if (n <= arrayLength) array else growArray
   }
+}
 
-  /** Remove elements of this array at indices after `sz`.
-   */
-  def nullElems(array: Array[AnyRef], start: Int, end: Int): Unit = {
-    // Maybe use `fill` instead?
-    var i = start
-    while (i < end) {
-      array(i) = null
-      i += 1
-    }
-  }
-
+final class ArrayBufferView[A](val array: Array[AnyRef], val length: Int) extends AbstractIndexedSeqView[A] {
+  @throws[ArrayIndexOutOfBoundsException]
+  def apply(n: Int) = if (n < length) array(n).asInstanceOf[A] else throw new IndexOutOfBoundsException(s"$n is out of bounds (min 0, max ${length - 1})")
+  override protected[this] def className = "ArrayBufferView"
 }
