@@ -1213,9 +1213,8 @@ abstract class RefChecks extends Transform {
           reporter.error(tree0.pos, ex.getMessage())
           if (settings.explaintypes) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
-            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(bound.lo, targ))
-            argtps.lazyZip(bounds).foreach((targ, bound) => explainTypes(targ, bound.hi))
-            ()
+            foreach2(argtps, bounds)((targ, bound) => explainTypes(bound.lo, targ))
+            foreach2(argtps, bounds)((targ, bound) => explainTypes(targ, bound.hi))
           }
       }
     private def isIrrefutable(pat: Tree, seltpe: Type): Boolean = pat match {

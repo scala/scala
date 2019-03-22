@@ -224,8 +224,8 @@ trait TypeDiagnostics {
         val params    = req.typeConstructor.typeParams
 
         if (foundArgs.nonEmpty && foundArgs.length == reqArgs.length) {
-          val relationships = foundArgs.lazyZip(reqArgs).lazyZip(params).map {
-            case (arg, reqArg, param) =>
+          val relationships = map3(foundArgs, reqArgs, params){
+            (arg, reqArg, param) =>
               def mkMsg(isSubtype: Boolean) = {
                 val op      = if (isSubtype) "<:" else ">:"
                 val suggest = if (isSubtype) "+" else "-"

@@ -24,6 +24,7 @@
   <component name="InspectionProjectProfileManager">
     <profile version="1.0">
       <option value="Project Default" name="myName"/>
+      <inspection_tool enabled_by_default="false" level="WARNING" enabled="false" class="EmptyCheck"/>
     </profile>
     <version value="1.0"/>
   </component>

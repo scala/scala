@@ -1778,7 +1778,7 @@ trait Contexts { self: Analyzer =>
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case Nil => Nil
       case sel :: Nil if sel.isWildcard => List(sym)
-      case (sel @ ImportSelector(from, _, to, _)) :: _ if from == sym.name =>
+      case (sel @ ImportSelector(from, _, to, _)) :: _ if from == (if (from.isTermName) sym.name.toTermName else sym.name.toTypeName) =>
         if (sel.isMask) Nil
         else List(sym.cloneSymbol(sym.owner, sym.rawflags, to))
       case _ :: rest => transformImport(rest, sym)
