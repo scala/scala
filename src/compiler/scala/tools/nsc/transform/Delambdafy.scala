@@ -114,7 +114,11 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
       val samBridges = logResultIf[List[Symbol]](s"will add SAM bridges for $fun", _.nonEmpty) {
         userSamCls.fold[List[Symbol]](Nil) {
-          _.info.findMembers(excludedFlags = 0L, requiredFlags = BRIDGE).toList
+          _.info.findMember(sam.name, excludedFlags = 0L, requiredFlags = BRIDGE, stableOnly = false) match {
+            case NoSymbol => Nil
+            case bridges if bridges.isOverloaded => bridges.alternatives
+            case bridge => bridge :: Nil
+          }
         }
       }
 
