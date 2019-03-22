@@ -2724,7 +2724,7 @@ trait Types
           }
         case _ if isShowAsInfixType                    => infixTypeString
         case _ if isTupleTypeDirect(this)              => tupleTypeString
-        case _ if sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias)
+        case _ if sym.isAliasType && (this ne dealias) && prefixChain.exists(_.termSymbol.isSynthetic)
                                                        => "" + dealias
         case _                                         => ""
     }
