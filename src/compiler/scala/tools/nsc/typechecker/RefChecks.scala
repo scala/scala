@@ -650,20 +650,23 @@ abstract class RefChecks extends Transform {
               // but differs in one param or param list.
               val abstractParamLists = underlying.paramLists
               val matchingName       = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
-              val matchingArity      = matchingName.filter { m => !m.isDeferred &&
+              val matchingArity      = matchingName.filter { m =>
+                !m.isDeferred &&
                 m.name == underlying.name &&
-                m.paramLists.length == abstractParamLists.length &&
-                m.paramLists.map(_.length).sum == abstractParamLists.map(_.length).sum &&
-                m.tpe.typeParams.size == underlying.tpe.typeParams.size
+                sameLength(m.paramLists, abstractParamLists) &&
+                sumSize(m.paramLists, 0) == sumSize(abstractParamLists, 0) &&
+                sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
               }
 
               matchingArity match {
                 // So far so good: only one candidate method
                 case Scope(concrete) =>
-                  val sideBySide = abstractParamLists.flatten.map(_.tpe) zip concrete.paramLists.flatten.map(_.tpe)
-                  val mismatches = sideBySide.filterNot {
-                    case (abs, konkret) => abs.asSeenFrom(clazz.tpe, underlying.owner) =:= konkret
-                  }
+                  val aplIter = abstractParamLists .iterator.flatten
+                  val cplIter = concrete.paramLists.iterator.flatten
+                  def mismatch(apl: Symbol, cpl: Symbol): Option[(Type, Type)] =
+                    if (apl.tpe =:= cpl.tpe) None else Some(apl.tpe -> cpl.tpe)
+
+                  val mismatches = mapFilter2(aplIter, cplIter)(mismatch).take(2).toList
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
@@ -1331,9 +1334,9 @@ abstract class RefChecks extends Transform {
       }
 
       // types of the value parameters
-      mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
+      foreachParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.upperBound.widen) foreach checkAccessibilityOfType
+      member.typeParams.foreach(tp => checkAccessibilityOfType(tp.info.upperBound.widen))
     }
 
     /** Check that a deprecated val or def does not override a

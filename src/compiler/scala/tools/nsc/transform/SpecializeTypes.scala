@@ -563,7 +563,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (env.contains(orig))
         cln modifyInfo (info => TypeBounds(info.lowerBound, AnyRefTpe))
     }
-    cloned map (_ substInfo (syms, cloned))
+    cloned.foreach(_.substInfo(syms, cloned))
+    cloned
   }
 
   /** Maps AnyRef bindings from a raw environment (holding AnyRefs) into type parameters from
@@ -691,7 +692,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
         // they are never needed.
-        mapParamss(sym)(_ resetFlag DEFAULTPARAM)
+        foreachParamss(sym)(_ resetFlag DEFAULTPARAM)
         decls1 enter subst(fullEnv)(sym)
       }
 
