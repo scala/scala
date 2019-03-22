@@ -48,7 +48,7 @@ trait StreamExtensions {
     def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[A, S, St],
         st: StepperShape[A, St],
-        @implicitNotFound("`parStream` can only be called on collections where `stepper` returns a `Stepper with EfficientSubstep`")
+        @implicitNotFound("`parStream` can only be called on collections where `stepper` returns a `Stepper with EfficientSplit`")
         isEfficient: C <:< IterableOnceWithEfficientStepper[A]): S =
       s.fromStepper(ev(c).stepper, par = true)
   }
@@ -83,7 +83,7 @@ trait StreamExtensions {
     def asJavaParKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[K, S, St],
         st: StepperShape[K, St],
-        @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSubstep`")
+        @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSplit`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientKeyStepper[K, V]): S =
       s.fromStepper(cc.keyStepper, par = true)
 
@@ -94,7 +94,7 @@ trait StreamExtensions {
     def asJavaParValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[V, S, St],
         st: StepperShape[V, St],
-        @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSubstep`")
+        @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSplit`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientValueStepper[K, V]): S =
       s.fromStepper(cc.valueStepper, par = true)
 
@@ -105,7 +105,7 @@ trait StreamExtensions {
     def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
         s: StreamShape[(K, V), S, St],
         st: StepperShape[(K, V), St],
-        @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSubstep`")
+        @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSplit`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientStepper[K, V]): S =
       s.fromStepper(cc.stepper, par = true)
   }

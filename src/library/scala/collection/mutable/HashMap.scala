@@ -270,10 +270,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.key.asInstanceOf[Int],    0, table.length)
-      case StepperShape.LongValue   => new LongTableStepper[Node[K, V]]  (size, table, _.next, _.key.asInstanceOf[Long],   0, table.length)
-      case StepperShape.DoubleValue => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.key.asInstanceOf[Double], 0, table.length)
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.key.asInstanceOf[Int],    0, table.length)
+      case StepperShape.LongShape   => new LongTableStepper[Node[K, V]]  (size, table, _.next, _.key.asInstanceOf[Long],   0, table.length)
+      case StepperShape.DoubleShape => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.key.asInstanceOf[Double], 0, table.length)
       case _         => shape.parUnbox(new AnyTableStepper[K, Node[K, V]](size, table, _.next, _.key,                      0, table.length))
     }
     s.asInstanceOf[S with EfficientSplit]
@@ -281,10 +281,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
   override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.value.asInstanceOf[Int],    0, table.length)
-      case StepperShape.LongValue   => new LongTableStepper[Node[K, V]]  (size, table, _.next, _.value.asInstanceOf[Long],   0, table.length)
-      case StepperShape.DoubleValue => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.value.asInstanceOf[Double], 0, table.length)
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntTableStepper[Node[K, V]]   (size, table, _.next, _.value.asInstanceOf[Int],    0, table.length)
+      case StepperShape.LongShape   => new LongTableStepper[Node[K, V]]  (size, table, _.next, _.value.asInstanceOf[Long],   0, table.length)
+      case StepperShape.DoubleShape => new DoubleTableStepper[Node[K, V]](size, table, _.next, _.value.asInstanceOf[Double], 0, table.length)
       case _         => shape.parUnbox(new AnyTableStepper[B, Node[K, V]](size, table, _.next, _.value.asInstanceOf[B],      0, table.length))
     }
     s.asInstanceOf[S with EfficientSplit]

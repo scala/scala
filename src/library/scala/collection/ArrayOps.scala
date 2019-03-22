@@ -411,17 +411,17 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import convert.impl._
     val s = shape.shape match {
-      case StepperShape.Reference => (xs: Any) match {
+      case StepperShape.ReferenceShape => (xs: Any) match {
         case bs: Array[Boolean] => new BoxedBooleanArrayStepper(bs, 0, xs.length)
         case _ => new ObjectArrayStepper[AnyRef](xs.asInstanceOf[Array[AnyRef ]], 0, xs.length)
       }
-      case StepperShape.IntValue    => new IntArrayStepper           (xs.asInstanceOf[Array[Int    ]], 0, xs.length)
-      case StepperShape.LongValue   => new LongArrayStepper          (xs.asInstanceOf[Array[Long   ]], 0, xs.length)
-      case StepperShape.DoubleValue => new DoubleArrayStepper        (xs.asInstanceOf[Array[Double ]], 0, xs.length)
-      case StepperShape.ByteValue   => new WidenedByteArrayStepper   (xs.asInstanceOf[Array[Byte   ]], 0, xs.length)
-      case StepperShape.ShortValue  => new WidenedShortArrayStepper  (xs.asInstanceOf[Array[Short  ]], 0, xs.length)
-      case StepperShape.CharValue   => new WidenedCharArrayStepper   (xs.asInstanceOf[Array[Char   ]], 0, xs.length)
-      case StepperShape.FloatValue  => new WidenedFloatArrayStepper  (xs.asInstanceOf[Array[Float  ]], 0, xs.length)
+      case StepperShape.IntShape    => new IntArrayStepper           (xs.asInstanceOf[Array[Int    ]], 0, xs.length)
+      case StepperShape.LongShape   => new LongArrayStepper          (xs.asInstanceOf[Array[Long   ]], 0, xs.length)
+      case StepperShape.DoubleShape => new DoubleArrayStepper        (xs.asInstanceOf[Array[Double ]], 0, xs.length)
+      case StepperShape.ByteShape   => new WidenedByteArrayStepper   (xs.asInstanceOf[Array[Byte   ]], 0, xs.length)
+      case StepperShape.ShortShape  => new WidenedShortArrayStepper  (xs.asInstanceOf[Array[Short  ]], 0, xs.length)
+      case StepperShape.CharShape   => new WidenedCharArrayStepper   (xs.asInstanceOf[Array[Char   ]], 0, xs.length)
+      case StepperShape.FloatShape  => new WidenedFloatArrayStepper  (xs.asInstanceOf[Array[Float  ]], 0, xs.length)
     }
     s.asInstanceOf[S with EfficientSplit]
   }

@@ -13,7 +13,7 @@
 package scala
 package collection
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.tailrec
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult}
 import scala.collection.Stepper.EfficientSplit
 import scala.language.higherKinds
@@ -39,10 +39,10 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
    */
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntIndexedSeqStepper   (this.asInstanceOf[IndexedSeqOps[Int, AnyConstr, _]],    0, length)
-      case StepperShape.LongValue   => new LongIndexedSeqStepper  (this.asInstanceOf[IndexedSeqOps[Long, AnyConstr, _]],   0, length)
-      case StepperShape.DoubleValue => new DoubleIndexedSeqStepper(this.asInstanceOf[IndexedSeqOps[Double, AnyConstr, _]], 0, length)
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIndexedSeqStepper   (this.asInstanceOf[IndexedSeqOps[Int, AnyConstr, _]],    0, length)
+      case StepperShape.LongShape   => new LongIndexedSeqStepper  (this.asInstanceOf[IndexedSeqOps[Long, AnyConstr, _]],   0, length)
+      case StepperShape.DoubleShape => new DoubleIndexedSeqStepper(this.asInstanceOf[IndexedSeqOps[Double, AnyConstr, _]], 0, length)
       case _                        => shape.parUnbox(new AnyIndexedSeqStepper[B](this, 0, length))
     }
     s.asInstanceOf[S with EfficientSplit]

@@ -80,10 +80,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import collection.convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Int])
-      case StepperShape.LongValue   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Long])
-      case StepperShape.DoubleValue => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Double])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Int])
+      case StepperShape.LongShape   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Long])
+      case StepperShape.DoubleShape => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Double])
       case _         => shape.parUnbox(AnyChampStepper.from[K, MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i)))
     }
     s.asInstanceOf[S with EfficientSplit]
@@ -91,10 +91,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import collection.convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Int])
-      case StepperShape.LongValue   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Long])
-      case StepperShape.DoubleValue => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Double])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Int])
+      case StepperShape.LongShape   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Long])
+      case StepperShape.DoubleShape => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Double])
       case _         => shape.parUnbox(AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i)))
     }
     s.asInstanceOf[S with EfficientSplit]

@@ -61,10 +61,10 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => IntChampStepper.from[   SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Int])
-      case StepperShape.LongValue   => LongChampStepper.from[  SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Long])
-      case StepperShape.DoubleValue => DoubleChampStepper.from[SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Double])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => IntChampStepper.from[   SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Int])
+      case StepperShape.LongShape   => LongChampStepper.from[  SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Long])
+      case StepperShape.DoubleShape => DoubleChampStepper.from[SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Double])
       case _         => shape.parUnbox(AnyChampStepper.from[B, SetNode[A]](size, rootNode, (node, i) => node.getPayload(i)))
     }
     s.asInstanceOf[S with EfficientSplit]

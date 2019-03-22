@@ -13,12 +13,11 @@
 package scala
 package collection
 
-import scala.annotation.switch
-import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.StringBuilder
+import scala.language.{higherKinds, implicitConversions}
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
-import scala.collection.mutable.StringBuilder
 
 /**
   * A template trait for collections which can be traversed either once only
@@ -50,10 +49,10 @@ trait IterableOnce[+A] extends Any {
    */
   def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S = {
     import convert.impl._
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
-      case StepperShape.LongValue   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
-      case StepperShape.DoubleValue => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])
       case _                        => shape.seqUnbox(new AnyIteratorStepper[B](iterator))
     }
     s.asInstanceOf[S]

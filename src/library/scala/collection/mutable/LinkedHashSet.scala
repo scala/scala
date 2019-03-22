@@ -49,10 +49,10 @@ class LinkedHashSet[A]
    */
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => new IntTableStepper[HashEntry[A, Entry]]   (size, table.table, _.next, _.key.asInstanceOf[Int],    0, table.table.length)
-      case StepperShape.LongValue   => new LongTableStepper[HashEntry[A, Entry]]  (size, table.table, _.next, _.key.asInstanceOf[Long],   0, table.table.length)
-      case StepperShape.DoubleValue => new DoubleTableStepper[HashEntry[A, Entry]](size, table.table, _.next, _.key.asInstanceOf[Double], 0, table.table.length)
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntTableStepper[HashEntry[A, Entry]]   (size, table.table, _.next, _.key.asInstanceOf[Int],    0, table.table.length)
+      case StepperShape.LongShape   => new LongTableStepper[HashEntry[A, Entry]]  (size, table.table, _.next, _.key.asInstanceOf[Long],   0, table.table.length)
+      case StepperShape.DoubleShape => new DoubleTableStepper[HashEntry[A, Entry]](size, table.table, _.next, _.key.asInstanceOf[Double], 0, table.table.length)
       case _         => shape.parUnbox(new AnyTableStepper[B, HashEntry[A, Entry]](size, table.table, _.next, _.key.asInstanceOf[B],      0, table.table.length))
     }
     s.asInstanceOf[S with EfficientSplit]

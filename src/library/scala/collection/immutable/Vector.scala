@@ -14,7 +14,6 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
@@ -124,10 +123,10 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
       else if (endIndex <= (1 << 20)) { depth = 3; displaySource.display3.asInstanceOf[Array[AnyRef]] }
       else if (endIndex <= (1 << 25)) { depth = 4; displaySource.display4.asInstanceOf[Array[AnyRef]] }
       else  /* endIndex <=  1 << 30*/ { depth = 5; displaySource.display5.asInstanceOf[Array[AnyRef]] }
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntVectorStepper   (startIndex, endIndex, depth, trunk)
-      case StepperShape.LongValue   => new LongVectorStepper  (startIndex, endIndex, depth, trunk)
-      case StepperShape.DoubleValue => new DoubleVectorStepper(startIndex, endIndex, depth, trunk)
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntVectorStepper   (startIndex, endIndex, depth, trunk)
+      case StepperShape.LongShape   => new LongVectorStepper  (startIndex, endIndex, depth, trunk)
+      case StepperShape.DoubleShape => new DoubleVectorStepper(startIndex, endIndex, depth, trunk)
       case _         => shape.parUnbox(new AnyVectorStepper[B](startIndex, endIndex, depth, trunk))
     }
     s.asInstanceOf[S with EfficientSplit]

@@ -44,9 +44,9 @@ final class IntAccumulator
   override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new IntAccumulatorStepper(this)
     val r =
-      if (shape.shape == StepperShape.IntValue) st
+      if (shape.shape == StepperShape.IntShape) st
       else {
-        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        assert(shape.shape == StepperShape.ReferenceShape, s"unexpected StepperShape: $shape")
         AnyStepper.ofParIntStepper(st)
       }
     r.asInstanceOf[S with EfficientSplit]

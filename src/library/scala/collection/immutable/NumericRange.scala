@@ -57,8 +57,8 @@ sealed class NumericRange[T](
     import scala.collection.convert._
     import impl._
     val s = shape.shape match {
-      case StepperShape.IntValue    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
-      case StepperShape.LongValue   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
+      case StepperShape.IntShape    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
+      case StepperShape.LongShape   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
       case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[B] with EfficientSplit])
     }
     s.asInstanceOf[S with EfficientSplit]

@@ -13,7 +13,6 @@
 package scala
 package collection
 
-import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
@@ -93,10 +92,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
     import convert.impl._
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
-      case StepperShape.LongValue   => new LongIteratorStepper  (keysIterator.asInstanceOf[Iterator[Long]])
-      case StepperShape.DoubleValue => new DoubleIteratorStepper(keysIterator.asInstanceOf[Iterator[Double]])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (keysIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(keysIterator.asInstanceOf[Iterator[Double]])
       case _                        => shape.seqUnbox(new AnyIteratorStepper(keysIterator))
     }
     s.asInstanceOf[S]
@@ -104,10 +103,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
     import convert.impl._
-    val s = (shape.shape: @switch) match {
-      case StepperShape.IntValue    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])
-      case StepperShape.LongValue   => new LongIteratorStepper  (valuesIterator.asInstanceOf[Iterator[Long]])
-      case StepperShape.DoubleValue => new DoubleIteratorStepper(valuesIterator.asInstanceOf[Iterator[Double]])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (valuesIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(valuesIterator.asInstanceOf[Iterator[Double]])
       case _                        => shape.seqUnbox(new AnyIteratorStepper(valuesIterator))
     }
     s.asInstanceOf[S]

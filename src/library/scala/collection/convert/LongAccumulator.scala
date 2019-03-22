@@ -44,9 +44,9 @@ final class LongAccumulator
   override def stepper[B >: Long, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new LongAccumulatorStepper(this)
     val r =
-      if (shape.shape == StepperShape.LongValue) st
+      if (shape.shape == StepperShape.LongShape) st
       else {
-        assert(shape.shape == StepperShape.Reference, s"unexpected StepperShape: $shape")
+        assert(shape.shape == StepperShape.ReferenceShape, s"unexpected StepperShape: $shape")
         AnyStepper.ofParLongStepper(st)
       }
     r.asInstanceOf[S with EfficientSplit]

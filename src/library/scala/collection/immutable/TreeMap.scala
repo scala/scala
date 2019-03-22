@@ -70,10 +70,10 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Tree[K, V]
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => IntBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.key.asInstanceOf[Int])
-      case StepperShape.LongValue   => LongBinaryTreeStepper.from[T]  (size, tree, _.left, _.right, _.key.asInstanceOf[Long])
-      case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T](size, tree, _.left, _.right, _.key.asInstanceOf[Double])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => IntBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.key.asInstanceOf[Int])
+      case StepperShape.LongShape   => LongBinaryTreeStepper.from[T]  (size, tree, _.left, _.right, _.key.asInstanceOf[Long])
+      case StepperShape.DoubleShape => DoubleBinaryTreeStepper.from[T](size, tree, _.left, _.right, _.key.asInstanceOf[Double])
       case _         => shape.parUnbox(AnyBinaryTreeStepper.from[K, T](size, tree, _.left, _.right, _.key))
     }
     s.asInstanceOf[S with EfficientSplit]
@@ -82,10 +82,10 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Tree[K, V]
-    val s = (shape.shape: @annotation.switch) match {
-      case StepperShape.IntValue    => IntBinaryTreeStepper.from[T]    (size, tree, _.left, _.right, _.value.asInstanceOf[Int])
-      case StepperShape.LongValue   => LongBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.value.asInstanceOf[Long])
-      case StepperShape.DoubleValue => DoubleBinaryTreeStepper.from[T] (size, tree, _.left, _.right, _.value.asInstanceOf[Double])
+    val s = shape.shape match {
+      case StepperShape.IntShape    => IntBinaryTreeStepper.from[T]    (size, tree, _.left, _.right, _.value.asInstanceOf[Int])
+      case StepperShape.LongShape   => LongBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.value.asInstanceOf[Long])
+      case StepperShape.DoubleShape => DoubleBinaryTreeStepper.from[T] (size, tree, _.left, _.right, _.value.asInstanceOf[Double])
       case _         => shape.parUnbox(AnyBinaryTreeStepper.from[V1, T](size, tree, _.left, _.right, _.value.asInstanceOf[V1]))
     }
     s.asInstanceOf[S with EfficientSplit]

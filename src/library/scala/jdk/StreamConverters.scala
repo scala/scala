@@ -27,7 +27,7 @@ import scala.collection.convert.StreamExtensions
   * code, it is recommended to use the extension methods defined in [[StreamConverters.Ops]].
   *
   * TODO: overview documentation
-  *   - Stepeprs, Spliterators, EfficientSubstep
+  *   - Stepeprs, Spliterators, EfficientSplit
   *   - Available extension methods
   *   - Accumulators
   *   - Manual specializations
@@ -37,7 +37,7 @@ import scala.collection.convert.StreamExtensions
   * @define parNote Note: parallel processing is only efficient for collections that have a
   *                 [[Stepper]] implementation which supports efficient splitting. For collections
   *                 where this is the case, the [[scala.collection.IterableOnce.stepper `stepper`]]
-  *                 method has a return type marked `with EfficientSubstep`.
+  *                 method has a return type marked `with EfficientSplit`.
   */
 object StreamConverters {
 
