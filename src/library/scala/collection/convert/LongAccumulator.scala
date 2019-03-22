@@ -284,11 +284,11 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
 private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSplit {
   import java.util.Spliterator._
 
-  private var h = 0
-  private var i = 0
-  private var a = if (acc.hIndex > 0) acc.history(0) else acc.current
-  private var n = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
-  private var N = acc.totalSize
+  private var h: Int = 0
+  private var i: Int = 0
+  private var a: Array[Long] = if (acc.hIndex > 0) acc.history(0) else acc.current
+  private var n: Long = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
+  private var N: Long = acc.totalSize
 
   private def duplicateSelf(limit: Long): LongAccumulatorStepper = {
     val ans = new LongAccumulatorStepper(acc)

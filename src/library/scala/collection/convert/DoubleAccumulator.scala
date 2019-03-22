@@ -284,11 +284,11 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
 private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSplit {
   import java.util.Spliterator._
 
-  private var h = 0
-  private var i = 0
-  private var a = if (acc.hIndex > 0) acc.history(0) else acc.current
-  private var n = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
-  private var N = acc.totalSize
+  private var h: Int = 0
+  private var i: Int = 0
+  private var a: Array[Double] = if (acc.hIndex > 0) acc.history(0) else acc.current
+  private var n: Long = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
+  private var N: Long = acc.totalSize
 
   private def duplicateSelf(limit: Long): DoubleAccumulatorStepper = {
     val ans = new DoubleAccumulatorStepper(acc)
