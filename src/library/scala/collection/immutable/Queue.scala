@@ -79,14 +79,14 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override def isEmpty: Boolean = in.isEmpty && out.isEmpty
 
   override def head: A =
-    if (out.nonEmpty) out.head
-    else if (in.nonEmpty) in.last
+    if (nonEmpty) out.head
     else throw new NoSuchElementException("head on empty queue")
 
-  override def tail: Queue[A] =
-    if (out.nonEmpty) new Queue(in, out.tail)
-    else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
-    else throw new NoSuchElementException("tail on empty queue")
+  override def tail: Queue[A] = out match {
+    case _ :: Nil if in.nonEmpty => new Queue(Nil, in.reverse)
+    case _ :: xs => new Queue(in, xs)
+    case _ => throw new NoSuchElementException("tail on empty queue")
+  }
 
   /* This is made to avoid inefficient implementation of iterator. */
   override def forall(p: A => Boolean): Boolean =
@@ -119,7 +119,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @param  elem        the element to insert
     */
   def enqueue[B >: A](elem: B): Queue[B] =
-    if (isEmpty) new Queue(Nil, out :+ elem)
+    if (isEmpty) new Queue(Nil, elem :: Nil)
     else new Queue(elem :: in, out)
 
   /** Creates a new queue with all elements provided by an `Iterable` object
@@ -150,10 +150,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @return the first element of the queue.
     */
   def dequeue: (A, Queue[A]) = out match {
-    case Nil if !in.isEmpty => in match {
-      case x :: Nil => (x, new Queue(Nil, Nil))
-      case _ => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
-    }
+    case x :: Nil if in.nonEmpty => (x, new Queue(Nil, in.reverse))
     case x :: xs            => (x, new Queue(in, xs))
     case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
