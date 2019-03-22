@@ -260,9 +260,9 @@ abstract class HtmlPage extends Page { thisPage =>
     val Trait, Class, Type, Object, Package = Value
   }
 
-  def permalink(template: Entity, isSelf: Boolean = true): Elem =
+  def permalink(template: Entity): Elem =
     <span class="permalink">
-      <a href={ memberToUrl(template, isSelf) } title="Permalink">
+      <a href={ memberToUrl(template) } title="Permalink">
         <i class="material-icons">&#xE157;</i>
       </a>
     </span>
@@ -297,16 +297,15 @@ abstract class HtmlPage extends Page { thisPage =>
       }
     }</span>
 
-  private def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
+  private def memberToUrl(template: Entity): String = {
     val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
-      case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)
       case dte: DocTemplateEntity => (None, dte)
       case me: MemberEntity => (Some(me.signature), me.inTemplate)
       case tpl => (None, tpl)
     }
 
     val templatePath = templateToPath(containingTemplate)
-    val url = "../" * (templatePath.size - 1) + templatePath.reverse.mkString("/")
+    val url = "../" * (thisPage.path.size - 1) + templatePath.reverse.mkString("/")
     url + signature.map("#" + _).getOrElse("")
   }
 }

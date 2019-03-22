@@ -987,7 +987,7 @@ trait EntityPage extends HtmlPage {
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        permalink(dte, isSelf) ++ { inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }
+        permalink(dte) ++ { inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>

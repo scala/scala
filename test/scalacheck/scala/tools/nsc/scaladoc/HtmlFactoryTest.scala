@@ -749,8 +749,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
     property("scala/bug#8144: Members' permalink - inner package") = check("some/pack/index.html") { node =>
       ("type link" |: node.assertTypeLink("../../some/pack/index.html")) &&
-        ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../some/pack/index.html#SomeType")) &&
-        ("member: SomeType (class)" |: node.assertMemberLink("types")("some.pack.SomeType", "../../some/pack/index.html#SomeTypeextendsAnyRef"))
+        ("member: SomeType (object)" |: node.assertValuesLink("some.pack.SomeType", "../../some/pack/SomeType$.html")) &&
+        ("member: SomeType (class)" |: node.assertMemberLink("types")("some.pack.SomeType", "../../some/pack/SomeType.html"))
     }
 
     property("scala/bug#8144: Members' permalink - companion object") = check("some/pack/SomeType$.html") { node =>
