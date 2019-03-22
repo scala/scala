@@ -85,7 +85,7 @@ object StepperShape extends StepperShapeLowPriority {
 }
 
 trait StepperShapeLowPriority {
-  implicit def anyStepperShape[T] = anyStepperShapePrototype.asInstanceOf[StepperShape[T, AnyStepper[T]]]
+  implicit def anyStepperShape[T]: StepperShape[T, AnyStepper[T]] = anyStepperShapePrototype.asInstanceOf[StepperShape[T, AnyStepper[T]]]
 
   private[this] val anyStepperShapePrototype: StepperShape[AnyRef, AnyStepper[AnyRef]] = new StepperShape[AnyRef, AnyStepper[AnyRef]] {
     def shape = StepperShape.ReferenceShape

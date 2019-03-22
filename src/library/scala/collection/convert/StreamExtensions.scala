@@ -348,9 +348,9 @@ object StreamExtensions {
 
   trait StreamShapeLowPriority2 {
     // reference
-    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShape.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
+    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShapePrototype.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
 
-    private[this] val anyStreamShape: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
+    private[this] val anyStreamShapePrototype: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
       def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator, par)
     }
   }
