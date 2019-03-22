@@ -451,6 +451,13 @@ class LazyListLazinessTest {
     assertLazyAllSkipping(_ forall { _ < 2 }, 3)
   }
 
+  @Test
+  def force_properlyStrict(): Unit = {
+    val checker = new OpLazinessChecker
+    checker.lazyList.force
+    checker.assertAll(evaluated = true)
+  }
+
   private def genericSliding_properlyLazy(op: (LazyList[Int], Int) => Iterator[LazyList[Int]],
                                           evalExtra: Int = 0,
                                           skip: Int = 0): Unit = {

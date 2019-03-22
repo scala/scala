@@ -2371,7 +2371,7 @@ trait Types
     override def isShowAsInfixType: Boolean =
       hasLength(args, 2) &&
         sym.getAnnotation(ShowAsInfixAnnotationClass)
-         .map(_ booleanArg 0 getOrElse true)
+         .map(_.booleanArg(0).getOrElse(true))
          .getOrElse(!Character.isUnicodeIdentifierStart(sym.decodedName.head))
 
     private[Types] def invalidateTypeRefCaches(): Unit = {

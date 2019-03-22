@@ -111,6 +111,7 @@ trait Warnings {
     val ValPattern             = LintWarning("valpattern",                "Enable pattern checks in val definitions.")
     val EtaZero                = LintWarning("eta-zero",                  "Warn on eta-expansion (rather than auto-application) of zero-ary method.")
     val EtaSam                 = LintWarning("eta-sam",                   "Warn on eta-expansion to meet a Java-defined functional interface that is not explicitly annotated with @FunctionalInterface.")
+    val Deprecation            = LintWarning("deprecation",               "Enable linted deprecations.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -138,6 +139,7 @@ trait Warnings {
   def lintValPatterns            = lint contains ValPattern
   def warnEtaZero                = lint contains EtaZero
   def warnEtaSam                 = lint contains EtaSam
+  def lintDeprecation            = lint contains Deprecation
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
@@ -149,6 +151,7 @@ trait Warnings {
   ).withPostSetHook { s =>
     if (s contains Unused) warnUnused.enable(UnusedWarnings.Linted)
     else warnUnused.disable(UnusedWarnings.Linted)
+    if (s.contains(Deprecation)) deprecation.value = true
   }
 
   // Backward compatibility.

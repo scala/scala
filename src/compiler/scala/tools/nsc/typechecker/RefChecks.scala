@@ -1605,7 +1605,7 @@ abstract class RefChecks extends Transform {
         // on Unit, in which case we had better let it slide.
         val isOk = (
              sym.isGetter
-          || (sym.name containsName nme.DEFAULT_GETTER_STRING)
+          || sym.isDefaultGetter
           || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
         )
         if (!isOk)
