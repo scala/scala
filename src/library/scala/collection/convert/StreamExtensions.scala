@@ -357,6 +357,9 @@ object StreamExtensions {
 
 
 
+  /** Connects a stream element type `A` to the corresponding, potentially specialized, Stream type.
+    * Used in the `stream.asJavaPrimitiveStream` extension method.
+    */
   sealed trait StreamUnboxer[A, S] {
     def apply(s: Stream[A]): S
   }
