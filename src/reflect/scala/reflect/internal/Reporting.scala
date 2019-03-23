@@ -94,15 +94,18 @@ abstract class Reporter {
   class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
   object INFO    extends Severity(0)("INFO")
   object WARNING extends Severity(1)("WARNING")
-  object ERROR   extends Severity(2)("ERROR")
+  private[this] var isERRORInitialized = false // OPT: avoid initializing ERROR to check isError/errorCount
+  object ERROR   extends Severity(2)("ERROR") {
+    isERRORInitialized = true
+  }
 
   def count(severity: Severity): Int       = severity.count
   def resetCount(severity: Severity): Unit = severity.count = 0
 
-  def errorCount: Int   = count(ERROR)
+  def errorCount: Int   = if (!isERRORInitialized) 0 else count(ERROR)
   def warningCount: Int = count(WARNING)
 
-  def hasErrors: Boolean   = count(ERROR) > 0
+  def hasErrors: Boolean   = isERRORInitialized && count(ERROR) > 0
   def hasWarnings: Boolean = count(WARNING) > 0
 
   def reset(): Unit = {
