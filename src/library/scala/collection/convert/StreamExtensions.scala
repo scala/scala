@@ -69,6 +69,13 @@ trait StreamExtensions {
       */
     def asJavaSeqValueStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
       s.fromStepper(cc.valueStepper, par = false)
+
+    // The asJavaSeqStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
+    /** Create a sequential [[java.util.stream.Stream Java Stream]] for the `(key, value)` pairs of
+      * this map.
+      */
+    def asJavaSeqStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[(K, V), S, St], st: StepperShape[(K, V), St]): S =
+      s.fromStepper(cc.stepper, par = false)
   }
 
 
