@@ -224,7 +224,8 @@ object IntStepper {
       case ic: IntConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(jl.Integer.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfInt = {
+    // override required for dotty#6152
+    override def trySplit(): Spliterator.OfInt = {
       val sp = s.trySplit()
       if (sp == null) null else sp.spliterator
     }
@@ -261,7 +262,8 @@ object DoubleStepper {
       case ic: DoubleConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(java.lang.Double.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfDouble = {
+    // override required for dotty#6152
+    override def trySplit(): Spliterator.OfDouble = {
       val sp = s.trySplit()
       if (sp == null) null else sp.spliterator
     }
@@ -298,7 +300,8 @@ object LongStepper {
       case ic: LongConsumer => tryAdvance(ic)
       case _ => if (s.hasStep) { c.accept(java.lang.Long.valueOf(s.nextStep())); true } else false
     }
-    def trySplit(): Spliterator.OfLong = {
+    // override required for dotty#6152
+    override def trySplit(): Spliterator.OfLong = {
       val sp = s.trySplit()
       if (sp == null) null else sp.spliterator
     }
