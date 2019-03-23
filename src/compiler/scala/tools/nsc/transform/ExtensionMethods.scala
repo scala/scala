@@ -175,7 +175,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       // need to modify the bounds of the cloned type parameters, but we
       // don't want to substitute for the cloned type parameters themselves.
       val tparams = tparamsFromMethod ::: tparamsFromClass
-      GenPolyType(tparams map (_ modifyInfo fixtparam), fixres(resultType))
+      tparams foreach (_ modifyInfo fixtparam)
+      GenPolyType(tparams, fixres(resultType))
 
       // For reference, calling fix on the GenPolyType plays out like this:
       // error: scala.reflect.internal.Types$TypeError: type arguments [B#7344,A#6966]
