@@ -31,7 +31,7 @@ trait StreamExtensions {
       * collection contains primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaSeqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    def asJavaSeqStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(cc.stepper, par = false)
   }
 
@@ -45,7 +45,7 @@ trait StreamExtensions {
       * collection contains primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    def asJavaParStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit
         s: StreamShape[A, S, St],
         st: StepperShape[A, St],
         @implicitNotFound("`parStream` can only be called on collections where `stepper` returns a `Stepper with EfficientSplit`")
@@ -60,14 +60,14 @@ trait StreamExtensions {
       * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaSeqKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
+    def asJavaSeqKeyStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
       s.fromStepper(cc.keyStepper, par = false)
 
     /** Create a sequential [[java.util.stream.Stream Java Stream]] for the values of this map. If
       * the values are primitives, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaSeqValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
+    def asJavaSeqValueStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
       s.fromStepper(cc.valueStepper, par = false)
   }
 
@@ -81,7 +81,7 @@ trait StreamExtensions {
       * the keys are primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaParKeyStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    def asJavaParKeyStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit
         s: StreamShape[K, S, St],
         st: StepperShape[K, St],
         @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSplit`")
@@ -92,7 +92,7 @@ trait StreamExtensions {
       * the values are primitives, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaParValueStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    def asJavaParValueStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit
         s: StreamShape[V, S, St],
         st: StepperShape[V, St],
         @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSplit`")
@@ -103,7 +103,7 @@ trait StreamExtensions {
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for the `(key, value)` pairs of
       * this map.
       */
-    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit
+    def asJavaParStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit
         s: StreamShape[(K, V), S, St],
         st: StepperShape[(K, V), St],
         @implicitNotFound("parStream can only be called on maps where `stepper` returns a `Stepper with EfficientSplit`")
@@ -118,7 +118,7 @@ trait StreamExtensions {
       * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaSeqStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    def asJavaSeqStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(stepper.asInstanceOf[St], par = false)
   }
 
@@ -127,7 +127,7 @@ trait StreamExtensions {
       * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaParStream[S <: BaseStream[_, S], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
+    def asJavaParStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
       s.fromStepper(stepper.asInstanceOf[St], par = true)
   }
 
@@ -314,7 +314,7 @@ object StreamExtensions {
     * Stream and Stepper types. This is used in `asJavaStream` extension methods to create
     * generic or primitive streams according to the element type.
     */
-  sealed trait StreamShape[T, S <: BaseStream[_, S], St <: Stepper[_]] {
+  sealed trait StreamShape[T, S <: BaseStream[_, _], St <: Stepper[_]] {
     final def fromStepper(st: St, par: Boolean): S = mkStream(st, par)
     protected def mkStream(st: St, par: Boolean): S
   }
@@ -333,6 +333,8 @@ object StreamExtensions {
     implicit val shortStreamShape: StreamShape[Short, IntStream   , IntStepper]    = mkIntStreamShape[Short]
     implicit val charStreamShape : StreamShape[Char , IntStream   , IntStepper]    = mkIntStreamShape[Char]
     implicit val floatStreamShape: StreamShape[Float, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Float]
+
+    implicit val integerStreamShape : StreamShape[java.lang.Integer, IntStream, IntStepper] = mkIntStreamShape[java.lang.Integer]
 
     protected def mkIntStreamShape[T]: StreamShape[T, IntStream, IntStepper] = new StreamShape[T, IntStream, IntStepper] {
       protected def mkStream(st: IntStepper, par: Boolean): IntStream = StreamSupport.intStream(st.spliterator, par)
