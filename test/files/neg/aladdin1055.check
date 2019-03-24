@@ -2,6 +2,6 @@ Test_1.scala:3: warning: match may not be exhaustive.
 It would fail on the following input: (_ : this.<local child>)
   def foo(t: A.T) = t match {
                     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found

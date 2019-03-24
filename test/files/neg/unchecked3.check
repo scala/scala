@@ -37,6 +37,6 @@ unchecked3.scala:77: warning: abstract type A in type pattern scala.collection.i
 unchecked3.scala:64: warning: unreachable code
     /*   warn */ case _: Array[List[Array[String]]] => ()
                                                        ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 13 warnings found
 one error found

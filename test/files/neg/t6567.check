@@ -5,6 +5,6 @@ t6567.scala:12: warning: Suspicious application of an implicit view (Test.this.a
   val b: Option[B] = Option(a)
                            ^
 warning: there was one feature warning; re-run with -feature for details
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

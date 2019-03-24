@@ -22,6 +22,6 @@ exhausting.scala:58: warning: match may not be exhaustive.
 It would fail on the following inputs: (Bar1, Bar2), (Bar1, Bar3), (Bar2, Bar1), (Bar2, Bar2)
   def fail5[T](xx: (Foo[T], Foo[T])) = xx match {
                                        ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 6 warnings found
 one error found

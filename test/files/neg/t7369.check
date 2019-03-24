@@ -10,6 +10,6 @@ t7369.scala:33: warning: unreachable code
 t7369.scala:42: warning: unreachable code
     case Tuple1(null) => // unreachable
                       ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 four warnings found
 one error found

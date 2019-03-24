@@ -7,6 +7,6 @@ t6902.scala:11: warning: unreachable code
 t6902.scala:23: warning: unreachable code
     case 1 => 3 // crash
               ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

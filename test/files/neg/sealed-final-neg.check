@@ -6,6 +6,6 @@ sealed-final-neg.scala:39: warning: neg2/Foo::bar(I)I is annotated @inline but c
 The method is not final and may be overridden.
     def f = Foo.mkFoo() bar 10
                         ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

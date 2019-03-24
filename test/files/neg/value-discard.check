@@ -7,6 +7,6 @@ value-discard.scala:13: warning: discarded non-Unit value
 value-discard.scala:17: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     ""                         // warn
     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 three warnings found
 one error found

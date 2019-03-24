@@ -2,6 +2,6 @@ sealed-java-enums.scala:7: warning: match may not be exhaustive.
 It would fail on the following inputs: BLOCKED, TERMINATED, TIMED_WAITING
   def f(state: State) = state match {
                         ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 one warning found
 one error found

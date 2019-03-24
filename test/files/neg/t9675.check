@@ -22,6 +22,6 @@ t9675.scala:22: warning: comparing values of types Test.A and String using `!=` 
 t9675.scala:24: warning: comparing values of types Test.A and String using `!=` will always yield true
     List(A("x")).foreach((item: A) => item != "x")
                                            ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 8 warnings found
 one error found

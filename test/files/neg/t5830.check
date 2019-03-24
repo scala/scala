@@ -4,6 +4,6 @@ t5830.scala:8: warning: unreachable code
 t5830.scala:6: warning: could not emit switch for @switch annotated match
   def unreachable(ch: Char) = (ch: @switch) match {
                                     ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

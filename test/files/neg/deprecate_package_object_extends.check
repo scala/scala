@@ -6,6 +6,6 @@ deprecate_package_object_extends.scala:5: warning: package object inheritance is
 drop the `extends` clause or use a regular object instead
 package foo2 { object `package` extends C }
                                 ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 two warnings found
 one error found

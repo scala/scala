@@ -22,6 +22,6 @@ t7721.scala:49: warning: abstract type pattern B.this.Foo is unchecked since it 
 t7721.scala:49: warning: abstract type pattern B.this.Bar is unchecked since it is eliminated by erasure
     case x: Foo with Bar with Concrete => x.bippy + x.barry + x.dingo + x.conco + x.bongo
             ^
-error: No warnings can be incurred under -Xfatal-warnings.
+error: No warnings can be incurred under -Werror.
 8 warnings found
 one error found
