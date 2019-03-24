@@ -156,18 +156,46 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override protected[this] def className = "HashMap"
 
-  private type MergeFunction[A1, B1] = ((A1, B1), (A1, B1)) => (A1, B1)
+  def merged[V1 >: V](that: HashMap[K, V1])(mergef: ((K, V), (K, V1)) => (K, V1)): HashMap[K, V1] =
+    if (mergef == null) {
+      that ++ this
+    } else {
+      if (isEmpty) that
+      else if (that.isEmpty) this
+      else if (size == 1) {
+        val payload@(k, v) = rootNode.getPayload(0)
+        val originalHash = rootNode.getHash(0)
+        val improved = improve(originalHash)
 
-  //TODO optimize (https://github.com/scala/bug/issues/11077)
-  def merged[V1 >: V](that: HashMap[K, V1])(mergef: MergeFunction[K, V1]): HashMap[K, V1] = {
-    val thisKeys = this.keySet
-    if(mergef eq null)
-      that.removedAll(thisKeys) ++ this
-    else {
-      val thatKeys = that.keySet
-      that.removedAll(thisKeys) ++ this.removedAll(thatKeys) ++ thisKeys.intersect(thatKeys).map { case k => mergef((k, this(k)), (k, that(k))) }
+        if (that.rootNode.containsKey(k, originalHash, improved, 0)) {
+          val thatPayload = that.rootNode.getTuple(k, originalHash, improved, 0)
+          val (mergedK, mergedV) = mergef(payload, thatPayload)
+          val mergedOriginalHash = mergedK.##
+          val mergedImprovedHash = improve(mergedOriginalHash)
+          new HashMap(that.rootNode.updated(mergedK, mergedV, mergedOriginalHash, mergedImprovedHash, 0))
+        } else {
+          new HashMap(that.rootNode.updated(k, v, originalHash, improved, 0))
+        }
+      } else if (that.size == 0) {
+        val thatPayload@(k, v) = rootNode.getPayload(0)
+        val thatOriginalHash = rootNode.getHash(0)
+        val thatImproved = improve(thatOriginalHash)
+
+        if (rootNode.containsKey(k, thatOriginalHash, thatImproved, 0)) {
+          val payload = rootNode.getTuple(k, thatOriginalHash, thatImproved, 0)
+          val (mergedK, mergedV) = mergef(payload, thatPayload)
+          val mergedOriginalHash = mergedK.##
+          val mergedImprovedHash = improve(mergedOriginalHash)
+          new HashMap(rootNode.updated(mergedK, mergedV, mergedOriginalHash, mergedImprovedHash, 0))
+        } else {
+          new HashMap(rootNode.updated(k, v, thatOriginalHash, thatImproved, 0))
+        }
+      } else {
+        val builder = new HashMapBuilder[K, V1]
+        rootNode.mergeInto(that.rootNode, builder, 0)(mergef)
+        builder.result()
+      }
     }
-  }
 
   override def transform[W](f: (K, V) => W): HashMap[K, W] =
     newHashMapOrThis(rootNode.transform(f)).asInstanceOf[HashMap[K, W]]
@@ -344,6 +372,23 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
   def concat[V1 >: V](that: MapNode[K, V1], shift: Int): MapNode[K, V1]
 
   def filterImpl(pred: ((K, V)) => Boolean, isFlipped: Boolean): MapNode[K, V]
+
+  /** Merges this node with that node, adding each resulting tuple to `builder`
+    *
+    * `this` should be a node from `left` hashmap in `left.merged(right)(mergef)`
+    *
+    * @param that node from the "right" HashMap. Must also be at the same "path" or "position" within the right tree,
+    *             as `this` is, within the left tree
+    */
+  def mergeInto[V1 >: V](that: MapNode[K, V1], builder: HashMapBuilder[K, V1], shift: Int)(mergef: ((K, V), (K, V1)) => (K, V1)): Unit
+
+  /** Returns the exact (equal by reference) key, and value, associated to a given key.
+    * If the key is not bound to a value, then an exception is thrown
+    */
+  def getTuple(key: K, originalHash: Int, hash: Int, shift: Int): (K, V)
+
+  /** Adds all key-value pairs to a builder */
+  def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): Unit
 }
 
 private final class BitmapIndexedMapNode[K, +V](
@@ -426,6 +471,23 @@ private final class BitmapIndexedMapNode[K, +V](
 
     None
   }
+
+  override def getTuple(key: K, originalHash: Int, hash: Int, shift: Int): (K, V) = {
+    val mask = maskFrom(hash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val payload = getPayload(index)
+      if (key == payload._1) payload else throw new NoSuchElementException
+    } else if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      getNode(index).getTuple(key, originalHash, hash, shift + BitPartitionSize)
+    } else {
+      throw new NoSuchElementException
+    }
+  }
+
   def getOrElse[V1 >: V](key: K, originalHash: Int, keyHash: Int, shift: Int, f: => V1): V1 = {
     val mask = maskFrom(keyHash, shift)
     val bitpos = bitposFrom(mask)
@@ -767,6 +829,21 @@ private final class BitmapIndexedMapNode[K, +V](
       j += 1
     }
   }
+  override def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): Unit = {
+    var i = 0
+    val iN = payloadArity
+    val jN = nodeArity
+    while (i < iN) {
+      builder.addOne(getKey(i), getValue(i), getHash(i))
+      i += 1
+    }
+
+    var j = 0
+    while (j < jN) {
+      getNode(j).buildTo(builder)
+      j += 1
+    }
+  }
 
   override def transform[W](f: (K, V) => W): BitmapIndexedMapNode[K, W] = {
     var newContent: Array[Any] = null
@@ -804,6 +881,110 @@ private final class BitmapIndexedMapNode[K, +V](
     }
     if (newContent eq null) this.asInstanceOf[BitmapIndexedMapNode[K, W]]
     else new BitmapIndexedMapNode[K, W](dataMap, nodeMap, newContent, originalHashes, size, cachedJavaKeySetHashCode)
+  }
+
+  override def mergeInto[V1 >: V](that: MapNode[K, V1], builder: HashMapBuilder[K, V1], shift: Int)(mergef: ((K, V), (K, V1)) => (K, V1)): Unit = that match {
+    case bm: BitmapIndexedMapNode[K, V] =>
+      if (size == 0) {
+        that.buildTo(builder)
+        return
+      } else if (bm.size == 0) {
+        buildTo(builder)
+        return
+      }
+
+      val allMap = dataMap | bm.dataMap | nodeMap | bm.nodeMap
+
+      val minIndex: Int = Integer.numberOfTrailingZeros(allMap)
+      val maxIndex: Int = Node.BranchingFactor - Integer.numberOfLeadingZeros(allMap)
+
+      {
+        var index = minIndex
+        var leftIdx = 0
+        var rightIdx = 0
+
+        while (index < maxIndex) {
+          val bitpos = bitposFrom(index)
+
+          if ((bitpos & dataMap) != 0) {
+            val leftKey = getKey(leftIdx)
+            val leftValue = getValue(leftIdx)
+            val leftOriginalHash = getHash(leftIdx)
+            if ((bitpos & bm.dataMap) != 0) {
+              // left data and right data
+              val rightKey = bm.getKey(rightIdx)
+              val rightValue = bm.getValue(rightIdx)
+              val rightOriginalHash = bm.getHash(rightIdx)
+              if (leftOriginalHash == rightOriginalHash && leftKey == rightKey) {
+                builder.addOne(mergef((leftKey, leftValue), (rightKey, rightValue)))
+              } else {
+                builder.addOne(leftKey, leftValue, leftOriginalHash)
+                builder.addOne(rightKey, rightValue, rightOriginalHash)
+              }
+              rightIdx += 1
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              // left data and right node
+              val subNode = bm.getNode(bm.nodeIndex(bitpos))
+              val leftImprovedHash = improve(leftOriginalHash)
+              val removed = subNode.removed(leftKey, leftOriginalHash, leftImprovedHash, shift + BitPartitionSize)
+              if (removed eq subNode) {
+                // no overlap in leftData and rightNode, just build both children to builder
+                subNode.buildTo(builder)
+                builder.addOne(leftKey, leftValue, leftOriginalHash, leftImprovedHash)
+              } else {
+                // there is collision, so special treatment for that key
+                removed.buildTo(builder)
+                builder.addOne(mergef((leftKey, leftValue), subNode.getTuple(leftKey, leftOriginalHash, leftImprovedHash, shift + BitPartitionSize)))
+              }
+            } else {
+              // left data and nothing on right
+              builder.addOne(leftKey, leftValue, leftOriginalHash)
+            }
+            leftIdx += 1
+          } else if ((bitpos & nodeMap) != 0) {
+            if ((bitpos & bm.dataMap) != 0) {
+              // left node and right data
+              val rightKey = bm.getKey(rightIdx)
+              val rightValue = bm.getValue(rightIdx)
+              val rightOriginalHash = bm.getHash(rightIdx)
+              val rightImprovedHash = improve(rightOriginalHash)
+
+              val subNode = getNode(nodeIndex(bitpos))
+              val removed = subNode.removed(rightKey, rightOriginalHash, rightImprovedHash, shift + BitPartitionSize)
+              if (removed eq subNode) {
+                // no overlap in leftNode and rightData, just build both children to builder
+                subNode.buildTo(builder)
+                builder.addOne(rightKey, rightValue, rightOriginalHash, rightImprovedHash)
+              } else {
+                // there is collision, so special treatment for that key
+                removed.buildTo(builder)
+                builder.addOne(mergef(subNode.getTuple(rightKey, rightOriginalHash, rightImprovedHash, shift + BitPartitionSize), (rightKey, rightValue)))
+              }
+              rightIdx += 1
+
+            } else if ((bitpos & bm.nodeMap) != 0) {
+              // left node and right node
+              getNode(nodeIndex(bitpos)).mergeInto(bm.getNode(bm.nodeIndex(bitpos)), builder, shift + BitPartitionSize)(mergef)
+            } else {
+              // left node and nothing on right
+              getNode(nodeIndex(bitpos)).buildTo(builder)
+            }
+          } else if ((bitpos & bm.dataMap) != 0) {
+            // nothing on left, right data
+            val dataIndex = bm.dataIndex(bitpos)
+            builder.addOne(bm.getKey(dataIndex),bm.getValue(dataIndex), bm.getHash(dataIndex))
+            rightIdx += 1
+
+          } else if ((bitpos & bm.nodeMap) != 0) {
+            // nothing on left, right node
+            bm.getNode(bm.nodeIndex(bitpos)).buildTo(builder)
+          }
+
+          index += 1
+        }
+      }
+    case _: HashCollisionMapNode[K, V] =>
+      throw new Exception("Cannot merge BitmapIndexedMapNode with HashCollisionMapNode")
   }
 
   override def equals(that: Any): Boolean =
@@ -1304,6 +1485,11 @@ private final class HashCollisionMapNode[K, +V ](
       if (index >= 0) Some(content(index)._2) else None
     } else None
 
+  override def getTuple(key: K, originalHash: Int, hash: Int, shift: Int): (K, V) = {
+    val index = indexOf(key)
+    if (index >= 0) content(index) else throw new NoSuchElementException
+  }
+
   def getOrElse[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, f: => V1): V1 = {
     if (this.hash == hash) {
       indexOf(key) match {
@@ -1440,7 +1626,56 @@ private final class HashCollisionMapNode[K, +V ](
       throw new UnsupportedOperationException("Cannot concatenate a HashCollisionMapNode with a BitmapIndexedMapNode")
   }
 
-  override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean) = {
+
+  override def mergeInto[V1 >: V](that: MapNode[K, V1], builder: HashMapBuilder[K, V1], shift: Int)(mergef: ((K, V), (K, V1)) => (K, V1)): Unit = that match {
+    case hc: HashCollisionMapNode[K, V1] =>
+      val iter = content.iterator
+      val rightArray = hc.content.toArray[AnyRef] // really Array[(K, V1)]
+
+      def rightIndexOf(key: K): Int = {
+        var i = 0
+        while (i < rightArray.length) {
+          val elem = rightArray(i)
+          if ((elem ne null) && (elem.asInstanceOf[(K, V1)])._1 == key) return i
+          i += 1
+        }
+        -1
+      }
+
+      while (iter.hasNext) {
+        val nextPayload = iter.next()
+        val index = rightIndexOf(nextPayload._1)
+
+        if (index == -1) {
+          builder.addOne(nextPayload)
+        } else {
+          val rightPayload = rightArray(index).asInstanceOf[(K, V1)]
+          rightArray(index) = null
+
+          builder.addOne(mergef(nextPayload, rightPayload))
+        }
+      }
+
+      var i = 0
+      while (i < rightArray.length) {
+        val elem = rightArray(i)
+        if (elem ne null) builder.addOne(elem.asInstanceOf[(K, V1)])
+        i += 1
+      }
+    case _: BitmapIndexedMapNode[K, V1] =>
+      throw new Exception("Cannot merge HashCollisionMapNode with BitmapIndexedMapNode")
+
+  }
+
+  override def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): Unit = {
+    val iter = content.iterator
+    while (iter.hasNext) {
+      val (k, v) = iter.next()
+      builder.addOne(k, v, originalHash, hash)
+    }
+  }
+
+  override def filterImpl(pred: ((K, V)) => Boolean, flipped: Boolean): MapNode[K, V] = {
     val newContent = content.filterImpl(pred, flipped)
     val newContentLength = newContent.length
     if (newContentLength == 0) {
@@ -1776,6 +2011,16 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
     ensureUnaliased()
     val originalHash = key.##
     update(rootNode, key, value, originalHash, improve(originalHash), 0)
+    this
+  }
+  def addOne(key: K, value: V, originalHash: Int): this.type = {
+    ensureUnaliased()
+    update(rootNode, key, value, originalHash, improve(originalHash), 0)
+    this
+  }
+  def addOne(key: K, value: V, originalHash: Int, hash: Int): this.type = {
+    ensureUnaliased()
+    update(rootNode, key, value, originalHash, hash, 0)
     this
   }
 

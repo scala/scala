@@ -139,11 +139,11 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
 
   property("left.merged(right) { select left } is the same as right concat left") =
     forAll { (left: HashMap[K, V], right: HashMap[K, V]) =>
-      left.merged(right)((left, _) => left) == right.concat(left)
+      left.merged(right)((left, _) => left) ?= right.concat(left)
     }
   property("left.merged(right) { select right } is the same as left concat right") =
     forAll { (left: HashMap[K, V], right: HashMap[K, V]) =>
-      left.merged(right)((_, right) => right) == left.concat(right)
+      left.merged(right)((_, right) => right) ?= left.concat(right)
     }
   property("merged passes through all key-values in either map that aren't in the other") =
     forAll { (left: HashMap[K, V], right: HashMap[K, V], mergedValue: V) =>
