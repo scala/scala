@@ -51,7 +51,7 @@ sealed abstract class ArraySeq[+A]
     * the expected immutability. Its element type does not have to be equal to the element type of this ArraySeq.
     * A primitive ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an
     * array of a supertype or subtype of the element type. */
-  def unsafeArray: Array[_]
+  protected def unsafeArray: Array[_]
 
   override protected def fromSpecific(coll: scala.collection.IterableOnce[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
 

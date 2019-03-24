@@ -55,7 +55,9 @@ class ArraySeqTest {
   @Test
   def t10851(): Unit = {
     val s1 = ArraySeq.untagged(1,2,3)
-    assertTrue(s1.unsafeArray.getClass == classOf[Array[AnyRef]])
+    val unsafeArray = s1.getClass.getMethod("unsafeArray")
+    unsafeArray.setAccessible(true)
+    assertTrue(unsafeArray.invoke(s1).getClass == classOf[Array[AnyRef]])
   }
 
   @Test

@@ -15,12 +15,11 @@ package tools.nsc
 package util
 
 import scala.reflect.internal.Chars._
-import scala.collection.immutable.ArraySeq
 
-class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, startcol: int, */
+class JavaCharArrayReader(buf: Array[Char], start: Int, /* startline: int, startcol: int, */
                       decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {
 
-  def this(buf: ArraySeq.ofChar, decodeUni: Boolean, error: String => Unit) =
+  def this(buf: Array[Char], decodeUni: Boolean, error: String => Unit) =
     this(buf, 0, /* 1, 1, */ decodeUni, error)
 
   /** the line and column position of the current character
@@ -33,7 +32,7 @@ class JavaCharArrayReader(buf: ArraySeq.ofChar, start: Int, /* startline: int, s
   def hasNext = bp < buf.length
 
   def next(): Char = {
-    val buf = this.buf.unsafeArray
+    val buf = this.buf
     if(!hasNext) {
       ch = SU
       return SU  // there is an endless stream of SU's at the end

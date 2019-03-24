@@ -33,10 +33,9 @@ final class LambdaDeserialize private (lookup: MethodHandles.Lookup, targetMetho
 }
 
 object LambdaDeserialize {
-  @varargs @throws[Throwable]
-  def bootstrap(lookup: MethodHandles.Lookup, invokedName: String, invokedType: MethodType, targetMethods: MethodHandle*): CallSite = {
-    val targetMethodsArray = targetMethods.asInstanceOf[immutable.ArraySeq[_]].unsafeArray.asInstanceOf[Array[MethodHandle]]
-    val exact = MethodHandleConstants.LAMBDA_DESERIALIZE_DESERIALIZE_LAMBDA.bindTo(new LambdaDeserialize(lookup, targetMethodsArray)).asType(invokedType)
+  @throws[Throwable]
+  def bootstrap(lookup: MethodHandles.Lookup, invokedName: String, invokedType: MethodType, targetMethods: Array[MethodHandle]): CallSite = {
+    val exact = MethodHandleConstants.LAMBDA_DESERIALIZE_DESERIALIZE_LAMBDA.bindTo(new LambdaDeserialize(lookup, targetMethods)).asType(invokedType)
     new ConstantCallSite(exact)
   }
 
