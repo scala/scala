@@ -345,7 +345,7 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
 
     private def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
-      val size = acc.longSize
+      val size = acc.sizeLong
       out.writeLong(size)
       val st = acc.stepper
       while (st.hasStep)

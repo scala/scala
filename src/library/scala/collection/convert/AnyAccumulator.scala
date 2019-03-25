@@ -276,7 +276,7 @@ object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
 
     private def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
-      val size = acc.longSize
+      val size = acc.sizeLong
       out.writeLong(size)
       val st = acc.stepper
       while (st.hasStep)

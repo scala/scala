@@ -39,13 +39,13 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
   }
 
   final override def length: Int =
-    if (longSize < Int.MaxValue) longSize.toInt
-    else throw new IllegalArgumentException(s"Size too large for an Int: $longSize")
+    if (sizeLong < Int.MaxValue) sizeLong.toInt
+    else throw new IllegalArgumentException(s"Size too large for an Int: $sizeLong")
 
-  final override def knownSize: Int = if (longSize < Int.MaxValue) size else -1
+  final override def knownSize: Int = if (sizeLong < Int.MaxValue) size else -1
 
   /** Size of the accumulated collection, as a `Long` */
-  final def longSize: Long = totalSize
+  final def sizeLong: Long = totalSize
 
   /** Remove all accumulated elements from this accumulator. */
   def clear(): Unit = {
