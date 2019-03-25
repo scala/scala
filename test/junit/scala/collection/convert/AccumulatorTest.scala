@@ -25,6 +25,7 @@ class AccumulatorTest {
     val ia = Accumulator(1, 2)
 
     assert(Accumulator("a-a", "b-b").iterator sameElements  (sa.map(x => s"$x-$x"): AnyAccumulator[String]))
-    assert(Accumulator("1", "2").iterator sameElements (ia.map(_.toString): Accumulator[String, _]))
+    assert(Accumulator("1", "2").iterator sameElements (ia.map(_.toString): AnyAccumulator[String]))
+    assert(AnyAccumulator(2, 3).iterator sameElements (ia.map(_ + 1): AnyAccumulator[Int]))
   }
 }

@@ -18,7 +18,7 @@ import java.util.function.{Consumer, IntConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, IntStepper, IterableFactory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyConstr, AnyStepper, Factory, IntStepper, IterableFactory, Stepper, StepperShape, mutable}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -31,8 +31,7 @@ import scala.collection.{AnyStepper, Factory, IntStepper, IterableFactory, Stepp
  * TODO: doc performance characteristics.
  */
 final class IntAccumulator
-  extends Accumulator[Int, IntAccumulator]
-    with collection.IterableOps[Int, ({type A[T] = Accumulator[T, _]})#A, IntAccumulator]
+  extends Accumulator[Int, AnyAccumulator, IntAccumulator]
     with Serializable {
   private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
   private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
@@ -217,7 +216,7 @@ final class IntAccumulator
 
   override protected def fromSpecific(coll: IterableOnce[Int]): IntAccumulator = IntAccumulator.fromSpecific(coll)
   override protected def newSpecificBuilder: mutable.Builder[Int, IntAccumulator] = IntAccumulator.newBuilder
-  override def iterableFactory: IterableFactory[({type A[T] = Accumulator[T, _]})#A] = AnyAccumulator
+  override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new IntAccumulator.SerializationProxy(this)
 }

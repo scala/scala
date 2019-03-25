@@ -12,15 +12,16 @@
 
 package scala.collection.convert
 
-import scala.collection.mutable
+import scala.collection.{AnyConstr, IterableOps, mutable}
 
 
 /**
  * Base class to share code between the [[AnyAccumulator]] class (for reference types) and the manual
  * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
  */
-abstract class Accumulator[@specialized(Double, Int, Long) A, +C]
+abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Iterable[X], +C <: mutable.Iterable[A]]
   extends mutable.AbstractIterable[A]
+    with IterableOps[A, CC, C]
     with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
   private[convert] var hIndex: Int = 0

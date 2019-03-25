@@ -18,7 +18,7 @@ import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, IterableFactory, LongStepper, Stepper, StepperShape, mutable}
+import scala.collection.{AnyConstr, AnyStepper, Factory, IterableFactory, LongStepper, Stepper, StepperShape, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -31,8 +31,7 @@ import scala.collection.{AnyStepper, Factory, IterableFactory, LongStepper, Step
  * TODO: doc performance characteristics.
  */
 final class LongAccumulator
-  extends Accumulator[Long, LongAccumulator]
-    with collection.IterableOps[Long, ({type A[T] = Accumulator[T, _]})#A, LongAccumulator]
+  extends Accumulator[Long, AnyAccumulator, LongAccumulator]
     with Serializable {
   private[convert] var current: Array[Long] = LongAccumulator.emptyLongArray
   private[convert] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
@@ -212,7 +211,7 @@ final class LongAccumulator
 
   override protected def fromSpecific(coll: IterableOnce[Long]): LongAccumulator = LongAccumulator.fromSpecific(coll)
   override protected def newSpecificBuilder: mutable.Builder[Long, LongAccumulator] = LongAccumulator.newBuilder
-  override def iterableFactory: IterableFactory[({type A[T] = Accumulator[T, _]})#A] = AnyAccumulator
+  override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new LongAccumulator.SerializationProxy(this)
 }
