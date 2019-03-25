@@ -1,5 +1,5 @@
 class MotherClass extends MixinWithSymbol {
-  val classSymbol = sym"classSymbol"
+  val classSymbol = Symbol("classSymbol")
 }
 
 object Test {

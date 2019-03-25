@@ -1318,7 +1318,7 @@ self =>
         interpolatedString(inPattern = inPattern)
       else if (in.token == SYMBOLLIT) {
         def msg(what: String) =
-          s"""symbol literal is $what; use sym"${in.strVal}" instead"""
+          s"""symbol literal is $what; use Symbol("${in.strVal}") instead"""
         if (settings.isScala214) syntaxError(in.offset, msg("unsupported"))
         else deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))

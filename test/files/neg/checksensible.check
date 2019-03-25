@@ -1,4 +1,4 @@
-checksensible.scala:54: warning: symbol literal is deprecated; use sym"sym" instead
+checksensible.scala:54: warning: symbol literal is deprecated; use Symbol("sym") instead
   (1 != 'sym)
         ^
 checksensible.scala:15: warning: comparing a fresh object using `eq` will always yield false

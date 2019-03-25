@@ -1,7 +1,7 @@
-names-defaults-neg.scala:103: warning: symbol literal is deprecated; use sym"foo" instead
+names-defaults-neg.scala:103: warning: symbol literal is deprecated; use Symbol("foo") instead
   def deprNam6(@deprecatedName('foo) deprNam6Arg: String) = 0
                                ^
-names-defaults-neg.scala:105: warning: symbol literal is deprecated; use sym"bar" instead
+names-defaults-neg.scala:105: warning: symbol literal is deprecated; use Symbol("bar") instead
   def deprNam7(@deprecatedName('bar, "2.12.0") deprNam7Arg: String) = 0
                                ^
 names-defaults-neg.scala:7: error: type mismatch;
