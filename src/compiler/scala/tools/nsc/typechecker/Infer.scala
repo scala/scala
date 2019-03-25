@@ -346,19 +346,27 @@ trait Infer extends Checkable {
      *  by existentially bound variables.
      */
     def makeFullyDefined(tp: Type): Type = {
-      var tparams: List[Symbol] = Nil
-      def addTypeParam(bounds: TypeBounds): Type = {
-        val tparam = context.owner.newExistential(newTypeName("_"+tparams.size), context.tree.pos.focus) setInfo bounds
-        tparams ::= tparam
-        tparam.tpe
+      object typeMap extends TypeMap {
+        def tparamsList: List[Symbol] = if (tparams_ == null) Nil else tparams_.toList
+        private var tparams_ : ListBuffer[Symbol] = null
+        private var i = 0
+        private def nextI(): Int = try i finally i += 1
+        private def addTypeParam(bounds: TypeBounds): Type = {
+          val tparam = context.owner.newExistential(nme.existentialName(nextI()), context.tree.pos.focus) setInfo bounds
+          if (tparams_ == null) tparams_ = ListBuffer.empty
+          tparams_ += tparam
+          tparam.tpe
+        }
+
+        override def apply(tp: Type): Type = mapOver(tp) match {
+          case WildcardType                => addTypeParam(TypeBounds.empty)
+          case BoundedWildcardType(bounds) => addTypeParam(bounds)
+          case tp => tp
+        }
       }
-      val tp1 = tp map {
-        case WildcardType                => addTypeParam(TypeBounds.empty)
-        case BoundedWildcardType(bounds) => addTypeParam(bounds)
-        case t                           => t
-      }
+      val tp1 = typeMap(tp)
       if (tp eq tp1) tp
-      else existentialAbstraction(tparams.reverse, tp1)
+      else existentialAbstraction(typeMap.tparamsList, tp1)
     }
     def ensureFullyDefined(tp: Type): Type = if (isFullyDefined(tp)) tp else makeFullyDefined(tp)
 
