@@ -156,6 +156,14 @@ final class AnyAccumulator[A]
   /** Returns an `Iterator` over the contents of this `AnyAccumulator`. */
   def iterator: Iterator[A] = stepper.iterator
 
+  def countLong(p: A => Boolean): Long = {
+    var r = 0L
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) r += 1
+    r
+  }
+
   /** Copy the elements in this `AnyAccumulator` into an `Array` */
   override def toArray[B >: A : ClassTag]: Array[B] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)

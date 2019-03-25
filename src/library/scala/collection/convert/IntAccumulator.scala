@@ -18,7 +18,7 @@ import java.util.function.{Consumer, IntConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyConstr, AnyStepper, Factory, IntStepper, IterableFactory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, IntStepper, IterableFactory, Stepper, StepperShape}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -162,6 +162,82 @@ final class IntAccumulator
   /** Returns an `Iterator` over the contents of this `IntAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Int] = stepper.iterator
 
+  override def foreach[U](f: Int => U): Unit = {
+    val s = stepper
+    while (s.hasStep) f(s.nextStep())
+  }
+
+  def map(f: Int => Int): IntAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep)
+      b.addOne(f(s.nextStep()))
+    b.result()
+  }
+
+  def flatMap(f: Int => IterableOnce[Int]): IntAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep)
+      b.addAll(f(s.nextStep()))
+    b.result()
+  }
+
+  def collect(pf: PartialFunction[Int, Int]): IntAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep) {
+      val n = s.nextStep()
+      if (pf.isDefinedAt(n))
+        b.addOne(pf.apply(n))
+    }
+    b.result()
+  }
+
+  private def filterAccImpl(pred: Int => Boolean, not: Boolean): IntAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep) {
+      val n = s.nextStep()
+      if (pred(n) != not) b.addOne(n)
+    }
+    b.result()
+  }
+
+  override def filter(pred: Int => Boolean): IntAccumulator = filterAccImpl(pred, not = false)
+
+  override def filterNot(pred: Int => Boolean): IntAccumulator = filterAccImpl(pred, not = true)
+
+  override def forall(p: Int => Boolean): Boolean = {
+    val s = stepper
+    while (s.hasStep)
+      if (!p(s.nextStep())) return false
+    true
+  }
+
+  override def exists(p: Int => Boolean): Boolean = {
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) return true
+    false
+  }
+
+  override def count(p: Int => Boolean): Int = {
+    var r = 0
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) r += 1
+    r
+  }
+
+  def countLong(p: Int => Boolean): Long = {
+    var r = 0L
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) r += 1
+    r
+  }
+
   /** Copies the elements in this `IntAccumulator` into an `Array[Int]` */
   def toArray: Array[Int] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
@@ -215,7 +291,7 @@ final class IntAccumulator
   }
 
   override protected def fromSpecific(coll: IterableOnce[Int]): IntAccumulator = IntAccumulator.fromSpecific(coll)
-  override protected def newSpecificBuilder: mutable.Builder[Int, IntAccumulator] = IntAccumulator.newBuilder
+  override protected def newSpecificBuilder: IntAccumulator = IntAccumulator.newBuilder
   override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new IntAccumulator.SerializationProxy(this)
@@ -257,7 +333,7 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
 
   override def empty: IntAccumulator = new IntAccumulator
 
-  override def newBuilder: mutable.Builder[Int, IntAccumulator] = new IntAccumulator
+  override def newBuilder: IntAccumulator = new IntAccumulator
 
   class SerializationProxy[A](@transient private val acc: IntAccumulator) extends Serializable {
     @transient private var result: IntAccumulator = _

@@ -12,7 +12,7 @@
 
 package scala.collection.convert
 
-import scala.collection.{AnyConstr, IterableOps, mutable}
+import scala.collection.{IterableOps, StrictOptimizedIterableOps, mutable}
 
 
 /**
@@ -22,6 +22,7 @@ import scala.collection.{AnyConstr, IterableOps, mutable}
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Iterable[X], +C <: mutable.Iterable[A]]
   extends mutable.AbstractIterable[A]
     with IterableOps[A, CC, C]
+    with StrictOptimizedIterableOps[A, CC, C]
     with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
   private[convert] var hIndex: Int = 0

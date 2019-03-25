@@ -18,7 +18,7 @@ import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyConstr, AnyStepper, Factory, IterableFactory, LongStepper, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, IterableFactory, LongStepper, Stepper, StepperShape, mutable}
 
 /** A `LongAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -157,6 +157,82 @@ final class LongAccumulator
   /** Returns an `Iterator` over the contents of this `LongAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Long] = stepper.iterator
 
+  override def foreach[U](f: Long => U): Unit = {
+    val s = stepper
+    while (s.hasStep) f(s.nextStep())
+  }
+
+  def map(f: Long => Long): LongAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep)
+      b.addOne(f(s.nextStep()))
+    b.result()
+  }
+
+  def flatMap(f: Long => IterableOnce[Long]): LongAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep)
+      b.addAll(f(s.nextStep()))
+    b.result()
+  }
+
+  def collect(pf: PartialFunction[Long, Long]): LongAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep) {
+      val n = s.nextStep()
+      if (pf.isDefinedAt(n))
+        b.addOne(pf.apply(n))
+    }
+    b.result()
+  }
+
+  private def filterAccImpl(pred: Long => Boolean, not: Boolean): LongAccumulator = {
+    val b = newSpecificBuilder
+    val s = stepper
+    while (s.hasStep) {
+      val n = s.nextStep()
+      if (pred(n) != not) b.addOne(n)
+    }
+    b.result()
+  }
+
+  override def filter(pred: Long => Boolean): LongAccumulator = filterAccImpl(pred, not = false)
+
+  override def filterNot(pred: Long => Boolean): LongAccumulator = filterAccImpl(pred, not = true)
+
+  override def forall(p: Long => Boolean): Boolean = {
+    val s = stepper
+    while (s.hasStep)
+      if (!p(s.nextStep())) return false
+    true
+  }
+
+  override def exists(p: Long => Boolean): Boolean = {
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) return true
+    false
+  }
+
+  override def count(p: Long => Boolean): Int = {
+    var r = 0
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) r += 1
+    r
+  }
+
+  def countLong(p: Long => Boolean): Long = {
+    var r = 0L
+    val s = stepper
+    while (s.hasStep)
+      if (p(s.nextStep())) r += 1
+    r
+  }
+
   /** Copies the elements in this `LongAccumulator` into an `Array[Long]` */
   def toArray: Array[Long] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
@@ -210,7 +286,7 @@ final class LongAccumulator
   }
 
   override protected def fromSpecific(coll: IterableOnce[Long]): LongAccumulator = LongAccumulator.fromSpecific(coll)
-  override protected def newSpecificBuilder: mutable.Builder[Long, LongAccumulator] = LongAccumulator.newBuilder
+  override protected def newSpecificBuilder: LongAccumulator = LongAccumulator.newBuilder
   override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new LongAccumulator.SerializationProxy(this)
@@ -252,7 +328,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
 
   override def empty: LongAccumulator = new LongAccumulator
 
-  override def newBuilder: mutable.Builder[Long, LongAccumulator] = new LongAccumulator
+  override def newBuilder: LongAccumulator = new LongAccumulator
 
   class SerializationProxy[A](@transient private val acc: LongAccumulator) extends Serializable {
     @transient private var result: LongAccumulator = _
