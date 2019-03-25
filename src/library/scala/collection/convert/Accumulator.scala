@@ -12,7 +12,8 @@
 
 package scala.collection.convert
 
-import scala.collection.{StrictOptimizedIterableOps, mutable}
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.{Stepper, StepperShape, StrictOptimizedIterableOps, mutable}
 
 
 /**
@@ -37,6 +38,11 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
     }
     else 1 << 24
   }
+
+  protected def efficientStepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit
+
+  final override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
+    efficientStepper(shape)
 
   final override def length: Int =
     if (sizeLong < Int.MaxValue) sizeLong.toInt

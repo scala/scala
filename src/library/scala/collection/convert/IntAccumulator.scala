@@ -40,7 +40,7 @@ final class IntAccumulator
 
   override protected[this] def className: String = "IntAccumulator"
 
-  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  def efficientStepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new IntAccumulatorStepper(this)
     val r =
       if (shape.shape == StepperShape.IntShape) st

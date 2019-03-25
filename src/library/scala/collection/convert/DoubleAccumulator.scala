@@ -40,7 +40,7 @@ final class DoubleAccumulator
 
   override protected[this] def className: String = "DoubleAccumulator"
 
-  override def stepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  def efficientStepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     val st = new DoubleAccumulatorStepper(this)
     val r =
       if (shape.shape == StepperShape.DoubleShape) st

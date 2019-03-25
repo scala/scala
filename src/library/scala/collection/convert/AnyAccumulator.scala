@@ -49,7 +49,7 @@ final class AnyAccumulator[A]
 
   override protected[this] def className: String = "AnyAccumulator"
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
+  def efficientStepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
     shape.parUnbox(new AnyAccumulatorStepper[B](this.asInstanceOf[AnyAccumulator[B]]))
 
   private def expand(): Unit = {
