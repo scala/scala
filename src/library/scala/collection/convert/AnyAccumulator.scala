@@ -17,7 +17,7 @@ import java.util.Spliterator
 import java.util.function.Consumer
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, IterableFactory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -153,6 +153,16 @@ final class AnyAccumulator[A]
   /** Retrieves the `ix`th element, using an `Int` index. */
   def apply(i: Int): A = apply(i.toLong)
 
+  def update(idx: Long, elem: A): Unit = {
+    if (totalSize - idx <= index || hIndex == 0) current((idx - (totalSize - index)).toInt) = elem.asInstanceOf[AnyRef]
+    else {
+      val w = seekSlot(idx)
+      history((w >>> 32).toInt)((w & 0xFFFFFFFFL).toInt) = elem.asInstanceOf[AnyRef]
+    }
+  }
+
+  def update(idx: Int, elem: A): Unit = update(idx.toLong, elem)
+
   /** Returns an `Iterator` over the contents of this `AnyAccumulator`. */
   def iterator: Iterator[A] = stepper.iterator
 
@@ -222,12 +232,12 @@ final class AnyAccumulator[A]
     factory.fromSpecific(iterator)
   }
 
-  override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
+  override def iterableFactory: SeqFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new AnyAccumulator.SerializationProxy(this)
 }
 
-object AnyAccumulator extends collection.IterableFactory[AnyAccumulator] {
+object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
   private val emptyAnyRefArray = new Array[AnyRef](0)
   private val emptyAnyRefArrayArray = new Array[Array[AnyRef]](0)
   private val emptyLongArray = new Array[Long](0)

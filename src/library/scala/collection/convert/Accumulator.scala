@@ -12,16 +12,16 @@
 
 package scala.collection.convert
 
-import scala.collection.{IterableOps, StrictOptimizedIterableOps, mutable}
+import scala.collection.{StrictOptimizedIterableOps, mutable}
 
 
 /**
  * Base class to share code between the [[AnyAccumulator]] class (for reference types) and the manual
  * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
  */
-abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Iterable[X], +C <: mutable.Iterable[A]]
-  extends mutable.AbstractIterable[A]
-    with IterableOps[A, CC, C]
+abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
+  extends mutable.AbstractSeq[A]
+    with mutable.SeqOps[A, CC, C]
     with StrictOptimizedIterableOps[A, CC, C]
     with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
@@ -38,7 +38,7 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
     else 1 << 24
   }
 
-  final override def size: Int =
+  final override def length: Int =
     if (longSize < Int.MaxValue) longSize.toInt
     else throw new IllegalArgumentException(s"Size too large for an Int: $longSize")
 

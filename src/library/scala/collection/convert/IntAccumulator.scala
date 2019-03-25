@@ -18,7 +18,7 @@ import java.util.function.{Consumer, IntConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, IntStepper, IterableFactory, Stepper, StepperShape}
+import scala.collection.{AnyStepper, Factory, IntStepper, SeqFactory, Stepper, StepperShape}
 
 /** A `IntAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -159,6 +159,16 @@ final class IntAccumulator
   /** Retrieves the `ix`th element, using an `Int` index. */
   def apply(i: Int): Int = apply(i.toLong)
 
+  def update(idx: Long, elem: Int): Unit = {
+    if (totalSize - idx <= index || hIndex == 0) current((idx - (totalSize - index)).toInt) = elem
+    else {
+      val w = seekSlot(idx)
+      history((w >>> 32).toInt)((w & 0xFFFFFFFFL).toInt) = elem
+    }
+  }
+
+  def update(idx: Int, elem: Int): Unit = update(idx.toLong, elem)
+
   /** Returns an `Iterator` over the contents of this `IntAccumulator`. The `Iterator` is not specialized. */
   def iterator: Iterator[Int] = stepper.iterator
 
@@ -292,7 +302,7 @@ final class IntAccumulator
 
   override protected def fromSpecific(coll: IterableOnce[Int]): IntAccumulator = IntAccumulator.fromSpecific(coll)
   override protected def newSpecificBuilder: IntAccumulator = IntAccumulator.newBuilder
-  override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
+  override def iterableFactory: SeqFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new IntAccumulator.SerializationProxy(this)
 }
