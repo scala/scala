@@ -17,7 +17,7 @@ import java.util.Spliterator
 import java.util.function.Consumer
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, IterableFactory, Stepper, StepperShape, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -214,6 +214,8 @@ final class AnyAccumulator[A]
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
+
+  override def iterableFactory: IterableFactory[AnyAccumulator] = AnyAccumulator
 
   private def writeReplace(): AnyRef = new AnyAccumulator.SerializationProxy(this)
 }

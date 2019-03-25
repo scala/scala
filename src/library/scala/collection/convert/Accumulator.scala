@@ -19,8 +19,8 @@ import scala.collection.mutable
  * Base class to share code between the [[AnyAccumulator]] class (for reference types) and the manual
  * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
  */
-trait Accumulator[@specialized(Double, Int, Long) A, +C]
-  extends mutable.Iterable[A]
+abstract class Accumulator[@specialized(Double, Int, Long) A, +C]
+  extends mutable.AbstractIterable[A]
     with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
   private[convert] var hIndex: Int = 0
