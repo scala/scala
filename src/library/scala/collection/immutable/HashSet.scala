@@ -466,7 +466,7 @@ private final class BitmapIndexedSetNode[A](
         val nodeMap = bitposFrom(mask0)
         val node = mergeTwoKeyValPairs(key0, originalKeyHash0, keyHash0, key1, originalKeyHash1, keyHash1, shift + BitPartitionSize)
 
-        new BitmapIndexedSetNode[A](0, nodeMap, Array(node), Array(), node.size, node.cachedJavaKeySetHashCode)
+        new BitmapIndexedSetNode[A](0, nodeMap, Array(node), Array.emptyIntArray, node.size, node.cachedJavaKeySetHashCode)
       }
     }
   }
@@ -1551,7 +1551,7 @@ private[collection] final class HashSetBuilder[A] extends ReusableBuilder[A, Has
   import Node._
   import SetNode._
 
-  private def newEmptyRootNode = new BitmapIndexedSetNode[A](0, 0, Array(), Array(), 0, 0)
+  private def newEmptyRootNode = new BitmapIndexedSetNode[A](0, 0, Array.emptyObjectArray.asInstanceOf[Array[Any]], Array.emptyIntArray, 0, 0)
 
   /** The last given out HashSet as a return value of `result()`, if any, otherwise null.
     * Indicates that on next add, the elements should be copied to an identical structure, before continuing

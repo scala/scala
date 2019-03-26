@@ -640,7 +640,7 @@ private final class BitmapIndexedMapNode[K, +V](
         // identical prefixes, payload must be disambiguated deeper in the trie
         val nodeMap = bitposFrom(mask0)
         val node = mergeTwoKeyValPairs(key0, value0, originalHash0, keyHash0, key1, value1, originalHash1, keyHash1, shift + BitPartitionSize)
-        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node), Array(), node.size, node.cachedJavaKeySetHashCode)
+        new BitmapIndexedMapNode[K, V1](0, nodeMap, Array(node), Array.emptyIntArray, node.size, node.cachedJavaKeySetHashCode)
       }
     }
   }
@@ -1835,7 +1835,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
   import MapNode._
 
 
-  private def newEmptyRootNode = new BitmapIndexedMapNode[K, V](0, 0, Array(), Array(), 0, 0)
+  private def newEmptyRootNode = new BitmapIndexedMapNode[K, V](0, 0, Array.emptyObjectArray.asInstanceOf[Array[Any]], Array.emptyIntArray, 0, 0)
 
   /** The last given out HashMap as a return value of `result()`, if any, otherwise null.
     * Indicates that on next add, the elements should be copied to an identical structure, before continuing
