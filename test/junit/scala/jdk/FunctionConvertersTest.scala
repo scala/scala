@@ -848,4 +848,27 @@ class FunctionConvertersTest {
       assertEquals(foo(uop2)(num), bar(conv.asScalaFromUnaryOperator(uop2))(num))
     }
   }
+
+  @Test
+  def noDoubleWrapping(): Unit = {
+    val sf = (x: Int, y: Int) => x + y
+    val jfa: BiFunction[Int, Int, Int] = (x, y) => x + y
+    val jfb: IntBinaryOperator = (x, y) => x + y
+
+    assert(sf eq sf.asJava.asScala)
+    assert(sf eq sf.asJavaBinaryOperator.asScala)
+    assert(sf eq sf.asJavaBiFunction.asScala)
+    assert(jfa eq jfa.asScala.asJavaBiFunction)
+    assert(jfa ne (jfa.asScala.asJava: IntBinaryOperator)) // produces a IntBinaryOperator
+    assert(jfb eq jfb.asScala.asJava)
+    assert(jfb ne jfb.asScala.asJavaBinaryOperator)
+
+    assert(sf eq conv.asScalaFromIntBinaryOperator(conv.asJavaIntBinaryOperator(sf)))
+    assert(sf eq conv.asScalaFromBinaryOperator(conv.asJavaBinaryOperator(sf)))
+    assert(sf eq conv.asScalaFromBiFunction(conv.asJavaBiFunction(sf)))
+    assert(jfa eq conv.asJavaBiFunction(conv.asScalaFromBiFunction(jfa)))
+    assert(jfa ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa)))
+    assert(jfb eq conv.asJavaIntBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
+    assert(jfb ne conv.asJavaBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
+  }
 }

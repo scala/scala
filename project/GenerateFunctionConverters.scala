@@ -187,6 +187,7 @@ object GenerateFunctionConverters {
 
       // Names for Java conversions to Scala
       val j2sClassN = TypeName("FromJava" + jfn.title)
+      val j2sCompanionN = j2sClassN.toTermName
       val j2sValCN = TypeName("Rich" + jfn.title + "As" + scalaType.name.encoded)
       val j2sDefN = TermName("asScalaFrom" + jfn.title)
       val j2sImpN = TermName("enrichAsScalaFrom" + jfn.title)
@@ -194,6 +195,7 @@ object GenerateFunctionConverters {
       // Names for Scala conversions to Java
       val s2jAsJavaTitle = TermName("asJava" + jfn.title)
       val s2jClassN = TypeName("AsJava" + jfn.title)
+      val s2jCompanionN = s2jClassN.toTermName
       val s2jValCN = TypeName("Rich" + scalaType.name.encoded + "As" + jfn.title)
       val s2jDefN = TermName("asJava" + jfn.title)
       val s2jImpN = TermName("enrichAsJava" + jfn.title)
@@ -205,28 +207,37 @@ object GenerateFunctionConverters {
       val vParamRefs = vParams.map(_.name).map(Ident(_))
 
       val j2sClassTree =
-        q"""class $j2sClassN[..$tdParams](jf: $javaType[..$javaTargs]) extends $scalaType[..$scalaTargs] {
+        q"""case class $j2sClassN[..$tdParams](jf: $javaType[..$javaTargs]) extends $scalaType[..$scalaTargs] {
           def apply(..$vParams) = jf.${jfn.name}(..$vParamRefs)
         }"""
 
       val j2sValCTree =
         q"""class $j2sValCN[..$tdParams](private val underlying: $javaType[..$javaTargs]) extends AnyVal {
-          @inline def asScala: $scalaType[..$scalaTargs] = new $j2sClassN[..$tnParams](underlying)
+          @inline def asScala: $scalaType[..$scalaTargs] = underlying match {
+            case $s2jCompanionN(sf) => sf.asInstanceOf[$scalaType[..$scalaTargs]]
+            case _ => new $j2sClassN[..$tnParams](underlying)
+          }
         }"""
 
       val j2sDefTree =
-        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargs] = new $j2sClassN[..$tnParams](jf)"""
+        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargs] = jf match {
+          case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargs]]
+          case _ => new $j2sClassN[..$tnParams](jf)
+        }"""
 
       val j2sImpTree =
         q"""@inline implicit def $j2sImpN[..$tdParams](jf: $javaType[..$javaTargs]): $j2sValCN[..$tnParams] = new $j2sValCN[..$tnParams](jf)"""
 
       val s2jClassTree =
-        q"""class $s2jClassN[..$tdParams](sf: $scalaType[..$scalaTargs]) extends $javaType[..$javaTargs] {
+        q"""case class $s2jClassN[..$tdParams](sf: $scalaType[..$scalaTargs]) extends $javaType[..$javaTargs] {
           def ${jfn.name}(..$vParams) = sf.apply(..$vParamRefs)
         }"""
 
       val s2jDefTree =
-        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargs]): $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](sf)"""
+        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargs]): $javaType[..$javaTargs] = sf match {
+          case $j2sCompanionN(f) => f.asInstanceOf[$javaType[..$javaTargs]]
+          case _ => new $s2jClassN[..$tnParams](sf)
+        }"""
 
       // This is especially tricky because functions are contravariant in their arguments
       // Need to prevent e.g. Any => String from "downcasting" itself to Int => String; we want the more exact conversion
@@ -268,12 +279,19 @@ object GenerateFunctionConverters {
       }
 
       val s2jValFullNameAsJavaMethodTree =
-        if (priority > 0) q"@inline def $s2jAsJavaTitle: $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](underlying)"
+        if (priority > 0)
+          q"""@inline def $s2jAsJavaTitle: $javaType[..$javaTargs] = underlying match {
+            case $j2sCompanionN(sf) => sf.asInstanceOf[$javaType[..$javaTargs]]
+            case _ => new $s2jClassN[..$tnParams](underlying)
+          }"""
         else EmptyTree
 
       val s2jValCTree =
         q"""class $s2jValCN[..$tdParams](private val underlying: $scalaType[..$scalaTargs]) extends AnyVal {
-          @inline def asJava: $javaType[..$javaTargs] = new $s2jClassN[..$tnParams](underlying)
+          @inline def asJava: $javaType[..$javaTargs] = underlying match {
+            case $j2sCompanionN(jf) => jf.asInstanceOf[$javaType[..$javaTargs]]
+            case _ => new $s2jClassN[..$tnParams](underlying)
+          }
           $s2jValFullNameAsJavaMethodTree
         }"""
 
