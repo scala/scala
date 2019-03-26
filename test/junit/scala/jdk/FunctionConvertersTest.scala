@@ -12,6 +12,8 @@
 
 package scala.jdk
 
+import java.io.NotSerializableException
+
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,6 +21,7 @@ import org.junit.runners.JUnit4
 
 import scala.jdk.FunctionConverters.Ops._
 import scala.jdk.{FunctionConverters => conv}
+import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class FunctionConvertersTest {
@@ -870,5 +873,41 @@ class FunctionConvertersTest {
     assert(jfa ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa)))
     assert(jfb eq conv.asJavaIntBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
     assert(jfb ne conv.asJavaBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
+  }
+
+  private def serializeDeserialize[T <: AnyRef](obj: T): T = {
+    import java.io._
+    val buffer = new ByteArrayOutputStream
+    val out = new ObjectOutputStream(buffer)
+    out.writeObject(obj)
+    val in = new ObjectInputStream(new ByteArrayInputStream(buffer.toByteArray))
+    in.readObject.asInstanceOf[T]
+  }
+
+  @Test
+  def wrappersSerializable(): Unit = {
+    val sf = (x: Int, y: Int) => x + y
+    val jfa: BiFunction[Int, Int, Int] = (x, y) => x + y
+    val jfb: IntBinaryOperator = (x, y) => x + y
+    val jfas = new BiFunction[Int, Int, Int] with Serializable {
+      def apply(x: Int, y: Int): Int = x + y
+    }
+    val jfbs = new IntBinaryOperator with Serializable {
+      def applyAsInt(x: Int, y: Int): Int = x + y
+    }
+
+    serializeDeserialize(sf)
+    assertThrows[NotSerializableException](serializeDeserialize(jfa))
+    assertThrows[NotSerializableException](serializeDeserialize(jfb))
+    serializeDeserialize(jfas)
+    serializeDeserialize(jfbs)
+    serializeDeserialize(sf.asJava)
+    serializeDeserialize(sf.asJavaBiFunction)
+    serializeDeserialize(sf.asJavaBinaryOperator)
+    assertThrows[NotSerializableException](serializeDeserialize(jfa.asScala))
+    assertThrows[NotSerializableException](serializeDeserialize(jfb.asScala))
+    serializeDeserialize(jfas.asScala)
+    serializeDeserialize(jfbs.asScala)
+
   }
 }
