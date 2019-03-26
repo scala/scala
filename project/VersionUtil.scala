@@ -193,23 +193,4 @@ object VersionUtil {
       case (k, v) => (k, sys.props.getOrElse(k, v)) // allow system properties to override versions.properties
     }
   }
-
-  private def bootstrapOrganization(path: String) =
-    "org.scala-lang.scala-sha-bootstrap." + path.replace('/', '.')
-
-  /** Build a dependency to a JAR file in the bootstrap repository */
-  def bootstrapDep(path: String)(libNameAndSha: (String, String)): ModuleID =
-    bootstrapOrganization(path) % libNameAndSha._1 % libNameAndSha._2 from
-      s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/${libNameAndSha._2}/$path/${libNameAndSha._1}.jar"
-
-  /** Copy a bootstrap dependency JAR that is on the classpath to a file */
-  def copyBootstrapJar(cp: Seq[Attributed[File]], baseDir: File, path: String, libName: String): Unit = {
-    val org = bootstrapOrganization(path)
-    val resolved = cp.find { a =>
-      val mod = a.get(moduleID.key)
-      mod.map(_.organization) == Some(org) && mod.map(_.name) == Some(libName)
-    }.map(_.data).get
-    if(!(baseDir / path).exists()) IO.createDirectory(baseDir / path)
-    IO.copyFile(resolved, baseDir / path / s"$libName.jar")
-  }
 }
