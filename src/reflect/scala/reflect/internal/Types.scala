@@ -417,7 +417,7 @@ trait Types
      *  The empty list for all other types */
     def parents: List[Type] = List()
 
-    /** For a class with nonEmpty parents, the first parent.
+    /** For a class with !isEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
     def firstParent = if (!parents.isEmpty) parents.head else ObjectTpe
@@ -1239,7 +1239,7 @@ trait Types
     // Empty signals failure. We don't consider the 0-ary HOF case, since we are only concerned with inferring param types for these functions anyway
     def hofParamTypes = functionOrPfOrSamArgTypes(underlying)
 
-    override def expectsFunctionType: Boolean = hofParamTypes.nonEmpty
+    override def expectsFunctionType: Boolean = !hofParamTypes.isEmpty
 
     // TODO: include result type?
     override def asFunctionType =
@@ -1275,7 +1275,7 @@ trait Types
         }
 
         // if we're asking for the last argument, or past, and it happens to be a repeated param -- strip the vararg marker and return the type
-        if (params.nonEmpty && params.lengthCompare(argIdxMapped + 1) <= 0 && isRepeatedParamType(lastParamTp)) {
+        if (!params.isEmpty && params.lengthCompare(argIdxMapped + 1) <= 0 && isRepeatedParamType(lastParamTp)) {
           Some(lastParamTp.dealiasWiden.typeArgs.head)
         } else if (params.isDefinedAt(argIdxMapped)) {
           Some(dropByName(params(argIdxMapped).tpe))
@@ -1328,7 +1328,7 @@ trait Types
       def sameHOArgTypes(tp1: Type, tp2: Type) = tp1 == WildcardType || {
         val hoArgTypes1 = functionOrPfOrSamArgTypes(tp1.resultType)
         // println(s"sameHOArgTypes($tp1, $tp2) --> $hoArgTypes1 === $hoArgTypes2 : $res")
-        hoArgTypes1.nonEmpty && hoArgTypes1.corresponds(functionOrPfOrSamArgTypes(tp2.resultType))(same)
+        !hoArgTypes1.isEmpty && hoArgTypes1.corresponds(functionOrPfOrSamArgTypes(tp2.resultType))(same)
       }
 
       // TODO: compute functionOrPfOrSamArgTypes during fold?
@@ -1792,7 +1792,7 @@ trait Types
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType with RefinedTypeApi {
     override def isHigherKinded = (
-      parents.nonEmpty &&
+      !parents.isEmpty &&
       (parents forall typeIsHigherKinded) &&
       !phase.erasedTypes
     )
@@ -1963,7 +1963,7 @@ trait Types
 
       def apply(tp: Type): Type = {
         tp match {
-          case tr @ TypeRef(_, sym, args) if args.nonEmpty =>
+          case tr @ TypeRef(_, sym, args) if !args.isEmpty =>
             val tparams = tr.initializedTypeParams
             devWarningIf(!sameLength(tparams, args)) {
               s"Mismatched zip in computeRefs(): ${sym.info.typeParams}, $args"
@@ -2650,9 +2650,8 @@ trait Types
     }
     private def customToString = sym match {
       case RepeatedParamClass | JavaRepeatedParamClass => args.head.toString + "*"
-      case ByNameParamClass if args.nonEmpty => "=> " + args.head
-      case _ =>
-        if (isFunctionTypeDirect(this)) {
+      case ByNameParamClass if !args.isEmpty           => "=> " + args.head
+      case _ if isFunctionTypeDirect(this)             =>
           // Aesthetics: printing Function1 as T => R rather than (T) => R
           // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
           // from (T1, T2) => R.
@@ -2670,15 +2669,11 @@ trait Types
             case xs =>
               xs.init.mkString("(", ", ", ")") + " => " + xs.last
           }
-        }
-        else if (isShowAsInfixType)
-          infixTypeString
-        else if (isTupleTypeDirect(this))
-          tupleTypeString
-        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (this ne dealias))
-          "" + dealias
-        else
-          ""
+        case _ if isShowAsInfixType                    => infixTypeString
+        case _ if isTupleTypeDirect(this)              => tupleTypeString
+        case _ if sym.isAliasType && (this ne dealias) && prefixChain.exists(_.termSymbol.isSynthetic)
+                                                       => "" + dealias
+        case _                                         => ""
     }
     override def safeToString = {
       val custom = if (settings.debug) "" else customToString
@@ -2934,7 +2929,7 @@ trait Types
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type with PolyTypeApi {
     //assert(!(typeParams contains NoSymbol), this)
-    assert(typeParams.nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
+    assert(!typeParams.isEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss
@@ -3311,14 +3306,14 @@ trait Types
     }
   }
 
-  /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
+  /** Precondition: !params.isEmpty.  (args.nonEmpty enforced structurally.)
    */
   class HKTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
     override val params: List[Symbol]
   ) extends TypeVar(_origin, _constr) {
-    require(params.nonEmpty, this)
+    require(!params.isEmpty, this)
     override def isHigherKinded: Boolean = true
     override def typeParams: List[Symbol] = params
   }
@@ -3330,7 +3325,7 @@ trait Types
     override val params: List[Symbol],
     override val typeArgs: List[Type]
   ) extends TypeVar(_origin, _constr) {
-    require(params.nonEmpty && sameLength(params, typeArgs), this)
+    require(!params.isEmpty && sameLength(params, typeArgs), this)
     override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
     override def setInst(tp: Type): this.type =
       super.setInst(if (isSubArgs(typeArgs, tp.typeArgs, params, Depth.AnyDepth)) tp.typeConstructor else NoType)
@@ -3700,7 +3695,7 @@ trait Types
     override def typeSymbol = origin.typeSymbol
 
     private def tparamsOfSym(sym: Symbol) = sym.info match {
-      case PolyType(tparams, _) if tparams.nonEmpty =>
+      case PolyType(tparams, _) if !tparams.isEmpty =>
         tparams map (_.defString) mkString("[", ",", "]")
       case _ => ""
     }
@@ -4192,7 +4187,7 @@ trait Types
         partitionInto(tparams, tpe.contains, border, pending)
         val closed    = mutable.ListBuffer.empty[Symbol]
         var nextBorder = mutable.ListBuffer.empty[Symbol]
-        while (border.nonEmpty) {
+        while (!border.isEmpty) {
           nextBorder.clear
           pending.filterInPlace { paramTodo =>
             !border.exists(_.info contains paramTodo) || {
@@ -5160,7 +5155,7 @@ trait Types
     if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
     else tp
 
-  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (updatedSyms.nonEmpty)
+  def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (!updatedSyms.isEmpty)
     for (t <- tree if t.tpe != null)
       for (tp <- t.tpe) {
         invalidateCaches(tp, updatedSyms)
