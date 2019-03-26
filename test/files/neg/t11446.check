@@ -1,0 +1,29 @@
+t11446.scala:29: error: object A is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: def unapply(s: String, strict: Boolean): Option[Int] exists in object A, but it cannot be used as an extractor as it has more than one (non-implicit) parameter
+  "a" match { case A(i) => i }
+                   ^
+t11446.scala:30: error: object B is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: def unapply(s: String)(u: Int): Option[Int] exists in object B, but it cannot be used as an extractor due to its second non-implicit parameter list
+  "b" match { case B(i) => i }
+                   ^
+t11446.scala:31: error: object C is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: def unapply(s: String, i: Int): Option[Int] exists in object C, but it cannot be used as an extractor as it has more than one (non-implicit) parameter
+  "c" match { case C(i) => i }
+                   ^
+t11446.scala:32: error: object D is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: def unapply(): Option[Int] exists in object D, but it cannot be used as an extractor: an unapply method must accept a single argument
+  "d" match { case D(i) => i }
+                   ^
+t11446.scala:33: error: object E is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: def unapply: Option[Int] exists in object E, but it cannot be used as an extractor: an unapply method must accept a single argument
+  "e" match { case E(i) => i }
+                   ^
+t11446.scala:34: error: object F is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: val unapply: Option[Int] exists in object F, but it cannot be used as an extractor: an unapply method must accept a single argument
+  "f" match { case F(i) => i }
+                   ^
+t11446.scala:35: error: object F is not a case class, nor does it have a valid unapply/unapplySeq member
+Note: val unapply: Option[Int] exists in object F, but it cannot be used as an extractor: an unapply method must accept a single argument
+  "g" match { case F(i) => i }
+                   ^
+7 errors found

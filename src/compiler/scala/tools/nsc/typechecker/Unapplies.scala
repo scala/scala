@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.annotation.tailrec
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
 
@@ -42,10 +43,33 @@ trait Unapplies extends ast.TreeDSL {
    */
   def directUnapplyMember(tp: Type): Symbol = (tp member nme.unapply) orElse (tp member nme.unapplySeq)
 
-  /** Filters out unapplies with multiple (non-implicit) parameter lists,
-   *  as they cannot be used as extractors
+  /** Filters out unapplies with invalid shapes: extractor methods must have
+    * either one unary param list or one unary param list and an implicit param list.
    */
-  def unapplyMember(tp: Type): Symbol = directUnapplyMember(tp) filter (sym => !hasMultipleNonImplicitParamLists(sym))
+  def unapplyMember(tp: Type): Symbol = {
+    def qualifies(sym: Symbol) =
+      validateUnapplyMember(sym.info) == UnapplyMemberResult.Ok
+    directUnapplyMember(tp) filter qualifies
+  }
+
+  // this slight extravagance opens this to reuse in error message generation
+  object UnapplyMemberResult extends Enumeration {
+    val Ok, NoParams, MultiParams, MultiParamss, VarArgs, Other = Value
+  }
+  @tailrec final def validateUnapplyMember(tp: Type): UnapplyMemberResult.Value = {
+    import UnapplyMemberResult._
+    tp match {
+      case PolyType(_, restpe) => validateUnapplyMember(restpe)
+      case MethodType(Nil, _) | NullaryMethodType(_) => NoParams
+      case MethodType(_ :: Nil, snd: MethodType) =>
+        if (snd.isImplicit) Ok else MultiParamss
+      case MethodType(x :: Nil, _) =>
+        if (definitions.isRepeated(x)) VarArgs
+        else Ok
+      case MethodType(_, _) => MultiParams
+      case _ => Other
+    }
+  }
 
   object HasUnapply {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
