@@ -206,6 +206,14 @@ trait Collections {
       index += 1
     }
   }
+  final def foreachWithIndex[A](it: Iterator[A])(f: (A, Int) => Unit){
+    var index = 0
+    while (it.hasNext) {
+      f(it.next, index)
+      index += 1
+    }
+  }
+
 
   // @inline
   final def findOrElse[A](xs: TraversableOnce[A])(p: A => Boolean)(orElse: => A): A = {

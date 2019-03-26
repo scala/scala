@@ -17,7 +17,7 @@ package runtime
 import scala.language.existentials
 
 import scala.ref.WeakReference
-import scala.collection.mutable.WeakHashMap
+import scala.collection.mutable.{BitSet, ListBuffer, WeakHashMap}
 
 import java.lang.{Class => jClass, Package => jPackage}
 import java.lang.reflect.{
@@ -29,9 +29,7 @@ import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
 import java.lang.ref.{WeakReference => jWeakReference}
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags }
-import internal.pickling.ByteCodecs
-import internal.pickling.UnPickler
-import scala.collection.mutable.ListBuffer
+import internal.pickling.{ByteCodecs, UnPickler}
 import internal.Flags._
 import ReflectionUtils._
 import scala.reflect.api.TypeCreator
@@ -449,12 +447,16 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     // caches MethodSymbol metadata, so that we minimize the work that needs to be done during Mirror.apply
     // TODO: vararg is only supported in the last parameter list (scala/bug#6182), so we don't need to worry about the rest for now
     private class MethodMetadata(symbol: MethodSymbol) {
-      private val params = symbol.paramss.flatten.toArray
-      private val vcMetadata = params.map(p => new DerivedValueClassMetadata(p.info))
-      val isByName = params.map(p => isByNameParam(p.info))
-      def isDerivedValueClass(i: Int) = vcMetadata(i).isDerivedValueClass
+      val paramCount = sumSize(symbol.paramss, 0)
+      private val vcMetadata = new Array[DerivedValueClassMetadata](paramCount)
+      val isByName: BitSet = new BitSet(initSize = paramCount)
+
+      foreachWithIndex(symbol.paramss.iterator.flatten) { (p, ix) =>
+        if (isByNameParam(p.info)) isByName.add(ix)
+        vcMetadata(ix) = new DerivedValueClassMetadata(p.info)
+      }
+      def isDerivedValueClass(i: Int): Boolean = vcMetadata(i).isDerivedValueClass
       def paramUnboxers(i: Int) = vcMetadata(i).unboxer
-      val paramCount = params.length
       val ret = new DerivedValueClassMetadata(symbol.returnType)
     }
 
