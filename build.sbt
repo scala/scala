@@ -48,18 +48,6 @@ val jlineDep          = "jline"                          % "jline"              
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
-val partestDependencies =  Seq(
-  "annotations" -> "02fe2ed93766323a13f22c7a7e2ecdcd84259b6c",
-  "enums"       -> "981392dbd1f727b152cd1c908c5fce60ad9d07f7",
-  "genericNest" -> "b1ec8a095cec4902b3609d74d274c04365c59c04",
-  "jsoup-1.3.1" -> "346d3dff4088839d6b4d163efa2892124039d216",
-  "macro210"    -> "3794ec22d9b27f2b179bd34e9b46db771b934ec3",
-  "methvsfield" -> "be8454d5e7751b063ade201c225dcedefd252775",
-  "nest"        -> "cd33e0a0ea249eb42363a2f8ba531186345ff68c"
-).map(bootstrapDep("test/files/lib")) ++ Seq(
-  bootstrapDep("test/files/codelib")("code" -> "e737b123d31eede5594ceda07caafed1673ec472") % "test"
-)
-
 lazy val publishSettings : Seq[Setting[_]] = Seq(
   credentials ++= {
     val file = Path.userHome / ".credentials"
@@ -767,7 +755,6 @@ lazy val test = project
   .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep),
-    libraryDependencies ++= partestDependencies,
     // no main sources
     sources in Compile := Seq.empty,
     // test sources are compiled in partest run, not here
@@ -786,8 +773,7 @@ lazy val test = project
       val baseDir = (baseDirectory in ThisBuild).value
       val instrumentedJar = (packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2
       Tests.Setup { () =>
-        // Copy code.jar (resolved in the otherwise unused scope "test") and instrumented.jar (from specLib)to the location where partest expects them
-        copyBootstrapJar(cp, baseDir, "test/files/codelib", "code")
+        // Copy instrumented.jar (from specLib)to the location where partest expects it.
         IO.copyFile(instrumentedJar, baseDir / "test/files/speclib/instrumented.jar")
       }
     },
