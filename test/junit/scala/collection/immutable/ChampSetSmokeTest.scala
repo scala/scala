@@ -5,7 +5,6 @@ import java.{util => ju}
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
-import scala.collection.convert.{DecorateAsJava, DecorateAsScala}
 import scala.collection.immutable.ChampMapSmokeTest.{emptyMap, mkTuple}
 
 object ChampSetSmokeTest {
@@ -28,8 +27,7 @@ object ChampSetSmokeTest {
 
 }
 
-class ChampSetSmokeTest extends DecorateAsJava with DecorateAsScala {
-
+class ChampSetSmokeTest {
   import ChampSetSmokeTest._
 
   @Test def testNodeValNode(): Unit = {

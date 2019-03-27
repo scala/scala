@@ -2,7 +2,7 @@ import scala.tools.partest.BytecodeTest
 import scala.tools.asm
 import asm.tree.{ClassNode, InnerClassNode}
 import asm.{Opcodes => Flags}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.Ops._
 
 class C {
   def f1: A_1.A1N_FINAL    = A_1.A1N_FINAL.A1N_FINAL_VAL

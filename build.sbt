@@ -883,9 +883,10 @@ lazy val root: Project = (project in file("."))
     // source links (could be fixed by shipping these sources with the scaladoc bundles) and scala-js source maps
     // rely on them being on github.
     commands += Command.command("generateSources") { state =>
-      val dir = (((baseDirectory in ThisBuild).value) / "src" / "library" / "scala")
-      genprod.main(Array(dir.getPath))
-      GenerateAnyVals.run(dir.getAbsoluteFile)
+      val dir = ((baseDirectory in ThisBuild).value / "src" / "library" / "scala").getAbsoluteFile
+      genprod.run(dir)
+      GenerateAnyVals.run(dir)
+      GenerateFunctionConverters.run(dir)
       state
     },
     // ../docs.scala-lang/_data/compiler-options.yml

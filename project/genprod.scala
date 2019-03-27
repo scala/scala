@@ -10,15 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-/** This program generates the ProductN, TupleN, FunctionN,
- *  and AbstractFunctionN, where 0 <= N <= MaxArity.
- *
- *    Usage: scala genprod <directory>
- *      where the argument is the desired output directory
- *
- *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
+/**
+ * This program generates the ProductN, TupleN, FunctionN, and AbstractFunctionN,
+ * where 0 <= N <= MaxArity. Usage: sbt generateSources
  */
-object genprod extends App {
+object genprod {
   final val MaxArity = 22
   def arities = (1 to MaxArity).toList
 
@@ -82,20 +78,18 @@ package %s
 """.trim.format(genprodString, packageDef, imports)
   }
 
-  if (args.length != 1) {
-    println("please give path of output directory")
-    sys.exit(-1)
+  def run(outDir: java.io.File): Unit = {
+    val out = outDir.getAbsolutePath
+    def writeFile(node: scala.xml.Node): Unit = {
+      import scala.tools.nsc.io._
+      val f = Path(out) / node.attributes("name").toString
+      f.parent.createDirectory(force = true)
+      f.toFile writeAll node.text
+    }
+    allfiles foreach writeFile
   }
-  val out = args(0)
-  def writeFile(node: scala.xml.Node): Unit = {
-    import scala.tools.nsc.io._
-    val f = Path(out) / node.attributes("name").toString
-    f.parent.createDirectory(force = true)
-    f.toFile writeAll node.text
-  }
-
-  allfiles foreach writeFile
 }
+
 import genprod._
 
 

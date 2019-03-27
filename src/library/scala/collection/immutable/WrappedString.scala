@@ -13,8 +13,10 @@
 package scala.collection
 package immutable
 
-import mutable.{Builder, StringBuilder}
-import scala.Predef.{ wrapString => _ }  // unimport to avoid triggering accidentally
+import scala.Predef.{wrapString => _}
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.convert.impl.CharStringStepper
+import scala.collection.mutable.{Builder, StringBuilder}
 
 /**
   *  This class serves as a wrapper augmenting `String`s with all the operations
@@ -52,6 +54,9 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
   override def length = self.length
   override def toString = self
   override def view: StringView = new StringView(self)
+
+  override def stepper[B >: Char, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
+    (new CharStringStepper(self, 0, self.length)).asInstanceOf[S with EfficientSplit]
 
   override def startsWith[B >: Char](that: IterableOnce[B], offset: Int = 0): Boolean =
     that match {

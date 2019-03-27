@@ -22,18 +22,18 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import javax.tools.ToolProvider
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters.Ops._
 import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.FakePos
 import scala.reflect.io.RootPath
+import scala.tools.nsc.PipelineMain.{BuildStrategy, Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success, Try}
-import PipelineMain.{BuildStrategy, Pipeline, Traditional}
 
 class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy, argFiles: Seq[Path], useJars: Boolean) {
   private val pickleCacheConfigured = System.getProperty("scala.pipeline.picklecache")

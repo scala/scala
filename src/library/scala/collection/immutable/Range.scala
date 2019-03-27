@@ -13,7 +13,9 @@
 package scala
 package collection.immutable
 
-import collection.{AbstractIterator, Iterator}
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.convert.impl.RangeStepper
+import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper, StepperShape}
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
@@ -66,6 +68,17 @@ sealed abstract class Range(
     with Serializable { range =>
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
+
+  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    val st = new RangeStepper(start, step, 0, length)
+    val r =
+      if (shape.shape == StepperShape.IntShape) st
+      else {
+        assert(shape.shape == StepperShape.ReferenceShape, s"unexpected StepperShape: $shape")
+        AnyStepper.ofParIntStepper(st)
+      }
+    r.asInstanceOf[S with EfficientSplit]
+  }
 
   private[this] def gap           = end.toLong - start.toLong
   private[this] def isExact       = gap % step == 0

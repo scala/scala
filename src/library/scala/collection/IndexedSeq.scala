@@ -14,9 +14,10 @@ package scala
 package collection
 
 import scala.annotation.tailrec
+import scala.collection.Searching.{Found, InsertionPoint, SearchResult}
+import scala.collection.Stepper.EfficientSplit
 import scala.language.higherKinds
 import scala.math.Ordering
-import Searching.{SearchResult, Found, InsertionPoint}
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
@@ -31,6 +32,21 @@ object IndexedSeq extends SeqFactory.Delegate[IndexedSeq](immutable.IndexedSeq)
 trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   def iterator: Iterator[A] = view.iterator
+
+  /**
+   * @return a [[Stepper]] that can be used to operate on the elements of this collections
+   *         with the java Streams API. TODO reference to more documentation.
+   */
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIndexedSeqStepper   (this.asInstanceOf[IndexedSeqOps[Int, AnyConstr, _]],    0, length)
+      case StepperShape.LongShape   => new LongIndexedSeqStepper  (this.asInstanceOf[IndexedSeqOps[Long, AnyConstr, _]],   0, length)
+      case StepperShape.DoubleShape => new DoubleIndexedSeqStepper(this.asInstanceOf[IndexedSeqOps[Double, AnyConstr, _]], 0, length)
+      case _                        => shape.parUnbox(new AnyIndexedSeqStepper[B](this, 0, length))
+    }
+    s.asInstanceOf[S with EfficientSplit]
+  }
 
   override def reverseIterator: Iterator[A] = new AbstractIterator[A] {
     private[this] var i = self.length

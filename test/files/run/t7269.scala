@@ -1,4 +1,4 @@
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.Ops._
 import scala.collection.mutable
 
 object Test extends App {

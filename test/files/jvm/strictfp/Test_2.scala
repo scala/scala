@@ -2,7 +2,7 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.tree._
 import scala.tools.partest.BytecodeTest
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.Ops._
 
 object Test extends BytecodeTest {
 

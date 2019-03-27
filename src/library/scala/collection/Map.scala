@@ -90,6 +90,28 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
 
   override def view: MapView[K, V] = new MapView.Id(this)
 
+  def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (keysIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(keysIterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper(keysIterator))
+    }
+    s.asInstanceOf[S]
+  }
+
+  def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (valuesIterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(valuesIterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper(valuesIterator))
+    }
+    s.asInstanceOf[S]
+  }
+
   /**
     * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
     * and `newSpecificBuilder` operations.

@@ -17,8 +17,7 @@ import java.lang.Integer.bitCount
 import java.lang.Math.ceil
 import java.lang.System.arraycopy
 
-private[immutable] object Node {
-
+private[collection] object Node {
   final val HashCodeLength = 32
 
   final val BitPartitionSize = 5
@@ -39,7 +38,7 @@ private[immutable] object Node {
 
 }
 
-private[immutable] abstract class Node[T <: Node[T]] {
+private[collection] abstract class Node[T <: Node[T]] {
 
   def hasNodes: Boolean
 
@@ -111,6 +110,11 @@ private[immutable] abstract class ChampBaseIterator[T <: Node[T]] {
 
   import Node.MaxDepth
 
+  // Note--this code is duplicated to a large extent both in
+  // ChampBaseReverseIterator and in convert.impl.ChampStepperBase.
+  // If you change this code, check those also in case they also
+  // need to be modified.
+  
   protected var currentValueCursor: Int = 0
   protected var currentValueLength: Int = 0
   protected var currentValueNode: T = _

@@ -17,7 +17,7 @@ class JIterableWrapperTest {
     val jIterable: jl.Iterable[Int] = ju.Arrays.asList(1, 2, 3)
     val sIterable: Iterable[Int] = jIterable.asScala
 
-    assertTrue(sIterable.isInstanceOf[Wrappers.JIterableWrapper[_]])
+    assertTrue(sIterable.isInstanceOf[JavaCollectionWrappers.JIterableWrapper[_]])
     assertTrue(sIterable.iterator.sameElements(Iterable(1, 2, 3)))
   }
 }

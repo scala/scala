@@ -16,6 +16,8 @@ package collection
 import java.lang.{StringBuilder => JStringBuilder}
 import java.util.NoSuchElementException
 
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper}
 import scala.collection.immutable.{ArraySeq, WrappedString}
 import scala.collection.mutable.StringBuilder
 import scala.math.{ScalaNumber, max, min}
@@ -1079,6 +1081,20 @@ final class StringOps(private val s: String) extends AnyVal {
 
   /** Iterator can be used only once */
   def iterator: Iterator[Char] = new StringIterator(s)
+
+  /** Stepper can be used with Java 8 Streams. This method is equivalent to a call to
+    * [[charStepper]]. See also [[codePointStepper]].
+    */
+  @`inline` def stepper: IntStepper with EfficientSplit = charStepper
+
+  /** Steps over characters in this string. Values are packed in `Int` for efficiency
+    * and compatibility with Java 8 Streams which have an efficient specialization for `Int`.
+    */
+  @`inline` def charStepper: IntStepper with EfficientSplit = new CharStringStepper(s, 0, s.length)
+
+  /** Steps over code points in this string.
+    */
+  @`inline` def codePointStepper: IntStepper with EfficientSplit = new CodePointStringStepper(s, 0, s.length)
 
   /** Tests whether the string is not empty. */
   @`inline` def nonEmpty: Boolean = !s.isEmpty

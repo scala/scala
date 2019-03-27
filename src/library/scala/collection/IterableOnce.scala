@@ -13,11 +13,11 @@
 package scala
 package collection
 
-import scala.language.{higherKinds, implicitConversions}
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.mutable.StringBuilder
+import scala.language.{higherKinds, implicitConversions}
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
-import scala.collection.mutable.StringBuilder
 
 /**
   * A template trait for collections which can be traversed either once only
@@ -42,6 +42,21 @@ import scala.collection.mutable.StringBuilder
 trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator: Iterator[A]
+
+  /**
+   * @return a [[Stepper]] that can be used to operate on the elements of this collections
+   *         with the java Streams API. TODO reference to more documentation.
+   */
+  def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.IntShape    => new IntIteratorStepper   (iterator.asInstanceOf[Iterator[Int]])
+      case StepperShape.LongShape   => new LongIteratorStepper  (iterator.asInstanceOf[Iterator[Long]])
+      case StepperShape.DoubleShape => new DoubleIteratorStepper(iterator.asInstanceOf[Iterator[Double]])
+      case _                        => shape.seqUnbox(new AnyIteratorStepper[B](iterator))
+    }
+    s.asInstanceOf[S]
+  }
 
   /** @return The number of elements in this $coll, if it can be cheaply computed,
     *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
@@ -276,7 +291,6 @@ object IterableOnce {
   *
   */
 trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
-
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the

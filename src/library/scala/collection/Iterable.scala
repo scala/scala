@@ -32,8 +32,8 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 
   final protected def coll: this.type = this
 
-  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): IterableCC[A] @uncheckedVariance = iterableFactory.from(coll)
-  protected def newSpecificBuilder: Builder[A, IterableCC[A]] @uncheckedVariance = iterableFactory.newBuilder[A]
+  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): IterableC @uncheckedVariance = iterableFactory.from(coll)
+  protected def newSpecificBuilder: Builder[A, IterableC] @uncheckedVariance = iterableFactory.newBuilder[A]
 
   /**
     * @note This operation '''has''' to be overridden by concrete collection classes to effectively
@@ -142,13 +142,22 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
 
   /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
-    * and `newSpecificBuilder` operations.
+    * Type alias to `CC`. It is used to provide a default implementation of the `iterableFactory`
+    * operation.
     *
     * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
     * therefore not recommended.
     */
   protected type IterableCC[X] = CC[X] @uncheckedVariance
+
+  /**
+    * Type alias to `C`. It is used to provide a default implementation of the `fromSpecific`
+    * and `newSpecificBuilder` operations.
+    *
+    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
+    * therefore not recommended.
+    */
+  protected type IterableC = C @uncheckedVariance
 
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.

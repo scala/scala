@@ -4,7 +4,7 @@ import scala.tools.asm.{ClassWriter, Opcodes, ClassReader}
 import scala.tools.asm.tree.{InsnNode, ClassNode}
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.partest.DirectTest
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.Ops._
 
 /**
  * Test that the ICodeReader does not crash if the bytecode of a method has unreachable code.

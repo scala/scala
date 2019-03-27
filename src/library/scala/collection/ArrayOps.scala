@@ -16,11 +16,6 @@ package collection
 import java.lang.Math.{max, min}
 import java.util.Arrays
 
-import mutable.ArrayBuilder
-import immutable.Range
-import scala.reflect.ClassTag
-import scala.math.Ordering
-import scala.util.Sorting
 import scala.Predef.{ // unimport all array-related implicit conversions to avoid triggering them accidentally
   genericArrayOps => _,
   booleanArrayOps => _,
@@ -48,6 +43,12 @@ import scala.Predef.{ // unimport all array-related implicit conversions to avoi
   copyArrayToImmutableIndexedSeq => _,
   _
 }
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.immutable.Range
+import scala.collection.mutable.ArrayBuilder
+import scala.math.Ordering
+import scala.reflect.ClassTag
+import scala.util.Sorting
 
 object ArrayOps {
 
@@ -406,6 +407,24 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       case xs: Array[Unit]    => new ArrayOps.ArrayIterator(xs)
       case null               => throw new NullPointerException
     }).asInstanceOf[Iterator[A]]
+
+  def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
+    import convert.impl._
+    val s = shape.shape match {
+      case StepperShape.ReferenceShape => (xs: Any) match {
+        case bs: Array[Boolean] => new BoxedBooleanArrayStepper(bs, 0, xs.length)
+        case _ => new ObjectArrayStepper[AnyRef](xs.asInstanceOf[Array[AnyRef ]], 0, xs.length)
+      }
+      case StepperShape.IntShape    => new IntArrayStepper           (xs.asInstanceOf[Array[Int    ]], 0, xs.length)
+      case StepperShape.LongShape   => new LongArrayStepper          (xs.asInstanceOf[Array[Long   ]], 0, xs.length)
+      case StepperShape.DoubleShape => new DoubleArrayStepper        (xs.asInstanceOf[Array[Double ]], 0, xs.length)
+      case StepperShape.ByteShape   => new WidenedByteArrayStepper   (xs.asInstanceOf[Array[Byte   ]], 0, xs.length)
+      case StepperShape.ShortShape  => new WidenedShortArrayStepper  (xs.asInstanceOf[Array[Short  ]], 0, xs.length)
+      case StepperShape.CharShape   => new WidenedCharArrayStepper   (xs.asInstanceOf[Array[Char   ]], 0, xs.length)
+      case StepperShape.FloatShape  => new WidenedFloatArrayStepper  (xs.asInstanceOf[Array[Float  ]], 0, xs.length)
+    }
+    s.asInstanceOf[S with EfficientSplit]
+  }
 
   /** Partitions elements in fixed size arrays.
     *  @see [[scala.collection.Iterator]], method `grouped`

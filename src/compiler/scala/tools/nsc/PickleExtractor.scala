@@ -12,11 +12,10 @@
 
 package scala.tools.nsc
 
-import java.io.Closeable
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor, _}
 
-import scala.collection.JavaConverters.{asScalaBufferConverter, bufferAsJavaListConverter, collectionAsScalaIterableConverter}
+import scala.jdk.CollectionConverters.Ops._
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.io.RootPath
 import scala.tools.asm.tree.ClassNode

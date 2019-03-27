@@ -20,17 +20,20 @@ import scala.language.implicitConversions
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the factory methods in `ExecutionContext` instead", "2.13.0")
 object JavaConversions {
 
   /**
    * Creates a new `ExecutionContext` which uses the provided `ExecutorService`.
    */
+  @deprecated("Use `ExecutionContext.fromExecutorService` instead", "2.13.0")
   implicit def asExecutionContext(exec: ExecutorService): ExecutionContextExecutorService =
     ExecutionContext.fromExecutorService(exec)
 
   /**
    * Creates a new `ExecutionContext` which uses the provided `Executor`.
    */
+  @deprecated("Use `ExecutionContext.fromExecutor` instead", "2.13.0")
   implicit def asExecutionContext(exec: Executor): ExecutionContextExecutor =
     ExecutionContext.fromExecutor(exec)
 

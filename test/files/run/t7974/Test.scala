@@ -4,7 +4,7 @@ import scala.tools.partest.BytecodeTest
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.asm.util._
 import scala.tools.nsc.util.stringFromWriter
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters.Ops._
 
 object Test extends BytecodeTest {
   def show: Unit = {
