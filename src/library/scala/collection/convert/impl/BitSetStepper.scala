@@ -38,12 +38,12 @@ with IntStepper {
       if (ix == cacheIndex || ix == cacheIndex+1) {
         val i = scanLong(if (ix == cacheIndex) cache0 else cache1, i0 & (WordLength - 1))
         if (i >= 0) {
-          i0 = (i0 & (WordLength - 1)) | i
+          i0 = (i0 & ~(WordLength - 1)) | i
           found = (i0 < iN)
           found
         }
         else {
-          i0 = (i0 & (WordLength - 1)) + WordLength
+          i0 = (i0 & ~(WordLength - 1)) + WordLength
           findNext()
         }
       }
