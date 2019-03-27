@@ -1,24 +1,24 @@
-t4425b.scala:5: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:5: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println(      "" match { case _ X _   => "ok" ; case _ => "fail" })
                                     ^
-t4425b.scala:6: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:6: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println((X: Any) match { case _ X _   => "ok" ; case _ => "fail" })
                                     ^
-t4425b.scala:7: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:7: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println(      "" match { case X(_)    => "ok" ; case _ => "fail" })
                                   ^
-t4425b.scala:8: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:8: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println((X: Any) match { case X(_)    => "ok" ; case _ => "fail" })
                                   ^
-t4425b.scala:9: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:9: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println(      "" match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
-t4425b.scala:10: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425b.scala:10: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Nothing exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
     println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^

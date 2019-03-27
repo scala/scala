@@ -89,13 +89,16 @@ trait PatternTypers {
         || member.isOverloaded // the whole overloading situation is over the rails
       )
 
+      // if we're already failing, no need to emit another error here
+      if (fun.tpe.isErroneous)
+        fun
       // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
       // A case class with 23+ params has no unapply method.
       // A case class constructor may be overloaded with unapply methods in the companion.
-      if (canElide && caseClass.isCase && !member.isOverloaded)
+      else if (canElide && caseClass.isCase && !member.isOverloaded)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
       else if (!reallyExists(member))
-        CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have an unapply/unapplySeq member")
+        CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have a valid unapply/unapplySeq member")
       else if (isOkay)
         fun
       else if (isEmptyType == NoType)

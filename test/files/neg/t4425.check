@@ -1,12 +1,12 @@
-t4425.scala:3: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425.scala:3: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: Int)(y: Option[Int]): None.type exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
   42 match { case _ X _ => () }
                     ^
-t4425.scala:8: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425.scala:8: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: Int)(y: Int): Some[(Int, Int)] exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
   42 match { case _ X _ => () }
                     ^
-t4425.scala:13: error: object X is not a case class, nor does it have an unapply/unapplySeq member
+t4425.scala:13: error: object X is not a case class, nor does it have a valid unapply/unapplySeq member
 Note: def unapply(x: String)(y: String): Some[(Int, Int)] exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
   "" match { case _ X _ => () }
                     ^

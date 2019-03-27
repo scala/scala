@@ -736,9 +736,22 @@ trait ContextErrors {
       }
 
       def CaseClassConstructorError(tree: Tree, baseMessage: String) = {
-        val addendum = directUnapplyMember(tree.symbol.info) match {
-          case sym if hasMultipleNonImplicitParamLists(sym) => s"\nNote: ${sym.defString} exists in ${tree.symbol}, but it cannot be used as an extractor due to its second non-implicit parameter list"
-          case _                                            => ""
+        import UnapplyMemberResult._
+        val addendum = {
+          def contextualize(sym: Symbol, because: String) =
+            s"\nNote: ${sym.defString} exists in ${tree.symbol}, but it cannot be used as an extractor$because"
+          val sym = directUnapplyMember(tree.symbol.info)
+          validateUnapplyMember(sym.info) match {
+            case NoParams =>
+              contextualize(sym, ": an unapply method must accept a single argument")
+            case MultiParams =>
+              contextualize(sym, " as it has more than one (non-implicit) parameter")
+            case MultiParamss =>
+              contextualize(sym, " due to its second non-implicit parameter list")
+            case VarArgs =>
+              contextualize(sym, " since it is a varargs method")
+            case _ => ""
+          }
         }
         issueNormalTypeError(tree, baseMessage + addendum)
         setError(tree)

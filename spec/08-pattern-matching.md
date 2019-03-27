@@ -244,8 +244,8 @@ An extractor pattern cannot match the value `null`. The implementation
 ensures that the `unapply`/`unapplySeq` method is not applied to `null`.
 
 An `unapply` method in an object $x$ _matches_ the pattern
-$x(p_1 , \ldots , p_n)$ if it takes exactly one argument and one of
-the following applies:
+$x(p_1 , \ldots , p_n)$ if it has a single parameter (and, optionally, an
+implicit parameter list) and one of the following applies:
 
 * $n=0$ and `unapply`'s result type is `Boolean`. In this case
   the extractor pattern matches all values $v$ for which
