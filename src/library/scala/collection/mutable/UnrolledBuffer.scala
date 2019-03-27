@@ -54,6 +54,7 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
     with Seq[T]
     with SeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
     with StrictOptimizedSeqOps[T, UnrolledBuffer, UnrolledBuffer[T]]
+    with EvidenceIterableFactoryDefaults[T, UnrolledBuffer, ClassTag]
     with Builder[T, UnrolledBuffer[T]]
     with DefaultSerializable {
 
@@ -69,8 +70,8 @@ sealed class UnrolledBuffer[T](implicit val tag: ClassTag[T])
   private[collection] def lastPtr_=(last: Unrolled[T]) = lastptr = last
   private[collection] def size_=(s: Int) = sz = s
 
-  override protected def fromSpecific(coll: scala.collection.IterableOnce[T]) = UnrolledBuffer.from(coll)
-  override protected def newSpecificBuilder: Builder[T, UnrolledBuffer[T]] = new UnrolledBuffer[T]
+  protected def evidenceIterableFactory: UnrolledBuffer.type = UnrolledBuffer
+  protected def iterableEvidence: ClassTag[T] = tag
 
   override def iterableFactory: SeqFactory[UnrolledBuffer] = UnrolledBuffer.untagged
 

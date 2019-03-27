@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable
 
 /** This class implements immutable maps using a vector/map-based data structure, which preserves insertion order.
@@ -37,7 +38,8 @@ final class VectorMap[K, +V] private (
     private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
-    with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
+    with MapFactoryDefaults[K, V @uncheckedVariance, VectorMap, Iterable] {
 
   import VectorMap._
 
@@ -196,7 +198,7 @@ final class VectorMap[K, +V] private (
 
   override def keys: Vector[K] = keysIterator.toVector
 
-  override def values: Iterable[V] = new Iterable[V] {
+  override def values: Iterable[V] = new Iterable[V] with IterableFactoryDefaults[V, Iterable] {
     override def iterator: Iterator[V] = keysIterator.map(underlying(_)._2)
   }
 }

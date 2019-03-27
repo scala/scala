@@ -12,16 +12,17 @@
 
 package scala.collection.mutable
 
-import scala.collection.{IterableFactory, IterableOps}
+import scala.collection.{IterableFactory, IterableFactoryDefaults, IterableOps}
 import scala.language.higherKinds
 
 /** Base trait for mutable sets */
 trait Set[A]
   extends Iterable[A]
     with collection.Set[A]
-    with SetOps[A, Set, Set[A]] {
+    with SetOps[A, Set, Set[A]]
+    with IterableFactoryDefaults[A, Set] {
 
-  override def iterableFactory: IterableFactory[IterableCC] = Set
+  override def iterableFactory: IterableFactory[Set] = Set
 }
 
 /**

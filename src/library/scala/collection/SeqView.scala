@@ -15,7 +15,6 @@ package collection
 
 
 trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
-
   override def view: SeqView[A] = this
 
   override def map[B](f: A => B): SeqView[B] = new SeqView.Map(this, f)

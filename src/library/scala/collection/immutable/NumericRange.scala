@@ -13,7 +13,7 @@
 package scala.collection.immutable
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper, StepperShape}
+import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, Iterator, Stepper, StepperShape}
 
 /** `NumericRange` is a more generic version of the
   *  `Range` class which works with arbitrary types.
@@ -49,6 +49,7 @@ sealed class NumericRange[T](
     with IndexedSeq[T]
     with IndexedSeqOps[T, IndexedSeq, IndexedSeq[T]]
     with StrictOptimizedSeqOps[T, IndexedSeq, IndexedSeq[T]]
+    with IterableFactoryDefaults[T, IndexedSeq]
     with Serializable { self =>
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)

@@ -33,6 +33,7 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   extends AbstractSet[A]
     with SetOps[A, HashSet, HashSet[A]]
     with StrictOptimizedIterableOps[A, HashSet, HashSet[A]]
+    with IterableFactoryDefaults[A, HashSet]
     with Serializable {
 
   def this() = this(HashSet.defaultInitialCapacity, HashSet.defaultLoadFactor)

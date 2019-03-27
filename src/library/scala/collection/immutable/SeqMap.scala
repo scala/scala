@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 
 /**
@@ -37,6 +38,9 @@ trait SeqMap[K, +V]
   extends Map[K, V]
     with collection.SeqMap[K, V]
     with MapOps[K, V, SeqMap, SeqMap[K, V]]
+    with MapFactoryDefaults[K, V @uncheckedVariance, SeqMap, Iterable] {
+  override def mapFactory: MapFactory[SeqMap] = SeqMap
+}
 
 
 object SeqMap extends MapFactory[SeqMap] {

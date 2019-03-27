@@ -15,6 +15,7 @@ package immutable
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{Builder, ListBuffer}
 
@@ -46,6 +47,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     with LinearSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedLinearSeqOps[A, Queue, Queue[A]]
     with StrictOptimizedSeqOps[A, Queue, Queue[A]]
+    with IterableFactoryDefaults[A @uncheckedVariance, Queue]
     with DefaultSerializable {
 
   override def iterableFactory: SeqFactory[Queue] = Queue

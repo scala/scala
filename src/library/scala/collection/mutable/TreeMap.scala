@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{RedBlackTree => RB}
@@ -38,6 +39,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
     with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]]
+    with SortedMapFactoryDefaults[K, V @uncheckedVariance, TreeMap, Iterable, Map]
     with DefaultSerializable {
 
   override def sortedMapFactory = TreeMap

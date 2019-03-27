@@ -21,7 +21,7 @@ import scala.collection.Hashing.improve
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.ReusableBuilder
-import scala.collection.{Iterator, MapFactory, Stepper, StepperShape, mutable}
+import scala.collection.{Iterator, MapFactory, MapFactoryDefaults, Stepper, StepperShape, mutable}
 import scala.runtime.Statics.releaseFence
 import scala.util.hashing.MurmurHash3
 
@@ -40,6 +40,7 @@ import scala.util.hashing.MurmurHash3
 final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: BitmapIndexedMapNode[K, V])
   extends AbstractMap[K, V]
     with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]]
+    with MapFactoryDefaults[K, V @uV, HashMap, Iterable]
     with DefaultSerializable {
 
   def this() = this(MapNode.empty)

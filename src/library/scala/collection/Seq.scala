@@ -13,10 +13,10 @@
 package scala.collection
 
 import scala.collection.immutable.Range
-
 import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
-import Searching.{SearchResult, Found, InsertionPoint}
+import Searching.{Found, InsertionPoint, SearchResult}
+import scala.annotation.unchecked.uncheckedVariance
 
 /** Base trait for sequence collections
   *
@@ -26,9 +26,10 @@ trait Seq[+A]
   extends Iterable[A]
     with PartialFunction[Int, A]
     with SeqOps[A, Seq, Seq[A]]
+    with IterableFactoryDefaults[A @uncheckedVariance, Seq]
     with Equals {
 
-  override def iterableFactory: SeqFactory[IterableCC] = Seq
+  override def iterableFactory: SeqFactory[Seq] = Seq
 
   /** Method called from equality methods, so that user-defined subclasses can
     *  refuse to be equal to other collections of the same kind.

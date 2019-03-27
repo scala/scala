@@ -19,7 +19,8 @@ trait Buffer[A]
   extends Seq[A]
     with SeqOps[A, Buffer, Buffer[A]]
     with Growable[A]
-    with Shrinkable[A] {
+    with Shrinkable[A]
+    with IterableFactoryDefaults[A, Buffer] {
 
   override def iterableFactory: SeqFactory[Buffer] = Buffer
 
@@ -173,7 +174,8 @@ trait Buffer[A]
 
 trait IndexedBuffer[A] extends IndexedSeq[A]
   with IndexedSeqOps[A, IndexedBuffer, IndexedBuffer[A]]
-  with Buffer[A] {
+  with Buffer[A]
+  with IterableFactoryDefaults[A, IndexedBuffer] {
 
   override def iterableFactory: SeqFactory[IndexedBuffer] = IndexedBuffer
 

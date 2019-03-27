@@ -1,14 +1,16 @@
 import annotation.unchecked.{uncheckedVariance => uV}
-import scala.collection.{StrictOptimizedIterableOps, mutable}
+import scala.collection.{IterableFactory, StrictOptimizedIterableOps, mutable}
 import scala.collection.immutable.{ListMap, ListSet}
-import scala.collection.mutable.{HashMap, HashSet, Set, SetOps}
+import scala.collection.mutable.{AbstractSet, HashMap, HashSet, Set, SetOps}
 
 // Stub of HashSet, but not final, so we can extend from it (in Test below)
 class HS[A]
-  extends Set[A]
+  extends AbstractSet[A]
     with SetOps[A, HS, HS[A]]
     with StrictOptimizedIterableOps[A, HS, HS[A]]
+    with collection.IterableFactoryDefaults[A, HS]
     with Serializable {
+  override def iterableFactory: IterableFactory[HS] = ???
   def get(elem: A): Option[A] = ???
   def contains(elem: A): Boolean = ???
   def addOne(elem: A): HS.this.type = ???

@@ -68,6 +68,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
   extends AbstractMap[Key, Value]
     with MapOps[Key, Value, OpenHashMap, OpenHashMap[Key, Value]]
     with StrictOptimizedIterableOps[(Key, Value), Iterable, OpenHashMap[Key, Value]]
+    with MapFactoryDefaults[Key, Value, OpenHashMap, Iterable]
     with DefaultSerializable {
 
   import OpenHashMap.OpenEntry

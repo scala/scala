@@ -13,7 +13,8 @@
 package scala
 package collection.mutable
 
-import scala.collection.SortedMapFactory
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.{SortedMapFactory, SortedMapFactoryDefaults}
 import scala.language.higherKinds
 
 /**
@@ -22,11 +23,12 @@ import scala.language.higherKinds
 trait SortedMap[K, V]
   extends collection.SortedMap[K, V]
     with Map[K, V]
-    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
+    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
+    with SortedMapFactoryDefaults[K, V @uncheckedVariance, SortedMap, Iterable, Map] {
 
   override def unsorted: Map[K, V] = this
 
-  override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
+  override def sortedMapFactory: SortedMapFactory[SortedMap] = SortedMap
 
   /** The same sorted map with a given default function.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.

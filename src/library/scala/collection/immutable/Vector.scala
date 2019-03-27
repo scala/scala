@@ -116,6 +116,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
     with StrictOptimizedSeqOps[A, Vector, Vector[A]]
+    with IterableFactoryDefaults[A @uncheckedVariance, Vector]
     with VectorPointer[A @uncheckedVariance]
     with DefaultSerializable { self =>
 

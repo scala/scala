@@ -25,9 +25,10 @@ import scala.language.higherKinds
 trait Map[K, +V]
   extends Iterable[(K, V)]
      with collection.Map[K, V]
-     with MapOps[K, V, Map, Map[K, V]] {
+     with MapOps[K, V, Map, Map[K, V]]
+     with MapFactoryDefaults[K, V @uncheckedVariance, Map, Iterable] {
 
-  override def mapFactory: scala.collection.MapFactory[MapCC] = Map
+  override def mapFactory: scala.collection.MapFactory[Map] = Map
 
   override final def toMap[K2, V2](implicit ev: (K, V) <:< (K2, V2)): Map[K2, V2] = this.asInstanceOf[Map[K2, V2]]
 

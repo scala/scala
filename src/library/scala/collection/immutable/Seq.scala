@@ -14,15 +14,17 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 
 trait Seq[+A] extends Iterable[A]
                  with collection.Seq[A]
-                 with SeqOps[A, Seq, Seq[A]] {
+                 with SeqOps[A, Seq, Seq[A]]
+                 with IterableFactoryDefaults[A @uncheckedVariance, Seq] {
 
   override final def toSeq: this.type = this
 
-  override def iterableFactory: SeqFactory[IterableCC] = Seq
+  override def iterableFactory: SeqFactory[Seq] = Seq
 }
 
 /**
@@ -47,7 +49,8 @@ object Seq extends SeqFactory.Delegate[Seq](List) {
 /** Base trait for immutable indexed sequences that have efficient `apply` and `length` */
 trait IndexedSeq[+A] extends Seq[A]
                         with collection.IndexedSeq[A]
-                        with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+                        with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
+                        with IterableFactoryDefaults[A @uncheckedVariance, IndexedSeq] {
 
   final override def toIndexedSeq: IndexedSeq[A] = this
 
@@ -96,7 +99,7 @@ trait IndexedSeq[+A] extends Seq[A]
     */
   protected def applyPreferredMaxLength: Int = IndexedSeqDefaults.defaultApplyPreferredMaxLength
 
-  override def iterableFactory: SeqFactory[IterableCC] = IndexedSeq
+  override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 }
 
 object IndexedSeqDefaults {
@@ -133,9 +136,10 @@ trait IndexedSeqOps[+A, +CC[_], +C]
 trait LinearSeq[+A]
   extends Seq[A]
     with collection.LinearSeq[A]
-    with LinearSeqOps[A, LinearSeq, LinearSeq[A]] {
+    with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
+    with IterableFactoryDefaults[A @uncheckedVariance, LinearSeq] {
 
-  override def iterableFactory: SeqFactory[IterableCC] = LinearSeq
+  override def iterableFactory: SeqFactory[LinearSeq] = LinearSeq
 }
 
 @SerialVersionUID(3L)

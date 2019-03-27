@@ -43,6 +43,7 @@ class ListBuffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
      with StrictOptimizedSeqOps[A, ListBuffer, ListBuffer[A]]
      with ReusableBuilder[A, immutable.List[A]]
+     with IterableFactoryDefaults[A, ListBuffer]
      with DefaultSerializable {
 
   private var first: List[A] = Nil

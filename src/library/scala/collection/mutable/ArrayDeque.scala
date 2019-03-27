@@ -14,14 +14,10 @@ package scala
 package collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import scala.reflect.ClassTag
-import scala.collection.{Iterator, StrictOptimizedSeqOps}
-import java.lang.Math
 import java.util.NoSuchElementException
 
 import scala.collection.generic.DefaultSerializable
+import scala.reflect.ClassTag
 
 /** An implementation of a double-ended queue that internally uses a resizable circular buffer
   *  Append, prepend, removeFirst, removeLast and random-access (indexed-lookup and indexed-replacement)
@@ -43,13 +39,16 @@ import scala.collection.generic.DefaultSerializable
   *  @define willNotTerminateInf
   */
 class ArrayDeque[A] protected (
-    private[ArrayDeque] var array: Array[AnyRef],
+    protected var array: Array[AnyRef],
     private[ArrayDeque] var start: Int,
     private[ArrayDeque] var end: Int
 ) extends AbstractBuffer[A]
     with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayDeque, ArrayDeque[A]]
     with StrictOptimizedSeqOps[A, ArrayDeque, ArrayDeque[A]]
+    with IterableFactoryDefaults[A, ArrayDeque]
+    with ArrayDequeOps[A, ArrayDeque, ArrayDeque[A]]
+    with Cloneable[ArrayDeque[A]]
     with DefaultSerializable {
 
   reset(array, start, end)
@@ -421,24 +420,13 @@ class ArrayDeque[A] protected (
     res.result()
   }
 
-  override def reverse: IterableCC[A] = {
-    val n = length
-    val arr = ArrayDeque.alloc(n)
-    var i = 0
-    while(i < n) {
-      arr(i) = this(n - i - 1).asInstanceOf[AnyRef]
-      i += 1
-    }
-    ofArray(arr, n)
-  }
-
   @inline def ensureSize(hint: Int) = if (hint > length && isResizeNecessary(hint)) resize(hint + 1)
 
   def length = end_-(start)
 
   override def isEmpty = start == end
 
-  override def clone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
+  protected override def klone(): ArrayDeque[A] = new ArrayDeque(array.clone(), start = start, end = end)
 
   override def iterableFactory: SeqFactory[ArrayDeque] = ArrayDeque
 
@@ -463,36 +451,8 @@ class ArrayDeque[A] protected (
     this
   }
 
-  override def slice(from: Int, until: Int): IterableCC[A] = {
-    val n = length
-    val left = Math.max(0, Math.min(n, from))
-    val right = Math.max(0, Math.min(n, until))
-    val len = right - left
-    if (len <= 0) {
-      iterableFactory.empty[A]
-    } else if (len >= n) {
-      clone()
-    } else {
-      val array2 = copySliceToArray(srcStart = left, dest = ArrayDeque.alloc(len), destStart = 0, maxItems = len)
-      ofArray(array2, len)
-    }
-  }
-
   protected def ofArray(array: Array[AnyRef], end: Int): ArrayDeque[A] =
     new ArrayDeque[A](array, start = 0, end)
-
-  override def sliding(window: Int, step: Int): Iterator[IterableCC[A]] = {
-    require(window > 0 && step > 0, s"window=$window and step=$step, but both must be positive")
-    length match {
-      case 0 => Iterator.empty
-      case n if n <= window => Iterator.single(slice(0, length))
-      case n =>
-        val lag = if (window > step) window - step else 0
-        Iterator.range(start = 0, end = n - lag, step = step).map(i => slice(i, i + window))
-    }
-  }
-
-  override def grouped(n: Int): Iterator[IterableCC[A]] = sliding(n, n)
 
   override def copyToArray[B >: A](dest: Array[B], destStart: Int, len: Int): Int = {
     val copied = IterableOnce.elemsToCopyToArray(length, dest.length, destStart, len)
@@ -506,36 +466,12 @@ class ArrayDeque[A] protected (
     copySliceToArray(srcStart = 0, dest = new Array[B](length), destStart = 0, maxItems = length)
 
   /**
-    * This is a more general version of copyToArray - this also accepts a srcStart unlike copyToArray
-    * This copies maxItems elements from this collections srcStart to dest's destStart
-    * If we reach the end of either collections before we could copy maxItems, we simply stop copying
-    *
-    * @param dest
-    * @param srcStart
-    * @param destStart
-    * @param maxItems
-    */
-  def copySliceToArray(srcStart: Int, dest: Array[_], destStart: Int, maxItems: Int): dest.type = {
-    requireBounds(destStart, dest.length+1)
-    val toCopy = Math.min(maxItems, Math.min(length - srcStart, dest.length - destStart))
-    if (toCopy > 0) {
-      requireBounds(srcStart)
-      val startIdx = start_+(srcStart)
-      val block1 = Math.min(toCopy, array.length - startIdx)
-      Array.copy(src = array, srcPos = startIdx, dest = dest, destPos = destStart, length = block1)
-      val block2 = toCopy - block1
-      if (block2 > 0) Array.copy(src = array, srcPos = 0, dest = dest, destPos = destStart + block1, length = block2)
-    }
-    dest
-  }
-
-  /**
     * Trims the capacity of this ArrayDeque's instance to be the current size
     */
   def trimToSize(): Unit = resize(length - 1)
 
   // Utils for common modular arithmetic:
-  @inline private[this] def start_+(idx: Int) = (start + idx) & (array.length - 1)
+  @inline protected def start_+(idx: Int) = (start + idx) & (array.length - 1)
   @inline private[this] def start_-(idx: Int) = (start - idx) & (array.length - 1)
   @inline private[this] def end_+(idx: Int) = (end + idx) & (array.length - 1)
   @inline private[this] def end_-(idx: Int) = (end - idx) & (array.length - 1)
@@ -554,9 +490,6 @@ class ArrayDeque[A] protected (
     val array2 = copySliceToArray(srcStart = 0, dest = ArrayDeque.alloc(len), destStart = 0, maxItems = n)
     reset(array = array2, start = 0, end = n)
   }
-
-  @inline private[this] def requireBounds(idx: Int, until: Int = length) =
-    if (idx < 0 || idx >= until) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${until-1})")
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ArrayDeque"
@@ -613,4 +546,82 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     require(size >= 0, s"ArrayDeque too big - cannot allocate ArrayDeque of length $len")
     new Array[AnyRef](Math.max(size, DefaultInitialSize))
   }
+}
+
+trait ArrayDequeOps[A, +CC[_], +C <: AnyRef] extends StrictOptimizedSeqOps[A, CC, C] {
+  protected def array: Array[AnyRef]
+
+  final override def clone(): C = klone()
+
+  protected def klone(): C
+
+  protected def ofArray(array: Array[AnyRef], end: Int): C
+
+  protected def start_+(idx: Int): Int
+
+  @inline protected final def requireBounds(idx: Int, until: Int = length): Unit =
+    if (idx < 0 || idx >= until) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${until-1})")
+
+  /**
+    * This is a more general version of copyToArray - this also accepts a srcStart unlike copyToArray
+    * This copies maxItems elements from this collections srcStart to dest's destStart
+    * If we reach the end of either collections before we could copy maxItems, we simply stop copying
+    *
+    * @param dest
+    * @param srcStart
+    * @param destStart
+    * @param maxItems
+    */
+  def copySliceToArray(srcStart: Int, dest: Array[_], destStart: Int, maxItems: Int): dest.type = {
+    requireBounds(destStart, dest.length+1)
+    val toCopy = Math.min(maxItems, Math.min(length - srcStart, dest.length - destStart))
+    if (toCopy > 0) {
+      requireBounds(srcStart)
+      val startIdx = start_+(srcStart)
+      val block1 = Math.min(toCopy, array.length - startIdx)
+      Array.copy(src = array, srcPos = startIdx, dest = dest, destPos = destStart, length = block1)
+      val block2 = toCopy - block1
+      if (block2 > 0) Array.copy(src = array, srcPos = 0, dest = dest, destPos = destStart + block1, length = block2)
+    }
+    dest
+  }
+
+  override def reverse: C = {
+    val n = length
+    val arr = ArrayDeque.alloc(n)
+    var i = 0
+    while(i < n) {
+      arr(i) = this(n - i - 1).asInstanceOf[AnyRef]
+      i += 1
+    }
+    ofArray(arr, n)
+  }
+
+  override def slice(from: Int, until: Int): C = {
+    val n = length
+    val left = Math.max(0, Math.min(n, from))
+    val right = Math.max(0, Math.min(n, until))
+    val len = right - left
+    if (len <= 0) {
+      empty
+    } else if (len >= n) {
+      klone()
+    } else {
+      val array2 = copySliceToArray(srcStart = left, dest = ArrayDeque.alloc(len), destStart = 0, maxItems = len)
+      ofArray(array2, len)
+    }
+  }
+
+  override def sliding(window: Int, step: Int): Iterator[C] = {
+    require(window > 0 && step > 0, s"window=$window and step=$step, but both must be positive")
+    length match {
+      case 0 => Iterator.empty
+      case n if n <= window => Iterator.single(slice(0, length))
+      case n =>
+        val lag = if (window > step) window - step else 0
+        Iterator.range(start = 0, end = n - lag, step = step).map(i => slice(i, i + window))
+    }
+  }
+
+  override def grouped(n: Int): Iterator[C] = sliding(n, n)
 }

@@ -13,7 +13,7 @@
 package scala.collection.convert
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{Stepper, StepperShape, StrictOptimizedIterableOps, mutable}
+import scala.collection.{Stepper, StepperShape, mutable}
 
 
 /**
@@ -21,9 +21,7 @@ import scala.collection.{Stepper, StepperShape, StrictOptimizedIterableOps, muta
  * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
  */
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
-  extends mutable.AbstractSeq[A]
-    with mutable.SeqOps[A, CC, C]
-    with StrictOptimizedIterableOps[A, CC, C]
+  extends mutable.Seq[A]
     with mutable.Builder[A, C] {
   private[convert] var index: Int = 0
   private[convert] var hIndex: Int = 0

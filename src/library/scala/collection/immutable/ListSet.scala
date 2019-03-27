@@ -44,6 +44,7 @@ import scala.collection.generic.DefaultSerializable
 sealed class ListSet[A]
   extends AbstractSet[A]
     with StrictOptimizedSetOps[A, ListSet, ListSet[A]]
+    with IterableFactoryDefaults[A, ListSet]
     with DefaultSerializable {
 
   override protected[this] def className: String = "ListSet"

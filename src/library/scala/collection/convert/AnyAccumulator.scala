@@ -17,7 +17,7 @@ import java.util.Spliterator
 import java.util.function.Consumer
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, IterableFactoryDefaults, SeqFactory, Stepper, StepperShape, mutable}
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
@@ -37,6 +37,8 @@ import scala.reflect.ClassTag
  */
 final class AnyAccumulator[A]
   extends Accumulator[A, AnyAccumulator, AnyAccumulator[A]]
+    with mutable.SeqOps[A, AnyAccumulator, AnyAccumulator[A]]
+    with IterableFactoryDefaults[A, AnyAccumulator]
     with Serializable {
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
   // created with `nextBlockSize` (which depends on `totalSize`).

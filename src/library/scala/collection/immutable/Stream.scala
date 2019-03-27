@@ -25,7 +25,11 @@ import Stream.cons
 
 @deprecated("Use LazyList (which is fully lazy) instead of Stream (which has a lazy tail only)", "2.13.0")
 @SerialVersionUID(3L)
-sealed abstract class Stream[+A] extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A, Stream, Stream[A]] with Serializable {
+sealed abstract class Stream[+A] extends AbstractSeq[A]
+  with LinearSeq[A]
+  with LinearSeqOps[A, Stream, Stream[A]]
+  with IterableFactoryDefaults[A @uncheckedVariance, Stream]
+  with Serializable {
   def tail: Stream[A]
 
   /** Forces evaluation of the whole `Stream` and returns it.

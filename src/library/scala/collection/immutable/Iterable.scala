@@ -12,7 +12,8 @@
 
 package scala.collection.immutable
 
-import scala.collection.IterableFactory
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.{IterableFactory, IterableFactoryDefaults}
 
 /** A trait for collections that are guaranteed immutable.
   *
@@ -22,9 +23,10 @@ import scala.collection.IterableFactory
   * @define Coll `immutable.Iterable`
   */
 trait Iterable[+A] extends collection.Iterable[A]
-                      with collection.IterableOps[A, Iterable, Iterable[A]] {
+                      with collection.IterableOps[A, Iterable, Iterable[A]]
+                      with IterableFactoryDefaults[A @uncheckedVariance, Iterable] {
 
-  override def iterableFactory: IterableFactory[IterableCC] = Iterable
+  override def iterableFactory: IterableFactory[Iterable] = Iterable
 }
 
 @SerialVersionUID(3L)

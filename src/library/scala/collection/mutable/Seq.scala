@@ -12,15 +12,16 @@
 
 package scala.collection.mutable
 
-import scala.collection.SeqFactory
+import scala.collection.{IterableFactoryDefaults, SeqFactory}
 import scala.language.higherKinds
 
 trait Seq[A]
   extends Iterable[A]
     with collection.Seq[A]
-    with SeqOps[A, Seq, Seq[A]] {
+    with SeqOps[A, Seq, Seq[A]]
+    with IterableFactoryDefaults[A, Seq] {
 
-  override def iterableFactory: SeqFactory[IterableCC] = Seq
+  override def iterableFactory: SeqFactory[Seq] = Seq
 }
 
 /**

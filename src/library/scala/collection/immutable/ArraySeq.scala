@@ -16,7 +16,7 @@ package collection.immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
-import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory}
+import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, EvidenceIterableFactoryDefaults}
 import scala.collection.IterableOnce
 import scala.annotation.unchecked.uncheckedVariance
 import scala.util.Sorting
@@ -38,6 +38,7 @@ sealed abstract class ArraySeq[+A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArraySeq, ArraySeq[A]]
     with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]]
+    with EvidenceIterableFactoryDefaults[A @uncheckedVariance, ArraySeq, ClassTag]
     with Serializable {
 
   /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
@@ -53,9 +54,8 @@ sealed abstract class ArraySeq[+A]
     * array of a supertype or subtype of the element type. */
   def unsafeArray: Array[_]
 
-  override protected def fromSpecific(coll: scala.collection.IterableOnce[A] @uncheckedVariance): ArraySeq[A] = ArraySeq.from(coll)(elemTag.asInstanceOf[ClassTag[A]])
-
-  override protected def newSpecificBuilder: Builder[A, ArraySeq[A]] @uncheckedVariance = ArraySeq.newBuilder[A](elemTag.asInstanceOf[ClassTag[A]])
+  protected def evidenceIterableFactory: ArraySeq.type = ArraySeq
+  protected def iterableEvidence: ClassTag[A @uncheckedVariance] = elemTag.asInstanceOf[ClassTag[A]]
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A

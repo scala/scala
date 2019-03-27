@@ -15,7 +15,7 @@ package collection.immutable
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl.RangeStepper
-import scala.collection.{AbstractIterator, AnyStepper, Iterator, Stepper, StepperShape}
+import scala.collection.{AbstractIterator, AnyStepper, IterableFactoryDefaults, Iterator, Stepper, StepperShape}
 import scala.util.hashing.MurmurHash3
 
 /** The `Range` class represents integer values in range
@@ -65,6 +65,7 @@ sealed abstract class Range(
     with IndexedSeq[Int]
     with IndexedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
     with StrictOptimizedSeqOps[Int, IndexedSeq, IndexedSeq[Int]]
+    with IterableFactoryDefaults[Int, IndexedSeq]
     with Serializable { range =>
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)

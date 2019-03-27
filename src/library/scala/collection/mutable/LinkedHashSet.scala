@@ -39,6 +39,7 @@ class LinkedHashSet[A]
   extends AbstractSet[A]
     with SetOps[A, LinkedHashSet, LinkedHashSet[A]]
     with StrictOptimizedIterableOps[A, LinkedHashSet, LinkedHashSet[A]]
+    with IterableFactoryDefaults[A, LinkedHashSet]
     with DefaultSerializable  {
 
   override def iterableFactory: IterableFactory[LinkedHashSet] = LinkedHashSet

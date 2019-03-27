@@ -55,11 +55,12 @@ import scala.language.higherKinds
 trait SortedMap[K, +V]
   extends Map[K, V]
     with collection.SortedMap[K, V]
-    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
+    with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
+    with SortedMapFactoryDefaults[K, V @uncheckedVariance, SortedMap, Iterable, Map] {
 
   override def unsorted: Map[K, V] = this
 
-  override def sortedMapFactory: SortedMapFactory[SortedMapCC] = SortedMap
+  override def sortedMapFactory: SortedMapFactory[SortedMap] = SortedMap
 
   /** The same map with a given default function.
     *  Note: The default is only used for `apply`. Other methods like `get`, `contains`, `iterator`, `keys`, etc.

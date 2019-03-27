@@ -37,6 +37,7 @@ import scala.util.hashing.MurmurHash3
 final class HashSet[A] private[immutable](private[immutable] val rootNode: BitmapIndexedSetNode[A])
   extends AbstractSet[A]
     with StrictOptimizedSetOps[A, HashSet, HashSet[A]]
+    with IterableFactoryDefaults[A, HashSet]
     with DefaultSerializable {
 
   releaseFence()

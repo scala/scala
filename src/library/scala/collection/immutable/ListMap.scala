@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
@@ -46,6 +47,7 @@ sealed class ListMap[K, +V]
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
+    with MapFactoryDefaults[K, V @uncheckedVariance, ListMap, Iterable]
     with DefaultSerializable {
 
   override def mapFactory: MapFactory[ListMap] = ListMap

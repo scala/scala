@@ -18,7 +18,7 @@ import java.util.function.{Consumer, DoubleConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape}
+import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
 
 /** A `DoubleAccumulator` is a low-level collection specialized for gathering
  * elements in parallel and then joining them in order by merging them.
@@ -32,6 +32,7 @@ import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper
  */
 final class DoubleAccumulator
   extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
+    with mutable.SeqOps[Double, AnyAccumulator, DoubleAccumulator]
     with Serializable {
   private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
   private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
@@ -298,6 +299,8 @@ final class DoubleAccumulator
   override protected def fromSpecific(coll: IterableOnce[Double]): DoubleAccumulator = DoubleAccumulator.fromSpecific(coll)
   override protected def newSpecificBuilder: DoubleAccumulator = DoubleAccumulator.newBuilder
   override def iterableFactory: SeqFactory[AnyAccumulator] = AnyAccumulator
+
+  override def empty: DoubleAccumulator = DoubleAccumulator.empty
 
   private def writeReplace(): AnyRef = new DoubleAccumulator.SerializationProxy(this)
 }

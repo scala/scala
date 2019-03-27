@@ -34,7 +34,8 @@ import scala.collection.convert.JavaCollectionWrappers.{JMapWrapper, JMapWrapper
  */
 @SerialVersionUID(3L)
 class WeakHashMap[K, V] extends JMapWrapper[K, V](new java.util.WeakHashMap)
-    with JMapWrapperLike[K, V, WeakHashMap, WeakHashMap[K, V]] {
+    with JMapWrapperLike[K, V, WeakHashMap, WeakHashMap[K, V]]
+    with MapFactoryDefaults[K, V, WeakHashMap, Iterable] {
   override def empty = new WeakHashMap[K, V]
   override def mapFactory: MapFactory[WeakHashMap] = WeakHashMap
   @deprecatedOverriding("Compatibility override", since="2.13.0")
