@@ -112,7 +112,8 @@ trait ExistentialsAndSkolems {
     val typeParamTypes = typeParams map (_.tpeHK)
     def doSubst(info: Type) = info.subst(rawSyms, typeParamTypes)
 
-    creator(typeParams map (_ modifyInfo doSubst), doSubst(tp))
+    typeParams foreach (_ modifyInfo doSubst)
+    creator(typeParams, doSubst(tp))
   }
 
   /**

@@ -1531,7 +1531,7 @@ trait Namers extends MethodSynthesis {
         assert(!overrides || vparams.length == baseParamss.head.length, ""+ meth.fullName + ", "+ overridden.fullName)
         val rvparams = rvparamss(previous.length)
         var baseParams = if (overrides) baseParamss.head else Nil
-        map2(vparams, rvparams)((vparam, rvparam) => {
+        foreach2(vparams, rvparams){ (vparam, rvparam) =>
           val sym = vparam.symbol
           // true if the corresponding parameter of the base class has a default argument
           val baseHasDefault = overrides && baseParams.head.hasDefault
@@ -1573,8 +1573,7 @@ trait Namers extends MethodSynthesis {
                     // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
                     // TODO: this is a very brittle approach; I sincerely hope that Denys's research into hygiene
                     //       will open the doors to a much better way of doing this kind of stuff
-                    val tparamNames = defTparams map { case TypeDef(_, name, _, _) => name }
-                    val eraseAllMentionsOfTparams = new TypeTreeSubstituter(tparamNames contains _)
+                    val eraseAllMentionsOfTparams = new TypeTreeSubstituter(x => defTparams.exists(_.name == x))
                     eraseAllMentionsOfTparams(rvparam.tpt match {
                       // default getter for by-name params
                       case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
@@ -1604,7 +1603,7 @@ trait Namers extends MethodSynthesis {
           }
           posCounter += 1
           if (overrides) baseParams = baseParams.tail
-        })
+        }
         if (overrides) baseParamss = baseParamss.tail
         previous :+ vparams
       }
@@ -2056,7 +2055,7 @@ trait Namers extends MethodSynthesis {
     if (defnSym.isTerm) {
       // for polymorphic DefDefs, create type skolems and assign them to the tparam trees.
       val skolems = deriveFreshSkolems(tparams map (_.symbol))
-      map2(tparams, skolems)(_ setSymbol _)
+      foreach2(tparams, skolems)(_ setSymbol _)
     }
 
     def completeImpl(sym: Symbol) = {

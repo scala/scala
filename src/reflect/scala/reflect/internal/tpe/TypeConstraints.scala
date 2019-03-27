@@ -15,6 +15,7 @@ package reflect
 package internal
 package tpe
 
+import scala.collection.mutable.BitSet
 import scala.collection.mutable.Clearable
 
 private[internal] trait TypeConstraints {
@@ -195,32 +196,28 @@ private[internal] trait TypeConstraints {
 
   /** Solve constraint collected in types `tvars`.
     *
-    *  @param tvars      All type variables to be instantiated.
-    *  @param tparams    The type parameters corresponding to `tvars`
-    *  @param variances  The variances of type parameters; need to reverse
+    *  @param tvars    All type variables to be instantiated.
+    *  @param tparams  The type parameters corresponding to `tvars`
+    *  @param getVariance Function to extract variances of type parameters; we need to reverse
     *                    solution direction for all contravariant variables.
-    *  @param upper      When `true` search for max solution else min.
+    *  @param upper    When `true` search for max solution else min.
     */
-  def solve(tvars: List[TypeVar], tparams: List[Symbol], variances: List[Variance], upper: Boolean, depth: Depth): Boolean = {
-    // We're going to be iterating over these a lot. Let's put them in an array.
-    val _tvars     = tvars.toArray
-    val _tparams   = tparams.toArray
-    val _variances = variances.toArray
-    val _len       = _tvars.length
-    // TODO: can we make this reliably inline its HOF argument when it's a function?
-    @inline def configForeach(f: (TypeVar, Symbol, Variance) => Unit) = {
-      var i = 0
-      while (i < _len) { f(_tvars(i), _tparams(i), _variances(i)); i += 1 }
+  def solve(tvars: List[TypeVar], tparams: List[Symbol], getVariance: Variance.Extractor[Symbol], upper: Boolean, depth: Depth): Boolean = {
+    assert(tvars.corresponds(tparams)((tvar, tparam) => tvar.origin.typeSymbol eq tparam), (tparams, tvars.map(_.origin.typeSymbol)))
+    val areContravariant: BitSet = BitSet.empty
+    foreachWithIndex(tparams){(tparam, ix) =>
+      if (getVariance(tparam).isContravariant) areContravariant += ix
     }
 
     @inline def toBound(hi: Boolean, tparam: Symbol) =
       if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
-    def solveOne(tvar: TypeVar, tparam: Symbol, variance: Variance): Unit = {
+    def solveOne(tvar: TypeVar, isContravariant: Boolean): Unit = {
+      val tparam = tvar.origin.typeSymbol
       if (tvar.constr.inst == NoType) {
         tvar.constr.inst = null // mark tvar as being solved
 
-        val up = if (variance.isContravariant) !upper else upper
+        val up = if (isContravariant) !upper else upper
 
         val tparamTycon = tparam.typeConstructor
         val bound = toBound(up, tparam)
@@ -230,10 +227,11 @@ private[internal] trait TypeConstraints {
         // Solve other type vars, they are relevant when:
         //   - our current bound mentions the other tparam
         //   - our current tparam equals the other tparam's bound (we'll add the symmetric bound below)
-        configForeach { (tvar2, tparam2, variance2) =>
+        foreachWithIndex(tvars) { (tvar2, ix) =>
+          val tparam2 = tvar2.origin.typeSymbol
           if ((tparam2 ne tparam) && ((bound contains tparam2) || tparamTycon =:= toBound(!up, tparam2))) {
             if (tvar2.constr.inst eq null) cyclic = true // came back to a tvar that's being solved --> cycle! (note that we capture the `cyclic` var)
-            solveOne(tvar2, tparam2, variance2)
+            solveOne(tvar2, areContravariant(ix))
           }
         }
 
@@ -246,7 +244,8 @@ private[internal] trait TypeConstraints {
             // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
             // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
-            configForeach { (tvarOther, tparamOther, _) =>
+            tvars.foreach { tvarOther =>
+              val tparamOther = tvarOther.origin.typeSymbol
               if ((tparamOther ne tparam) && tparamOther.info.lowerBound =:= tparamTycon)
                 tvar.addHiBound(tvarOther)
             }
@@ -257,7 +256,8 @@ private[internal] trait TypeConstraints {
             // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
             // `tparam` is the upper bound of `tvarOther`. Flip that, and add `tvarOther` as an lower bound for `tvar`.
             // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
-            configForeach { (tvarOther, tparamOther, _) =>
+            tvars.foreach { tvarOther =>
+              val tparamOther = tvarOther.origin.typeSymbol
               if ((tparamOther ne tparam) && tparamOther.info.upperBound =:= tparamTycon)
                 tvar.addLoBound(tvarOther)
             }
@@ -279,8 +279,7 @@ private[internal] trait TypeConstraints {
     }
 
     // println("solving "+tvars+"/"+tparams+"/"+(tparams map (_.info)))
-
-    configForeach { solveOne }
+    foreachWithIndex(tvars)((tvar, i) => solveOne(tvar, areContravariant(i)))
 
 //    def logBounds(tv: TypeVar) = log {
 //      val what = if (!tv.instValid) "is invalid" else s"does not conform to bounds: ${tv.constr}"

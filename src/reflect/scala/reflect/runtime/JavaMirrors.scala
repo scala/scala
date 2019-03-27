@@ -327,12 +327,13 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     // that's because we want to have decent performance
     // therefore we move special cases into separate subclasses
     // rather than have them on a hot path them in a unified implementation of the `apply` method
-    private def mkMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): MethodMirror = {
-      def existsParam(pred: Type => Boolean) = symbol.paramss.flatten.map(_.info).exists(pred)
-      if (isBytecodelessMethod(symbol)) new BytecodelessMethodMirror(receiver, symbol)
-      else if (existsParam(isByNameParam) || existsParam(isValueClassParam)) new JavaTransformingMethodMirror(receiver, symbol)
-      else {
-        symbol.paramss.flatten.length match {
+    private def mkMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): MethodMirror =
+      if (isBytecodelessMethod(symbol))
+        new BytecodelessMethodMirror(receiver, symbol)
+      else if (mexists(symbol.paramss)(p => isByNameParam(p.info) || isValueClassParam(p.info)))
+        new JavaTransformingMethodMirror(receiver, symbol)
+      else
+        sumSize(symbol.paramss, 0) match {
           case 0 => new JavaVanillaMethodMirror0(receiver, symbol)
           case 1 => new JavaVanillaMethodMirror1(receiver, symbol)
           case 2 => new JavaVanillaMethodMirror2(receiver, symbol)
@@ -340,8 +341,6 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           case 4 => new JavaVanillaMethodMirror4(receiver, symbol)
           case _ => new JavaVanillaMethodMirror(receiver, symbol)
         }
-      }
-    }
 
     private abstract class JavaMethodMirror(val symbol: MethodSymbol, protected val ret: DerivedValueClassMetadata) extends MethodMirror {
       lazy val jmeth = ensureAccessible(methodToJava(symbol))
