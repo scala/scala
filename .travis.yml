@@ -25,6 +25,7 @@ jobs:
           #  - by travis config (see below): secret env vars
           #  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
           #  - by `bootstrap_fun`: publishPrivateTask, ...
+          - set -e
           - (cd admin && ./init.sh)
           - source scripts/common
           - source scripts/bootstrap_fun
@@ -40,6 +41,7 @@ jobs:
       - stage: build
         if: type = pull_request
         script:
+          - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
@@ -56,10 +58,11 @@ jobs:
           - bundler --version
           - bundle install
         script:
-        - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
-        - bundle exec jekyll build -s spec/ -d build/spec
+          - set -e
+          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
+          - bundle exec jekyll build -s spec/ -d build/spec
         after_success:
-        - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
+          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
 
 env:
   global:
