@@ -526,6 +526,10 @@ trait StdNames {
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
     def protSetterName(name: Name): TermName = newTermName(PROTECTED_SET_PREFIX + name)
 
+    private[this] val existentialNames = (0 to 22).map(existentialName0)
+    private def existentialName0(i: Int) = newTypeName("_" + i)
+    final def existentialName(i: Int): TypeName = if (i < existentialNames.length) existentialNames(i) else existentialName0(i)
+
     final val Nil: NameType                 = "Nil"
     final val Predef: NameType              = "Predef"
 

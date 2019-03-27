@@ -83,10 +83,8 @@ trait Infer extends Checkable {
       // use function type subtyping, not method type subtyping (the latter is invariant in argument types)
       funTp <:< functionType(samInfoWithTVars.paramTypes, samInfoWithTVars.finalResultType)
 
-      val variances = tparams map varianceInType(sam.info)
-
       // solve constraints tracked by tvars
-      val targs = solvedTypes(tvars, tparams, variances, upper = false, lubDepth(sam.info :: Nil))
+      val targs = solvedTypes(tvars, tparams, varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
 
       debuglog(s"sam infer: $samTp --> ${appliedType(samTyCon, targs)} by ${funTp} <:< $samInfoWithTVars --> $targs for $tparams")
 
@@ -172,12 +170,12 @@ trait Infer extends Checkable {
    *
    *  @param tvars      All type variables to be instantiated.
    *  @param tparams    The type parameters corresponding to `tvars`
-   *  @param variances  The variances of type parameters; need to reverse
+   *  @param getVariance Function to extract variances of type parameters; we need to reverse
    *                    solution direction for all contravariant variables.
    *  @param upper      When `true` search for max solution else min.
    *  @throws NoInstance
    */
-  def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol], variances: List[Variance], upper: Boolean, depth: Depth): List[Type] = {
+  def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol], getVariance: Variance.Extractor[Symbol], upper: Boolean, depth: Depth): List[Type] = {
     if (tvars.isEmpty) Nil else {
       printTyping("solving for " + parentheses(map2(tparams, tvars)((p, tv) => s"${p.name}: $tv")))
       // !!! What should be done with the return value of "solve", which is at present ignored?
@@ -185,7 +183,7 @@ trait Infer extends Checkable {
       // we'll find out later whether it works", meaning don't issue an error here when types
       // don't conform to bounds. That means you can never trust the results of implicit search.
       // For an example where this was not being heeded, scala/bug#2421.
-      solve(tvars, tparams, variances, upper, depth)
+      solve(tvars, tparams, getVariance, upper, depth)
       tvars map instantiate
     }
   }
@@ -301,8 +299,10 @@ trait Infer extends Checkable {
           )
           tree setSymbol sym1 setType (
             pre match {
-              case _: SuperType => owntype map (tp => if (tp eq pre) site.symbol.thisType else tp)
-              case _            => owntype
+              // OPT: avoid lambda allocation and Type.map for super constructor calls
+              case _: SuperType if !sym.isConstructor && !owntype.isInstanceOf[OverloadedType] =>
+                owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
+              case _ => owntype
             }
           )
       }
@@ -371,18 +371,26 @@ trait Infer extends Checkable {
      *  by existentially bound variables.
      */
     def makeFullyDefined(tp: Type): Type = {
-      var tparams: List[Symbol] = Nil
-      def addTypeParam(bounds: TypeBounds): Type = {
-        val tparam = context.owner.newExistential(newTypeName("_"+tparams.size), context.tree.pos.focus) setInfo bounds
-        tparams ::= tparam
-        tparam.tpe
+      object typeMap extends TypeMap {
+        def tparamsList: List[Symbol] = if (tparams_ == null) Nil else tparams_.toList
+        private var tparams_ : ListBuffer[Symbol] = null
+        private var i = 0
+        private def nextI(): Int = try i finally i += 1
+        private def addTypeParam(bounds: TypeBounds): Type = {
+          val tparam = context.owner.newExistential(nme.existentialName(nextI()), context.tree.pos.focus) setInfo bounds
+          if (tparams_ == null) tparams_ = ListBuffer.empty
+          tparams_ += tparam
+          tparam.tpe
+        }
+
+        override def apply(tp: Type): Type = mapOver(tp) match {
+          case pt: ProtoType => addTypeParam(pt.toBounds)
+          case t             => t
+        }
       }
-      val tp1 = tp map {
-        case pt: ProtoType => addTypeParam(pt.toBounds)
-        case t             => t
-      }
+      val tp1 = typeMap(tp)
       if (tp eq tp1) tp
-      else existentialAbstraction(tparams.reverse, tp1)
+      else existentialAbstraction(typeMap.tparamsList, tp1)
     }
     def ensureFullyDefined(tp: Type): Type = if (isFullyDefined(tp)) tp else makeFullyDefined(tp)
 
@@ -407,7 +415,7 @@ trait Infer extends Checkable {
           case _                                                     => restpe
         }
 
-        try solvedTypes(tvars, tparams, tparams map varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
+        try solvedTypes(tvars, tparams, varianceInType(variance), upper = false, lubDepth(restpe :: pt :: Nil))
         catch { case _: NoInstance => null }
       } else
         null
@@ -564,7 +572,7 @@ trait Infer extends Checkable {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
         }
       }
-      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
+      val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
       // Can warn about inferring Any/AnyVal/Object as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
@@ -1103,13 +1111,12 @@ trait Infer extends Checkable {
           try {
             // debuglog("TVARS "+ (tvars map (_.constr)))
             // look at the argument types of the primary constructor corresponding to the pattern
-            val variances  =
-              if (ctorTp.paramTypes.isEmpty) undetparams map varianceInType(ctorTp)
-              else undetparams map varianceInTypes(ctorTp.paramTypes)
+            val varianceFun: Variance.Extractor[Symbol] =
+              if (ctorTp.paramTypes.isEmpty) varianceInType(ctorTp) else varianceInTypes(ctorTp.paramTypes)
 
             // Note: this is the only place where solvedTypes (or, indirectly, solve) is called
             // with upper = true.
-            val targs = solvedTypes(tvars, undetparams, variances, upper = true, lubDepth(resTp :: pt :: Nil))
+            val targs = solvedTypes(tvars, undetparams, varianceFun, upper = true, lubDepth(resTp :: pt :: Nil))
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
@@ -1164,7 +1171,7 @@ trait Infer extends Checkable {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
       // So we should come back to this and investigate.
-      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), upper = false, Depth.AnyDepth)
+      solve(tvars1, tvars1.map(_.origin.typeSymbol), (_ => Variance.Covariant), upper = false, Depth.AnyDepth)
     }
 
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params

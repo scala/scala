@@ -689,11 +689,6 @@ abstract class UnCurry extends InfoTransform
      * }}}
      */
     private object dependentParamTypeErasure {
-      sealed abstract class ParamTransform {
-        def param: ValDef
-      }
-      final case class Identity(param: ValDef) extends ParamTransform
-      final case class Packed(param: ValDef, tempVal: ValDef) extends ParamTransform
 
       def isDependent(dd: DefDef): Boolean =
         enteringUncurry {
@@ -706,10 +701,23 @@ abstract class UnCurry extends InfoTransform
        */
       def erase(dd: DefDef): (List[List[ValDef]], Tree) = {
         import dd.{ vparamss, rhs }
-        val paramTransforms: List[ParamTransform] =
-          map2(vparamss.flatten, dd.symbol.info.paramss.flatten) { (p, infoParam) =>
+        val (allParams, packedParamsSyms, tempVals): (List[ValDef], List[Symbol], List[ValDef]) = {
+
+          val allParamsBuf: ListBuffer[ValDef] = ListBuffer.empty
+          val packedParamsSymsBuf: ListBuffer[Symbol] = ListBuffer.empty
+          val tempValsBuf: ListBuffer[ValDef] = ListBuffer.empty
+
+          def addPacked(param: ValDef, tempVal: ValDef): Unit = {
+            allParamsBuf += param
+            if (rhs != EmptyTree) {
+              packedParamsSymsBuf += param.symbol
+              tempValsBuf         += tempVal
+            }
+          }
+
+          def addParamTransform(p: ValDef, infoParam: Symbol): Unit = {
             val packedType = infoParam.info
-            if (packedType =:= p.symbol.info) Identity(p)
+            if (packedType =:= p.symbol.info) allParamsBuf += p
             else {
               // The Uncurry info transformer existentially abstracted over value parameters
               // from the previous parameter lists.
@@ -765,19 +773,22 @@ abstract class UnCurry extends InfoTransform
                 val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(info)
                 atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), info)))
               }
-              Packed(newParam, tempVal)
+              addPacked(newParam, tempVal)
             }
           }
 
-        val allParams = paramTransforms map (_.param)
-        val (packedParams, tempVals) = paramTransforms.collect {
-          case Packed(param, tempVal) => (param, tempVal)
-        }.unzip
+          val viter = vparamss.iterator.flatten
+          val piter = dd.symbol.info.paramss.iterator.flatten
+          while (viter.hasNext && piter.hasNext)
+            addParamTransform(viter.next, piter.next)
+
+          (allParamsBuf.toList, packedParamsSymsBuf.toList, tempValsBuf.toList)
+        }
 
         val rhs1 = if (rhs == EmptyTree || tempVals.isEmpty) rhs else {
           localTyper.typedPos(rhs.pos) {
             // Patch the method body to refer to the temp vals
-            val rhsSubstituted = rhs.substituteSymbols(packedParams map (_.symbol), tempVals map (_.symbol))
+            val rhsSubstituted = rhs.substituteSymbols(packedParamsSyms, tempVals.map(_.symbol))
             // The new method body: { val p$1 = p.asInstanceOf[<dependent type>]; ...; <rhsSubstituted> }
             Block(tempVals, rhsSubstituted)
           }

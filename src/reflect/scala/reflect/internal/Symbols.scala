@@ -3715,10 +3715,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @param    infoFn  the function to apply to the infos
    *  @return           the newly created, info-adjusted symbols
    */
-  def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] =
-    mapList(cloneSymbols(syms))(_ modifyInfo infoFn)
-  def cloneSymbolsAtOwnerAndModify(syms: List[Symbol], owner: Symbol, infoFn: Type => Type): List[Symbol] =
-    mapList(cloneSymbolsAtOwner(syms, owner))(_ modifyInfo infoFn)
+  def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] = {
+    val cloned = cloneSymbols(syms)
+    cloned foreach (_ modifyInfo infoFn)
+    cloned
+  }
+  def cloneSymbolsAtOwnerAndModify(syms: List[Symbol], owner: Symbol, infoFn: Type => Type): List[Symbol] = {
+    val cloned = cloneSymbolsAtOwner(syms, owner)
+    cloned foreach (_ modifyInfo infoFn)
+    cloned
+  }
 
   /** Functions which perform the standard clone/substituting on the given symbols and type,
    *  then call the creator function with the new symbols and type as arguments.
