@@ -1,0 +1,60 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+- 2.13.x
+
+jobs:
+# - job: CI_Build
+#   condition: ne(variables['BUILD_REASON'], 'PullRequest')
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+#   steps:
+#   - script: | 
+#       ./init.sh
+#       pwd
+#       ls
+#       source ./scripts/common
+#       source ./scripts/bootstrap_fun
+#       determineScalaVersion
+#       removeExistingBuilds $integrationRepoUrl
+#       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+#       buildLocker
+#       buildQuick
+#       triggerScalaDist
+#     workingDirectory: $(Build.SourcesDirectory)/admin
+#   displayName: 'Full Bootstrap and Publish'
+- job: PR_Build
+  # condition: eq(variables['BUILD_REASON'], 'PullRequest')
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  steps:
+  - script: | 
+      sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+      STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+      sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+  displayName: 'pull request validation (w/ mini-bootstrap)'
+- job: Build_With_Jekyll
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  steps:
+  - script: | 
+      pwd
+      ls
+      'if [ "$BUILD_REASON" = "PullRequest" ]; then (./admin/init.sh); fi'
+      bundle exec jekyll build -s spec/ -d build/spec
+  displayName: 'build the spec using jekyll'
+
+variables:
+  # ========================================================================
+  #                          env variables 
+  # ========================================================================
+
+  PRIV_KEY_SECRET: 'P8EqpZoin/YTnwel9TTxSSAHtXfZ4M262BKXlYUZmjoQsjyvXDAeZ7yAqgAvX5BeRFrGkBToPiE+V60stdWkPKs3+9COw2BDUB1CULBHhRY9Lxordmz0xVhgEfsoH4f6r6wOlIQ9kuaWhmP+JdB/mzOHZhLch9ziPi8O46Z8t4k='
+  PRIVATE_REPO_PASS: 'T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8='
+  SONA_USER: 'feE5A8mYNpkNQKVwCj3aXrwjVrJWh/4ENpRfFlr2HOD9ORk1GORD5Yq907WZd+dTkYK54Lh1gA+qHOCIDgJHbi9ZLU+kjzEjtYKF6lQy6Wb0LI8smTOnAA6IWVVYifiXw8d66MI2MKZb2jjGeIzy8Q00SZjLhEGjLyTeCIB88Ws='
+  SONA_PASS: 'ek3As5q2tL8UBXcxSBbv4v5YgsoPD41SCzPOSu72kzfbngyxgQxrcziU5pIM+Lib9KaWex7hVVWNL38tMyDbu+0OpDv8bPjMujzlDx5I2pJUfuOJo7QRYsJE1nsXcY4cA72cCLfbRcLEkvtDAhcdLSaUOqlyQe5BY4X4fY5eoPA='
+  GPG_SUBKEY_SECRET: 'dbAvl6KEuLwZ0MVQPZihFsPzCdiLbX0EFk3so+hcfEbksrmLQ1tn4X5ZM7Wy1UDR8uN9lxngEwHch7a7lKqpugzmXMew9Wnikr9WBWbJT77Z+XJ/jHI6YuiCRpRo+nvxXGp9Ry80tSIgx5eju0J83IaJL41BWlBkvyAd7YAHORI='
