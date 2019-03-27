@@ -4,7 +4,7 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck._
 
-object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSet") {
+object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
 
   type K = Int
 
@@ -319,10 +319,53 @@ object ImmutableChampHashSetProperties extends Properties("immutable.ChampHashSe
     val actual: collection.Set[Int] = left -- right.to(collection.mutable.HashSet)
     actual ?= expected
   }
+
   property("removedAll(Vector)") = forAll { (left: HashSet[Int], right: Vector[Int]) =>
     val expected: collection.Set[Int] = left.filter(!right.contains(_))
     val actual: collection.Set[Int] = left -- right
     actual ?= expected
   }
 
+  property("xs ++ list == list.foldLeft(xs)(_ + _)") = forAll { (xs: HashSet[Int], list: List[Int]) =>
+    xs.concat(list) ?= list.foldLeft(xs)(_ + _)
+  }
+
+
+  property("hs.concat(list) does not mutate hs") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val asList = hs.toList
+    val clone = hs.to(List).to(HashSet)
+    hs.concat(l)
+    hs ?= clone
+  }
+  property("hs.concat(mutable.HashSet) does not mutate hs or the mutable.HashSet") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val mhs: collection.Set[K] = l.to(collection.mutable.HashSet)
+    val clone = hs.to(List).to(HashSet)
+    hs.concat(mhs)
+    hs ?= clone
+  }
+  property("hs.concat(mutable.HashSet)") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val mhs: collection.Set[K] = l.to(collection.mutable.HashSet)
+    hs.concat(mhs) ?= mhs.foldLeft(hs)(_ + _)
+  }
+
+  property("hs.union(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.union(hs2)
+    hs ?= clone
+  }
+  property("hs.removedAll(list) does not mutate hs") = forAll { (hs: HashSet[K], l: List[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.removedAll(l)
+    hs ?= clone
+  }
+  property("hs.diff(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.diff(hs2)
+    hs ?= clone
+  }
+  property("hs.removedAll(hashSet) does not mutate hs") = forAll { (hs: HashSet[K], hs2: HashSet[K]) =>
+    val clone = hs.to(List).to(HashSet)
+    hs.removedAll(hs2)
+    hs ?= clone
+  }
 }

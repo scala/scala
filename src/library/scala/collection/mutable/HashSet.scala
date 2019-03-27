@@ -49,6 +49,9 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   override def size: Int = contentSize
 
+  /** Performs the inverse operation of improveHash. In this case, it happens to be identical to improveHash*/
+  @`inline` private[collection] def unimproveHash(improvedHash: Int): Int = improveHash(improvedHash)
+
   /** Computes the improved hash of an original (`any.##`) hash. */
   private[this] def improveHash(originalHash: Int): Int = {
     // Improve the hash by xoring the high 16 bits into the low 16 bits just in case entropy is skewed towards the

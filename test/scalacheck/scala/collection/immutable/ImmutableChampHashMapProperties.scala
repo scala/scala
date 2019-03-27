@@ -14,15 +14,11 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
   type V = Int
   type T = (K, V)
 
-  //  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-  //    p.withMinSuccessfulTests(1000)
-
-  property("convertToScalaMapAndCheckSize") = forAll { input: HashMap[K, V] =>
+  property("convertToScalaMapAndCheckSize") = forAll { (input: HashMap[K, V]) =>
     convertToScalaMapAndCheckSize(input)
   }
 
-  private def convertToScalaMapAndCheckSize(input: HashMap[K, V]) =
-    HashMap.from(input).size == input.size
+  private def convertToScalaMapAndCheckSize(input: HashMap[K, V]) = HashMap.from(input).size == input.size
 
   property("convertToScalaMapAndCheckHashCode") = forAll { input: HashMap[K, V] =>
     convertToScalaMapAndCheckHashCode(input)
@@ -187,6 +183,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
         builder.result()
       }
   }
+
   property("xs.filter(p) does not perform any hashes") =
     forAll { (xs: HashMap[Int, Int], p: ((Int, Int)) => Boolean, flipped: Boolean) =>
       // container which tracks the number of times its hashCode() is called
@@ -239,5 +236,57 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     val expected: collection.Map[Int, Int] = left.view.filterKeys(!right.contains(_)).toMap
     val actual: collection.Map[Int, Int] = left -- right
     actual ?= expected
+  }
+
+  property("hm.removedAll(list) == list.foldLeft(hm)(_ - _)") = forAll { (hm: HashMap[K, V], l: List[K]) =>
+    hm.removedAll(l) ?= l.foldLeft(hm)(_ - _)
+  }
+
+  property("hm.removedAll(list) does not mutate hm") = forAll { (hm: HashMap[K, V], l: List[K]) =>
+    val clone = hm.to(List).to(HashMap)
+    hm.removedAll(l)
+    hm ?= clone
+  }
+  property("hm.concat(list) == list.foldLeft(hm)(_ + _)") = forAll { (hm: HashMap[K, V], l: List[(K, V)]) =>
+    hm.concat(l) ?= l.foldLeft(hm)((m, tuple) => m + tuple)
+  }
+
+  property("hm.concat(list) does not mutate hm") = forAll { (hm: HashMap[K, V], l: List[(K, V)]) =>
+    val clone = hm.to(List).to(HashMap)
+    hm.concat(l)
+    hm ?= clone
+  }
+
+  property("hm.concat(mutable.HashMap) == list.foldLeft(hm)(_ + _)") = forAll { (hm: HashMap[K, V], l: List[(K, V)]) =>
+    val mhm = l.to(collection.mutable.HashMap)
+    hm.concat(mhm) ?= mhm.foldLeft(hm)((m, tuple) => m + tuple)
+  }
+
+  property("hm.concat(mutable.HashMap) does not mutate hm or the mutable.HashMap") = forAll { (hm: HashMap[K, V], l: List[(K, V)]) =>
+    val clone = hm.to(List).to(HashMap)
+    val mhm = l.to(collection.mutable.HashMap)
+    hm.concat(mhm)
+    (hm ?= clone).label("hm is unmutated") &&
+      ((mhm : collection.Map[K, V]) ?= l.to(HashMap)).label("mhm is unmutated")
+  }
+
+  property("hm.removedAll(hashSet) == hashSet.foldLeft(this)(_ - _)") = forAll { (hm: HashMap[K, V], hs: HashSet[K]) =>
+    hm.removedAll(hs) ?= hs.foldLeft(hm)(_ - _)
+  }
+  property("hm.removedAll(hashSet) does not mutate hm") = forAll { (hm: HashMap[K, V], hs: HashSet[K]) =>
+    val clone = hm.to(List).to(HashMap)
+    hm.removedAll(hs)
+    hm ?= clone
+  }
+  property("hm.removedAll(mutable.hashSet) == hashSet.foldLeft(this)(_ - _)") = forAll { (hm: HashMap[K, V], hs: HashSet[K]) =>
+    val mhs = hs.to(collection.mutable.HashSet)
+    hm.removedAll(mhs) ?= mhs.foldLeft(hm)(_ - _)
+  }
+  property("hm.removedAll(mutable.hashSet) does not mutate hm or the mutable.hashSet") = forAll { (hm: HashMap[K, V], hs: HashSet[K]) =>
+    val clone = hm.to(List).to(HashMap)
+    val mhs = hs.to(collection.mutable.HashSet)
+    hm.removedAll(mhs)
+    (hm ?= clone).label("hm is unmutated") &&
+      ((mhs : collection.Set[K]) ?= hs).label("mhs is unmutated")
   }
 }
