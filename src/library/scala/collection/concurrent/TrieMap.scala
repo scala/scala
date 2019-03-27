@@ -1037,8 +1037,8 @@ object TrieMap extends MapFactory[TrieMap] {
   }
 }
 
-
-private[collection] final class TrieMapIterator[K, V](var level: Int, private var ct: TrieMap[K, V], mustInit: Boolean = true) extends AbstractIterator[(K, V)] {
+// non-final as an extension point for parallel collections
+private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: TrieMap[K, V], mustInit: Boolean = true) extends AbstractIterator[(K, V)] {
   private val stack = new Array[Array[BasicNode]](7)
   private val stackpos = new Array[Int](7)
   private var depth = -1
@@ -1089,7 +1089,7 @@ private[collection] final class TrieMapIterator[K, V](var level: Int, private va
   }
 
   @tailrec
-  def advance(): Unit = if (depth >= 0) {
+  final def advance(): Unit = if (depth >= 0) {
     val npos = stackpos(depth) + 1
     if (npos < stack(depth).length) {
       stackpos(depth) = npos
