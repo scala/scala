@@ -17,8 +17,8 @@ jobs:
 #       ./init.sh
 #       pwd
 #       ls
-#       source ./scripts/common
-#       source ./scripts/bootstrap_fun
+#       source ../scripts/common
+#       source ../scripts/bootstrap_fun
 #       determineScalaVersion
 #       removeExistingBuilds $integrationRepoUrl
 #       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
@@ -27,25 +27,38 @@ jobs:
 #       triggerScalaDist
 #     workingDirectory: $(Build.SourcesDirectory)/admin
 #   displayName: 'Full Bootstrap and Publish'
-- job: PR_Build
-  # condition: eq(variables['BUILD_REASON'], 'PullRequest')
-  pool:
-    vmImage: 'Ubuntu-16.04'
-  steps:
-  - script: | 
-      sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-      STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-      sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
-  displayName: 'pull request validation (w/ mini-bootstrap)'
+
+# - job: PR_Build
+#   # condition: eq(variables['BUILD_REASON'], 'PullRequest')
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+#   steps:
+#   - script: | 
+#       sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+#       STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+#       sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+#   displayName: 'pull request validation (w/ mini-bootstrap)'
+
 - job: Build_With_Jekyll
   pool:
     vmImage: 'Ubuntu-16.04'
   steps:
+  - task: UseRubyVersion@0
+    inputs:
+      versionSpec: '>= 2.5'
+
   - script: | 
+      rvm install 2.2
+      rvm use 2.2
+      rvm info
+      ruby -v
+      bundler --version
+      bundle install
       pwd
       ls
-      'if [ "$BUILD_REASON" = "PullRequest" ]; then (./admin/init.sh); fi'
+      'if [ "$BUILD_REASON" != "PullRequest" ]; then (./admin/init.sh); fi'
       bundle exec jekyll build -s spec/ -d build/spec
+      'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then ./scripts/travis-publish-spec.sh; fi'
   displayName: 'build the spec using jekyll'
 
 variables:
