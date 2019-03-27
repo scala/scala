@@ -43,10 +43,26 @@ trait IterableOnce[+A] extends Any {
   /** Iterator can be used only once */
   def iterator: Iterator[A]
 
-  /**
-   * @return a [[Stepper]] that can be used to operate on the elements of this collections
-   *         with the java Streams API. TODO reference to more documentation.
-   */
+  /** Returns a [[Stepper]] for the elements of this collection.
+    *
+    * The Stepper enables creating a Java stream to operate on the collection, see
+    * [[scala.jdk.StreamConverters]]. For collections holding primitive values, the Stepper can be
+    * used as an iterator which doesn't box the elements.
+    *
+    * The implicit [[StepperShape]] parameter defines the resulting Stepper type according to the
+    * element type of this collection.
+    *
+    *   - For collections of `Int`, `Short`, `Byte` or `Char`, an [[IntStepper]] is returned
+    *   - For collections of `Double` or `Float`, a [[DoubleStepper]] is returned
+    *   - For collections of `Long` a [[LongStepper]] is returned
+    *   - For any other element type, an [[AnyStepper]] is returned
+    *
+    * Note that this method is overridden in subclasses and the return type is refined to
+    * `S with EfficientSplit`, for example [[IndexedSeqOps.stepper]]. For Steppers marked with
+    * [[scala.collection.Stepper.EfficientSplit]], the converters in [[scala.jdk.StreamConverters]]
+    * allow creating parallel streams, whereas bare Steppers can be converted only to sequential
+    * streams.
+    */
   def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S = {
     import convert.impl._
     val s = shape.shape match {

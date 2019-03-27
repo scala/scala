@@ -38,10 +38,6 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   def iterator: Iterator[A] = view.iterator
 
-  /**
-   * @return a [[Stepper]] that can be used to operate on the elements of this collections
-   *         with the java Streams API. TODO reference to more documentation.
-   */
   override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import convert.impl._
     val s = shape.shape match {

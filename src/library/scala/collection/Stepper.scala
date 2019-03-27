@@ -18,24 +18,70 @@ import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
 
+/** Steppers exist to enable creating Java streams over Scala collections, see
+  * [[scala.jdk.StreamConverters]]. Besides that use case, they allow iterating over collections
+  * holding unboxed primitives (e.g., `Array[Int]`) without boxing the elements.
+  *
+  * Steppers have an iterator-like interface with methods `hasStep` and `nextStep()`. The difference
+  * to iterators - and the reason `Stepper` is not a subtype of `Iterator` - is that there are
+  * hand-specialized variants of `Stepper` for `Int`, `Long` and `Double` ([[IntStepper]], etc.).
+  * These enable iterating over collections holding unboxed primitives (e.g., Arrays,
+  * [[scala.collection.convert.Accumulator]]s) without boxing the elements.
+  *
+  * The selection of primitive types (`Int`, `Long` and `Double`) matches the hand-specialized
+  * variants of Java Streams ([[java.util.stream.Stream]], [[java.util.stream.IntStream]], etc.)
+  * and the corresponding Java Spliterators ([[Spliterator]], [[Spliterator.OfInt]], etc.).
+  *
+  * Steppers can be converted to Scala Iterators, Java Iterators and Java Spliterators. Primitive
+  * Steppers are converted to the corresponding primitive Java Iterators and Spliterators.
+  *
+  * @tparam A the element type of the Stepper
+  */
 trait Stepper[@specialized(Double, Int, Long) A] {
+  /** Check if there's an element available. */
   def hasStep: Boolean
 
+  /** Return the next element and advance the stepper */
   def nextStep(): A
 
-  // may return null
+  /** Split this stepper, if applicable. The elements of the current Stepper are split up between
+    * the resulting Stepper and the current stepper.
+    *
+    * May return `null`, in which case the current Stepper yields the same elements as before.
+    *
+    * See method `trySplit` in [[Spliterator]].
+    */
   private[collection] def trySplit(): Stepper[A]
 
+  /** Returns an estimate of the number of elements of this Stepper, or [[Long.MaxValue]]. See
+    * method `estimateSize` in [[Spliterator]].
+    */
   private[collection] def estimateSize: Long
 
+  /** Returns a set of characteristics of this Stepper and its elements. See method
+    * `characteristics` in [[Spliterator]].
+    */
   private[collection] def characteristics: Int
 
-  // Not Spliterator[A] because when A=Int, we refine the type to Spliterator.OfInt, which is a
-  // subtype of Spliterator[Integer]. Could use a shape typeclass implicit argument to express it.
+  /** Returns a [[Spliterator]] corresponding to this Stepper.
+    *
+    * Note that the return type is `Spliterator[_]` instead of `Spliterator[A]` to allow returning
+    * a [[Spliterator.OfInt]] (which is a `Spliterator[Integer]`) in the subclass [[IntStepper]]
+    * (which is a `Stepper[Int]`).
+    */
   def spliterator: Spliterator[_]
 
+  /** Returns a Java [[JIterator]] corresponding to this Stepper.
+    *
+    * Note that the return type is `Iterator[_]` instead of `Iterator[A]` to allow returning
+    * a [[java.util.PrimitiveIterator.OfInt]] (which is a `Iterator[Integer]`) in the subclass
+    * [[IntStepper]] (which is a `Stepper[Int]`).
+    */
   def javaIterator: JIterator[_]
 
+  /** Returns an [[Iterator]] corresponding to this Stepper. Note that Iterators corresponding to
+    * primitive Steppers box the elements.
+    */
   def iterator: Iterator[A] = new AbstractIterator[A] {
     def hasNext: Boolean = hasStep
     def next(): A = nextStep()
@@ -52,10 +98,10 @@ object Stepper {
 
   private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
 
-  /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
+  /* These adapter classes can wrap an AnyStepper of a numeric type into a possibly widened primitive Stepper type.
    * This provides a basis for more efficient stream processing on unboxed values provided that the original source
    * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided
-   * (see for example StepsIntArray and StepsWidenedByteArray). */
+   * (see for example IntArrayStepper and WidenedByteArrayStepper). */
 
   private[collection] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
     def hasStep: Boolean = st.hasStep
@@ -135,6 +181,7 @@ object Stepper {
   }
 }
 
+/** A Stepper for arbitrary element types. See [[Stepper]]. */
 trait AnyStepper[A] extends Stepper[A] {
   private[collection] def trySplit(): AnyStepper[A]
 
@@ -204,7 +251,7 @@ object AnyStepper {
   }
 }
 
-
+/** A Stepper for Ints. See [[Stepper]]. */
 trait IntStepper extends Stepper[Int] {
   private[collection] def trySplit(): IntStepper
 
@@ -242,6 +289,7 @@ object IntStepper {
   }
 }
 
+/** A Stepper for Doubles. See [[Stepper]]. */
 trait DoubleStepper extends Stepper[Double] {
   private[collection] def trySplit(): DoubleStepper
 
@@ -280,6 +328,7 @@ object DoubleStepper {
   }
 }
 
+/** A Stepper for Longs. See [[Stepper]]. */
 trait LongStepper extends Stepper[Long] {
   private[collection] def trySplit(): LongStepper
 
