@@ -16,7 +16,7 @@ package immutable
 
 
 import scala.collection.immutable.Set.Set4
-import scala.collection.mutable.{Builder, ReusableBuilder, ImmutableBuilder}
+import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
 
 
@@ -112,6 +112,13 @@ object Set extends IterableFactory[Set] {
     override def size: Int = 0
     override def isEmpty = true
     override def knownSize: Int = size
+    override def filter(pred: Any => Boolean): Set[Any] = this
+    override def filterNot(pred: Any => Boolean): Set[Any] = this
+    override def removedAll(that: IterableOnce[Any]): Set[Any] = this
+    override def diff(that: collection.Set[Any]): Set[Any] = this
+    override def subsetOf(that: collection.Set[Any]): Boolean = true
+    override def intersect(that: collection.Set[Any]): Set[Any] = this
+    override def view: View[Any] = View.empty
     def contains(elem: Any): Boolean = false
     def incl(elem: Any): Set[Any] = new Set1(elem)
     def excl(elem: Any): Set[Any] = this
