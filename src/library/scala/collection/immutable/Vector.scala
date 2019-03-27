@@ -37,6 +37,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
           val v = new Vector(0, as.length, 0)
           v.display0 = as.unsafeArray.asInstanceOf[Array[AnyRef]]
           v.depth = 1
+          releaseFence()
           v
         }
       case v: Vector[E] => v
@@ -56,6 +57,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
           val v = new Vector[E](0, knownSize, 0)
           v.depth = 1
           v.display0 = display0
+          releaseFence()
           v
         } else {
           (newBuilder ++= it).result()
@@ -64,7 +66,7 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def newBuilder[A]: ReusableBuilder[A, Vector[A]] = new VectorBuilder[A]
 
-  /** Creates a Vector of one element */
+  /** Creates a Vector of one element. Not safe for publication, the caller is responsible for `releaseFence` */
   private def single[A](elem: A): Vector[A] = {
     val s = new Vector[A](0, 1, 0)
     s.depth = 1
