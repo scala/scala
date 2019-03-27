@@ -31,15 +31,51 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
+      case as: ArraySeq[E] if as.length <= 32 && as.unsafeArray.isInstanceOf[Array[AnyRef]] =>
+        if (as.isEmpty) NIL
+        else {
+          val v = new Vector(0, as.length, 0)
+          v.display0 = as.unsafeArray.asInstanceOf[Array[AnyRef]]
+          v.depth = 1
+          releaseFence()
+          v
+        }
       case v: Vector[E] => v
-      case _ if it.knownSize == 0 => empty[E]
-      case _ => (newBuilder ++= it).result()
+      case _ =>
+        val knownSize = it.knownSize
+
+        if (knownSize == 0) empty[E]
+        else if (knownSize > 0 && knownSize <= 32) {
+          val display0 = new Array[AnyRef](knownSize)
+
+          var i = 0
+          val iterator = it.iterator
+          while (iterator.hasNext) {
+            display0(i) = iterator.next().asInstanceOf[AnyRef]
+            i += 1
+          }
+          val v = new Vector[E](0, knownSize, 0)
+          v.depth = 1
+          v.display0 = display0
+          releaseFence()
+          v
+        } else {
+          (newBuilder ++= it).result()
+        }
     }
 
   def newBuilder[A]: ReusableBuilder[A, Vector[A]] = new VectorBuilder[A]
 
+  /** Creates a Vector of one element. Not safe for publication, the caller is responsible for `releaseFence` */
+  private def single[A](elem: A): Vector[A] = {
+    val s = new Vector[A](0, 1, 0)
+    s.depth = 1
+    s.display0 = Array[AnyRef](elem.asInstanceOf[AnyRef])
+    s
+  }
+
   @transient
-  private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
+  private val NIL = new Vector[Nothing](0, 0, 0)
 
   private val defaultApplyPreferredMaxLength: Int =
     try System.getProperty("scala.collection.immutable.Vector.defaultApplyPreferredMaxLength",
@@ -349,145 +385,158 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   }
 
   override def prepended[B >: A](value: B): Vector[B] = {
-    val result = if (endIndex != startIndex) {
-      val blockIndex = (startIndex - 1) & ~31
-      val lo = (startIndex - 1) & 31
-
-      if (startIndex != blockIndex + 32) {
-        val s = new Vector(startIndex - 1, endIndex, blockIndex)
-        s.initFrom(this)
-        s.dirty = dirty
-        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
+    val thisLength = length
+    val result =
+      if (depth == 1 && thisLength < 32) {
+        val s = new Vector(0, thisLength + 1, 0)
+        s.depth = 1
+        val newDisplay0 = new Array[AnyRef](thisLength + 1)
+        System.arraycopy(display0, startIndex, newDisplay0, 1, thisLength)
+        newDisplay0(0) = value.asInstanceOf[AnyRef]
+        s.display0 = newDisplay0
         s
-      } else {
+      } else if (thisLength > 0) {
+        val blockIndex = (startIndex - 1) & ~31
+        val lo = (startIndex - 1) & 31
 
-        val freeSpace = (1 << (5 * depth)) - endIndex           // free space at the right given the current tree-structure depth
-        val shift = freeSpace & ~((1 << (5 * (depth - 1))) - 1) // number of elements by which we'll shift right (only move at top level)
-        val shiftBlocks = freeSpace >>> (5 * (depth - 1))       // number of top-level blocks
-
-        if (shift != 0) {
-          // case A: we can shift right on the top level
-          if (depth > 1) {
-            val newBlockIndex = blockIndex + shift
-            val newFocus = focus + shift
-
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
-            s.initFrom(this)
-            s.dirty = dirty
-            s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
-            s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
-            s.display0(lo) = value.asInstanceOf[AnyRef]
-            s
-          } else {
-            val newBlockIndex = blockIndex + 32
-            val newFocus = focus
-
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
-            s.initFrom(this)
-            s.dirty = dirty
-            s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
-            s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
-            s.display0(shift - 1) = value.asInstanceOf[AnyRef]
-            s
-          }
-        } else if (blockIndex < 0) {
-          // case B: we need to move the whole structure
-          val move = (1 << (5 * (depth + 1))) - (1 << (5 * depth))
-          val newBlockIndex = blockIndex + move
-          val newFocus = focus + move
-
-          val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
+        if (startIndex != blockIndex + 32) {
+          val s = new Vector(startIndex - 1, endIndex, blockIndex)
           s.initFrom(this)
           s.dirty = dirty
-          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
+          s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
           s
         } else {
-          val newBlockIndex = blockIndex
-          val newFocus = focus
 
-          val s = new Vector(startIndex - 1, endIndex, newBlockIndex)
-          s.initFrom(this)
-          s.dirty = dirty
-          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-          s.display0(lo) = value.asInstanceOf[AnyRef]
-          s
+          val freeSpace = (1 << (5 * depth)) - endIndex           // free space at the right given the current tree-structure depth
+          val shift = freeSpace & ~((1 << (5 * (depth - 1))) - 1) // number of elements by which we'll shift right (only move at top level)
+          val shiftBlocks = freeSpace >>> (5 * (depth - 1))       // number of top-level blocks
+
+          if (shift != 0) {
+            // case A: we can shift right on the top level
+            if (depth > 1) {
+              val newBlockIndex = blockIndex + shift
+              val newFocus = focus + shift
+
+              val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+              s.initFrom(this)
+              s.dirty = dirty
+              s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
+              s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
+              s.display0(lo) = value.asInstanceOf[AnyRef]
+              s
+            } else {
+              val newBlockIndex = blockIndex + 32
+              val newFocus = focus
+
+              val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+              s.initFrom(this)
+              s.dirty = dirty
+              s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
+              s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
+              s.display0(shift - 1) = value.asInstanceOf[AnyRef]
+              s
+            }
+          } else if (blockIndex < 0) {
+            // case B: we need to move the whole structure
+            val move = (1 << (5 * (depth + 1))) - (1 << (5 * depth))
+            val newBlockIndex = blockIndex + move
+            val newFocus = focus + move
+
+            val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
+            s.initFrom(this)
+            s.dirty = dirty
+            s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
+            s.display0(lo) = value.asInstanceOf[AnyRef]
+            s
+          } else {
+            val newBlockIndex = blockIndex
+            val newFocus = focus
+
+            val s = new Vector(startIndex - 1, endIndex, newBlockIndex)
+            s.initFrom(this)
+            s.dirty = dirty
+            s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.display0(lo) = value.asInstanceOf[AnyRef]
+            s
+          }
         }
-      }
-    } else {
-      // empty vector, just insert single element at the back
-      val elems = new Array[AnyRef](32)
-      elems(31) = value.asInstanceOf[AnyRef]
-      val s = new Vector(31, 32, 0)
-      s.depth = 1
-      s.display0 = elems
-      s
-    }
+      } else Vector.single(value)
+
     releaseFence()
     result
   }
 
   override def appended[B >: A](value: B): Vector[B] = {
-    val result = if (endIndex != startIndex) {
-      val blockIndex = endIndex & ~31 // round down to nearest 32
-      val lo = endIndex & 31 // remainder of blockIndex / 32
-
-      if (endIndex != blockIndex) {
-        val s = new Vector(startIndex, endIndex + 1, blockIndex)
-        s.initFrom(this)
-        s.dirty = dirty
-        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
+    val thisLength = length
+    val result =
+      if (depth == 1 && thisLength < 32) {
+        val s = new Vector(0, thisLength + 1, 0)
+        s.depth = 1
+        val newDisplay0 = new Array[AnyRef](thisLength + 1)
+        System.arraycopy(display0, startIndex, newDisplay0, 0, thisLength)
+        newDisplay0(thisLength) = value.asInstanceOf[AnyRef]
+        s.display0 = newDisplay0
         s
-      } else {
-        val shift = startIndex & ~((1 << (5 * (depth - 1))) - 1)
-        val shiftBlocks = startIndex >>> (5 * (depth - 1))
+      } else if (thisLength > 0) {
+        val blockIndex = endIndex & ~31 // round down to nearest 32
+        val lo = endIndex & 31 // remainder of blockIndex / 32
 
-        if (shift != 0) {
-          if (depth > 1) {
-            val newBlockIndex = blockIndex - shift
-            val newFocus = focus - shift
+        if (endIndex != blockIndex) {
+          val s = new Vector(startIndex, endIndex + 1, blockIndex)
+          s.initFrom(this)
+          s.dirty = dirty
+          s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
+          s.display0(lo) = value.asInstanceOf[AnyRef]
+          s
+        } else {
+          val shift = startIndex & ~((1 << (5 * (depth - 1))) - 1)
+          val shiftBlocks = startIndex >>> (5 * (depth - 1))
 
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+          if (shift != 0) {
+            if (depth > 1) {
+              val newBlockIndex = blockIndex - shift
+              val newFocus = focus - shift
+
+              val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+              s.initFrom(this)
+              s.dirty = dirty
+              s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
+              s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+              s.display0(lo) = value.asInstanceOf[AnyRef]
+              s
+            } else {
+              val newBlockIndex = blockIndex - 32
+              val newFocus = focus
+
+              val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+              s.initFrom(this)
+              s.dirty = dirty
+              s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
+              s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+
+              if (s.display0.length < 32 - shift - 1) {
+                val newDisplay0 = new Array[AnyRef](32 - shift - 1)
+                s.display0.copyToArray(newDisplay0)
+                s.display0 = newDisplay0
+              }
+              s.display0(32 - shift) = value.asInstanceOf[AnyRef]
+              s
+            }
+          } else {
+            val newBlockIndex = blockIndex
+            val newFocus = focus
+
+            val s = new Vector(startIndex, endIndex + 1, newBlockIndex)
             s.initFrom(this)
             s.dirty = dirty
-            s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
             s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(lo) = value.asInstanceOf[AnyRef]
             s
-          } else {
-            val newBlockIndex = blockIndex - 32
-            val newFocus = focus
-
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
-            s.initFrom(this)
-            s.dirty = dirty
-            s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
-            s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-            s.display0(32 - shift) = value.asInstanceOf[AnyRef]
-            s
           }
-        } else {
-          val newBlockIndex = blockIndex
-          val newFocus = focus
-
-          val s = new Vector(startIndex, endIndex + 1, newBlockIndex)
-          s.initFrom(this)
-          s.dirty = dirty
-          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-          s.display0(lo) = value.asInstanceOf[AnyRef]
-          s
         }
-      }
-    } else {
-      val elems = new Array[AnyRef](32)
-      elems(0) = value.asInstanceOf[AnyRef]
-      val s = new Vector(0, 1, 0)
-      s.depth = 1
-      s.display0 = elems
-      s
-    }
+      } else Vector.single(value)
+
     releaseFence()
     result
   }
