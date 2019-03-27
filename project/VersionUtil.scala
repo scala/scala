@@ -29,10 +29,10 @@ object VersionUtil {
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
     copyrightString := "Copyright 2002-2019, LAMP/EPFL and Lightbend, Inc.",
     shellWelcomeString := """
-      |     ________ ___   / /  ___  
-      |    / __/ __// _ | / /  / _ | 
+      |     ________ ___   / /  ___
+      |    / __/ __// _ | / /  / _ |
       |  __\ \/ /__/ __ |/ /__/ __ | 
-      | /____/\___/_/ |_/____/_/ | | 
+      | /____/\___/_/ |_/____/_/ | |
       |                          |/  %s""".stripMargin.lines.drop(1).map(s => s"${ "%n" }${ s }").mkString,
     resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
@@ -190,24 +190,5 @@ object VersionUtil {
     val m2 = if(scope eq null) m else m % scope
     // exclusion of the scala-library transitive dependency avoids eviction warnings during `update`:
     m2.exclude("org.scala-lang", "*")
-  }
-
-  private def bootstrapOrganization(path: String) =
-    "org.scala-lang.scala-sha-bootstrap." + path.replace('/', '.')
-
-  /** Build a dependency to a JAR file in the bootstrap repository */
-  def bootstrapDep(path: String)(libNameAndSha: (String, String)): ModuleID =
-    bootstrapOrganization(path) % libNameAndSha._1 % libNameAndSha._2 from
-      s"https://repo.lightbend.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap/${libNameAndSha._2}/$path/${libNameAndSha._1}.jar"
-
-  /** Copy a bootstrap dependency JAR that is on the classpath to a file */
-  def copyBootstrapJar(cp: Seq[Attributed[File]], baseDir: File, path: String, libName: String): Unit = {
-    val org = bootstrapOrganization(path)
-    val resolved = cp.find { a =>
-      val mod = a.get(moduleID.key)
-      mod.map(_.organization) == Some(org) && mod.map(_.name) == Some(libName)
-    }.map(_.data).get
-    if(!(baseDir / path).exists()) IO.createDirectory(baseDir / path)
-    IO.copyFile(resolved, baseDir / path / s"$libName.jar")
   }
 }

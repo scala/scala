@@ -23,7 +23,8 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.18")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
-  "org.slf4j" % "slf4j-nop" % "1.7.23"
+  "org.slf4j" % "slf4j-nop" % "1.7.23",
+  "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
 )
 
 concurrentRestrictions in Global := Seq(

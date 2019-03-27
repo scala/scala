@@ -1,4 +1,4 @@
 // bug #1062
 object Test extends App {
-  println((new MethVsField).three)
+  println((new MethVsField_1).three)
 }
