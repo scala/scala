@@ -47,6 +47,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def depth = owner.nestingLevel
     override def hashCode(): Int = sym.name.start
     override def toString() = s"$sym (depth=$depth)"
+    // OPT: compare raw names when pre-flatten, saving needsFlatClasses within the loop
+    final def name(flat: Boolean): Name = if (flat) sym.name else sym.rawname
   }
 
   private def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
@@ -316,14 +318,15 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def lookupEntry(name: Name): ScopeEntry = {
       val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopeLookupTime) else null
       var e: ScopeEntry = null
+      val flat = phase.flatClasses
       if (hashtable ne null) {
         e = hashtable(name.start & HASHMASK)
-        while ((e ne null) && (e.sym.name ne name)) {
+        while ((e ne null) && (e.name(flat) ne name)) {
           e = e.tail
         }
       } else {
         e = elems
-        while ((e ne null) && (e.sym.name ne name)) {
+        while ((e ne null) && (e.name(flat) ne name)) {
           e = e.next
         }
       }
@@ -338,10 +341,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
       var e = entry
+      val flat = phase.flatClasses
+      val entryName = entry.name(flat)
       if (hashtable ne null)
-        do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
+        do { e = e.tail } while ((e ne null) && e.name(flat) != entryName)
       else
-        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name)
+        do { e = e.next } while ((e ne null) && e.name(flat) != entryName)
       e
     }
 
