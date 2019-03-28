@@ -14,7 +14,7 @@ package scala.collection
 package mutable
 
 import scala.annotation.meta.{getter, setter}
-import scala.annotation.tailrec
+import scala.annotation.{ implicitNotFound, tailrec }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.collection.mutable
@@ -40,6 +40,8 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     with MapOps[K, V, Map, CollisionProofHashMap[K, V]] //--
     with StrictOptimizedIterableOps[(K, V), Iterable, CollisionProofHashMap[K, V]]
     with StrictOptimizedMapOps[K, V, Map, CollisionProofHashMap[K, V]] { //--
+
+  private[this] final def sortedMapFactory: SortedMapFactory[CollisionProofHashMap] = CollisionProofHashMap
 
   def this()(implicit ordering: Ordering[K]) = this(CollisionProofHashMap.defaultInitialCapacity, CollisionProofHashMap.defaultLoadFactor)(ordering)
 
@@ -254,14 +256,20 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
       }
   }
 
-  override def keysIterator: Iterator[K] = new MapIterator[K] {
-    protected[this] def extract(node: LLNode) = node.key
-    protected[this] def extract(node: RBNode) = node.key
+  override def keysIterator: Iterator[K] = {
+    if (isEmpty) Iterator.empty
+    else new MapIterator[K] {
+      protected[this] def extract(node: LLNode) = node.key
+      protected[this] def extract(node: RBNode) = node.key
+    }
   }
 
-  override def iterator: Iterator[(K, V)] = new MapIterator[(K, V)] {
-    protected[this] def extract(node: LLNode) = (node.key, node.value)
-    protected[this] def extract(node: RBNode) = (node.key, node.value)
+  override def iterator: Iterator[(K, V)] = {
+    if (isEmpty) Iterator.empty
+    else new MapIterator[(K, V)] {
+      protected[this] def extract(node: LLNode) = (node.key, node.value)
+      protected[this] def extract(node: RBNode) = (node.key, node.value)
+    }
   }
 
   private[this] def growTable(newlen: Int) = {
@@ -401,6 +409,57 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
     put0(key, default, false, hash, newIdx)
     default
   }
+
+  ///////////////////// Overrides code from SortedMapOps
+
+  /** Builds a new `CollisionProofHashMap` by applying a function to all elements of this $coll.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given function
+    *                `f` to each element of this $coll and collecting the results.
+    */
+  def map[K2, V2](f: ((K, V)) => (K2, V2))
+      (implicit @implicitNotFound(CollisionProofHashMap.ordMsg) ordering: Ordering[K2]): CollisionProofHashMap[K2, V2] =
+    sortedMapFactory.from(new View.Map[(K, V), (K2, V2)](toIterable, f))
+
+  /** Builds a new `CollisionProofHashMap` by applying a function to all elements of this $coll
+    *  and using the elements of the resulting collections.
+    *
+    *  @param f      the function to apply to each element.
+    *  @return       a new $coll resulting from applying the given collection-valued function
+    *                `f` to each element of this $coll and concatenating the results.
+    */
+  def flatMap[K2, V2](f: ((K, V)) => IterableOnce[(K2, V2)])
+      (implicit @implicitNotFound(CollisionProofHashMap.ordMsg) ordering: Ordering[K2]): CollisionProofHashMap[K2, V2] =
+    sortedMapFactory.from(new View.FlatMap(toIterable, f))
+
+  /** Builds a new sorted map by applying a partial function to all elements of this $coll
+    *  on which the function is defined.
+    *
+    *  @param pf     the partial function which filters and maps the $coll.
+    *  @return       a new $coll resulting from applying the given partial function
+    *                `pf` to each element on which it is defined and collecting the results.
+    *                The order of the elements is preserved.
+    */
+  def collect[K2, V2](pf: PartialFunction[(K, V), (K2, V2)])
+      (implicit @implicitNotFound(CollisionProofHashMap.ordMsg) ordering: Ordering[K2]): CollisionProofHashMap[K2, V2] =
+    sortedMapFactory.from(new View.Collect(toIterable, pf))
+
+  override def concat[V2 >: V](suffix: IterableOnce[(K, V2)]): CollisionProofHashMap[K, V2] = sortedMapFactory.from(suffix match {
+    case it: Iterable[(K, V2)] => new View.Concat(toIterable, it)
+    case _ => iterator.concat(suffix.iterator)
+  })
+
+  /** Alias for `concat` */
+  @`inline` override final def ++ [V2 >: V](xs: IterableOnce[(K, V2)]): CollisionProofHashMap[K, V2] = concat(xs)
+
+  @deprecated("Consider requiring an immutable Map or fall back to Map.concat", "2.13.0")
+  override def + [V1 >: V](kv: (K, V1)): CollisionProofHashMap[K, V1] =
+     sortedMapFactory.from(new View.Appended(toIterable, kv))
+
+  @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
+  override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CollisionProofHashMap[K, V1] =
+     sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))
 
   ///////////////////// RedBlackTree code derived from mutable.RedBlackTree:
 
@@ -685,6 +744,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   */
 @SerialVersionUID(3L)
 object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
+  private[collection] final val ordMsg = "No implicit Ordering[${K2}] found to build a CollisionProofHashMap[${K2}, ${V2}]. You may want to upcast to a Map[${K}, ${V}] first by calling `unsorted`."
 
   def from[K : Ordering, V](it: scala.collection.IterableOnce[(K, V)]): CollisionProofHashMap[K, V] = {
     val k = it.knownSize
