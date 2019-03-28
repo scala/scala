@@ -40,12 +40,14 @@ jobs:
 #   displayName: 'pull request validation (w/ mini-bootstrap)'
 
 - job: Build_With_Jekyll
+  condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
+
   pool:
     vmImage: 'Ubuntu-16.04'
   steps:
   - task: UseRubyVersion@0
     inputs:
-      versionSpec: '>= 2.5'
+      versionSpec: '>= 2.2'
 
   - bash: | 
       rvm install 2.2
@@ -54,7 +56,7 @@ jobs:
       ruby -v
       bundler --version
       bundle install
-      'if [ "$BUILD_REASON" != "PullRequest" ]; then cd admin; fi'
+      . ./admin/init.sh
       pwd
       ls
       bundle exec jekyll build -s spec/ -d build/spec
