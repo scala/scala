@@ -58,7 +58,7 @@ jobs:
       bundler --version
       bundle install
       cd ./admin
-      init.sh
+      bash -x init.sh
       pwd
       bundle exec jekyll build -s spec/ -d build/spec
   displayName: 'build the spec using jekyll'
