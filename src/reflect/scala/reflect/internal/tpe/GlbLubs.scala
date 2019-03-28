@@ -66,20 +66,20 @@ private[internal] trait GlbLubs {
     *  @return List of symbol pairs holding the recursive type
     *    parameter and the parameter which references it.
     */
-  def findRecursiveBounds(ts: List[Type]): List[(Symbol, Symbol)] = {
+  def findRecursiveBounds(ts: List[Type]): List[Symbol] = {
     if (ts.isEmpty) Nil
     else {
       val sym = ts.head.typeSymbol
       require(ts.tail forall (_.typeSymbol == sym), ts)
       for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
-        p -> in
+        in
     }
   }
 
   // only called when strictInference
   private def willViolateRecursiveBounds(tp: Type, ts: List[Type], tsElimSub: List[Type]) = {
     val typeSym     = ts.head.typeSymbol // we're uniform, the `.head` is as good as any.
-    def fbounds     = findRecursiveBounds(ts) map (_._2)
+    def fbounds     = findRecursiveBounds(ts)
     def isRecursive = typeSym.typeParams exists fbounds.contains
 
     isRecursive && (transposeSafe(tsElimSub map (_.normalize.typeArgs)) match {
