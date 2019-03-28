@@ -102,4 +102,34 @@ class CollisionProofHashMapTest {
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
+  @Test
+  def testPreserveType: Unit = {
+    val m1 = mutable.CollisionProofHashMap(1 -> "a", 2 -> "b")
+    val m2 = (m1 map { case (k, v) => k -> (v + "!") }).addOne(3 -> "c")
+    assertEquals(m2(3), "c")
+
+    val m3 = (m1 flatMap { case (k, v) => List(k -> (v + "!"), -k -> (v + "!")) }).addOne(3 -> "c")
+    assertEquals(m3(3), "c")
+
+    val m4 = (m1 collect { case (k, v) if k == 1 => k -> (v + "!") }).addOne(3 -> "c")
+    assertEquals(m4(3), "c")
+
+    val m5 = (m1 concat List(4 -> "d")).addOne(3 -> "c")
+    assertEquals(m5(3), "c")
+
+    val m6 = (m1 ++ List(4 -> "d")).addOne(3 -> "c")
+    assertEquals(m6(3), "c")
+
+    // deprecated
+    val m7 = (m1 + (4 -> "d")).addOne(3 -> "c")
+    assertEquals(m7(3), "c")
+
+    // deprecated
+    val m8 = (m1 + (4 -> "d", 5 -> "e")).addOne(3 -> "c")
+    assertEquals(m8(3), "c")
+
+    // deprecated
+    val m9 = (m1.updated(4, "d")).addOne(3 -> "c")
+    assertEquals(m9(3), "c")
+  }
 }
