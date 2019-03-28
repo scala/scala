@@ -47,7 +47,7 @@ jobs:
     inputs:
       versionSpec: '>= 2.5'
 
-  - script: | 
+  - bash: | 
       rvm install 2.2
       rvm use 2.2
       rvm info
