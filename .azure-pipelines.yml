@@ -47,21 +47,16 @@ jobs:
   steps:
   - task: UseRubyVersion@0
     inputs:
-      versionSpec: '>= 2.2'
+      versionSpec: '2.2'
 
   - bash: | 
-      \curl -sSL https://get.rvm.io | bash
-      rvm install 2.2
-      rvm use 2.2
-      rvm info
       ruby -v
-      bundler --version
-      bundle install
+      CALL gem install bundler
+      bundle install --retry=3 --jobs=4
       cd ./admin
       bash -x init.sh
-      pwd
       bundle exec jekyll build -s spec/ -d build/spec
-  displayName: 'build the spec using jekyll'
+  displayName: 'build exec jekyll'
 
 variables:
   # ========================================================================
