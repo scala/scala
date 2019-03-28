@@ -9,7 +9,7 @@ trigger:
 
 jobs:
 - job: CI_Build
-  condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   pool:
     vmImage: 'Ubuntu-16.04'
   steps:
@@ -17,6 +17,9 @@ jobs:
       bash -x init.sh
       source ../scripts/common
       source ../scripts/bootstrap_fun
+      cd ..
+      determineScalaVersion
+      #removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
       buildLocker
       buildQuick
@@ -25,7 +28,7 @@ jobs:
   displayName: 'Full Bootstrap and Publish'
 
 # - job: PR_Build
-#   condition: eq(variables['BUILD_REASON'], 'PullRequest')
+#   condition: condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 #   pool:
 #     vmImage: 'Ubuntu-16.04'
 #   steps:
@@ -36,7 +39,7 @@ jobs:
 #   displayName: 'pull request validation (w/ mini-bootstrap)'
 
 # - job: Build_With_Jekyll
-#   condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
+#   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 #   pool:
 #     vmImage: 'Ubuntu-16.04'
