@@ -15,6 +15,7 @@ package collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.mutable.Builder
@@ -118,16 +119,69 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
   def iterator: Iterator[Int] = iteratorFrom(0)
 
-  def iteratorFrom(start: Int): Iterator[Int] = new AbstractIterator[Int] {
-    private[this] var current = start
-    private[this] val end = nwords * WordLength
-    def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
-      current != end
+  def iteratorFrom(minimum: Int): Iterator[Int] = {
+
+    @inline def iterator: Iterator[Int] = iteratorFrom0(math.max(0, minimum))
+
+    @inline def iteratorFrom0(minimum: Int): Iterator[Int] = {
+      val wordIndex = minimum / WordLength
+      val wordShift = minimum % WordLength
+      if (wordIndex < nwords) {
+        val shiftedWord = word(wordIndex) >>> wordShift
+        new ImprovedBitSetIterator(minimum, wordIndex, shiftedWord)
+      } else {
+        Iterator.empty
+      }
     }
-    def next(): Int =
-      if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next()
+
+    final class ImprovedBitSetIterator(private[this] var nextCandidate: Int,
+                                       private[this] var wordIndex: Int,
+                                       private[this] var shiftedWord: Long) extends AbstractIterator[Int] {
+      @tailrec override def hasNext: Boolean = {
+
+        @inline def currentBitIsSet: Boolean = (shiftedWord & 1L) == 1L
+
+        @inline def hasMoreBits: Boolean = shiftedWord != 0L
+
+        @inline def hasNextWord: Boolean = wordIndex + 1 < nwords
+
+        @inline def gotoNextWord() {
+          wordIndex += 1
+          shiftedWord = word(wordIndex)
+          nextCandidate = wordIndex * WordLength
+        }
+
+        if (currentBitIsSet) {
+          true
+        } else {
+          if (hasMoreBits) {
+            gotoNextBit()
+            hasNext
+          } else if (hasNextWord) {
+            gotoNextWord()
+            hasNext
+          } else {
+            false
+          }
+        }
+      }
+
+      override def next(): Int = {
+        if (hasNext) {
+          val result = nextCandidate
+          gotoNextBit()
+          result
+        } else {
+          Iterator.empty.next()
+        }
+      }
+
+      @inline private[this] def gotoNextBit() {
+        shiftedWord >>>= 1
+        nextCandidate += 1
+      }
+    }
+    iterator
   }
 
   override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
