@@ -15,11 +15,8 @@ jobs:
   steps:
   - bash: |
       bash -x init.sh
-      pwd
-      ls
       source ../scripts/common
       source ../scripts/bootstrap_fun
-      determineScalaVersion
       removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
       buildLocker
