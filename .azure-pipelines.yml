@@ -13,19 +13,22 @@ jobs:
   pool:
     vmImage: 'Ubuntu-16.04'
   steps:
+  - bash: bash -x init.sh
+    workingDirectory: $(Build.SourcesDirectory)/admin  
+    displayName: 'Run init.sh'
+
   - bash: |
-      bash -x init.sh
-      source ../scripts/common
-      source ../scripts/bootstrap_fun
-      cd ..
+      source ./scripts/common
+      source ./scripts/bootstrap_fun
       determineScalaVersion
       #removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
       buildLocker
       buildQuick
       triggerScalaDist
-    workingDirectory: $(Build.SourcesDirectory)/admin
-  displayName: 'Full Bootstrap and Publish'
+    workingDirectory: $(Build.SourcesDirectory)
+    displayName: 'Run bootstrap scripts'
+
 
 # - job: PR_Build
 #   condition: condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
