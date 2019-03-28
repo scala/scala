@@ -47,7 +47,7 @@ jobs:
   steps:
   - task: UseRubyVersion@0
     inputs:
-      versionSpec: '2.2'
+      versionSpec: '2.3.7'
 
   - bash: | 
       ruby -v
