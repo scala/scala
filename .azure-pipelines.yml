@@ -17,7 +17,6 @@ jobs:
       bash -x init.sh
       source ../scripts/common
       source ../scripts/bootstrap_fun
-      removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
       buildLocker
       buildQuick
