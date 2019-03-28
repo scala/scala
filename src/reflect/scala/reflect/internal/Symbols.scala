@@ -3017,7 +3017,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       res
     }
 
-    override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
+    override def isVarargs: Boolean = definitions.isVarArgsList(lastSuch(paramss)(!_.isEmpty))
 
     override def returnType: Type = {
       def loop(tpe: Type): Type =

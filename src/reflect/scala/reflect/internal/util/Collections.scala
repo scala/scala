@@ -55,6 +55,17 @@ trait Collections {
   final def mforeach[A](xss: List[List[A]])(f: A => Unit) = xss foreach (_ foreach f)
   final def mforeach[A](xss: Traversable[Traversable[A]])(f: A => Unit) = xss foreach (_ foreach f)
 
+  final def lastSuch[A](xs: List[A])(pred: A => Boolean): Option[A] = {
+    var res: A = null.asInstanceOf[A]
+    var ys = xs
+    while (!ys.isEmpty){
+      if (pred(ys.head))
+        res = ys.head
+      ys = ys.tail
+    }
+    Option(res)
+  }
+
   /** A version of List#map, specialized for List, and optimized to avoid allocation if `as` is empty */
   final def mapList[A, B](as: List[A])(f: A => B): List[B] = if (as eq Nil) Nil else {
     val head = new ::[B](f(as.head), Nil)
