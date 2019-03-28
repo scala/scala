@@ -54,7 +54,7 @@ jobs:
       ruby -v
       bundler --version
       bundle install
-      'if [ "$BUILD_REASON" != "PullRequest" ]; then cd ./admin/init.sh; fi'
+      'if [ "$BUILD_REASON" != "PullRequest" ]; then cd admin; fi'
       pwd
       ls
       bundle exec jekyll build -s spec/ -d build/spec
