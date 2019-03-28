@@ -189,20 +189,17 @@ private[concurrent] trait BatchingExecutor extends Executor {
     private[this] final def cloneAndClear(): AsyncBatch = {
       val newBatch = new AsyncBatch(this.first, this.other, this.size)
       this.first = null
-      this.parentBlockContext = BatchingExecutorStatics.MissingParentBlockContext
       this.other = BatchingExecutorStatics.emptyBatchArray
       this.size = 0
       newBatch
     }
 
     override final def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
-      val pbc = parentBlockContext // Store this for later since `cloneAndClear()` will reset it
-
       // If we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
       if(this.size > 0)
         submitForExecution(cloneAndClear()) // If this throws then we have bigger problems
 
-      pbc.blockOn(thunk) // Now delegate the blocking to the previous BC
+      parentBlockContext.blockOn(thunk) // Now delegate the blocking to the previous BC
     }
   }
 
