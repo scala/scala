@@ -542,7 +542,7 @@ abstract class RefChecks extends Transform {
         }
       }
 
-      val opc = new overridingPairs.Cursor(clazz)
+      val opc = new overridingPairs.RefchecksCursor(clazz)
       while (opc.hasNext) {
         if (!opc.high.isClass)
           checkOverride(opc.currentPair)

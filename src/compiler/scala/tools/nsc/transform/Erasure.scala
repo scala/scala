@@ -462,20 +462,11 @@ abstract class Erasure extends InfoTransform
   override def newTyper(context: Context) = new Eraser(context)
 
   class EnterBridges(unit: CompilationUnit, root: Symbol) {
-
-    class BridgesCursor(root: Symbol) extends overridingPairs.Cursor(root) {
-      // Varargs bridges may need generic bridges due to the non-repeated part of the signature of the involved methods.
-      // The vararg bridge is generated during refchecks (probably to simplify override checking),
-      // but then the resulting varargs "bridge" method may itself need an actual erasure bridge.
-      // TODO: like javac, generate just one bridge method that wraps Seq <-> varargs and does erasure-induced casts
-      override def exclude(sym: Symbol) = !sym.isMethod || super.exclude(sym)
-    }
-
     val site         = root.thisType
     val bridgesScope = newScope
     val bridgeTarget = mutable.HashMap[Symbol, Symbol]()
 
-    val opc = enteringExplicitOuter { new BridgesCursor(root) }
+    val opc = enteringExplicitOuter { new overridingPairs.BridgesCursor(root) }
 
     def computeAndEnter(): Unit = {
       while (opc.hasNext) {
@@ -915,6 +906,9 @@ abstract class Erasure extends InfoTransform
         || !sym.hasTypeAt(currentRun.refchecksPhase.id)
       )
       override def matches(high: Symbol) = !high.isPrivate
+
+      // consider all matching pairs
+      protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = false
     }
 
     /** Emit an error if there is a double definition. This can happen if:
