@@ -49,8 +49,9 @@ jobs:
     inputs:
       versionSpec: '2.3.7'
 
-  - bash: | 
+  - script: | 
       ruby -v
+      CALL gem install bundler
       bundle install --jobs=3 --retry=3
       cd ./admin
       bash -x init.sh
