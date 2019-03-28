@@ -40,7 +40,7 @@ jobs:
 #   displayName: 'pull request validation (w/ mini-bootstrap)'
 
 - job: Build_With_Jekyll
-  #condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
+  condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
 
   pool:
     vmImage: 'Ubuntu-16.04'
@@ -57,7 +57,8 @@ jobs:
       ruby -v
       bundler --version
       bundle install
-      cd ./admin/init.sh
+      cd ./admin
+      init.sh
       pwd
       bundle exec jekyll build -s spec/ -d build/spec
   displayName: 'build the spec using jekyll'
