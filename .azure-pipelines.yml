@@ -51,12 +51,12 @@ jobs:
 
   - bash: | 
       ruby -v
-      CALL gem install bundler
-      bundle install --retry=3 --jobs=4
+      bundle install --jobs=3 --retry=3
       cd ./admin
       bash -x init.sh
       bundle exec jekyll build -s spec/ -d build/spec
   displayName: 'build exec jekyll'
+
 
 variables:
   # ========================================================================
