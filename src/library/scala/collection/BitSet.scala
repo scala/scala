@@ -117,7 +117,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
-  def iterator: Iterator[Int] = iteratorFrom(0)
+  def iterator: Iterator[Int] = iteratorFrom(minimum = 0)
 
   def iteratorFrom(minimum: Int): Iterator[Int] = {
 
@@ -145,25 +145,14 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
 
         @inline def hasNextWord: Boolean = wordIndex + 1 < nwords
 
-        @inline def gotoNextWord() {
+        @inline def gotoNextWord():Boolean = {
           wordIndex += 1
           shiftedWord = word(wordIndex)
           nextCandidate = wordIndex * WordLength
+          true
         }
 
-        if (currentBitIsSet) {
-          true
-        } else {
-          if (hasMoreBits) {
-            gotoNextBit()
-            hasNext
-          } else if (hasNextWord) {
-            gotoNextWord()
-            hasNext
-          } else {
-            false
-          }
-        }
+        currentBitIsSet || (hasMoreBits && gotoNextBit() || hasNextWord && gotoNextWord()) && hasNext
       }
 
       override def next(): Int = {
@@ -176,11 +165,13 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
         }
       }
 
-      @inline private[this] def gotoNextBit() {
+      @inline private[this] def gotoNextBit(): Boolean = {
         shiftedWord >>>= 1
         nextCandidate += 1
+        true
       }
     }
+
     iterator
   }
 
