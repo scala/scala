@@ -1,11 +1,7 @@
 object Test {
   abstract class A1
   case class C1(x: Int) extends A1
-  class C2(x: Int) extends C1(x) {
-    // this used to be a different prefix, not sure what it was testing
-    // (now, hashCode takes the prefix into account, so using the same as the super case class is the only way to maintain the assert on hashCode below)
-    override def productPrefix = "C1"
-  }
+  class C2(x: Int) extends C1(x)
   class C3(x: Int) extends C1(x) {
     override def canEqual(other: Any) = other.isInstanceOf[C3]
     override def equals(other: Any) = other match {
