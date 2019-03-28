@@ -50,15 +50,15 @@ jobs:
       versionSpec: '>= 2.2'
 
   - bash: | 
+      \curl -sSL https://get.rvm.io | bash
       rvm install 2.2
       rvm use 2.2
       rvm info
       ruby -v
       bundler --version
       bundle install
-      cd ./admin
+      cd ./admin/init.sh
       pwd
-      ls
       bundle exec jekyll build -s spec/ -d build/spec
   displayName: 'build the spec using jekyll'
 
