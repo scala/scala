@@ -13,13 +13,12 @@ jobs:
   pool:
     vmImage: 'Ubuntu-16.04'
   steps:
-  - bash: | 
-      cd ./admin
+  - bash: |
       bash -x init.sh
       pwd
       ls
-      source ./scripts/common
-      source ./scripts/bootstrap_fun
+      source ../scripts/common
+      source ../scripts/bootstrap_fun
       determineScalaVersion
       removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
