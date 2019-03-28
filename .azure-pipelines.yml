@@ -8,28 +8,29 @@ trigger:
 - 2.13.x
 
 jobs:
-# - job: CI_Build
-#   condition: ne(variables['BUILD_REASON'], 'PullRequest')
-#   pool:
-#     vmImage: 'Ubuntu-16.04'
-#   steps:
-#   - script: | 
-#       ./init.sh
-#       pwd
-#       ls
-#       source ../scripts/common
-#       source ../scripts/bootstrap_fun
-#       determineScalaVersion
-#       removeExistingBuilds $integrationRepoUrl
-#       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-#       buildLocker
-#       buildQuick
-#       triggerScalaDist
-#     workingDirectory: $(Build.SourcesDirectory)/admin
-#   displayName: 'Full Bootstrap and Publish'
+- job: CI_Build
+  condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  steps:
+  - bash: | 
+      cd ./admin
+      bash -x init.sh
+      pwd
+      ls
+      source ./scripts/common
+      source ./scripts/bootstrap_fun
+      determineScalaVersion
+      removeExistingBuilds $integrationRepoUrl
+      if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+      buildLocker
+      buildQuick
+      triggerScalaDist
+    workingDirectory: $(Build.SourcesDirectory)/admin
+  displayName: 'Full Bootstrap and Publish'
 
 # - job: PR_Build
-#   # condition: eq(variables['BUILD_REASON'], 'PullRequest')
+#   condition: eq(variables['BUILD_REASON'], 'PullRequest')
 #   pool:
 #     vmImage: 'Ubuntu-16.04'
 #   steps:
@@ -39,24 +40,24 @@ jobs:
 #       sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 #   displayName: 'pull request validation (w/ mini-bootstrap)'
 
-- job: Build_With_Jekyll
-  condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
+# - job: Build_With_Jekyll
+#   condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
 
-  pool:
-    vmImage: 'Ubuntu-16.04'
-  steps:
-  - task: UseRubyVersion@0
-    inputs:
-      versionSpec: '2.3.7'
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+#   steps:
+#   - task: UseRubyVersion@0
+#     inputs:
+#       versionSpec: '2.3.7'
 
-  - bash: | 
-      ruby -v
-      gem install bundler
-      bundle install --jobs=3 --retry=3
-      cd ./admin
-      bash -x init.sh
-      bundle exec jekyll build -s spec/ -d build/spec
-  displayName: 'build exec jekyll'
+#   - bash: | 
+#       ruby -v
+#       gem install bundler
+#       bundle install --jobs=3 --retry=3
+#       cd ./admin
+#       bash -x init.sh
+#       bundle exec jekyll build -s spec/ -d build/spec
+#   displayName: 'build exec jekyll'
 
 
 variables:
