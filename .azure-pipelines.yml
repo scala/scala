@@ -40,7 +40,7 @@ jobs:
 #   displayName: 'pull request validation (w/ mini-bootstrap)'
 
 - job: Build_With_Jekyll
-  condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
+  #condition: and(always(), eq(variables['Build.Reason'], 'PullRequest'))
 
   pool:
     vmImage: 'Ubuntu-16.04'
