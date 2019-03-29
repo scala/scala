@@ -72,7 +72,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def removed(key: K): C
 
-  /** Alias for `remove` */
+  /** Alias for `removed` */
   @`inline` final def - (key: K): C = removed(key)
 
   @deprecated("Use -- with an explicit collection", "2.13.0")
@@ -89,7 +89,7 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
     */
   def removedAll(keys: IterableOnce[K]): C = keys.iterator.foldLeft[C](coll)(_ - _)
 
-  /** Alias for `removeAll` */
+  /** Alias for `removedAll` */
   @`inline` final override def -- (keys: IterableOnce[K]): C = removedAll(keys)
 
   /** Creates a new map obtained by updating this map with a given key/value pair.

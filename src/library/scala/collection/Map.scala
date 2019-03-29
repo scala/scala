@@ -60,9 +60,9 @@ trait Map[K, +V]
   override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
 
   // These two methods are not in MapOps so that MapView is not forced to implement them
-  @deprecated("Use - or remove on an immutable Map", "2.13.0")
+  @deprecated("Use - or removed on an immutable Map", "2.13.0")
   def - (key: K): Map[K, V]
-  @deprecated("Use -- or removeAll on an immutable Map", "2.13.0")
+  @deprecated("Use -- or removedAll on an immutable Map", "2.13.0")
   def - (key1: K, key2: K, keys: K*): Map[K, V]
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")

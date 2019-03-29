@@ -67,7 +67,7 @@ trait SetOps[A, +CC[X], +C <: SetOps[A, CC, C]]
     */
   def removedAll(that: IterableOnce[A]): C = that.iterator.foldLeft[C](coll)(_ - _)
 
-  /** Alias for removeAll */
+  /** Alias for removedAll */
   override final def -- (that: IterableOnce[A]): C = removedAll(that)
 }
 
