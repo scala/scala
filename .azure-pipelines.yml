@@ -21,11 +21,16 @@ jobs:
       source ./scripts/common
       source ./scripts/bootstrap_fun
       determineScalaVersion
+      echo 'DETERMINESCALAVERSION DONE ------------------------------------------'
       #removeExistingBuilds $integrationRepoUrl
       if [ ! -z "$STARR_REF" ]; then buildStarr; fi
+      echo 'BUILDSTARR DONE -----------------------------------------------------'
       buildLocker
+      echo 'BUILDLOCKER DONE ----------------------------------------------------'
       buildQuick
+      echo 'BUILDQUICK DONE -----------------------------------------------------'
       triggerScalaDist
+      echo 'TRIGGERSCALADIST DONE -----------------------------------------------'
     workingDirectory: $(Build.SourcesDirectory)
     displayName: 'Run bootstrap scripts'
 
