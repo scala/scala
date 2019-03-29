@@ -106,6 +106,14 @@ abstract class SymbolPairs {
      */
     protected def matches(high: Symbol): Boolean
 
+    /** Even if a pair `matches`, should the cursor skip this pair?
+      *
+      * @param lowClass owner of the next low symbol
+      * @param highClass owner of the next hi symbol
+      * @return whether to skip this pair
+      */
+    protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean
+
     protected def bases: List[Symbol] = base.info.baseClasses
 
     /** The scope entries that have already been visited as highSymbol
@@ -162,7 +170,7 @@ abstract class SymbolPairs {
     }
 
     // We can only draw conclusions about linearisation from a non-trait parent; skip Object, being the top of the lattice.
-    private lazy val nonTraitParent: Symbol =
+    protected lazy val nonTraitParent: Symbol =
       base.info.firstParent.typeSymbol.filter(sym => !sym.isTrait && sym != definitions.ObjectClass)
 
     @tailrec private def advanceNextEntry(): Unit = {
@@ -172,14 +180,9 @@ abstract class SymbolPairs {
           val high    = nextEntry.sym
           val isMatch = matches(high) && { visited addEntry nextEntry ; true } // side-effect visited on all matches
 
-          // Skip nextEntry if the (non-trait) class in `parents` is a subclass of the owners of both low and high.
-          // this means we'll come back to this entry when we consider `nonTraitParent`, and the linearisation order will be the same
-          // (this only works for non-trait classes, since subclassing on traits does not imply one's linearisation is contained in the other's)
-          // This is not just an optimization -- bridge generation relies on visiting each such class only once.
-          if (!isMatch || (nonTraitParent.isNonBottomSubClass(low.owner) && nonTraitParent.isNonBottomSubClass(high.owner)))
-            advanceNextEntry()
-          else
-            highSymbol = high
+          // Advance if no match, or if the particular cursor is not intested in this pair
+          if (!isMatch || skipOwnerPair(low.owner, high.owner)) advanceNextEntry()
+          else highSymbol = high
         }
       }
     }

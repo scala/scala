@@ -1,0 +1,8 @@
+t11136_override_conflict.scala:99: error: incompatible type in overriding
+def empty: Qu[A] (defined in trait ArDqOps)
+  with def empty: ArDq[A] (defined in class ArDq);
+ found   : => ArDq[A]
+ required: => Qu[A]
+class Qu[A] extends ArDq[A]
+      ^
+one error found

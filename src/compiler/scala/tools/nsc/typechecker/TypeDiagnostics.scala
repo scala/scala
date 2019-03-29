@@ -707,7 +707,9 @@ trait TypeDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.Cursor(classOf(m))
+          val opc = new overridingPairs.Cursor(classOf(m)) {
+            override protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = false
+          }
           opc.iterator.exists(pair => pair.low == m)
         }
         import PartialFunction._
