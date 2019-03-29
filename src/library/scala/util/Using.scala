@@ -39,16 +39,16 @@ import scala.util.control.{ControlThrowable, NonFatal}
   * Example:
   * {{{
   * val lines: Try[Seq[String]] = Using.Manager { use =>
-  *   val r1 = use(new BufferedReader(new FileReader(("file1.txt")))
-  *   val r2 = use(new BufferedReader(new FileReader(("file2.txt")))
-  *   val r3 = use(new BufferedReader(new FileReader(("file3.txt")))
-  *   val r4 = use(new BufferedReader(new FileReader(("file4.txt")))
+  *   val r1 = use(new BufferedReader(new FileReader("file1.txt")))
+  *   val r2 = use(new BufferedReader(new FileReader("file2.txt")))
+  *   val r3 = use(new BufferedReader(new FileReader("file3.txt")))
+  *   val r4 = use(new BufferedReader(new FileReader("file4.txt")))
   *
   *   // use your resources here
   *   def lines(reader: BufferedReader): Iterator[String] =
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
+  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()))
   *
-  *   lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)
+  *   (lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)).toList
   * }
   * }}}
   *
