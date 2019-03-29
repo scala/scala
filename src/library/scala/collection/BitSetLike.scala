@@ -15,6 +15,7 @@ package collection
 
 import BitSetLike._
 import mutable.StringBuilder
+import scala.annotation.tailrec
 
 /** A template trait for bitsets.
  *  $bitsetinfo
@@ -104,16 +105,59 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
   def iterator: Iterator[Int] = iteratorFrom(0)
 
-  override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
-    private var current = start
-    private val end = nwords * WordLength
-    def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
-      current != end
+  override def iteratorFrom(minimum: Int): Iterator[Int] = {
+
+    @inline def iterator: Iterator[Int] = iteratorFrom0(math.max(0, minimum))
+
+    @inline def iteratorFrom0(minimum: Int): Iterator[Int] = {
+      val wordIndex = minimum / WordLength
+      val wordShift = minimum % WordLength
+      if (wordIndex < nwords) {
+        val shiftedWord = word(wordIndex) >>> wordShift
+        new ImprovedBitSetIterator(minimum, wordIndex, shiftedWord)
+      } else {
+        Iterator.empty
+      }
     }
-    def next(): Int =
-      if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next()
+
+    final class ImprovedBitSetIterator(private[this] var nextCandidate: Int,
+                                       private[this] var wordIndex: Int,
+                                       private[this] var shiftedWord: Long) extends AbstractIterator[Int] {
+      @tailrec override def hasNext: Boolean = {
+
+        @inline def currentBitIsSet: Boolean = (shiftedWord & 1L) == 1L
+
+        @inline def hasMoreBits: Boolean = shiftedWord != 0L
+
+        @inline def hasNextWord: Boolean = wordIndex + 1 < nwords
+
+        @inline def gotoNextWord():Boolean = {
+          wordIndex += 1
+          shiftedWord = word(wordIndex)
+          nextCandidate = wordIndex * WordLength
+          true
+        }
+
+        currentBitIsSet || (hasMoreBits && gotoNextBit() || hasNextWord && gotoNextWord()) && hasNext
+      }
+
+      override def next(): Int = {
+        if (hasNext) {
+          val result = nextCandidate
+          gotoNextBit()
+          result
+        } else {
+          Iterator.empty.next()
+        }
+      }
+
+      @inline private[this] def gotoNextBit(): Boolean = {
+        shiftedWord >>>= 1
+        nextCandidate += 1
+        true
+      }
+    }
+    iterator
   }
 
   override def foreach[U](f: Int => U) {
