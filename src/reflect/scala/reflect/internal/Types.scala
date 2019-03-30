@@ -3028,8 +3028,6 @@ trait Types
   ) extends TypeVar(_origin, _constr) {
     require(params.nonEmpty && sameLength(params, typeArgs), this)
     override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
-    override def setInst(tp: Type): this.type =
-      super.setInst(if (isSubArgs(typeArgs, tp.typeArgs, params, Depth.AnyDepth)) tp.typeConstructor else NoType)
   }
 
   trait UntouchableTypeVar extends TypeVar {
