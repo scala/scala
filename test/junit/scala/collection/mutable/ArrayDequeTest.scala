@@ -104,18 +104,17 @@ class ArrayDequeTest {
 object ArrayDequeTest {
 
   // tests scala/bug#11047
-  def genericSlidingTest(factory: SeqFactory[ArrayDeque], collectionName: String): Unit =
+  def genericSlidingTest(factory: SeqFactory[ArrayDeque], collectionName: String): Unit = {
     for {
-      i <- 1 to 40
+      i <- 0 to 40
 
       range = 0 until i
-      iterable = collection.Iterable.from(range)
       other = factory.from(range)
 
       j <- 1 to 40
       k <- 1 to 40
 
-      iterableSliding = iterable.sliding(j,k).to(Seq)
+      iterableSliding = range.sliding(j, k).to(Seq)
       otherSliding = other.sliding(j, k).to(Seq)
     }
       assert(iterableSliding == otherSliding,
@@ -124,4 +123,8 @@ object ArrayDequeTest {
            |$collectionName yielded: $otherSliding
        """.stripMargin
       )
+
+    // scala/bug#11440
+    assertEquals(0, factory.empty[Int].sliding(1).size)
+  }
 }
