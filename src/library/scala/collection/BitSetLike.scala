@@ -207,6 +207,19 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     fromBitMaskNoCopy(words)
   }
 
+  /**
+    * Equivalent to Java BitSet.intersects, faster than (set1 & set2).nonEmpty
+    */
+  def intersects(other: BitSet): Boolean = {
+    val len = this.nwords min other.nwords
+    for (i <- 0 until len) {
+      if ((word(i) & other.word(i)) != 0L) {
+        return true
+      }
+    }
+    false
+  }
+
   /** Computes the difference of this bitset and another bitset by performing
    *  a bitwise "and-not".
    *
