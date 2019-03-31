@@ -16,7 +16,7 @@ package internal
 package util
 
 /** @inheritdoc */
-class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
+class Position extends macros.EmptyAttachments with api.Position with InternalPositionImpl with DeprecatedPosition {
   type Pos = Position
   def pos: Position = this
   def withPos(newPos: Position): macros.Attachments { type Pos = Position.this.Pos } = newPos
