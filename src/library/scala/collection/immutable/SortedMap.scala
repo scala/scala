@@ -18,6 +18,40 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.language.higherKinds
 
+
+/** An immutable map whose key-value pairs are sorted according to an [[scala.math.Ordering]] on the keys.
+  *
+  * Allows for range queries to be performed on its keys, and implementations must guarantee that traversal happens in
+  * sorted order, according to the map's [[scala.math.Ordering]].
+  *
+  *  @example {{{
+  *  import scala.collection.immutable.SortedMap
+  *
+  *  // Make a SeqMap via the companion object factory
+  *  val weekdays = SortedMap(
+  *    2 -> "Monday",
+  *    3 -> "Tuesday",
+  *    4 -> "Wednesday",
+  *    5 -> "Thursday",
+  *    6 -> "Friday"
+  *  )
+  *  // TreeMap(2 -> Monday, 3 -> Tuesday, 4 -> Wednesday, 5 -> Thursday, 6 -> Friday)
+  *
+  *  val days = weekdays ++ List(1 -> "Sunday", 7 -> "Saturday")
+  *  // TreeMap(1 -> Sunday, 2 -> Monday, 3 -> Tuesday, 4 -> Wednesday, 5 -> Thursday, 6 -> Friday, 7 -> Saturday)
+  *
+  *  val day3 = days.get(3) // Some("Tuesday")
+  *
+  *  val rangeOfDays = days.range(2, 5) // TreeMap(2 -> Monday, 3 -> Tuesday, 4 -> Wednesday)
+  *
+  *  val daysUntil2 = days.rangeUntil(2) // TreeMap(1 -> Sunday)
+  *  val daysTo2 = days.rangeTo(2) // TreeMap(1 -> Sunday, 2 -> Monday)
+  *  val daysAfter5 = days.rangeFrom(5) //  TreeMap(5 -> Thursday, 6 -> Friday, 7 -> Saturday)
+  *  }}}
+  *
+  *  @tparam K the type of the keys contained in this tree map.
+  *  @tparam V the type of the values associated with the keys.
+  */
 trait SortedMap[K, +V]
   extends Map[K, V]
     with collection.SortedMap[K, V]

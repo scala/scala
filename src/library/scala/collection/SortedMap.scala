@@ -14,11 +14,10 @@ package scala
 package collection
 
 import scala.annotation.implicitNotFound
-import scala.collection.immutable.TreeMap
 import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 
-/** Base type of sorted sets */
+/** A Map whose keys are sorted according to a [[scala.math.Ordering]]*/
 trait SortedMap[K, +V]
   extends Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]] {
