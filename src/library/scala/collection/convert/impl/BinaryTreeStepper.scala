@@ -97,8 +97,7 @@ extends EfficientSplit {
     else {
       maxLength = size
       index = -1
-      val unrolled = unroll(root)
-      myCurrent = if (unrolled eq root) detach(root) else unrolled
+      myCurrent = detach(unroll(root))
     }
 
   protected def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): Semi
