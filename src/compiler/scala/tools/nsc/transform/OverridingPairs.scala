@@ -24,7 +24,7 @@ import scala.reflect.internal.SymbolPairs
 abstract class OverridingPairs extends SymbolPairs {
   import global._
 
-  abstract class Cursor(base: Symbol) extends super.Cursor(base) {
+  class Cursor(base: Symbol) extends super.Cursor(base) {
     /** Symbols to exclude: Here these are constructors and private/artifact symbols,
      *  including bridges. But it may be refined in subclasses.
      */
@@ -44,13 +44,6 @@ abstract class OverridingPairs extends SymbolPairs {
       && !exclude(low)                 // this admits private, as one can't have a private member that matches a less-private member.
       && (lowMemberType matches (self memberType high))
     ) // TODO we don't call exclude(high), should we?
-  }
-
-  final class RefchecksCursor(base: Symbol) extends Cursor(base) {
-    // Skip if we know this pair is checked when root == nonTraitParent
-    // (since it's not a trait, we know the linearisation will be the same and it's safe to delay our checks).
-    protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean =
-      lowClass != nonTraitParent && nonTraitParent.isNonBottomSubClass(lowClass) && nonTraitParent.isNonBottomSubClass(highClass)
   }
 
   final class BridgesCursor(base: Symbol) extends Cursor(base) {

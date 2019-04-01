@@ -112,7 +112,7 @@ abstract class SymbolPairs {
       * @param highClass owner of the next hi symbol
       * @return whether to skip this pair
       */
-    protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean
+    protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = false
 
     protected def bases: List[Symbol] = base.info.baseClasses
 

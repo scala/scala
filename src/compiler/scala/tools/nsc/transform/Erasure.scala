@@ -906,9 +906,6 @@ abstract class Erasure extends InfoTransform
         || !sym.hasTypeAt(currentRun.refchecksPhase.id)
       )
       override def matches(high: Symbol) = !high.isPrivate
-
-      // consider all matching pairs
-      protected def skipOwnerPair(lowClass: Symbol, highClass: Symbol): Boolean = false
     }
 
     /** Emit an error if there is a double definition. This can happen if:
