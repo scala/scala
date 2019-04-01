@@ -63,6 +63,7 @@ object FutureConverters {
   def toJava[T](f: Future[T]): CompletionStage[T] = {
     f match {
       case p: P[T] => p.wrapped
+      case c: CompletionStage[T] => c
       case _ =>
         val cf = new CF[T](f)
         implicit val ec = ExecutionContext.parasitic
@@ -83,6 +84,7 @@ object FutureConverters {
   def toScala[T](cs: CompletionStage[T]): Future[T] = {
     cs match {
       case cf: CF[T] => cf.wrapped
+      case f: Future[T] => f
       case _ =>
         val p = new P[T](cs)
         cs whenComplete p
