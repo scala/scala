@@ -10,12 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package collection
-package mutable
+package scala.collection
 
 /**
-  * A generic trait for ordered mutable maps. Concrete classes have to provide
+  * A generic trait for ordered maps. Concrete classes have to provide
   * functionality for the abstract methods in `SeqMap`.
   *
   * Note that when checking for equality [[SeqMap]] does not take into account
@@ -24,15 +22,15 @@ package mutable
   * @tparam K      the type of the keys contained in this linked map.
   * @tparam V      the type of the values associated with the keys in this linked map.
   *
-  * @author Matthew de Detrich
+  * @author Matthew de Detrich, Josh Lemer
   * @version 2.13
   * @since 2.13
-  * @define coll mutable Seq map
-  * @define Coll `mutable.SeqMap`
+  * @define coll immutable seq map
+  * @define Coll `immutable.SeqMap`
   */
 
-trait SeqMap[K, V] extends Map[K, V]
-  with collection.SeqMap[K, V]
+trait SeqMap[K, +V] extends Map[K, V]
   with MapOps[K, V, SeqMap, SeqMap[K, V]]
 
-object SeqMap extends MapFactory.Delegate[SeqMap](LinkedHashMap)
+object SeqMap extends MapFactory.Delegate[immutable.SeqMap](immutable.SeqMap)
+
