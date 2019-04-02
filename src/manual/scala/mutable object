@@ -1,0 +1,30 @@
+class BankAccount {
+
+    private var bal: Int = 0
+
+    def balance: Int = bal
+
+    def deposit(amount: Int) = {
+      require(amount > 0)
+      bal += amount
+    }
+
+    def withdraw(amount: Int): Boolean = 
+      if (amount > bal) false
+      else {
+        bal -= amount
+        true
+      }
+  } 
+
+
+  scala> val account = new BankAccount
+  account: BankAccount = BankAccount@21cf775d
+
+  scala> account deposit 100
+
+  scala> account withdraw 80
+  res1: Boolean = true
+
+  scala>  account withdraw 80
+  res2: Boolean = false
