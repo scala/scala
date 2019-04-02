@@ -208,7 +208,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, LazyList, LazyList[A]]
-    with IterableFactoryDefaults[A @uncheckedVariance, LazyList]
+    with IterableFactoryDefaults[A, LazyList]
     with Serializable {
   import LazyList._
 

@@ -47,7 +47,7 @@ sealed class ListMap[K, +V]
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
-    with MapFactoryDefaults[K, V @uncheckedVariance, ListMap, Iterable]
+    with MapFactoryDefaults[K, V, ListMap, Iterable]
     with DefaultSerializable {
 
   override def mapFactory: MapFactory[ListMap] = ListMap

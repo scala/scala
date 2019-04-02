@@ -40,7 +40,7 @@ import scala.util.hashing.MurmurHash3
 final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: BitmapIndexedMapNode[K, V])
   extends AbstractMap[K, V]
     with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]]
-    with MapFactoryDefaults[K, V @uV, HashMap, Iterable]
+    with MapFactoryDefaults[K, V, HashMap, Iterable]
     with DefaultSerializable {
 
   def this() = this(MapNode.empty)

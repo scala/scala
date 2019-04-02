@@ -24,7 +24,7 @@ import scala.collection.{IterableFactory, IterableFactoryDefaults}
   */
 trait Iterable[+A] extends collection.Iterable[A]
                       with collection.IterableOps[A, Iterable, Iterable[A]]
-                      with IterableFactoryDefaults[A @uncheckedVariance, Iterable] {
+                      with IterableFactoryDefaults[A, Iterable] {
 
   override def iterableFactory: IterableFactory[Iterable] = Iterable
 }

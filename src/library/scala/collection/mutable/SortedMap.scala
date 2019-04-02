@@ -24,7 +24,7 @@ trait SortedMap[K, V]
   extends collection.SortedMap[K, V]
     with Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
-    with SortedMapFactoryDefaults[K, V @uncheckedVariance, SortedMap, Iterable, Map] {
+    with SortedMapFactoryDefaults[K, V, SortedMap, Iterable, Map] {
 
   override def unsorted: Map[K, V] = this
 

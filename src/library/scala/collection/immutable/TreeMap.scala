@@ -74,7 +74,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   extends AbstractMap[K, V]
     with SortedMap[K, V]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with SortedMapFactoryDefaults[K, V @uncheckedVariance, TreeMap, Iterable, Map]
+    with SortedMapFactoryDefaults[K, V, TreeMap, Iterable, Map]
     with DefaultSerializable {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)

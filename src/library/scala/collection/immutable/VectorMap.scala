@@ -39,7 +39,7 @@ final class VectorMap[K, +V] private (
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
-    with MapFactoryDefaults[K, V @uncheckedVariance, VectorMap, Iterable] {
+    with MapFactoryDefaults[K, V, VectorMap, Iterable] {
 
   import VectorMap._
 

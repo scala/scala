@@ -28,7 +28,7 @@ import Stream.cons
 sealed abstract class Stream[+A] extends AbstractSeq[A]
   with LinearSeq[A]
   with LinearSeqOps[A, Stream, Stream[A]]
-  with IterableFactoryDefaults[A @uncheckedVariance, Stream]
+  with IterableFactoryDefaults[A, Stream]
   with Serializable {
   def tail: Stream[A]
 

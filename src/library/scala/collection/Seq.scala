@@ -26,7 +26,7 @@ trait Seq[+A]
   extends Iterable[A]
     with PartialFunction[Int, A]
     with SeqOps[A, Seq, Seq[A]]
-    with IterableFactoryDefaults[A @uncheckedVariance, Seq]
+    with IterableFactoryDefaults[A, Seq]
     with Equals {
 
   override def iterableFactory: SeqFactory[Seq] = Seq

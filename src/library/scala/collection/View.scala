@@ -26,7 +26,7 @@ import scala.collection.immutable.LazyList
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with IterableFactoryDefaults[A @uncheckedVariance, View] with Serializable {
+trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with IterableFactoryDefaults[A, View] with Serializable {
 
   override def view: View[A] = this
 

@@ -39,7 +39,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeMap[K, V]]
     with StrictOptimizedMapOps[K, V, Map, TreeMap[K, V]]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]]
-    with SortedMapFactoryDefaults[K, V @uncheckedVariance, TreeMap, Iterable, Map]
+    with SortedMapFactoryDefaults[K, V, TreeMap, Iterable, Map]
     with DefaultSerializable {
 
   override def sortedMapFactory = TreeMap

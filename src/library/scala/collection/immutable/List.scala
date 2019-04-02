@@ -86,7 +86,7 @@ sealed abstract class List[+A]
     with LinearSeqOps[A, List, List[A]]
     with StrictOptimizedLinearSeqOps[A, List, List[A]]
     with StrictOptimizedSeqOps[A, List, List[A]]
-    with IterableFactoryDefaults[A @uncheckedVariance, List]
+    with IterableFactoryDefaults[A, List]
     with DefaultSerializable {
 
   override def iterableFactory: SeqFactory[List] = List

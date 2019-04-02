@@ -26,7 +26,7 @@ trait Map[K, +V]
   extends Iterable[(K, V)]
      with collection.Map[K, V]
      with MapOps[K, V, Map, Map[K, V]]
-     with MapFactoryDefaults[K, V @uncheckedVariance, Map, Iterable] {
+     with MapFactoryDefaults[K, V, Map, Iterable] {
 
   override def mapFactory: scala.collection.MapFactory[Map] = Map
 

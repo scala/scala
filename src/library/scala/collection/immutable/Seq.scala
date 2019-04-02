@@ -20,7 +20,7 @@ import scala.language.higherKinds
 trait Seq[+A] extends Iterable[A]
                  with collection.Seq[A]
                  with SeqOps[A, Seq, Seq[A]]
-                 with IterableFactoryDefaults[A @uncheckedVariance, Seq] {
+                 with IterableFactoryDefaults[A, Seq] {
 
   override final def toSeq: this.type = this
 
@@ -50,7 +50,7 @@ object Seq extends SeqFactory.Delegate[Seq](List) {
 trait IndexedSeq[+A] extends Seq[A]
                         with collection.IndexedSeq[A]
                         with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
-                        with IterableFactoryDefaults[A @uncheckedVariance, IndexedSeq] {
+                        with IterableFactoryDefaults[A, IndexedSeq] {
 
   final override def toIndexedSeq: IndexedSeq[A] = this
 
@@ -137,7 +137,7 @@ trait LinearSeq[+A]
   extends Seq[A]
     with collection.LinearSeq[A]
     with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
-    with IterableFactoryDefaults[A @uncheckedVariance, LinearSeq] {
+    with IterableFactoryDefaults[A, LinearSeq] {
 
   override def iterableFactory: SeqFactory[LinearSeq] = LinearSeq
 }

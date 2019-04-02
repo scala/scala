@@ -38,7 +38,7 @@ sealed abstract class ArraySeq[+A]
     with IndexedSeq[A]
     with IndexedSeqOps[A, ArraySeq, ArraySeq[A]]
     with StrictOptimizedSeqOps[A, ArraySeq, ArraySeq[A]]
-    with EvidenceIterableFactoryDefaults[A @uncheckedVariance, ArraySeq, ClassTag]
+    with EvidenceIterableFactoryDefaults[A, ArraySeq, ClassTag]
     with Serializable {
 
   /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive

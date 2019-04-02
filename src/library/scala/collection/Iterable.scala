@@ -27,7 +27,7 @@ import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
   */
 trait Iterable[+A] extends IterableOnce[A]
   with IterableOps[A, Iterable, Iterable[A]]
-  with IterableFactoryDefaults[A @uncheckedVariance, Iterable] {
+  with IterableFactoryDefaults[A, Iterable] {
 
   // The collection itself
   final def toIterable: this.type = this
@@ -913,12 +913,12 @@ abstract class AbstractIterable[+A] extends Iterable[A]
   * The default implementations in this trait can be used in the common case when `CC[A]` is the
   * same as `C`.
   */
-trait IterableFactoryDefaults[A, +CC[x] <: IterableOps[x, CC, CC[x]]] extends IterableOps[A, CC, CC[A]] {
-  protected def fromSpecific(coll: IterableOnce[A]): CC[A] = iterableFactory.from(coll)
-  protected def newSpecificBuilder: Builder[A, CC[A]] = iterableFactory.newBuilder[A]
+trait IterableFactoryDefaults[+A, +CC[x] <: IterableOps[x, CC, CC[x]]] extends IterableOps[A, CC, CC[A @uncheckedVariance]] {
+  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance] = iterableFactory.from(coll)
+  protected def newSpecificBuilder: Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = iterableFactory.newBuilder[A]
 
   // overridden for efficiency, since we know CC[A] =:= C
-  override def empty: CC[A] = iterableFactory.empty
+  override def empty: CC[A @uncheckedVariance] = iterableFactory.empty
 }
 
 /** This trait provides default implementations for the factory methods `fromSpecific` and
@@ -929,12 +929,12 @@ trait IterableFactoryDefaults[A, +CC[x] <: IterableOps[x, CC, CC[x]]] extends It
   * The default implementations in this trait can be used in the common case when `CC[A]` is the
   * same as `C`.
   */
-trait EvidenceIterableFactoryDefaults[A, +CC[x] <: IterableOps[x, CC, CC[x]], Ev[_]] extends IterableOps[A, CC, CC[A]] {
+trait EvidenceIterableFactoryDefaults[+A, +CC[x] <: IterableOps[x, CC, CC[x]], Ev[_]] extends IterableOps[A, CC, CC[A @uncheckedVariance]] {
   protected def evidenceIterableFactory: EvidenceIterableFactory[CC, Ev]
-  implicit protected def iterableEvidence: Ev[A]
-  override protected def fromSpecific(coll: IterableOnce[A]): CC[A] = evidenceIterableFactory.from(coll)
-  override protected def newSpecificBuilder: Builder[A, CC[A]] = evidenceIterableFactory.newBuilder[A]
-  override def empty: CC[A] = evidenceIterableFactory.empty
+  implicit protected def iterableEvidence: Ev[A @uncheckedVariance]
+  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance] = evidenceIterableFactory.from(coll)
+  override protected def newSpecificBuilder: Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = evidenceIterableFactory.newBuilder[A]
+  override def empty: CC[A @uncheckedVariance] = evidenceIterableFactory.empty
 }
 
 /** This trait provides default implementations for the factory methods `fromSpecific` and
@@ -949,14 +949,14 @@ trait EvidenceIterableFactoryDefaults[A, +CC[x] <: IterableOps[x, CC, CC[x]], Ev
   * The default implementations in this trait can be used in the common case when `CC[A]` is the
   * same as `C`.
   */
-trait SortedSetFactoryDefaults[A,
+trait SortedSetFactoryDefaults[+A,
     +CC[X] <: SortedSet[X] with SortedSetOps[X, CC, CC[X]],
-    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Set[x]] extends SortedSetOps[A, CC, CC[A]] {
+    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Set[x]] extends SortedSetOps[A @uncheckedVariance, CC, CC[A @uncheckedVariance]] {
   self: IterableOps[A, WithFilterCC, _] =>
 
-  override protected def fromSpecific(coll: IterableOnce[A]): CC[A]    = sortedIterableFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[A, CC[A]] = sortedIterableFactory.newBuilder[A]
-  override def empty: CC[A] = sortedIterableFactory.empty
+  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance]    = sortedIterableFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = sortedIterableFactory.newBuilder[A]
+  override def empty: CC[A @uncheckedVariance] = sortedIterableFactory.empty
 
   override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, WithFilterCC, CC] =
     new SortedSetOps.WithFilter[A, WithFilterCC, CC](this, p)
@@ -975,12 +975,12 @@ trait SortedSetFactoryDefaults[A,
   * The default implementations in this trait can be used in the common case when `CC[A]` is the
   * same as `C`.
   */
-trait MapFactoryDefaults[K, V,
+trait MapFactoryDefaults[K, +V,
     +CC[x, y] <: IterableOps[(x, y), Iterable, Iterable[(x, y)]],
-    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x]] extends MapOps[K, V, CC, CC[K, V]] with IterableOps[(K, V), WithFilterCC, CC[K, V]] {
-  override protected def fromSpecific(coll: IterableOnce[(K, V)]): CC[K, V] = mapFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[(K, V), CC[K, V]] = mapFactory.newBuilder[K, V]
-  override def empty: CC[K, V] = mapFactory.empty
+    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x]] extends MapOps[K, V, CC, CC[K, V @uncheckedVariance]] with IterableOps[(K, V), WithFilterCC, CC[K, V @uncheckedVariance]] {
+  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = mapFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = mapFactory.newBuilder[K, V]
+  override def empty: CC[K, V @uncheckedVariance] = mapFactory.empty
 
   override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, WithFilterCC, CC] =
     new MapOps.WithFilter[K, V, WithFilterCC, CC](this, p)
@@ -998,15 +998,15 @@ trait MapFactoryDefaults[K, V,
   * The default implementations in this trait can be used in the common case when `CC[A]` is the
   * same as `C`.
   */
-trait SortedMapFactoryDefaults[K, V,
+trait SortedMapFactoryDefaults[K, +V,
     +CC[x, y] <:  Map[x, y] with SortedMapOps[x, y, CC, CC[x, y]] with UnsortedCC[x, y],
     +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x],
-    +UnsortedCC[x, y] <: Map[x, y]] extends SortedMapOps[K, V, CC, CC[K, V]] with MapOps[K, V, UnsortedCC, CC[K, V]] {
+    +UnsortedCC[x, y] <: Map[x, y]] extends SortedMapOps[K, V, CC, CC[K, V @uncheckedVariance]] with MapOps[K, V, UnsortedCC, CC[K, V @uncheckedVariance]] {
   self: IterableOps[(K, V), WithFilterCC, _] =>
 
-  override def empty: CC[K, V] = sortedMapFactory.empty
-  override protected def fromSpecific(coll: IterableOnce[(K, V@uncheckedVariance)]): CC[K, V] = sortedMapFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[(K, V@uncheckedVariance), CC[K, V@uncheckedVariance]] = sortedMapFactory.newBuilder[K, V]
+  override def empty: CC[K, V @uncheckedVariance] = sortedMapFactory.empty
+  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = sortedMapFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = sortedMapFactory.newBuilder[K, V]
 
   override def withFilter(p: ((K, V)) => Boolean): collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC] =
     new collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC](this, p)

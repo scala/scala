@@ -56,7 +56,7 @@ final class TreeSeqMap[K, +V] private (
     with MapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeSeqMap[K, V]]
     with StrictOptimizedMapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
-    with MapFactoryDefaults[K, V @uncheckedVariance, TreeSeqMap, Iterable] {
+    with MapFactoryDefaults[K, V, TreeSeqMap, Iterable] {
 
   import TreeSeqMap._
 
