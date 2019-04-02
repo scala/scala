@@ -138,4 +138,11 @@ class SortedMapTest {
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
+
+  @Test def updatedWithReturnsSortedMap: Unit = {
+    val m1 = SortedMap(1 -> "a")
+    val m2 = m1.updatedWith(2) { case Some(v) => Some(v.toUpperCase) case None => Some("DEFAULT") }
+    val m3: SortedMap[Int, String] = m2 // check the type returned by `updatedWith`
+    assertEquals(SortedMap(1 -> "a", 2 -> "DEFAULT"), m3)
+  }
 }
