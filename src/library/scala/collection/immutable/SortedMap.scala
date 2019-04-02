@@ -106,7 +106,16 @@ trait SortedMapOps[K, +V, +CC[X, +Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _]
   // We override these methods to fix their return type (which would be `Map` otherwise)
   def updated[V1 >: V](key: K, value: V1): CC[K, V1]
   @`inline` final override def +[V1 >: V](kv: (K, V1)): CC[K, V1] = updated(kv._1, kv._2)
-
+  override def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K, V1] = {
+    // Implementation has been copied from `MapOps`
+    val previousValue = this.get(key)
+    val nextValue = remappingFunction(previousValue)
+    (previousValue, nextValue) match {
+      case (None, None) => coll
+      case (Some(_), None) => this.removed(key).coll
+      case (_, Some(v)) => this.updated(key, v)
+    }
+  }
   override def transform[W](f: (K, V) => W): CC[K, W] = map({ case (k, v) => (k, f(k, v)) })
 }
 
