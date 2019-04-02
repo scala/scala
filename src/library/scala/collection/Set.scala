@@ -22,7 +22,8 @@ import java.lang.String
 trait Set[A]
   extends Iterable[A]
     with SetOps[A, Set, Set[A]]
-    with Equals {
+    with Equals
+    with IterableFactoryDefaults[A, Set] {
 
   def canEqual(that: Any) = true
 
@@ -38,9 +39,7 @@ trait Set[A]
 
   override def hashCode(): Int = MurmurHash3.setHash(toIterable)
 
-  override def iterableFactory: IterableFactory[IterableCC] = Set
-
-  def empty: IterableCC[A] = iterableFactory.empty
+  override def iterableFactory: IterableFactory[Set] = Set
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "Set"
@@ -213,11 +212,6 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
 
   /** Alias for `union` */
   @`inline` final def | (that: Set[A]): C = concat(that)
-
-  /** The empty set of the same type as this set
-    * @return  an empty set of type `C`.
-    */
-  def empty: C
 }
 
 /**

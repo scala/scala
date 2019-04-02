@@ -60,7 +60,7 @@ Missing implementations for 7 members. Stub implementations follow:
   // Members declared in scala.collection.IterableOps
   protected def coll: List[(Set[Int], String)] = ???
   protected def fromSpecific(coll: scala.collection.IterableOnce[(Set[Int], String)]): List[(Set[Int], String)] = ???
-  def iterableFactory: scala.collection.IterableFactory[[X]List[X]] = ???
+  def iterableFactory: scala.collection.IterableFactory[List] = ???
   protected def newSpecificBuilder: scala.collection.mutable.Builder[(Set[Int], String),List[(Set[Int], String)]] = ???
   def toIterable: Iterable[(Set[Int], String)] = ???
 

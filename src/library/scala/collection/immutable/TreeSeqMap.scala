@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 
 /** This class implements an immutable map that preserves order using
   * a hash map for the key to value mapping to provide efficient lookup,
@@ -54,7 +55,8 @@ final class TreeSeqMap[K, +V] private (
     with SeqMap[K, V]
     with MapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, TreeSeqMap[K, V]]
-    with StrictOptimizedMapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]] {
+    with StrictOptimizedMapOps[K, V, TreeSeqMap, TreeSeqMap[K, V]]
+    with MapFactoryDefaults[K, V, TreeSeqMap, Iterable] {
 
   import TreeSeqMap._
 

@@ -13,7 +13,8 @@
 package scala.collection.mutable
 
 import scala.annotation.migration
-import scala.collection.{IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps}
+import scala.collection.generic.DefaultSerializable
+import scala.collection.{IterableFactoryDefaults, IterableOnce, SeqFactory, StrictOptimizedSeqFactory, StrictOptimizedSeqOps, mutable}
 
 /** A stack implements a data structure which allows to store and retrieve
   *  objects in a last-in-first-out (LIFO) fashion.
@@ -35,7 +36,10 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
   extends ArrayDeque[A](array, start, end)
     with IndexedSeqOps[A, Stack, Stack[A]]
     with StrictOptimizedSeqOps[A, Stack, Stack[A]]
-    with Cloneable[Stack[A]] {
+    with IterableFactoryDefaults[A, Stack]
+    with ArrayDequeOps[A, Stack, Stack[A]]
+    with Cloneable[Stack[A]]
+    with DefaultSerializable {
 
   def this(initialSize: Int = ArrayDeque.DefaultInitialSize) =
     this(ArrayDeque.alloc(initialSize), start = 0, end = 0)
@@ -109,7 +113,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     */
   @`inline` final def top: A = head
 
-  override def clone(): Stack[A] = {
+  protected override def klone(): Stack[A] = {
     val bf = newSpecificBuilder
     bf ++= this
     bf.result()

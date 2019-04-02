@@ -17,23 +17,13 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 
 /** Base type of sorted sets */
-trait SortedSet[A] extends Set[A] with SortedSetOps[A, SortedSet, SortedSet[A]] {
+trait SortedSet[A] extends Set[A]
+    with SortedSetOps[A, SortedSet, SortedSet[A]]
+    with SortedSetFactoryDefaults[A, SortedSet, Set] {
+
   def unsorted: Set[A] = this
 
-  override protected def fromSpecific(coll: IterableOnce[A] @uncheckedVariance): SortedIterableCC[A] @uncheckedVariance = sortedIterableFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[A, SortedIterableCC[A]] @uncheckedVariance = sortedIterableFactory.newBuilder[A]
-
-  /**
-    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
-    *       return a `SortedIterableFactory[SortedIterableCC]`. The implementation in `SortedSet` only returns
-    *       a `SortedIterableFactory[SortedSet]`, but the compiler will '''not''' throw an error if the
-    *       effective `SortedIterableCC` type constructor is more specific than `SortedSet`.
-    *
-    * @return The factory of this collection.
-    */
-  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
-
-  override def empty: SortedIterableCC[A] = sortedIterableFactory.empty
+  def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SortedSet"
@@ -43,16 +33,13 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
-    * and `newSpecificBuilder` operations.
+  /** The companion object of this sorted set, providing various factory methods.
     *
-    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
-    * therefore not recommended.
+    * @note When implementing a custom collection type and refining `CC` to the new type, this
+    *       method needs to be overridden to return a factory for the new type (the compiler will
+    *       issue an error otherwise).
     */
-  protected type SortedIterableCC[X] = CC[X] @uncheckedVariance
-
-  def sortedIterableFactory: SortedIterableFactory[SortedIterableCC]
+  def sortedIterableFactory: SortedIterableFactory[CC]
 
   def unsorted: Set[A]
 
@@ -106,8 +93,6 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
     else
       rangeUntil(next)
   }
-
-  override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, IterableCC, CC] = new SortedSetOps.WithFilter(this, p)
 
   /** Builds a new sorted collection by applying a function to all elements of this $coll.
     *
@@ -185,3 +170,4 @@ object SortedSetOps {
 
 @SerialVersionUID(3L)
 object SortedSet extends SortedIterableFactory.Delegate[SortedSet](immutable.SortedSet)
+

@@ -16,7 +16,7 @@ package collection.mutable
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{RedBlackTree => RB}
-import scala.collection.{SortedIterableFactory, Stepper, StepperShape, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
+import scala.collection.{SortedIterableFactory, SortedSetFactoryDefaults, Stepper, StepperShape, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
 
 /**
   * A mutable sorted set implemented using a mutable red-black tree as underlying data structure.
@@ -37,6 +37,7 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
     with SortedSetOps[A, TreeSet, TreeSet[A]]
     with StrictOptimizedIterableOps[A, Set, TreeSet[A]]
     with StrictOptimizedSortedSetOps[A, TreeSet, TreeSet[A]]
+    with SortedSetFactoryDefaults[A, TreeSet, Set]
     with DefaultSerializable {
 
   if (ordering eq null)

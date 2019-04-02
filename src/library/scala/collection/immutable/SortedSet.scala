@@ -14,17 +14,19 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 
 /** Base trait for sorted sets */
 trait SortedSet[A]
   extends Set[A]
      with collection.SortedSet[A]
-     with SortedSetOps[A, SortedSet, SortedSet[A]] {
+     with SortedSetOps[A, SortedSet, SortedSet[A]]
+     with SortedSetFactoryDefaults[A, SortedSet, Set] {
 
   override def unsorted: Set[A] = this
 
-  override def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
+  override def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
 }
 
 /**
@@ -41,7 +43,8 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
 trait StrictOptimizedSortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SortedSetOps[A, CC, C]
     with collection.StrictOptimizedSortedSetOps[A, CC, C]
-    with StrictOptimizedSetOps[A, Set, C]
+    with StrictOptimizedSetOps[A, Set, C] {
+}
 
 /**
   * $factoryInfo

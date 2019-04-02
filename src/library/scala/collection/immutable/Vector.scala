@@ -116,7 +116,8 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
     with IndexedSeq[A]
     with IndexedSeqOps[A, Vector, Vector[A]]
     with StrictOptimizedSeqOps[A, Vector, Vector[A]]
-    with VectorPointer[A @uncheckedVariance]
+    with IterableFactoryDefaults[A, Vector]
+    with VectorPointer[A]
     with DefaultSerializable { self =>
 
   override def iterableFactory: SeqFactory[Vector] = Vector
@@ -725,7 +726,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
 @deprecated("This class is not intended for public consumption and will be made private in the future.","2.13.0")
 class VectorIterator[+A](_startIndex: Int, private[this] var endIndex: Int)
   extends AbstractIterator[A]
-    with VectorPointer[A @uncheckedVariance] {
+    with VectorPointer[A] {
 
   private[this] final var blockIndex: Int = _startIndex & ~31
   private[this] final var lo: Int = _startIndex & 31
@@ -837,7 +838,7 @@ class VectorIterator[+A](_startIndex: Int, private[this] var endIndex: Int)
 }
 
 /** A class to build instances of `Vector`.  This builder is reusable. */
-final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with VectorPointer[A @uncheckedVariance] {
+final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with VectorPointer[A] {
 
   // possible alternative: start with display0 = null, blockIndex = -32, lo = 32
   // to avoid allocating initial array if the result will be empty anyways
@@ -949,7 +950,7 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   }
 }
 
-private[immutable] trait VectorPointer[T] {
+private[immutable] trait VectorPointer[+T] {
     private[immutable] var depth:    Int = _
     private[immutable] var display0: Array[AnyRef] = _
     private[immutable] var display1: Array[Array[AnyRef]] = _

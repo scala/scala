@@ -18,6 +18,7 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{StringBuilder => JStringBuilder}
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.SerializeEnd
 import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder, StringBuilder}
 import scala.language.implicitConversions
@@ -204,7 +205,11 @@ import scala.language.implicitConversions
   */
 @SerialVersionUID(3L)
 final class LazyList[+A] private(private[this] var lazyState: () => LazyList.State[A])
-  extends AbstractSeq[A] with LinearSeq[A] with LinearSeqOps[A, LazyList, LazyList[A]] with Serializable {
+  extends AbstractSeq[A]
+    with LinearSeq[A]
+    with LinearSeqOps[A, LazyList, LazyList[A]]
+    with IterableFactoryDefaults[A, LazyList]
+    with Serializable {
   import LazyList._
 
   @volatile private[this] var stateEvaluated: Boolean = false

@@ -15,6 +15,7 @@ package scala.collection
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.{ArrayBuffer, Builder}
 import scala.collection.immutable.LazyList
 
@@ -25,11 +26,13 @@ import scala.collection.immutable.LazyList
   * @define coll view
   * @define Coll `View`
   */
-trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Serializable {
+trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with IterableFactoryDefaults[A, View] with Serializable {
 
   override def view: View[A] = this
 
   override def iterableFactory: IterableFactory[View] = View
+
+  override def empty: scala.collection.View[A] = iterableFactory.empty
 
   override def toString: String  = stringPrefix + "(?)"
 

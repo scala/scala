@@ -25,7 +25,7 @@ class OverridingPairsTest extends BytecodeTesting {
     val g = compiler.global
     val C = g.rootMirror.getRequiredClass("p1.L")
 
-    val opcs = new g.overridingPairs.RefchecksCursor(C).iterator.filter(_.low.nameString == "c").map(c => (c.lowString, c.highString)).toList
+    val opcs = new g.overridingPairs.Cursor(C).iterator.filter(_.low.nameString == "c").map(c => (c.lowString, c.highString)).toList
 
     assertEquals(List(("override def c(x: Int): Int in trait SOIO", "final override def c(x: Int): Int in trait SO"),
                       ("override def c(x: Int): Int in trait SOIO", "def c(x: Int): Int in trait IO")), opcs)

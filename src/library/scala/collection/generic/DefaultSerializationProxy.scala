@@ -76,7 +76,7 @@ private[collection] case object SerializeEnd
   */
 trait DefaultSerializable extends Serializable { this: scala.collection.Iterable[_] =>
   protected[this] def writeReplace(): AnyRef = {
-    val f: Factory[Any, Any] = this match {
+    val f: Factory[Any, Any] = (this: scala.collection.Iterable[_]) match {
       case it: scala.collection.SortedMap[_, _] => it.sortedMapFactory.sortedMapFactory[Any, Any](it.ordering.asInstanceOf[Ordering[Any]]).asInstanceOf[Factory[Any, Any]]
       case it: scala.collection.Map[_, _] => it.mapFactory.mapFactory[Any, Any].asInstanceOf[Factory[Any, Any]]
       case it: scala.collection.SortedSet[_] => it.sortedIterableFactory.evidenceIterableFactory[Any](it.ordering.asInstanceOf[Ordering[Any]])

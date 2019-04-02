@@ -14,6 +14,7 @@ package scala
 package collection
 package immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}
@@ -73,6 +74,7 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   extends AbstractMap[K, V]
     with SortedMap[K, V]
     with StrictOptimizedSortedMapOps[K, V, TreeMap, TreeMap[K, V]]
+    with SortedMapFactoryDefaults[K, V, TreeMap, Iterable, Map]
     with DefaultSerializable {
 
   def this()(implicit ordering: Ordering[K]) = this(null)(ordering)

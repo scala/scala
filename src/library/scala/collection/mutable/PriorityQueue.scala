@@ -94,8 +94,10 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   override def knownSize: Int = length
   override def isEmpty: Boolean = resarr.p_size0 < 2
 
+  // not eligible for EvidenceIterableFactoryDefaults since C != CC[A] (PriorityQueue[A] != Iterable[A])
   override protected def fromSpecific(coll: scala.collection.IterableOnce[A]): PriorityQueue[A] = PriorityQueue.from(coll)
   override protected def newSpecificBuilder: Builder[A, PriorityQueue[A]] = PriorityQueue.newBuilder
+  override def empty: PriorityQueue[A] = PriorityQueue.empty
 
   def mapInPlace(f: A => A): this.type = {
     resarr.mapInPlace(f)

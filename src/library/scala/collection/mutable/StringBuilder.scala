@@ -14,7 +14,7 @@ package scala.collection.mutable
 
 import java.lang.String
 
-import scala.collection.IterableOnce
+import scala.collection.{IterableFactoryDefaults, IterableOnce}
 import scala.collection.immutable.WrappedString
 
 import scala.Predef.{ // unimport char-related implicit conversions to avoid triggering them accidentally
@@ -45,6 +45,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
   with ReusableBuilder[Char, String]
   with IndexedSeq[Char]
   with IndexedSeqOps[Char, IndexedSeq, StringBuilder]
+  with IterableFactoryDefaults[Char, IndexedSeq]
   with java.lang.CharSequence
   with Serializable {
 
@@ -77,6 +78,8 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   override protected def newSpecificBuilder: Builder[Char, StringBuilder] =
     new GrowableBuilder(new StringBuilder())
+
+  override def empty: StringBuilder = new StringBuilder()
 
   @inline def length: Int = underlying.length
 

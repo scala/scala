@@ -45,4 +45,12 @@ class MapTest {
     assert(mm.isInstanceOf[ListMap[Int,String]])
     assertEquals(mm.mkString("[", ", ", "]"), "[1 -> one, 2 -> two]")
   }
+
+  @Test def deprecatedPPE(): Unit = {
+    val m = (1 to 10).map(x => (x, x)).toMap
+    val m1 = m ++: m
+    assertEquals(m.toList.sorted, (m1: Map[Int, Int]).toList.sorted)
+    val s1 = List(1) ++: m
+    assertEquals(1 :: m.toList.sorted, (s1: Iterable[Any]).toList.sortBy({case (x: Int, _) => x; case x: Int => x}))
+  }
 }

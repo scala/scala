@@ -22,11 +22,12 @@ import scala.language.higherKinds
 trait SortedSet[A]
   extends Set[A]
     with collection.SortedSet[A]
-    with SortedSetOps[A, SortedSet, SortedSet[A]] {
+    with SortedSetOps[A, SortedSet, SortedSet[A]]
+    with SortedSetFactoryDefaults[A, SortedSet, Set] {
 
   override def unsorted: Set[A] = this
 
-  override def sortedIterableFactory: SortedIterableFactory[SortedIterableCC] = SortedSet
+  override def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
 }
 
 /**

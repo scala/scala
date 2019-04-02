@@ -39,9 +39,9 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
 
   def apply(i: Int): Char = self.charAt(i)
 
-  override protected def fromSpecific(coll: scala.collection.IterableOnce[Char]): WrappedString =
-    WrappedString.fromSpecific(coll)
+  override protected def fromSpecific(coll: scala.collection.IterableOnce[Char]): WrappedString = WrappedString.fromSpecific(coll)
   override protected def newSpecificBuilder: Builder[Char, WrappedString] = WrappedString.newBuilder
+  override def empty: WrappedString = WrappedString.empty
 
   override def slice(from: Int, until: Int): WrappedString = {
     val start = if (from < 0) 0 else from

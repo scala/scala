@@ -22,9 +22,10 @@ trait Map[K, V]
     with collection.Map[K, V]
     with MapOps[K, V, Map, Map[K, V]]
     with Growable[(K, V)]
-    with Shrinkable[K] {
+    with Shrinkable[K]
+    with MapFactoryDefaults[K, V, Map, Iterable] {
 
-  override def mapFactory: scala.collection.MapFactory[MapCC] = Map
+  override def mapFactory: scala.collection.MapFactory[Map] = Map
 
   /*
   //TODO consider keeping `remove` because it returns the removed entry

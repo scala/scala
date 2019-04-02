@@ -38,6 +38,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     with MapOps[K, V, HashMap, HashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, HashMap[K, V]]
     with StrictOptimizedMapOps[K, V, HashMap, HashMap[K, V]]
+    with MapFactoryDefaults[K, V, HashMap, Iterable]
     with Serializable {
 
   def this() = this(HashMap.defaultInitialCapacity, HashMap.defaultLoadFactor)

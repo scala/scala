@@ -35,6 +35,7 @@ class ListMap[K, V]
     with MapOps[K, V, ListMap, ListMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, ListMap[K, V]]
     with StrictOptimizedMapOps[K, V, ListMap, ListMap[K, V]]
+    with MapFactoryDefaults[K, V, ListMap, Iterable]
     with DefaultSerializable {
 
   override def mapFactory: MapFactory[ListMap] = ListMap

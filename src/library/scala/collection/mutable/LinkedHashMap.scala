@@ -65,6 +65,7 @@ class LinkedHashMap[K, V]
     with MapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
     with StrictOptimizedIterableOps[(K, V), Iterable, LinkedHashMap[K, V]]
     with StrictOptimizedMapOps[K, V, LinkedHashMap, LinkedHashMap[K, V]]
+    with MapFactoryDefaults[K, V, LinkedHashMap, Iterable]
     with DefaultSerializable {
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
@@ -141,7 +142,6 @@ class LinkedHashMap[K, V]
     if (size > 0) Some((firstEntry.key, firstEntry.value))
     else None
       
-  override def empty = LinkedHashMap.empty[K, V]
   override def size = table.tableSize
   override def knownSize: Int = size
   override def isEmpty: Boolean = table.tableSize == 0

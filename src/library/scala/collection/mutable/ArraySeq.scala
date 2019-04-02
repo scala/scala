@@ -53,6 +53,7 @@ sealed abstract class ArraySeq[T]
     ArraySeq.make(b.result())
   }
   override protected def newSpecificBuilder: Builder[T, ArraySeq[T]] = ArraySeq.newBuilder(elemTag).asInstanceOf[Builder[T, ArraySeq[T]]]
+  override def empty: ArraySeq[T] = ArraySeq.empty(elemTag.asInstanceOf[ClassTag[T]])
 
   /** The tag of the element type. This does not have to be equal to the element type of this ArraySeq. A primitive
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype

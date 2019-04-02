@@ -23,22 +23,10 @@ import scala.util.hashing.MurmurHash3
 trait Map[K, +V]
   extends Iterable[(K, V)]
     with MapOps[K, V, Map, Map[K, V]]
+    with MapFactoryDefaults[K, V @uncheckedVariance, Map, Iterable]
     with Equals {
 
-  override protected def fromSpecific(coll: IterableOnce[(K, V)] @uncheckedVariance): MapCC[K, V] @uncheckedVariance = mapFactory.from(coll)
-  override protected def newSpecificBuilder: mutable.Builder[(K, V), MapCC[K, V]] @uncheckedVariance = mapFactory.newBuilder[K, V]
-
-  /**
-    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
-    *       return a `MapFactory[MapCC]`. The implementation in `Map` only returns
-    *       a `MapFactory[Map]`, but the compiler will '''not''' throw an error if the
-    *       effective `MapCC` type constructor is more specific than `Map`.
-    *
-    * @return The factory of this collection.
-    */
-  def mapFactory: scala.collection.MapFactory[MapCC] = Map
-
-  def empty: MapCC[K, V] @uncheckedVariance = mapFactory.empty
+  def mapFactory: scala.collection.MapFactory[Map] = Map
 
   def canEqual(that: Any): Boolean = true
 
@@ -112,21 +100,18 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     s.asInstanceOf[S]
   }
 
-  /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `fromSpecific`
-    * and `newSpecificBuilder` operations.
-    *
-    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
-    * therefore not recommended.
-    */
-  protected type MapCC[KCC, VCC] = CC[KCC, VCC] @uncheckedVariance
-
   /** Similar to `fromIterable`, but returns a Map collection type.
-    * Note that the return type is now `CC[K2, V2]` aka `MapCC[K2, V2]` rather than `IterableCC[(K2, V2)]`.
+    * Note that the return type is now `CC[K2, V2]`.
     */
   @`inline` protected final def mapFromIterable[K2, V2](it: Iterable[(K2, V2)]): CC[K2, V2] = mapFactory.from(it)
 
-  def mapFactory: MapFactory[MapCC]
+  /** The companion object of this map, providing various factory methods.
+    *
+    * @note When implementing a custom collection type and refining `CC` to the new type, this
+    *       method needs to be overridden to return a factory for the new type (the compiler will
+    *       issue an error otherwise).
+    */
+  def mapFactory: MapFactory[CC]
 
   /** Optionally returns the value associated with a key.
     *
@@ -274,13 +259,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     */
   def isDefinedAt(key: K): Boolean = contains(key)
 
-  /** The empty map of the same type as this map
-    * @return an empty map of type `Repr`.
-    */
-  def empty: C
-
-  override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, IterableCC, CC] = new MapOps.WithFilter(this, p)
-
   /** Builds a new map by applying a function to all elements of this $coll.
     *
     *  @param f      the function to apply to each element.
@@ -324,6 +302,8 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     case _ => iterator.concat(suffix.iterator)
   })
 
+  // Not final because subclasses refine the result type, e.g. in SortedMap, the result type is
+  // SortedMap's CC, while Map's CC is fixed to Map
   /** Alias for `concat` */
   /*@`inline` final*/ def ++ [V2 >: V](xs: collection.IterableOnce[(K, V2)]): CC[K, V2] = concat(xs)
 
@@ -352,10 +332,6 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     }
     mapFactory.from(new View.Concat(toIterable, thatIterable))
   }
-
-  // explicit override for correct disambiguation with the new overload above
-  @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
-  override def ++:[B >: (K, V)](that: IterableOnce[B]): IterableCC[B] = super.++:[B](that)
 }
 
 object MapOps {
@@ -396,3 +372,4 @@ object Map extends MapFactory.Delegate[Map](immutable.Map) {
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
 @SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]
+

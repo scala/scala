@@ -95,7 +95,10 @@ private[collection] object JavaCollectionWrappers extends Serializable {
   }
 
   @SerialVersionUID(3L)
-  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with SeqOps[A, mutable.Buffer, mutable.Buffer[A]] with Serializable {
+  case class JListWrapper[A](underlying: ju.List[A]) extends mutable.AbstractBuffer[A]
+      with SeqOps[A, mutable.Buffer, mutable.Buffer[A]]
+      with IterableFactoryDefaults[A, mutable.Buffer]
+      with Serializable {
     def length = underlying.size
     override def knownSize: Int = if (underlying.isEmpty) 0 else super.knownSize
     override def isEmpty = underlying.isEmpty

@@ -43,6 +43,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     with IndexedBuffer[A]
     with IndexedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
     with StrictOptimizedSeqOps[A, ArrayBuffer, ArrayBuffer[A]]
+    with IterableFactoryDefaults[A, ArrayBuffer]
     with DefaultSerializable {
 
   def this() = this(new Array[AnyRef](ArrayBuffer.DefaultInitialSize), 0)

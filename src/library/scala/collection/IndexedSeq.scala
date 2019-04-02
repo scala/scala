@@ -14,15 +14,20 @@ package scala
 package collection
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult}
 import scala.collection.Stepper.EfficientSplit
 import scala.language.higherKinds
 import scala.math.Ordering
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */
-trait IndexedSeq[+A] extends Seq[A] with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]] {
+trait IndexedSeq[+A] extends Seq[A]
+  with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
+  with IterableFactoryDefaults[A @uncheckedVariance, IndexedSeq] {
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "IndexedSeq"
+
+  override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
 }
 
 @SerialVersionUID(3L)

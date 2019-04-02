@@ -25,25 +25,16 @@ import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}
   * @define Coll `Iterable`
   * @define coll iterable collection
   */
-trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterable[A]] {
+trait Iterable[+A] extends IterableOnce[A]
+  with IterableOps[A, Iterable, Iterable[A]]
+  with IterableFactoryDefaults[A, Iterable] {
 
   // The collection itself
   final def toIterable: this.type = this
 
   final protected def coll: this.type = this
 
-  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): IterableC @uncheckedVariance = iterableFactory.from(coll)
-  protected def newSpecificBuilder: Builder[A, IterableC] @uncheckedVariance = iterableFactory.newBuilder[A]
-
-  /**
-    * @note This operation '''has''' to be overridden by concrete collection classes to effectively
-    *       return an `IterableFactory[IterableCC]`. The implementation in `Iterable` only returns
-    *       an `IterableFactory[Iterable]`, but the compiler will '''not''' throw an error if the
-    *       effective `IterableCC` type constructor is more specific than `Iterable`.
-    *
-    * @return The factory of this collection.
-    */
-  def iterableFactory: IterableFactory[IterableCC] = Iterable
+  def iterableFactory: IterableFactory[Iterable] = Iterable
 
   @deprecated("Iterable.seq always returns the iterable itself", "2.13.0")
   def seq: this.type = this
@@ -140,25 +131,6 @@ trait Iterable[+A] extends IterableOnce[A] with IterableOps[A, Iterable, Iterabl
   *  and may be nondeterministic.
   */
 trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with IterableOnceOps[A, CC, C] {
-
-  /**
-    * Type alias to `CC`. It is used to provide a default implementation of the `iterableFactory`
-    * operation.
-    *
-    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
-    * therefore not recommended.
-    */
-  protected type IterableCC[X] = CC[X] @uncheckedVariance
-
-  /**
-    * Type alias to `C`. It is used to provide a default implementation of the `fromSpecific`
-    * and `newSpecificBuilder` operations.
-    *
-    * Due to the `@uncheckedVariance` annotation, usage of this type member can be unsound and is
-    * therefore not recommended.
-    */
-  protected type IterableC = C @uncheckedVariance
-
   /**
     * @return This collection as an `Iterable[A]`. No new collection will be built if `this` is already an `Iterable[A]`.
     */
@@ -188,6 +160,12 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * the elements of the resulting collections). In other words, this methods defines
     * the evaluation model of the collection.
     *
+    * @note When implementing a custom collection type and refining `C` to the new type, this
+    *       method needs to be overridden (the compiler will issue an error otherwise). In the
+    *       common case where `C =:= CC[A]`, this can be done by mixing in the
+    *       [[IterableFactoryDefaults]] trait, which implements the method using
+    *       [[iterableFactory]].
+    *
     * @note As witnessed by the `@uncheckedVariance` annotation, using this method
     *       might be unsound. However, as long as it is called with an
     *       `Iterable[A]` obtained from `this` collection (as it is the case in the
@@ -195,14 +173,17 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     */
   protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): C
 
-  /**
-    * @return The companion object of this ${coll}, providing various factory methods.
+  /** The companion object of this ${coll}, providing various factory methods.
+    *
+    * @note When implementing a custom collection type and refining `CC` to the new type, this
+    *       method needs to be overridden to return a factory for the new type (the compiler will
+    *       issue an error otherwise).
     */
-  def iterableFactory: IterableFactory[IterableCC]
+  def iterableFactory: IterableFactory[CC]
 
   @deprecated("Use iterableFactory instead", "2.13.0")
   @deprecatedOverriding("Use iterableFactory instead", "2.13.0")
-  @`inline` def companion: IterableFactory[IterableCC] = iterableFactory
+  @`inline` def companion: IterableFactory[CC] = iterableFactory
 
   /**
     * @return a strict builder for the same collection type.
@@ -212,11 +193,23 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * As a consequence, operations should preferably be implemented with `fromSpecific`
     * instead of this method.
     *
+    * @note When implementing a custom collection type and refining `C` to the new type, this
+    *       method needs to be overridden (the compiler will issue an error otherwise). In the
+    *       common case where `C =:= CC[A]`, this can be done by mixing in the
+    *       [[IterableFactoryDefaults]] trait, which implements the method using
+    *       [[iterableFactory]].
+    *
     * @note As witnessed by the `@uncheckedVariance` annotation, using this method might
     *       be unsound. However, as long as the returned builder is only fed
     *       with `A` values taken from `this` instance, it is safe.
     */
   protected def newSpecificBuilder: Builder[A @uncheckedVariance, C]
+
+  /** The empty iterable of the same type as this iterable
+    *
+    * @return an empty iterable of type `C`.
+    */
+  def empty: C = fromSpecific(Nil)
 
   /** Selects the first element of this $coll.
     *  $orderDependent
@@ -830,10 +823,10 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   }
 
   @deprecated("Use ++ instead of ++: for collections of type Iterable", "2.13.0")
-  def ++:[B >: A](that: IterableOnce[B]): IterableCC[B] =
-    (iterableFactory.from(that).asInstanceOf[Iterable[B]] ++ coll.asInstanceOf[Iterable[B]]).asInstanceOf[IterableCC[B]]
-    // These casts are needed because C and CC do not have the proper constraints.
-    // Adding those constraints would require a lot of boilerplate in many classes.
+  def ++:[B >: A](that: IterableOnce[B]): CC[B] = iterableFactory.from(that match {
+    case xs: Iterable[B] => new View.Concat(xs, this)
+    case _ => that.iterator ++ iterator
+  })
 }
 
 object IterableOps {
@@ -912,3 +905,109 @@ object Iterable extends IterableFactory.Delegate[Iterable](immutable.Iterable) {
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
 abstract class AbstractIterable[+A] extends Iterable[A]
+
+/** This trait provides default implementations for the factory methods `fromSpecific` and
+  * `newSpecificBuilder` that need to be refined when implementing a collection type that refines
+  * the `CC` and `C` type parameters.
+  *
+  * The default implementations in this trait can be used in the common case when `CC[A]` is the
+  * same as `C`.
+  */
+trait IterableFactoryDefaults[+A, +CC[x] <: IterableOps[x, CC, CC[x]]] extends IterableOps[A, CC, CC[A @uncheckedVariance]] {
+  protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance] = iterableFactory.from(coll)
+  protected def newSpecificBuilder: Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = iterableFactory.newBuilder[A]
+
+  // overridden for efficiency, since we know CC[A] =:= C
+  override def empty: CC[A @uncheckedVariance] = iterableFactory.empty
+}
+
+/** This trait provides default implementations for the factory methods `fromSpecific` and
+  * `newSpecificBuilder` that need to be refined when implementing a collection type that refines
+  * the `CC` and `C` type parameters. It is used for collections that have an additional constraint,
+  * expressed by the `evidenceIterableFactory` method.
+  *
+  * The default implementations in this trait can be used in the common case when `CC[A]` is the
+  * same as `C`.
+  */
+trait EvidenceIterableFactoryDefaults[+A, +CC[x] <: IterableOps[x, CC, CC[x]], Ev[_]] extends IterableOps[A, CC, CC[A @uncheckedVariance]] {
+  protected def evidenceIterableFactory: EvidenceIterableFactory[CC, Ev]
+  implicit protected def iterableEvidence: Ev[A @uncheckedVariance]
+  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance] = evidenceIterableFactory.from(coll)
+  override protected def newSpecificBuilder: Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = evidenceIterableFactory.newBuilder[A]
+  override def empty: CC[A @uncheckedVariance] = evidenceIterableFactory.empty
+}
+
+/** This trait provides default implementations for the factory methods `fromSpecific` and
+  * `newSpecificBuilder` that need to be refined when implementing a collection type that refines
+  * the `CC` and `C` type parameters. It is used for sorted sets.
+  *
+  * Note that in sorted sets, the `CC` type of the set is not the same as the `CC` type for the
+  * underlying iterable (which is fixed to `Set` in [[SortedSetOps]]). This trait has therefore
+  * two type parameters `CC` and `WithFilterCC`. The `withFilter` method inherited from
+  * `IterableOps` is overridden with a compatible default implementation.
+  *
+  * The default implementations in this trait can be used in the common case when `CC[A]` is the
+  * same as `C`.
+  */
+trait SortedSetFactoryDefaults[+A,
+    +CC[X] <: SortedSet[X] with SortedSetOps[X, CC, CC[X]],
+    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Set[x]] extends SortedSetOps[A @uncheckedVariance, CC, CC[A @uncheckedVariance]] {
+  self: IterableOps[A, WithFilterCC, _] =>
+
+  override protected def fromSpecific(coll: IterableOnce[A @uncheckedVariance]): CC[A @uncheckedVariance]    = sortedIterableFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[A @uncheckedVariance, CC[A @uncheckedVariance]] = sortedIterableFactory.newBuilder[A]
+  override def empty: CC[A @uncheckedVariance] = sortedIterableFactory.empty
+
+  override def withFilter(p: A => Boolean): SortedSetOps.WithFilter[A, WithFilterCC, CC] =
+    new SortedSetOps.WithFilter[A, WithFilterCC, CC](this, p)
+}
+
+
+/** This trait provides default implementations for the factory methods `fromSpecific` and
+  * `newSpecificBuilder` that need to be refined when implementing a collection type that refines
+  * the `CC` and `C` type parameters. It is used for maps.
+  *
+  * Note that in maps, the `CC` type of the map is not the same as the `CC` type for the
+  * underlying iterable (which is fixed to `Map` in [[MapOps]]). This trait has therefore
+  * two type parameters `CC` and `WithFilterCC`. The `withFilter` method inherited from
+  * `IterableOps` is overridden with a compatible default implementation.
+  *
+  * The default implementations in this trait can be used in the common case when `CC[A]` is the
+  * same as `C`.
+  */
+trait MapFactoryDefaults[K, +V,
+    +CC[x, y] <: IterableOps[(x, y), Iterable, Iterable[(x, y)]],
+    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x]] extends MapOps[K, V, CC, CC[K, V @uncheckedVariance]] with IterableOps[(K, V), WithFilterCC, CC[K, V @uncheckedVariance]] {
+  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = mapFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = mapFactory.newBuilder[K, V]
+  override def empty: CC[K, V @uncheckedVariance] = mapFactory.empty
+
+  override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, WithFilterCC, CC] =
+    new MapOps.WithFilter[K, V, WithFilterCC, CC](this, p)
+}
+
+/** This trait provides default implementations for the factory methods `fromSpecific` and
+  * `newSpecificBuilder` that need to be refined when implementing a collection type that refines
+  * the `CC` and `C` type parameters. It is used for sorted maps.
+  *
+  * Note that in sorted maps, the `CC` type of the map is not the same as the `CC` type for the
+  * underlying map (which is fixed to `Map` in [[SortedMapOps]]). This trait has therefore
+  * three type parameters `CC`, `WithFilterCC` and `UnsortedCC`. The `withFilter` method inherited
+  * from `IterableOps` is overridden with a compatible default implementation.
+  *
+  * The default implementations in this trait can be used in the common case when `CC[A]` is the
+  * same as `C`.
+  */
+trait SortedMapFactoryDefaults[K, +V,
+    +CC[x, y] <:  Map[x, y] with SortedMapOps[x, y, CC, CC[x, y]] with UnsortedCC[x, y],
+    +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x],
+    +UnsortedCC[x, y] <: Map[x, y]] extends SortedMapOps[K, V, CC, CC[K, V @uncheckedVariance]] with MapOps[K, V, UnsortedCC, CC[K, V @uncheckedVariance]] {
+  self: IterableOps[(K, V), WithFilterCC, _] =>
+
+  override def empty: CC[K, V @uncheckedVariance] = sortedMapFactory.empty
+  override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = sortedMapFactory.from(coll)
+  override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = sortedMapFactory.newBuilder[K, V]
+
+  override def withFilter(p: ((K, V)) => Boolean): collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC] =
+    new collection.SortedMapOps.WithFilter[K, V, WithFilterCC, UnsortedCC, CC](this, p)
+}

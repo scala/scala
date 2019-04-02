@@ -685,6 +685,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   extends scala.collection.mutable.AbstractMap[K, V]
     with scala.collection.concurrent.Map[K, V]
     with scala.collection.mutable.MapOps[K, V, TrieMap, TrieMap[K, V]]
+    with scala.collection.MapFactoryDefaults[K, V, TrieMap, mutable.Iterable]
     with DefaultSerializable {
 
   private[this] var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
@@ -829,8 +830,6 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
   def string = RDCSS_READ_ROOT().string(0)
 
   /* public methods */
-
-  override def empty: TrieMap[K, V] = new TrieMap[K, V]
 
   def isReadOnly = rootupdater eq null
 
