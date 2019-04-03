@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
@@ -20,24 +20,15 @@ import java.{lang => jl}
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, IntStepper, SeqFactory, Stepper, StepperShape, mutable}
 
-/** A `IntAccumulator` is a low-level collection specialized for gathering
- * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `AnyAccumulator` with no actual
- * subclassing relationship with `AnyAccumulator`.
- *
- * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
- * implemented based on length, which throws when more than MaxInt.
- *
- * TODO: doc performance characteristics.
- */
+/** A specialized Accumulator that holds `Int`s without boxing, see [[Accumulator]]. */
 final class IntAccumulator
   extends Accumulator[Int, AnyAccumulator, IntAccumulator]
     with mutable.SeqOps[Int, AnyAccumulator, IntAccumulator]
     with Serializable {
-  private[convert] var current: Array[Int] = IntAccumulator.emptyIntArray
-  private[convert] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
+  private[jdk] var current: Array[Int] = IntAccumulator.emptyIntArray
+  private[jdk] var history: Array[Array[Int]] = IntAccumulator.emptyIntArrayArray
 
-  private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-2).toLong << 32 | (x(x.length-1)&0xFFFFFFFFL) }
+  private[jdk] def cumulative(i: Int) = { val x = history(i); x(x.length-2).toLong << 32 | (x(x.length-1)&0xFFFFFFFFL) }
 
   override protected[this] def className: String = "IntAccumulator"
 
@@ -375,7 +366,7 @@ object IntAccumulator extends collection.SpecificIterableFactory[Int, IntAccumul
   }
 }
 
-private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper with EfficientSplit {
+private[jdk] class IntAccumulatorStepper(private val acc: IntAccumulator) extends IntStepper with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0
@@ -401,9 +392,9 @@ private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) ex
     i = 0
   }
 
-  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  private[collection] def estimateSize: Long = N
+  def estimateSize: Long = N
 
   def hasStep: Boolean = N > 0
 
@@ -417,7 +408,7 @@ private[convert] class IntAccumulatorStepper(private val acc: IntAccumulator) ex
       ans
     }
 
-  private[collection] def trySplit(): IntStepper =
+  def trySplit(): IntStepper =
     if (N <= 1) null
     else {
       val half = N >> 1

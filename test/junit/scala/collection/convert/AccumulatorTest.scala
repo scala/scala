@@ -17,6 +17,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.jdk.{Accumulator, AnyAccumulator, IntAccumulator}
+
 @RunWith(classOf[JUnit4])
 class AccumulatorTest {
   @Test

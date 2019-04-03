@@ -21,6 +21,7 @@ import org.junit.runners.JUnit4
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
+import scala.jdk.{Accumulator, AnyAccumulator, IntAccumulator}
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {

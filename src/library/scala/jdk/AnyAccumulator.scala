@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
@@ -21,20 +21,7 @@ import scala.collection.{AnyStepper, Factory, IterableFactoryDefaults, SeqFactor
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
-/**
- * An `AnyAccumulator` is a low-level collection specialized for gathering
- * elements in parallel and then joining them in order by merging Accumulators.
- * Accumulators can contain more than `Int.MaxValue` elements.
- *
- * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
- * implemented based on length, which throws when more than MaxInt.
- *
- * TODO doc: two main uses.
- *   - copy existing collection into new accumulator to support efficient splitting (could use array as well)
- *   - build the result of a stream pipeline into an accumulator because it supports parallel building
- *
- * TODO: doc performance characteristics.
- */
+/** An Accumulator for arbitrary element types, see [[Accumulator]]. */
 final class AnyAccumulator[A]
   extends Accumulator[A, AnyAccumulator, AnyAccumulator[A]]
     with mutable.SeqOps[A, AnyAccumulator, AnyAccumulator[A]]
@@ -43,11 +30,11 @@ final class AnyAccumulator[A]
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
   // created with `nextBlockSize` (which depends on `totalSize`).
   // `cumul(i)` is `(0 until i).map(history(_).length)`
-  private[convert] var current: Array[AnyRef] = AnyAccumulator.emptyAnyRefArray
-  private[convert] var history: Array[Array[AnyRef]] = AnyAccumulator.emptyAnyRefArrayArray
-  private[convert] var cumul: Array[Long] = AnyAccumulator.emptyLongArray
+  private[jdk] var current: Array[AnyRef] = AnyAccumulator.emptyAnyRefArray
+  private[jdk] var history: Array[Array[AnyRef]] = AnyAccumulator.emptyAnyRefArrayArray
+  private[jdk] var cumul: Array[Long] = AnyAccumulator.emptyLongArray
 
-  private[convert] def cumulative(i: Int): Long = cumul(i)
+  private[jdk] def cumulative(i: Int): Long = cumul(i)
 
   override protected[this] def className: String = "AnyAccumulator"
 
@@ -300,7 +287,7 @@ object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
   }
 }
 
-private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
+private[jdk] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0
@@ -326,9 +313,9 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
     i = 0
   }
 
-  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED
 
-  private[collection] def estimateSize: Long = N
+  def estimateSize: Long = N
 
   def hasStep: Boolean = N > 0
 
@@ -342,7 +329,7 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
       ans
     }
 
-  private[collection] def trySplit(): AnyStepper[A] =
+  def trySplit(): AnyStepper[A] =
     if (N <= 1) null
     else {
       val half = N >> 1

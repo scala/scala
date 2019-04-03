@@ -18,6 +18,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 import scala.collection.convert.StreamExtensions.{AccumulatorFactoryInfo, StreamShape, StreamUnboxer}
+import scala.jdk.{Accumulator, AnyAccumulator, DoubleAccumulator, IntAccumulator, LongAccumulator}
 import scala.jdk.CollectionConverters.Ops._
 
 /** Defines extension methods to create Java Streams for Scala collections, available through

@@ -37,11 +37,11 @@ extends EfficientSplit {
 
   final def hasStep: Boolean = found || findNext()
 
-  private[collection] def characteristics: Int = Spliterator.ORDERED
+  def characteristics: Int = Spliterator.ORDERED
 
-  private[collection] def estimateSize: Long = iN - i0
+  def estimateSize: Long = iN - i0
 
-  private[collection] def trySplit(): Sub = {
+  def trySplit(): Sub = {
     if (iN-1 > i0) {
       val half = (i0 + iN) >>> 1
       val ans = semiclone(half)

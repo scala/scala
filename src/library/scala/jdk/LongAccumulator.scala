@@ -10,44 +10,35 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
-import java.util.function.{Consumer, DoubleConsumer}
+import java.util.function.{Consumer, LongConsumer}
 import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
-import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
+import scala.collection.{AnyStepper, Factory, LongStepper, SeqFactory, Stepper, StepperShape, mutable}
 
-/** A `DoubleAccumulator` is a low-level collection specialized for gathering
- * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `AnyAccumulator` with no actual
- * subclassing relationship with `AnyAccumulator`.
- *
- * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
- * implemented based on length, which throws when more than MaxInt.
- *
- * TODO: doc performance characteristics.
- */
-final class DoubleAccumulator
-  extends Accumulator[Double, AnyAccumulator, DoubleAccumulator]
-    with mutable.SeqOps[Double, AnyAccumulator, DoubleAccumulator]
+/** A specialized Accumulator that holds `Long`s without boxing, see [[Accumulator]]. */
+final class LongAccumulator
+  extends Accumulator[Long, AnyAccumulator, LongAccumulator]
+    with mutable.SeqOps[Long, AnyAccumulator, LongAccumulator]
     with Serializable {
-  private[convert] var current: Array[Double] = DoubleAccumulator.emptyDoubleArray
-  private[convert] var history: Array[Array[Double]] = DoubleAccumulator.emptyDoubleArrayArray
+  private[jdk] var current: Array[Long] = LongAccumulator.emptyLongArray
+  private[jdk] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
 
-  private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-1).toLong }
+  private[jdk] def cumulative(i: Int) = { val x = history(i); x(x.length-1) }
 
-  override protected[this] def className: String = "DoubleAccumulator"
+  override protected[this] def className: String = "LongAccumulator"
 
-  def efficientStepper[B >: Double, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
-    val st = new DoubleAccumulatorStepper(this)
+  def efficientStepper[B >: Long, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    val st = new LongAccumulatorStepper(this)
     val r =
-      if (shape.shape == StepperShape.DoubleShape) st
+      if (shape.shape == StepperShape.LongShape) st
       else {
         assert(shape.shape == StepperShape.ReferenceShape, s"unexpected StepperShape: $shape")
-        AnyStepper.ofParDoubleStepper(st)
+        AnyStepper.ofParLongStepper(st)
       }
     r.asInstanceOf[S with EfficientSplit]
   }
@@ -59,17 +50,17 @@ final class DoubleAccumulator
       history(hIndex) = current
       hIndex += 1
     }
-    current = new Array[Double](nextBlockSize+1)
+    current = new Array[Long](nextBlockSize+1)
     index = 0
   }
 
   private def hExpand(): Unit = {
-    if (hIndex == 0) history = new Array[Array[Double]](4)
+    if (hIndex == 0) history = new Array[Array[Long]](4)
     else history = java.util.Arrays.copyOf(history, history.length << 1)
   }
 
-  /** Appends an element to this `DoubleAccumulator`. */
-  def addOne(a: Double): this.type = {
+  /** Appends an element to this `LongAccumulator`. */
+  def addOne(a: Long): this.type = {
     totalSize += 1
     if (index+1 >= current.length) expand()
     current(index) = a
@@ -78,10 +69,10 @@ final class DoubleAccumulator
   }
 
   /** Result collection consisting of all elements appended so far. */
-  override def result(): DoubleAccumulator = this
+  override def result(): LongAccumulator = this
 
-  /** Removes all elements from `that` and appends them to this `DoubleAccumulator`. */
-  def drain(that: DoubleAccumulator): Unit = {
+  /** Removes all elements from `that` and appends them to this `LongAccumulator`. */
+  def drain(that: LongAccumulator): Unit = {
     var h = 0
     var prev = 0L
     var more = true
@@ -139,12 +130,12 @@ final class DoubleAccumulator
 
   override def clear(): Unit = {
     super.clear()
-    current = DoubleAccumulator.emptyDoubleArray
-    history = DoubleAccumulator.emptyDoubleArrayArray
+    current = LongAccumulator.emptyLongArray
+    history = LongAccumulator.emptyLongArrayArray
   }
 
   /** Retrieves the `ix`th element. */
-  def apply(ix: Long): Double = {
+  def apply(ix: Long): Long = {
     if (totalSize - ix <= index || hIndex == 0) current((ix - (totalSize - index)).toInt)
     else {
       val w = seekSlot(ix)
@@ -153,9 +144,9 @@ final class DoubleAccumulator
   }
 
   /** Retrieves the `ix`th element, using an `Int` index. */
-  def apply(i: Int): Double = apply(i.toLong)
+  def apply(i: Int): Long = apply(i.toLong)
 
-  def update(idx: Long, elem: Double): Unit = {
+  def update(idx: Long, elem: Long): Unit = {
     if (totalSize - idx <= index || hIndex == 0) current((idx - (totalSize - index)).toInt) = elem
     else {
       val w = seekSlot(idx)
@@ -163,17 +154,17 @@ final class DoubleAccumulator
     }
   }
 
-  def update(idx: Int, elem: Double): Unit = update(idx.toLong, elem)
+  def update(idx: Int, elem: Long): Unit = update(idx.toLong, elem)
 
-  /** Returns an `Iterator` over the contents of this `DoubleAccumulator`. The `Iterator` is not specialized. */
-  def iterator: Iterator[Double] = stepper.iterator
+  /** Returns an `Iterator` over the contents of this `LongAccumulator`. The `Iterator` is not specialized. */
+  def iterator: Iterator[Long] = stepper.iterator
 
-  override def foreach[U](f: Double => U): Unit = {
+  override def foreach[U](f: Long => U): Unit = {
     val s = stepper
     while (s.hasStep) f(s.nextStep())
   }
 
-  def map(f: Double => Double): DoubleAccumulator = {
+  def map(f: Long => Long): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper
     while (s.hasStep)
@@ -181,7 +172,7 @@ final class DoubleAccumulator
     b.result()
   }
 
-  def flatMap(f: Double => IterableOnce[Double]): DoubleAccumulator = {
+  def flatMap(f: Long => IterableOnce[Long]): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper
     while (s.hasStep)
@@ -189,7 +180,7 @@ final class DoubleAccumulator
     b.result()
   }
 
-  def collect(pf: PartialFunction[Double, Double]): DoubleAccumulator = {
+  def collect(pf: PartialFunction[Long, Long]): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper
     while (s.hasStep) {
@@ -200,7 +191,7 @@ final class DoubleAccumulator
     b.result()
   }
 
-  private def filterAccImpl(pred: Double => Boolean, not: Boolean): DoubleAccumulator = {
+  private def filterAccImpl(pred: Long => Boolean, not: Boolean): LongAccumulator = {
     val b = newSpecificBuilder
     val s = stepper
     while (s.hasStep) {
@@ -210,25 +201,25 @@ final class DoubleAccumulator
     b.result()
   }
 
-  override def filter(pred: Double => Boolean): DoubleAccumulator = filterAccImpl(pred, not = false)
+  override def filter(pred: Long => Boolean): LongAccumulator = filterAccImpl(pred, not = false)
 
-  override def filterNot(pred: Double => Boolean): DoubleAccumulator = filterAccImpl(pred, not = true)
+  override def filterNot(pred: Long => Boolean): LongAccumulator = filterAccImpl(pred, not = true)
 
-  override def forall(p: Double => Boolean): Boolean = {
+  override def forall(p: Long => Boolean): Boolean = {
     val s = stepper
     while (s.hasStep)
       if (!p(s.nextStep())) return false
     true
   }
 
-  override def exists(p: Double => Boolean): Boolean = {
+  override def exists(p: Long => Boolean): Boolean = {
     val s = stepper
     while (s.hasStep)
       if (p(s.nextStep())) return true
     false
   }
 
-  override def count(p: Double => Boolean): Int = {
+  override def count(p: Long => Boolean): Int = {
     var r = 0
     val s = stepper
     while (s.hasStep)
@@ -236,7 +227,7 @@ final class DoubleAccumulator
     r
   }
 
-  def countLong(p: Double => Boolean): Long = {
+  def countLong(p: Long => Boolean): Long = {
     var r = 0L
     val s = stepper
     while (s.hasStep)
@@ -244,16 +235,16 @@ final class DoubleAccumulator
     r
   }
 
-  /** Copies the elements in this `DoubleAccumulator` into an `Array[Double]` */
-  def toArray: Array[Double] = {
+  /** Copies the elements in this `LongAccumulator` into an `Array[Long]` */
+  def toArray: Array[Long] = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for an array: "+totalSize.toString)
-    val a = new Array[Double](totalSize.toInt)
+    val a = new Array[Long](totalSize.toInt)
     var j = 0
     var h = 0
     var pv = 0L
     while (h < hIndex) {
       val x = history(h)
-      val cuml = x(x.length-1).toLong
+      val cuml = x(x.length-1)
       val n = (cuml - pv).toInt
       pv = cuml
       System.arraycopy(x, 0, a, j, n)
@@ -265,9 +256,9 @@ final class DoubleAccumulator
     a
   }
 
-  /** Copies the elements in this `DoubleAccumulator` to a `List` */
-  override def toList: List[Double] = {
-    var ans: List[Double] = Nil
+  /** Copies the elements in this `LongAccumulator` to a `List` */
+  override def toList: List[Long] = {
+    var ans: List[Long] = Nil
     var i = index - 1
     while (i >= 0) {
       ans = current(i) :: ans
@@ -287,64 +278,64 @@ final class DoubleAccumulator
   }
 
   /**
-   * Copy the elements in this `DoubleAccumulator` to a specified collection.
+   * Copy the elements in this `LongAccumulator` to a specified collection.
    * Note that the target collection is not specialized.
    * Usage example: `acc.to(Vector)`
    */
-  override def to[C1](factory: Factory[Double, C1]): C1 = {
+  override def to[C1](factory: Factory[Long, C1]): C1 = {
     if (totalSize > Int.MaxValue) throw new IllegalArgumentException("Too many elements accumulated for a Scala collection: "+totalSize.toString)
     factory.fromSpecific(iterator)
   }
 
-  override protected def fromSpecific(coll: IterableOnce[Double]): DoubleAccumulator = DoubleAccumulator.fromSpecific(coll)
-  override protected def newSpecificBuilder: DoubleAccumulator = DoubleAccumulator.newBuilder
+  override protected def fromSpecific(coll: IterableOnce[Long]): LongAccumulator = LongAccumulator.fromSpecific(coll)
+  override protected def newSpecificBuilder: LongAccumulator = LongAccumulator.newBuilder
   override def iterableFactory: SeqFactory[AnyAccumulator] = AnyAccumulator
 
-  override def empty: DoubleAccumulator = DoubleAccumulator.empty
+  override def empty: LongAccumulator = LongAccumulator.empty
 
-  private def writeReplace(): AnyRef = new DoubleAccumulator.SerializationProxy(this)
+  private def writeReplace(): AnyRef = new LongAccumulator.SerializationProxy(this)
 }
 
-object DoubleAccumulator extends collection.SpecificIterableFactory[Double, DoubleAccumulator] {
-  private val emptyDoubleArray = new Array[Double](0)
-  private val emptyDoubleArrayArray = new Array[Array[Double]](0)
+object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccumulator] {
+  private val emptyLongArray = new Array[Long](0)
+  private val emptyLongArrayArray = new Array[Array[Long]](0)
 
-  implicit def toJavaDoubleAccumulator(ia: DoubleAccumulator.type): collection.SpecificIterableFactory[jl.Double, DoubleAccumulator] = DoubleAccumulator.asInstanceOf[collection.SpecificIterableFactory[jl.Double, DoubleAccumulator]]
+  implicit def toJavaLongAccumulator(ia: LongAccumulator.type): collection.SpecificIterableFactory[jl.Long, LongAccumulator] = LongAccumulator.asInstanceOf[collection.SpecificIterableFactory[jl.Long, LongAccumulator]]
 
   import java.util.{function => jf}
 
-  /** A `Supplier` of `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
-  def supplier: jf.Supplier[DoubleAccumulator]  = () => new DoubleAccumulator
+  /** A `Supplier` of `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
+  def supplier: jf.Supplier[LongAccumulator]  = () => new LongAccumulator
 
-  /** A `BiConsumer` that adds an element to an `DoubleAccumulator`, suitable for use with `java.util.stream.DoubleStream`'s `collect` method. */
-  def adder: jf.ObjDoubleConsumer[DoubleAccumulator] = (ac: DoubleAccumulator, a: Double) => ac addOne a
+  /** A `BiConsumer` that adds an element to an `LongAccumulator`, suitable for use with `java.util.stream.LongStream`'s `collect` method. */
+  def adder: jf.ObjLongConsumer[LongAccumulator] = (ac: LongAccumulator, a: Long) => ac addOne a
 
-  /** A `BiConsumer` that adds a boxed `Double` to an `DoubleAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
-  def boxedAdder: jf.BiConsumer[DoubleAccumulator, Double] = (ac: DoubleAccumulator, a: Double) => ac addOne a
+  /** A `BiConsumer` that adds a boxed `Long` to an `LongAccumulator`, suitable for use with `java.util.stream.Stream`'s `collect` method. */
+  def boxedAdder: jf.BiConsumer[LongAccumulator, Long] = (ac: LongAccumulator, a: Long) => ac addOne a
 
-  /** A `BiConsumer` that merges `DoubleAccumulator`s, suitable for use with `java.util.stream.DoubleStream`'s `collect` method.  Suitable for `Stream[Double]` also. */
-  def merger: jf.BiConsumer[DoubleAccumulator, DoubleAccumulator] = (a1: DoubleAccumulator, a2: DoubleAccumulator) => a1 drain a2
+  /** A `BiConsumer` that merges `LongAccumulator`s, suitable for use with `java.util.stream.LongStream`'s `collect` method.  Suitable for `Stream[Long]` also. */
+  def merger: jf.BiConsumer[LongAccumulator, LongAccumulator] = (a1: LongAccumulator, a2: LongAccumulator) => a1 drain a2
 
-  private def fromArray(a: Array[Double]): DoubleAccumulator = {
-    val r = new DoubleAccumulator
+  private def fromArray(a: Array[Long]): LongAccumulator = {
+    val r = new LongAccumulator
     var i = 0
     while (i < a.length) { r addOne a(i); i += 1 }
     r
   }
 
-  override def fromSpecific(it: IterableOnce[Double]): DoubleAccumulator = it match {
-    case acc: DoubleAccumulator => acc
-    case as: collection.immutable.ArraySeq.ofDouble => fromArray(as.unsafeArray)
-    case as: collection.mutable.ArraySeq.ofDouble => fromArray(as.array) // this case ensures Array(1).to(Accumulator) doesn't box
-    case _ => (new DoubleAccumulator).addAll(it)
+  override def fromSpecific(it: IterableOnce[Long]): LongAccumulator = it match {
+    case acc: LongAccumulator => acc
+    case as: collection.immutable.ArraySeq.ofLong => fromArray(as.unsafeArray)
+    case as: collection.mutable.ArraySeq.ofLong => fromArray(as.array) // this case ensures Array(1).to(Accumulator) doesn't box
+    case _ => (new LongAccumulator).addAll(it)
   }
 
-  override def empty: DoubleAccumulator = new DoubleAccumulator
+  override def empty: LongAccumulator = new LongAccumulator
 
-  override def newBuilder: DoubleAccumulator = new DoubleAccumulator
+  override def newBuilder: LongAccumulator = new LongAccumulator
 
-  class SerializationProxy[A](@transient private val acc: DoubleAccumulator) extends Serializable {
-    @transient private var result: DoubleAccumulator = _
+  class SerializationProxy[A](@transient private val acc: LongAccumulator) extends Serializable {
+    @transient private var result: LongAccumulator = _
 
     private def writeObject(out: ObjectOutputStream): Unit = {
       out.defaultWriteObject()
@@ -352,15 +343,15 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
       out.writeLong(size)
       val st = acc.stepper
       while (st.hasStep)
-        out.writeDouble(st.nextStep())
+        out.writeLong(st.nextStep())
     }
 
     private def readObject(in: ObjectInputStream): Unit = {
       in.defaultReadObject()
-      val res = new DoubleAccumulator()
+      val res = new LongAccumulator()
       var elems = in.readLong()
       while (elems > 0) {
-        res += in.readDouble()
+        res += in.readLong()
         elems -= 1L
       }
       result = res
@@ -370,17 +361,17 @@ object DoubleAccumulator extends collection.SpecificIterableFactory[Double, Doub
   }
 }
 
-private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) extends DoubleStepper with EfficientSplit {
+private[jdk] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0
   private var i: Int = 0
-  private var a: Array[Double] = if (acc.hIndex > 0) acc.history(0) else acc.current
+  private var a: Array[Long] = if (acc.hIndex > 0) acc.history(0) else acc.current
   private var n: Long = if (acc.hIndex > 0) acc.cumulative(0) else acc.index
   private var N: Long = acc.totalSize
 
-  private def duplicateSelf(limit: Long): DoubleAccumulatorStepper = {
-    val ans = new DoubleAccumulatorStepper(acc)
+  private def duplicateSelf(limit: Long): LongAccumulatorStepper = {
+    val ans = new LongAccumulatorStepper(acc)
     ans.h = h
     ans.i = i
     ans.a = a
@@ -396,13 +387,13 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
     i = 0
   }
 
-  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  private[collection] def estimateSize: Long = N
+  def estimateSize: Long = N
 
   def hasStep: Boolean = N > 0
 
-  def nextStep(): Double =
+  def nextStep(): Long =
     if (n <= 0) throw new NoSuchElementException("next on empty Stepper")
     else {
       if (i >= n) loadMore()
@@ -412,7 +403,7 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
       ans
     }
 
-  private[collection] def trySplit(): DoubleStepper =
+  def trySplit(): LongStepper =
     if (N <= 1) null
     else {
       val half = N >> 1
@@ -437,9 +428,9 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
       ans
     }
 
-  override def spliterator: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this) {
+  override def spliterator: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this) {
     // Overridden for efficiency
-    override def tryAdvance(c: DoubleConsumer): Boolean =
+    override def tryAdvance(c: LongConsumer): Boolean =
       if (N <= 0) false
       else {
         if (i >= n) loadMore()
@@ -450,8 +441,8 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
       }
 
     // Overridden for efficiency
-    override def tryAdvance(c: Consumer[_ >: jl.Double]): Boolean = (c: AnyRef) match {
-      case ic: DoubleConsumer => tryAdvance(ic)
+    override def tryAdvance(c: Consumer[_ >: jl.Long]): Boolean = (c: AnyRef) match {
+      case ic: LongConsumer => tryAdvance(ic)
       case _ =>
         if (N <= 0) false
         else {
@@ -464,7 +455,7 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
     }
 
     // Overridden for efficiency
-    override def forEachRemaining(c: DoubleConsumer): Unit =
+    override def forEachRemaining(c: LongConsumer): Unit =
       while (N > 0) {
         if (i >= n) loadMore()
         val i0 = i
@@ -477,8 +468,8 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
       }
 
     // Overridden for efficiency
-    override def forEachRemaining(c: Consumer[_ >: jl.Double]): Unit = (c: AnyRef) match {
-      case ic: DoubleConsumer => forEachRemaining(ic)
+    override def forEachRemaining(c: Consumer[_ >: jl.Long]): Unit = (c: AnyRef) match {
+      case ic: LongConsumer => forEachRemaining(ic)
       case _ =>
         while (N > 0) {
           if (i >= n) loadMore()

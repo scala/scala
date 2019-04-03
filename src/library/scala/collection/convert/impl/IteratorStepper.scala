@@ -16,6 +16,7 @@ package impl
 import java.util.Spliterator
 
 import scala.collection.{AnyStepper, DoubleStepper, IntStepper, LongStepper, Stepper}
+import scala.jdk.{AnyAccumulator, DoubleAccumulator, IntAccumulator, LongAccumulator}
 
 private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
   extends IteratorStepperBase[A, AnyStepper[A], AnyIteratorStepper[A]](_underlying)
@@ -24,7 +25,7 @@ private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
 
   def nextStep(): A = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  private[collection] def trySplit(): AnyStepper[A] = if (proxied ne null) proxied.trySplit() else {
+  def trySplit(): AnyStepper[A] = if (proxied ne null) proxied.trySplit() else {
     val acc = new AnyAccumulator[A]
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
@@ -49,7 +50,7 @@ private[collection] class DoubleIteratorStepper(_underlying: Iterator[Double])
 
   def nextStep(): Double = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  private[collection] def trySplit(): DoubleStepper = if (proxied ne null) proxied.trySplit() else {
+  def trySplit(): DoubleStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new DoubleAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
@@ -74,7 +75,7 @@ private[collection] class IntIteratorStepper(_underlying: Iterator[Int])
 
   def nextStep(): Int = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  private[collection] def trySplit(): IntStepper = if (proxied ne null) proxied.trySplit() else {
+  def trySplit(): IntStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new IntAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
@@ -99,7 +100,7 @@ private[collection] class LongIteratorStepper(_underlying: Iterator[Long])
 
   def nextStep(): Long = if (proxied ne null) proxied.nextStep() else underlying.next()
 
-  private[collection] def trySplit(): LongStepper = if (proxied ne null) proxied.trySplit() else {
+  def trySplit(): LongStepper = if (proxied ne null) proxied.trySplit() else {
     val acc = new LongAccumulator
     var i = 0
     val n = nextChunkSize & 0xFFFFFFFC
@@ -122,7 +123,7 @@ private[convert] abstract class IteratorStepperBase[A, SP >: Null <: Stepper[A],
   final protected var nextChunkSize = 16
   final protected var proxied: SP = null
   protected def semiclone(): Semi        // Must initialize with null iterator!
-  private[collection] def characteristics: Int = if (proxied ne null) Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED else Spliterator.ORDERED
-  private[collection] def estimateSize: Long = if (proxied ne null) proxied.estimateSize else Long.MaxValue
+  def characteristics: Int = if (proxied ne null) Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED else Spliterator.ORDERED
+  def estimateSize: Long = if (proxied ne null) proxied.estimateSize else Long.MaxValue
   def hasStep: Boolean = if (proxied ne null) proxied.hasStep else underlying.hasNext
 }

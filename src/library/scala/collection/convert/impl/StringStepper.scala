@@ -35,8 +35,8 @@ with IntStepper {
   */
 private[collection] final class CodePointStringStepper(underlying: String, private var i0: Int, private var iN: Int)
 extends IntStepper with EfficientSplit {
-  private[collection] def characteristics: Int = Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED
-  private[collection] def estimateSize: Long = iN - i0
+  def characteristics: Int = Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED
+  def estimateSize: Long = iN - i0
   def hasStep: Boolean = i0 < iN
   def nextStep(): Int = {
     if (hasStep) {
@@ -46,7 +46,7 @@ extends IntStepper with EfficientSplit {
     }
     else Stepper.throwNSEE()
   }
-  private[collection] def trySplit(): CodePointStringStepper =
+  def trySplit(): CodePointStringStepper =
     if (iN - 3 > i0) {
       var half = (i0 + iN) >>> 1
       if (isLowSurrogate(underlying.charAt(half))) half -= 1

@@ -18,24 +18,70 @@ import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
 
+/** Steppers exist to enable creating Java streams over Scala collections, see
+  * [[scala.jdk.StreamConverters]]. Besides that use case, they allow iterating over collections
+  * holding unboxed primitives (e.g., `Array[Int]`) without boxing the elements.
+  *
+  * Steppers have an iterator-like interface with methods `hasStep` and `nextStep()`. The difference
+  * to iterators - and the reason `Stepper` is not a subtype of `Iterator` - is that there are
+  * hand-specialized variants of `Stepper` for `Int`, `Long` and `Double` ([[IntStepper]], etc.).
+  * These enable iterating over collections holding unboxed primitives (e.g., Arrays,
+  * [[scala.jdk.Accumulator]]s) without boxing the elements.
+  *
+  * The selection of primitive types (`Int`, `Long` and `Double`) matches the hand-specialized
+  * variants of Java Streams ([[java.util.stream.Stream]], [[java.util.stream.IntStream]], etc.)
+  * and the corresponding Java Spliterators ([[Spliterator]], [[Spliterator.OfInt]], etc.).
+  *
+  * Steppers can be converted to Scala Iterators, Java Iterators and Java Spliterators. Primitive
+  * Steppers are converted to the corresponding primitive Java Iterators and Spliterators.
+  *
+  * @tparam A the element type of the Stepper
+  */
 trait Stepper[@specialized(Double, Int, Long) A] {
+  /** Check if there's an element available. */
   def hasStep: Boolean
 
+  /** Return the next element and advance the stepper */
   def nextStep(): A
 
-  // may return null
-  private[collection] def trySplit(): Stepper[A]
+  /** Split this stepper, if applicable. The elements of the current Stepper are split up between
+    * the resulting Stepper and the current stepper.
+    *
+    * May return `null`, in which case the current Stepper yields the same elements as before.
+    *
+    * See method `trySplit` in [[Spliterator]].
+    */
+  def trySplit(): Stepper[A]
 
-  private[collection] def estimateSize: Long
+  /** Returns an estimate of the number of elements of this Stepper, or [[Long.MaxValue]]. See
+    * method `estimateSize` in [[Spliterator]].
+    */
+  def estimateSize: Long
 
-  private[collection] def characteristics: Int
+  /** Returns a set of characteristics of this Stepper and its elements. See method
+    * `characteristics` in [[Spliterator]].
+    */
+  def characteristics: Int
 
-  // Not Spliterator[A] because when A=Int, we refine the type to Spliterator.OfInt, which is a
-  // subtype of Spliterator[Integer]. Could use a shape typeclass implicit argument to express it.
+  /** Returns a [[Spliterator]] corresponding to this Stepper.
+    *
+    * Note that the return type is `Spliterator[_]` instead of `Spliterator[A]` to allow returning
+    * a [[Spliterator.OfInt]] (which is a `Spliterator[Integer]`) in the subclass [[IntStepper]]
+    * (which is a `Stepper[Int]`).
+    */
   def spliterator: Spliterator[_]
 
+  /** Returns a Java [[JIterator]] corresponding to this Stepper.
+    *
+    * Note that the return type is `Iterator[_]` instead of `Iterator[A]` to allow returning
+    * a [[java.util.PrimitiveIterator.OfInt]] (which is a `Iterator[Integer]`) in the subclass
+    * [[IntStepper]] (which is a `Stepper[Int]`).
+    */
   def javaIterator: JIterator[_]
 
+  /** Returns an [[Iterator]] corresponding to this Stepper. Note that Iterators corresponding to
+    * primitive Steppers box the elements.
+    */
   def iterator: Iterator[A] = new AbstractIterator[A] {
     def hasNext: Boolean = hasStep
     def next(): A = nextStep()
@@ -52,17 +98,17 @@ object Stepper {
 
   private[collection] final def throwNSEE(): Nothing = throw new NoSuchElementException("Empty Stepper")
 
-  /* These adapter classes can wrap an AnyStepper of anumeric type into a possibly widened primitive Stepper type.
+  /* These adapter classes can wrap an AnyStepper of a numeric type into a possibly widened primitive Stepper type.
    * This provides a basis for more efficient stream processing on unboxed values provided that the original source
    * of the data is boxed. In other cases native implementations of the primitive stepper types should be provided
-   * (see for example StepsIntArray and StepsWidenedByteArray). */
+   * (see for example IntArrayStepper and WidenedByteArrayStepper). */
 
   private[collection] class UnboxingDoubleStepper(st: AnyStepper[Double]) extends DoubleStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): DoubleStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): DoubleStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingDoubleStepper(s)
     }
@@ -71,9 +117,9 @@ object Stepper {
   private[collection] class UnboxingIntStepper(st: AnyStepper[Int]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): IntStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingIntStepper(s)
     }
@@ -82,9 +128,9 @@ object Stepper {
   private[collection] class UnboxingLongStepper(st: AnyStepper[Long]) extends LongStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Long = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): LongStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): LongStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingLongStepper(s)
     }
@@ -93,9 +139,9 @@ object Stepper {
   private[collection] class UnboxingByteStepper(st: AnyStepper[Byte]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): IntStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingByteStepper(s)
     }
@@ -104,9 +150,9 @@ object Stepper {
   private[collection] class UnboxingCharStepper(st: AnyStepper[Char]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): IntStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingCharStepper(s)
     }
@@ -115,9 +161,9 @@ object Stepper {
   private[collection] class UnboxingShortStepper(st: AnyStepper[Short]) extends IntStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): IntStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): IntStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingShortStepper(s)
     }
@@ -126,17 +172,18 @@ object Stepper {
   private[collection] class UnboxingFloatStepper(st: AnyStepper[Float]) extends DoubleStepper {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): DoubleStepper = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): DoubleStepper = {
       val s = st.trySplit()
       if (s == null) null else new UnboxingFloatStepper(s)
     }
   }
 }
 
+/** A Stepper for arbitrary element types. See [[Stepper]]. */
 trait AnyStepper[A] extends Stepper[A] {
-  private[collection] def trySplit(): AnyStepper[A]
+  def trySplit(): AnyStepper[A]
 
   def spliterator: Spliterator[A] = new AnyStepper.AnyStepperSpliterator(this)
 
@@ -173,9 +220,9 @@ object AnyStepper {
   private[collection] class BoxedDoubleStepper(st: DoubleStepper) extends AnyStepper[Double] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Double = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): AnyStepper[Double] = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): AnyStepper[Double] = {
       val s = st.trySplit()
       if (s == null) null else new BoxedDoubleStepper(s)
     }
@@ -184,9 +231,9 @@ object AnyStepper {
   private[collection] class BoxedIntStepper(st: IntStepper) extends AnyStepper[Int] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Int = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): AnyStepper[Int] = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): AnyStepper[Int] = {
       val s = st.trySplit()
       if (s == null) null else new BoxedIntStepper(s)
     }
@@ -195,18 +242,18 @@ object AnyStepper {
   private[collection] class BoxedLongStepper(st: LongStepper) extends AnyStepper[Long] {
     def hasStep: Boolean = st.hasStep
     def nextStep(): Long = st.nextStep()
-    private[collection] def estimateSize: Long = st.estimateSize
-    private[collection] def characteristics: Int = st.characteristics
-    private[collection] def trySplit(): AnyStepper[Long] = {
+    def estimateSize: Long = st.estimateSize
+    def characteristics: Int = st.characteristics
+    def trySplit(): AnyStepper[Long] = {
       val s = st.trySplit()
       if (s == null) null else new BoxedLongStepper(s)
     }
   }
 }
 
-
+/** A Stepper for Ints. See [[Stepper]]. */
 trait IntStepper extends Stepper[Int] {
-  private[collection] def trySplit(): IntStepper
+  def trySplit(): IntStepper
 
   def spliterator: Spliterator.OfInt = new IntStepper.IntStepperSpliterator(this)
 
@@ -242,8 +289,9 @@ object IntStepper {
   }
 }
 
+/** A Stepper for Doubles. See [[Stepper]]. */
 trait DoubleStepper extends Stepper[Double] {
-  private[collection] def trySplit(): DoubleStepper
+  def trySplit(): DoubleStepper
 
   def spliterator: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this)
 
@@ -280,8 +328,9 @@ object DoubleStepper {
   }
 }
 
+/** A Stepper for Longs. See [[Stepper]]. */
 trait LongStepper extends Stepper[Long] {
-  private[collection] def trySplit(): LongStepper
+  def trySplit(): LongStepper
 
   def spliterator: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this)
 
