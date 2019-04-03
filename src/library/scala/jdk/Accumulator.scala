@@ -16,10 +16,57 @@ import scala.collection.Stepper.EfficientSplit
 import scala.collection.{Stepper, StepperShape, mutable}
 
 
-/**
- * Base class to share code between the [[AnyAccumulator]] class (for reference types) and the manual
- * specializations [[IntAccumulator]], [[LongAccumulator]] and [[DoubleAccumulator]].
- */
+/** Accumulators are mutable sequences with two distinct features:
+  *   - An accumulator can be appended efficiently to another
+  *   - There are manually specialized Accumulators for `Int`, `Long` and `Double` that don't box
+  *     the elements
+  *
+  * These two features make Accumulators a good candidate to collect the results of a parallel Java
+  * stream pipeline into a Scala collection. The
+  * [[scala.collection.convert.StreamExtensions.StreamHasToScala.toScala]] extension method on Java
+  * streams (available by importing
+  * [[scala.jdk.StreamConverters.Ops `scala.jdk.StreamConverters.Ops._`]]) is specialized for
+  * Accumulators: they are built in parallel, the parts are merged efficiently.
+  *
+  * Building specialized Accumulators is handled transparently. As a user, using the
+  * [[Accumulator]] object as a factory automatically creates an [[IntAccumulator]],
+  * [[LongAccumulator]], [[DoubleAccumulator]] or [[AnyAccumulator]] depending on the element type.
+  *
+  * Note: to run the example, start the Scala REPL with `scala -Yrepl-class-based` to avoid
+  * deadlocks, see [[https://github.com/scala/bug/issues/9076]].
+  *
+  * {{{
+  *   scala> import scala.jdk.StreamConverters.Ops._
+  *   import scala.jdk.StreamConverters.Ops._
+  *
+  *   scala> def isPrime(n: Int): Boolean = !(2 +: (3 to Math.sqrt(n).toInt by 2) exists (n % _ == 0))
+  *   isPrime: (n: Int)Boolean
+  *
+  *   scala> val intAcc = (1 to 10000).asJavaParStream.filter(isPrime).toScala(scala.jdk.Accumulator)
+  *   intAcc: scala.jdk.IntAccumulator = IntAccumulator(1, 3, 5, 7, 11, 13, 17, 19, ...
+  *
+  *   scala> val stringAcc = (1 to 100).asJavaParStream.mapToObj("<>" * _).toScala(Accumulator)
+  *   stringAcc: scala.jdk.AnyAccumulator[String] = AnyAccumulator(<>, <><>, <><><>, ...
+  * }}}
+  *
+  * There are two possibilities to process elements of a primitive Accumulator without boxing:
+  * specialized operations of the Accumulator, or the Stepper interface. The most common collection
+  * operations are overloaded or overridden in the primitive Accumulator classes, for example
+  * [[IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
+  * `intAcc.exists(x => testOn(x))` does not incur boxing.
+  *
+  * The [[Stepper]] interface provides iterator-like `hasStep` and `nextStep` methods, and is
+  * specialized for `Int`, `Long` and `Double`. The `intAccumulator.stepper` method creates an
+  * [[scala.collection.IntStepper]] that yields the elements of the accumulator without boxing.
+  *
+  * Accumulators can hold more than `Int.MaxValue` elements. They have a [[sizeLong]] method that
+  * returns the size as a `Long`. Note that certain operations defined in [[scala.collection.Seq]]
+  * are implemented using [[length]], so they will not work correctly for large accumulators.
+  *
+  * The [[Accumulator]] class is a base class to share code between [[AnyAccumulator]] (for
+  * reference types) and the manual specializations [[IntAccumulator]], [[LongAccumulator]] and
+  * [[DoubleAccumulator]].
+  */
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
   extends mutable.Seq[A]
     with mutable.Builder[A, C] {
@@ -85,6 +132,12 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
   *
   *   scala> val anyAccc = Accumulator("K")
   *   anyAccc: scala.collection.convert.AnyAccumulator[String] = AnyAccumulator(K)
+  *
+  *   scala> val intAcc2 = List(1,2,3).to(Accumulator)
+  *   intAcc2: scala.jdk.IntAccumulator = IntAccumulator(1, 2, 3)
+  *
+  *   scala> val anyAcc2 = List("K").to(Accumulator)
+  *   anyAcc2: scala.jdk.AnyAccumulator[String] = AnyAccumulator(K)
   * }}}
   *
   * @define coll Accumulator

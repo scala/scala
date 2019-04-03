@@ -20,16 +20,7 @@ import java.{lang => jl}
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, IntStepper, SeqFactory, Stepper, StepperShape, mutable}
 
-/** A `IntAccumulator` is a low-level collection specialized for gathering
- * elements in parallel and then joining them in order by merging them.
- * This is a manually specialized variant of `AnyAccumulator` with no actual
- * subclassing relationship with `AnyAccumulator`.
- *
- * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
- * implemented based on length, which throws when more than MaxInt.
- *
- * TODO: doc performance characteristics.
- */
+/** A specialized Accumulator that holds `Int`s without boxing, see [[Accumulator]]. */
 final class IntAccumulator
   extends Accumulator[Int, AnyAccumulator, IntAccumulator]
     with mutable.SeqOps[Int, AnyAccumulator, IntAccumulator]

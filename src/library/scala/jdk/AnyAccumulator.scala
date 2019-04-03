@@ -21,20 +21,7 @@ import scala.collection.{AnyStepper, Factory, IterableFactoryDefaults, SeqFactor
 import scala.language.higherKinds
 import scala.reflect.ClassTag
 
-/**
- * An `AnyAccumulator` is a low-level collection specialized for gathering
- * elements in parallel and then joining them in order by merging Accumulators.
- * Accumulators can contain more than `Int.MaxValue` elements.
- *
- * TODO: doc why only Iterable, not IndexedSeq or such. Operations inherited by Seq are
- * implemented based on length, which throws when more than MaxInt.
- *
- * TODO doc: two main uses.
- *   - copy existing collection into new accumulator to support efficient splitting (could use array as well)
- *   - build the result of a stream pipeline into an accumulator because it supports parallel building
- *
- * TODO: doc performance characteristics.
- */
+/** An Accumulator for arbitrary element types, see [[Accumulator]]. */
 final class AnyAccumulator[A]
   extends Accumulator[A, AnyAccumulator, AnyAccumulator[A]]
     with mutable.SeqOps[A, AnyAccumulator, AnyAccumulator[A]]
