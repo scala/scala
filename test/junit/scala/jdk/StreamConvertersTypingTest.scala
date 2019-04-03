@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.util.stream._
 
@@ -21,10 +21,9 @@ import org.junit.runners.JUnit4
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
-import scala.jdk.{Accumulator, AnyAccumulator, IntAccumulator}
 
 @RunWith(classOf[JUnit4])
-class StreamConvertersTest {
+class StreamConvertersTypingTest {
   @Test
   def keyValueSteppers(): Unit = {
     import scala.jdk.StreamConverters.Ops._

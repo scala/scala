@@ -91,6 +91,14 @@ import com.typesafe.tools.mima.core._
 val mimaPrereleaseHandlingSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ShortArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$CharArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ByteArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$FloatArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ShortArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.CharArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ByteArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.FloatArrayHasSeqParStream"),
   ),
 )
 

@@ -173,6 +173,36 @@ trait StreamExtensions {
     def asJavaParStream: Stream[A] = asJavaSeqStream.parallel
   }
 
+  implicit class ByteArrayHasSeqParStream(a: Array[Byte]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class ShortArrayHasSeqParStream(a: Array[Short]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class CharArrayHasSeqParStream(a: Array[Char]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class FloatArrayHasSeqParStream(a: Array[Float]) {
+    /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaSeqStream: DoubleStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaParStream: DoubleStream = a.stepper.asJavaParStream
+  }
+
+
+
   // strings
 
   implicit class StringHasSeqParStream(s: String) {
