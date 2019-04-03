@@ -326,9 +326,9 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
     i = 0
   }
 
-  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED
 
-  private[collection] def estimateSize: Long = N
+  def estimateSize: Long = N
 
   def hasStep: Boolean = N > 0
 
@@ -342,7 +342,7 @@ private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[
       ans
     }
 
-  private[collection] def trySplit(): AnyStepper[A] =
+  def trySplit(): AnyStepper[A] =
     if (N <= 1) null
     else {
       val half = N >> 1

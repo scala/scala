@@ -39,13 +39,13 @@ extends EfficientSplit {
 
   protected def semiclone(half: Int): Semi
 
-  private[collection] def characteristics: Int = 0
+  def characteristics: Int = 0
 
-  private[collection] def estimateSize: Long = if (!hasStep) { maxLength = 0; 0 } else maxLength
+  def estimateSize: Long = if (!hasStep) { maxLength = 0; 0 } else maxLength
 
   def hasStep: Boolean = (myCurrent ne null) || findNextCurrent()
 
-  private[collection] def trySplit(): Sub = {
+  def trySplit(): Sub = {
     if (iN-1 > i0 && maxLength > 0) {
       val half = (i0 + iN) >>> 1
       val ans = semiclone(half)

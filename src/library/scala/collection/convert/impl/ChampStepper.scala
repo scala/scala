@@ -142,9 +142,9 @@ extends EfficientSplit {
     false
   }
 
-  private[collection] def characteristics: Int = 0
+  def characteristics: Int = 0
 
-  private[collection] def estimateSize: Long = if (hasStep) maxSize else 0L
+  def estimateSize: Long = if (hasStep) maxSize else 0L
 
   def semiclone(): Semi
 
@@ -154,7 +154,7 @@ extends EfficientSplit {
     ans
   }
 
-  final private[collection] def trySplit(): Sub =
+  final def trySplit(): Sub =
     if (!hasStep) null
     else {
       val root = effectiveRootLevel

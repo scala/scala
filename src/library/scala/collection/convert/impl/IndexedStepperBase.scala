@@ -24,11 +24,11 @@ private[convert] abstract class IndexedStepperBase[Sub >: Null, Semi <: Sub](pro
 
   def hasStep: Boolean = i0 < iN
 
-  private[collection] def characteristics: Int = Spliterator.ORDERED + Spliterator.SIZED + Spliterator.SUBSIZED
+  def characteristics: Int = Spliterator.ORDERED + Spliterator.SIZED + Spliterator.SUBSIZED
 
-  private[collection] def estimateSize: Long = iN - i0
+  def estimateSize: Long = iN - i0
 
-  private[collection] def trySplit(): Sub = {
+  def trySplit(): Sub = {
     if (iN-1 > i0) {
       val half = (i0+iN) >>> 1
       val ans = semiclone(half)

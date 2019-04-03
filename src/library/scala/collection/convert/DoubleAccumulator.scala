@@ -396,9 +396,9 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
     i = 0
   }
 
-  private[collection] def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
+  def characteristics: Int = ORDERED | SIZED | SUBSIZED | NONNULL
 
-  private[collection] def estimateSize: Long = N
+  def estimateSize: Long = N
 
   def hasStep: Boolean = N > 0
 
@@ -412,7 +412,7 @@ private[convert] class DoubleAccumulatorStepper(private val acc: DoubleAccumulat
       ans
     }
 
-  private[collection] def trySplit(): DoubleStepper =
+  def trySplit(): DoubleStepper =
     if (N <= 1) null
     else {
       val half = N >> 1

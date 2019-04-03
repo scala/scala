@@ -102,9 +102,9 @@ extends EfficientSplit {
 
   protected def semiclone(maxL: Int, myC: T, stk: Array[AnyRef], ix: Int): Semi
 
-  private[collection] def characteristics: Int = Spliterator.ORDERED
+  def characteristics: Int = Spliterator.ORDERED
 
-  private[collection] def estimateSize: Long = if (hasStep) maxLength else 0
+  def estimateSize: Long = if (hasStep) maxLength else 0
 
   def hasStep: Boolean = (myCurrent ne null) || (maxLength > 0 && {
     if (index < 0) { maxLength = 0; stack = BinaryTreeStepper.emptyStack; false }
@@ -121,7 +121,7 @@ extends EfficientSplit {
     *
     * If the tree is empty or only has one element left, it returns `null` instead of splitting.
     */
-  private[collection] def trySplit(): Sub =
+  def trySplit(): Sub =
     if (!hasStep || index < 0) null
     else {
       val root = stack(0).asInstanceOf[T]
