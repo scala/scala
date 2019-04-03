@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{Stepper, StepperShape, mutable}
@@ -23,12 +23,12 @@ import scala.collection.{Stepper, StepperShape, mutable}
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
   extends mutable.Seq[A]
     with mutable.Builder[A, C] {
-  private[convert] var index: Int = 0
-  private[convert] var hIndex: Int = 0
-  private[convert] var totalSize: Long = 0L
-  private[convert] def cumulative(i: Int): Long
+  private[jdk] var index: Int = 0
+  private[jdk] var hIndex: Int = 0
+  private[jdk] var totalSize: Long = 0L
+  private[jdk] def cumulative(i: Int): Long
 
-  private[convert] def nextBlockSize: Int = {
+  private[jdk] def nextBlockSize: Int = {
     if (totalSize < 32) 16
     else if (totalSize <= Int.MaxValue) {
       val bit = 64 - java.lang.Long.numberOfLeadingZeros(totalSize)
@@ -58,7 +58,7 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
     totalSize = 0L
   }
 
-  private[convert] def seekSlot(ix: Long): Long = {
+  private[jdk] def seekSlot(ix: Long): Long = {
     var lo = -1
     var hi = hIndex
     while (lo + 1 < hi) {

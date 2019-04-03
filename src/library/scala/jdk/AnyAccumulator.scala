@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
@@ -43,11 +43,11 @@ final class AnyAccumulator[A]
   // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
   // created with `nextBlockSize` (which depends on `totalSize`).
   // `cumul(i)` is `(0 until i).map(history(_).length)`
-  private[convert] var current: Array[AnyRef] = AnyAccumulator.emptyAnyRefArray
-  private[convert] var history: Array[Array[AnyRef]] = AnyAccumulator.emptyAnyRefArrayArray
-  private[convert] var cumul: Array[Long] = AnyAccumulator.emptyLongArray
+  private[jdk] var current: Array[AnyRef] = AnyAccumulator.emptyAnyRefArray
+  private[jdk] var history: Array[Array[AnyRef]] = AnyAccumulator.emptyAnyRefArrayArray
+  private[jdk] var cumul: Array[Long] = AnyAccumulator.emptyLongArray
 
-  private[convert] def cumulative(i: Int): Long = cumul(i)
+  private[jdk] def cumulative(i: Int): Long = cumul(i)
 
   override protected[this] def className: String = "AnyAccumulator"
 
@@ -300,7 +300,7 @@ object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
   }
 }
 
-private[convert] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
+private[jdk] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0

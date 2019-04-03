@@ -87,10 +87,10 @@ import scala.collection.convert.StreamExtensions
   *
   * Collecting a parallel stream to a collection can be performed in parallel. This is beneficial if
   * the target collection supports efficient merging of the segments that are built in parallel.
-  * To support this use case, the Scala standard library provides the
-  * [[scala.collection.convert.Accumulator]] collection. This collection supports efficient parallel
-  * construction, and it has specialized subtypes for `Int`, `Long` and `Double` so that primitive
-  * Java streams can be collected to a Scala collection without boxing the elements.
+  * To support this use case, the Scala standard library provides the [[Accumulator]] collection.
+  * This collection supports efficient parallel construction, and it has specialized subtypes for
+  * `Int`, `Long` and `Double` so that primitive Java streams can be collected to a Scala collection
+  * without boxing the elements.
   *
   * @define parNote Note: parallel processing is only efficient for collections that have a
   *                 [[Stepper]] implementation which supports efficient splitting. For collections

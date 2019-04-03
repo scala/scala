@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.Spliterator
@@ -34,10 +34,10 @@ final class LongAccumulator
   extends Accumulator[Long, AnyAccumulator, LongAccumulator]
     with mutable.SeqOps[Long, AnyAccumulator, LongAccumulator]
     with Serializable {
-  private[convert] var current: Array[Long] = LongAccumulator.emptyLongArray
-  private[convert] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
+  private[jdk] var current: Array[Long] = LongAccumulator.emptyLongArray
+  private[jdk] var history: Array[Array[Long]] = LongAccumulator.emptyLongArrayArray
 
-  private[convert] def cumulative(i: Int) = { val x = history(i); x(x.length-1) }
+  private[jdk] def cumulative(i: Int) = { val x = history(i); x(x.length-1) }
 
   override protected[this] def className: String = "LongAccumulator"
 
@@ -370,7 +370,7 @@ object LongAccumulator extends collection.SpecificIterableFactory[Long, LongAccu
   }
 }
 
-private[convert] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSplit {
+private[jdk] class LongAccumulatorStepper(private val acc: LongAccumulator) extends LongStepper with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0

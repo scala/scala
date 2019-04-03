@@ -26,7 +26,7 @@ import scala.collection.Stepper.EfficientSplit
   * to iterators - and the reason `Stepper` is not a subtype of `Iterator` - is that there are
   * hand-specialized variants of `Stepper` for `Int`, `Long` and `Double` ([[IntStepper]], etc.).
   * These enable iterating over collections holding unboxed primitives (e.g., Arrays,
-  * [[scala.collection.convert.Accumulator]]s) without boxing the elements.
+  * [[scala.jdk.Accumulator]]s) without boxing the elements.
   *
   * The selection of primitive types (`Int`, `Long` and `Double`) matches the hand-specialized
   * variants of Java Streams ([[java.util.stream.Stream]], [[java.util.stream.IntStream]], etc.)
