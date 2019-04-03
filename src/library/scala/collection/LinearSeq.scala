@@ -14,7 +14,6 @@ package scala
 package collection
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
