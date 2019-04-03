@@ -46,7 +46,7 @@ trait EtaExpansion { self: Analyzer =>
     *   - typedEta (when type checking a method value, `m _`).
     *
     **/
-  def etaExpand(unit: CompilationUnit, tree: Tree, owner: Symbol)(implicit creator: FreshNameCreator): Tree = {
+  def etaExpand(tree: Tree, owner: Symbol)(implicit creator: FreshNameCreator): Tree = {
     val tpe = tree.tpe
     var cnt = 0 // for NoPosition
     def freshName() = {
@@ -95,11 +95,12 @@ trait EtaExpansion { self: Analyzer =>
           liftoutPrefix(fun)
         case Apply(fn, args) =>
           val byName: Int => Option[Boolean] = fn.tpe.params.map(p => definitions.isByNameParamType(p.tpe)).lift
+          val liftedFn = liftoutPrefix(fn) // scala/bug#11465: lift fn before args
           val newArgs = mapWithIndex(args) { (arg, i) =>
             // with repeated params, there might be more or fewer args than params
             liftout(arg, byName(i).getOrElse(false))
           }
-          treeCopy.Apply(tree, liftoutPrefix(fn), newArgs).clearType()
+          treeCopy.Apply(tree, liftedFn, newArgs).clearType()
         case TypeApply(fn, args) =>
           treeCopy.TypeApply(tree, liftoutPrefix(fn), args).clearType()
         case Select(qual, name) =>
