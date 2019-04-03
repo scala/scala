@@ -595,7 +595,11 @@ trait ContextErrors {
             val excess = supplied - expected
             val target = treeSymTypeMsg(fun)
 
-            if (expected == 0) s"no arguments allowed for nullary $target"
+            if (expected == 0) args match {
+              case (c @ Literal(Constant(()))) :: Nil if c.hasAttachment[SyntheticUnitAttachment.type] =>
+                s"can't supply unit value with infix notation because nullary $target takes no arguments; use dotted invocation instead: ${show(treeCopy.Apply(tree, fun, Nil))}"
+              case _ => s"no arguments allowed for nullary $target"
+            }
             else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
             else if (expected > 10) s"$supplied arguments but expected $expected for $target"
             else {
