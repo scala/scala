@@ -15,13 +15,12 @@ package collection
 
 import scala.annotation.implicitNotFound
 import scala.language.higherKinds
-import scala.annotation.unchecked.uncheckedVariance
 
 /** A Map whose keys are sorted according to a [[scala.math.Ordering]]*/
 trait SortedMap[K, +V]
   extends Map[K, V]
     with SortedMapOps[K, V, SortedMap, SortedMap[K, V]]
-    with SortedMapFactoryDefaults[K, V @uncheckedVariance, SortedMap, Iterable, Map]{
+    with SortedMapFactoryDefaults[K, V, SortedMap, Iterable, Map]{
 
   def unsorted: Map[K, V] = this
 

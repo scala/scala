@@ -12,8 +12,6 @@
 
 package scala.collection
 
-import scala.annotation.unchecked.uncheckedVariance
-
 /**
   * A generic trait for ordered maps. Concrete classes have to provide
   * functionality for the abstract methods in `SeqMap`.
@@ -32,7 +30,7 @@ import scala.annotation.unchecked.uncheckedVariance
 
 trait SeqMap[K, +V] extends Map[K, V]
   with MapOps[K, V, SeqMap, SeqMap[K, V]]
-  with MapFactoryDefaults[K, V @uncheckedVariance, SeqMap, Iterable] {
+  with MapFactoryDefaults[K, V, SeqMap, Iterable] {
   override def mapFactory: MapFactory[SeqMap] = SeqMap
 }
 

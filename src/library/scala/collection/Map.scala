@@ -13,7 +13,6 @@
 package scala
 package collection
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
@@ -23,7 +22,7 @@ import scala.util.hashing.MurmurHash3
 trait Map[K, +V]
   extends Iterable[(K, V)]
     with MapOps[K, V, Map, Map[K, V]]
-    with MapFactoryDefaults[K, V @uncheckedVariance, Map, Iterable]
+    with MapFactoryDefaults[K, V, Map, Iterable]
     with Equals {
 
   def mapFactory: scala.collection.MapFactory[Map] = Map
