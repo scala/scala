@@ -3,6 +3,6 @@ scala> class C
 defined class C
 
 scala> Thread.currentThread.getContextClassLoader.loadClass(classOf[C].getName)
-res0: Class[_] = class C
+res0: Class[_ <: Object] = class C
 
 scala> :quit

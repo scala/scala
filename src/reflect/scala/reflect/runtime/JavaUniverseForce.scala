@@ -231,6 +231,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.NothingTpe
     definitions.NullTpe
     definitions.ObjectTpe
+    definitions.ObjectTpeJava
     definitions.SerializableTpe
     definitions.StringTpe
     definitions.ThrowableTpe

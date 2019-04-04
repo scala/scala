@@ -10,7 +10,7 @@ def ensuring(cond: Boolean): Foo
 def ensuring(cond: Boolean, msg: => Any): Foo
 def ensuring(cond: Foo => Boolean): Foo
 def ensuring(cond: Foo => Boolean, msg: => Any): Foo
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def foo: Foo
 def formatted(fmtstr: String): String
 def hashCode(): Int

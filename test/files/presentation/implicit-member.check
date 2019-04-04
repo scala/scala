@@ -10,7 +10,7 @@ def ensuring(cond: Boolean): Implicit.type
 def ensuring(cond: Boolean, msg: => Any): Implicit.type
 def ensuring(cond: Implicit.type => Boolean): Implicit.type
 def ensuring(cond: Implicit.type => Boolean, msg: => Any): Implicit.type
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String

@@ -1273,12 +1273,12 @@ trait Namers extends MethodSynthesis {
 
     // make a java method type if meth.isJavaDefined
     private def methodTypeFor(meth: Symbol, vparamSymss: List[List[Symbol]], restpe: Type) = {
-      def makeJavaMethodType(vparams: List[Symbol], restpe: Type) = {
-        vparams foreach (p => p setInfo objToAny(p.tpe))
-        JavaMethodType(vparams, restpe)
+      def makeMethodType(vparams: List[Symbol], restpe: Type) = {
+        vparams foreach (p => p setInfo p.tpe)
+        MethodType(vparams, restpe)
       }
       if (vparamSymss.isEmpty) NullaryMethodType(restpe)
-      else if (meth.isJavaDefined) vparamSymss.foldRight(restpe)(makeJavaMethodType)
+      else if (meth.isJavaDefined) vparamSymss.foldRight(restpe)(makeMethodType)
       else vparamSymss.foldRight(restpe)(MethodType(_, _))
     }
 
@@ -1755,7 +1755,7 @@ trait Namers extends MethodSynthesis {
         case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
           TypeBounds.empty
         case tp @ TypeBounds(lt, rt) if (tdef.symbol hasFlag JAVA) =>
-          TypeBounds(lt, objToAny(rt))
+          TypeBounds(lt, rt)
         case tp =>
           tp
       }

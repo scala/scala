@@ -588,9 +588,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case SelectFromTypeTree(_, name) => SelectFromTypeTree(qual, name)
           }
         }
-        (checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe)
+        (checkAccessible(tree1, sym, qual.tpe, qual, unit.isJava), qual.tpe)
       } else {
-        (checkAccessible(tree, sym, pre, site), pre)
+        (checkAccessible(tree, sym, pre, site, unit.isJava), pre)
       }
 
     /** Post-process an identifier or selection node, performing the following:

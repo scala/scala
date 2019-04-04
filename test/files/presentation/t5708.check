@@ -16,7 +16,7 @@ def ensuring(cond: Boolean): test.Compat.type
 def ensuring(cond: Boolean, msg: => Any): test.Compat.type
 def ensuring(cond: test.Compat.type => Boolean): test.Compat.type
 def ensuring(cond: test.Compat.type => Boolean, msg: => Any): test.Compat.type
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String

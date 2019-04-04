@@ -25,7 +25,7 @@ def ensuring(cond: Boolean): callccInterpreter.type
 def ensuring(cond: Boolean, msg: => Any): callccInterpreter.type
 def ensuring(cond: callccInterpreter.type => Boolean): callccInterpreter.type
 def ensuring(cond: callccInterpreter.type => Boolean, msg: => Any): callccInterpreter.type
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def id[A]: A => A

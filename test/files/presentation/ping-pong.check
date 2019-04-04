@@ -13,7 +13,7 @@ def ensuring(cond: Boolean): Pong
 def ensuring(cond: Boolean, msg: => Any): Pong
 def ensuring(cond: Pong => Boolean): Pong
 def ensuring(cond: Pong => Boolean, msg: => Any): Pong
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def poke(): Unit
@@ -47,7 +47,7 @@ def ensuring(cond: Boolean): Ping
 def ensuring(cond: Boolean, msg: => Any): Ping
 def ensuring(cond: Ping => Boolean): Ping
 def ensuring(cond: Ping => Boolean, msg: => Any): Ping
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def loop: Unit

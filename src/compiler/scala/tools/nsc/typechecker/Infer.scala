@@ -270,7 +270,7 @@ trait Infer extends Checkable {
      * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
      */
-    def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree = {
+    def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree, isJava: Boolean): Tree = {
       def malformed(ex: MalformedType, instance: Type): Type = {
         val what    = if (ex.msg contains "malformed type") "is malformed" else s"contains a ${ex.msg}"
         val message = s"\n because its instance type $instance $what"
@@ -302,7 +302,9 @@ trait Infer extends Checkable {
               // OPT: avoid lambda allocation and Type.map for super constructor calls
               case _: SuperType if !sym.isConstructor && !owntype.isInstanceOf[OverloadedType] =>
                 owntype map ((tp: Type) => if (tp eq pre) site.symbol.thisType else tp)
-              case _ => owntype
+              case _ =>
+                if ((owntype eq ObjectTpe) && isJava) ObjectTpeJava
+                else owntype
             }
           )
       }

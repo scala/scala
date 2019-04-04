@@ -41,7 +41,7 @@ trait Definitions extends api.StandardDefinitions {
   private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long): MethodSymbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    val info = if (owner.isJavaDefined) JavaMethodType(params, restpe) else MethodType(params, restpe)
+    val info = MethodType(params, restpe)
     msym.setInfo(info).markAllCompleted
   }
   private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): MethodSymbol =
@@ -293,6 +293,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NothingTpe      = NothingClass.tpe
     lazy val NullTpe         = NullClass.tpe
     lazy val ObjectTpe       = ObjectClass.tpe
+    lazy val ObjectTpeJava   = mkObjectTpeJava
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
@@ -447,7 +448,7 @@ trait Definitions extends api.StandardDefinitions {
      // We don't need to deal with JavaRepeatedParamClass here, as `repeatedToSeq` is only called in the patmat translation for Scala sources.
     def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
     def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
-    def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(_ <:< AnyRefTpe)
+    def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(elemtp => elemtp <:< AnyRefTpe || (elemtp eq ObjectTpeJava))
     def isArrayOfSymbol(tp: Type, elem: Symbol)              = elementTest(ArrayClass, tp)(_.typeSymbol == elem)
     def elementType(container: Symbol, tp: Type): Type       = elementExtract(container, tp)
 

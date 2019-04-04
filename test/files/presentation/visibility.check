@@ -11,7 +11,7 @@ def ensuring(cond: Boolean): accessibility.Foo
 def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def secretPublic(): Unit
@@ -48,7 +48,7 @@ def ensuring(cond: Boolean): accessibility.Foo
 def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def secretPublic(): Unit
@@ -86,7 +86,7 @@ def ensuring(cond: Boolean): accessibility.AccessibilityChecks
 def ensuring(cond: Boolean, msg: => Any): accessibility.AccessibilityChecks
 def ensuring(cond: accessibility.AccessibilityChecks => Boolean): accessibility.AccessibilityChecks
 def ensuring(cond: accessibility.AccessibilityChecks => Boolean, msg: => Any): accessibility.AccessibilityChecks
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def secretPublic(): Unit
@@ -128,7 +128,7 @@ def ensuring(cond: Boolean): accessibility.Foo
 def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def secretPublic(): Unit
@@ -167,7 +167,7 @@ def ensuring(cond: Boolean): accessibility.Foo
 def ensuring(cond: Boolean, msg: => Any): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean): accessibility.Foo
 def ensuring(cond: accessibility.Foo => Boolean, msg: => Any): accessibility.Foo
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def secretPublic(): Unit

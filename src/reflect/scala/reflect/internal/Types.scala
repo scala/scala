@@ -2709,6 +2709,7 @@ trait Types
   private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym){
     override def contains(sym0: Symbol): Boolean = (sym eq sym0) || pre.contains(sym0)
   }
+  private[scala] def mkObjectTpeJava: Type = new ClassNoArgsTypeRef(definitions.ObjectTpe.prefix, definitions.ObjectClass)
 
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
@@ -2827,7 +2828,6 @@ trait Types
       }
 
     def isImplicit = (params ne Nil) && params.head.isImplicit
-    def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
 
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
 
@@ -2884,10 +2884,6 @@ trait Types
   }
 
   object MethodType extends MethodTypeExtractor
-
-  class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
-    override def isJava = true
-  }
 
   // TODO: rename so it's more appropriate for the type that is for a method without argument lists
   // ("nullary" erroneously implies it has an argument list with zero arguments, it actually has zero argument lists)
@@ -4039,15 +4035,8 @@ trait Types
       typeRef(pre, sym, args)
   }
 
-  /** The canonical creator for implicit method types */
-  def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
-    new JavaMethodType(params, resultType) // don't unique this!
-
-  /** Create a new MethodType of the same class as tp, i.e. keep JavaMethodType */
-  def copyMethodType(tp: Type, params: List[Symbol], restpe: Type): Type = tp match {
-    case _: JavaMethodType => JavaMethodType(params, restpe)
-    case _                 => MethodType(params, restpe)
-  }
+  /** Create a new MethodType */
+  def copyMethodType(tp: Type, params: List[Symbol], restpe: Type): Type = MethodType(params, restpe)
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself, and repeated parent classes are merged.
@@ -4752,7 +4741,7 @@ trait Types
           case mt2 @ MethodType(params2, res2) =>
             // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performance-wise?)
             mt1.isImplicit == mt2.isImplicit &&
-            matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
+            matchingParams(params1, params2) &&
             matchesQuantified(params1, params2, res1, res2)
           case NullaryMethodType(res2) =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
@@ -4847,7 +4836,7 @@ trait Types
 */
 
   /** Are `syms1` and `syms2` parameter lists with pairwise equivalent types? */
-  protected[internal] def matchingParams(syms1: List[Symbol], syms2: List[Symbol], syms1isJava: Boolean, syms2isJava: Boolean): Boolean = syms1 match {
+  protected[internal] def matchingParams(syms1: List[Symbol], syms2: List[Symbol]): Boolean = syms1 match {
     case Nil =>
       syms2.isEmpty
     case sym1 :: rest1 =>
@@ -4857,10 +4846,7 @@ trait Types
         case sym2 :: rest2 =>
           val tp1 = sym1.tpe
           val tp2 = sym2.tpe
-          (tp1 =:= tp2 ||
-           syms1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
-           syms2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass) &&
-          matchingParams(rest1, rest2, syms1isJava, syms2isJava)
+          tp1 =:= tp2 && matchingParams(rest1, rest2)
       }
   }
 
@@ -5130,11 +5116,11 @@ trait Types
   }
 
   def isUnboundedGeneric(tp: Type) = tp match {
-    case t @ TypeRef(_, sym, _) => sym.isAbstractType && !(t <:< AnyRefTpe)
+    case t @ TypeRef(_, sym, _) => sym.isAbstractType && (!(t <:< AnyRefTpe) || (t.upperBound eq ObjectTpeJava))
     case _                      => false
   }
   def isBoundedGeneric(tp: Type) = tp match {
-    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefTpe)
+    case TypeRef(_, sym, _) if sym.isAbstractType => tp <:< AnyRefTpe && !(tp.upperBound eq ObjectTpeJava)
     case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
@@ -5158,10 +5144,6 @@ trait Types
   /** Members which can be imported into other scopes.
    */
   def importableMembers(pre: Type): Scope = pre.members filter isImportable
-
-  def objToAny(tp: Type): Type =
-    if (!phase.erasedTypes && tp.typeSymbol == ObjectClass) AnyTpe
-    else tp
 
   def invalidateTreeTpeCaches(tree: Tree, updatedSyms: List[Symbol]) = if (!updatedSyms.isEmpty)
     for (t <- tree if t.tpe != null)
