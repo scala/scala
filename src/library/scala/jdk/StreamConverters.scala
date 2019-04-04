@@ -78,7 +78,9 @@ import scala.collection.convert.StreamExtensions
   * | Strings | `asJavaSeqStream`, `asJavaParStream`, `asJavaSeqCharStream`, `asJavaParCharStream`, `asJavaSeqCodePointStream`, `asJavaParCodePointStream` |
   * | Java streams | `toScala`, `asJavaPrimitiveStream` |
   *
-  * The `asJavaPrimitiveStream` method converts a `Stream[Int]` to an `IntStream`.
+  * The `asJavaPrimitiveStream` method converts a `Stream[Int]` to an `IntStream`. It is the dual
+  * of the `boxed` method defined on primitive streams (e.g., `IntStream.boxed` is a
+  * `Stream[Integer]`).
   *
   * The `toScala` extension methods on Java streams collects the result of a stream pipeline into a
   * Scala collection, for example `stream.toScala(List)`, `stream.toScala(Vector)`. Note that
