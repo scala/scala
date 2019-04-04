@@ -84,7 +84,15 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
 ))
 
 // to be locked down sometime around the time of 2.13.0-RC1
-Global / mimaReferenceVersion := None
+Global / mimaReferenceVersion := Some("2.13.0-RC1")
+
+// Drop once 2.13.0 is out.
+import com.typesafe.tools.mima.core._
+val mimaPrereleaseHandlingSettings = Seq(
+  mimaBinaryIssueFilters ++= Seq(
+    ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+  ),
+)
 
 Global / scalaVersion      := {
   if (DottySupport.compileWithDotty)
@@ -352,7 +360,8 @@ lazy val library = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaPrereleaseHandlingSettings,
   )
   .settings(filterDocSources("*.scala" -- regexFileFilter(".*/scala/runtime/.*")))
   .settings(
@@ -383,7 +392,8 @@ lazy val reflect = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaPrereleaseHandlingSettings,
   )
   .dependsOn(library)
 
