@@ -12,6 +12,7 @@
 
 package scala.collection.convert
 
+import java.util.Spliterator
 import java.util.stream._
 
 import scala.annotation.implicitNotFound
@@ -389,10 +390,10 @@ object StreamExtensions {
 
   trait StreamShapeLowPriority2 {
     // reference
-    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShapePrototype.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
+    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], Stepper[T]] = anyStreamShapePrototype.asInstanceOf[StreamShape[T, Stream[T], Stepper[T]]]
 
-    private[this] val anyStreamShapePrototype: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
-      def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator, par)
+    private[this] val anyStreamShapePrototype: StreamShape[AnyRef, Stream[AnyRef], Stepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], Stepper[AnyRef]] {
+      def mkStream(s: Stepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator.asInstanceOf[Spliterator[AnyRef]], par)
     }
   }
 

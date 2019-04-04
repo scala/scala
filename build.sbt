@@ -99,6 +99,12 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.CharArrayHasSeqParStream"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ByteArrayHasSeqParStream"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.FloatArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority1"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority2"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StepperShape.anyStepperShapePrototype"),
   ),
 )
 

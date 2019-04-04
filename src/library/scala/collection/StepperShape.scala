@@ -30,7 +30,7 @@ sealed trait StepperShape[T, S <: Stepper[_]] {
   def parUnbox(st: AnyStepper[T] with EfficientSplit): S with EfficientSplit
 }
 
-object StepperShape extends StepperShapeLowPriority {
+object StepperShape extends StepperShapeLowPriority1 {
   class Shape private[StepperShape] (private val s: Int) extends AnyVal
 
   // reference
@@ -84,10 +84,14 @@ object StepperShape extends StepperShapeLowPriority {
   }
 }
 
-trait StepperShapeLowPriority {
+trait StepperShapeLowPriority1 extends StepperShapeLowPriority2 {
   implicit def anyStepperShape[T]: StepperShape[T, AnyStepper[T]] = anyStepperShapePrototype.asInstanceOf[StepperShape[T, AnyStepper[T]]]
+}
 
-  private[this] val anyStepperShapePrototype: StepperShape[AnyRef, AnyStepper[AnyRef]] = new StepperShape[AnyRef, AnyStepper[AnyRef]] {
+trait StepperShapeLowPriority2 {
+  implicit def baseStepperShape[T]: StepperShape[T, Stepper[T]] = anyStepperShapePrototype.asInstanceOf[StepperShape[T, Stepper[T]]]
+
+  protected val anyStepperShapePrototype: StepperShape[AnyRef, Stepper[AnyRef]] = new StepperShape[AnyRef, Stepper[AnyRef]] {
     def shape = StepperShape.ReferenceShape
     def seqUnbox(st: AnyStepper[AnyRef]): AnyStepper[AnyRef] = st
     def parUnbox(st: AnyStepper[AnyRef] with EfficientSplit): AnyStepper[AnyRef] with EfficientSplit = st
