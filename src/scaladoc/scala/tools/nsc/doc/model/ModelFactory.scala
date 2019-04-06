@@ -542,13 +542,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   private trait TypeBoundsImpl {
     def sym: Symbol
     def inTpl: TemplateImpl
-    def lo = sym.info.bounds match {
-      case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass =>
+    def lo = sym.info.lowerBound match {
+      case lo if lo.typeSymbol != NothingClass =>
         Some(makeTypeInTemplateContext(appliedType(lo, sym.info.typeParams map {_.tpe}), inTpl, sym))
       case _ => None
     }
-    def hi = sym.info.bounds match {
-      case TypeBounds(lo, hi) if hi.typeSymbol != AnyClass =>
+    def hi = sym.info.upperBound match {
+      case hi if hi.typeSymbol != AnyClass =>
         Some(makeTypeInTemplateContext(appliedType(hi, sym.info.typeParams map {_.tpe}), inTpl, sym))
       case _ => None
     }

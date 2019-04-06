@@ -1082,20 +1082,6 @@ trait Infer extends Checkable {
       }
     }
 
-    def instBounds(tvar: TypeVar): TypeBounds = {
-      val tparam               = tvar.origin.typeSymbol
-      val instType             = toOrigin(tvar.constr.inst)
-      val TypeBounds(lo, hi)   = tparam.info.bounds
-      val (loBounds, hiBounds) =
-        if (isFullyDefined(instType)) (List(instType), List(instType))
-        else (tvar.constr.loBounds, tvar.constr.hiBounds)
-
-      TypeBounds(
-        lub(lo :: loBounds map toOrigin),
-        glb(hi :: hiBounds map toOrigin)
-      )
-    }
-
     def isInstantiatable(tvars: List[TypeVar]) = {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
@@ -1106,12 +1092,24 @@ trait Infer extends Checkable {
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentionally observed in the mean time
-    def instantiateTypeVar(tvar: TypeVar) {
-      val tparam                    = tvar.origin.typeSymbol
-      val TypeBounds(lo0, hi0)      = tparam.info.bounds
-      val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
-      val enclCase                  = context.enclosingCaseDef
-      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
+    private[this] def instantiateTypeVar(tvar: TypeVar): Unit = {
+      val tparam   = tvar.origin.typeSymbol
+      val tpinfo   = tparam.info
+      val lo0      = tpinfo.lowerBound
+      val hi0      = tpinfo.upperBound
+      val instType = toOrigin(tvar.constr.inst)
+      val isFullD  = isFullyDefined(instType)
+      val lo1 = {
+        val loBounds = if (isFullD) List(instType) else tvar.constr.loBounds
+        lub(lo0 :: loBounds map toOrigin)
+      }
+      val hi1 = {
+        val hiBounds = if (isFullD) List(instType) else tvar.constr.hiBounds
+        glb(hi0 :: hiBounds map toOrigin)
+      }
+
+      val enclCase   = context.enclosingCaseDef
+      def enclCase_s = enclCase.toString.replaceAll("\\n", " ").take(60)
 
       if (enclCase.savedTypeBounds.nonEmpty) log(
         sm"""|instantiateTypeVar with nonEmpty saved type bounds {
@@ -1127,7 +1125,7 @@ trait Infer extends Checkable {
           log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
         else {
           enclCase pushTypeBounds tparam
-          tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
+          tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(TypeBounds(lo1, hi1))
         }
       }
       else log(s"inconsistent bounds: discarding TypeBounds($lo1, $hi1)")

@@ -1322,8 +1322,8 @@ trait Types
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
-    def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
-    def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
+    private[this] def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
+    private[this] def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     override def safeToString = scalaNotation(_.toString)
@@ -3462,11 +3462,11 @@ trait Types
      *  bounds are exactly tp.
      */
     override def bounds: TypeBounds = underlying.bounds match {
-      case TypeBounds(_: this.type, _: this.type) => TypeBounds(this, this)
-      case oftp                                   => oftp
+      case bd @ TypeBounds(_: this.type, _: this.type) => bd
+      case oftp                                        => oftp
     }
-    override def lowerBound: Type = bounds.lo
-    override def upperBound: Type = bounds.hi
+    override def lowerBound: Type = underlying.lowerBound
+    override def upperBound: Type = underlying.upperBound
 
     // ** Replace formal type parameter symbols with actual type arguments. * /
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {

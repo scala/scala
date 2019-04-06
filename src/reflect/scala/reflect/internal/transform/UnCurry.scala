@@ -70,7 +70,8 @@ trait UnCurry {
   object DesugaredParameterType {
     def isUnboundedGeneric(tp: Type) = tp match {
       case t @ TypeRef(_, sym, _) if sym.isAbstractType =>
-        sym.info.resultType.bounds.emptyUpperBound
+        val hi = sym.info.resultType.upperBound
+        typeIsAny(hi) || hi.isWildcard
       case _                      => false
     }
 
