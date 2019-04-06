@@ -1082,21 +1082,22 @@ trait Infer extends Checkable {
       }
     }
 
-    def instBounds(tvar: TypeVar): TypeBounds = {
-      val tparam               = tvar.origin.typeSymbol
-      val instType             = toOrigin(tvar.constr.inst)
-      val TypeBounds(lo, hi)   = tparam.info.bounds
-      val (loBounds, hiBounds) =
-        if (isFullyDefined(instType)) (List(instType), List(instType))
-        else (tvar.constr.loBounds, tvar.constr.hiBounds)
-
-      TypeBounds(
-        lub(lo :: loBounds map toOrigin),
-        glb(hi :: hiBounds map toOrigin)
-      )
+    @inline
+    private[this] def instBounds(tvar: TypeVar): TypeBounds = {
+      val tparam   = tvar.origin.typeSymbol
+      val instType = toOrigin(tvar.constr.inst)
+      val lo       = tparam.info.lowerBound
+      val hi       = tparam.info.upperBound
+      val ifd      = isFullyDefined(instType)
+      val loBounds = if (ifd) List(instType) else tvar.constr.loBounds
+      val hiBounds = if (ifd) List(instType) else tvar.constr.hiBounds
+      val lo1      = lub(lo :: loBounds map toOrigin)
+      val hi1      = glb(hi :: hiBounds map toOrigin)
+      TypeBounds(lo1, hi1)
     }
 
-    def isInstantiatable(tvars: List[TypeVar]) = {
+    @inline
+    private[this] def isInstantiatable(tvars: List[TypeVar]) = {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
       // So we should come back to this and investigate.
@@ -1106,12 +1107,16 @@ trait Infer extends Checkable {
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentionally observed in the mean time
-    def instantiateTypeVar(tvar: TypeVar) {
-      val tparam                    = tvar.origin.typeSymbol
-      val TypeBounds(lo0, hi0)      = tparam.info.bounds
+    private[this] def instantiateTypeVar(tvar: TypeVar): Unit = {
+      val tparam   = tvar.origin.typeSymbol
+      val tpinfo   = tparam.info
+      val lo0      = tpinfo.lowerBound
+      val hi0      = tpinfo.upperBound
+      val instType = toOrigin(tvar.constr.inst)
+      val isFullD  = isFullyDefined(instType)
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
-      val enclCase                  = context.enclosingCaseDef
-      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
+      val enclCase   = context.enclosingCaseDef
+      def enclCase_s = enclCase.toString.replaceAll("\\n", " ").take(60)
 
       if (enclCase.savedTypeBounds.nonEmpty) log(
         sm"""|instantiateTypeVar with nonEmpty saved type bounds {

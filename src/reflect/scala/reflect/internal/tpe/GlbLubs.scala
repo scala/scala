@@ -356,10 +356,10 @@ private[internal] trait GlbLubs {
               else if (symtypes.tail forall (symtypes.head =:= _))
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
-                def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                  TypeBounds(glb(bnds map (_.lo), depth.decr), lub(bnds map (_.hi), depth.decr))
+                val lo = glb(symtypes map (_.lowerBound), depth.decr)
+                val hi = lub(symtypes map (_.upperBound), depth.decr)
                 lubRefined.typeSymbol.newAbstractType(proto.name.toTypeName, proto.pos)
-                  .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
+                  .setInfoOwnerAdjusted(TypeBounds(lo, hi))
               }
             }
           }
