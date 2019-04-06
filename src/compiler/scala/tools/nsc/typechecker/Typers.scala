@@ -5289,15 +5289,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             foreach2(args, tparams) { (arg, tparam) =>
               // note: can't use args1 in selector, because Binds got replaced
               val asym = arg.symbol
-              def abounds = asym.info.bounds
-              def tbounds = tparam.info.bounds
               def enhanceBounds(): Unit = {
-                val TypeBounds(lo0, hi0) = abounds
-                val TypeBounds(lo1, hi1) = tbounds.subst(tparams, argtypes)
+                val info0 = asym.info
+                val lo0 = info0.lowerBound
+                val hi0 = info0.upperBound
+                val tpinfo = tparam.info
+                val lo1 = tpinfo.lowerBound.subst(tparams, argtypes)
+                val hi1 = tpinfo.upperBound.subst(tparams, argtypes)
                 val lo = lub(List(lo0, lo1))
                 val hi = glb(List(hi0, hi1))
                 if (!(lo =:= lo0 && hi =:= hi0))
-                  asym setInfo logResult(s"Updating bounds of ${asym.fullLocationString} in $tree from '$abounds' to")(TypeBounds(lo, hi))
+                  asym setInfo logResult({
+                    val abounds = TypeBounds(lo0, hi0)
+                    s"Updating bounds of ${asym.fullLocationString} in $tree from '$abounds' to"
+                  })(TypeBounds(lo, hi))
               }
               if (asym != null && asym.isAbstractType) {
                 arg match {

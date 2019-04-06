@@ -1322,8 +1322,8 @@ trait Types
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
-    def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
-    def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
+    def emptyLowerBound = TypeBounds.isEmptyLower(lo)
+    def emptyUpperBound = TypeBounds.isEmptyUpper(hi)
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     override def safeToString = scalaNotation(_.toString)
@@ -1355,6 +1355,8 @@ trait Types
     def apply(lo: Type, hi: Type): TypeBounds = {
       unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
     }
+    def isEmptyUpper(hi: Type): Boolean = typeIsAny(hi) || hi.isWildcard
+    def isEmptyLower(lo: Type): Boolean = typeIsNothing(lo) || lo.isWildcard
   }
 
   object CompoundType {
