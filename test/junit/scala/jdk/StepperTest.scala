@@ -29,7 +29,7 @@ class StepperTest {
   val sizes = List(0, 1, 2, 3, 4, 7, 8, 15, 16, 17, 136, 2123)
 
   val factories: List[(IterableFactory[IterableOnce], Boolean)] =
-//    (ci.HashSet, false) :: // TODO bug in ChampStepper
+    (ci.HashSet, false) ::
     List[IterableFactory[IterableOnce]](
       collection.Iterator,
       ci.ListSet, ci.LazyList, ci.List, ci.Vector,
@@ -43,7 +43,7 @@ class StepperTest {
   val sortedFactories = List[SortedIterableFactory[IterableOnce]](ci.TreeSet, cm.TreeSet)
 
   val mapFactories = List[(MapFactory[scala.collection.Map], Boolean)](
-    /*(ci.HashMap, false), TODO bug in ChampStepper */(ci.TreeSeqMap, true), (ci.ListMap, true), (ci.VectorMap, true),
+    (ci.HashMap, false), (ci.TreeSeqMap, true), (ci.ListMap, true), (ci.VectorMap, true),
     (cm.HashMap, false), (cm.LinkedHashMap, false), // TODO report issue: LinkedHashMap should be ordered
     (cc.TrieMap, false)) // TODO: report issue: TrieMap says its Stepper is ordered
 

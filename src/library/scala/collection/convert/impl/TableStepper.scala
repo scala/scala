@@ -46,7 +46,6 @@ extends EfficientSplit {
   def hasStep: Boolean = (myCurrent ne null) || findNextCurrent()
 
   def trySplit(): Sub = {
-    return null // https://github.com/scala/bug/issues/11468
     if (iN-1 > i0 && maxLength > 0) {
       val half = (i0 + iN) >>> 1
       val ans = semiclone(half)
