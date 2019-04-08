@@ -141,7 +141,10 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *
     *  @param  iter        an iterable object
     */
-  def enqueueAll[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
+  def enqueueAll[B >: A](iter: scala.collection.Iterable[B]) =
+    if (isEmpty) new Queue(in, iter.toList ::: out)
+    else  new Queue(iter.toList reverse_::: in, out)
+
 
   /** Returns a tuple with the first element in the queue,
     *  and a new queue with this element removed.
