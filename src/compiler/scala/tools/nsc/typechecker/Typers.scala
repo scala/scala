@@ -3576,7 +3576,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * This is the last thing which is tried (after default arguments).
            */
           def tryTupleApply: Tree =
-            if (phase.erasedTypes || !eligibleForTupleConversion(paramTypes, argslen)) EmptyTree
+            if (phase.erasedTypes) EmptyTree
+            else if (settings.YunitDiscard && params.isEmpty && argslen == 1 && args.head.hasAttachment[SyntheticUnitAttachment.type])
+              doTypedApply(tree, fun, Nil, mode, pt)
+            else if (!eligibleForTupleConversion(paramTypes, argslen)) EmptyTree
             else {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
