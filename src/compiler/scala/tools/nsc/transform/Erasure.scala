@@ -51,7 +51,7 @@ abstract class Erasure extends InfoTransform
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
-  private object NeedsSigCollector extends TypeCollector(false) {
+  private class NeedsSigCollector(sym: Symbol) extends TypeCollector(false) {
     def apply(tp: Type): Unit =
       if (!result) {
         tp match {
@@ -69,6 +69,17 @@ abstract class Erasure extends InfoTransform
             untilApply(parents)
           case AnnotatedType(_, atp) =>
             apply(atp)
+          case MethodType(params, resultType) =>
+            if (sym.isClassConstructor) {
+              val sigParams = params match {
+                case head :: tail if head.isOuterParam => tail
+                case _ => params
+              }
+              this.foldOver(sigParams)
+              // skip the result type, it is Void in the signature.
+            } else {
+              tp.foldOver(this)
+            }
           case _ =>
             tp.foldOver(this)
         }
@@ -79,8 +90,8 @@ abstract class Erasure extends InfoTransform
   }
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
-  private def needsJavaSig(tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
-    def needs(tp: Type) = NeedsSigCollector.collect(tp)
+  private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
+    def needs(tp: Type) = new NeedsSigCollector(sym).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
   }
 
@@ -284,7 +295,7 @@ abstract class Erasure extends InfoTransform
           def classSig(): Unit = {
             markClassUsed(sym)
             val preRebound = pre.baseType(sym.owner) // #2585
-            if (needsJavaSig(preRebound, Nil)) {
+            if (needsJavaSig(sym, preRebound, Nil)) {
               val i = builder.length()
               jsig(preRebound, existentiallyBound)
               if (builder.charAt(i) == 'L') {
@@ -361,16 +372,19 @@ abstract class Erasure extends InfoTransform
         case MethodType(params, restpe) =>
           builder.append('(')
           params foreach (p => {
-            val tp = p.attachments.get[TypeParamVarargsAttachment] match {
-              case Some(att) =>
-                // For @varargs forwarders, a T* parameter has type Array[Object] in the forwarder
-                // instead of Array[T], as the latter would erase to Object (instead of Array[Object]).
-                // To make the generic signature correct ("[T", not "[Object"), an attachment on the
-                // parameter symbol stores the type T that was replaced by Object.
-                builder.append('['); att.typeParamRef
-              case _         => p.tpe
+            val isClassOuterParam = sym0.isClassConstructor && p.isOuterParam
+            if (!isClassOuterParam) {
+              val tp = p.attachments.get[TypeParamVarargsAttachment] match {
+                case Some(att) =>
+                  // For @varargs forwarders, a T* parameter has type Array[Object] in the forwarder
+                  // instead of Array[T], as the latter would erase to Object (instead of Array[Object]).
+                  // To make the generic signature correct ("[T", not "[Object"), an attachment on the
+                  // parameter symbol stores the type T that was replaced by Object.
+                  builder.append('['); att.typeParamRef
+                case _ => p.tpe
+              }
+              jsig(tp)
             }
-            jsig(tp)
           })
           builder.append(')')
           if (restpe.typeSymbol == UnitClass || sym0.isConstructor) builder.append(VOID_TAG) else jsig(restpe)
@@ -391,7 +405,7 @@ abstract class Erasure extends InfoTransform
       }
     }
     val throwsArgs = sym0.annotations flatMap ThrownException.unapply
-    if (needsJavaSig(info, throwsArgs)) {
+    if (needsJavaSig(sym0, info, throwsArgs)) {
       try {
         jsig(info, toplevel = true)
         throwsArgs.foreach { t =>
