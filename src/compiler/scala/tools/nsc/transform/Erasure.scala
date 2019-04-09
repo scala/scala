@@ -51,7 +51,12 @@ abstract class Erasure extends InfoTransform
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
-  private class NeedsSigCollector(sym: Symbol) extends TypeCollector(false) {
+  private object NeedsSigCollector {
+    private val NeedsSigCollector_true = new NeedsSigCollector(true)
+    private val NeedsSigCollector_false = new NeedsSigCollector(false)
+    def apply(isClassConstructor: Boolean) = if (isClassConstructor) NeedsSigCollector_true else NeedsSigCollector_false
+  }
+  private class NeedsSigCollector(isClassConstructor: Boolean) extends TypeCollector(false) {
     def apply(tp: Type): Unit =
       if (!result) {
         tp match {
@@ -70,7 +75,7 @@ abstract class Erasure extends InfoTransform
           case AnnotatedType(_, atp) =>
             apply(atp)
           case MethodType(params, resultType) =>
-            if (sym.isClassConstructor) {
+            if (isClassConstructor) {
               val sigParams = params match {
                 case head :: tail if head.isOuterParam => tail
                 case _ => params
@@ -91,7 +96,7 @@ abstract class Erasure extends InfoTransform
 
   override protected def verifyJavaErasure = settings.Xverify || settings.debug
   private def needsJavaSig(sym: Symbol, tp: Type, throwsArgs: List[Type]) = !settings.Ynogenericsig && {
-    def needs(tp: Type) = new NeedsSigCollector(sym).collect(tp)
+    def needs(tp: Type) = NeedsSigCollector(sym.isClassConstructor).collect(tp)
     needs(tp) || throwsArgs.exists(needs)
   }
 
