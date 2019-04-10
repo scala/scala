@@ -125,6 +125,11 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectNoOp"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectToStdIn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashTable.removeEntry0"),
+    // #7978
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.typeVarSuspensionLevel"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.typeVarSuspensionLevel_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.typeVarSuspensionLevel"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.typeVarSuspensionLevel_="),
   ),
 }
 

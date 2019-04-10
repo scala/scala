@@ -125,6 +125,12 @@ trait Types
   def skolemizationLevel = _skolemizationLevel
   def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
+  /** The current level of active TypeVars. Any TypeVar created at an earlier level will not accumulate constraints.
+    */
+  private[this] var _typeVarSuspensionLevel = 0
+  def typeVarSuspensionLevel: Int = _typeVarSuspensionLevel
+  def typeVarSuspensionLevel_=(value: Int) = _typeVarSuspensionLevel = value
+
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
@@ -1017,7 +1023,7 @@ trait Types
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
       if (this.isGround) findMembersInternal
-      else suspendingTypeVars(typeVarsInTypeRev(this))(findMembersInternal)
+      else suspendingTypeVars(findMembersInternal)
     }
 
     /**
@@ -1036,7 +1042,7 @@ trait Types
       }
 
       if (this.isGround) findMemberInternal
-      else suspendingTypeVars(typeVarsInTypeRev(this))(findMemberInternal)
+      else suspendingTypeVars(findMemberInternal)
     }
 
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
@@ -3479,13 +3485,9 @@ trait Types
 
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
-    private[this] var _suspended: Type = ConstantFalse
-    @tailrec
-    private[Types] final def suspended: Boolean = (_suspended: @unchecked) match {
-      case ConstantFalse => false
-      case ConstantTrue  => true
-      case tv: TypeVar   => tv.suspended
-    }
+    private[this] var _suspensionLevel: Int = typeVarSuspensionLevel
+    private[Types] final def suspended: Boolean =  _suspensionLevel < typeVarSuspensionLevel
+    private[Types] final def suspensionLevel: Int =  _suspensionLevel
 
     /** `AppliedTypeVar`s share the same `TypeConstraint` with the `HKTypeVar` that it was spawned from.
      *   A type inference session can also have more than one ATV.
@@ -3497,9 +3499,8 @@ trait Types
       case PolyType(_, other: TypeVar) => constr == other.constr
       case _ => false
     }
-    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse
-    // scala/bug#7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
-    private[Types] def linkSuspended(origin: TypeVar): Unit = _suspended = origin
+    // scala/bug#7785 Link the suspensionLevel of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
+    private[Types] def linkSuspended(origin: TypeVar): Unit = _suspensionLevel = origin.suspensionLevel
 
     /** Called when a TypeVar is involved in a subtyping check.  Result is whether
      *  this TypeVar could plausibly be a [super/sub]type of argument `tp` and if so,
@@ -4899,41 +4900,21 @@ trait Types
       t
   }
 
-  /** A list of the typevars in a type. */
-  def typeVarsInType(tp: Type): List[TypeVar] =
-    typeVarsInTypeRev(tp).reverse
 
-  private[this] def typeVarsInTypeRev(tp: Type): List[TypeVar] = {
-    var tvs: List[TypeVar] = Nil
-    tp foreach {
-      case t: TypeVar => tvs ::= t
-      case _          =>
-    }
-    tvs
-  }
-
-  // If this type contains type variables, put them to sleep for a while.
+  // While evaluating `op`, prevent TypeVars created earlier from accumulating constraints.
   // Don't just wipe them out by replacing them by the corresponding type
   // parameter, as that messes up (e.g.) type variables in type refinements.
   // Without this, the matchesType call would lead to type variables on both
   // sides of a subtyping/equality judgement, which can lead to recursive types
   // being constructed. See pos/t0851 for a situation where this happens.
-  @inline final def suspendingTypeVars[T](tvs: List[TypeVar])(op: => T): T = {
-    val saved = bitSetByPredicate(tvs)(_.suspended)
-    tvs foreach (_.suspended = true)
-
-    try op
-    finally {
-      var index = 0
-      var sss = tvs
-      while (sss != Nil) {
-        val tv = sss.head
-        tv.suspended = saved(index)
-        index += 1
-        sss = sss.tail
-      }
+  @inline final def suspendingTypeVars[T](op: => T): T =
+    try {
+      typeVarSuspensionLevel += 1
+      op
     }
-  }
+    finally {
+      typeVarSuspensionLevel -= 1
+    }
 
   final def stripExistentialsAndTypeVars(ts: List[Type], expandLazyBaseType: Boolean = false): (List[Type], List[Symbol]) = {
     val needsStripping = ts.exists {

@@ -56,6 +56,10 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def skolemizationLevel = _skolemizationLevel.get
   override def skolemizationLevel_=(value: Int) = _skolemizationLevel.set(value)
 
+  private lazy val _typeVarSuspensionLevel = mkThreadLocalStorage(0)
+  override def typeVarSuspensionLevel = _typeVarSuspensionLevel.get
+  override def typeVarSuspensionLevel_=(value: Int) = _typeVarSuspensionLevel.set(value)
+
   private lazy val _undoLog = mkThreadLocalStorage(new UndoLog)
   override def undoLog = _undoLog.get
 
