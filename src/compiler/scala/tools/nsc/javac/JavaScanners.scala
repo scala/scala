@@ -134,20 +134,14 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       javanme.WHILEkw        -> WHILE
     )
 
-    private var kwOffset = -1
-    private val kwArray: Array[Int] = {
-      val (offset, arr) = createKeywordArray(allKeywords, IDENTIFIER)
-      kwOffset = offset
-      arr
-    }
+    allKeywords foreach {case (name, token) => name.toTermName.markAsIdentifier(true, token)}
     final val tokenName = allKeywords.map(_.swap).toMap
 
 //Token representation -----------------------------------------------------
 
     /** Convert name to token */
-    def name2token(name: Name) = {
-      val idx = name.start - kwOffset
-      if (idx >= 0 && idx < kwArray.length) kwArray(idx)
+    def name2token(name: TermName) = {
+      if (name.isJavaIdentifier) name.identifier
       else IDENTIFIER
     }
 

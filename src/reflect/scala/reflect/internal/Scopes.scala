@@ -46,7 +46,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     var next: ScopeEntry = null
 
     def depth = owner.nestingLevel
-    override def hashCode(): Int = sym.name.start
+    override def hashCode(): Int = sym.name.hashCode()
     override def toString() = s"$sym (depth=$depth)"
   }
 
@@ -131,7 +131,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     private def enterInHash(e: ScopeEntry): Unit = {
-      val i = e.sym.name.start & HASHMASK
+      val i = e.sym.name.hashCode() & HASHMASK
       e.tail = hashtable(i)
       hashtable(i) = e
     }
@@ -180,7 +180,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     def rehash(sym: Symbol, newname: Name): Unit = {
       if (hashtable ne null) {
-        val index = sym.name.start & HASHMASK
+        val index = sym.name.hashCode() & HASHMASK
         var e1 = hashtable(index)
         var e: ScopeEntry = null
         if (e1 != null) {
@@ -196,7 +196,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           }
         }
         if (e != null) {
-          val newindex = newname.start & HASHMASK
+          val newindex = newname.hashCode() & HASHMASK
           e.tail = hashtable(newindex)
           hashtable(newindex) = e
         }
@@ -214,7 +214,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         e1.next = e.next
       }
       if (hashtable ne null) {
-        val index = e.sym.name.start & HASHMASK
+        val index = e.sym.name.hashCode() & HASHMASK
         var e1 = hashtable(index)
         if (e1 == e) {
           hashtable(index) = e.tail
@@ -318,7 +318,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopeLookupTime) else null
       var e: ScopeEntry = null
       if (hashtable ne null) {
-        e = hashtable(name.start & HASHMASK)
+        e = hashtable(name.hashCode() & HASHMASK)
         while ((e ne null) && (e.sym.name ne name)) {
           e = e.tail
         }

@@ -21,7 +21,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
 
 // Names
 
-  override protected def synchronizeNames = true
+  //override protected def synchronizeNames = true
 
 // BaseTypeSeqs
 

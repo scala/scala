@@ -129,7 +129,7 @@ trait Contexts { self: Analyzer =>
         case s              =>
           getModuleIfDefined(s) orElse
           getPackageObjectIfDefined(s) orElse
-          getPackageIfDefined(s) orElse {
+          getPackageIfDefined(TermName(s)) orElse {
             error(s"bad preamble import $s")
             NoSymbol
           }

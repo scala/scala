@@ -65,15 +65,6 @@ trait ScannersCommon {
     def discardDocBuffer(): Unit = {}
   }
 
-  def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
-    val names = keywords sortBy (_._1.start) map { case (k, v) => (k.start, v) }
-    val low   = names.head._1
-    val high  = names.last._1
-    val arr   = Array.fill(high - low + 1)(defaultToken)
-
-    names foreach { case (k, v) => arr(k + low) = v }
-    (low, arr)
-  }
 }
 
 trait Scanners extends ScannersCommon {
@@ -218,13 +209,12 @@ trait Scanners extends ScannersCommon {
 
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Token = IDENTIFIER): Unit = {
-      name = newTermName(cbuf.toArray)
+      name = newTermName(cbuf.toString)
       cbuf.clear()
       token = idtoken
       if (idtoken == IDENTIFIER) {
-        val idx = name.start - kwOffset
-        if (idx >= 0 && idx < kwArray.length) {
-          token = kwArray(idx)
+        if (name.isScalaIdentifier) {
+          token = name.identifier
           if (token == IDENTIFIER && allowIdent != name) {
             if (name == nme.MACROkw)
               syntaxError(s"$name is now a reserved word; usage as an identifier is disallowed")
@@ -823,10 +813,8 @@ trait Scanners extends ScannersCommon {
           next.token = IDENTIFIER
           next.name = newTermName(cbuf.toString)
           cbuf.clear()
-          val idx = next.name.start - kwOffset
-          if (idx >= 0 && idx < kwArray.length) {
-            next.token = kwArray(idx)
-          }
+          if (next.name.isScalaIdentifier)
+            next.token = next.name.identifier
         } else {
           syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
@@ -1265,12 +1253,7 @@ trait Scanners extends ScannersCommon {
     nme.MACROkw     -> IDENTIFIER,
     nme.THENkw      -> IDENTIFIER)
 
-  private var kwOffset: Offset = -1
-  private val kwArray: Array[Token] = {
-    val (offset, arr) = createKeywordArray(allKeywords, IDENTIFIER)
-    kwOffset = offset
-    arr
-  }
+  allKeywords foreach {case (name, token) => name.toTermName.markAsIdentifier(false, token)}
 
   final val token2name = (allKeywords map (_.swap)).toMap
 

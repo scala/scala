@@ -1076,7 +1076,9 @@ trait StdNames {
         case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
         // otherwise, we can tell based on whether '#' or '.' is the following char.
         case idx    =>
-          val (simple, div, rest) = (name take idx, name charAt idx, name drop idx + 1)
+          val simple = name.substring(0,idx)
+          val div = name.charAt(idx)
+          val rest = name.substring(idx + 1)
           mkName(simple, div == '.') :: segments(rest, assumeTerm)
       }
     }

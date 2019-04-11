@@ -24,6 +24,7 @@ import PickleFormat._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.annotation.switch
+import scala.io.Codec
 import scala.util.control.NonFatal
 
 /** @author Martin Odersky
@@ -199,9 +200,10 @@ abstract class UnPickler {
     protected def readName(): Name = {
       val tag = readByte()
       val len = readNat()
+      val name = new String(Codec.fromUTF8(bytes, readIndex, len))
       tag match {
-        case TERMname => newTermName(bytes, readIndex, len)
-        case TYPEname => newTypeName(bytes, readIndex, len)
+        case TERMname => newTermName(name)
+        case TYPEname => newTypeName(name)
         case _ => errorBadSignature("bad name tag: " + tag)
       }
     }

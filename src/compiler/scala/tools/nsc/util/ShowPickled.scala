@@ -16,6 +16,7 @@ package nsc
 package util
 
 import java.io.PrintStream
+import scala.io.Codec
 import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
@@ -123,6 +124,7 @@ object ShowPickled extends Names {
 
     result.toInt
   }
+  private val UTF8 = Codec.UTF8.charSet
 
   def printFile(buf: PickleBuffer, out: PrintStream): Unit = {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
@@ -199,11 +201,11 @@ object ShowPickled extends Names {
       tag match {
         case TERMname =>
           out.print(" ")
-          out.print(newTermName(buf.bytes, buf.readIndex, len).toString)
+          out.print(new String(buf.bytes, buf.readIndex, len, UTF8))
           buf.readIndex = end
         case TYPEname =>
           out.print(" ")
-          out.print(newTypeName(buf.bytes, buf.readIndex, len))
+          out.print(new String(buf.bytes, buf.readIndex, len, UTF8))
           buf.readIndex = end
         case TYPEsym | ALIASsym | CLASSsym | MODULEsym | VALsym =>
           printSymInfo(end)

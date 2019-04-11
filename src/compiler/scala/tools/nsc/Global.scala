@@ -1585,7 +1585,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
       if (settings.verbose)
-        println("Name table size after compilation: " + nameTableSize + " chars")
+        println("Name table size after compilation: " + nameTableSize + " names")
     }
 
     /** Compile list of abstract files. */

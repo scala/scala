@@ -164,7 +164,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   // (the map will grow indefinitely, and the only use case is the backend)
   override def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = { }
 
-  override protected def synchronizeNames = true
+//  override protected def synchronizeNames = true
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
