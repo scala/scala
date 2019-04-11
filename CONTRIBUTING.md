@@ -153,6 +153,16 @@ only the failed tests, similar to `testQuick`.
 root> partest --grep range --failed
 ```
 
+To inspect the generated files after running the test, add `--debug`:
+
+```
+root> partest --debug --verbose test/files/pos/traits.scala
+...
+# starting 1 test in pos
+% scalac pos/traits.scala -d /home/aengelen/dev/scala/test/files/pos/traits-pos.obj
+ok 1 - pos/traits.scala
+```
+
 See `--help` for more info:
 
 ```
