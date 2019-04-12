@@ -28,12 +28,29 @@ import scala.util.chaining._
 class StepperTest {
   val sizes = List(0, 1, 2, 3, 4, 7, 8, 15, 16, 17, 136, 2123)
 
+  // NOTE: the ORDERED characterstic of a stepper does NOT mean the stepper yields elements in
+  // the same order as they are stored in the underlying collection.
+  // If a collection is ordered, the stepper is REQUIRED to yield elements in that order, just like
+  // the collection's iterator.
+  // The ORDERED flag on the stepper is `true` if there's *any* defined order in the stepper, and
+  // that `trySplit` splits a prefix. See Javadocs of Spliterator.ORDERED. So an un-ordered
+  // collection may have a stepper with the ORDERED flag, it's actually common, as the default
+  // IterablerOnce.stepper method has that flag.
+  // For some stepper implementations, it makes sense not to be ORDERED, as this can allow more
+  // efficient splitting.
+  val hasSpecificNonOrderedStepper: Set[AnyRef] = Set(
+    ci.HashSet, ci.HashMap, cm.HashMap
+  )
+
+  def hasOrderedFlag(companion: AnyRef) = !hasSpecificNonOrderedStepper(companion)
+
+  // Boolean tells whether the collection's elements have an order.
   val factories: List[(IterableFactory[IterableOnce], Boolean)] =
     (ci.HashSet, false) ::
     List[IterableFactory[IterableOnce]](
       collection.Iterator,
       ci.ListSet, ci.LazyList, ci.List, ci.Vector,
-      cm.ArrayBuffer, cm.Queue, cm.Stack, cm.ListBuffer, cm.ArrayDeque,
+      cm.ArrayBuffer, cm.Queue, cm.Stack, cm.ListBuffer, cm.ArrayDeque, cm.LinkedHashSet,
       scala.jdk.AnyAccumulator).map((_, true))
 
   val classTagFactories = List[ClassTagIterableFactory[IterableOnce]](
@@ -44,8 +61,8 @@ class StepperTest {
 
   val mapFactories = List[(MapFactory[scala.collection.Map], Boolean)](
     (ci.HashMap, false), (ci.TreeSeqMap, true), (ci.ListMap, true), (ci.VectorMap, true),
-    (cm.HashMap, false), (cm.LinkedHashMap, false), // TODO report issue: LinkedHashMap should be ordered
-    (cc.TrieMap, false)) // TODO: report issue: TrieMap says its Stepper is ordered
+    (cm.HashMap, false), (cm.LinkedHashMap, true),
+    (cc.TrieMap, false))
 
   val r = new scala.util.Random(3123)
 
@@ -68,28 +85,30 @@ class StepperTest {
     b.result()
   }
 
-  def sameElems[T](l: List[T], o: IterableOnce[T], ordered: Boolean): Unit = {
-    if (ordered)
+  def sameElems[T](l: List[T], o: IterableOnce[T], testElemOrder: Boolean): Unit = {
+    if (testElemOrder)
       assertTrue(l sameElements o)
-    else
-      assertEquals(l.toSet, o.iterator.toSet)
+    else {
+      val ls = l.toSet
+      assertEquals(l.size, ls.size) // l is distinct
+      assertEquals(ls, o.iterator.toSet)
+    }
   }
 
-  def testStepper[T, U](anyStepper: => AnyStepper[T], specificStepper: => Stepper[U], l: List[T], size: Int, ordered: Boolean = true, testOrderedFlag: Boolean = true): Unit = {
+  def testStepper[T, U](anyStepper: => AnyStepper[T], specificStepper: => Stepper[U], l: List[T], size: Int, testElemOrder: Boolean, orderedFlag: Boolean): Unit = {
     for (st <- List(() => specificStepper, () => anyStepper) if st() != null) {
       if ((st().characteristics & Spliterator.SIZED) != 0)
         assertEquals(st().estimateSize, size)
       else
         assertTrue(st().estimateSize >= size)
 
-      if (testOrderedFlag)
-        assertEquals(ordered, (st().characteristics & Spliterator.ORDERED) != 0)
+      assertEquals(orderedFlag, (st().characteristics & Spliterator.ORDERED) != 0)
 
-      sameElems(l, st().iterator, ordered)
-      sameElems(l, splitAndCombine(st()), ordered)
-      sameElems(l, spliteratorForEachElems(st()), ordered)
-      sameElems(l, st().asJavaSeqStream.toScala(List), ordered)
-      sameElems(l, st().asJavaSeqStream.parallel.toScala(List), ordered)
+      sameElems(l, st().iterator, testElemOrder)
+      sameElems(l, splitAndCombine(st()), testElemOrder)
+      sameElems(l, spliteratorForEachElems(st()), testElemOrder)
+      sameElems(l, st().asJavaSeqStream.toScala(List), testElemOrder)
+      sameElems(l, st().asJavaSeqStream.parallel.toScala(List), testElemOrder)
     }
   }
 
@@ -97,13 +116,13 @@ class StepperTest {
 
   @Test
   def iterableSteppers(): Unit = {
-    for (size <- sizes; (factory, ordered) <- factories) {
+    for (size <- sizes; (factory, elemsOrdered) <- factories) {
       val l = List.fill(size)(r.nextInt())
       def c = factory.from(l)
-      testStepper(anyStepper(c), c.stepper: IntStepper, l, size, ordered)
+      testStepper(anyStepper(c), c.stepper: IntStepper, l, size, elemsOrdered, hasOrderedFlag(factory))
       val sl = l.map(_.toString)
       def sc = factory.from(sl)
-      testStepper(anyStepper(sc), sc.stepper, sl, size, ordered)
+      testStepper(anyStepper(sc), sc.stepper, sl, size, elemsOrdered, hasOrderedFlag(factory))
     }
   }
 
@@ -112,10 +131,10 @@ class StepperTest {
     for (size <- sizes; factory <- classTagFactories) {
       val l = List.fill(size)(r.nextInt())
       val c = factory.from(l)
-      testStepper(anyStepper(c), c.stepper: IntStepper, l, size)
+      testStepper(anyStepper(c), c.stepper: IntStepper, l, size, testElemOrder = true, hasOrderedFlag(factory))
       val sl = l.map(_.toString)
       val sc = factory.from(sl)
-      testStepper(anyStepper(sc), sc.stepper, sl, size)
+      testStepper(anyStepper(sc), sc.stepper, sl, size, testElemOrder = true, hasOrderedFlag(factory))
     }
   }
 
@@ -124,10 +143,10 @@ class StepperTest {
     for (size <- sizes; factory <- sortedFactories) {
       val l = List.fill(size)(r.nextInt()).distinct.sorted
       val c = factory.from(l)
-      testStepper(anyStepper(c), c.stepper: IntStepper, l, size)
+      testStepper(anyStepper(c), c.stepper: IntStepper, l, size, testElemOrder = true, hasOrderedFlag(factory))
       val sl = l.map(_.toString).sorted
       val sc = factory.from(sl)
-      testStepper(anyStepper(sc), sc.stepper, sl, size)
+      testStepper(anyStepper(sc), sc.stepper, sl, size, testElemOrder = true, hasOrderedFlag(factory))
     }
   }
 
@@ -137,67 +156,55 @@ class StepperTest {
       for ((factory, set) <- List[(SpecificIterableFactory[Int, IterableOnce[Int]], Boolean)](ci.BitSet -> true, cm.BitSet -> true, scala.jdk.IntAccumulator -> false)) {
         val l = List.fill(size)(if(set) r.nextInt(100000) else r.nextInt()).pipe(x => if (set) x.distinct.sorted else x)
         val c = factory.fromSpecific(l)
-        testStepper(anyStepper(c), c.stepper: IntStepper, l, size)
+        testStepper(anyStepper(c), c.stepper: IntStepper, l, size, testElemOrder = true, hasOrderedFlag(factory))
       }
       locally {
         val l = List.fill(size)(r.nextInt().toChar)
         val c = ci.WrappedString.fromSpecific(l)
-        testStepper(anyStepper(c), c.stepper, l, size)
+        testStepper(anyStepper(c), c.stepper, l, size, testElemOrder = true, orderedFlag = true)
       }
       locally {
         val l = List.fill(size)(r.nextLong())
         val c = scala.jdk.LongAccumulator.fromSpecific(l)
-        testStepper(anyStepper(c), c.stepper, l, size)
+        testStepper(anyStepper(c), c.stepper, l, size, testElemOrder = true, orderedFlag = true)
       }
       locally {
         val l = List.fill(size)(r.nextDouble())
         val c = scala.jdk.DoubleAccumulator.fromSpecific(l)
-        testStepper(anyStepper(c), c.stepper, l, size)
+        testStepper(anyStepper(c), c.stepper, l, size, testElemOrder = true, orderedFlag = true)
       }
     }
   }
 
-  def testMap(l: List[(Int, Int)], m: collection.Map[Int, Int], ordered: Boolean, size: Int, factory: AnyRef): Unit = {
-    val testOrd = factory != cm.LinkedHashMap && factory != cc.TrieMap
-    testStepper(anyStepper(m), m.stepper, l, size, ordered, testOrd)
-
-    // TODO: keySet steppers say they're ordered.. (IteratorStepper)
+  def testMap[K, V](l: List[(K, V)], m: collection.Map[K, V], size: Int, testElemOrder: Boolean, orderedFlag: Boolean): Unit = {
+    testStepper(anyStepper(m), m.stepper, l, size, testElemOrder, orderedFlag)
 
     val kl = l.map(_._1)
     val ks = m.keySet
-    testStepper(anyStepper(ks), ks.stepper, kl, size, ordered, testOrderedFlag = false)
+    testStepper(anyStepper(ks), ks.stepper, kl, size, testElemOrder, orderedFlag = true) // keySet uses IteratorStepper, so has ordered flag
 
     def ki = m.keysIterator
-    testStepper(anyStepper(ki), ki.stepper, kl, size, ordered, testOrderedFlag = false)
-
-    val skl = kl.map(_.toString)
-    val sks = m.map({case (k, v) => (k.toString, v)}).keySet
-    testStepper(anyStepper(sks), sks.stepper, skl, size, ordered && factory != cm.TreeMap && factory != ci.TreeMap, testOrderedFlag = false)
-
-    def ski = m.map({case (k, v) => (k.toString, v)}).keysIterator
-    testStepper(anyStepper(ski), ski.stepper, skl, size, ordered && factory != cm.TreeMap && factory != ci.TreeMap, testOrderedFlag = false)
+    testStepper(anyStepper(ki), ki.stepper, kl, size, testElemOrder, orderedFlag = true)
 
     val vl = l.map(_._2)
     val vc = m.values
-    testStepper(anyStepper(vc), vc.stepper, vl, size, ordered = false, testOrderedFlag = false)
+    testStepper(anyStepper(vc), vc.stepper, vl, size, testElemOrder = false, orderedFlag = true) // // values uses IteratorStepper, so has ordered flag
 
     def vi = m.valuesIterator
-    testStepper(anyStepper(vi), vi.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-    val svl = vl.map(_.toString)
-    val svc = m.map({case (k, v) => (k, v.toString)}).values
-    testStepper(anyStepper(svc), svc.stepper, svl, size, ordered = false, testOrderedFlag = false)
-
-    def svi = m.map({case (k, v) => (k, v.toString)}).valuesIterator
-    testStepper(anyStepper(svi), svi.stepper, svl, size, ordered = false, testOrderedFlag = false)
+    testStepper(anyStepper(vi), vi.stepper, vl, size, testElemOrder = false, orderedFlag = true)
   }
 
   @Test
   def mapSteppers(): Unit = {
-    for (size <- sizes; (factory, ordered) <- mapFactories) {
+    for (size <- sizes; (factory, elemsOrdered) <- mapFactories) {
       val l = List.fill(size)(r.nextInt() -> r.nextInt()).distinctBy(_._1)
-      val m = factory.from(l)
-      testMap(l, m, ordered, size, factory)
+      testMap(l, factory.from(l), size, elemsOrdered, hasOrderedFlag(factory))
+
+      val skl = l.map({case (k, v) => (k.toString, v)})
+      testMap(skl, factory.from(skl), size, elemsOrdered, hasOrderedFlag(factory))
+
+      val svl = l.map({case (k, v) => (k, v.toString)})
+      testMap(svl, factory.from(svl), size, elemsOrdered, hasOrderedFlag(factory))
     }
   }
 
@@ -205,8 +212,13 @@ class StepperTest {
   def sortedMapSteppers(): Unit = {
     for (size <- sizes; factory <- List[SortedMapFactory[collection.Map]](ci.TreeMap, cm.TreeMap)) {
       val l = List.fill(size)(r.nextInt() -> r.nextInt()).distinctBy(_._1).sortBy(_._1)
-      val m = factory.from(l)
-      testMap(l, m, ordered = true, size, factory)
+      testMap(l, factory.from(l), size, testElemOrder = true, hasOrderedFlag(factory))
+
+      val skl = l.map({case (k, v) => (k.toString, v)}).sortBy(_._1)
+      testMap(skl, factory.from(skl), size, testElemOrder = true, hasOrderedFlag(factory))
+
+      val svl = l.map({case (k, v) => (k, v.toString)}).sortBy(_._1)
+      testMap(svl, factory.from(svl), size, testElemOrder = true, hasOrderedFlag(factory))
     }
   }
 
@@ -214,61 +226,21 @@ class StepperTest {
   def intMapSteppers(): Unit = {
     for (size <- sizes) {
       val l = List.fill(size)(r.nextInt() -> r.nextInt()).distinctBy(_._1)
-      val m = ci.IntMap.from(l)
+      testMap(l, ci.IntMap.from(l), size, testElemOrder = false, hasOrderedFlag(ci.IntMap))
 
-      testStepper(anyStepper(m), m.stepper, l, size, ordered = false, testOrderedFlag = false)
-
-      val kl = l.map(_._1)
-      val ks = m.keySet
-      testStepper(anyStepper(ks), ks.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      def ki = m.keysIterator
-      testStepper(anyStepper(ki), ki.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      val vl = l.map(_._2)
-      val vc = m.values
-      testStepper(anyStepper(vc), vc.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      def vi = m.valuesIterator
-      testStepper(anyStepper(vi), vi.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      val svl = vl.map(_.toString)
-      val svc = m.map({case (k, v) => (k, v.toString)}).values
-      testStepper(anyStepper(svc), svc.stepper, svl, size, ordered = false, testOrderedFlag = false)
-
-      def svi = m.map({case (k, v) => (k, v.toString)}).valuesIterator
-      testStepper(anyStepper(svi), svi.stepper, svl, size, ordered = false, testOrderedFlag = false)
+      val svl = l.map({case (k, v) => (k, v.toString)})
+      testMap(svl, ci.IntMap.from(svl), size, testElemOrder = false, hasOrderedFlag(ci.IntMap))
     }
   }
 
   @Test
   def longMapSteppers(): Unit = {
-    for (size <- sizes; factory <- List(ci.LongMap.from[Int] _, cm.LongMap.from[Int] _)) {
+    for (size <- sizes; (factory, mki, mks) <- List((ci.LongMap, ci.LongMap.from[Int] _, ci.LongMap.from[String] _), (cm.LongMap, cm.LongMap.from[Int] _, cm.LongMap.from[String] _))) {
       val l = List.fill(size)(r.nextLong() -> r.nextInt()).distinctBy(_._1)
-      val m = factory(l)
+      testMap(l, mki(l), size, testElemOrder = false, hasOrderedFlag(factory))
 
-      testStepper(anyStepper(m), m.stepper, l, size, ordered = false, testOrderedFlag = false)
-
-      val kl = l.map(_._1)
-      val ks = m.keySet
-      testStepper(anyStepper(ks), ks.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      def ki = m.keysIterator
-      testStepper(anyStepper(ki), ki.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      val vl = l.map(_._2)
-      val vc = m.values
-      testStepper(anyStepper(vc), vc.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      def vi = m.valuesIterator
-      testStepper(anyStepper(vi), vi.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      val svl = vl.map(_.toString)
-      val svc = m.map({case (k, v) => (k, v.toString)}).values
-      testStepper(anyStepper(svc), svc.stepper, svl, size, ordered = false, testOrderedFlag = false)
-
-      def svi = m.map({case (k, v) => (k, v.toString)}).valuesIterator
-      testStepper(anyStepper(svi), svi.stepper, svl, size, ordered = false, testOrderedFlag = false)
+      val svl = l.map({case (k, v) => (k, v.toString)})
+      testMap(svl, mks(svl), size, testElemOrder = false, hasOrderedFlag(factory))
     }
   }
 
@@ -276,30 +248,10 @@ class StepperTest {
   def anyRefMapSteppers(): Unit = {
     for (size <- sizes) {
       val l = List.fill(size)(r.nextInt().toString -> r.nextInt()).distinctBy(_._1)
-      val m = cm.AnyRefMap.from(l)
+      testMap(l, cm.AnyRefMap.from(l), size, testElemOrder = false, hasOrderedFlag(cm.AnyRefMap))
 
-      testStepper(anyStepper(m), m.stepper, l, size, ordered = false, testOrderedFlag = false)
-
-      val kl = l.map(_._1)
-      val ks = m.keySet
-      testStepper(anyStepper(ks), ks.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      def ki = m.keysIterator
-      testStepper(anyStepper(ki), ki.stepper, kl, size, ordered = false, testOrderedFlag = false)
-
-      val vl = l.map(_._2)
-      val vc = m.values
-      testStepper(anyStepper(vc), vc.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      def vi = m.valuesIterator
-      testStepper(anyStepper(vi), vi.stepper, vl, size, ordered = false, testOrderedFlag = false)
-
-      val svl = vl.map(_.toString)
-      val svc = m.map({case (k, v) => (k, v.toString)}).values
-      testStepper(anyStepper(svc), svc.stepper, svl, size, ordered = false, testOrderedFlag = false)
-
-      def svi = m.map({case (k, v) => (k, v.toString)}).valuesIterator
-      testStepper(anyStepper(svi), svi.stepper, svl, size, ordered = false, testOrderedFlag = false)
+      val svl = l.map({case (k, v) => (k, v.toString)})
+      testMap(svl, cm.AnyRefMap.from(svl), size, testElemOrder = false, hasOrderedFlag(cm.AnyRefMap))
     }
   }
 
@@ -308,9 +260,9 @@ class StepperTest {
     for (size <- sizes) {
       val l = List.fill(size)(r.nextInt())
       val ia = Array.from(l)
-      testStepper(anyStepper(ia), ia.stepper, l, size)
+      testStepper(anyStepper(ia), ia.stepper, l, size, testElemOrder = true, orderedFlag = true)
       val sa = ia.map(_.toString)
-      testStepper(anyStepper(sa), sa.stepper, l.map(_.toString), size)
+      testStepper(anyStepper(sa), sa.stepper, l.map(_.toString), size, testElemOrder = true, orderedFlag = true)
     }
   }
 
@@ -319,9 +271,9 @@ class StepperTest {
     for (size <- sizes) {
       val s = r.nextString(size)
       val chars = s.iterator.toList
-      testStepper(null, s.charStepper, chars, size)
+      testStepper(null, s.charStepper, chars, size, testElemOrder = true, orderedFlag = true)
       val codePoints = s.codePoints().toScala(List)
-      testStepper(null, s.codePointStepper, codePoints, size)
+      testStepper(null, s.codePointStepper, codePoints, size, testElemOrder = true, orderedFlag = true)
     }
   }
 }
