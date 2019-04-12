@@ -210,15 +210,15 @@ class StepperTest {
 
   @Test
   def sortedMapSteppers(): Unit = {
-    for (size <- sizes; factory <- List[SortedMapFactory[collection.Map]](ci.TreeMap, cm.TreeMap)) {
+    for (size <- sizes; (factory, isOrdered) <- List[(SortedMapFactory[collection.Map], Boolean)](ci.TreeMap -> true, cm.TreeMap -> true, cm.CollisionProofHashMap -> false)) {
       val l = List.fill(size)(r.nextInt() -> r.nextInt()).distinctBy(_._1).sortBy(_._1)
-      testMap(l, factory.from(l), size, testElemOrder = true, hasOrderedFlag(factory))
+      testMap(l, factory.from(l), size, testElemOrder = isOrdered, hasOrderedFlag(factory))
 
       val skl = l.map({case (k, v) => (k.toString, v)}).sortBy(_._1)
-      testMap(skl, factory.from(skl), size, testElemOrder = true, hasOrderedFlag(factory))
+      testMap(skl, factory.from(skl), size, testElemOrder = isOrdered, hasOrderedFlag(factory))
 
       val svl = l.map({case (k, v) => (k, v.toString)}).sortBy(_._1)
-      testMap(svl, factory.from(svl), size, testElemOrder = true, hasOrderedFlag(factory))
+      testMap(svl, factory.from(svl), size, testElemOrder = isOrdered, hasOrderedFlag(factory))
     }
   }
 
