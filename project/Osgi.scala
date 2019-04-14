@@ -39,8 +39,9 @@ object Osgi {
     jarlist := false,
     bundle := Def.task {
       val cp = (products in Compile in packageBin).value
+      val licenseFiles = License.licenseMapping.value.map(_._1)
       bundleTask(headers.value.toMap, jarlist.value, cp,
-        (artifactPath in (Compile, packageBin)).value, cp, streams.value)
+        (artifactPath in (Compile, packageBin)).value, cp ++ licenseFiles, streams.value)
     }.value,
     packagedArtifact in (Compile, packageBin) := (((artifact in (Compile, packageBin)).value, bundle.value)),
     // Also create OSGi source bundles:
@@ -62,10 +63,10 @@ object Osgi {
 
     // https://github.com/scala/scala-dev/issues/254
     // Must be careful not to include scala-asm.jar within scala-compiler.jar!
-    def resourceDirectoryRef(f: File) = (if (f.isDirectory) "" else "@") + f.getAbsolutePath
+    def resourceDirectoryRef(f: File) = (if (f.getName endsWith ".jar") "@" else "") + f.getAbsolutePath
 
     val includeRes = resourceDirectories.filter(_.exists).map(resourceDirectoryRef).mkString(",")
-    if(!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
+    if (!includeRes.isEmpty) builder.setProperty(INCLUDERESOURCE, includeRes)
     builder.getProperties.asScala.foreach { case (k, v) => log.debug(s"bnd: $k: $v") }
     // builder.build is not thread-safe because it uses a static SimpleDateFormat.  This ensures
     // that all calls to builder.build are serialized.
