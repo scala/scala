@@ -28,6 +28,41 @@ class FunctionConvertersTest {
   import java.io.File
   import java.util.function._
 
+  // A series of hacks to enable implicit conversion of `Integer => Integer` to `Int => Int` etc.
+
+  final class Unboxer[B, P]
+  object Unboxer extends LPUnboxer {
+    implicit val unitUnboxer: Unboxer[scala.runtime.BoxedUnit, Unit] = new Unboxer
+    implicit val byteUnboxer: Unboxer[java.lang.Byte, Byte] = new Unboxer
+    implicit val shortUnboxer: Unboxer[java.lang.Short, Short] = new Unboxer
+    implicit val charUnboxer: Unboxer[java.lang.Character, Char] = new Unboxer
+    implicit val intUnboxer: Unboxer[java.lang.Integer, Int] = new Unboxer
+    implicit val longUnboxer: Unboxer[java.lang.Long, Long] = new Unboxer
+    implicit val floatUnboxer: Unboxer[java.lang.Float, Float] = new Unboxer
+    implicit val doubleUnboxer: Unboxer[java.lang.Double, Double] = new Unboxer
+    implicit val booleanUnboxer: Unboxer[java.lang.Boolean, Boolean] = new Unboxer
+
+    implicit val unitBoxer: Unboxer[Unit, scala.runtime.BoxedUnit] = new Unboxer
+    implicit val byteBoxer: Unboxer[Byte, java.lang.Byte] = new Unboxer
+    implicit val shortBoxer: Unboxer[Short, java.lang.Short] = new Unboxer
+    implicit val charBoxer: Unboxer[Char, java.lang.Character] = new Unboxer
+    implicit val intBoxer: Unboxer[Int, java.lang.Integer] = new Unboxer
+    implicit val longBoxer: Unboxer[Long, java.lang.Long] = new Unboxer
+    implicit val floatBoxer: Unboxer[Float, java.lang.Float] = new Unboxer
+    implicit val doubleBoxer: Unboxer[Double, java.lang.Double] = new Unboxer
+    implicit val booleanBoxer: Unboxer[Boolean, java.lang.Boolean] = new Unboxer
+  }
+  trait LPUnboxer {
+    implicit def unUnboxer[T]: Unboxer[T, T] = new Unboxer
+  }
+
+  implicit def f0conv[T, U](f: Function0[T])(implicit u: Unboxer[T, U]): Function0[U] = f.asInstanceOf[Function0[U]]
+  implicit def f1conv[T1, U1, T2, U2](f: Function1[T1, T2])(implicit u1: Unboxer[T1, U1], u2: Unboxer[T2, U2]): Function1[U1, U2] = f.asInstanceOf[Function1[U1, U2]]
+  implicit def f2conv[T1, U1, T2, U2, T3, U3](f: Function2[T1, T2, T3])(implicit u1: Unboxer[T1, U1], u2: Unboxer[T2, U2], u3: Unboxer[T3, U3]): Function2[U1, U2, U3] = f.asInstanceOf[Function2[U1, U2, U3]]
+
+  private val aa = <:<.refl[Any]
+  implicit def boxeq[T, U](implicit u: Unboxer[T, U]): T =:= U = aa.asInstanceOf[T =:= U]
+
   val str = "fish"
   val fyl = new File("salmon")
   val num = 42
@@ -870,7 +905,7 @@ class FunctionConvertersTest {
     assert(sf eq conv.asScalaFromBinaryOperator(conv.asJavaBinaryOperator(sf)))
     assert(sf eq conv.asScalaFromBiFunction(conv.asJavaBiFunction(sf)))
     assert(jfa eq conv.asJavaBiFunction(conv.asScalaFromBiFunction(jfa)))
-    assert(jfa ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa)))
+    assert(jfa ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa): (Int, Int) => Int))
     assert(jfb eq conv.asJavaIntBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
     assert(jfb ne conv.asJavaBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
   }

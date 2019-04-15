@@ -13,6 +13,7 @@
 package scala.jdk
 
 import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
+import java.{lang => jl}
 
 /** This object contains methods that convert between Scala `Option` and Java `Optional` types.
   *
@@ -121,19 +122,19 @@ object OptionConverters {
   }
 
   /** Convert a Scala `Option[Double]` to a Java `OptionalDouble` */
-  def toJavaOptionalDouble(o: Option[Double]): OptionalDouble = o match {
+  def toJavaOptionalDouble(o: Option[jl.Double]): OptionalDouble = o match {
     case Some(a) => OptionalDouble.of(a)
     case _ => OptionalDouble.empty
   }
 
   /** Convert a Scala `Option[Int]` to a Java `OptionalInt` */
-  def toJavaOptionalInt(o: Option[Int]): OptionalInt = o match {
+  def toJavaOptionalInt(o: Option[jl.Integer]): OptionalInt = o match {
     case Some(a) => OptionalInt.of(a)
     case _ => OptionalInt.empty
   }
 
   /** Convert a Scala `Option[Long]` to a Java `OptionalLong` */
-  def toJavaOptionalLong(o: Option[Long]): OptionalLong = o match {
+  def toJavaOptionalLong(o: Option[jl.Long]): OptionalLong = o match {
     case Some(a) => OptionalLong.of(a)
     case _ => OptionalLong.empty
   }
@@ -142,11 +143,11 @@ object OptionConverters {
   def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
   /** Convert a Java `OptionalDouble` to a Scala `Option` */
-  def toScala(o: OptionalDouble): Option[Double] = if (o.isPresent) Some(o.getAsDouble) else None
+  def toScala(o: OptionalDouble): Option[jl.Double] = if (o.isPresent) Some(o.getAsDouble) else None
 
   /** Convert a Java `OptionalInt` to a Scala `Option` */
-  def toScala(o: OptionalInt): Option[Int] = if (o.isPresent) Some(o.getAsInt) else None
+  def toScala(o: OptionalInt): Option[jl.Integer] = if (o.isPresent) Some(o.getAsInt) else None
 
   /** Convert a Java `OptionalLong` to a Scala `Option` */
-  def toScala(o: OptionalLong): Option[Long] = if (o.isPresent) Some(o.getAsLong) else None
+  def toScala(o: OptionalLong): Option[jl.Long] = if (o.isPresent) Some(o.getAsLong) else None
 }

@@ -42,6 +42,25 @@ object GenerateFunctionConverters {
   val run = new compiler.Run
 
   import compiler._, definitions._
+  locally {
+    // make sure `java.lang.Double` prints as `java.lang.Double`, not just `Double` (which resolves to `scala.Double`)
+    val f = classOf[scala.reflect.internal.Definitions#DefinitionsClass].getDeclaredField("UnqualifiedOwners")
+    f.setAccessible(true)
+    f.set(definitions, definitions.UnqualifiedOwners.filter(_.fullNameString != "java.lang"))
+  }
+
+  def primitiveBox(tp: Type): Type = tp.typeSymbol match {
+    case UnitClass    => BoxedUnitClass.tpe
+    case ByteClass    => BoxedByteClass.tpe
+    case ShortClass   => BoxedShortClass.tpe
+    case CharClass    => BoxedCharacterClass.tpe
+    case IntClass     => BoxedIntClass.tpe
+    case LongClass    => BoxedLongClass.tpe
+    case FloatClass   => BoxedFloatClass.tpe
+    case DoubleClass  => BoxedDoubleClass.tpe
+    case BooleanClass => BoxedBooleanClass.tpe
+    case _            => tp
+  }
 
   implicit class IndentMe(v: Vector[String]) {
     def indent: Vector[String] = v.map("  " + _)
@@ -177,7 +196,8 @@ object GenerateFunctionConverters {
       val tnParams: List[TypeName] = jfn.iface.typeParams.map(_.name.toTypeName)
       val tdParams: List[TypeDef] = tnParams.map(TypeDef(NoMods, _, Nil, EmptyTree))
       val javaTargs: List[Tree] = tdParams.map(_.name).map(Ident(_))
-      val scalaTargs: List[Tree] = jfn.pTypes.map(mkRef) :+ mkRef(jfn.rType)
+      val scalaTargsBoxed: List[Tree] = jfn.pTypes.map(t => mkRef(primitiveBox(t))) :+ mkRef(primitiveBox(jfn.rType))
+      val scalaTargs: List[Tree] = jfn.pTypes.map(t => mkRef(t)) :+ mkRef(jfn.rType)
 
       // Conversion wrappers have three or four components that we need to name
       // (1) The wrapper class that wraps a Java SAM as Scala function, or vice versa (ClassN)
@@ -220,9 +240,9 @@ object GenerateFunctionConverters {
         }"""
 
       val j2sDefTree =
-        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargs] = jf match {
-          case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargs]]
-          case _ => new $j2sClassN[..$tnParams](jf)
+        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargsBoxed] = jf match {
+          case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargsBoxed]]
+          case _ => new $j2sClassN[..$tnParams](jf).asInstanceOf[$scalaType[..$scalaTargsBoxed]]
         }"""
 
       val j2sImpTree =
@@ -234,9 +254,9 @@ object GenerateFunctionConverters {
         }"""
 
       val s2jDefTree =
-        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargs]): $javaType[..$javaTargs] = sf match {
+        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargsBoxed]): $javaType[..$javaTargs] = (sf: AnyRef) match {
           case $j2sCompanionN(f) => f.asInstanceOf[$javaType[..$javaTargs]]
-          case _ => new $s2jClassN[..$tnParams](sf)
+          case _ => new $s2jClassN[..$tnParams](sf.asInstanceOf[$scalaType[..$scalaTargs]])
         }"""
 
       // This is especially tricky because functions are contravariant in their arguments
