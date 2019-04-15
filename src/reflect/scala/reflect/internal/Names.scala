@@ -16,22 +16,17 @@ package internal
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.tailrec
-
 trait Names extends api.Names {
   def nameTableSize: Int = cache.size
 
-  override final type Name = NameHolder#AName
-  override final type TypeName = NameHolder#TypeNameImpl
-  override final type TermName = NameHolder#TermNameImpl
+  override final type Name =  AName
+  override final type TypeName = TermNameImpl#TypeNameImpl
+  override final type TermName = TermNameImpl
 
   implicit final val NameTag = ClassTag[Name](classOf[Name])
   implicit final val TermNameTag = ClassTag[TermName](classOf[TermName])
   implicit final val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
 
-
-  override final def newTermName(s: String): TermName = newName(s).termName
-  override final def newTypeName(s: String): TypeName = newName(s).typeName
 
   override object TermName extends TermNameExtractor {
     @inline override def apply(s: String): TermName = newTermName(s)
@@ -41,11 +36,13 @@ trait Names extends api.Names {
     @inline override def apply(s: String): TypeName = newTypeName(s)
     override def unapply(name: TypeName): Option[String] = Some(name.rawString)
   }
+  override final def newTypeName(value: String): TypeName = newTermName(value).companionName
+
+  override final def newTermName(value: String): TermName = {
   //TODO consider a better structure to use than a CHM
-  final def newName(value:String) = {
     var res = cache.get(value)
     if (res eq null) {
-      val next = new NameHolder(value)
+      val next = new TermNameImpl(value)
       res = cache.putIfAbsent(value, next)
       if (res eq null)
         res = next
@@ -53,121 +50,102 @@ trait Names extends api.Names {
     res
     //same as cache.computeIfAbsent(value, new NameHolder(_)) but faster
   }
-  private[this] final val cache = new ConcurrentHashMap[String, NameHolder](1000, 0.75F, 1)
+  private[this] final val cache = new ConcurrentHashMap[String, TermName](1000, 0.75F, 1)
   //deprecated stuff
   @deprecated @inline final def newTermNameCached(s: String): TermName = newTermName(s)
   @deprecated @inline final def newTypeNameCached(s: String): TypeName = newTypeName(s)
 
-  final class NameHolder(private final val value: String) {
+  abstract sealed class AName extends NameApi with CharSequence {
+    type ThisNameType <: AName
+    @inline override final def length(): Int = value.length
+    override final def subSequence(start: Int, end: Int): CharSequence = value.subSequence(start, end)
+    override def decoded: String = decodedName.toString
+    override def encoded: String = encodedName.toString
+    @inline private[Names] def rawString = value
+    override def decodedName: ThisNameType
+    override def encodedName: ThisNameType
 
-   lazy final val decodedHolder: NameHolder = {
-      if (value contains '$') {
-        val res = NameTransformer.decode(value)
-        if (res == value) this
-        else newName(res)
+    //non API methods
+    protected def value: String
+
+    def companionName: Name
+
+    /** Return the subname with characters from from to to-1. */
+    def subName(from: Int, to: Int): ThisNameType =
+      if (from == 0 && to == value.length) thisNameType
+      else if (from < 0 || to > value.length)
+        throw new IllegalArgumentException(s" from:$from to:$to is illegal for length$length")
+      else newName(value.substring(from, Math.max(to, from)))
+    private def thisNameType = this.asInstanceOf[ThisNameType]
+
+    /** Return a new name of the same variety. */
+    def newName(str: String): ThisNameType
+
+    /** Return a new name based on string transformation. */
+    def mapName(f: String => String): ThisNameType = newName(f(toString))
+
+    /** Copy bytes of this name to buffer cs, starting at position `offset`. */
+    final def copyChars(cs: Array[Char], offset: Int) =
+      value.copyToArray(cs,offset)
+
+    def nameKind: String
+
+    def append(ch: Char)        = newName(toString + ch)
+    def append(suffix: String)  = if (suffix.length == 0) thisNameType else newName(toString + suffix)
+    def append(suffix: Name)    = if (suffix.length == 0) thisNameType else newName(toString + suffix)
+    def append(separator: Char, suffix: Name) = newName(toString + separator + suffix)
+    def prepend(prefix: String) = newName(prefix + value)
+
+    def isOperatorName: Boolean = decodedName != this  // used by ide
+    def longString: String      = nameKind + " " + decoded
+    def debugString :String
+
+    //avoid the implicit NameOps
+
+    import NameTransformer._
+    def stripSuffix(suffix: String): ThisNameType = if (value endsWith suffix) dropRight(suffix.length) else thisNameType // OPT avoid creating a Name with `suffix`
+    def stripSuffix(suffix: Name): ThisNameType   = if (value endsWith suffix.toString) dropRight(suffix.length) else thisNameType
+    def take(n: Int): ThisNameType                = subName(0, n)
+    def drop(n: Int): ThisNameType                = subName(n, value.length)
+    def dropRight(n: Int): ThisNameType           = subName(0, value.length - n)
+    def dropLocal: TermName                       = toTermName stripSuffix LOCAL_SUFFIX_STRING
+    def dropSetter: TermName                      = toTermName stripSuffix SETTER_SUFFIX_STRING
+    def dropModule: ThisNameType                  = stripSuffix(MODULE_SUFFIX_STRING)
+    def localName: TermName                       = newTermName(getterNameString + LOCAL_SUFFIX_STRING)
+    def setterName: TermName                      = newTermName(getterNameString + SETTER_SUFFIX_STRING)
+    def getterName: TermName                      = {val rawString = getterNameString; if (rawString == value) toTermName else newTermName(rawString)}
+
+    private def getterNameString: String          = unSuffix(unSuffix(dropTraitSetterSeparator,SETTER_SUFFIX_STRING), LOCAL_SUFFIX_STRING)
+    private def unSuffix(value: String, suffix: String)  = if (value endsWith suffix) value.substring(0, value.length - suffix.length) else value
+
+    private def dropTraitSetterSeparator: String =
+      value indexOf TRAIT_SETTER_SEPARATOR_STRING match {
+        case -1  => value
+        case idx => value.substring(idx + TRAIT_SETTER_SEPARATOR_STRING.length)
       }
-      else this
+
+    /** @return the i'th Char of this name */
+    @inline final def charAt(i: Int): Char = value.charAt(i)
+
+    //deprcated stuff maybe
+    @deprecated @inline final def decode = decoded
+    @deprecated @inline final def encode = encodedName
+    @deprecated @inline final def nonEmpty = value.length != 0
+    @deprecated @inline final def isEmpty = value.length == 0
+    /** @return the ascii representation of this name */
+    @deprecated final def toChars: Array[Char] = {  // used by ide
+      value.toCharArray
     }
-    lazy final val encodedHolder: NameHolder = {
-      val res = NameTransformer.encode(value)
-      if (res == value) this else newName(res)
-    }
-
-    final val termName:TermName = new TermNameImpl
-    final val typeName:TypeName = new TypeNameImpl
-
-    abstract sealed class AName extends NameApi with CharSequence {
-      type ThisNameType <: NameHolder#AName
-      @inline override final def length(): Int = value.length
-      override final def subSequence(start: Int, end: Int): CharSequence = value.subSequence(start, end)
-      override def decoded: String = decodedName.raw
-      override def encoded: String = encodedName.raw
-      @inline private[Names] def rawString = value
-      override def decodedName: ThisNameType
-      override def encodedName: ThisNameType
-
-      //non API methods
-
-      def companionName: Name
-
-      /** Return the subname with characters from from to to-1. */
-      def subName(from: Int, to: Int): ThisNameType =
-        if (from == 0 && to == value.length) thisNameType
-        else if (from < 0 || to > value.length)
-          throw new IllegalArgumentException(s" from:$from to:$to is illegal for length$length")
-        else newName(value.substring(from, Math.max(to, from)))
-      private def thisNameType = this.asInstanceOf[ThisNameType]
-
-      /** Return a new name of the same variety. */
-      def newName(str: String): ThisNameType
-
-      /** Return a new name based on string transformation. */
-      def mapName(f: String => String): ThisNameType = newName(f(toString))
-
-      /** Copy bytes of this name to buffer cs, starting at position `offset`. */
-      final def copyChars(cs: Array[Char], offset: Int) =
-        value.copyToArray(cs,offset)
-
-      def nameKind: String
-      @inline private[Names] final def raw = value
-      @inline override final def toString = value
-
-      def append(ch: Char)        = newName(toString + ch)
-      def append(suffix: String)  = if (suffix.length == 0) thisNameType else newName(toString + suffix)
-      def append(suffix: Name)    = if (suffix.length == 0) thisNameType else newName(toString + suffix)
-      def append(separator: Char, suffix: Name) = newName(toString + separator + suffix)
-      def prepend(prefix: String) = newName(prefix + value)
-
-      def isOperatorName: Boolean = decodedName != this  // used by ide
-      def longString: String      = nameKind + " " + decoded
-      def debugString :String
-
-      //avoid the implicit NameOps
-
-      import NameTransformer._
-      def stripSuffix(suffix: String): ThisNameType = if (value endsWith suffix) dropRight(suffix.length) else thisNameType // OPT avoid creating a Name with `suffix`
-      def stripSuffix(suffix: Name): ThisNameType   = if (value endsWith suffix.raw) dropRight(suffix.length) else thisNameType
-      def take(n: Int): ThisNameType                = subName(0, n)
-      def drop(n: Int): ThisNameType                = subName(n, value.length)
-      def dropRight(n: Int): ThisNameType           = subName(0, value.length - n)
-      def dropLocal: TermName                       = toTermName stripSuffix LOCAL_SUFFIX_STRING
-      def dropSetter: TermName                      = toTermName stripSuffix SETTER_SUFFIX_STRING
-      def dropModule: ThisNameType                  = stripSuffix(MODULE_SUFFIX_STRING)
-      def localName: TermName                       = newTermName(getterNameString + LOCAL_SUFFIX_STRING)
-      def setterName: TermName                      = newTermName(getterNameString + SETTER_SUFFIX_STRING)
-      def getterName: TermName                      = {val rawString = getterNameString; if (rawString == value) toTermName else newTermName(rawString)}
-
-      private def getterNameString: String          = unSuffix(unSuffix(dropTraitSetterSeparator,SETTER_SUFFIX_STRING), LOCAL_SUFFIX_STRING)
-      private def unSuffix(value: String, suffix: String)  = if (value endsWith suffix) value.substring(0, value.length - suffix.length) else value
-
-      private def dropTraitSetterSeparator: String =
-        value indexOf TRAIT_SETTER_SEPARATOR_STRING match {
-          case -1  => value
-          case idx => value.substring(idx + TRAIT_SETTER_SEPARATOR_STRING.length)
-        }
-
-      /** @return the i'th Char of this name */
-      @inline final def charAt(i: Int): Char = value.charAt(i)
-
-      //deprcated stuff maybe
-      @deprecated @inline final def decode = decoded
-      @deprecated @inline final def encode = encodedName
-      @deprecated @inline final def nonEmpty = value.length != 0
-      @deprecated @inline final def isEmpty = value.length == 0
-      /** @return the ascii representation of this name */
-      @deprecated final def toChars: Array[Char] = {  // used by ide
-        value.toCharArray
-      }
-      //basic string like operations
-      /** @return true if the string value of this name is equal
-        *  to the string value of the given name or String.
-        */
-      @deprecated def string_==(that: Name): Boolean   = (that ne null) && (value == that.raw)
-      //value == that ??
-      @deprecated def string_==(that: String): Boolean = (that ne null) && (value == that)
+    //basic string like operations
+    /** @return true if the string value of this name is equal
+      *  to the string value of the given name or String.
+      */
+    @deprecated def string_==(that: Name): Boolean   = (that ne null) && (value == that.toString)
+    //value == that ??
+    @deprecated def string_==(that: String): Boolean = (that ne null) && (value == that)
 
 
-      //      /********************  IS POS REALLY USED **********/
+    //      /********************  IS POS REALLY USED **********/
 //      /** @return the index of first occurrence of char c in this name, length if not found */
 //      final def pos(c: Char): Int = pos(c, 0)
 //
@@ -218,107 +196,125 @@ trait Names extends api.Names {
 //     }
 //      /********************  IS POS REALLY USED **********/
 
-      /** Does this name start with prefix? */
-      @inline final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
+    /** Does this name start with prefix? */
+    @inline final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
 
-      /** Does this name start with prefix at given start index? */
-      @inline final def startsWith(prefix: Name, start: Int): Boolean = {
-        startsWith(prefix.raw, start)
-      }
-      @inline final def startsWith(prefix: String, start: Int): Boolean = {
-        value.startsWith(prefix, start)
-      }
+    /** Does this name start with prefix at given start index? */
+    @inline final def startsWith(prefix: Name, start: Int): Boolean = {
+      startsWith(prefix.toString, start)
+    }
+    @inline final def startsWith(prefix: String, start: Int): Boolean = {
+      value.startsWith(prefix, start)
+    }
 
-      /** Does this name end with suffix? */
-      @inline final def endsWith(suffix: Name): Boolean = endsWith(suffix, length)
+    /** Does this name end with suffix? */
+    @inline final def endsWith(suffix: Name): Boolean = endsWith(suffix, length)
 
-      /** Does this name end with suffix just before given end index? */
-      @inline final def endsWith(suffix: Name, end: Int): Boolean = {
-        endsWith(suffix.raw, end)
-      }
-      @inline final def endsWith(suffix: String, end: Int): Boolean = {
-        value.startsWith(suffix, end - suffix.length)
-      }
+    /** Does this name end with suffix just before given end index? */
+    @inline final def endsWith(suffix: Name, end: Int): Boolean = {
+      endsWith(suffix.toString, end)
+    }
+    @inline final def endsWith(suffix: String, end: Int): Boolean = {
+      value.startsWith(suffix, end - suffix.length)
+    }
 
-      @inline final def containsName(subname: String): Boolean = value contains subname
-      @inline final def containsName(subname: Name): Boolean = containsName(subname.raw)
+    @inline final def containsName(subname: String): Boolean = value contains subname
+    @inline final def containsName(subname: Name): Boolean = containsName(subname.toString)
 
-      final def containsChar(ch: Char): Boolean = value contains ch
-      /** Some thoroughly self-explanatory convenience functions.  They
-        *  assume that what they're being asked to do is known to be valid.
-        */
-      @inline final def startChar: Char                   = value charAt 0
-      @inline final def endChar: Char                     = value charAt length - 1
-      @inline final def startsWith(char: Char): Boolean   = length > 0 && startChar == char
-      @inline final def startsWith(name: String): Boolean = startsWith(name, 0)
-      @inline final def endsWith(char: Char): Boolean     = length > 0 && endChar == char
-      @inline final def endsWith(name: String): Boolean   = endsWith(name, length)
+    final def containsChar(ch: Char): Boolean = value contains ch
+    /** Some thoroughly self-explanatory convenience functions.  They
+      *  assume that what they're being asked to do is known to be valid.
+      */
+    @inline final def startChar: Char                   = value charAt 0
+    @inline final def endChar: Char                     = value charAt length - 1
+    @inline final def startsWith(char: Char): Boolean   = length > 0 && startChar == char
+    @inline final def startsWith(name: String): Boolean = startsWith(name, 0)
+    @inline final def endsWith(char: Char): Boolean     = length > 0 && endChar == char
+    @inline final def endsWith(name: String): Boolean   = endsWith(name, length)
 
 
-      @inline final def indexOf(ch: Char)                 = value.indexOf(ch)
-      @inline final def indexOf(ch: Char, fromIndex: Int) = value.indexOf(ch, fromIndex)
-      @inline final def indexOf(s: String)                = value.indexOf(s)
+    @inline final def indexOf(ch: Char)                 = value.indexOf(ch)
+    @inline final def indexOf(ch: Char, fromIndex: Int) = value.indexOf(ch, fromIndex)
+    @inline final def indexOf(s: String)                = value.indexOf(s)
 
-      @inline final def lastIndexOf(ch: Char): Int  = value lastIndexOf ch
-      @inline final def lastIndexOf(s: String): Int = value lastIndexOf s
+    @inline final def lastIndexOf(ch: Char): Int  = value lastIndexOf ch
+    @inline final def lastIndexOf(s: String): Int = value lastIndexOf s
 
-      /** Replace all occurrences of `from` by `to` in
-        *  name; result is always a term name.
-        */
-      def replace(from: Char, to: Char): Name = {
-        val replaced = value.replace(from, to)
-        if (replaced eq value) this else newTermName(replaced)
+    /** Replace all occurrences of `from` by `to` in
+      *  name; result is always a term name.
+      */
+    def replace(from: Char, to: Char): Name = {
+      val replaced = value.replace(from, to)
+      if (replaced eq value) this else newTermName(replaced)
+    }
+  }
+  final class TermNameImpl(override val toString: String) extends AName with TermNameApi {
+    type ThisNameType = TermName
+    override def isTermName = true
+    override def isTypeName = false
+
+    override protected def value: String = toString
+
+
+    override def toTermName: TermName = this
+    override def toTypeName: TypeName = typeName
+
+    override def companionName = typeName
+    override def newName(str: String) = newTermName(str)
+    override def nameKind = "term"
+
+    private var identifier_ : Short = _
+    def isJavaIdentifier = (identifier_ & 0x1000) != 0
+    def isScalaIdentifier = (identifier_ & 0x2000) != 0
+    def identifier = identifier_ & 0x80FF
+    def markAsIdentifier(java: Boolean, newIdentifier: Int) {
+      require((identifier.toShort & 0x80FF) == identifier.toShort)
+      val flag =  (if (java) 0x1000 else 0x2000).toShort
+      if (identifier_ == 0) {
+        //first call
+        this.identifier_ = (newIdentifier | flag).toShort
+      } else {
+        require(identifier == newIdentifier)
+        this.identifier_ = (this.identifier_ | flag).toShort
       }
     }
-    final class TermNameImpl extends AName with TermNameApi {
-      type ThisNameType = TermName
-      override def isTermName = true
-      override def isTypeName = false
-      override def decodedName: TermName = decodedHolder.termName
-      override def encodedName: TermName = encodedHolder.termName
 
-      override def toTermName: TermName = this
-      override def toTypeName: TypeName = typeName
+    def debugString = decoded
 
-      override def companionName = toTypeName
-      override def newName(str: String) = newTermName(str)
-      override def nameKind = "term"
-
-      private var identifier_ : Short = _
-      def isJavaIdentifier = (identifier_ & 0x1000) != 0
-      def isScalaIdentifier = (identifier_ & 0x2000) != 0
-      def identifier = identifier_ & 0x80FF
-      def markAsIdentifier(java: Boolean, newIdentifier: Int) {
-        require((identifier.toShort & 0x80FF) == identifier.toShort)
-        val flag =  (if (java) 0x1000 else 0x2000).toShort
-        if (identifier_ == 0) {
-          //first call
-          this.identifier_ = (newIdentifier | flag).toShort
-        } else {
-          require(identifier == newIdentifier)
-          this.identifier_ = (this.identifier_ | flag).toShort
-        }
+    override lazy final val decodedName: TermName = {
+      if (value contains '$') {
+        val res = NameTransformer.decode(value)
+        if (res == value) this
+        else newName(res)
+      }
+      else this
+    }
+    override lazy final val encodedName: TermName = {
+        val res = NameTransformer.encode(value)
+        if (res == value) this else newName(res)
       }
 
-      def debugString = decoded
-    }
+    private lazy val typeName:TypeName = new TypeNameImpl
+
+
     final class TypeNameImpl extends AName with TypeNameApi {
       type ThisNameType = TypeName
       override def isTermName = false
       override def isTypeName = true
-      override def decodedName: TypeName = decodedHolder.typeName
-      override def encodedName: TypeName  = encodedHolder.typeName
+      override def decodedName: TypeName = TermNameImpl.this.decodedName.typeName
+      override def encodedName: TypeName  = TermNameImpl.this.encodedName.typeName
 
-      override def toTermName: TermName = termName
+
+      override protected def value: String = TermNameImpl.this.toString
+      override def toString: String = TermNameImpl.this.toString
+
+      override def toTermName: TermName = TermNameImpl.this
       override def toTypeName: TypeName = this
 
-      override def companionName = termName
+      override def companionName = TermNameImpl.this
       override def newName(str: String) = newTypeName(str)
       override def nameKind = "type"
       def debugString = decoded + "!"
     }
-
-    override final def hashCode = value.hashCode
-    override final def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
   }
 }
