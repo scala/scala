@@ -12,6 +12,8 @@
 
 package scala.jdk
 
+import java.{lang => jl}
+
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{Stepper, StepperShape, mutable}
 
@@ -78,7 +80,7 @@ abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.
   private[jdk] def nextBlockSize: Int = {
     if (totalSize < 32) 16
     else if (totalSize <= Int.MaxValue) {
-      val bit = 64 - java.lang.Long.numberOfLeadingZeros(totalSize)
+      val bit = 64 - jl.Long.numberOfLeadingZeros(totalSize)
       1 << (bit - (bit >> 2))
     }
     else 1 << 24
@@ -362,9 +364,9 @@ object Accumulator {
       def empty: LongAccumulator = LongAccumulator.empty
     }
 
-    implicit val javaDoubleAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Double, DoubleAccumulator] = doubleAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Double, DoubleAccumulator]]
-    implicit val javaIntegerAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Integer, IntAccumulator] = intAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Integer, IntAccumulator]]
-    implicit val javaLongAccumulatorFactoryShape: AccumulatorFactoryShape[java.lang.Long, LongAccumulator] = longAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[java.lang.Long, LongAccumulator]]
+    implicit val jDoubleAccumulatorFactoryShape: AccumulatorFactoryShape[jl.Double, DoubleAccumulator] = doubleAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[jl.Double, DoubleAccumulator]]
+    implicit val jIntegerAccumulatorFactoryShape: AccumulatorFactoryShape[jl.Integer, IntAccumulator] = intAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[jl.Integer, IntAccumulator]]
+    implicit val jLongAccumulatorFactoryShape: AccumulatorFactoryShape[jl.Long, LongAccumulator] = longAccumulatorFactoryShape.asInstanceOf[AccumulatorFactoryShape[jl.Long, LongAccumulator]]
   }
 
   sealed trait LowPriorityAccumulatorFactoryShape {

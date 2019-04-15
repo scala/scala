@@ -109,6 +109,9 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.skipHalf"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealCurrentNodesFrom"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealNodesFrom"),
+    ProblemFilters.exclude[Problem]("scala.collection.convert.*"),
+    ProblemFilters.exclude[Problem]("scala.collection.StepperShape.*"),
+    ProblemFilters.exclude[Problem]("scala.jdk.*"),
   ),
 )
 
