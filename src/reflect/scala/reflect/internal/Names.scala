@@ -25,9 +25,9 @@ trait Names extends api.Names {
   override final type TypeName = NameHolder#TypeNameImpl
   override final type TermName = NameHolder#TermNameImpl
 
-  implicit val NameTag = ClassTag[Name](classOf[Name])
-  implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
-  implicit val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
+  implicit final val NameTag = ClassTag[Name](classOf[Name])
+  implicit final val TermNameTag = ClassTag[TermName](classOf[TermName])
+  implicit final val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
 
 
   override final def newTermName(s: String): TermName = newName(s).termName
@@ -58,9 +58,9 @@ trait Names extends api.Names {
   @deprecated @inline final def newTermNameCached(s: String): TermName = newTermName(s)
   @deprecated @inline final def newTypeNameCached(s: String): TypeName = newTypeName(s)
 
-  final class NameHolder(private[NameHolder] val value: String) {
+  final class NameHolder(private final val value: String) {
 
-   lazy val decodedHolder: NameHolder = {
+   lazy final val decodedHolder: NameHolder = {
       if (value contains '$') {
         val res = NameTransformer.decode(value)
         if (res == value) this
@@ -68,7 +68,7 @@ trait Names extends api.Names {
       }
       else this
     }
-    lazy val encodedHolder: NameHolder = {
+    lazy final val encodedHolder: NameHolder = {
       val res = NameTransformer.encode(value)
       if (res == value) this else newName(res)
     }
@@ -76,7 +76,7 @@ trait Names extends api.Names {
     final val termName:TermName = new TermNameImpl
     final val typeName:TypeName = new TypeNameImpl
 
-    abstract class AName extends NameApi with CharSequence {
+    abstract sealed class AName extends NameApi with CharSequence {
       type ThisNameType <: NameHolder#AName
       @inline override final def length(): Int = value.length
       override final def subSequence(start: Int, end: Int): CharSequence = value.subSequence(start, end)
@@ -108,13 +108,9 @@ trait Names extends api.Names {
       final def copyChars(cs: Array[Char], offset: Int) =
         value.copyToArray(cs,offset)
 
-      /** @return the ascii representation of this name */
-      final def toChars: Array[Char] = {  // used by ide
-        value.toCharArray
-      }
       def nameKind: String
-      private[Names] def raw = value
-      override def toString = value
+      @inline private[Names] final def raw = value
+      @inline override final def toString = value
 
       def append(ch: Char)        = newName(toString + ch)
       def append(suffix: String)  = if (suffix.length == 0) thisNameType else newName(toString + suffix)
@@ -150,13 +146,6 @@ trait Names extends api.Names {
           case idx => value.substring(idx + TRAIT_SETTER_SEPARATOR_STRING.length)
         }
 
-      //basic string like operations
-      /** @return true if the string value of this name is equal
-        *  to the string value of the given name or String.
-        */
-      def string_==(that: Name): Boolean   = (that ne null) && (value == that.raw)
-      def string_==(that: String): Boolean = (that ne null) && (value == that)
-
       /** @return the i'th Char of this name */
       @inline final def charAt(i: Int): Char = value.charAt(i)
 
@@ -165,7 +154,17 @@ trait Names extends api.Names {
       @deprecated @inline final def encode = encodedName
       @deprecated @inline final def nonEmpty = value.length != 0
       @deprecated @inline final def isEmpty = value.length == 0
-      //@deprecated @inline final def start = hashCode()
+      /** @return the ascii representation of this name */
+      @deprecated final def toChars: Array[Char] = {  // used by ide
+        value.toCharArray
+      }
+      //basic string like operations
+      /** @return true if the string value of this name is equal
+        *  to the string value of the given name or String.
+        */
+      @deprecated def string_==(that: Name): Boolean   = (that ne null) && (value == that.raw)
+      //value == that ??
+      @deprecated def string_==(that: String): Boolean = (that ne null) && (value == that)
 
 
       //      /********************  IS POS REALLY USED **********/
@@ -220,48 +219,48 @@ trait Names extends api.Names {
 //      /********************  IS POS REALLY USED **********/
 
       /** Does this name start with prefix? */
-      final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
+      @inline final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
 
       /** Does this name start with prefix at given start index? */
-      final def startsWith(prefix: Name, start: Int): Boolean = {
+      @inline final def startsWith(prefix: Name, start: Int): Boolean = {
         startsWith(prefix.raw, start)
       }
-      final def startsWith(prefix: String, start: Int): Boolean = {
+      @inline final def startsWith(prefix: String, start: Int): Boolean = {
         value.startsWith(prefix, start)
       }
 
       /** Does this name end with suffix? */
-      final def endsWith(suffix: Name): Boolean = endsWith(suffix, length)
+      @inline final def endsWith(suffix: Name): Boolean = endsWith(suffix, length)
 
       /** Does this name end with suffix just before given end index? */
-      final def endsWith(suffix: Name, end: Int): Boolean = {
+      @inline final def endsWith(suffix: Name, end: Int): Boolean = {
         endsWith(suffix.raw, end)
       }
-      final def endsWith(suffix: String, end: Int): Boolean = {
+      @inline final def endsWith(suffix: String, end: Int): Boolean = {
         value.startsWith(suffix, end - suffix.length)
       }
 
-      final def containsName(subname: String): Boolean = value contains subname
-      final def containsName(subname: Name): Boolean = containsName(subname.raw)
+      @inline final def containsName(subname: String): Boolean = value contains subname
+      @inline final def containsName(subname: Name): Boolean = containsName(subname.raw)
 
       final def containsChar(ch: Char): Boolean = value contains ch
       /** Some thoroughly self-explanatory convenience functions.  They
         *  assume that what they're being asked to do is known to be valid.
         */
-      final def startChar: Char                   = value charAt 0
-      final def endChar: Char                     = value charAt length - 1
-      final def startsWith(char: Char): Boolean   = length > 0 && startChar == char
-      final def startsWith(name: String): Boolean = startsWith(name, 0)
-      final def endsWith(char: Char): Boolean     = length > 0 && endChar == char
-      final def endsWith(name: String): Boolean   = endsWith(name, length)
+      @inline final def startChar: Char                   = value charAt 0
+      @inline final def endChar: Char                     = value charAt length - 1
+      @inline final def startsWith(char: Char): Boolean   = length > 0 && startChar == char
+      @inline final def startsWith(name: String): Boolean = startsWith(name, 0)
+      @inline final def endsWith(char: Char): Boolean     = length > 0 && endChar == char
+      @inline final def endsWith(name: String): Boolean   = endsWith(name, length)
 
 
-      def indexOf(ch: Char)                 = value.indexOf(ch)
-      def indexOf(ch: Char, fromIndex: Int) = value.indexOf(ch, fromIndex)
-      def indexOf(s: String)                = value.indexOf(s)
+      @inline final def indexOf(ch: Char)                 = value.indexOf(ch)
+      @inline final def indexOf(ch: Char, fromIndex: Int) = value.indexOf(ch, fromIndex)
+      @inline final def indexOf(s: String)                = value.indexOf(s)
 
-      def lastIndexOf(ch: Char): Int  = value lastIndexOf ch
-      def lastIndexOf(s: String): Int = value lastIndexOf s
+      @inline final def lastIndexOf(ch: Char): Int  = value lastIndexOf ch
+      @inline final def lastIndexOf(s: String): Int = value lastIndexOf s
 
       /** Replace all occurrences of `from` by `to` in
         *  name; result is always a term name.
@@ -319,7 +318,7 @@ trait Names extends api.Names {
       def debugString = decoded + "!"
     }
 
-    override def hashCode = value.hashCode
-    override def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
+    override final def hashCode = value.hashCode
+    override final def equals(other: Any) = other.asInstanceOf[AnyRef] eq this
   }
 }
