@@ -58,7 +58,7 @@ class FunctionConvertersTest {
     assert(jbic(conv.asJavaBiConsumer(sbic))(str, fyl))
     assert(jbic(conv.asJavaBiConsumer(zbic))(num, nmm))
     assert(jbic(sbic.asJava)(str, fyl))
-    // assert(jbic(zbic.asJava)(num, nmm))  --  ObjLongConsumer
+    assert(jbic(zbic.asJavaBiConsumer)(num, nmm))
     assert(fbic(conv.asScalaFromBiConsumer(bic1))(str, fyl))
     assert(fbic(conv.asScalaFromBiConsumer(bic2))(num, nmm))
     assert(fbic(bic1.asScala)(str, fyl))
@@ -77,7 +77,7 @@ class FunctionConvertersTest {
       Box((a: A, b: B) => f.apply(a,b) == g.apply(ev1(a), ev2(b)))
     assert(sameJ(bif1, sbif.asJava).value(str,fyl))
     assert(sameJ(bif1, conv.asJavaBiFunction(sbif)).value(str,fyl))
-    // assert(sameJ(bif2, zbif.asJava))  -- ToDoubleBiFunction
+    assert(sameJ(bif2, zbif.asJavaBiFunction).value(num, num))
     assert(sameJ(bif2, conv.asJavaBiFunction(zbif)).value(num,nmm))
     assert(sameS(bif1.asScala, sbif).value(str,fyl))
     assert(sameS(conv.asScalaFromBiFunction(bif1), sbif).value(str,fyl))
@@ -96,7 +96,7 @@ class FunctionConvertersTest {
       Box((a1: A, a2: A) => f.apply(a1, a2) == g.apply(ev1(a1), ev1(a2)))
     assert(sameJ(bop1, sbop.asJava).value(str,str))
     assert(sameJ(bop1, conv.asJavaBinaryOperator(sbop)).value(str,str))
-    // assert(sameJ(bop2, zbop.asJava).value(num, num))  -- IntBinaryOperator
+    assert(sameJ(bop2, zbop.asJavaBinaryOperator).value(num, num))
     assert(sameJ(bop2, conv.asJavaBinaryOperator(zbop)).value(num,num))
     assert(sameS(bop1.asScala, sbop).value(str,str))
     assert(sameS(conv.asScalaFromBinaryOperator(bop1), sbop).value(str,str))
@@ -148,7 +148,7 @@ class FunctionConvertersTest {
     def fcon[A](f: A => Unit)(a: A) = { f(a); recall == a }
     assert(jcon(scon.asJava)(str))
     assert(jcon(conv.asJavaConsumer(scon))(str))
-    // assert(jcon(zcon.asJava))  -- IntConsumer
+    assert(jcon(zcon.asJavaConsumer)(num))
     assert(jcon(conv.asJavaConsumer(zcon))(num))
     assert(fcon(con1.asScala)(str))
     assert(fcon(conv.asScalaFromConsumer(con1))(str))
@@ -198,7 +198,7 @@ class FunctionConvertersTest {
     assertEquals(dfn2(nnn), zdfn(nnn))
     assertEquals(dfn2(nnn), dfn2.asScala(nnn))
     assertEquals(dfn2(nnn), conv.asScalaFromDoubleFunction(dfn2)(nnn))
-    /// assertEquals(dfn2(nnn), zdfn.asJava(nnn))  -- DoubleToIntFunction
+    assertEquals(dfn2(nnn), zdfn.asJavaDoubleFunction(nnn))
     assertEquals(dfn2(nnn), conv.asJavaDoubleFunction(zdfn)(nnn))
   }
 
@@ -295,7 +295,7 @@ class FunctionConvertersTest {
     assertEquals(anz, zfun(num))
     assertEquals(anz, jf2(fun2)(num))
     assertEquals(anz, sf2(zfun)(num))
-    // assertEquals(anz, jf2(zfun.asJava)(num))  -- IntToLongFunction
+    assertEquals(anz, jf2(zfun.asJavaFunction)(num))
     assertEquals(anz, sf2(fun2.asScala)(num))
     assertEquals(anz, jf2(conv.asJavaFunction(zfun))(num))
     assertEquals(anz, sf2(conv.asScalaFromFunction(fun2))(num))
@@ -343,7 +343,7 @@ class FunctionConvertersTest {
     assertEquals(ifn2(num), zifn(num))
     assertEquals(ifn2(num), ifn2.asScala(num))
     assertEquals(ifn2(num), conv.asScalaFromIntFunction(ifn2)(num))
-    /// assertEquals(ifn2(num), zifn.asJava(num))  -- IntToLongFunction
+    assertEquals(ifn2(num), zifn.asJavaIntFunction(num))
     assertEquals(ifn2(num), conv.asJavaIntFunction(zifn)(num))
   }
 
@@ -459,7 +459,7 @@ class FunctionConvertersTest {
     assertEquals(lfn2(nmm), zlfn(nmm))
     assertEquals(lfn2(nmm), lfn2.asScala(nmm))
     assertEquals(lfn2(nmm), conv.asScalaFromLongFunction(lfn2)(nmm))
-    /// assertEquals(lfn2(nmm), zlfn.asJava(nmm))  -- LongToIntFunction
+    assertEquals(lfn2(nmm), zlfn.asJavaLongFunction(nmm))
     assertEquals(lfn2(nmm), conv.asJavaLongFunction(zlfn)(nmm))
   }
 
@@ -706,7 +706,7 @@ class FunctionConvertersTest {
       def sf2(f: Double => Double)(x: Double) = f(x)
       val ans = jf2(fnd2)(nnn)
       assertEquals(ans, sf2(zfnd)(nnn), 1e-9)
-      // assertEquals(ans, jf2(znfd.asJava)(nnn), 1e-9)  -- DoubleUnaryOperator
+       assertEquals(ans, jf2(zfnd.asJavaToDoubleFunction)(nnn), 1e-9)
       assertEquals(ans, sf2(conv.asScalaFromToDoubleFunction(fnd2))(nnn), 1e-9)
       assertEquals(ans, jf2(conv.asJavaToDoubleFunction(zfnd))(nnn), 1e-9)
     }
@@ -763,7 +763,7 @@ class FunctionConvertersTest {
       def sf2(f: Int => Int)(x: Int) = f(x)
       val ans = jf2(fni2)(num)
       assertEquals(ans, sf2(zfni)(num))
-      // assertEquals(ans, jf2(znfd.asJava)(num))  -- IntUnaryOperator
+      assertEquals(ans, jf2(zfni.asJavaToIntFunction)(num))
       assertEquals(ans, sf2(conv.asScalaFromToIntFunction(fni2))(num))
       assertEquals(ans, jf2(conv.asJavaToIntFunction(zfni))(num))
     }
@@ -820,7 +820,7 @@ class FunctionConvertersTest {
       def sf2(f: Long => Long)(x: Long) = f(x)
       val ans = jf2(fnl2)(num)
       assertEquals(ans, sf2(zfnl)(num))
-      // assertEquals(ans, jf2(znfd.asJava)(num))  -- LongUnaryOperator
+      assertEquals(ans, jf2(zfnl.asJavaToLongFunction)(num))
       assertEquals(ans, sf2(conv.asScalaFromToLongFunction(fnl2))(num))
       assertEquals(ans, jf2(conv.asJavaToLongFunction(zfnl))(num))
     }
