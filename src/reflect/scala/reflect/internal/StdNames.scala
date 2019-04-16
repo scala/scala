@@ -410,7 +410,7 @@ trait StdNames {
     def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_NAME
 
     /** Is name a variable name? */
-    def isVariableName(name: Name): Boolean = {
+    def isVariableName(name: Name): Boolean = name.length() > 0 && {
       val first = name.startChar
       (    ((first.isLower && first.isLetter) || first == '_')
         && (name != nme.false_)
