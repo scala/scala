@@ -695,6 +695,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val finalFlag = (
            (sym.isFinal || isTopLevelModuleClass(sym))
         && !sym.enclClass.isTrait
+        && !sym.isBridge // Mixin forwarders are bridges and can be final, but final bridges confuse some frameworks (scala/bug#11485)
         && !sym.isClassConstructor
         && (!sym.isMutable || nme.isTraitSetterName(sym.name)) // lazy vals and vars and their setters cannot be final, but trait setters are
       )
