@@ -14,7 +14,7 @@ sealed trait DynamicDocument extends Document {
 
 class Coll extends StaticDocument
 
-// similiar issue with annotations
+// similar issue with annotations
 class ann[T] extends annotation.StaticAnnotation
 
 trait StatDoc extends Doc {

@@ -609,9 +609,9 @@ object PipelineMain {
 //  def main(args: Array[String]): Unit = {
 //    var i = 0
 //    val argsFiles = Files.walk(Paths.get("/code/guardian-frontend")).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
-//    for (_ <- 1 to 2; n <- List(parallel.availableProcessors); strat <- List(Pipeline)) {
+//    for (_ <- 1 to 2; n <- List(parallel.availableProcessors); start <- List(Pipeline)) {
 //      i += 1
-//      val main = new PipelineMainClass(strat + "-" + i, n, strat, argsFiles, useJars = false)
+//      val main = new PipelineMainClass(start + "-" + i, n, start, argsFiles, useJars = false)
 //      println(s"====== ITERATION $i=======")
 //      val result = main.process()
 //      if (!result)

@@ -49,7 +49,7 @@ trait LowPriorityEquiv {
    * comparing instances of types for which equality isn't well-defined or implemented.
    * (For example, it does not make sense to compare two `Function1` instances.)
    *
-   * Use `Equiv.universal` explicitly instead. If you really want an implicit univeral `Equiv` instance
+   * Use `Equiv.universal` explicitly instead. If you really want an implicit universal `Equiv` instance
    * despite the potential problems, consider `implicit def universalEquiv[T]: Equiv[T] = universal[T]`.
    */
   @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information: " +
