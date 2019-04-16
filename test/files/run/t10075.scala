@@ -22,7 +22,7 @@ class SerializableBecauseTransient extends Serializable with SerializableActuall
   var notSerializedR: NotSerializable = new NotSerializable
 }
 
-// Indirectly check that the @transient annotation on `notSerialized` made it to the underyling field in bytecode.
+// Indirectly check that the @transient annotation on `notSerialized` made it to the underlying field in bytecode.
 // If it doesn't, `writeObject` will fail to serialize the field `notSerialized`, because `NotSerializable` is not serializable
 object Test {
   def main(args: Array[String]): Unit = {

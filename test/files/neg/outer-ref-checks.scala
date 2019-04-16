@@ -50,7 +50,7 @@ object O extends Outer {
   }
 
   def belongsOtherOuter4(a: Outer#Inner): Unit = a match {
-    case _: (Inner @unchecked) => // warning supressed
+    case _: (Inner @unchecked) => // warning suppressed
     case _ =>
   }
 

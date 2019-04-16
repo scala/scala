@@ -178,7 +178,7 @@ class BytecodeTest extends BytecodeTesting {
     def iv(m: Method) = getInstructions(c1b, "f1").collect({case i: Invoke => i})
     assertSameCode(iv(getMethod(c1b, "f1")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
     assertSameCode(iv(getMethod(c1b, "f2")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
-    // invokeinterface T.clone in C1 is OK here because it is not an override of Object.clone (different siganture)
+    // invokeinterface T.clone in C1 is OK here because it is not an override of Object.clone (different signature)
     assertSameCode(iv(getMethod(c1b, "f3")), List(Invoke(INVOKEINTERFACE, "T", "clone", "()Ljava/lang/String;", true)))
   }
 

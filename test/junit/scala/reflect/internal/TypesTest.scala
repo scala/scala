@@ -175,7 +175,7 @@ class TypesTest {
         TypeRef(pre, sym, Nil)
     }
 
-    // apply Foo to type arugment A
+    // apply Foo to type argument A
     def Foo(A: Type) = FooTpe match {
       case TypeRef(pre, sym, Nil) => TypeRef(pre, sym, A :: Nil)
     }

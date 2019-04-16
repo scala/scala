@@ -20,7 +20,7 @@ class StringOpsBenchmark {
   var prefix: String = _
   var suffix: String = _
 
-  // Used when we want to test stripPrefix etc with a string which is definately not present
+  // Used when we want to test stripPrefix etc with a string which is definitely not present
   var impossibleString: String = _
 
   var testObject: StringOps = _

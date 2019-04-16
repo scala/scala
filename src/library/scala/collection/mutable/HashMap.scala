@@ -65,7 +65,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     // algorithm as in java.util.HashMap.
     //
     // This function is also its own inverse. That is, for all ints i, improveHash(improveHash(i)) = i
-    // this allows us to retreive the original hash when we need it, for instance when appending to an immutable.HashMap
+    // this allows us to retrieve the original hash when we need it, for instance when appending to an immutable.HashMap
     // and that is why unimproveHash simply forwards to this method
     originalHash ^ (originalHash >>> 16)
   }
