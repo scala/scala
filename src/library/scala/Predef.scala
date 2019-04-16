@@ -456,7 +456,6 @@ object Predef extends LowPriorityImplicits {
   @inline implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps(xs)
   @inline implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps(xs)
   @inline implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps(xs)
-  @inline implicit def nothingArrayOps(xs: Array[Nothing]): ArrayOps[Nothing] = new ArrayOps[Nothing](xs)
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
@@ -516,6 +515,10 @@ object Predef extends LowPriorityImplicits {
 // compiled copy on the classpath.
 private[scala] abstract class LowPriorityImplicits extends LowPriorityImplicits2 {
   import mutable.ArraySeq
+
+  // This method is defined in LowPriorityImplicits,
+  // because scala reflect ToolBox will be broken if moving this method to Predef
+  @inline implicit def nothingArrayOps(xs: Array[Nothing]): ArrayOps[Nothing] = new ArrayOps[Nothing](xs)
 
   /** We prefer the java.lang.* boxed types to these wrappers in
    *  any potential conflicts.  Conflicts do exist because the wrappers
