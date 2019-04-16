@@ -154,6 +154,10 @@ case class StringContext(parts: String*) {
    */
   def raw(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateRaw
 
+  @deprecated("Use the static method StringContext.standardInterpolator instead of the instance method", "2.13.0")
+  def standardInterpolator(process: String => String, args: Seq[Any]): String =
+    StringContext.standardInterpolator(process, args, parts)
+
   /** The formatted string interpolator.
    *
    *  It inserts its arguments between corresponding parts of the string context.
