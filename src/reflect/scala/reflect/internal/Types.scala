@@ -3636,9 +3636,12 @@ trait Types
         )
 
         case skolems =>
-          registerBound(existentialTransform(skolems, tp) {
-            existentialAbstraction(_, _, flipVariance = !isLowerBound)
-          }, isLowerBound = isLowerBound, isNumericBound = isNumericBound)
+          val existential = existentialTransform(skolems, tp)(existentialAbstraction(_, _, flipVariance = !isLowerBound))
+          // `isRelatable(existential)` defends against F-bounds. We've added one layer of existential abstraction to remove
+          // skolems that occur immediately in the underlying type `tp`. If after this transformation, the type still
+          // contains skolems from another level, it could be F-bounded, and we give up to avoid looping.
+          isRelatable(existential) &&
+            registerBound(existential, isLowerBound = isLowerBound, isNumericBound = isNumericBound)
       }
     }
 
@@ -3679,7 +3682,10 @@ trait Types
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
       */
-    def isRelatable(tp: Type) = unrelatable(tp).isEmpty
+    def isRelatable(tp: Type) = tp.find {
+      case TypeRef(_, ts: TypeSkolem, _) => ts.level > level
+      case _ => false
+    }.isEmpty
 
     override def normalize: Type = (
       if (instValid) inst
