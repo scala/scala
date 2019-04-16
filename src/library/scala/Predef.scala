@@ -456,6 +456,7 @@ object Predef extends LowPriorityImplicits {
   @inline implicit def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T]    = new ArrayOps(xs)
   @inline implicit def shortArrayOps(xs: Array[Short]): ArrayOps[Short]       = new ArrayOps(xs)
   @inline implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit]          = new ArrayOps(xs)
+  @inline implicit def nothingArrayOps(xs: Array[Nothing]): ArrayOps[Nothing] = new ArrayOps[Nothing](xs)
 
   // "Autoboxing" and "Autounboxing" ---------------------------------------------------
 
