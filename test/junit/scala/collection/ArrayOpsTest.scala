@@ -108,4 +108,11 @@ class ArrayOpsTest {
     val target = Array[Int]()
     assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
   }
+
+  @Test
+  def t10590_ArrayNothingHeadOption: Unit = {
+    val a: Array[Nothing] = Array.empty
+    assertEquals(None, a.headOption)
+  }
+
 }
