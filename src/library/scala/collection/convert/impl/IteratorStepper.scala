@@ -15,10 +15,11 @@ package impl
 
 import java.util.Spliterator
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{AnyStepper, DoubleStepper, IntStepper, LongStepper, Stepper}
 import scala.jdk.{AnyAccumulator, DoubleAccumulator, IntAccumulator, LongAccumulator}
 
-private[collection] class AnyIteratorStepper[A](_underlying: Iterator[A])
+private[collection] class AnyIteratorStepper[+A](_underlying: Iterator[A])
   extends IteratorStepperBase[A, AnyStepper[A], AnyIteratorStepper[A]](_underlying)
     with AnyStepper[A] {
   protected def semiclone(): AnyIteratorStepper[A] = new AnyIteratorStepper(null)
@@ -119,9 +120,9 @@ private[collection] class LongIteratorStepper(_underlying: Iterator[Long])
 }
 
 /** Common functionality for Steppers that step through an Iterator, caching the results as needed when a split is requested. */
-private[convert] abstract class IteratorStepperBase[A, SP >: Null <: Stepper[A], Semi <: SP](final protected var underlying: Iterator[A]) {
+private[convert] abstract class IteratorStepperBase[+A, +SP >: Null <: Stepper[A], +Semi <: SP](final protected val underlying: Iterator[A]) {
   final protected var nextChunkSize = 16
-  final protected var proxied: SP = null
+  final protected var proxied: SP @uncheckedVariance = null
   protected def semiclone(): Semi        // Must initialize with null iterator!
   def characteristics: Int = if (proxied ne null) Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED else Spliterator.ORDERED
   def estimateSize: Long = if (proxied ne null) proxied.estimateSize else Long.MaxValue

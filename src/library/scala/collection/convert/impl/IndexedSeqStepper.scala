@@ -15,7 +15,7 @@ package impl
 
 import scala.collection._
 
-private[collection] class AnyIndexedSeqStepper[A](underlying: collection.IndexedSeqOps[A, AnyConstr, _], _i0: Int, _iN: Int)
+private[collection] class AnyIndexedSeqStepper[+A](underlying: collection.IndexedSeqOps[A, AnyConstr, _], _i0: Int, _iN: Int)
   extends IndexedStepperBase[AnyStepper[A], AnyIndexedSeqStepper[A]](_i0, _iN)
     with AnyStepper[A] {
   def nextStep(): A = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()

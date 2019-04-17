@@ -16,7 +16,7 @@ package impl
 import scala.collection.{AnyStepper, IntStepper, LongStepper, Stepper}
 import scala.collection.immutable.NumericRange
 
-private[collection] class AnyNumericRangeStepper[A](underlying: NumericRange[A], _i0: Int, _iN: Int)
+private[collection] class AnyNumericRangeStepper[+A](underlying: NumericRange[A], _i0: Int, _iN: Int)
 extends IndexedStepperBase[AnyStepper[A], AnyNumericRangeStepper[A]](_i0, _iN)
 with AnyStepper[A] {
   def nextStep(): A = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()

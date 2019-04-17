@@ -15,7 +15,7 @@ package impl
 
 import scala.collection._
 
-private[collection] class ObjectArrayStepper[A <: Object](underlying: Array[A], _i0: Int, _iN: Int)
+private[collection] class ObjectArrayStepper[+A <: Object](underlying: Array[A], _i0: Int, _iN: Int)
   extends IndexedStepperBase[AnyStepper[A], ObjectArrayStepper[A]](_i0, _iN)
     with AnyStepper[A] {
   def nextStep(): A = if (hasStep) { val j = i0; i0 += 1; underlying(j) } else Stepper.throwNSEE()

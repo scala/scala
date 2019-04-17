@@ -433,7 +433,7 @@ private[jdk] class IntAccumulatorStepper(private val acc: IntAccumulator) extend
       ans
     }
 
-  override def spliterator: Spliterator.OfInt = new IntStepper.IntStepperSpliterator(this) {
+  override def spliterator[B >: Int]: Spliterator.OfInt = new IntStepper.IntStepperSpliterator(this) {
     // Overridden for efficiency
     override def tryAdvance(c: IntConsumer): Boolean =
       if (N <= 0) false
