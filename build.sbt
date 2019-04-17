@@ -112,6 +112,7 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[Problem]("scala.collection.convert.*"),
     ProblemFilters.exclude[Problem]("scala.collection.StepperShape.*"),
     ProblemFilters.exclude[Problem]("scala.jdk.*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#CF.*"),
   ),
 )
 
