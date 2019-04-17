@@ -196,8 +196,15 @@ object GenerateFunctionConverters {
       val tnParams: List[TypeName] = jfn.iface.typeParams.map(_.name.toTypeName)
       val tdParams: List[TypeDef] = tnParams.map(TypeDef(NoMods, _, Nil, EmptyTree))
       val javaTargs: List[Tree] = tdParams.map(_.name).map(Ident(_))
-      val scalaTargsBoxed: List[Tree] = jfn.pTypes.map(t => mkRef(primitiveBox(t))) :+ mkRef(primitiveBox(jfn.rType))
-      val scalaTargs: List[Tree] = jfn.pTypes.map(t => mkRef(t)) :+ mkRef(jfn.rType)
+      val scalaTargTps = jfn.pTypes :+ jfn.rType
+      val scalaTargBoxedTps = scalaTargTps.map(primitiveBox)
+      val scalaTargs: List[Tree] = scalaTargTps.map(mkRef)
+      val scalaTargsBoxed: List[Tree] = scalaTargBoxedTps.map(mkRef)
+      val boxComment =
+        if (scalaTargTps.map(_.typeSymbol) != scalaTargBoxedTps.map(_.typeSymbol))
+          Literal(Constant("primitiveComment"))
+        else
+          Literal(Constant("noComment"))
 
       // Conversion wrappers have three or four components that we need to name
       // (1) The wrapper class that wraps a Java SAM as Scala function, or vice versa (ClassN)
@@ -240,7 +247,7 @@ object GenerateFunctionConverters {
         }"""
 
       val j2sDefTree =
-        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargsBoxed] = jf match {
+        q"""@deprecated($boxComment) @inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargsBoxed] = jf match {
           case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargsBoxed]]
           case _ => new $j2sClassN[..$tnParams](jf).asInstanceOf[$scalaType[..$scalaTargsBoxed]]
         }"""
@@ -254,7 +261,7 @@ object GenerateFunctionConverters {
         }"""
 
       val s2jDefTree =
-        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargsBoxed]): $javaType[..$javaTargs] = (sf: AnyRef) match {
+        q"""@deprecated($boxComment) @inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargsBoxed]): $javaType[..$javaTargs] = (sf: AnyRef) match {
           case $j2sCompanionN(f) => f.asInstanceOf[$javaType[..$javaTargs]]
           case _ => new $s2jClassN[..$tnParams](sf.asInstanceOf[$scalaType[..$scalaTargs]])
         }"""
@@ -402,7 +409,16 @@ object GenerateFunctionConverters {
          |${explicitDefs.indent.mkString("\n")}
          |}
       """.stripMargin
-    write(outDir, Artifact("jdk/FunctionConverters.scala", sourceFile("", funConvs)))
+    // cannot generate comments with quasiquotes
+    val res = funConvs.replace("""  @deprecated("primitiveComment") """,
+      s"""  /** Note: this method uses the boxed type `java.lang.X` (or `BoxedUnit`) instead of the
+         |    * primitive type `scala.X` to improve compatibility when using it in Java code (the
+         |    * Scala compiler emits `C[Int]` as `C[Object]` in bytecode due to
+         |    * [[https://github.com/scala/bug/issues/4214 scala/bug#4214]]). In Scala code, add
+         |    * `import scala.jdk.FunctionConverters.Ops._` and use the extension methods instead.
+         |    */
+         |""".stripMargin + "  ").replace("""@deprecated("noComment") """, "")
+    write(outDir, Artifact("jdk/FunctionConverters.scala", sourceFile("", res)))
     write(outDir, Artifact("jdk/FunctionWrappers.scala", sourceFile("", impls.mkString("\n"))))
     write(outDir, Artifact("jdk/FunctionExtensions.scala", sourceFile("", defss.map(_.mkString("\n")).mkString("\n\n\n\n"))))
   }

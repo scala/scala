@@ -37,11 +37,19 @@ import java.{lang => jl}
   *   val c = a.toScala                     // Back to Option("example")
   *   val d = b.toScala                     // Back to None typed as Option[String]
   *   val e = Option(2.7).toJava            // java.util.Optional[Double] containing boxed 2.7
-  *   val f = Option(2.7).toPrimitive       // java.util.OptionalDouble containing 2.7 (not boxed)
+  *   val f = Option(2.7).toJavaPrimitive   // java.util.OptionalDouble containing 2.7 (not boxed)
   *   val g = f.toScala                     // Back to Option(2.7)
-  *   val h = f.toGeneric                   // Same as e
-  *   val i = e.toPrimitive                 // Same as f
+  *   val h = f.toJavaGeneric               // Same as e
+  *   val i = e.toJavaPrimitive             // Same as f
   * }}}
+  *
+  * @define primitiveNote Note: this method uses the boxed type `java.lang.X` instead of the
+  *                       primitive type `scala.X` to improve compatibility when using it in
+  *                       Java code (the Scala compiler emits `C[Int]` as `C[Object]` in bytecode
+  *                       due to [[https://github.com/scala/bug/issues/4214 scala/bug#4214]]). In
+  *                       Scala code, add `import scala.jdk.OptionConverters.Ops._` and use the
+  *                       extension methods instead.
+  *
   */
 object OptionConverters {
 
@@ -121,19 +129,28 @@ object OptionConverters {
     case _ => Optional.empty[A]
   }
 
-  /** Convert a Scala `Option[Double]` to a Java `OptionalDouble` */
+  /** Convert a Scala `Option[Double]` to a Java `OptionalDouble`
+    *
+    * $primitiveNote
+    */
   def toJavaOptionalDouble(o: Option[jl.Double]): OptionalDouble = o match {
     case Some(a) => OptionalDouble.of(a)
     case _ => OptionalDouble.empty
   }
 
-  /** Convert a Scala `Option[Int]` to a Java `OptionalInt` */
+  /** Convert a Scala `Option[Int]` to a Java `OptionalInt`
+    *
+    * $primitiveNote
+    */
   def toJavaOptionalInt(o: Option[jl.Integer]): OptionalInt = o match {
     case Some(a) => OptionalInt.of(a)
     case _ => OptionalInt.empty
   }
 
-  /** Convert a Scala `Option[Long]` to a Java `OptionalLong` */
+  /** Convert a Scala `Option[Long]` to a Java `OptionalLong`
+    *
+    * $primitiveNote
+    */
   def toJavaOptionalLong(o: Option[jl.Long]): OptionalLong = o match {
     case Some(a) => OptionalLong.of(a)
     case _ => OptionalLong.empty
@@ -142,12 +159,21 @@ object OptionConverters {
   /** Convert a Java `Optional` to a Scala `Option` */
   def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
-  /** Convert a Java `OptionalDouble` to a Scala `Option` */
+  /** Convert a Java `OptionalDouble` to a Scala `Option`
+    *
+    * $primitiveNote
+    */
   def toScala(o: OptionalDouble): Option[jl.Double] = if (o.isPresent) Some(o.getAsDouble) else None
 
-  /** Convert a Java `OptionalInt` to a Scala `Option` */
+  /** Convert a Java `OptionalInt` to a Scala `Option`
+    *
+    * $primitiveNote
+    */
   def toScala(o: OptionalInt): Option[jl.Integer] = if (o.isPresent) Some(o.getAsInt) else None
 
-  /** Convert a Java `OptionalLong` to a Scala `Option` */
+  /** Convert a Java `OptionalLong` to a Scala `Option`
+    *
+    * $primitiveNote
+    */
   def toScala(o: OptionalLong): Option[jl.Long] = if (o.isPresent) Some(o.getAsLong) else None
 }
