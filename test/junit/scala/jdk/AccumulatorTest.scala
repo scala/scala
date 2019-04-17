@@ -10,14 +10,12 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
-import scala.jdk.{Accumulator, AnyAccumulator, IntAccumulator}
 
 @RunWith(classOf[JUnit4])
 class AccumulatorTest {

@@ -55,9 +55,9 @@ extends EfficientSplit {
       var inRight = if (myCurrent ne null) 1 else 0
       if (iN - i0 < 32) {
         var i = i0+1
-        while (i < half && (table(i) ne null)) inLeft += 1
+        while (i < half && (table(i) ne null)) { i += 1; inLeft += 1 }
         i = half+1
-        while (i < iN && (table(i) ne null)) inRight += 1
+        while (i < iN && (table(i) ne null)) { i += 1; inRight += 1 }
       }
       maxLength -= inLeft
       ans.maxLength -= inRight

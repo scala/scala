@@ -91,6 +91,28 @@ import com.typesafe.tools.mima.core._
 val mimaPrereleaseHandlingSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ShortArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$CharArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ByteArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$FloatArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ShortArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.CharArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ByteArrayHasSeqParStream"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.FloatArrayHasSeqParStream"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority1"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority2"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StepperShape.anyStepperShapePrototype"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.effectiveRootLevel"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.skipHalf"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealCurrentNodesFrom"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealNodesFrom"),
+    ProblemFilters.exclude[Problem]("scala.collection.convert.*"),
+    ProblemFilters.exclude[Problem]("scala.collection.StepperShape.*"),
+    ProblemFilters.exclude[Problem]("scala.jdk.*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#CF.*"),
   ),
 )
 

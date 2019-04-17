@@ -28,7 +28,7 @@ private[collection] abstract class ChampStepperBase[
 extends EfficientSplit {
   import Node.MaxDepth
 
-  // Most of this code is identical to ChampBaseIterator.  If you change that, look here too!
+  // Much of this code is identical to ChampBaseIterator.  If you change that, look here too!
 
   protected var currentValueCursor: Int = 0
   protected var currentValueLength: Int = 0
@@ -44,51 +44,6 @@ extends EfficientSplit {
       nodes = new Array[Node[T]](MaxDepth).asInstanceOf[Array[T]]
     }
   }
-  protected def effectiveRootLevel: Int =
-    if (currentStackLevel < 0) -1
-    else {
-      var erl = 0
-      while (erl < nodeCursorsAndLengths.length) {
-        if (nodeCursorsAndLengths(erl) < nodeCursorsAndLengths(erl+1)) return (erl >>> 1)
-        erl += 2
-      }
-      -1
-    }
-  protected def skipHalf(rootLevel: Int): Int = {
-    val cursorAtRoot = nodeCursorsAndLengths(2*rootLevel)
-    val lengthAtRoot = nodeCursorsAndLengths(2*rootLevel+1)
-    val last = (cursorAtRoot + lengthAtRoot) >>> 1
-    currentStackLevel = rootLevel
-    nodeCursorsAndLengths(2*rootLevel) = last
-    searchNextValueNode()
-    last
-  }
-  protected def stealNodesFrom(that: ChampStepperBase[A, T, _, _], rootLevel: Int): Unit = {
-    initNodes()
-    maxSize            = that.maxSize
-    currentValueCursor = that.currentValueCursor
-    currentValueNode   = that.currentValueNode
-    currentStackLevel  = that.currentStackLevel - rootLevel
-    var i = 0
-    while (i <= currentStackLevel) {
-      val j = i + rootLevel
-      nodeCursorsAndLengths(2*i)   = that.nodeCursorsAndLengths(2*j)
-      nodeCursorsAndLengths(2*i+1) = that.nodeCursorsAndLengths(2*j+1)
-      nodes(i)                     = that.nodes(j)
-      i += 1
-    }
-    val last = that.skipHalf(rootLevel)
-    nodeCursorsAndLengths(2*rootLevel + 1) = last-1
-  }
-  protected def stealCurrentNodesFrom(that: ChampStepperBase[A, T, _, _]): Unit = {
-    maxSize            = that.maxSize
-    currentValueCursor = that.currentValueCursor
-    currentValueNode   = that.currentValueNode
-    currentStackLevel  = -1
-    currentValueLength = (currentValueCursor + that.currentValueLength) >>> 1
-    that.currentValueCursor = currentValueLength
-  }
-
   def initRoot(rootNode: T): Unit = {
     if (rootNode.hasNodes) pushNode(rootNode)
     if (rootNode.hasPayload) setupPayloadNode(rootNode)
@@ -157,18 +112,45 @@ extends EfficientSplit {
   final def trySplit(): Sub =
     if (!hasStep) null
     else {
-      val root = effectiveRootLevel
-      if (root < 0) {
-        if (currentValueCursor > currentValueLength-2) null
-        else {
-          val semi = semiclone()
-          semi.stealCurrentNodesFrom(this)
-          semi
-        }
-      }
+      var fork = 0
+      while (fork <= currentStackLevel && nodeCursorsAndLengths(2*fork) >= nodeCursorsAndLengths(2*fork + 1)) fork += 1
+      if (fork > currentStackLevel && currentValueCursor > currentValueLength -2) null
       else {
         val semi = semiclone()
-        semi.stealNodesFrom(this, root)
+        semi.maxSize = maxSize
+        semi.currentValueCursor = currentValueCursor
+        semi.currentValueNode = currentValueNode
+        if (fork > currentStackLevel) {
+          // Just need to finish the current node
+          semi.currentStackLevel = -1
+          val i = (currentValueCursor + currentValueLength) >>> 1
+          semi.currentValueLength = i
+          currentValueCursor = i
+        }
+        else {
+          // Need (at least some of) the full stack, so make an identical copy
+          semi.nodeCursorsAndLengths = java.util.Arrays.copyOf(nodeCursorsAndLengths, nodeCursorsAndLengths.length)
+          semi.nodes = java.util.Arrays.copyOf(nodes.asInstanceOf[Array[Node[T]]], nodes.length).asInstanceOf[Array[T]]
+          semi.currentStackLevel = currentStackLevel
+          semi.currentValueLength = currentValueLength
+
+          // Split the top level of the stack where there's still something to split
+          // Could make this more efficient by duplicating code from searchNextValueNode
+          // instead of setting up for it to run normally.  But splits tend to be rare,
+          // so it's not critically important.
+          //
+          // Note that this split can be kind of uneven; if we knew how many child nodes there
+          // were we could do better.
+          val i = (nodeCursorsAndLengths(2*fork) + nodeCursorsAndLengths(2*fork + 1)) >>> 1
+          semi.nodeCursorsAndLengths(2*fork + 1) = i
+          var j = currentStackLevel
+          while (j > fork) {
+            nodeCursorsAndLengths(2*j) = nodeCursorsAndLengths(2*j + 1)
+            j -= 1
+          }
+          nodeCursorsAndLengths(2*fork) = i
+          searchNextValueNode()
+        }
         semi
       }
     }

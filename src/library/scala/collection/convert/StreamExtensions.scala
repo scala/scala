@@ -12,7 +12,9 @@
 
 package scala.collection.convert
 
+import java.util.Spliterator
 import java.util.stream._
+import java.{lang => jl}
 
 import scala.annotation.implicitNotFound
 import scala.collection.Stepper.EfficientSplit
@@ -173,6 +175,36 @@ trait StreamExtensions {
     def asJavaParStream: Stream[A] = asJavaSeqStream.parallel
   }
 
+  implicit class ByteArrayHasSeqParStream(a: Array[Byte]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class ShortArrayHasSeqParStream(a: Array[Short]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class CharArrayHasSeqParStream(a: Array[Char]) {
+    /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaSeqStream: IntStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for this array. */
+    def asJavaParStream: IntStream = a.stepper.asJavaParStream
+  }
+
+  implicit class FloatArrayHasSeqParStream(a: Array[Float]) {
+    /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaSeqStream: DoubleStream = a.stepper.asJavaSeqStream
+    /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for this array. */
+    def asJavaParStream: DoubleStream = a.stepper.asJavaParStream
+  }
+
+
+
   // strings
 
   implicit class StringHasSeqParStream(s: String) {
@@ -332,9 +364,6 @@ object StreamExtensions {
     implicit val intStreamShape   : StreamShape[Int   , IntStream   , IntStepper]    = mkIntStreamShape[Int]
     implicit val longStreamShape  : StreamShape[Long  , LongStream  , LongStepper]   = mkLongStreamShape[Long]
     implicit val doubleStreamShape: StreamShape[Double, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Double]
-  }
-
-  trait StreamShapeLowPriority1 extends StreamShapeLowPriority2 {
 
     // widening
     implicit val byteStreamShape : StreamShape[Byte , IntStream   , IntStepper]    = mkIntStreamShape[Byte]
@@ -342,31 +371,37 @@ object StreamExtensions {
     implicit val charStreamShape : StreamShape[Char , IntStream   , IntStepper]    = mkIntStreamShape[Char]
     implicit val floatStreamShape: StreamShape[Float, DoubleStream, DoubleStepper] = mkDoubleStreamShape[Float]
 
-    implicit val integerStreamShape : StreamShape[java.lang.Integer, IntStream, IntStepper] = mkIntStreamShape[java.lang.Integer]
+    // boxed java primitives
 
-    protected def mkIntStreamShape[T]: StreamShape[T, IntStream, IntStepper] = new StreamShape[T, IntStream, IntStepper] {
+    implicit val jIntegerStreamShape   : StreamShape[jl.Integer  , IntStream   , IntStepper   ] = mkIntStreamShape[jl.Integer]
+    implicit val jLongStreamShape      : StreamShape[jl.Long     , LongStream  , LongStepper  ] = mkLongStreamShape[jl.Long]
+    implicit val jDoubleStreamShape    : StreamShape[jl.Double   , DoubleStream, DoubleStepper] = mkDoubleStreamShape[jl.Double]
+    implicit val jByteStreamShape      : StreamShape[jl.Byte     , IntStream   , IntStepper   ] = mkIntStreamShape[jl.Byte]
+    implicit val jShortStreamShape     : StreamShape[jl.Short    , IntStream   , IntStepper   ] = mkIntStreamShape[jl.Short]
+    implicit val jCharacterStreamShape : StreamShape[jl.Character, IntStream   , IntStepper   ] = mkIntStreamShape[jl.Character]
+    implicit val jFloatStreamShape     : StreamShape[jl.Float    , DoubleStream, DoubleStepper] = mkDoubleStreamShape[jl.Float]
+
+    private def mkIntStreamShape[T]: StreamShape[T, IntStream, IntStepper] = new StreamShape[T, IntStream, IntStepper] {
       protected def mkStream(st: IntStepper, par: Boolean): IntStream = StreamSupport.intStream(st.spliterator, par)
     }
 
-    protected def mkLongStreamShape[T]: StreamShape[T, LongStream, LongStepper] = new StreamShape[T, LongStream, LongStepper] {
+    private def mkLongStreamShape[T]: StreamShape[T, LongStream, LongStepper] = new StreamShape[T, LongStream, LongStepper] {
       protected def mkStream(st: LongStepper, par: Boolean): LongStream = StreamSupport.longStream(st.spliterator, par)
     }
 
-    protected def mkDoubleStreamShape[T]: StreamShape[T, DoubleStream, DoubleStepper] = new StreamShape[T, DoubleStream, DoubleStepper] {
+    private def mkDoubleStreamShape[T]: StreamShape[T, DoubleStream, DoubleStepper] = new StreamShape[T, DoubleStream, DoubleStepper] {
       protected def mkStream(st: DoubleStepper, par: Boolean): DoubleStream = StreamSupport.doubleStream(st.spliterator, par)
     }
   }
 
-  trait StreamShapeLowPriority2 {
+  trait StreamShapeLowPriority1 {
     // reference
-    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], AnyStepper[T]] = anyStreamShapePrototype.asInstanceOf[StreamShape[T, Stream[T], AnyStepper[T]]]
+    implicit def anyStreamShape[T]: StreamShape[T, Stream[T], Stepper[T]] = anyStreamShapePrototype.asInstanceOf[StreamShape[T, Stream[T], Stepper[T]]]
 
-    private[this] val anyStreamShapePrototype: StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], AnyStepper[AnyRef]] {
-      def mkStream(s: AnyStepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator, par)
+    private[this] val anyStreamShapePrototype: StreamShape[AnyRef, Stream[AnyRef], Stepper[AnyRef]] = new StreamShape[AnyRef, Stream[AnyRef], Stepper[AnyRef]] {
+      def mkStream(s: Stepper[AnyRef], par: Boolean): Stream[AnyRef] = StreamSupport.stream(s.spliterator.asInstanceOf[Spliterator[AnyRef]], par)
     }
   }
-
-
 
   /** Connects a stream element type `A` to the corresponding, potentially specialized, Stream type.
     * Used in the `stream.asJavaPrimitiveStream` extension method.
@@ -378,17 +413,17 @@ object StreamExtensions {
     implicit val intStreamUnboxer: StreamUnboxer[Int, IntStream] = new StreamUnboxer[Int, IntStream] {
       def apply(s: Stream[Int]): IntStream = s.mapToInt(x => x)
     }
-    implicit val javaIntegerStreamUnboxer: StreamUnboxer[java.lang.Integer, IntStream] = intStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Integer, IntStream]]
+    implicit val javaIntegerStreamUnboxer: StreamUnboxer[jl.Integer, IntStream] = intStreamUnboxer.asInstanceOf[StreamUnboxer[jl.Integer, IntStream]]
 
     implicit val longStreamUnboxer: StreamUnboxer[Long, LongStream] = new StreamUnboxer[Long, LongStream] {
       def apply(s: Stream[Long]): LongStream = s.mapToLong(x => x)
     }
-    implicit val javaLongStreamUnboxer: StreamUnboxer[java.lang.Long, LongStream] = longStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Long, LongStream]]
+    implicit val javaLongStreamUnboxer: StreamUnboxer[jl.Long, LongStream] = longStreamUnboxer.asInstanceOf[StreamUnboxer[jl.Long, LongStream]]
 
     implicit val doubleStreamUnboxer: StreamUnboxer[Double, DoubleStream] = new StreamUnboxer[Double, DoubleStream] {
       def apply(s: Stream[Double]): DoubleStream = s.mapToDouble(x => x)
     }
-    implicit val javaDoubleStreamUnboxer: StreamUnboxer[java.lang.Double, DoubleStream] = doubleStreamUnboxer.asInstanceOf[StreamUnboxer[java.lang.Double, DoubleStream]]
+    implicit val javaDoubleStreamUnboxer: StreamUnboxer[jl.Double, DoubleStream] = doubleStreamUnboxer.asInstanceOf[StreamUnboxer[jl.Double, DoubleStream]]
   }
 
 
@@ -428,8 +463,8 @@ object StreamExtensions {
       val companion: AnyRef = DoubleAccumulator
     }
 
-    implicit val javaIntegerAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Integer, IntAccumulator] = intAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Integer, IntAccumulator]]
-    implicit val javaLongAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Long, IntAccumulator] = longAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Long, IntAccumulator]]
-    implicit val javaDoubleAccumulatorFactoryInfo: AccumulatorFactoryInfo[java.lang.Double, IntAccumulator] = doubleAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[java.lang.Double, IntAccumulator]]
+    implicit val jIntegerAccumulatorFactoryInfo: AccumulatorFactoryInfo[jl.Integer, IntAccumulator] = intAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[jl.Integer, IntAccumulator]]
+    implicit val jLongAccumulatorFactoryInfo: AccumulatorFactoryInfo[jl.Long, IntAccumulator] = longAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[jl.Long, IntAccumulator]]
+    implicit val jDoubleAccumulatorFactoryInfo: AccumulatorFactoryInfo[jl.Double, IntAccumulator] = doubleAccumulatorFactoryInfo.asInstanceOf[AccumulatorFactoryInfo[jl.Double, IntAccumulator]]
   }
 }

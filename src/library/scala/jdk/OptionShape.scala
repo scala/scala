@@ -13,6 +13,7 @@
 package scala.jdk
 
 import java.util.{Optional, OptionalDouble, OptionalInt, OptionalLong}
+import java.{lang => jl}
 
 import scala.annotation.implicitNotFound
 
@@ -40,6 +41,7 @@ object OptionShape {
       case _ => OptionalDouble.empty
     }
   }
+  implicit val jDoubleOptionShape: OptionShape[jl.Double, OptionalDouble] = doubleOptionShape.asInstanceOf[OptionShape[jl.Double, OptionalDouble]]
 
   implicit val intOptionShape: OptionShape[Int, OptionalInt] = new OptionShape[Int, OptionalInt] {
     def fromJava(o: Optional[Int]): OptionalInt =
@@ -50,6 +52,7 @@ object OptionShape {
       case _ => OptionalInt.empty
     }
   }
+  implicit val jIntegerOptionShape: OptionShape[jl.Integer, OptionalInt] = intOptionShape.asInstanceOf[OptionShape[jl.Integer, OptionalInt]]
 
   implicit val longOptionShape: OptionShape[Long, OptionalLong] = new OptionShape[Long, OptionalLong] {
     def fromJava(o: Optional[Long]): OptionalLong =
@@ -60,4 +63,5 @@ object OptionShape {
       case _ => OptionalLong.empty
     }
   }
+  implicit val jLongOptionShape: OptionShape[jl.Long, OptionalLong] = longOptionShape.asInstanceOf[OptionShape[jl.Long, OptionalLong]]
 }

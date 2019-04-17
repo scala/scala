@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.collection.convert
+package scala.jdk
 
 import java.util.stream._
 
@@ -21,13 +21,16 @@ import org.junit.runners.JUnit4
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
-import scala.jdk.{Accumulator, AnyAccumulator, IntAccumulator}
 
 @RunWith(classOf[JUnit4])
-class StreamConvertersTest {
+class StreamConvertersTypingTest {
   @Test
   def keyValueSteppers(): Unit = {
     import scala.jdk.StreamConverters.Ops._
+
+    // The steppers of LinkedHashMap and LinkedHashSet are not EfficientSplit, because they use
+    // the default IterableOnce.stepper. We cannot use XTableStepper because that would not yield
+    // the elements in insertion order.
 
     val m1 = Map(1 -> "a")
     val m2 = mutable.LinkedHashMap('c' -> 35f)
@@ -40,9 +43,9 @@ class StreamConvertersTest {
     val m1vs = m1.valueStepper
     (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
     val m2ks = m2.keyStepper
-    (m2ks: IntStepper with EfficientSplit).nextStep()
+    (m2ks: IntStepper /*with EfficientSplit*/).nextStep()
     val m2vs = m2.valueStepper
-    (m2vs: DoubleStepper with EfficientSplit).nextStep()
+    (m2vs: DoubleStepper /*with EfficientSplit*/).nextStep()
 
     val m1sps = m1.asJavaSeqStream
     (m1sps: Stream[(Int, String)]).count()
@@ -62,12 +65,12 @@ class StreamConvertersTest {
     val m2svs = m2.asJavaSeqValueStream
     (m2svs: DoubleStream).count()
 
-    val m2pps = m2.asJavaParStream
-    (m2pps: Stream[(Char, Float)]).count()
-    val m2pks = m2.asJavaParKeyStream
-    (m2pks: IntStream).sum()
-    val m2pvs = m2.asJavaParValueStream
-    (m2pvs: DoubleStream).count()
+//    val m2pps = m2.asJavaParStream
+//    (m2pps: Stream[(Char, Float)]).count()
+//    val m2pks = m2.asJavaParKeyStream
+//    (m2pks: IntStream).sum()
+//    val m2pvs = m2.asJavaParValueStream
+//    (m2pvs: DoubleStream).count()
 
     val s1sps = s1.asJavaSeqStream
     (s1sps: Stream[String]).count()
@@ -75,26 +78,9 @@ class StreamConvertersTest {
 
     val s2sps = s2.asJavaSeqStream
     (s2sps: IntStream).count()
-    val s2pps = s2.asJavaParStream
-    (s2pps: IntStream).count()
+//    val s2pps = s2.asJavaParStream
+//    (s2pps: IntStream).count()
   }
-
-  /*
-  @Test
-  def spliteratorHasStepper(): Unit = {
-    import scala.jdk.StreamConverters.Ops._
-
-    val ia = Array(1,2,3)
-    val sa = Array("")
-
-    val ias = ia.asJavaSeqStream.spliterator.asScalaStepper
-    (ias: IntStepper).nextStep()
-    val iasb = ias.asJavaSeqStream.boxed.spliterator.asScalaStepper
-    (iasb: Stepper[Integer]).nextStep()
-    val sas = sa.asJavaSeqStream.spliterator.asScalaStepper
-    (sas: Stepper[String]).nextStep()
-  }
-  */
 
   @Test
   def toArrayTests(): Unit = {

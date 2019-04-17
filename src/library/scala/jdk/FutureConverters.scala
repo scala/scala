@@ -66,8 +66,7 @@ object FutureConverters {
       case c: CompletionStage[T] => c
       case _ =>
         val cf = new CF[T](f)
-        implicit val ec = ExecutionContext.parasitic
-        f onComplete cf
+        f.onComplete(cf)(ExecutionContext.parasitic)
         cf
     }
   }
