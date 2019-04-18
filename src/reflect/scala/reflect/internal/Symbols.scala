@@ -1873,6 +1873,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def withAnnotations(annots: List[AnnotationInfo]): this.type =
       setAnnotations(annots ::: annotations)
 
+    def withAnnotation(anno: AnnotationInfo): this.type =
+      setAnnotations(anno :: annotations)
+
     def withoutAnnotations: this.type =
       setAnnotations(Nil)
 

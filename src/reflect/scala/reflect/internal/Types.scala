@@ -1061,6 +1061,7 @@ trait Types
     def filterAnnotations(p: AnnotationInfo => Boolean): Type = this
     def setAnnotations(annots: List[AnnotationInfo]): Type  = annotatedType(annots, this)
     def withAnnotations(annots: List[AnnotationInfo]): Type = annotatedType(annots, this)
+    def withAnnotation(anno: AnnotationInfo): Type = withAnnotations(List(anno))
 
     /** The kind of this type; used for debugging */
     def kind: String = "unknown type of class "+getClass()
@@ -3780,6 +3781,9 @@ trait Types
     override def withAnnotations(annots: List[AnnotationInfo]): Type =
       if (annots.isEmpty) this
       else copy(annots ::: this.annotations)
+
+    override def withAnnotation(anno: AnnotationInfo): Type =
+      copy(anno :: this.annotations)
 
     /** Remove any annotations from this type.
      *  TODO - is it allowed to nest AnnotatedTypes? If not then let's enforce
