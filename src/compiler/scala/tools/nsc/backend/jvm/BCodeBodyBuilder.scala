@@ -313,7 +313,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
         case ApplyDynamic(qual, args) => abort("No invokedynamic support yet.")
 
-        case This(qual) =>
+        case thiz @ This(qual) =>
           val symIsModuleClass = tree.symbol.isModuleClass
           assert(tree.symbol == claszSymbol || symIsModuleClass,
                  s"Trying to access the this of another class: tree.symbol = ${tree.symbol}, class symbol = $claszSymbol compilation unit: $cunit")
@@ -322,6 +322,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           }
           else {
             mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+            if(thiz.hasAttachment[DropThisAttachment.type]) {
+              mnode.visitInsn(asm.Opcodes.ACONST_NULL)
+              mnode.visitVarInsn(asm.Opcodes.ASTORE, 0)
+            }
             // When compiling Array.scala, the constructor invokes `Array.this.super.<init>`. The expectedType
             // is `[Object` (computed by typeToBType, the type of This(Array) is `Array[T]`). If we would set
             // the generatedType to `Array` below, the call to adapt at the end would fail. The situation is

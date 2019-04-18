@@ -1317,6 +1317,10 @@ abstract class Erasure extends InfoTransform
           }
           fun
 
+        case tree @ Typed(expr, tt @ TypeTree()) if tt.tpe.hasAnnotation(definitions.DropthisClass) =>
+          expr.updateAttachment(DropThisAttachment)
+          tree
+
         case _ =>
           tree
       }

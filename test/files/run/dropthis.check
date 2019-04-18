@@ -1,0 +1,6 @@
+foreach1
+GC success - List deallocated
+foreach2
+List not deallocated
+foreach3
+GC success - List deallocated
