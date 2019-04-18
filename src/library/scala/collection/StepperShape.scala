@@ -108,7 +108,7 @@ trait StepperShapeLowPriority2 {
 
   protected val anyStepperShapePrototype: StepperShape[AnyRef, Stepper[AnyRef]] = new StepperShape[AnyRef, Stepper[AnyRef]] {
     def shape = StepperShape.ReferenceShape
-    def seqUnbox(st: AnyStepper[AnyRef]): AnyStepper[AnyRef] = st
-    def parUnbox(st: AnyStepper[AnyRef] with EfficientSplit): AnyStepper[AnyRef] with EfficientSplit = st
+    def seqUnbox(st: AnyStepper[AnyRef]): Stepper[AnyRef] = st
+    def parUnbox(st: AnyStepper[AnyRef] with EfficientSplit): Stepper[AnyRef] with EfficientSplit = st
   }
 }

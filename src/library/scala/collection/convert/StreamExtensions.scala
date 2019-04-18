@@ -128,8 +128,13 @@ trait StreamExtensions {
       * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaSeqStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
-      s.fromStepper(stepper.asInstanceOf[St], par = false)
+    def asJavaSeqStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S = {
+      val sStepper = stepper match {
+        case as: AnyStepper[A] => st.seqUnbox(as)
+        case _ => stepper.asInstanceOf[St]
+      }
+      s.fromStepper(sStepper, par = false)
+    }
   }
 
   implicit class StepperHasParStream[A](stepper: Stepper[A] with EfficientSplit) {
@@ -137,8 +142,13 @@ trait StreamExtensions {
       * stepper yields primitive values, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
-    def asJavaParStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S =
-      s.fromStepper(stepper.asInstanceOf[St], par = true)
+    def asJavaParStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[A, S, St], st: StepperShape[A, St]): S = {
+      val sStepper = stepper match {
+        case as: AnyStepper[A] => st.parUnbox(as)
+        case _ => stepper.asInstanceOf[St]
+      }
+      s.fromStepper(sStepper, par = true)
+    }
   }
 
   // arrays
