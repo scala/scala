@@ -17,6 +17,10 @@ import scala.util.{ Try, Success, Failure }
 /** Promise is an object which can be completed with a value or failed
  *  with an exception.
  *
+ *  A promise should always eventually be completed, whether for success or failure, 
+ *  in order to avoid unintended resource retention for any associated Future's 
+ *  callbacks or transformations.
+ *
  *  @define promiseCompletion
  *  If the promise has already been fulfilled, failed or has timed out,
  *  calling this method will throw an IllegalStateException.
