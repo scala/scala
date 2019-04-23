@@ -13,12 +13,12 @@
 package scala.collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import scala.runtime.ScalaRunTime
-import scala.reflect.ClassTag
-import scala.util.hashing.MurmurHash3
 import java.util.Arrays
+
+import scala.collection.Stepper.EfficientSplit
+import scala.reflect.ClassTag
+import scala.runtime.ScalaRunTime
+import scala.util.hashing.MurmurHash3
 
 /**
   *  A collection representing `Array[T]`. Unlike `ArrayBuffer` it is always backed by the same
@@ -67,6 +67,34 @@ sealed abstract class ArraySeq[T]
     * ArraySeq can be backed by an array of boxed values and a reference ArraySeq can be backed by an array of a supertype
     * or subtype of the element type. */
   def array: Array[_]
+
+  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    import scala.collection.convert.impl._
+    val isRefShape = shape.shape == StepperShape.ReferenceShape
+    val s = if (isRefShape) array match {
+      case a: Array[Int]     => AnyStepper.ofParIntStepper   (new IntArrayStepper(a, 0, a.length))
+      case a: Array[Long]    => AnyStepper.ofParLongStepper  (new LongArrayStepper(a, 0, a.length))
+      case a: Array[Double]  => AnyStepper.ofParDoubleStepper(new DoubleArrayStepper(a, 0, a.length))
+      case a: Array[Byte]    => AnyStepper.ofParIntStepper   (new WidenedByteArrayStepper(a, 0, a.length))
+      case a: Array[Short]   => AnyStepper.ofParIntStepper   (new WidenedShortArrayStepper(a, 0, a.length))
+      case a: Array[Char]    => AnyStepper.ofParIntStepper   (new WidenedCharArrayStepper(a, 0, a.length))
+      case a: Array[Float]   => AnyStepper.ofParDoubleStepper(new WidenedFloatArrayStepper(a, 0, a.length))
+      case a: Array[Boolean] => new BoxedBooleanArrayStepper(a, 0, a.length)
+      case a: Array[AnyRef]  => new ObjectArrayStepper(a, 0, a.length)
+    } else {
+      array match {
+        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+        case a: Array[Int]    => new IntArrayStepper(a, 0, a.length)
+        case a: Array[Long]   => new LongArrayStepper(a, 0, a.length)
+        case a: Array[Double] => new DoubleArrayStepper(a, 0, a.length)
+        case a: Array[Byte]   => new WidenedByteArrayStepper(a, 0, a.length)
+        case a: Array[Short]  => new WidenedShortArrayStepper(a, 0, a.length)
+        case a: Array[Char]   => new WidenedCharArrayStepper(a, 0, a.length)
+        case a: Array[Float]  => new WidenedFloatArrayStepper(a, 0, a.length)
+      }
+    }
+    s.asInstanceOf[S with EfficientSplit]
+  }
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ArraySeq"

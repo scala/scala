@@ -16,6 +16,7 @@ package mutable
 
 import java.util.NoSuchElementException
 
+import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.reflect.ClassTag
 
@@ -65,6 +66,9 @@ class ArrayDeque[A] protected (
   def this(initialSize: Int = ArrayDeque.DefaultInitialSize) = this(ArrayDeque.alloc(initialSize), start = 0, end = 0)
 
   override def knownSize: Int = super[IndexedSeqOps].knownSize
+
+  // No-Op override to allow for more efficient stepper in a minor release.
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = super.stepper(shape)
 
   def apply(idx: Int) = {
     requireBounds(idx)

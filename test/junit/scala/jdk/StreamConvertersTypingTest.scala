@@ -24,6 +24,8 @@ import scala.collection._
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTypingTest {
+  def anyStepper[T](c: IterableOnce[T]): AnyStepper[T] = c.stepper
+
   @Test
   def keyValueSteppers(): Unit = {
     import scala.jdk.StreamConverters.Ops._
@@ -447,4 +449,117 @@ class StreamConvertersTypingTest {
       (saps: Stream[String]).count()
     }
   }
+
+  @Test
+  def anyStepperOfPrimitiveAsStream(): Unit = {
+    import scala.jdk.StreamConverters.Ops._
+    val s = new AnyStepper[Int] with EfficientSplit {
+      override def trySplit(): AnyStepper[Int] = null
+      override def hasStep: Boolean = false
+      override def nextStep(): Int = ???
+      override def estimateSize: Long = Long.MaxValue
+      override def characteristics: Int = 0
+    }
+    (s: AnyStepper[Int]).asJavaSeqStream.count()
+    s.asJavaParStream.count()
+  }
+
+  @Test
+  def arraySeqStepper(): Unit = {
+    import collection.{mutable => m, immutable => i}
+    import scala.jdk.StreamConverters.Ops._
+
+    val sa = Array("", "")
+    val ia = Array(1, 2, 3)
+    val bia = Array[Any](1, 2, 3); assertEquals(classOf[Array[AnyRef]], bia.getClass)
+    val ba = Array(true, false)
+    val bba = Array[Any](true, false); assertEquals(classOf[Array[AnyRef]], bba.getClass)
+
+    val sams = m.ArraySeq.make(sa)
+    val iams = m.ArraySeq.make(ia)
+    val biams = m.ArraySeq.make(bia).asInstanceOf[m.ArraySeq[Int]]
+    val bams = m.ArraySeq.make(ba)
+    val bbams = m.ArraySeq.make(bba).asInstanceOf[m.ArraySeq[Boolean]]
+
+    val sais = i.ArraySeq.unsafeWrapArray(sa)
+    val iais = i.ArraySeq.unsafeWrapArray(ia)
+    val biais = i.ArraySeq.unsafeWrapArray(bia).asInstanceOf[i.ArraySeq[Int]]
+    val bais = i.ArraySeq.unsafeWrapArray(ba)
+    val bbais = i.ArraySeq.unsafeWrapArray(bba).asInstanceOf[i.ArraySeq[Boolean]]
+
+    val samsS = sams.stepper
+    (samsS: AnyStepper[String] with EfficientSplit).asJavaParStream.count()
+    val samsAS = anyStepper(sams)
+    (samsAS: AnyStepper[String]).asJavaSeqStream.count()
+
+    val iamsS = iams.stepper
+    (iamsS: IntStepper with EfficientSplit).asJavaParStream.count()
+    val iamsAS = anyStepper(iams)
+    (iamsAS: AnyStepper[Int]).asJavaSeqStream.count()
+
+    val biamsS = biams.stepper
+    (biamsS: IntStepper with EfficientSplit).asJavaParStream.count()
+    val biamsAS = anyStepper(biams)
+    (biamsAS: AnyStepper[Int]).asJavaSeqStream.count()
+
+    val bamsS = bams.stepper
+    (bamsS: AnyStepper[Boolean] with EfficientSplit).asJavaParStream.count()
+    val bamsAS = anyStepper(bams)
+    (bamsAS: AnyStepper[Boolean]).asJavaSeqStream.count()
+
+    val bbamsS = bbams.stepper
+    (bbamsS: AnyStepper[Boolean] with EfficientSplit).asJavaParStream.count()
+    val bbamsAS = anyStepper(bbams)
+    (bbamsAS: AnyStepper[Boolean]).asJavaSeqStream.count()
+
+
+    val saisS = sais.stepper
+    (saisS: AnyStepper[String] with EfficientSplit).asJavaParStream.count()
+    val saisAS = anyStepper(sais)
+    (saisAS: AnyStepper[String]).asJavaSeqStream.count()
+
+    val iaisS = iais.stepper
+    (iaisS: IntStepper with EfficientSplit).asJavaParStream.count()
+    val iaisAS = anyStepper(iais)
+    (iaisAS: AnyStepper[Int]).asJavaSeqStream.count()
+
+    val biaisS = biais.stepper
+    (biaisS: IntStepper with EfficientSplit).asJavaParStream.count()
+    val biaisAS = anyStepper(biais)
+    (biaisAS: AnyStepper[Int]).asJavaSeqStream.count()
+
+    val baisS = bais.stepper
+    (baisS: AnyStepper[Boolean] with EfficientSplit).asJavaParStream.count()
+    val baisAS = anyStepper(bais)
+    (baisAS: AnyStepper[Boolean]).asJavaSeqStream.count()
+
+    val bbaisS = bbais.stepper
+    (bbaisS: AnyStepper[Boolean] with EfficientSplit).asJavaParStream.count()
+    val bbaisAS = anyStepper(bbais)
+    (bbaisAS: AnyStepper[Boolean]).asJavaSeqStream.count()
+  }
+
+  @Test
+  def arrayBufferStepper(): Unit = {
+    import collection.{mutable => m, immutable => i}
+    import scala.jdk.StreamConverters.Ops._
+
+    val sb = m.ArrayBuffer.from(Array("", ""))
+    val ib = m.ArrayBuffer.from(Array(1, 2))
+    val bb = m.ArrayBuffer.from(Array(true, false))
+
+    val sbS = sb.stepper
+    (sbS: AnyStepper[String] with EfficientSplit).asJavaParStream.count()
+    val sbAS = anyStepper(sb)
+    (sbAS: AnyStepper[String]).asJavaSeqStream.count()
+
+    val ibS = ib.stepper
+    (ibS: IntStepper with EfficientSplit).asJavaParStream.count()
+    val ibAS = anyStepper(ib)
+    (ibAS: AnyStepper[Int]).asJavaSeqStream.count()
+
+    val bbS = bb.stepper
+    (bbS: AnyStepper[Boolean] with EfficientSplit).asJavaParStream.count()
+    val bbAS = anyStepper(bb)
+    (bbAS: AnyStepper[Boolean]).asJavaSeqStream.count()  }
 }

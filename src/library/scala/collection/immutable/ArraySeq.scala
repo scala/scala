@@ -10,20 +10,18 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package collection.immutable
+package scala.collection
+package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.util.Arrays
 
-import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
-import scala.collection.{ArrayOps, ClassTagSeqFactory, SeqFactory, StrictOptimizedClassTagSeqFactory, EvidenceIterableFactoryDefaults}
-import scala.collection.IterableOnce
 import scala.annotation.unchecked.uncheckedVariance
-import scala.util.Sorting
-import scala.util.hashing.MurmurHash3
+import scala.collection.Stepper.EfficientSplit
+import scala.collection.mutable.{ArrayBuffer, ArrayBuilder, Builder, ArraySeq => MutableArraySeq}
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime
-import java.util.Arrays
+import scala.util.Sorting
+import scala.util.hashing.MurmurHash3
 
 /**
   * An immutable array.
@@ -56,6 +54,34 @@ sealed abstract class ArraySeq[+A]
 
   protected def evidenceIterableFactory: ArraySeq.type = ArraySeq
   protected def iterableEvidence: ClassTag[A @uncheckedVariance] = elemTag.asInstanceOf[ClassTag[A]]
+
+  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+    import scala.collection.convert.impl._
+    val isRefShape = shape.shape == StepperShape.ReferenceShape
+    val s = if (isRefShape) unsafeArray match {
+      case a: Array[Int]     => AnyStepper.ofParIntStepper   (new IntArrayStepper(a, 0, a.length))
+      case a: Array[Long]    => AnyStepper.ofParLongStepper  (new LongArrayStepper(a, 0, a.length))
+      case a: Array[Double]  => AnyStepper.ofParDoubleStepper(new DoubleArrayStepper(a, 0, a.length))
+      case a: Array[Byte]    => AnyStepper.ofParIntStepper   (new WidenedByteArrayStepper(a, 0, a.length))
+      case a: Array[Short]   => AnyStepper.ofParIntStepper   (new WidenedShortArrayStepper(a, 0, a.length))
+      case a: Array[Char]    => AnyStepper.ofParIntStepper   (new WidenedCharArrayStepper(a, 0, a.length))
+      case a: Array[Float]   => AnyStepper.ofParDoubleStepper(new WidenedFloatArrayStepper(a, 0, a.length))
+      case a: Array[Boolean] => new BoxedBooleanArrayStepper(a, 0, a.length)
+      case a: Array[AnyRef]  => new ObjectArrayStepper(a, 0, a.length)
+    } else {
+      unsafeArray match {
+        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+        case a: Array[Int]    => new IntArrayStepper(a, 0, a.length)
+        case a: Array[Long]   => new LongArrayStepper(a, 0, a.length)
+        case a: Array[Double] => new DoubleArrayStepper(a, 0, a.length)
+        case a: Array[Byte]   => new WidenedByteArrayStepper(a, 0, a.length)
+        case a: Array[Short]  => new WidenedShortArrayStepper(a, 0, a.length)
+        case a: Array[Char]   => new WidenedCharArrayStepper(a, 0, a.length)
+        case a: Array[Float]  => new WidenedFloatArrayStepper(a, 0, a.length)
+      }
+    }
+    s.asInstanceOf[S with EfficientSplit]
+  }
 
   @throws[ArrayIndexOutOfBoundsException]
   def apply(i: Int): A
