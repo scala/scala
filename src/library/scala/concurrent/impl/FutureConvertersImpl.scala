@@ -54,7 +54,7 @@ private[scala] object FutureConvertersImpl {
 
     override def exceptionally(fn: JFunction[Throwable, _ <: T]): CompletableFuture[T] = {
       val cf = new CompletableFuture[T]
-      whenCompleteAsync((t: T, e: Throwable) => { // param types for dotty b213f24ff (fixed in current dotty master, 311b8512c)
+      whenCompleteAsync((t, e) => {
           if (e == null) cf.complete(t)
           else {
             val n: AnyRef =
@@ -67,7 +67,6 @@ private[scala] object FutureConvertersImpl {
               }
             if (n ne this) cf.complete(n.asInstanceOf[T])
           }
-          () // for dotty b213f24ff (fixed in current dotty master, 311b8512c)
         }
       )
       cf
