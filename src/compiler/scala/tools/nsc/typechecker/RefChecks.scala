@@ -1604,7 +1604,8 @@ abstract class RefChecks extends Transform {
               if qual1.symbol == rd.StringContext_apply &&
                 treeInfo.isQualifierSafeToElide(qual) &&
                 lits.forall(lit => treeInfo.isLiteralString(lit)) &&
-                lits.length == (args.length + 1) =>
+                lits.length == (args.length + 1) &&
+                args.lengthCompare(64) <= 0 => // TODO make more robust to large input so that we can drop this condition, chunk the concatenations in manageable batches
               val isRaw = sym == rd.StringContext_raw
               if (isRaw) Some((lits, args))
               else {
