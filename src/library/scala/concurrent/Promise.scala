@@ -18,7 +18,7 @@ import scala.util.{ Try, Success, Failure }
  *  with an exception.
  *
  *  A promise should always eventually be completed, whether for success or failure, 
- *  in order to avoid unintended resource retention for any associated Future's 
+ *  in order to avoid unintended resource retention for any associated Futures' 
  *  callbacks or transformations.
  *
  *  @define promiseCompletion
