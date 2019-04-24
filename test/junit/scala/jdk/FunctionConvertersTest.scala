@@ -19,8 +19,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.jdk.FunctionConverters.Ops._
-import scala.jdk.{FunctionConverters => conv}
+import scala.jdk.FunctionConverters._
+import scala.jdk.javaapi.{FunctionConverters => conv}
 import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])

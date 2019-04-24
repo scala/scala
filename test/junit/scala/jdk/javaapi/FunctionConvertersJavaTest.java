@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.jdk;
+package scala.jdk.javaapi;
 
 import org.junit.Test;
 import scala.Function2;
