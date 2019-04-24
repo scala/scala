@@ -7,7 +7,6 @@ import org.junit.Test
 import org.junit.Assert._
 
 import scala.collection.mutable.{Builder, ListBuffer}
-import scala.ref.WeakReference
 import scala.tools.testkit.AssertUtil
 import scala.util.Try
 
@@ -23,55 +22,6 @@ class LazyListTest {
     assertTrue(LazyList.from(1).filter(_ > 4).take(3) == Seq(5,6,7))
     assertTrue(LazyList.from(1).filterNot(_ <= 4).take(3) == Seq(5,6,7))
   }
-
-  /* GC tests */
-
-  /** Test helper to verify that the given LazyList operation allows
-    * GC of the head during processing of the tail.
-    */
-  def assertLazyListOpAllowsGC(op: (=> LazyList[Int], Int => Unit) => Any, f: Int => Unit): Unit = {
-    val msgSuccessGC = "GC success"
-    val msgFailureGC = "GC failure"
-
-    // A LazyList of 500 elements at most. We will test that the head can be collected
-    // while processing the tail. After each element we will GC and wait 10 ms, so a
-    // failure to collect will take roughly 5 seconds.
-    val ref = WeakReference( LazyList.from(1).take(500) )
-
-    def gcAndThrowIfCollected(n: Int): Unit = {
-      System.gc()                                                   // try to GC
-      Thread.sleep(10)                                              // give it 10 ms
-      if (ref.get.isEmpty) throw new RuntimeException(msgSuccessGC) // we're done if head collected
-      f(n)
-    }
-
-    val res = Try { op(ref(), gcAndThrowIfCollected) }.failed       // success is indicated by an
-    val msg = res.map(_.getMessage).getOrElse(msgFailureGC)         // exception with expected message
-                                                                    // failure is indicated by no
-    assertTrue(msg == msgSuccessGC)                                 // exception, or one with different message
-  }
-
-  @Test
-  def foreach_allows_GC(): Unit = {
-    assertLazyListOpAllowsGC(_.foreach(_), _ => ())
-  }
-
-  @Test
-  def filter_all_foreach_allows_GC(): Unit = {
-    assertLazyListOpAllowsGC(_.filter(_ => true).foreach(_), _ => ())
-  }
-
-  @Test // scala/bug#8990
-  def withFilter_after_first_foreach_allows_GC: Unit = {
-    assertLazyListOpAllowsGC(_.withFilter(_ > 1).foreach(_), _ => ())
-  }
-
-  @Test // scala/bug#8990
-  def withFilter_after_first_withFilter_foreach_allows_GC: Unit = {
-    assertLazyListOpAllowsGC(_.withFilter(_ > 1).withFilter(_ < 100).foreach(_), _ => ())
-  }
-
-  /* misc */
 
   @Test // scala/bug#8990
   def withFilter_can_retry_after_exception_thrown_in_filter: Unit = {
