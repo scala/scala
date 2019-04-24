@@ -18,8 +18,8 @@ import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
 import scala.concurrent.duration._
-import scala.jdk.DurationConverters.Ops._
-import scala.jdk.{DurationConverters => conv}
+import scala.jdk.DurationConverters._
+import scala.jdk.javaapi.{DurationConverters => conv}
 import scala.util.Try
 
 class DurationConvertersTest {
