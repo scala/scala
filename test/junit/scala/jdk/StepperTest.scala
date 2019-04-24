@@ -20,7 +20,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.{AnyStepper, ClassTagIterableFactory, IntStepper, IterableFactory, MapFactory, SortedIterableFactory, SortedMapFactory, SpecificIterableFactory, Stepper, concurrent => cc, immutable => ci, mutable => cm}
-import scala.jdk.StreamConverters.Ops._
+import scala.jdk.StreamConverters._
 import scala.util.chaining._
 
 

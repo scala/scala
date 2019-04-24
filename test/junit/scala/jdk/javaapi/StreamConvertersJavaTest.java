@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.jdk;
+package scala.jdk.javaapi;
 
 import org.junit.Test;
 import scala.Tuple2;
@@ -25,15 +25,15 @@ import java.util.stream.Stream;
 import static org.junit.Assert.assertEquals;
 
 public class StreamConvertersJavaTest {
-    public List<String> ls = scala.jdk.javaapi.CollectionConverters.asScala(Arrays.asList("a", "b")).toList();
-    public List<Integer> li = scala.jdk.javaapi.CollectionConverters.asScala(Arrays.asList(1, 2)).toList();
-    public List<Float> lf = scala.jdk.javaapi.CollectionConverters.asScala(Arrays.asList(1f, 2f)).toList();
+    public List<String> ls = CollectionConverters.asScala(Arrays.asList("a", "b")).toList();
+    public List<Integer> li = CollectionConverters.asScala(Arrays.asList(1, 2)).toList();
+    public List<Float> lf = CollectionConverters.asScala(Arrays.asList(1f, 2f)).toList();
 
     public <K, V> Map<K, V> mkm(K k1, V v1, K k2, V v2) {
         java.util.Map<K, V> m = new java.util.HashMap<K, V>();
         m.put(k1, v1);
         m.put(k2, v2);
-        return scala.jdk.javaapi.CollectionConverters.asScala(m);
+        return CollectionConverters.asScala(m);
     }
     public Map<String, String> mss = mkm("a", "aa", "b", "bb");
     public Map<Float, Integer> mfi = mkm(1f, 1, 2f, 2);

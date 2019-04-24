@@ -13,7 +13,6 @@
 package scala.jdk.javaapi
 
 import scala.collection.convert.{AsJavaConverters, AsScalaConverters}
-import scala.jdk.StreamConverters
 
 /** This object contains methods that convert between Scala and Java collections.
   *

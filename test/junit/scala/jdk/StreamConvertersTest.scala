@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import StreamConverters.Ops._
+import scala.jdk.StreamConverters._
 
 @RunWith(classOf[JUnit4])
 class StreamConvertersTest {
@@ -122,7 +122,7 @@ class StreamConvertersTest {
     assert(newLongStream(1).boxed.asJavaPrimitiveStream.isInstanceOf[LongStream])
   }
 
-  import collection.mutable.{ ArrayBuffer, ArraySeq }
+  import collection.mutable.{ArrayBuffer, ArraySeq}
   def abufO(n: Int) = { val ab = new ArrayBuffer[String]; arrayO(n).foreach(ab += _); ab }
   def abufD(n: Int) = { val ab = new ArrayBuffer[Double]; arrayD(n).foreach(ab += _); ab }
   def abufI(n: Int) = { val ab = new ArrayBuffer[Int]; arrayI(n).foreach(ab += _); ab }
