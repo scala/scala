@@ -44,8 +44,15 @@ trait EntityPage extends HtmlPage {
   def headers: Elems = {
     def extScript(str: String) = Script(`type` = "text/javascript", src = str)
     def libScript(value: String) = extScript(relativeLinkTo(List(value, "lib")))
-
-    List(HtmlTags.Link(href = relativeLinkTo(List("index.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
+    val canonicalSetting = universe.settings.docCanonicalBaseUrl
+    val canonicalLink =  if (canonicalSetting.isSetByUser) {
+      val canonicalUrl =
+        if (canonicalSetting.value.endsWith("/")) canonicalSetting.value
+        else canonicalSetting.value + "/"
+      List(HtmlTags.Link(href = canonicalUrl + Page.relativeLinkTo(List("."), path), rel = "canonical"))
+    } else Nil
+    canonicalLink ++ List(
+      HtmlTags.Link(href = relativeLinkTo(List("index.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("template.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("diagrams.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet", id = "diagrams-css"),
     libScript("jquery.js"),
