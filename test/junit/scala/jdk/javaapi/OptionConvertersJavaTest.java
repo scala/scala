@@ -10,10 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.jdk;
+package scala.jdk.javaapi;
 
 import org.junit.Test;
 import scala.Option;
+
 import static org.junit.Assert.*;
 
 import java.util.Optional;
