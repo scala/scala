@@ -1,5 +1,5 @@
 object Test extends App {
-  import scala.jdk.CollectionConverters.Ops._
+  import scala.jdk.CollectionConverters._
 
   def ser(a: AnyRef) =
     (new java.io.ObjectOutputStream(new java.io.ByteArrayOutputStream())).writeObject(a)

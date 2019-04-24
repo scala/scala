@@ -4,7 +4,7 @@ import scala.tools.partest.BytecodeTest
 import scala.tools.asm
 import scala.tools.asm.util._
 import scala.tools.nsc.util.stringFromWriter
-import scala.jdk.CollectionConverters.Ops._
+import scala.jdk.CollectionConverters._
 
 object Test extends BytecodeTest {
   val nullChecks = Set(asm.Opcodes.IFNONNULL, asm.Opcodes.IFNULL)

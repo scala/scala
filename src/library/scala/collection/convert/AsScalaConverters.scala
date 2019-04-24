@@ -18,7 +18,7 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
 /** Defines converter methods from Java to Scala collections.
-  * These methods are available through the [[scala.jdk.CollectionConverters]] object.
+  * These methods are available through the [[scala.jdk.javaapi.CollectionConverters]] object.
   */
 trait AsScalaConverters {
   import JavaCollectionWrappers._

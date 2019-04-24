@@ -15,7 +15,7 @@ package scala.tools.nsc
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor, _}
 
-import scala.jdk.CollectionConverters.Ops._
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.io.RootPath
 import scala.tools.asm.tree.ClassNode

@@ -7,7 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.jdk.CollectionConverters.Ops._
+import scala.jdk.CollectionConverters._
 
 @RunWith(classOf[JUnit4])
 class MapWrapperTest {

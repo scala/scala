@@ -1,6 +1,6 @@
 package scala.tools.nsc
 
-import java.io.{File, OutputStreamWriter}
+import java.io.OutputStreamWriter
 import java.nio.charset.Charset
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
@@ -8,8 +8,7 @@ import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 import javax.tools.ToolProvider
 import org.junit.Test
 
-import scala.jdk.CollectionConverters.Ops._
-import scala.collection.immutable
+import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.reflect.io.PlainNioFile

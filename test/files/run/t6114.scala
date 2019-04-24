@@ -4,7 +4,7 @@ object Test extends App {
     list.add(1)
     list.add(2)
     list.add(3)
-    import scala.jdk.CollectionConverters.Ops._
+    import scala.jdk.CollectionConverters._
     val next = list.asScala ++ List(4,5,6)
     assert(next != list.asScala)
 
@@ -18,7 +18,7 @@ object Test extends App {
     set.add(1)
     set.add(2)
     set.add(3)
-    import scala.jdk.CollectionConverters.Ops._
+    import scala.jdk.CollectionConverters._
     val next = set.asScala ++ Set(4,5,6)
     assert(next != set.asScala)
 
@@ -32,7 +32,7 @@ object Test extends App {
     map.put(1,1)
     map.put(2,2)
     map.put(3,3)
-    import scala.jdk.CollectionConverters.Ops._
+    import scala.jdk.CollectionConverters._
     val next = map.asScala ++ Map(4->4,5->5,6->6)
     assert(next != map.asScala)
 
@@ -47,7 +47,7 @@ object Test extends App {
     list.add(1)
     list.add(2)
     list.add(3)
-    import scala.jdk.CollectionConverters.Ops._
+    import scala.jdk.CollectionConverters._
     val next = list.asScala ++ List(4,5,6)
     assert(next != list.asScala)
 

@@ -10,40 +10,32 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.jdk
+package scala.jdk.javaapi
 
-import scala.collection.convert.{AsJavaExtensions, AsScalaExtensions}
+import scala.collection.convert.{AsJavaConverters, AsScalaConverters}
+import scala.jdk.StreamConverters
 
-/** This object provides extension methods that convert between Scala and Java collections.
+/** This object contains methods that convert between Scala and Java collections.
   *
-  * When writing Java code, use the explicit conversion methods defined in
-  * [[javaapi.CollectionConverters]] instead.
+  * The explicit conversion methods defined here are intended to be used in Java code. For Scala
+  * code, it is recommended to use the extension methods defined in
+  * [[scala.jdk.CollectionConverters]].
   *
   * Note: to create [[java.util.stream.Stream Java Streams]] that operate on Scala collections
   * (sequentially or in parallel), use [[StreamConverters]].
   *
   * {{{
-  *   import scala.jdk.CollectionConverters._
-  *   val s: java.util.Set[String] = Set("one", "two").asJava
+  *   // Java Code
+  *   import scala.jdk.javaapi.CollectionConverters;
+  *   public class A {
+  *     public void t(scala.collection.immutable.List<String> l) {
+  *       java.util.List<String> jl = CollectionConverters.asJava(l);
+  *     }
+  *   }
   * }}}
   *
   * The conversions return adapters for the corresponding API, i.e., the collections are wrapped,
-  * not converted. Changes to the original collection are reflected in the view, and vice versa:
-  *
-  * {{{
-  *   scala> import scala.jdk.CollectionConverters._
-  *
-  *   scala> val s = collection.mutable.Set("one")
-  *   s: scala.collection.mutable.Set[String] = HashSet(one)
-  *
-  *   scala> val js = s.asJava
-  *   js: java.util.Set[String] = [one]
-  *
-  *   scala> js.add("two")
-  *
-  *   scala> s
-  *   res2: scala.collection.mutable.Set[String] = HashSet(two, one)
-  * }}}
+  * not converted. Changes to the original collection are reflected in the view, and vice versa.
   *
   * The following conversions are supported via `asScala` and `asJava`:
   *
@@ -57,7 +49,7 @@ import scala.collection.convert.{AsJavaExtensions, AsScalaExtensions}
   * }}}
   *
   * The following conversions are supported via `asScala` and through
-  * specially-named extension methods to convert to Java collections, as shown:
+  * specially-named methods to convert to Java collections, as shown:
   *
   * {{{
   *   scala.collection.Iterable    <=> java.util.Collection   (via asJavaCollection)
@@ -81,15 +73,6 @@ import scala.collection.convert.{AsJavaExtensions, AsScalaExtensions}
   * }}}
   *
   * In all cases, converting from a source type to a target type and back
-  * again will return the original source object. For example:
-  *
-  * {{{
-  *   import scala.jdk.CollectionConverters._
-  *
-  *   val source = new scala.collection.mutable.ListBuffer[Int]
-  *   val target: java.util.List[Int] = source.asJava
-  *   val other: scala.collection.mutable.Buffer[Int] = target.asScala
-  *   assert(source eq other)
-  * }}}
+  * again will return the original source object.
   */
-object CollectionConverters extends AsJavaExtensions with AsScalaExtensions
+object CollectionConverters extends AsJavaConverters with AsScalaConverters
