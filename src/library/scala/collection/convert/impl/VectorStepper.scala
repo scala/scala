@@ -15,7 +15,7 @@ package impl
 
 import scala.collection._
 
-private[convert] abstract class VectorStepperBase[+Sub >: Null, +Semi <: Sub](
+private[convert] abstract class VectorStepperBase[Sub >: Null, Semi <: Sub](
   _i0: Int,
   _iN: Int,
   protected val displayN: Int,
@@ -58,7 +58,7 @@ extends IndexedStepperBase[Sub, Semi](_i0, _iN) {
   }
 }
 
-private[collection] class AnyVectorStepper[+A](_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
+private[collection] class AnyVectorStepper[A](_i0: Int, _iN: Int, _displayN: Int, _trunk: Array[AnyRef])
 extends VectorStepperBase[AnyStepper[A], AnyVectorStepper[A]](_i0, _iN, _displayN, _trunk)
 with AnyStepper[A] {
   def nextStep(): A = if (hasStep) {

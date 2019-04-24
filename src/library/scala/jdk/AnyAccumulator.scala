@@ -287,7 +287,7 @@ object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
   }
 }
 
-private[jdk] class AnyAccumulatorStepper[+A](private[this] val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
+private[jdk] class AnyAccumulatorStepper[A](private[this] val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0
