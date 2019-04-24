@@ -453,14 +453,15 @@ trait MatchTranslation {
       protected def lengthGuard(binder: Symbol): Option[Tree] =
         // no need to check unless it's an unapplySeq and the minimal length is non-trivially satisfied
         checkedLength map { expectedLength =>
-          def lengthCompareSym = binder.info member nme.lengthCompare
-
           // `binder.lengthCompare(expectedLength)`
           // ...if binder has a lengthCompare method, otherwise
           // `scala.math.signum(binder.length - expectedLength)`
-          def checkExpectedLength = lengthCompareSym match {
-            case NoSymbol => compareInts(Select(seqTree(binder, forceImmutable = false), nme.length), LIT(expectedLength))
-            case lencmp   => (seqTree(binder, forceImmutable = false) DOT lencmp)(LIT(expectedLength))
+          def checkExpectedLength = {
+            val tree = seqTree(binder, forceImmutable = false)
+            val typedTree = typer.typed(tree)
+            val lengthCompareSym = typedTree.tpe.member(nme.lengthCompare)
+            if (lengthCompareSym == NoSymbol) compareInts(Select(typedTree, nme.length), LIT(expectedLength))
+            else (typedTree DOT lengthCompareSym)(LIT(expectedLength))
           }
 
           // the comparison to perform
