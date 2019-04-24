@@ -71,9 +71,6 @@ import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
  *   + enables downstream:
  *     - stale stores (a stored value may not be loaded anymore)
  *     - store-load pairs (a load n may now be right after a store n)
- *   + NOTE: copy propagation is only executed once, in the first fixpoint loop iteration. none of
- *     the other optimizations enables further copy prop. we still run it as part of the loop
- *     because it requires unreachable code to be eliminated.
  *
  * stale stores (replace STORE by POP), rewrites `ClassTag(x).newArray`, inlines `array_apply/update`
  *   + enables UPSTREAM:

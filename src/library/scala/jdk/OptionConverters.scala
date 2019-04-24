@@ -129,7 +129,7 @@ object OptionConverters {
     case _ => Optional.empty[A]
   }
 
-  /** Convert a Scala `Option[Double]` to a Java `OptionalDouble`
+  /** Convert a Scala `Option[java.lang.Double]` to a Java `OptionalDouble`
     *
     * $primitiveNote
     */
@@ -138,7 +138,7 @@ object OptionConverters {
     case _ => OptionalDouble.empty
   }
 
-  /** Convert a Scala `Option[Int]` to a Java `OptionalInt`
+  /** Convert a Scala `Option[java.lang.Integer]` to a Java `OptionalInt`
     *
     * $primitiveNote
     */
@@ -147,7 +147,7 @@ object OptionConverters {
     case _ => OptionalInt.empty
   }
 
-  /** Convert a Scala `Option[Long]` to a Java `OptionalLong`
+  /** Convert a Scala `Option[java.lang.Long]` to a Java `OptionalLong`
     *
     * $primitiveNote
     */
@@ -159,19 +159,19 @@ object OptionConverters {
   /** Convert a Java `Optional` to a Scala `Option` */
   def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
-  /** Convert a Java `OptionalDouble` to a Scala `Option`
+  /** Convert a Java `OptionalDouble` to a Scala `Option[java.lang.Double]`
     *
     * $primitiveNote
     */
   def toScala(o: OptionalDouble): Option[jl.Double] = if (o.isPresent) Some(o.getAsDouble) else None
 
-  /** Convert a Java `OptionalInt` to a Scala `Option`
+  /** Convert a Java `OptionalInt` to a Scala `Option[java.lang.Integer]`
     *
     * $primitiveNote
     */
   def toScala(o: OptionalInt): Option[jl.Integer] = if (o.isPresent) Some(o.getAsInt) else None
 
-  /** Convert a Java `OptionalLong` to a Scala `Option`
+  /** Convert a Java `OptionalLong` to a Scala `Option[java.lang.Long]`
     *
     * $primitiveNote
     */
