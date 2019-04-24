@@ -15,10 +15,11 @@ package reflect
 package internal
 package tpe
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import Flags._
 import scala.annotation.tailrec
 import Variance._
+import scala.collection.mutable.ListBuffer
 
 private[internal] trait TypeMaps {
   self: SymbolTable =>
@@ -1085,10 +1086,17 @@ private[internal] trait TypeMaps {
 
   /** A map to implement the `collect` method. */
   class CollectTypeCollector[T](pf: PartialFunction[Type, T]) extends TypeCollector[List[T]](Nil) {
-    override def collect(tp: Type) = super.collect(tp).reverse
+    val buffer: ListBuffer[T] = ListBuffer.empty
+
+    override def collect(tp: Type): List[T] = {
+      apply(tp)
+      val result = buffer.result()
+      buffer.clear()
+      result
+    }
 
     override def apply(tp: Type): Unit = {
-      if (pf.isDefinedAt(tp)) result ::= pf(tp)
+      if (pf.isDefinedAt(tp)) buffer += pf(tp)
       tp.foldOver(this)
     }
   }
@@ -1239,4 +1247,21 @@ private[internal] trait TypeMaps {
     }
   }
 
+  object UnrelatableCollector extends CollectTypeCollector[TypeSkolem](PartialFunction.empty) {
+    var barLevel: Int = 0
+
+    override def apply(tp: Type): Unit = tp match {
+      case TypeRef(_, ts: TypeSkolem, _) if ts.level > barLevel => buffer += ts
+      case _ => tp.foldOver(this)
+    }
+  }
+
+  object IsRelatableCollector extends TypeCollector[Boolean](true) {
+    var barLevel: Int = 0
+
+    def apply(tp: Type): Unit = if (result) tp match {
+      case TypeRef(_, ts: TypeSkolem, _) if ts.level > barLevel => result = false
+      case _ => tp.foldOver(this)
+    }
+  }
 }

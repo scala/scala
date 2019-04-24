@@ -201,6 +201,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.typeVarToOriginMap
     this.ErroneousCollector
     this.adaptToNewRunMap
+    this.UnrelatableCollector
+    this.IsRelatableCollector
     this.SubTypePair
     this.SymbolKind
     this.NoSymbol
