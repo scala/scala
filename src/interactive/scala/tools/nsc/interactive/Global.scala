@@ -13,9 +13,10 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ FileReader, FileWriter }
+import java.io.{FileReader, FileWriter}
+
 import scala.collection.mutable
-import mutable.{LinkedHashMap, HashSet}
+import mutable.{HashSet, LinkedHashMap}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
 import scala.reflect.internal.Reporter
@@ -23,12 +24,13 @@ import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.annotation.{ elidable, tailrec }
+import scala.annotation.{elidable, tailrec}
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
 import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters
+
+import scala.jdk.javaapi.CollectionConverters
 import scala.reflect.internal.Chars.isIdentifierStart
 
 /**

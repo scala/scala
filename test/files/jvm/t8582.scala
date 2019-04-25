@@ -1,5 +1,5 @@
 import scala.tools.partest.BytecodeTest
-import scala.jdk.CollectionConverters.Ops._
+import scala.jdk.CollectionConverters._
 
 package p1 {
   package p2 {

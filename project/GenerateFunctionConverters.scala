@@ -42,6 +42,25 @@ object GenerateFunctionConverters {
   val run = new compiler.Run
 
   import compiler._, definitions._
+  locally {
+    // make sure `java.lang.Double` prints as `java.lang.Double`, not just `Double` (which resolves to `scala.Double`)
+    val f = classOf[scala.reflect.internal.Definitions#DefinitionsClass].getDeclaredField("UnqualifiedOwners")
+    f.setAccessible(true)
+    f.set(definitions, definitions.UnqualifiedOwners.filter(_.fullNameString != "java.lang"))
+  }
+
+  def primitiveBox(tp: Type): Type = tp.typeSymbol match {
+    case UnitClass    => BoxedUnitClass.tpe
+    case ByteClass    => BoxedByteClass.tpe
+    case ShortClass   => BoxedShortClass.tpe
+    case CharClass    => BoxedCharacterClass.tpe
+    case IntClass     => BoxedIntClass.tpe
+    case LongClass    => BoxedLongClass.tpe
+    case FloatClass   => BoxedFloatClass.tpe
+    case DoubleClass  => BoxedDoubleClass.tpe
+    case BooleanClass => BoxedBooleanClass.tpe
+    case _            => tp
+  }
 
   implicit class IndentMe(v: Vector[String]) {
     def indent: Vector[String] = v.map("  " + _)
@@ -177,7 +196,15 @@ object GenerateFunctionConverters {
       val tnParams: List[TypeName] = jfn.iface.typeParams.map(_.name.toTypeName)
       val tdParams: List[TypeDef] = tnParams.map(TypeDef(NoMods, _, Nil, EmptyTree))
       val javaTargs: List[Tree] = tdParams.map(_.name).map(Ident(_))
-      val scalaTargs: List[Tree] = jfn.pTypes.map(mkRef) :+ mkRef(jfn.rType)
+      val scalaTargTps = jfn.pTypes :+ jfn.rType
+      val scalaTargBoxedTps = scalaTargTps.map(primitiveBox)
+      val scalaTargs: List[Tree] = scalaTargTps.map(mkRef)
+      val scalaTargsBoxed: List[Tree] = scalaTargBoxedTps.map(mkRef)
+      val boxComment =
+        if (scalaTargTps.map(_.typeSymbol) != scalaTargBoxedTps.map(_.typeSymbol))
+          Literal(Constant("primitiveComment"))
+        else
+          Literal(Constant("noComment"))
 
       // Conversion wrappers have three or four components that we need to name
       // (1) The wrapper class that wraps a Java SAM as Scala function, or vice versa (ClassN)
@@ -220,9 +247,9 @@ object GenerateFunctionConverters {
         }"""
 
       val j2sDefTree =
-        q"""@inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargs] = jf match {
-          case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargs]]
-          case _ => new $j2sClassN[..$tnParams](jf)
+        q"""@deprecated($boxComment) @inline def $j2sDefN[..$tdParams](jf: $javaType[..$javaTargs]): $scalaType[..$scalaTargsBoxed] = jf match {
+          case $s2jCompanionN(f) => f.asInstanceOf[$scalaType[..$scalaTargsBoxed]]
+          case _ => new $j2sClassN[..$tnParams](jf).asInstanceOf[$scalaType[..$scalaTargsBoxed]]
         }"""
 
       val j2sImpTree =
@@ -234,9 +261,9 @@ object GenerateFunctionConverters {
         }"""
 
       val s2jDefTree =
-        q"""@inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargs]): $javaType[..$javaTargs] = sf match {
+        q"""@deprecated($boxComment) @inline def $s2jDefN[..$tdParams](sf: $scalaType[..$scalaTargsBoxed]): $javaType[..$javaTargs] = (sf: AnyRef) match {
           case $j2sCompanionN(f) => f.asInstanceOf[$javaType[..$javaTargs]]
-          case _ => new $s2jClassN[..$tnParams](sf)
+          case _ => new $s2jClassN[..$tnParams](sf.asInstanceOf[$scalaType[..$scalaTargs]])
         }"""
 
       // This is especially tricky because functions are contravariant in their arguments
@@ -336,53 +363,70 @@ object GenerateFunctionConverters {
 
   def run(outDir: java.io.File): Unit = {
     val (impls, explicitDefs, defss) = SamConversionCode(buildWrappersViaReflection: _*)
-    val funConvs =
+    val javaFunConvsNoComments =
       s"""/** This object contains methods that convert between Scala and Java function types.
          |  *
-         |  * The explicit conversion methods defined here are practical when writing Java code. For Scala
-         |  * code, it is recommended to use the extension methods defined in [[FunctionConverters.Ops]].
+         |  * The explicit conversion methods defined here are intended to be used in Java code. For Scala
+         |  * code, it is recommended to use the extension methods defined in [[scala.jdk.FunctionConverters]].
          |  *
-         |  * Using the `.asJava` extension method (from [[FunctionConverters.Ops]]) on a Scala function
-         |  * produces the most specific possible Java function type:
+         |  * For details how the function converters work, see [[scala.jdk.FunctionConverters]].
          |  *
-         |  * {{{
-         |  *   scala> import scala.jdk.FunctionConverters; import FunctionConverters.Ops._
-         |  *   scala> val f = (x: Int) => x + 1
-         |  *
-         |  *   scala> val jf1 = f.asJava
-         |  *   jf1: java.util.function.IntUnaryOperator = ...
-         |  * }}}
-         |  *
-         |  * More generic Java function types can be created using the corresponding `asJavaXYZ` extension
-         |  * method:
-         |  *
-         |  * {{{
-         |  *   scala> val jf2 = f.asJavaFunction
-         |  *   jf2: java.util.function.Function[Int,Int] = ...
-         |  *
-         |  *   scala> val jf3 = f.asJavaUnaryOperator
-         |  *   jf3: java.util.function.UnaryOperator[Int] = ...
-         |  * }}}
-         |  *
-         |  * Converting a Java function to Scala is done using the `asScala` extension method:
-         |  *
-         |  * {{{
-         |  *   scala> List(1,2,3).map(jf2.asScala)
-         |  *   res1: List[Int] = List(2, 3, 4)
-         |  * }}}
          |  */
          |object FunctionConverters {
-         |  /** This object provides extension methods that convert between Scala and Java function types,
-         |    * see [[FunctionConverters]].
-         |    */
-         |  object Ops extends Priority0FunctionExtensions
-         |
-         |  import FunctionWrappers._
+         |  import scala.jdk.FunctionWrappers._
          |
          |${explicitDefs.indent.mkString("\n")}
-         |}
-      """.stripMargin
-    write(outDir, Artifact("jdk/FunctionConverters.scala", sourceFile("", funConvs)))
+         |}""".stripMargin
+
+    // cannot generate comments with quasiquotes
+    val javaFunConvs = javaFunConvsNoComments.replace("""  @deprecated("primitiveComment") """,
+      s"""  /** Note: this method uses the boxed type `java.lang.X` (or `BoxedUnit`) instead of the
+         |    * primitive type `scala.X` to improve compatibility when using it in Java code (the
+         |    * Scala compiler emits `C[Int]` as `C[Object]` in bytecode due to
+         |    * [[https://github.com/scala/bug/issues/4214 scala/bug#4214]]). In Scala code, add
+         |    * `import scala.jdk.FunctionConverters._` and use the extension methods instead.
+         |    */
+         |""".stripMargin + "  ").replace("""@deprecated("noComment") """, "")
+
+    val scalaFunConvs =
+      """/** This object provides extension methods that convert between Scala and Java function types.
+        |  *
+        |  * When writing Java code, use the explicit conversion methods defined in
+        |  * [[javaapi.FunctionConverters]] instead.
+        |  *
+        |  * Using the `.asJava` extension method on a Scala function produces the most specific possible
+        |  * Java function type:
+        |  *
+        |  * {{{
+        |  *   scala> import scala.jdk.FunctionConverters._
+        |  *   scala> val f = (x: Int) => x + 1
+        |  *
+        |  *   scala> val jf1 = f.asJava
+        |  *   jf1: java.util.function.IntUnaryOperator = ...
+        |  * }}}
+        |  *
+        |  * More generic Java function types can be created using the corresponding `asJavaXYZ` extension
+        |  * method:
+        |  *
+        |  * {{{
+        |  *   scala> val jf2 = f.asJavaFunction
+        |  *   jf2: java.util.function.Function[Int,Int] = ...
+        |  *
+        |  *   scala> val jf3 = f.asJavaUnaryOperator
+        |  *   jf3: java.util.function.UnaryOperator[Int] = ...
+        |  * }}}
+        |  *
+        |  * Converting a Java function to Scala is done using the `asScala` extension method:
+        |  *
+        |  * {{{
+        |  *   scala> List(1,2,3).map(jf2.asScala)
+        |  *   res1: List[Int] = List(2, 3, 4)
+        |  * }}}
+        |  */
+        |object FunctionConverters extends Priority0FunctionExtensions""".stripMargin
+
+    write(outDir, Artifact("jdk/javaapi/FunctionConverters.scala", sourceFile(".javaapi", javaFunConvs)))
+    write(outDir, Artifact("jdk/FunctionConverters.scala", sourceFile("", scalaFunConvs)))
     write(outDir, Artifact("jdk/FunctionWrappers.scala", sourceFile("", impls.mkString("\n"))))
     write(outDir, Artifact("jdk/FunctionExtensions.scala", sourceFile("", defss.map(_.mkString("\n")).mkString("\n\n\n\n"))))
   }

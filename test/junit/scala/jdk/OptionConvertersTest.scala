@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.jdk.OptionConverters.Ops._
+import scala.jdk.OptionConverters._
 
 @RunWith(classOf[JUnit4])
 class OptionConvertersTest {
@@ -107,7 +107,7 @@ class OptionConvertersTest {
 
   @Test
   def nonExtensionConversions(): Unit = {
-    import scala.jdk.{OptionConverters => conv}
+    import scala.jdk.javaapi.{OptionConverters => conv}
     assertEquals(conv.toScala(Optional.of("fish")), Option("fish"))
     assertEquals(conv.toScala(Optional.empty[String]), None)
     assertEquals(conv.toJava(Option("fish")), Optional.of("fish"))

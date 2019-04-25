@@ -147,7 +147,7 @@ trait ToJavaImplicits {
  * It is recommended to use explicit conversions provided by [[collection.JavaConverters]] instead.
  * Implicit conversions may cause unexpected issues, see [[ImplicitConversions]].
  */
-@deprecated("Use `scala.jdk.CollectionConverters.Ops` instead", "2.13.0")
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 object ImplicitConversionsToJava extends ToJavaImplicits
 
 /**
@@ -156,7 +156,7 @@ object ImplicitConversionsToJava extends ToJavaImplicits
  * It is recommended to use explicit conversions provided by [[collection.JavaConverters]] instead.
  * Implicit conversions may cause unexpected issues, see [[ImplicitConversions]].
  */
-@deprecated("Use `scala.jdk.CollectionConverters.Ops` instead", "2.13.0")
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 object ImplicitConversionsToScala extends ToScalaImplicits
 
 /**
@@ -175,5 +175,5 @@ object ImplicitConversionsToScala extends ToScalaImplicits
  * The above example returns `null` instead of producing a type error at compile-time. The map is
  * implicitly converted to a `java.util.Map` which provides a method `get(x: AnyRef)`.
  */
-@deprecated("Use `scala.jdk.CollectionConverters.Ops` instead", "2.13.0")
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 object ImplicitConversions extends ToScalaImplicits with ToJavaImplicits

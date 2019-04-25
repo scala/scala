@@ -3,11 +3,10 @@ package backend.jvm
 
 import java.util.concurrent.TimeUnit
 
-import scala.tools.asm.tree.ClassNode
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
 
-import scala.jdk.CollectionConverters.Ops._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.analysis.ProdConsAnalyzer
 
@@ -27,7 +26,6 @@ class ProdConsBenchmark {
     val settings = new Settings()
     settings.usejavacp.value = true
     val global = new Global(settings)
-    import global._
     this.global = global.asInstanceOf[G]
     classNode = AsmUtils.readClass(global.classPath.findClassFile("scala.tools.nsc.typechecker.Implicits$ImplicitSearch").get.toByteArray)
   }
@@ -35,7 +33,6 @@ class ProdConsBenchmark {
   @Benchmark
   def prodCons(bh: Blackhole): Unit = {
     val global: G = this.global
-    import global.genBCode.postProcessor.backendUtils._
     for (m <- classNode.methods.iterator().asScala) {
       bh.consume(new ProdConsAnalyzer(m, classNode.name))
     }

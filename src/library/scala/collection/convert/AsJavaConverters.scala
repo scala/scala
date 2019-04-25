@@ -20,7 +20,7 @@ import java.{lang => jl, util => ju}
 import scala.{unchecked => uc}
 
 /** Defines converter methods from Scala to Java collections.
-  * These methods are available through the [[scala.jdk.CollectionConverters]] object.
+  * These methods are available through the [[scala.jdk.javaapi.CollectionConverters]] object.
   */
 trait AsJavaConverters {
   import JavaCollectionWrappers._

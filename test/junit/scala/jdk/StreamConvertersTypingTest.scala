@@ -28,7 +28,7 @@ class StreamConvertersTypingTest {
 
   @Test
   def keyValueSteppers(): Unit = {
-    import scala.jdk.StreamConverters.Ops._
+    import scala.jdk.StreamConverters._
 
     // The steppers of LinkedHashMap and LinkedHashSet are not EfficientSplit, because they use
     // the default IterableOnce.stepper. We cannot use XTableStepper because that would not yield
@@ -110,7 +110,7 @@ class StreamConvertersTypingTest {
 
   @Test
   def convertStreamToScala(): Unit = {
-    import scala.jdk.StreamConverters.Ops._
+    import scala.jdk.StreamConverters._
 
     for (par <- List(false, true)) {
       def is = { val s = Vector(1).asJavaSeqStream; if (par) s.parallel else s }
@@ -257,7 +257,7 @@ class StreamConvertersTypingTest {
     }
 
     locally {
-      import scala.jdk.StreamConverters.Ops._
+      import scala.jdk.StreamConverters._
       val ils = il.stepper
       (ils: IntStepper /*with EfficientSubstep*/).nextStep(): Int
       val ivs = iv.stepper
@@ -395,7 +395,7 @@ class StreamConvertersTypingTest {
     def ps1: IntStepper with EfficientSplit = r.codePointStepper
 
     locally {
-      import scala.jdk.StreamConverters.Ops._
+      import scala.jdk.StreamConverters._
       val rss = r.asJavaSeqStream
       (rss: IntStream).count()
       val rps = r.asJavaParStream
@@ -432,7 +432,7 @@ class StreamConvertersTypingTest {
     val sa = Accumulator("a", "b", "c")
 
     locally {
-      import scala.jdk.StreamConverters.Ops._
+      import scala.jdk.StreamConverters._
 
       val ias = ia.stepper
       (ias: IntStepper with EfficientSplit).asJavaParStream.count()
@@ -452,7 +452,7 @@ class StreamConvertersTypingTest {
 
   @Test
   def anyStepperOfPrimitiveAsStream(): Unit = {
-    import scala.jdk.StreamConverters.Ops._
+    import scala.jdk.StreamConverters._
     val s = new AnyStepper[Int] with EfficientSplit {
       override def trySplit(): AnyStepper[Int] = null
       override def hasStep: Boolean = false
@@ -466,8 +466,8 @@ class StreamConvertersTypingTest {
 
   @Test
   def arraySeqStepper(): Unit = {
-    import collection.{mutable => m, immutable => i}
-    import scala.jdk.StreamConverters.Ops._
+    import collection.{immutable => i, mutable => m}
+    import scala.jdk.StreamConverters._
 
     val sa = Array("", "")
     val ia = Array(1, 2, 3)
@@ -541,8 +541,8 @@ class StreamConvertersTypingTest {
 
   @Test
   def arrayBufferStepper(): Unit = {
-    import collection.{mutable => m, immutable => i}
-    import scala.jdk.StreamConverters.Ops._
+    import collection.{mutable => m}
+    import scala.jdk.StreamConverters._
 
     val sb = m.ArrayBuffer.from(Array("", ""))
     val ib = m.ArrayBuffer.from(Array(1, 2))

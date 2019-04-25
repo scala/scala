@@ -27,7 +27,7 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * stream pipeline into a Scala collection. The
   * [[scala.collection.convert.StreamExtensions.StreamHasToScala.toScala]] extension method on Java
   * streams (available by importing
-  * [[scala.jdk.StreamConverters.Ops `scala.jdk.StreamConverters.Ops._`]]) is specialized for
+  * [[scala.jdk.StreamConverters `scala.jdk.StreamConverters._`]]) is specialized for
   * Accumulators: they are built in parallel, the parts are merged efficiently.
   *
   * Building specialized Accumulators is handled transparently. As a user, using the
@@ -38,8 +38,8 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * deadlocks, see [[https://github.com/scala/bug/issues/9076]].
   *
   * {{{
-  *   scala> import scala.jdk.StreamConverters.Ops._
-  *   import scala.jdk.StreamConverters.Ops._
+  *   scala> import scala.jdk.StreamConverters._
+  *   import scala.jdk.StreamConverters._
   *
   *   scala> def isPrime(n: Int): Boolean = !(2 +: (3 to Math.sqrt(n).toInt by 2) exists (n % _ == 0))
   *   isPrime: (n: Int)Boolean
@@ -54,7 +54,7 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * There are two possibilities to process elements of a primitive Accumulator without boxing:
   * specialized operations of the Accumulator, or the Stepper interface. The most common collection
   * operations are overloaded or overridden in the primitive Accumulator classes, for example
-  * [[IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
+  * [[IntAccumulator.map(f:Int=>Int)* IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
   * `intAcc.exists(x => testOn(x))` does not incur boxing.
   *
   * The [[Stepper]] interface provides iterator-like `hasStep` and `nextStep` methods, and is

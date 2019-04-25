@@ -21,8 +21,8 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.*;
-import static scala.jdk.FutureConverters.toJava;
-import static scala.jdk.FutureConverters.toScala;
+import static scala.jdk.javaapi.FutureConverters.toJava;
+import static scala.jdk.javaapi.FutureConverters.toScala;
 
 public class FutureConvertersTest {
     private <T> Promise<T> promise() { return Promise.apply(); }
