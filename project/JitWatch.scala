@@ -61,7 +61,7 @@ object JitWatchFilePlugin extends AutoPlugin {
       val sourceClassiferArtifacts = classiferArtifacts.filter(tuple => tuple._2.classifier == Some("sources") && dependencyModuleIds.contains(tuple._1))
 
       val externalSources = sourceClassiferArtifacts.map(_._3)
-      val internalAndExternalSources = (sourceDirectory.value +: javaHomeSrc +: (transitiveSourceDirectories ++ transitiveSourceDirectories2).distinct) ++ externalSources
+      val internalAndExternalSources = sourceDirectories.value ++ (javaHomeSrc +: (transitiveSourceDirectories ++ transitiveSourceDirectories2).distinct) ++ externalSources
       props.put("Sources", internalAndExternalSources.map(_.getAbsolutePath).mkString(","))
       val baseDir = baseDirectory.value
       val lastLogDir = Keys.forkOptions.value.workingDirectory match {
@@ -73,16 +73,20 @@ object JitWatchFilePlugin extends AutoPlugin {
     },
 
     jitwatchConfigFile := {
-      val f = target.value / ("jitwatch-" + configuration.value.name + ".properties")
-      val contents = jitwatchConfigFileContents.value
+      val jitwatchProps = target.value / ("jitwatch-" + configuration.value.name + ".properties")
+      val hotSpotLog = target.value / "hotspot.log"
       val log = streams.value.log
-      val fw = new FileWriter(f)
+      val fw = new FileWriter(jitwatchProps)
       try {
         jitwatchConfigFileContents.value.store(fw, null)
-        log.info(s"./launchUI.sh -Djitwatch.config.file=" + f.getAbsolutePath)
+        // TODO figure out the last benchmark that was run and focus the UI on that member with: -Djitwatch.focus.member="scala/collection/mutable/ArrayOpsBenchmark insertInteger (Lorg/openjdk/jmh/infra/Blackhole;)V"
+        log.info(s"^-- UNRESOLVED DEPENDENCIES warnings above are normal, please ignore")
+        log.info("After cloning https://github.com/AdoptOpenJDK/jitwatch to $JITWATCH_HOME, compile and launch with:")
+        log.info(s"mvn -f $$JITWATCH_HOME clean compile exec:java -Djitwatch.config.file=${jitwatchProps.getAbsolutePath} -Djitwatch.logfile=${hotSpotLog.getAbsolutePath}")
+        log.info("Note: Add, for example, `-Djitwatch.focus.member=\"scala/collection/mutable/ArrayOpsBenchmark insertInteger (Lorg/openjdk/jmh/infra/Blackhole;)V\"` to focus UI on a method of interest on startup.")
       } finally {
         fw.close()
       }
-    }
+    }    
   )
 }

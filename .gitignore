@@ -57,3 +57,4 @@
 /project/project/project/target/
 /build-sbt/
 local.sbt
+jitwatch.out
