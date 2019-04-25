@@ -45,6 +45,7 @@ val junitInterfaceDep = "com.novocode"                   % "junit-interface"    
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.9"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
+val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % "1.12"
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
@@ -409,7 +410,7 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies += asmDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies ++= Seq(jlineDep),
+    libraryDependencies ++= Seq(jlineDep, jansiDep),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -726,8 +727,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
   .settings(disableDocs)
   .settings(
     libraryDependencies += asmDep,
-    publishLocal := {},
-    publish := {},
+    skip in publish := true,
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
     description := "Scala Compiler Testing Tool (compiler-specific java agent)",
@@ -1295,3 +1295,8 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
   def extract(m: ModuleID) = (m.organization, m.name)
   files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
 }
+
+// WhiteSource
+whitesourceProduct               := "Lightbend Reactive Platform"
+whitesourceAggregateProjectName  := "scala-2.13-stable"
+whitesourceIgnoredScopes         := Vector("test", "scala-tool")
