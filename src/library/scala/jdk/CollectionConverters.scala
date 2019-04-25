@@ -92,4 +92,7 @@ import scala.collection.convert.{AsJavaExtensions, AsScalaExtensions}
   *   assert(source eq other)
   * }}}
   */
-object CollectionConverters extends AsJavaExtensions with AsScalaExtensions
+object CollectionConverters extends AsJavaExtensions with AsScalaExtensions {
+  @deprecated("For Scala.js compatibility in 2.13.0-RC2 only, will be removed for 2.13.0 final", "2.13.0-RC2")
+  object Ops extends AsJavaExtensions with AsScalaExtensions
+}
