@@ -20,7 +20,6 @@ package util.control
  *
  *  @note Since JDK 1.7, a similar effect can be achieved with `class Ex extends Throwable(..., writableStackTrace = false)`
  *
- *  @author   Paul Phillips
  *  @since    2.8
  */
 trait NoStackTrace extends Throwable {

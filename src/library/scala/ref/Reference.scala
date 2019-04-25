@@ -14,7 +14,6 @@ package scala.ref
 
 /**
  * @see `java.lang.ref.Reference`
- * @author Sean McDirmid
  */
 trait Reference[+T <: AnyRef] extends Function0[T] {
   /** return the underlying value */

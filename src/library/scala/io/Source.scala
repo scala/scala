@@ -19,8 +19,6 @@ import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
- *
- *  @author  Burak Emir, Paul Phillips
  */
 object Source {
   val DefaultBufSize = 2048

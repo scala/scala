@@ -16,8 +16,6 @@ package scala
  *  object doesn't match any pattern of a pattern matching
  *  expression.
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
  *  @since   2.0
  */
 final class MatchError(@transient obj: Any) extends RuntimeException {

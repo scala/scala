@@ -39,8 +39,6 @@ package scala.util.control
  *
  *  Instances of `ControlThrowable` should not normally have a cause.
  *  Legacy subclasses may set a cause using `initCause`.
- *
- *  @author Miles Sabin
  */
 abstract class ControlThrowable(message: String) extends Throwable(
   message, /*cause*/ null, /*enableSuppression=*/ false, /*writableStackTrace*/ false) {

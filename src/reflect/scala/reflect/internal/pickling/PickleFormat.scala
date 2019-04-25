@@ -20,7 +20,6 @@ package pickling
  *  If you extend the format, be sure to increase the
  *  version minor number.
  *
- *  @author Martin Odersky
  *  @version 1.0
  */
 object PickleFormat {

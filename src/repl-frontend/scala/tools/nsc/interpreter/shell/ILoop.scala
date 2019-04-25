@@ -46,9 +46,6 @@ import scala.collection.JavaConverters._
   * There should be no direct dependency of this code on the compiler;
   * it should all go through the `intp` reference to the interpreter,
   * or maybe eventually even over the wire to a remote compiler.
-  *
-  * @author Moez A. Abdel-Gawad
-  * @author Lex Spoon
   */
 class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
             protected val out: PrintWriter = new PrintWriter(Console.out, true)) extends LoopCommands {

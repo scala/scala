@@ -44,7 +44,5 @@ package scala
  * def t1 = f1(1) + f1(1): @noinline   // equivalent to (f1(1) + f1(1)): @noinline
  * def t2 = f1(1) + (f1(1): @noinline) // the second call to f1 is not inlined
  * }}}
- *
- * @author Lex Spoon
  */
 final class noinline extends scala.annotation.StaticAnnotation

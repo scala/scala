@@ -31,7 +31,6 @@ import scala.language.higherKinds
  *    1. transitive: if `equiv(x, y) == true` and `equiv(y, z) == true`, then
  *       `equiv(x, z) == true` for any `x`, `y`, and `z` of type `T`.
  *
- *  @author  Geoffrey Washburn, Paul Phillips
  *  @since 2.7
  */
 

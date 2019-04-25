@@ -37,7 +37,6 @@ package math
  *  exposed as the `equiv` method, inherited from the
  *  [[scala.math.Equiv Equiv]] trait.
  *
- *  @author  Geoffrey Washburn
  *  @since 2.7
  */
 

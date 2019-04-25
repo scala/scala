@@ -14,7 +14,6 @@ package scala
 
 /** A module defining utility methods for higher-order functional programming.
  *
- *  @author  Martin Odersky
  *  @since   1.0
  */
 object Function {

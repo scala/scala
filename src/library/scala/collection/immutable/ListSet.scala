@@ -34,7 +34,6 @@ import scala.collection.generic.DefaultSerializable
   *
   * @tparam A the type of the elements contained in this list set
   *
-  * @author Matthias Zenger
   * @since 1
   * @define Coll ListSet
   * @define coll list set

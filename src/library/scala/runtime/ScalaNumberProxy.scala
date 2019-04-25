@@ -21,7 +21,6 @@ import Proxy.Typed
 /** Base classes for the Rich* wrappers of the primitive types.
  *  As with all classes in scala.runtime.*, this is not a supported API.
  *
- *  @author Paul Phillips
  *  @since   2.9
  */
 trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed[T] with OrderedProxy[T] {

@@ -25,7 +25,6 @@ import scala.runtime.Statics
   * as determined by the `Ordering` has to be consistent with `equals` and `hashCode`. Universal equality
   * of numeric types is not supported (similar to `AnyRefMap`).
   *
-  * @author  Stefan Zeiger
   * @since   2.13
   * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   * section on `Hash Tables` for more information.

@@ -18,7 +18,6 @@ import scala.annotation.tailrec
 /** This trait forms part of collections that can be reduced
   *  using a `-=` operator.
   *
-  *  @author   Martin Odersky
   *  @since   2.8
   *  @define coll shrinkable collection
   *  @define Coll `Shrinkable`

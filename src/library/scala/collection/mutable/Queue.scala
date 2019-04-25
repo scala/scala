@@ -19,8 +19,6 @@ import scala.collection.generic.DefaultSerializable
 /** `Queue` objects implement data structures that allow to
   *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
   *
-  *  @author  Pathikrit Bhowmick
-  *
   *  @since   2.13
   *
   *  @define Coll `mutable.Queue`

@@ -23,7 +23,6 @@ package scala
  * }
  * }}}
  *
- * @author  Nikolay Mihaylov
  * @since   2.1
  */
 final class throws[T <: Throwable](cause: String = "") extends scala.annotation.StaticAnnotation {

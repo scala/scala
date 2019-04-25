@@ -21,7 +21,6 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for integer maps.
-  *  @author David MacIver
   */
 private[immutable] object IntMapUtils extends BitOperations.Int {
   def branchMask(i: Int, j: Int) = highestOneBit(i ^ j)

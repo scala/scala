@@ -191,10 +191,6 @@ import java.util.regex.{ Pattern, Matcher }
  *
  *  @see [[java.util.regex.Pattern]]
  *
- *  @author  Thibaud Hottelier
- *  @author  Philipp Haller
- *  @author  Martin Odersky
- *
  *  @param pattern    The compiled pattern
  *  @param groupNames A mapping from names to indices in capture groups
  *

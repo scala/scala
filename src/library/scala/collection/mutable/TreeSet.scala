@@ -24,7 +24,6 @@ import scala.collection.{SortedIterableFactory, SortedSetFactoryDefaults, Steppe
   * @param ordering the implicit ordering used to compare objects of type `A`.
   * @tparam A the type of the keys contained in this tree set.
   *
-  * @author Rui Gonçalves
   * @since 2.10
   *
   * @define Coll mutable.TreeSet
@@ -190,7 +189,6 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
   * $factoryInfo
   * @define Coll `mutable.TreeSet`
   * @define coll mutable tree set
-  * @author Lucien Pereira
   */
 @SerialVersionUID(3L)
 object TreeSet extends SortedIterableFactory[TreeSet] {

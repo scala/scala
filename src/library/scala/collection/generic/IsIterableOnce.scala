@@ -37,8 +37,6 @@ package generic
  *    // == List(2, 4)
  * }}}
  *
- * @author Miles Sabin
- * @author J. Suereth
  * @since 2.10
  */
 trait IsIterableOnce[Repr] {

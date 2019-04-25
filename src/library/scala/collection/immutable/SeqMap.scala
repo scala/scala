@@ -27,7 +27,6 @@ import scala.collection.mutable.Builder
   * @tparam K      the type of the keys contained in this linked map.
   * @tparam V      the type of the values associated with the keys in this linked map.
   *
-  * @author Matthew de Detrich
   * @version 2.13
   * @since 2.13
   * @define coll immutable seq map

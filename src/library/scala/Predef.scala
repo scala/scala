@@ -507,7 +507,6 @@ object Predef extends LowPriorityImplicits {
 *  but that are partially overridden by higher-priority conversions in object
 *  `Predef`.
 *
-*  @author  Martin Odersky
 *  @since 2.8
 */
 // scala/bug#7335 Parents of Predef are defined in the same compilation unit to avoid

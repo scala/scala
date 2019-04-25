@@ -19,8 +19,6 @@ import java.lang.System.{lineSeparator => EOL}
 
 /** This object provides utility methods to extract elements
  *  from Strings.
- *
- *  @author Martin Odersky
  *  @version 1.0
  */
 trait StringOps {

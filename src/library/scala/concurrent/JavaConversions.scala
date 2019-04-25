@@ -17,8 +17,6 @@ import scala.language.implicitConversions
 
 /** The `JavaConversions` object provides implicit conversions supporting
  *  interoperability between Scala and Java concurrency classes.
- *
- *  @author Philipp Haller
  */
 @deprecated("Use the factory methods in `ExecutionContext` instead", "2.13.0")
 object JavaConversions {

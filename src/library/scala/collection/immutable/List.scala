@@ -67,7 +67,6 @@ import scala.runtime.Statics.releaseFence
   *        objects that rely on structural sharing), will be serialized and deserialized with multiple lists, one for
   *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
   *
-  *  @author  Martin Odersky and others
   *  @since   1.0
   *  @see  [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists "Scala's Collection Library overview"]]
   *  section on `Lists` for more information.

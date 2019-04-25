@@ -24,8 +24,6 @@ import scala.annotation.tailrec
   *  @tparam K      the type of the keys contained in this vector map.
   *  @tparam V      the type of the values associated with the keys in this vector map.
   *
-  * @author Matthew de Detrich
-  * @author Odd Möller
   * @version 2.13
   * @since 2.13
   * @define coll immutable vector map

@@ -45,7 +45,6 @@ package scala
  *
  *  @see "Delayed Initialization" subsection of the Scala Language Specification (section 5.1)
  *
- *  @author  Martin Odersky
  */
 @deprecated("DelayedInit semantics can be surprising. Support for `App` will continue. See the release notes for more details: https://github.com/scala/scala/releases/tag/v2.11.0", "2.11.0")
 trait DelayedInit {

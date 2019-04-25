@@ -14,8 +14,6 @@ package scala
 package math
 
 /** A class for partially ordered data.
- *
- *  @author  Martin Odersky
  */
 trait PartiallyOrdered[+A] extends Any {
 

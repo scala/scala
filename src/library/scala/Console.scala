@@ -109,7 +109,6 @@ import scala.util.DynamicVariable
  *    <tr><td style="background-color:#000;color:#fff">First primes: Vector(2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47)</td></tr>
  *  </table>
  *
- *  @author  Matthias Zenger
  *  @since   1.0
  *
  *  @groupname console-output Console Output

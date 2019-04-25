@@ -21,7 +21,6 @@ import scala.collection.{IterableFactoryDefaults, IterableOnce, SeqFactory, Stri
   *
   *  @tparam A    type of the elements contained in this stack.
   *
-  *  @author  Pathikrit Bhowmick
   *  @since   2.13
   *
   *  @define Coll `Stack`

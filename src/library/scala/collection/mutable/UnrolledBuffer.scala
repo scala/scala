@@ -44,7 +44,6 @@ import scala.collection.immutable.Nil
   *
   *  @define coll unrolled buffer
   *  @define Coll `UnrolledBuffer`
-  *  @author Aleksandar Prokopec
   *
   */
 @SerialVersionUID(3L)

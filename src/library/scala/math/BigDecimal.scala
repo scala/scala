@@ -19,8 +19,6 @@ import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 
 /**
- *  @author  Stephane Micheloud
- *  @author  Rex Kerr
  *  @since 2.7
  */
 object BigDecimal {
@@ -355,9 +353,6 @@ object BigDecimal {
  *  and powers.  The left-hand argument's `MathContext` always determines the
  *  degree of rounding, if any, and is the one propagated through arithmetic
  *  operations that do not apply rounding themselves.
- *
- *  @author  Stephane Micheloud
- *  @author  Rex Kerr
  */
 final class BigDecimal(val bigDecimal: BigDec, val mc: MathContext)
 extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[BigDecimal] {

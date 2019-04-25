@@ -36,7 +36,6 @@ object Directory {
 
 /** An abstraction for directories.
  *
- *  @author  Paul Phillips
  *  @since   2.8
  *
  *  ''Note:  This is library is considered experimental and should not be used unless you know what you are doing.''
