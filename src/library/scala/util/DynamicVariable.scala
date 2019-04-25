@@ -38,7 +38,6 @@ import java.lang.InheritableThreadLocal
  *  from then on the bindings for the new thread
  *  are independent of those for the original thread.
  *
- *  @author  Lex Spoon
  *  @since   2.6
  */
 class DynamicVariable[T](init: T) {

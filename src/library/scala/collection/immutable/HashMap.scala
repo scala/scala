@@ -31,7 +31,6 @@ import scala.util.hashing.MurmurHash3
   *  @tparam K      the type of the keys contained in this hash set.
   *  @tparam V      the type of the values associated with the keys in this hash map.
   *
-  *  @author  Michael J. Steindorfer
   *  @since   2.13
   *  @define Coll `immutable.HashMap`
   *  @define coll immutable champ hash map

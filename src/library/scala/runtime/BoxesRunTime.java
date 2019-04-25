@@ -24,9 +24,6 @@ import scala.math.ScalaNumber;
   *     be a boxed value.
   *   - Standard value operators for boxed number and quasi-number values.
   *
-  * @author  Gilles Dubochet
-  * @author  Martin Odersky
-  * @contributor Stepan Koltsov
   * @version 2.0 */
 public final class BoxesRunTime
 {

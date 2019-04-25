@@ -33,8 +33,6 @@ import java.lang.Integer
  *  its size is automatically doubled. Both parameters may be changed by
  *  overriding the corresponding values in class `HashTable`.
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
  *  @since   1
  *
  *  @tparam A     type of the elements contained in this hash table.

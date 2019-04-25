@@ -55,7 +55,6 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
   *  @tparam Value        type of the values in this map.
   *  @param initialSize   the initial size of the internal hash table.
   *
-  *  @author David MacIver
   *  @since  2.7
   *
   *  @define Coll `OpenHashMap`

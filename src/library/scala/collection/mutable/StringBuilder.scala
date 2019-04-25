@@ -32,8 +32,6 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
   *
   * $multipleResults
   *
-  * @author Stephane Micheloud
-  * @author Martin Odersky
   * @since   2.7
   * @define Coll `mutable.IndexedSeq`
   * @define coll string builder

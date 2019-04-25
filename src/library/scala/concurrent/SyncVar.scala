@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit
  *  All methods are synchronized.
  *
  *  @tparam A type of the contained value
- *  @author  Martin Odersky
  */
 @deprecated("Use `java.util.concurrent.LinkedBlockingQueue with capacity 1` instead.", since = "2.13.0")
 class SyncVar[A] {

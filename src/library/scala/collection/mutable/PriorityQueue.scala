@@ -45,7 +45,6 @@ import scala.math.Ordering
   *  @tparam A    type of the elements in this priority queue.
   *  @param ord   implicit ordering used to compare the elements of type `A`.
   *
-  *  @author  Matthias Zenger
   *  @since   1
   *
   *  @define Coll PriorityQueue

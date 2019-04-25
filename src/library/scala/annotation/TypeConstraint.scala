@@ -23,7 +23,6 @@ package scala.annotation
  *  applied.  A Scala compiler will drop such annotations in cases where it
  *  would rewrite a type constraint.
  *
- *  @author  Lex Spoon
  *  @since   2.6
  */
 trait TypeConstraint extends Annotation

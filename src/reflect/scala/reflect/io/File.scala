@@ -42,7 +42,6 @@ object File {
  *  precedence if supplied.) If neither is available, the value
  *  of scala.io.Codec.default is used.
  *
- *  @author  Paul Phillips
  *  @since   2.8
  *
  *  ''Note:  This is library is considered experimental and should not be used unless you know what you are doing.''

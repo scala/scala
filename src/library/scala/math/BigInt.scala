@@ -17,7 +17,6 @@ import java.math.BigInteger
 import scala.language.implicitConversions
 
 /**
- *  @author  Martin Odersky
  *  @since 2.1
  */
 object BigInt {
@@ -108,9 +107,6 @@ object BigInt {
   implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
 }
 
-/**
- *  @author  Martin Odersky
- */
 final class BigInt(val bigInteger: BigInteger)
   extends ScalaNumber
     with ScalaNumericConversions

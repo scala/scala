@@ -16,7 +16,6 @@ package sys
 /** A minimal Thread wrapper to enhance shutdown hooks.  It knows
  *  how to unregister itself.
  *
- *  @author Paul Phillips
  *  @since   2.9
  */
 class ShutdownHookThread private (runnable: Runnable, name: String) extends Thread(runnable, name) {

@@ -678,7 +678,6 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   *
   *  For details, see: [[http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf]]
   *
-  *  @author Aleksandar Prokopec
   *  @since 2.10
   */
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])

@@ -34,10 +34,6 @@ import scala.math.Ordering
   * Note also that high-performance non-default sorts for numeric types
   * are not provided.  If this is required, it is advisable to investigate
   * other libraries that cover this use case.
-  *
-  * @author  Ross Judson
-  * @author  Adriaan Moors
-  * @author  Rex Kerr
   */
 object Sorting {
   /** Sort an array of Doubles using `java.util.Arrays.sort`. */

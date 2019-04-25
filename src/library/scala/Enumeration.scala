@@ -83,7 +83,6 @@ import scala.util.matching.Regex
  *
  *  @param initial The initial value from which to count the integers that
  *                 identifies values at run-time.
- *  @author  Matthias Zenger
  */
 @SerialVersionUID(8476000850333817230L)
 abstract class Enumeration (initial: Int) extends Serializable {

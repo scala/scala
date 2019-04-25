@@ -61,7 +61,6 @@ import scala.util.control.NonFatal
  *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
  *
- * @author based on Twitter's original implementation in com.twitter.util.
  * @since 2.10
  */
 sealed abstract class Try[+T] extends Product with Serializable {

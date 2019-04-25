@@ -12,9 +12,6 @@
 
 package scala.ref
 
-/**
- *  @author Sean McDirmid
- */
 trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
   val underlying: java.lang.ref.Reference[_ <: T]
   override def get = Option(underlying.get)
@@ -29,9 +26,6 @@ trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
   def self = underlying
 }
 
-/**
- *  @author Philipp Haller
- */
 private trait ReferenceWithWrapper[T <: AnyRef] {
   val wrapper: ReferenceWrapper[T]
 }

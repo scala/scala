@@ -20,7 +20,6 @@ package scala.annotation
  * and therefore not visible in Java reflection. In order to achieve this, the annotation has to
  * be written in Java.
  *
- *  @author  Martin Odersky
  *  @since   2.4
  */
 trait StaticAnnotation extends Annotation

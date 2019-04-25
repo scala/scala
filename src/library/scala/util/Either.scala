@@ -117,7 +117,6 @@ package util
  *  // Left(42.0), but unexpectedly a `Either[Double,String]`
  *  }}}
  *
- *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @since 2.7
  */
 sealed abstract class Either[+A, +B] extends Product with Serializable {
@@ -454,8 +453,6 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 }
 
 /** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
- *
- *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  */
 final case class Left[+A, +B](value: A) extends Either[A, B] {
   def isLeft  = true
@@ -473,8 +470,6 @@ final case class Left[+A, +B](value: A) extends Either[A, B] {
 }
 
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
- *
- *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  */
 final case class Right[+A, +B](value: B) extends Either[A, B] {
   def isLeft  = false
@@ -526,7 +521,6 @@ object Either {
 
   /** Projects an `Either` into a `Left`.
    *
-   *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    *  @see [[scala.util.Either#left]]
    */
   @deprecated("use `swap` instead", "2.13.0")
@@ -686,8 +680,6 @@ object Either {
    *  Because `Either` is already right-biased, this class is not normally needed.
    *  (It is retained in the library for now for easy cross-compilation between Scala
    *  2.11 and 2.12.)
-   *
-   *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
    */
   @deprecated("Either is now right-biased, calls to `right` should be removed", "2.13.0")
   final case class RightProjection[+A, +B](e: Either[A, B]) {

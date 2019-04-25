@@ -21,9 +21,6 @@ import scala.collection.generic.DefaultSerializable
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @author  Pavel Pavlov
  *  @since   1
  *
  *  @tparam A     the type of the elements contained in this set.

@@ -76,7 +76,6 @@ package scala.annotation
  *   }
  * }}}
  *
- *  @author   Paul Phillips
  *  @since    2.8
  */
 final class elidable(final val level: Int) extends scala.annotation.StaticAnnotation

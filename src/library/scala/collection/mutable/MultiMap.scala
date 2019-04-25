@@ -49,8 +49,6 @@ package scala.collection.mutable
   *
   *  @define coll multimap
   *  @define Coll `MultiMap`
-  *  @author  Matthias Zenger
-  *  @author  Martin Odersky
   *  @since   1
   */
 trait MultiMap[K, V] extends Map[K, Set[V]] {

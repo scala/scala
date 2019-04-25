@@ -19,7 +19,6 @@ import scala.collection.JavaConverters._
  *  and altering core aspects of the virtual machine as well as the
  *  world outside of it.
  *
- *  @author Paul Phillips
  *  @since   2.9
  */
 package object sys {

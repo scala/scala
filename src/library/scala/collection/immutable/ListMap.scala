@@ -35,8 +35,6 @@ import scala.runtime.Statics.releaseFence
   * @tparam K the type of the keys contained in this list map
   * @tparam V the type of the values associated with the keys
   *
-  * @author Matthias Zenger
-  * @author Martin Odersky
   * @since 1
   * @define Coll ListMap
   * @define coll list map

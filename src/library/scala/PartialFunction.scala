@@ -61,7 +61,6 @@ package scala
  *        | from optional [[Function]] | [[Function.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function.UnliftOps#unlift]] |
  *        | from an extractor | `{ case extractor(x) => x }` | `extractor.unapply _` | [[Predef.identity]] |
  *
- *  @author  Martin Odersky, Pavel Pavlov, Adriaan Moors
  *  @since   1.0
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
@@ -222,7 +221,6 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
  *  def onlyInt(v: Any): Option[Int] = condOpt(v) { case x: Int => x }
  *  }}}
  *
- *  @author  Paul Phillips
  *  @since   2.8
  */
 object PartialFunction {

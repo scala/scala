@@ -16,7 +16,6 @@ package scala.concurrent
  *  which are read by one or more reader threads.
  *
  *  @tparam A type of data exchanged
- *  @author  Martin Odersky
  */
 @deprecated("Use `java.util.concurrent.LinkedTransferQueue` instead.", since = "2.13.0")
 class Channel[A] {

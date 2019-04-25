@@ -26,7 +26,6 @@ import scala.collection.mutable.{RedBlackTree => RB}
   * @tparam K the type of the keys contained in this tree map.
   * @tparam V the type of the values associated with the keys.
   *
-  * @author Rui Gonçalves
   * @since 2.12
   *
   * @define Coll mutable.TreeMap

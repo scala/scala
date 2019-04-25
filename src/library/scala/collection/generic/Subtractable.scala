@@ -23,7 +23,6 @@ import scala.collection.IterableOnce
   *
   *  @tparam   A    the type of the elements of the $coll.
   *  @tparam   Repr the type of the $coll itself
-  *  @author   Martin Odersky
   *  @version  2.8
   *  @since    2.8
   *  @define   coll collection

@@ -24,8 +24,6 @@ import scala.collection.generic.DefaultSerializable
   *  access take constant time (amortized time). Prepends and removes are
   *  linear in the buffer size.
   *
-  *  @author  Matthias Zenger
-  *  @author  Martin Odersky
   *  @since   1
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array-buffers "Scala's Collection Library overview"]]
   *  section on `Array Buffers` for more information.

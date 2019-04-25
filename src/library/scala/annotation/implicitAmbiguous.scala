@@ -38,7 +38,6 @@ package scala.annotation
   * implicitly[Int =!= Int]
   * }}}
   *
-  * @author Brian McKenna
   * @since 2.12.0
   */
 @meta.getter

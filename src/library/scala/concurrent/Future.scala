@@ -42,8 +42,6 @@ import scala.concurrent.ExecutionContext.parasitic
  *  }
  *  }}}
  *
- *  @author  Philipp Haller, Heather Miller, Aleksandar Prokopec, Viktor Klang
- *
  *  @see [[http://docs.scala-lang.org/overviews/core/futures.html Futures and Promises]]
  *
  *  @define multipleCallbacks

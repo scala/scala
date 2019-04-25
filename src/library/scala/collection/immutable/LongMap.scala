@@ -23,7 +23,6 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for long maps.
-  *  @author David MacIver
   */
 private[immutable] object LongMapUtils extends BitOperations.Long {
   def branchMask(i: Long, j: Long) = highestOneBit(i ^ j)

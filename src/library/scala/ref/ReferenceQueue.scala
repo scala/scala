@@ -12,10 +12,6 @@
 
 package scala.ref
 
-/**
- *  @author Sean McDirmid
- *  @author Philipp Haller
- */
 class ReferenceQueue[+T <: AnyRef] {
 
   private[ref] val underlying: java.lang.ref.ReferenceQueue[_ <: T] = new java.lang.ref.ReferenceQueue[T]

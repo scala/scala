@@ -55,7 +55,6 @@ import scala.language.implicitConversions
  *  provide it yourself either when inheriting or instantiating.
  *
  *  @see [[scala.math.Ordering]], [[scala.math.PartiallyOrdered]]
- *  @author  Martin Odersky
  */
 trait Ordered[A] extends Any with java.lang.Comparable[A] {
 

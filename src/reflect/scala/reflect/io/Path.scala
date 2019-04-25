@@ -32,7 +32,6 @@ import scala.util.Random.alphanumeric
  *  Also available are createFile and createDirectory, which attempt
  *  to create the path in question.
  *
- *  @author  Paul Phillips
  *  @since   2.8
  *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''

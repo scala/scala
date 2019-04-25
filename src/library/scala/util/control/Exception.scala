@@ -148,8 +148,6 @@ import scala.language.implicitConversions
  *  @groupdesc logic-container Containers for catch and finally behavior.
  *
  *  @define protectedExceptions `ControlThrowable` or `InterruptedException`
- *
- *  @author Paul Phillips
  */
 
 object Exception {

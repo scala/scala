@@ -16,7 +16,6 @@ package scala.annotation
  *  [[http://docs.oracle.com/javase/8/docs/technotes/guides/language/annotations.html Java annotations]]]
  *  in classfiles.
  *
- *  @author  Martin Odersky
  *  @since 2.4
  */
 @deprecated("Annotation classes need to be written in Java in order to be stored in classfiles in a Java-compatible manner", "2.13.0")

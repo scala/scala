@@ -40,7 +40,6 @@ import scala.annotation.unchecked.uncheckedVariance
   *
   *  @tparam K the type of the keys contained in this map.
   *  @tparam V the type of the values associated with the keys in this map.
-  * @author Odd Möller
   * @version 2.13
   * @since 2.13
   * @define coll immutable tree seq map

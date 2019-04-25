@@ -29,7 +29,6 @@ import scala.util.hashing.MurmurHash3
   *
   *  @tparam A      the type of the elements contained in this hash set.
   *
-  *  @author  Michael J. Steindorfer
   *  @since   2.13
   *  @define Coll `immutable.HashSet`
   *  @define coll immutable champ hash set

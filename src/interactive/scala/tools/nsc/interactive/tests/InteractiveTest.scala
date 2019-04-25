@@ -46,9 +46,6 @@ import scala.collection.mutable.ListBuffer
  *  framework will automatically pick it up.
  *
  *  @see   Check existing tests under test/files/presentation
- *
- *  @author Iulian Dragos
- *  @author Mirco Dotta
  */
 abstract class InteractiveTest
   extends AskParse

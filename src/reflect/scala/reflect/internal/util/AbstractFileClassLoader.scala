@@ -36,8 +36,6 @@ object AbstractFileClassLoader {
 }
 
 /** A class loader that loads files from a [[scala.reflect.io.AbstractFile]].
- *
- *  @author Lex Spoon
  */
 class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     extends ClassLoader(parent)
