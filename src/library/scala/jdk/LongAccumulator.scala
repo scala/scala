@@ -428,7 +428,7 @@ private[jdk] class LongAccumulatorStepper(private val acc: LongAccumulator) exte
       ans
     }
 
-  override def spliterator: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this) {
+  override def spliterator[B >: Long]: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this) {
     // Overridden for efficiency
     override def tryAdvance(c: LongConsumer): Boolean =
       if (N <= 0) false

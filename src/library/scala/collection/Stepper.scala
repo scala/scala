@@ -37,7 +37,7 @@ import scala.collection.Stepper.EfficientSplit
   *
   * @tparam A the element type of the Stepper
   */
-trait Stepper[@specialized(Double, Int, Long) A] {
+trait Stepper[@specialized(Double, Int, Long) +A] {
   /** Check if there's an element available. */
   def hasStep: Boolean
 
@@ -69,7 +69,7 @@ trait Stepper[@specialized(Double, Int, Long) A] {
     * a [[Spliterator.OfInt]] (which is a `Spliterator[Integer]`) in the subclass [[IntStepper]]
     * (which is a `Stepper[Int]`).
     */
-  def spliterator: Spliterator[_]
+  def spliterator[B >: A]: Spliterator[_]
 
   /** Returns a Java [[JIterator]] corresponding to this Stepper.
     *
@@ -77,7 +77,7 @@ trait Stepper[@specialized(Double, Int, Long) A] {
     * a [[java.util.PrimitiveIterator.OfInt]] (which is a `Iterator[Integer]`) in the subclass
     * [[IntStepper]] (which is a `Stepper[Int]`).
     */
-  def javaIterator: JIterator[_]
+  def javaIterator[B >: A]: JIterator[_]
 
   /** Returns an [[Iterator]] corresponding to this Stepper. Note that Iterators corresponding to
     * primitive Steppers box the elements.
@@ -182,14 +182,14 @@ object Stepper {
 }
 
 /** A Stepper for arbitrary element types. See [[Stepper]]. */
-trait AnyStepper[A] extends Stepper[A] {
+trait AnyStepper[+A] extends Stepper[A] {
   def trySplit(): AnyStepper[A]
 
-  def spliterator: Spliterator[A] = new AnyStepper.AnyStepperSpliterator(this)
+  def spliterator[B >: A]: Spliterator[B] = new AnyStepper.AnyStepperSpliterator(this)
 
-  def javaIterator: JIterator[A] = new JIterator[A] {
+  def javaIterator[B >: A]: JIterator[B] = new JIterator[B] {
     def hasNext: Boolean = hasStep
-    def next(): A = nextStep()
+    def next(): B = nextStep()
   }
 }
 
@@ -255,9 +255,9 @@ object AnyStepper {
 trait IntStepper extends Stepper[Int] {
   def trySplit(): IntStepper
 
-  def spliterator: Spliterator.OfInt = new IntStepper.IntStepperSpliterator(this)
+  def spliterator[B >: Int]: Spliterator.OfInt = new IntStepper.IntStepperSpliterator(this)
 
-  def javaIterator: PrimitiveIterator.OfInt = new PrimitiveIterator.OfInt {
+  def javaIterator[B >: Int]: PrimitiveIterator.OfInt = new PrimitiveIterator.OfInt {
     def hasNext: Boolean = hasStep
     def nextInt(): Int = nextStep()
   }
@@ -293,9 +293,9 @@ object IntStepper {
 trait DoubleStepper extends Stepper[Double] {
   def trySplit(): DoubleStepper
 
-  def spliterator: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this)
+  def spliterator[B >: Double]: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this)
 
-  def javaIterator: PrimitiveIterator.OfDouble = new PrimitiveIterator.OfDouble {
+  def javaIterator[B >: Double]: PrimitiveIterator.OfDouble = new PrimitiveIterator.OfDouble {
     def hasNext: Boolean = hasStep
     def nextDouble(): Double = nextStep()
   }
@@ -332,9 +332,9 @@ object DoubleStepper {
 trait LongStepper extends Stepper[Long] {
   def trySplit(): LongStepper
 
-  def spliterator: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this)
+  def spliterator[B >: Long]: Spliterator.OfLong = new LongStepper.LongStepperSpliterator(this)
 
-  def javaIterator: PrimitiveIterator.OfLong = new PrimitiveIterator.OfLong {
+  def javaIterator[B >: Long]: PrimitiveIterator.OfLong = new PrimitiveIterator.OfLong {
     def hasNext: Boolean = hasStep
     def nextLong(): Long = nextStep()
   }

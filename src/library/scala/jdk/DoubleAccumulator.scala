@@ -428,7 +428,7 @@ private[jdk] class DoubleAccumulatorStepper(private val acc: DoubleAccumulator) 
       ans
     }
 
-  override def spliterator: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this) {
+  override def spliterator[B >: Double]: Spliterator.OfDouble = new DoubleStepper.DoubleStepperSpliterator(this) {
     // Overridden for efficiency
     override def tryAdvance(c: DoubleConsumer): Boolean =
       if (N <= 0) false

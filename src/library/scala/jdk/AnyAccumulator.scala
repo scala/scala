@@ -287,7 +287,7 @@ object AnyAccumulator extends collection.SeqFactory[AnyAccumulator] {
   }
 }
 
-private[jdk] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
+private[jdk] class AnyAccumulatorStepper[A](private[this] val acc: AnyAccumulator[A]) extends AnyStepper[A] with EfficientSplit {
   import java.util.Spliterator._
 
   private var h: Int = 0
@@ -354,13 +354,13 @@ private[jdk] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) 
       ans
     }
 
-  override def spliterator: Spliterator[A] = new AnyStepper.AnyStepperSpliterator(this) {
+  override def spliterator[B >: A]: Spliterator[B] = new AnyStepper.AnyStepperSpliterator[B](this) {
     // Overridden for efficiency
-    override def tryAdvance(c: Consumer[_ >: A]): Boolean = {
+    override def tryAdvance(c: Consumer[_ >: B]): Boolean = {
       if (N <= 0) false
       else {
         if (i >= n) loadMore()
-        c.accept(a(i).asInstanceOf[A])
+        c.accept(a(i).asInstanceOf[B])
         i += 1
         N -= 1
         true
@@ -368,13 +368,13 @@ private[jdk] class AnyAccumulatorStepper[A](private val acc: AnyAccumulator[A]) 
     }
 
     // Overridden for efficiency
-    override def forEachRemaining(f: java.util.function.Consumer[_ >: A]): Unit = {
+    override def forEachRemaining(f: java.util.function.Consumer[_ >: B]): Unit = {
       while (N > 0) {
         if (i >= n) loadMore()
         val i0 = i
         if ((n-i) > N) n = i + N.toInt
         while (i < n) {
-          f.accept(a(i).asInstanceOf[A])
+          f.accept(a(i).asInstanceOf[B])
           i += 1
         }
         N -= (n - i0)
