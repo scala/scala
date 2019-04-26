@@ -108,4 +108,10 @@ class ArrayOpsTest {
     val target = Array[Int]()
     assertEquals(0, Array(1,2).copyToArray(target, 1, 0))
   }
+
+  @Test
+  def t11499(): Unit = {
+    val a: Array[Byte] = new Array[Byte](1000).sortWith { _ < _ }
+    assertEquals(0, a(0))
+  }
 }

@@ -583,7 +583,6 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       val a = Array.copyAs[AnyRef](xs, len)(ClassTag.AnyRef)
       Arrays.sort(a, ord.asInstanceOf[Ordering[AnyRef]])
       Array.copyAs[A](a, len)
-      a
     }
     if(len <= 1) xs.clone()
     else ((xs: Array[_]) match {
