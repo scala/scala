@@ -47,7 +47,8 @@ object FutureConverters {
   def toJava[T](f: Future[T]): CompletionStage[T] = {
     f match {
       case p: P[T] => p.wrapped
-      case c: CompletionStage[T] => c
+      // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
+      case c: CompletionStage[T @unchecked] => c
       case _ =>
         val cf = new CF[T](f)
         f.onComplete(cf)(ExecutionContext.parasitic)
@@ -67,7 +68,8 @@ object FutureConverters {
   def toScala[T](cs: CompletionStage[T]): Future[T] = {
     cs match {
       case cf: CF[T] => cf.wrapped
-      case f: Future[T] => f
+      // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
+      case f: Future[T @unchecked] => f
       case _ =>
         val p = new P[T](cs)
         cs whenComplete p
