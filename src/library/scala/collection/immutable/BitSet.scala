@@ -37,6 +37,10 @@ sealed abstract class BitSet
 
   override def unsorted: Set[Int] = this
 
+  override protected def fromSpecific(coll: IterableOnce[Int]): BitSet = bitSetFactory.fromSpecific(coll)
+  override protected def newSpecificBuilder: Builder[Int, BitSet] = bitSetFactory.newBuilder
+  override def empty: BitSet = bitSetFactory.empty
+
   def bitSetFactory = BitSet
 
   protected[collection] def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)

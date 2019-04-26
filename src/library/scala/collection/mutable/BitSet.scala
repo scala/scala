@@ -47,6 +47,10 @@ class BitSet(protected[collection] final var elems: Array[Long])
 
   def this() = this(0)
 
+  override protected def fromSpecific(coll: IterableOnce[Int]): BitSet = bitSetFactory.fromSpecific(coll)
+  override protected def newSpecificBuilder: Builder[Int, BitSet] = bitSetFactory.newBuilder
+  override def empty: BitSet = bitSetFactory.empty
+
   def bitSetFactory = BitSet
 
   override def unsorted: Set[Int] = this
