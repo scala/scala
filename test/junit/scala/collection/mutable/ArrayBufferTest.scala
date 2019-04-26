@@ -368,4 +368,7 @@ class ArrayBufferTest {
     b.trimToSize()
     assertEquals(256, b.array.length)
   }
+
+  @Test def t11482_allowNegativeInitialSize: Unit =
+    new ArrayBuffer(-1)
 }

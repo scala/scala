@@ -48,7 +48,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   def this() = this(new Array[AnyRef](ArrayBuffer.DefaultInitialSize), 0)
 
-  def this(initialSize: Int) = this(new Array[AnyRef](initialSize), 0)
+  def this(initialSize: Int) = this(new Array[AnyRef](initialSize max 1), 0)
 
   protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
