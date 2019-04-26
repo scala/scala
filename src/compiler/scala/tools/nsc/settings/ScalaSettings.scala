@@ -251,6 +251,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YcachePluginClassLoader  = CachePolicy.setting("plugin", "compiler plugins")
   val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
   val YmacroClasspath = PathSetting       ("-Ymacro-classpath", "The classpath used to reflectively load macro implementations, default is the compilation classpath.", "")
+  val YcacheNameTable = BooleanSetting    ("-Ycache-name-table", "Share a single name table for concurrently running instances of the compiler")
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")

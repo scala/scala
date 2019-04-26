@@ -16,30 +16,51 @@ package internal
 
 import java.util.concurrent.ConcurrentHashMap
 
-trait Names extends api.Names {
-  def nameTableSize: Int = cache.size
+import scala.reflect.api.NameTableApi
 
-  override final type Name =  AName
-  override final type TypeName = TermNameImpl#TypeNameImpl
-  override final type TermName = TermNameImpl
+trait Names extends api.Names {
+  type NameTable = scala.reflect.internal.NameTable
+  override val nameTable: NameTable = newNameTable
+
+  protected def newNameTable: NameTable = new NameTable
+
+  def nameTableSize: Int = nameTable.nameTableSize
+  override final type Name = nameTable.AName
+  override final type TypeName = nameTable.TypeNameImpl
+  override final type TermName = nameTable.TermNameImpl
 
   implicit final val NameTag = ClassTag[Name](classOf[Name])
   implicit final val TermNameTag = ClassTag[TermName](classOf[TermName])
   implicit final val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
 
-
-  override object TermName extends TermNameExtractor {
-    @inline override def apply(s: String): TermName = newTermName(s)
-    override def unapply(name: TermName): Option[String] = Some(name.rawString)
+  override final def newTypeName(value: String): TypeName = nameTable.newTypeName(value)
+  override final def newTermName(value: String): TermName = nameTable.newTermName(value)
+  object TermName extends TermNameExtractor {
+    def apply(s: String) = newTermName(s)
+    def unapply(name: TermName): Option[String] = Some(name.toString)
   }
-  override object TypeName extends TypeNameExtractor {
-    @inline override def apply(s: String): TypeName = newTypeName(s)
-    override def unapply(name: TypeName): Option[String] = Some(name.rawString)
+  object TypeName extends TypeNameExtractor {
+    def apply(s: String) = newTypeName(s)
+    def unapply(name: TypeName): Option[String] = Some(name.toString)
   }
-  override final def newTypeName(value: String): TypeName = newTermName(value).companionName
+  //deprecated stuff
+  @deprecated
+  @inline final def newTermNameCached(s: String): TermName = newTermName(s)
 
-  override final def newTermName(value: String): TermName = {
-  //TODO consider a better structure to use than a CHM
+  @deprecated
+  @inline final def newTypeNameCached(s: String): TypeName = newTypeName(s)
+}
+class NameTable extends NameTableApi {
+  override final type Name = AName
+  override final type TypeName = TypeNameImpl
+  override final type TermName = TermNameImpl
+
+  def nameTableSize: Int = cache.size
+
+  private[this] final val cache = new ConcurrentHashMap[String, TermNameImpl](1000, 0.75F, 1)
+
+  override final def newTermName(value: String): TermNameImpl = {
+    //TODO consider a better structure to use than a CHM
     var res = cache.get(value)
     if (res eq null) {
       val next = new TermNameImpl(value)
@@ -50,10 +71,7 @@ trait Names extends api.Names {
     res
     //same as cache.computeIfAbsent(value, new NameHolder(_)) but faster
   }
-  private[this] final val cache = new ConcurrentHashMap[String, TermName](1000, 0.75F, 1)
-  //deprecated stuff
-  @deprecated @inline final def newTermNameCached(s: String): TermName = newTermName(s)
-  @deprecated @inline final def newTypeNameCached(s: String): TypeName = newTypeName(s)
+  final def newTypeName(value:String): TypeName = newTermName(value).companionName
 
   abstract sealed class AName extends NameApi with CharSequence {
     type ThisNameType <: AName
@@ -61,14 +79,14 @@ trait Names extends api.Names {
     override final def subSequence(start: Int, end: Int): CharSequence = value.subSequence(start, end)
     override def decoded: String = decodedName.toString
     override def encoded: String = encodedName.toString
-    @inline private[Names] def rawString = value
-    override def decodedName: ThisNameType
-    override def encodedName: ThisNameType
+    @inline private[NameTable] def rawString = value
+    def decodedName: ThisNameType
+    def encodedName: ThisNameType
 
     //non API methods
     protected def value: String
 
-    def companionName: Name
+    def companionName: AName
 
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): ThisNameType =
@@ -250,11 +268,11 @@ trait Names extends api.Names {
   }
   final class TermNameImpl(override val toString: String) extends AName with TermNameApi {
     type ThisNameType = TermName
+
     override def isTermName = true
     override def isTypeName = false
 
     override protected def value: String = toString
-
 
     override def toTermName: TermName = this
     override def toTypeName: TypeName = typeName
@@ -269,7 +287,7 @@ trait Names extends api.Names {
     def identifier = identifier_ & 0x80FF
     def markAsIdentifier(java: Boolean, newIdentifier: Int) {
       require((identifier.toShort & 0x80FF) == identifier.toShort)
-      val flag =  (if (java) 0x1000 else 0x2000).toShort
+      val flag = (if (java) 0x1000 else 0x2000).toShort
       if (identifier_ == 0) {
         //first call
         this.identifier_ = (newIdentifier | flag).toShort
@@ -290,31 +308,30 @@ trait Names extends api.Names {
       else this
     }
     override lazy final val encodedName: TermName = {
-        val res = NameTransformer.encode(value)
-        if (res == value) this else newName(res)
-      }
-
-    private lazy val typeName:TypeName = new TypeNameImpl
-
-
-    final class TypeNameImpl extends AName with TypeNameApi {
-      type ThisNameType = TypeName
-      override def isTermName = false
-      override def isTypeName = true
-      override def decodedName: TypeName = TermNameImpl.this.decodedName.typeName
-      override def encodedName: TypeName  = TermNameImpl.this.encodedName.typeName
-
-
-      override protected def value: String = TermNameImpl.this.toString
-      override def toString: String = TermNameImpl.this.toString
-
-      override def toTermName: TermName = TermNameImpl.this
-      override def toTypeName: TypeName = this
-
-      override def companionName = TermNameImpl.this
-      override def newName(str: String) = newTypeName(str)
-      override def nameKind = "type"
-      def debugString = decoded + "!"
+      val res = NameTransformer.encode(value)
+      if (res == value) this else newName(res)
     }
+
+    private[NameTable] lazy val typeName: TypeNameImpl = new TypeNameImpl(this)
+
+  }
+  final class TypeNameImpl(term: TermNameImpl) extends AName with TypeNameApi {
+    type ThisNameType = TypeName
+    override def isTermName = false
+    override def isTypeName = true
+    override def decodedName: TypeName = term.decodedName.typeName
+    override def encodedName: TypeName  = term.encodedName.typeName
+
+
+    override protected def value: String = term.toString
+    override def toString: String = term.toString
+
+    override def toTermName: TermName = term
+    override def toTypeName: TypeName = this
+
+    override def companionName = term
+    override def newName(str: String) = newTypeName(str)
+    override def nameKind = "type"
+    def debugString = decoded + "!"
   }
 }

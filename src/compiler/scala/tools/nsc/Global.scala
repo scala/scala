@@ -41,6 +41,8 @@ import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 import scala.util.control.NonFatal
 import java.io.Closeable
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 
 class Global(var currentSettings: Settings, reporter0: LegacyReporter)
@@ -1731,6 +1733,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     perRunCaches.clearAll()
     closeableRegistry.close()
   }
+  override protected def newNameTable: NameTable = {
+    if (currentSettings.YcacheNameTable) {
+      var shared: NameTable = null
+      do {
+        shared = Global.nameTableCache.get
+        if (shared == null) Global.nameTableCache.compareAndSet(null, new scala.reflect.internal.NameTable)
+      } while (shared == null)
+      shared
+    }
+    else super.newNameTable
+  }
 }
 
 object Global {
@@ -1743,4 +1756,5 @@ object Global {
     override def keepsTypeParams = false
     def run(): Unit = { throw new Error("InitPhase.run") }
   }
+  private val nameTableCache = new AtomicReference[scala.reflect.internal.NameTable]
 }
