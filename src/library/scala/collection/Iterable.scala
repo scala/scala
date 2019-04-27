@@ -439,7 +439,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return a $coll consisting only of the last `n` elements of this $coll,
     *          or else the whole $coll, if it has less than `n` elements.
     *          If `n` is negative, returns an empty $coll.
-    *  @note    Reuse: $consumesAndProducesIterator
     */
   def takeRight(n: Int): C = fromSpecific(new View.TakeRight(this, n))
 
@@ -448,7 +447,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @param   p  The predicate used to test elements.
     *  @return  the longest prefix of this $coll whose elements all satisfy
     *           the predicate `p`.
-    *  @note    Reuse: $consumesAndProducesIterator
     */
   def takeWhile(p: A => Boolean): C = fromSpecific(new View.TakeWhile(this, p))
 
@@ -462,7 +460,6 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @return a $coll consisting of all elements of this $coll except the last `n` ones, or else the
     *          empty $coll, if this $coll has less than `n` elements.
     *          If `n` is negative, don't drop any elements.
-    *  @note    Reuse: $consumesAndProducesIterator
     */
   def dropRight(n: Int): C = fromSpecific(new View.DropRight(this, n))
 
