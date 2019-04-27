@@ -202,7 +202,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
 
 trait LowPriorityOrderingImplicits {
 
-  type AsComparable[A] = A => Comparable[A]
+  type AsComparable[A] = A => Comparable[_ >: A]
 
   /** This would conflict with all the nice implicit Orderings
    *  available, but thanks to the magic of prioritized implicits

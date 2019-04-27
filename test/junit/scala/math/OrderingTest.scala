@@ -267,4 +267,14 @@ class OrderingTest {
     check(Ordering[Seq[Int]])
     check(Ordering[SortedSet[Int]])
   }
+
+  /* Test for scala/bug#11284 */
+  @Test
+  def supertypeOrdering(): Unit = {
+    val before = java.time.LocalDate.of(2004, 1, 20)
+    val now = java.time.LocalDate.now()
+    val later = java.time.LocalDate.now().plusWeeks(1)
+
+    assertEquals(Seq(before, now, later), Seq(now, later, before).sorted)
+  }
 }
