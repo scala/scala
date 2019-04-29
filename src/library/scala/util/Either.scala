@@ -164,7 +164,6 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was $e")
    *   }}}
    */
-  @deprecated("use swap instead", "2.13.0")
   def left = Either.LeftProjection(this)
 
   /** Projects this `Either` as a `Right`.
@@ -523,7 +522,6 @@ object Either {
    *
    *  @see [[scala.util.Either#left]]
    */
-  @deprecated("use `swap` instead", "2.13.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
      *  if this is a `Right`.
