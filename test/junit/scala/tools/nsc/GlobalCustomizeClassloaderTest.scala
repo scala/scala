@@ -17,7 +17,6 @@ class GlobalCustomizeClassloaderTest {
   // that properly closes them before one of the elements needs to be overwritten.
   @Test def test(): Unit = {
     val g = new Global(new Settings) {
-      override protected[scala] def findMacroClassLoader(): ClassLoader = getClass.getClassLoader
       override protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
         val d = new VirtualDirectory("", None)
         val xml = d.fileNamed("scalac-plugin.xml")
