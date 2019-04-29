@@ -16,7 +16,7 @@ package scala.collection
 /** Base trait for sorted collections */
 trait SortedOps[A, +C] {
 
-  implicit def ordering: Ordering[A]
+  def ordering: Ordering[A]
 
   /** Returns the first key of the collection. */
   def firstKey: A
