@@ -20,13 +20,15 @@ import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}
 import scala.collection.mutable.ReusableBuilder
 
-/** An immutable SeqMap whose values are stored in a red-black tree.
+/** An immutable SortedMap whose values are stored in a red-black tree.
   *
   * This class is optimal when range queries will be performed,
   * or when traversal in order of an ordering is desired.
   * If you only need key lookups, and don't care in which order key-values
   * are traversed in, consider using * [[scala.collection.immutable.HashMap]],
-  * which will generally have better performance.
+  * which will generally have better performance. If you need insertion order, 
+  * consider a * [[scala.collection.immutable.SeqMap]], which does not need to
+  * have an ordering supplied.
   *
   *  @example {{{
   *  import scala.collection.immutable.TreeMap

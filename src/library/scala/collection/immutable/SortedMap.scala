@@ -27,7 +27,7 @@ import scala.language.higherKinds
   *  @example {{{
   *  import scala.collection.immutable.SortedMap
   *
-  *  // Make a SeqMap via the companion object factory
+  *  // Make a SortedMap via the companion object factory
   *  val weekdays = SortedMap(
   *    2 -> "Monday",
   *    3 -> "Tuesday",
