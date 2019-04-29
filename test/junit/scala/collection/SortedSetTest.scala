@@ -58,7 +58,9 @@ class SortedSetTest {
 
   @Test
   def min_max_differentOrdering(): Unit = {
-    val set = SortedSet(1, 2, 3)(Ordering[Int].reverse)
+    implicit val forward: Ordering[Int] = (x, y) => Ordering.Int.compare(x, y)
+
+    val set = SortedSet(1, 2, 3)(Ordering.Int.reverse)
     assertEquals(1, set.min)
     assertEquals(3, set.max)
     assertEquals(3, set.min(set.ordering))
