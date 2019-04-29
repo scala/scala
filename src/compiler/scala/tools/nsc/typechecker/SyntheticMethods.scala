@@ -238,7 +238,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      * def hashCode(): Int = this.underlying.hashCode
      */
     def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
-      Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
+      Apply(Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_), Nil)
     }
 
     /* The _1, _2, etc. methods to implement ProductN, disabled
