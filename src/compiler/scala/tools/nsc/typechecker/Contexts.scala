@@ -1532,10 +1532,13 @@ trait Contexts { self: Analyzer =>
       var selectors = tree.selectors
       @inline def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
-        if (current.rename == name.toTermName)
+        def sameName(name: Name, other: Name) = {
+          (name eq other) || (name ne null) && name.start == other.start
+        }
+        if (sameName(current.rename, name))
           result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
             if (name.isTypeName) current.name.toTypeName else current.name)
-        else if (current.name == name.toTermName)
+        else if (sameName(current.name, name))
           renamed = true
         else if (current.name == nme.WILDCARD && !renamed && !requireExplicit)
           result = qual.tpe.nonLocalMember(name)
