@@ -532,6 +532,7 @@ function searchAll() {
     scheduler.clear("search"); // clear previous search
     maxJobs = 1; // clear previous max
     var searchStr = $("#textfilter input").attr("value").trim() || '';
+    searchStr = escape(searchStr);
 
     if (searchStr === '') {
         $("div#search-results").hide();
