@@ -302,11 +302,11 @@ object PartialFunction {
    *  This correctly interacts with specialization as return type of `applyOrElse`
    *  (which is parameterized upper bound) can never be specialized.
    *
-   *  Here `fallback_pf` is used as both unique marker object and special fallback function that returns it.
+   *  Here `fallback_fn` is used as both unique marker object and special fallback function that returns it.
    */
-  private[this] val fallback_pf: PartialFunction[Any, Any] = { case _ => fallback_pf }
-  private def checkFallback[B] = fallback_pf.asInstanceOf[PartialFunction[Any, B]]
-  private def fallbackOccurred[B](x: B) = (fallback_pf eq x.asInstanceOf[AnyRef])
+  private[this] val fallback_fn: Any => Any = _ => fallback_fn
+  private def checkFallback[B] = fallback_fn.asInstanceOf[Any => B]
+  private def fallbackOccurred[B](x: B) = fallback_fn eq x.asInstanceOf[AnyRef]
 
   private class Lifted[-A, +B] (val pf: PartialFunction[A, B])
       extends scala.runtime.AbstractFunction1[A, Option[B]] with Serializable {
