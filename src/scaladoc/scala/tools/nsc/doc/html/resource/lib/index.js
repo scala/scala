@@ -561,13 +561,12 @@ function searchAll() {
     entityH1.innerHTML = "Entity results";
     entityResults.appendChild(entityH1);
 
-    $("div#results-content")
-      .prepend(
-          $("<span>")
-              .addClass("search-text")
-              .append(document.createTextNode("  Showing results for "))
-              .append($("<span>").addClass("query-str").text(searchStr))
-      );
+    $("div#results-content").prepend(
+        $("<span>")
+            .addClass("search-text")
+            .append(document.createTextNode("  Showing results for "))
+            .append($("<span>").addClass("query-str").text(searchStr))
+    );
 
     var regExp = compilePattern(searchStr);
 
