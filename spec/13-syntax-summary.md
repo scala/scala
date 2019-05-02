@@ -44,10 +44,8 @@ id               ::=  plainid
 idrest           ::=  {letter | digit} [‘_’ op]
 
 integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
-decimalNumeral   ::=  ‘0’ | nonZeroDigit {digit}
+decimalNumeral   ::=  digit {digit}
 hexNumeral       ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
-digit            ::=  ‘0’ | nonZeroDigit
-nonZeroDigit     ::=  ‘1’ | … | ‘9’
 
 floatingPointLiteral
                  ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]

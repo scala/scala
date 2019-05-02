@@ -1,28 +1,49 @@
-t6124.scala:3: error: trailing separator is not allowed
+t6124.scala:3: error: illegal separator
   def i: Int = 123_456_
                       ^
-t6124.scala:4: error: trailing separator is not allowed
+t6124.scala:4: error: illegal separator
   def j: Long = 123_456_L * 1000
                        ^
-t6124.scala:7: error: trailing separator is not allowed
+t6124.scala:7: error: illegal separator
   def f = 3_14_E-2
               ^
-t6124.scala:8: error: Invalid literal number
+t6124.scala:8: error: illegal separator
   def e = 3_14E-_2
-          ^
-t6124.scala:9: error: trailing separator is not allowed
+                ^
+t6124.scala:9: error: illegal separator
   def d = 3_14E-2_
                  ^
-t6124.scala:11: error: trailing separator is not allowed
+t6124.scala:11: error: illegal separator
   def p = 3.1_4_
                ^
-t6124.scala:12: error: trailing separator is not allowed
+t6124.scala:12: error: illegal separator
   def q = 3.1_4_d
                ^
-t6124.scala:13: error: trailing separator is not allowed
+t6124.scala:13: error: illegal separator
   def r = 3.1_4_dd
                ^
-t6124.scala:13: error: Invalid literal number
+t6124.scala:13: error: invalid literal number
   def r = 3.1_4_dd
           ^
-9 errors
+t6124.scala:14: error: illegal separator
+  def s = 3_.14
+           ^
+t6124.scala:18: error: illegal separator
+  def v = 0_x42
+           ^
+t6124.scala:18: error: invalid literal number
+  def v = 0_x42
+          ^
+t6124.scala:22: error: illegal separator
+  def x = 00_
+            ^
+t6124.scala:23: error: illegal separator
+  def y = 0_
+           ^
+t6124.scala:26: error: invalid literal number
+  def wtf = 0x    // see neg/literals.scala
+            ^
+t6124.scala:30: error: illegal separator
+  def `caret positions` = 0x___________
+                                      ^
+16 errors

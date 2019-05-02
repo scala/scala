@@ -1,4 +1,4 @@
-literals.scala:4: error: missing integer number
+literals.scala:4: error: invalid literal number
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
                              ^
 literals.scala:6: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
@@ -13,7 +13,7 @@ literals.scala:10: warning: Decimal integer literals should not have a leading z
 literals.scala:14: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
                              ^
-literals.scala:22: error: missing integer number
+literals.scala:22: error: invalid literal number
   def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
                            ^
 literals.scala:26: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
