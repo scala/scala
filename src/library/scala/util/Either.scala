@@ -51,10 +51,10 @@ package util
  *
  *  Since `Either` defines the methods `map` and `flatMap`, it can also be used in for comprehensions:
  *  {{{
- *  val right1 = Right(1)   : Right[Double, Int] 
+ *  val right1 = Right(1)   : Right[Double, Int]
  *  val right2 = Right(2)
  *  val right3 = Right(3)
- *  val left23 = Left(23.0) : Left[Double, Int]  
+ *  val left23 = Left(23.0) : Left[Double, Int]
  *  val left42 = Left(42.0)
  *
  *  for {
@@ -164,7 +164,6 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was $e")
    *   }}}
    */
-  @deprecated("use swap instead", "2.13.0")
   def left = Either.LeftProjection(this)
 
   /** Projects this `Either` as a `Right`.
@@ -369,7 +368,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     * rl.flatten //Either[String, Int]: Left("flounder")
     * rr.flatten //Either[String, Int]: Right(7)
     * }}}
-    * 
+    *
     * Equivalent to `flatMap(id => id)`
     */
   def flatten[A1 >: A, B1](implicit ev: B <:< Either[A1, B1]): Either[A1, B1] = flatMap(ev)
@@ -523,7 +522,6 @@ object Either {
    *
    *  @see [[scala.util.Either#left]]
    */
-  @deprecated("use `swap` instead", "2.13.0")
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
     /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
      *  if this is a `Right`.
@@ -647,7 +645,7 @@ object Either {
       case x @ Left(a) if p(a) => Some(x.asInstanceOf[Either[A, B1]])
       case _                   => None
     }
-    
+
     /** Returns a `Seq` containing the `Left` value if it exists or an empty
      *  `Seq` if this is a `Right`.
      *
@@ -789,7 +787,7 @@ object Either {
       case Right(b) if p(b) => Some(Right(b))
       case _                => None
     }
-    
+
     /** Returns `None` if this is a `Left` or if the
      *  given predicate `p` does not hold for the right value,
      *  otherwise, returns a `Right`.
@@ -804,7 +802,7 @@ object Either {
       case r @ Right(b) if p(b) => Some(r.asInstanceOf[Either[A1, B]])
       case _                    => None
     }
-    
+
     /** Returns a `Seq` containing the `Right` value if
      *  it exists or an empty `Seq` if this is a `Left`.
      *
