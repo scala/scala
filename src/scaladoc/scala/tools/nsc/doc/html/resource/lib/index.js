@@ -532,7 +532,6 @@ function searchAll() {
     scheduler.clear("search"); // clear previous search
     maxJobs = 1; // clear previous max
     var searchStr = $("#textfilter input").attr("value").trim() || '';
-    searchStr = escape(searchStr);
 
     if (searchStr === '') {
         $("div#search-results").hide();
@@ -563,9 +562,12 @@ function searchAll() {
     entityResults.appendChild(entityH1);
 
     $("div#results-content")
-        .prepend("<span class='search-text'>"
-                +"  Showing results for <span class='query-str'>\"" + searchStr + "\"</span>"
-                +"</span>");
+      .prepend(
+          $("<span>")
+              .addClass("search-text")
+              .append(document.createTextNode("  Showing results for "))
+              .append($("<span>").addClass("query-str").text(searchStr))
+      );
 
     var regExp = compilePattern(searchStr);
 
