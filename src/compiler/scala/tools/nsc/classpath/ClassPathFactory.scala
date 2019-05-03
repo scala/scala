@@ -24,9 +24,6 @@ import scala.tools.nsc.util.ClassPath
  */
 class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry) {
 
-  @deprecated("for bincompat in 2.12.x series", "2.12.9")  // TODO remove from 2.13.x
-  def this(settings: Settings) = this(settings, new CloseableRegistry)
-
   /**
     * Create a new classpath based on the abstract file.
     */
@@ -82,9 +79,6 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
 }
 
 object ClassPathFactory {
-  @deprecated("for bincompat in 2.12.x series", "2.12.9")  // TODO remove from 2.13.x
-  def newClassPath(file: AbstractFile, settings: Settings): ClassPath =
-    newClassPath(file, settings, new CloseableRegistry)
   def newClassPath(file: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry): ClassPath = file match {
     case vd: VirtualDirectory => VirtualDirectoryClassPath(vd)
     case _ =>
