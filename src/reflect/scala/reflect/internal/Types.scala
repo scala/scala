@@ -1216,7 +1216,7 @@ trait Types
     *
     * In all other cases, the old behavior is maintained: Wildcard is expected.
     */
-  final case class OverloadedArgProto(argIdx: Either[Int, Name], pre: Type, alternatives: List[Symbol]) extends ProtoType with SimpleTypeProxy {
+  final case class OverloadedArgProto(argIdx: Either[Int, Name], pre: Type, alternatives: List[Symbol])(origUndets: List[Symbol]) extends ProtoType with SimpleTypeProxy {
     override def safeToString: String = underlying.safeToString
     override def kind = "OverloadedArgProto"
 
@@ -1249,7 +1249,7 @@ trait Types
     override def mapOver(map: TypeMap): Type = {
       val pre1 = pre.mapOver(map)
       val alts1 = map.mapOver(alternatives)
-      if ((pre ne pre1) || (alternatives ne alts1)) OverloadedArgProto(argIdx, pre1, alts1)
+      if ((pre ne pre1) || (alternatives ne alts1)) OverloadedArgProto(argIdx, pre1, alts1)(origUndets)
       else this
     }
 
@@ -1283,12 +1283,14 @@ trait Types
       }
     }
 
-
+    // replace origUndets: in chained calls, drop undets coming from earlier parts of the chain -- see pos/t11511
+    // replace tparams in top-level PolyType: we don't want bounded wildcards showing up for an f-bounded type param...
     private def toWild(tp: Type): Type = tp match {
       case PolyType(tparams, tp) =>
-        // we don't want bounded wildcards showing up for an f-bounded type param... no need for precision anyway
-        new SubstTypeMap(tparams, tparams map (_ => WildcardType)).apply(tp)
-      case tp                    => tp
+        val undets = tparams ++ origUndets
+        new SubstTypeMap(undets, undets map (_ => WildcardType)).apply(tp)
+      case tp                    =>
+        new SubstTypeMap(origUndets, origUndets map (_ => WildcardType)).apply(tp)
     }
 
     private lazy val sameTypesFolded = {
@@ -1299,7 +1301,7 @@ trait Types
         pre.memberType(alt) match {
           case PolyType(tparams, MethodType(ParamAtIdx(paramTp), res)) => PolyType(tparams, paramTp.asSeenFrom(pre, alt.owner))
           case MethodType(ParamAtIdx(paramTp), res)
-              if !(alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) => paramTp.asSeenFrom(pre, alt.owner)
+              if !(alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) => paramTp.asSeenFrom(pre, alt.owner) // TODO: can we simplify this (Are those params in origUndets by chance?)
           // this is just too ugly, but the type params are out of whack and thus toWild won't catch them unless we rewrite as follows:
           // if (alt.isConstructor && alt.owner.info.isInstanceOf[PolyType]) {
           //   PolyType(alt.owner.info.typeParams.map(_.tpe.asSeenFrom(pre, alt.owner).typeSymbol), paramTp.asSeenFrom(pre, alt.owner))

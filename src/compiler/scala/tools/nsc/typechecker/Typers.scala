@@ -3518,7 +3518,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               mapWithIndex(args) { (arg, argIdx) =>
                 def typedArg0(tree: Tree, argIdxOrName: Either[Int, Name] = Left(argIdx)) = {
-                  typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts))
+                  typedArg(tree, amode, BYVALmode, OverloadedArgProto(argIdxOrName, pre, alts)(undetparams))
                 }
 
                 arg match {
