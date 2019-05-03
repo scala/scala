@@ -149,9 +149,6 @@ trait CompilationUnits { global: Global =>
     @deprecated("Call global.currentRun.reporting.uncheckedWarning directly instead.", "2.11.2")
     final def uncheckedWarning(pos: Position, msg: String): Unit   = currentRun.reporting.uncheckedWarning(pos, msg)
 
-    @deprecated("This method will be removed. It does nothing.", "2.11.2")
-    final def comment(pos: Position, msg: String): Unit = {}
-
     /** Is this about a .java source file? */
     val isJava = source.file.name.endsWith(".java")
 

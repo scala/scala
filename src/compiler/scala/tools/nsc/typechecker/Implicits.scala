@@ -57,14 +57,6 @@ trait Implicits {
   def inferImplicitByTypeSilent(pt: Type, context: Context, pos: Position = NoPosition): SearchResult =
     inferImplicit(EmptyTree, pt, reportAmbiguous = false, isView = false, context, saveAmbiguousDivergent = false, pos)
 
-  @deprecated("Unused in scalac", "2.12.0-M4")
-  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
-    inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent = true, tree.pos)
-
-  @deprecated("Unused in scalac", "2.12.0-M4")
-  def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean): SearchResult =
-    inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent, tree.pos)
-
   /** Search for an implicit value. Consider using one of the convenience methods above. This one has many boolean levers.
    *
    * See the comment on `result` at the end of class `ImplicitSearch` for more info how the search is conducted.

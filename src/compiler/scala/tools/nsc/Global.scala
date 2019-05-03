@@ -314,8 +314,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       log(msg)
   }
 
-  @deprecated("Renamed to reportThrowable", "2.10.1")
-  def logThrowable(t: Throwable): Unit = reportThrowable(t)
   def reportThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   override def throwableAsString(t: Throwable) = util.stackTraceString(t)
 
