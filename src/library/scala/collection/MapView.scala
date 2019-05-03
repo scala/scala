@@ -54,6 +54,10 @@ trait MapView[K, +V]
   override def empty: MapView[K, V] = mapFactory.empty
 
   override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, View, ({ type l[X, Y] = View[(X, Y)] })#l] = new MapOps.WithFilter(this, p)
+
+  override def toString: String = super[View].toString
+
+  override protected[this] def className: String = "MapView"
 }
 
 object MapView extends MapViewFactory {

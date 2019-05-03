@@ -222,10 +222,10 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     *  Inside, the string representations (w.r.t. the method `toString`)
     *  of all elements of this $coll are separated by the string `sep`.
     *
-    * Undefined elements are represented with `"_"`, an undefined tail is represented with `"?"`,
-    * and cycles are represented with `"..."`.
+    * Undefined elements are represented with `"_"`, an undefined tail is represented with `"&lt;not computed&gt;"`,
+    * and cycles are represented with `"&lt;cycle&gt;"`.
     *
-    *  @param  b    the string builder to which elements are appended.
+    *  @param sb    the string builder to which elements are appended.
     *  @param start the starting string.
     *  @param sep   the separator string.
     *  @param end   the ending string.
@@ -242,10 +242,7 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
     if (nonEmpty) {
       b.append(head)
       var cursor = this
-      def appendCursorElement() = {
-        b.append(sep)
-        if (cursor.nonEmpty) b.append(cursor.head) else b.append('_')
-      }
+      def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
       if (tailDefined) {  // If tailDefined, also !isEmpty
         var scout = tail
         if (cursor ne scout) {
@@ -304,8 +301,8 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
       }
       if (cursor.nonEmpty) {
         // Either undefined or cyclic; we can check with tailDefined
-        if (!cursor.tailDefined) b.append(sep).append('?')
-        else b.append(sep).append("...")
+        if (!cursor.tailDefined) b.append(sep).append("<not computed>")
+        else b.append(sep).append("<cycle>")
       }
     }
     b.append(end)
@@ -313,16 +310,16 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
 
   /**
     * @return a string representation of this collection. Undefined elements are
-    *         represented with `"_"`, an undefined tail is represented with `"?"`,
-    *         and cycles are represented with `"..."`
+    *         represented with `"_"`, an undefined tail is represented with `"&lt;not computed&gt;"`,
+    *         and cycles are represented with `"&lt;cycle&gt;"`
     *
     *         Examples:
     *
-    *           - `"Stream(_, ?)"`, a non-empty stream, whose head has not been
+    *           - `"Stream(_, &lt;not computed&gt;)"`, a non-empty stream, whose head has not been
     *             evaluated ;
-    *           - `"Stream(_, 1, _, ?)"`, a stream with at least three elements,
+    *           - `"Stream(_, 1, _, &lt;not computed&gt;)"`, a stream with at least three elements,
     *             the second one has been evaluated ;
-    *           - `"Stream(1, 2, 3, ...)"`, an infinite stream that contains
+    *           - `"Stream(1, 2, 3, &lt;cycle&gt;)"`, an infinite stream that contains
     *             a cycle at the fourth element.
     */
   override def toString = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString

@@ -804,7 +804,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *  Inside, the string representations (w.r.t. the method `toString`)
     *  of all elements of this $coll are separated by the string `sep`.
     *
-    * An undefined state is represented with `"?"` and cycles are represented with `"..."`.
+    * An undefined state is represented with `"&lt;not computed&gt;"` and cycles are represented with `"&lt;cycle&gt;"`.
     *
     * $evaluatesAllElements
     *
@@ -822,11 +822,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   private[this] def addStringNoForce(b: JStringBuilder, start: String, sep: String, end: String): JStringBuilder = {
     b.append(start)
-    if (!stateDefined) b.append('?')
+    if (!stateDefined) b.append("<not computed>")
     else if (!isEmpty) {
       b.append(head)
       var cursor = this
-      def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
+      @inline def appendCursorElement(): Unit = b.append(sep).append(cursor.head)
       var scout = tail
       @inline def scoutNonEmpty: Boolean = scout.stateDefined && !scout.isEmpty
       if ((cursor ne scout) && (!scout.stateDefined || (cursor.state ne scout.state))) {
@@ -848,7 +848,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
           cursor = cursor.tail
         }
         // if cursor (eq scout) has state defined, it is empty; else unknown state
-        if (!cursor.stateDefined) b.append(sep).append('?')
+        if (!cursor.stateDefined) b.append(sep).append("<not computed>")
       } else {
         @inline def same(a: LazyList[A], b: LazyList[A]): Boolean = (a eq b) || (a.state eq b.state)
         // Cycle.
@@ -880,7 +880,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
           appendCursorElement()
           cursor = cursor.tail
         }
-        b.append(sep).append("...")
+        b.append(sep).append("<cycle>")
       }
     }
     b.append(end)
@@ -889,13 +889,13 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
   /** $preservesLaziness
     *
     * @return a string representation of this collection. An undefined state is
-    *         represented with `"?"` and cycles are represented with `"..."`
+    *         represented with `"&lt;not computed&gt;"` and cycles are represented with `"&lt;cycle&gt;"`
     *
     *         Examples:
     *
-    *           - `"LazyList(4, ?)"`, a non-empty lazy list ;
-    *           - `"LazyList(1, 2, 3, ?)"`, a lazy list with at least three elements ;
-    *           - `"LazyList(1, 2, 3, ...)"`, an infinite lazy list that contains
+    *           - `"LazyList(4, &lt;not computed&gt;)"`, a non-empty lazy list ;
+    *           - `"LazyList(1, 2, 3, &lt;not computed&gt;)"`, a lazy list with at least three elements ;
+    *           - `"LazyList(1, 2, 3, &lt;cycle&gt;)"`, an infinite lazy list that contains
     *             a cycle at the fourth element.
     */
   override def toString(): String = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString

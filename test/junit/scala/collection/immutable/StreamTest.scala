@@ -154,14 +154,14 @@ class StreamTest {
   @Test
   def testStreamToStringWhenHeadAndTailBothAreNotEvaluated = {
     val l = Stream(1, 2, 3, 4, 5)
-    assertEquals("Stream(1, ?)", l.toString)
+    assertEquals("Stream(1, <not computed>)", l.toString)
   }
 
   @Test
   def testStreamToStringWhenOnlyHeadIsEvaluated = {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
-    assertEquals("Stream(1, ?)", l.toString)
+    assertEquals("Stream(1, <not computed>)", l.toString)
   }
 
   @Test
@@ -169,7 +169,7 @@ class StreamTest {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
     l.tail
-    assertEquals("Stream(1, 2, ?)", l.toString)
+    assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
@@ -177,21 +177,21 @@ class StreamTest {
     val l = Stream(1, 2, 3, 4, 5)
     l.head
     l.tail.head
-    assertEquals("Stream(1, 2, ?)", l.toString)
+    assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testStreamToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
     val l = Stream(1, 2, 3, 4, 5)
     l.tail
-    assertEquals("Stream(1, 2, ?)", l.toString)
+    assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testStreamToStringWhedHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
     val l = Stream(1, 2, 3, 4, 5)
     l.tail.head
-    assertEquals("Stream(1, 2, ?)", l.toString)
+    assertEquals("Stream(1, 2, <not computed>)", l.toString)
   }
 
   @Test
@@ -211,7 +211,7 @@ class StreamTest {
   def testStreamToStringWhenStreamHasCyclicReference: Unit = {
     lazy val cyc: Stream[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
     cyc.tail.tail.tail.tail
-    assertEquals("Stream(1, 2, 3, 4, ...)", cyc.toString)
+    assertEquals("Stream(1, 2, 3, 4, <cycle>)", cyc.toString)
   }
 
   @Test

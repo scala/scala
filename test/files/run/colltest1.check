@@ -13,7 +13,7 @@ new test starting with Stream()
 10: Stream(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: Stream(2, 3, 4, 5, 6, 7, 8, 9, 10)
 1
-Stream(1, ?)
+Stream(1, <not computed>)
 new test starting with ArraySeq()
 10: ArraySeq(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: ArraySeq(2, 3, 4, 5, 6, 7, 8, 9, 10)

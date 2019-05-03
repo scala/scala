@@ -71,14 +71,14 @@ class LazyListTest {
   @Test
   def testLazyListToStringWhenHeadAndTailBothAreNotEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
-    assertEquals("LazyList(?)", l.toString)
+    assertEquals("LazyList(<not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenOnlyHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.head
-    assertEquals("LazyList(1, ?)", l.toString)
+    assertEquals("LazyList(1, <not computed>)", l.toString)
   }
 
   @Test
@@ -86,7 +86,7 @@ class LazyListTest {
     val l = LazyList(1, 2, 3, 4, 5)
     l.head
     l.tail
-    assertEquals("LazyList(1, ?)", l.toString)
+    assertEquals("LazyList(1, <not computed>)", l.toString)
   }
 
   @Test
@@ -94,35 +94,35 @@ class LazyListTest {
     val l = LazyList(1, 2, 3, 4, 5)
     l.head
     l.tail.head
-    assertEquals("LazyList(1, 2, ?)", l.toString)
+    assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail
-    assertEquals("LazyList(1, ?)", l.toString)
+    assertEquals("LazyList(1, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.head
-    assertEquals("LazyList(1, 2, ?)", l.toString)
+    assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailTailIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.tail
-    assertEquals("LazyList(1, 2, ?)", l.toString)
+    assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailHeadIsEvaluated = {
     val l = LazyList(1, 2, 3, 4, 5)
     l.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, ?)", l.toString)
+    assertEquals("LazyList(1, 2, 3, <not computed>)", l.toString)
   }
 
   @Test
@@ -139,7 +139,7 @@ class LazyListTest {
     assertEquals("LazyList()", l1.toString)
     // non-cached empty
     val l2 = LazyList.unfold(0)(_ => None)
-    assertEquals("LazyList(?)", l2.toString)
+    assertEquals("LazyList(<not computed>)", l2.toString)
   }
 
   @Test
@@ -152,19 +152,19 @@ class LazyListTest {
   @Test
   def testLazyListToStringWhenLazyListHasCyclicReference: Unit = {
     lazy val cyc: LazyList[Int] = 1 #:: 2 #:: 3 #:: 4 #:: cyc
-    assertEquals("LazyList(?)", cyc.toString)
+    assertEquals("LazyList(<not computed>)", cyc.toString)
     cyc.head
-    assertEquals("LazyList(1, ?)", cyc.toString)
+    assertEquals("LazyList(1, <not computed>)", cyc.toString)
     cyc.tail
-    assertEquals("LazyList(1, ?)", cyc.toString)
+    assertEquals("LazyList(1, <not computed>)", cyc.toString)
     cyc.tail.head
-    assertEquals("LazyList(1, 2, ?)", cyc.toString)
+    assertEquals("LazyList(1, 2, <not computed>)", cyc.toString)
     cyc.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, ?)", cyc.toString)
+    assertEquals("LazyList(1, 2, 3, <not computed>)", cyc.toString)
     cyc.tail.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, 4, ...)", cyc.toString)
+    assertEquals("LazyList(1, 2, 3, 4, <cycle>)", cyc.toString)
     cyc.tail.tail.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, 4, ...)", cyc.toString)
+    assertEquals("LazyList(1, 2, 3, 4, <cycle>)", cyc.toString)
   }
 
   def hasCorrectDrop(): Unit = {
@@ -274,22 +274,22 @@ class LazyListTest {
 
     def precyc(n: Int, m: Int) = pre(n) #::: cyc(m)
 
-    def goal(n: Int, m: Int) = (-n until m).mkString + "..."
+    def goal(n: Int, m: Int) = (-n until m).mkString + "<cycle>"
 
     // Check un-forced cyclic and non-cyclic streams
-    assertEquals("LazyList(?)", pre(2).toString)
-    assertEquals("LazyList(?)", cyc(2).toString)
-    assertEquals("LazyList(?)", precyc(2,2).toString)
+    assertEquals("LazyList(<not computed>)", pre(2).toString)
+    assertEquals("LazyList(<not computed>)", cyc(2).toString)
+    assertEquals("LazyList(<not computed>)", precyc(2,2).toString)
 
     // Check forced cyclic and non-cyclic streams
     assertEquals("LazyList(-2, -1)", pre(2).force.toString)
-    assertEquals("LazyList(0, 1, ...)", cyc(2).force.toString)
-    assertEquals("LazyList(-2, -1, 0, 1, ...)", precyc(2,2).force.toString)
+    assertEquals("LazyList(0, 1, <cycle>)", cyc(2).force.toString)
+    assertEquals("LazyList(-2, -1, 0, 1, <cycle>)", precyc(2,2).force.toString)
 
     // Special cases
-    assertEquals("LazyList(0, ...)", cyc(1).force.toString)
-    assertEquals("LazyList(-1, 0, 1, 2, 3, 4, 5, ...)", precyc(1,6).force.toString)
-    assertEquals("LazyList(-6, -5, -4, -3, -2, -1, 0, ...)", precyc(6,1).force.toString)
+    assertEquals("LazyList(0, <cycle>)", cyc(1).force.toString)
+    assertEquals("LazyList(-1, 0, 1, 2, 3, 4, 5, <cycle>)", precyc(1,6).force.toString)
+    assertEquals("LazyList(-6, -5, -4, -3, -2, -1, 0, <cycle>)", precyc(6,1).force.toString)
 
     // Make sure there are no odd/even problems
     for (n <- 3 to 4; m <- 3 to 4) {

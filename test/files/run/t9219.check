@@ -1,3 +1,3 @@
-LazyList(1, ?)
-LazyList(1, 2, 3, 4, ?)
-LazyList(1, 2, 3, 4, 5, 6, ?)
+LazyList(1, <not computed>)
+LazyList(1, 2, 3, 4, <not computed>)
+LazyList(1, 2, 3, 4, 5, 6, <not computed>)
