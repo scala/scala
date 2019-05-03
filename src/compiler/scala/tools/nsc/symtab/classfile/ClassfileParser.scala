@@ -487,18 +487,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       if (!c.isInstanceOf[StubSymbol] && c != clazz) mismatchError(c)
     }
 
-    // TODO: remove after the next 2.13 milestone
-    // A bug in the backend caused classes ending in `$` do get only a Scala marker attribute
-    // instead of a ScalaSig and a Signature annotaiton. This went unnoticed because isScalaRaw
-    // classes were parsed like Java classes. The below covers the cases in the std lib.
-    def isNothingOrNull = {
-      val n = clazz.fullName.toString
-      n == "scala.runtime.Nothing$" || n == "scala.runtime.Null$"
-    }
-
     if (isScala) {
       () // We're done
-    } else if (isScalaRaw && !isNothingOrNull) {
+    } else if (isScalaRaw) {
       val decls = clazz.enclosingPackage.info.decls
       for (c <- List(clazz, staticModule, staticModule.moduleClass)) {
         c.setInfo(NoType)
