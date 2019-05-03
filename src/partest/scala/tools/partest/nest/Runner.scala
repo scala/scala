@@ -653,28 +653,9 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
     import scala.tools.scalap
+    import scalap.scalax.rules.scalasig.ByteCode
 
-    // TODO: remove use of reflection once Scala 2.11.0-RC1 is out
-    // have to use reflection to work on both 2.11.0-M8 and 2.11.0-RC1.
-    // Once we require only 2.11.0-RC1, replace the following block by:
-    // import scalap.scalax.rules.scalasig.ByteCode
-    // ByteCode forClass clazz bytes
-    val bytes = {
-      import scala.language.{reflectiveCalls, existentials}
-      type ByteCode       = { def bytes: Array[Byte] }
-      type ByteCodeModule = { def forClass(clazz: Class[_]): ByteCode }
-      val ByteCode        = {
-        val ByteCodeModuleCls =
-          // RC1 package structure -- see: scala/scala#3588 and https://issues.scala-lang.org/browse/SI-8345
-          (util.Try { Class.forName("scala.tools.scalap.scalax.rules.scalasig.ByteCode$") }
-          // M8 package structure
-           getOrElse  Class.forName("scala.tools.scalap.scalasig.ByteCode$"))
-        ByteCodeModuleCls.getDeclaredFields()(0).get(null).asInstanceOf[ByteCodeModule]
-      }
-      ByteCode.forClass(clazz).bytes
-    }
-
-    scalap.Main.decompileScala(bytes, isPackageObject)
+    scalap.Main.decompileScala(ByteCode.forClass(clazz).bytes, isPackageObject)
   }
 
   def runScalapTest(): TestState = runTestCommon {
