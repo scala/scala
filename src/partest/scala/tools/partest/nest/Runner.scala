@@ -437,7 +437,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   /** Grouped files in group order, and lex order within each group. */
   def groupedFiles(sources: List[File]): List[List[File]] = (
-    if (sources.tail.nonEmpty) {
+    if (sources.sizeIs > 1) {
       val grouped = sources groupBy (_.group)
       grouped.keys.toList.sorted map (k => grouped(k) sortBy (_.getName))
     }
