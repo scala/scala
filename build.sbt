@@ -83,7 +83,7 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
-Global / mimaReferenceVersion := None // TODO: make it Some("2.13.0-RC2") when its out
+Global / mimaReferenceVersion := None // TODO: make it Some("2.13.0-RC2") when it's out
 
 // Drop once 2.13.0 is out.
 import com.typesafe.tools.mima.core._
