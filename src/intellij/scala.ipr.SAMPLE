@@ -363,7 +363,7 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/completion/jars/completion-0.13.18.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections/jars/collections-0.13.18.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.13.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.fusesource.jansi/jansi/jars/jansi-1.11.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.fusesource.jansi/jansi/jars/jansi-1.12.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/api/jars/api-0.13.18.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classfile/jars/classfile-0.13.18.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/logging/jars/logging-0.13.18.jar!/" />
