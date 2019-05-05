@@ -77,7 +77,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     b.result == b.addAll(seq).result()
   }
 
-  property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[(K, V)],ys: Seq[(K, V)]) =>
+  property("(xs ++ ys).toMap == xs.toMap ++ ys.toMap") = forAll { (xs: Seq[(K, V)], ys: Seq[(K, V)]) =>
     (xs ++ ys).toMap ?= xs.toMap ++ ys.toMap
   }
 
@@ -126,7 +126,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
   }
 
   property("transform(f) == map { (k, v) => (k, f(k, v)) }") = forAll { (xs: HashMap[K, V], f: (K, V) => String) =>
-    xs.transform(f) == xs.map{ case (k, v) => (k, f(k, v)) }
+    xs.transform(f) == xs.map { case (k, v) => (k, f(k, v)) }
   }
 
   property("xs.transform((_, v) => v) eq xs") = forAll { xs: HashMap[K, String] =>
@@ -146,17 +146,17 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
       val onlyInLeft = left.filter { case (k, _) => !right.contains(k) }
       val onlyInRight = right.filter { case (k, _) => !left.contains(k) }
 
-      val merged = left.merged(right){ case (_, (k, _)) => k -> mergedValue }
+      val merged = left.merged(right) { case (_, (k, _)) => k -> mergedValue }
 
-      onlyInLeft.forall{ case (k, v) => merged.get(k).contains(v) } &&
-      onlyInRight.forall{ case (k, v) => merged.get(k).contains(v) }
+      onlyInLeft.forall { case (k, v) => merged.get(k).contains(v) } &&
+        onlyInRight.forall { case (k, v) => merged.get(k).contains(v) }
     }
 
   property("merged results in a merged value for all keys that appear in both maps") =
     forAll { (left: HashMap[K, V], right: HashMap[K, V], mergedValue: V) =>
       val intersected = left.filter { case (k, _) => right.contains(k) }
 
-      val merged = left.merged(right){ case (_, (k, _)) => k -> mergedValue }
+      val merged = left.merged(right) { case (_, (k, _)) => k -> mergedValue }
 
       intersected.forall { case (k, _) => merged.get(k).contains(mergedValue) }
     }
@@ -171,7 +171,9 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     }
 
   property("xs.toList.filter(p).toMap == xs.filter(p)") = forAll { (xs: HashMap[Int, Int], flipped: Boolean) =>
-    val p: ((Int, Int)) => Boolean = { case (k, v) => k * v >= 0} // "key and value are the same sign"
+    val p: ((Int, Int)) => Boolean = {
+      case (k, v) => k * v >= 0
+    } // "key and value are the same sign"
     xs.toList.filterImpl(p, flipped).toMap == xs.filterImpl(p, flipped)
   }
 
@@ -179,27 +181,28 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     forAll { (xs: HashMap[Int, Int], p: ((Int, Int)) => Boolean, flipped: Boolean) =>
       xs.filterImpl(p, flipped) == {
         val builder = HashMap.newBuilder[Int, Int]
-        xs.foreach (kv => if (p(kv) != flipped) builder.addOne(kv))
+        xs.foreach(kv => if (p(kv) != flipped) builder.addOne(kv))
         builder.result()
       }
-  }
+    }
 
   property("xs.filter(p) does not perform any hashes") =
     forAll { (xs: HashMap[Int, Int], p: ((Int, Int)) => Boolean, flipped: Boolean) =>
       // container which tracks the number of times its hashCode() is called
       case class Container(inner: Int) {
         var timesHashed = 0
+
         override def hashCode() = {
-            timesHashed += 1
-            inner.hashCode()
-          }
+          timesHashed += 1
+          inner.hashCode()
+        }
       }
 
       val ys: HashMap[Container, Int] = xs.map { case (k, v) => Container(k) -> v }
-      val zs = ys.filterImpl( { case (k, v) => p((k.inner, v))}, flipped)
+      val zs = ys.filterImpl({ case (k, v) => p((k.inner, v)) }, flipped)
 
       ys.forall(_._1.timesHashed <= 1)
-     }
+    }
 
   property("xs.removeAll(ys) == xs.filterNot(kv => ys.toSet.contains(kv._1))") = forAll { (xs: HashMap[K, V], ys: Iterable[K]) =>
     val ysSet = ys.toSet
@@ -267,7 +270,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     val mhm = l.to(collection.mutable.HashMap)
     hm.concat(mhm)
     (hm ?= clone).label("hm is unmutated") &&
-      ((mhm : collection.Map[K, V]) ?= l.to(HashMap)).label("mhm is unmutated")
+      ((mhm: collection.Map[K, V]) ?= l.to(HashMap)).label("mhm is unmutated")
   }
 
   property("hm.removedAll(hashSet) == hashSet.foldLeft(this)(_ - _)") = forAll { (hm: HashMap[K, V], hs: HashSet[K]) =>
@@ -287,7 +290,7 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
     val mhs = hs.to(collection.mutable.HashSet)
     hm.removedAll(mhs)
     (hm ?= clone).label("hm is unmutated") &&
-      ((mhs : collection.Set[K]) ?= hs).label("mhs is unmutated")
+      ((mhs: collection.Set[K]) ?= hs).label("mhs is unmutated")
   }
 
   property("xs.keySet + k == xs.map(_._1).to(Set) + k") = forAll { (hm: HashMap[K, V], k: K) =>
@@ -313,5 +316,58 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
   property("xs.keySet diff ks == xs.map(_._1).to(Set) diff ks") = forAll { (hm: HashMap[K, V], ks: Set[K]) =>
     hm.keySet.diff(ks) ?= hm.to(List).map(_._1).to(Set).diff(ks)
   }
+}
+object HashMapUpdatedWithProperties extends Properties("HashMap#updatedWith") {
+
+  type K = Int
+  type V = Int
+  type T = (K, V)
+
+  final case class HashCollisionKey(i: Int, j: Int) {
+    override def hashCode(): V = i
+  }
+
+  implicit val hashCollisionKeyGen: Arbitrary[HashCollisionKey] =
+    Arbitrary(for {
+      i <- arbInt.arbitrary
+      j <- arbInt.arbitrary
+    } yield HashCollisionKey(i, j))
+
+  case class MapWithExistingKey(hm: HashMap[HashCollisionKey, Int], existingKey: HashCollisionKey)
+
+  implicit val mapWithExistingKeyGen: Gen[MapWithExistingKey] =
+    for {
+      hm <- arbitrary[HashMap[HashCollisionKey, Int]]
+      if hm.nonEmpty
+      key <- Gen.oneOf(hm.keys.toSeq)
+    } yield MapWithExistingKey(hm, key)
+
+  property("xs.updatedWith(key)(_ => None) == xs.removed(key)") = forAll { (hm: HashMap[HashCollisionKey, Int], key: HashCollisionKey) =>
+    hm.updatedWith(key)(_ => None) ?= hm.removed(key)
+  }
+  property("xs.updatedWith(existingKey)(_ => None) == xs.removed(existingKey)") = forAll(mapWithExistingKeyGen) { mwek =>
+    mwek.hm.updatedWith(mwek.existingKey)(_ => None) ?= mwek.hm.removed(mwek.existingKey)
+  }
+  property("xs.updatedWith(key)(_ => Some(value)) == xs.updated(value)") = forAll { (hm: HashMap[HashCollisionKey, Int], key: HashCollisionKey, value: Int) =>
+    hm.updatedWith(key)(_ => Some(value)) ?= hm.updated(key, value)
+  }
+  property("xs.updatedWith(key)(_ => Some(value)) == xs.updated(value)") = forAll(mapWithExistingKeyGen, arbitrary[Int]) { (mwek, v) =>
+    mwek.hm.updatedWith(mwek.existingKey)(_ => Some(v)) ?= mwek.hm.updated(mwek.existingKey, v)
+  }
+  property("xs.updatedWith(key)(identity) == xs") = forAll { (hm: HashMap[HashCollisionKey, Int], key: HashCollisionKey, value: Int) =>
+    hm.updatedWith(key)(identity) ?= hm
+  }
+  property("xs.updatedWith(existingKey)(identity) == xs") = forAll(mapWithExistingKeyGen) { mwek =>
+    mwek.hm.updatedWith(mwek.existingKey)(identity) ?= mwek.hm
+  }
+  property("xs.updatedWith(existingKey)(_.map(_ + 1))") = forAll(mapWithExistingKeyGen) { mwek =>
+    mwek.hm.updatedWith(mwek.existingKey)(_.map(_ + 1)) ?= {
+      mwek.hm.get(mwek.existingKey) match {
+        case Some(v) => mwek.hm.updated(mwek.existingKey, v + 1)
+        case None => mwek.hm
+      }
+    }
+  }
+
 
 }

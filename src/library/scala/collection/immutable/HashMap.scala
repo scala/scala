@@ -151,9 +151,12 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     newHashMapOrThis(rootNode.updated(key, value, keyUnimprovedHash, improve(keyUnimprovedHash), 0, replaceValue = true))
   }
 
-  // preemptively overridden in anticipation of performance optimizations
-  override def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): HashMap[K, V1] =
-    super.updatedWith[V1](key)(remappingFunction)
+  override def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): HashMap[K, V1] = {
+    val keyUnimprovedHash = key.##
+    val newRootNode = rootNode.updatedWith(key, keyUnimprovedHash, improve(keyUnimprovedHash), 0, remappingFunction)
+    if (newRootNode.size == 0) empty
+    else newHashMapOrThis(newRootNode)
+  }
 
   def removed(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
@@ -429,6 +432,9 @@ private[immutable] object MapNode {
 
   def empty[K, V]: BitmapIndexedMapNode[K, V] = EmptyMapNode.asInstanceOf[BitmapIndexedMapNode[K, V]]
 
+  def single[K, V](key: K, value: V, keyHash: Int, originalHash: Int): BitmapIndexedMapNode[K, V] =
+    new BitmapIndexedMapNode[K, V](Node.bitposFrom(Node.maskFrom(keyHash, 0)), 0, Array(key, value), Array(originalHash), 1, keyHash)
+
   final val TupleLength = 2
 
 }
@@ -457,6 +463,8 @@ private[immutable] sealed abstract class MapNode[K, +V] extends Node[MapNode[K, 
     *                     method has `update if not exists` semantics.
     */
   def updated[V1 >: V](key: K, value: V1, originalHash: Int, hash: Int, shift: Int, replaceValue: Boolean): MapNode[K, V1]
+
+  def updatedWith[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, remappingFunction: Option[V] => Option[V1]): MapNode[K, V1]
 
   def removed[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int): MapNode[K, V1]
 
@@ -664,7 +672,74 @@ private final class BitmapIndexedMapNode[K, +V](
     } else copyAndInsertValue(bitpos, key, originalHash, keyHash, value)
   }
 
-  /** A variant of `updated` which performs shallow mutations on the root (`this`), and if possible, on immediately
+
+  override def updatedWith[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, remappingFunction: Option[V] => Option[V1]): BitmapIndexedMapNode[K, V1] = {
+    val mask = maskFrom(hash, shift)
+    val bitpos = bitposFrom(mask)
+
+    if ((dataMap & bitpos) != 0) {
+      val index = indexFrom(dataMap, mask, bitpos)
+      val key0 = getKey(index)
+      val key0UnimprovedHash = getHash(index)
+      if (key0UnimprovedHash == originalHash && key0 == key) {
+        val value0 = this.getValue(index)
+        remappingFunction(Some(value0)) match {
+          case Some(newValue) =>
+            if (newValue.asInstanceOf[AnyRef] eq value0.asInstanceOf[AnyRef]) this
+            else copyAndSetValue(bitpos, key, newValue)
+          case None =>
+            if (size == 2) {
+              val remainingIndex = if (index == 0) 1 else 0
+              val remainingOriginalHash = getHash(remainingIndex)
+              MapNode.single(getKey(remainingIndex), getValue(remainingIndex), improve(remainingOriginalHash), remainingOriginalHash)
+            } else {
+              copyAndRemoveValue(bitpos, hash)
+            }
+        }
+      } else {
+        remappingFunction(None) match {
+          case Some(newValue) =>
+            val value0 = this.getValue(index)
+            val key0Hash = improve(key0UnimprovedHash)
+
+            val subNodeNew = mergeTwoKeyValPairs(key0, value0, key0UnimprovedHash, key0Hash, key, newValue, originalHash, hash, shift + BitPartitionSize)
+            copyAndMigrateFromInlineToNode(bitpos, key0Hash, subNodeNew)
+          case None =>
+            this
+        }
+      }
+    } else if ((nodeMap & bitpos) != 0) {
+      val index = indexFrom(nodeMap, mask, bitpos)
+      val subNode = this.getNode(index)
+
+      val subNodeNew = subNode.updatedWith(key, originalHash, hash, shift + BitPartitionSize, remappingFunction)
+      if (subNodeNew eq subNode) this
+      else {
+        val subNodeNewSize = subNodeNew.size
+        if (subNodeNewSize > 1) {
+          copyAndSetNode(bitpos, subNode, subNodeNew)
+        } else {
+          if (this.size == subNode.size) {
+            // subNode is the only child (no other data or node children of `this` exist)
+            // escalate (singleton or empty) result
+            subNodeNew.asInstanceOf[BitmapIndexedMapNode[K, V]]
+          } else {
+            // inline value (move to front)
+            copyAndMigrateFromNodeToInline(bitpos, subNode, subNodeNew)
+          }
+        }
+      }
+    } else {
+      remappingFunction(None) match {
+        case Some(newValue) =>
+          copyAndInsertValue(bitpos, key, originalHash, hash, newValue)
+        case None =>
+          this
+      }
+    }
+  }
+
+/** A variant of `updated` which performs shallow mutations on the root (`this`), and if possible, on immediately
     * descendant child nodes (only one level beneath `this`)
     *
     * The caller should pass a bitmap of child nodes of this node, which this method may mutate.
@@ -680,7 +755,6 @@ private final class BitmapIndexedMapNode[K, +V](
     * @param keyHash the improved hash
     * @param shallowlyMutableNodeMap bitmap of child nodes of this node, which can be shallowly mutated
     *                                during the call to this method
-    *
     * @return Int which is the bitwise OR of shallowlyMutableNodeMap and any freshly created nodes, which will be
     *         available for mutations in subsequent calls.
     */
@@ -1811,6 +1885,34 @@ private final class HashCollisionMapNode[K, +V ](
       }
     } else {
       new HashCollisionMapNode[K, V1](originalHash, hash, content.appended[(K, V1)]((key, value)))
+    }
+  }
+
+
+  override def updatedWith[V1 >: V](key: K, originalHash: Int, hash: Int, shift: Int, remappingFunction: Option[V] => Option[V1]): MapNode[K, V1] = {
+    val index = indexOf(key)
+    if (index >= 0) {
+      val (k, v) = content(index)
+      remappingFunction(Some(v)) match {
+        case Some(newValue) =>
+          if (newValue.asInstanceOf[AnyRef] eq v.asInstanceOf[AnyRef]) this
+          else new HashCollisionMapNode[K, V1](originalHash, hash, content.updated(index, (k, newValue)))
+        case None =>
+          if (content.length == 2) {
+            val remainingIndex = if (index == 0) 1 else 0
+            val (remainingKey, remainingValue) = content(remainingIndex)
+            MapNode.single(remainingKey, remainingValue, hash, originalHash)
+          } else {
+            new HashCollisionMapNode[K, V1](originalHash, hash, content.iterator.take(index).concat(content.iterator.drop(index + 1)).toVector)
+          }
+      }
+    } else {
+      remappingFunction(None) match {
+        case Some(newValue) =>
+          new HashCollisionMapNode[K, V1](originalHash, hash, content.appended[(K, V1)]((key, newValue)))
+        case None =>
+          this
+      }
     }
   }
 

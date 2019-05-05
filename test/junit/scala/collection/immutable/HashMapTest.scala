@@ -135,4 +135,134 @@ class HashMapTest {
     assertEquals(hashMap.updatedWith(2)(noneAnytime), HashMap(1 -> "a"))
   }
 
+  @Test
+  def testUpdatedWithHashCollisions(): Unit = {
+    case class Key(i: Int, j: Int) {
+      override def hashCode(): Int = i
+    }
+
+    def slowImplementation[K, V](m: Map[K, V])(key: K)(f: Option[V] => Option[V]): Map[K, V] =
+      f(m.get(key)) match {
+        case Some(v1) => m.updated(key, v1)
+        case None => m.removed(key)
+      }
+
+    def runTest[K, V](m: Map[K, V])(key: K)(f: Option[V] => Option[V]): Unit = {
+      var valuePresented: Option[V] = null
+      m.updatedWith(key){ v =>
+        valuePresented = v
+        f(v)
+      }
+      assertEquals(m.get(key), valuePresented)
+      assertEquals(slowImplementation(m)(key)(f), m.updatedWith(key)(f))
+    }
+
+    val map = HashMap(
+      // hash collision group 1
+      Key(1, 1) -> 1,
+      Key(1, 2) -> 2,
+      Key(1, 3) -> 3,
+      Key(1, 4) -> 4,
+
+      // hash collision group 2
+      Key(2, 1) -> 5,
+      Key(2, 2) -> 6,
+      Key(2, 3) -> 7,
+      Key(2, 4) -> 8,
+
+      // other keys
+      Key(3, 1) -> 9,
+      Key(4, 1) -> 10,
+      Key(5, 1) -> 11,
+      Key(6, 1) -> 12
+    )
+
+    // some to some (same)
+    def runSomeToSomeSame(key: Key): Unit = runTest(map)(key)(identity)
+
+    runSomeToSomeSame(Key(1,1))
+    runSomeToSomeSame(Key(1,2))
+    runSomeToSomeSame(Key(1,3))
+    runSomeToSomeSame(Key(1,4))
+
+    runSomeToSomeSame(Key(2,1))
+    runSomeToSomeSame(Key(2,2))
+    runSomeToSomeSame(Key(2,3))
+    runSomeToSomeSame(Key(2,4))
+
+    runSomeToSomeSame(Key(3,1))
+    runSomeToSomeSame(Key(4,1))
+    runSomeToSomeSame(Key(5,1))
+    runSomeToSomeSame(Key(6,1))
+
+    // some to some (different)
+    def runSomeToSomeDifferent(key: Key): Unit = {
+      runTest(map)(key)(_.map(_ + 1))
+    }
+    runSomeToSomeDifferent(Key(1,1))
+    runSomeToSomeDifferent(Key(1,2))
+    runSomeToSomeDifferent(Key(1,3))
+    runSomeToSomeDifferent(Key(1,4))
+
+    runSomeToSomeDifferent(Key(2,1))
+    runSomeToSomeDifferent(Key(2,2))
+    runSomeToSomeDifferent(Key(2,3))
+    runSomeToSomeDifferent(Key(2,4))
+
+    runSomeToSomeDifferent(Key(3,1))
+    runSomeToSomeDifferent(Key(4,1))
+    runSomeToSomeDifferent(Key(5,1))
+    runSomeToSomeDifferent(Key(6,1))
+
+    // some to none
+
+    def runSomeToNone(key: Key): Unit = runTest(map)(key)(_ => None)
+
+    runSomeToNone(Key(1,1))
+    runSomeToNone(Key(1,2))
+    runSomeToNone(Key(1,3))
+    runSomeToNone(Key(1,4))
+
+    runSomeToNone(Key(2,1))
+    runSomeToNone(Key(2,2))
+    runSomeToNone(Key(2,3))
+    runSomeToNone(Key(2,4))
+
+    runSomeToNone(Key(3,1))
+    runSomeToNone(Key(4,1))
+    runSomeToNone(Key(5,1))
+    runSomeToNone(Key(6,1))
+
+    // none to some
+
+    def runNoneToSome(key: Key, value: Int): Unit = runTest(map)(key)(_ => Some(value))
+
+    runNoneToSome(Key(1, 5), 6)
+    runNoneToSome(Key(1, 6), 7)
+
+    runNoneToSome(Key(2, 5), 6)
+    runNoneToSome(Key(2, 6), 7)
+
+    runNoneToSome(Key(3, 2), 6)
+    runNoneToSome(Key(7, 1), 6)
+    runNoneToSome(Key(8, 1), 7)
+
+    // none to none
+    def runNoneToNone(key: Key): Unit = runTest(map)(key)(_ => None)
+
+    runNoneToNone(Key(1, 5))
+    runNoneToNone(Key(1, 6))
+
+    runNoneToNone(Key(2, 5))
+    runNoneToNone(Key(2, 6))
+
+    runNoneToNone(Key(3, 2))
+    runNoneToNone(Key(4, 2))
+
+    runNoneToNone(Key(7, 1))
+    runNoneToNone(Key(8, 1))
+
+
+  }
+
 }
