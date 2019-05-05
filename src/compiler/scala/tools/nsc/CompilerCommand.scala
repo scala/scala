@@ -106,10 +106,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   def getInfoMessage(global: Global): String = {
     import settings._
-    import Properties.{versionString, copyrightString}
-    def versionFor(command: String) = f"Scala $command $versionString -- $copyrightString"
 
-    if (version)            versionFor(cmdDesc)
+    if (version)            Properties.versionFor(cmdDesc)
     else if (help)          usageMsg + global.pluginOptionsHelp
     else if (Vhelp)         vusageMsg
     else if (Whelp)         wusageMsg
