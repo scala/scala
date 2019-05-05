@@ -39,7 +39,7 @@ trait Contexts { self: Analyzer =>
     enclMethod = this
 
     override val depth = 0
-    override def enclosingContextChain: List[Context] = Nil
+    override def enclosingContextChain: Iterator[Context] = Iterator.empty
     override def implicitss: List[List[ImplicitInfo]] = Nil
     override def imports: List[ImportInfo] = Nil
     override def firstImport: Option[ImportInfo] = None
@@ -826,7 +826,7 @@ trait Contexts { self: Analyzer =>
       encl
     }
 
-    def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
+    def enclosingContextChain: Iterator[Context] = Iterator(this) ++ outer.enclosingContextChain
 
     private def treeTruncated       = tree.toString.replaceAll("\\s+", " ").linesIterator.mkString("\\n").take(70)
     private def treeIdString        = if (settings.uniqid.value) "#" + System.identityHashCode(tree).toString.takeRight(3) else ""

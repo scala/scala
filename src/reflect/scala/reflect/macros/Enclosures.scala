@@ -119,6 +119,6 @@ trait Enclosures {
    *  @see [[scala.reflect.macros.Enclosures]]
    */
   @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
-  case class EnclosureException(expected: Class[_], enclosingTrees: List[Tree])
+  case class EnclosureException(expected: Class[_], enclosingTrees: Iterator[Tree])
   extends Exception(s"Couldn't find a tree of type $expected among enclosing trees $enclosingTrees")
 }

@@ -91,7 +91,7 @@ package object reify {
     def isThisInScope = typer0.context.enclosingContextChain exists (_.tree.isInstanceOf[ImplDef])
     if (isThisInScope) {
       val enclosingClasses = typer0.context.enclosingContextChain map (_.tree) collect { case classDef: ClassDef => classDef }
-      val classInScope = enclosingClasses.headOption getOrElse EmptyTree
+      val classInScope = enclosingClasses.nextOption() getOrElse EmptyTree
       def isUnsafeToUseThis = {
         val isInsideConstructorSuper = typer0.context.enclosingContextChain exists (_.inSelfSuperCall)
         // Note: It's ok to check for any object here, because if we were in an enclosing class, we'd already have returned its classOf
