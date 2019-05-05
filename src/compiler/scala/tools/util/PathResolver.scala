@@ -208,9 +208,6 @@ object PathResolver {
 
 final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry) {
 
-  @deprecated("for bincompat in 2.12.x series", "2.12.9")  // TODO remove from 2.13.x
-  def this(settings: Settings) = this(settings, new CloseableRegistry)
-
   private val classPathFactory = new ClassPathFactory(settings, closeableRegistry)
 
   import PathResolver.{ AsLines, Defaults, ppcp }
