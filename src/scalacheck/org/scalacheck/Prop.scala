@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2017 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2018 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -496,7 +496,7 @@ object Prop {
 
   /**
    * This handles situations where we have a starting seed in our
-   * parameters.
+   * paramters.
    *
    * If we do, then we remove it from parameters and return it. If
    * not, we create a new random seed. The new parameters from this
