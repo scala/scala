@@ -80,7 +80,7 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
 
   override def indexOf[B >: Char](elem: B, from: Int = 0): Int = elem match {
     case c: Char => self.indexOf(c, from)
-    case _       => super.indexOf(elem)
+    case _       => super.indexOf(elem, from)
   }
 
   override def lastIndexOf[B >: Char](elem: B, end: Int = length - 1): Int =
