@@ -1,19 +1,19 @@
 class Test$bar1$ {
+  public java.lang.String Test$bar1$.f(java.lang.Object)
   public java.lang.Object Test$bar1$.f(java.lang.Object) <bridge> <synthetic>
-  public java.lang.String Test$bar1$.f(java.lang.Object) <bridge> <synthetic>
   public java.lang.String Test$bar1$.g(java.lang.String)
   public java.lang.Object Test$bar1$.g(java.lang.Object) <bridge> <synthetic>
   public java.lang.String Test$bar1$.g(java.lang.Object) <bridge> <synthetic>
-  public java.lang.Object Test$bar1$.h(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar1$.h(java.lang.Object)
 }
 
 class Test$bar2$ {
+  public java.lang.Object Test$bar2$.f(java.lang.String)
   public java.lang.Object Test$bar2$.f(java.lang.Object) <bridge> <synthetic>
-  public java.lang.Object Test$bar2$.f(java.lang.String) <bridge> <synthetic>
   public java.lang.String Test$bar2$.g(java.lang.String)
   public java.lang.Object Test$bar2$.g(java.lang.Object) <bridge> <synthetic>
   public java.lang.Object Test$bar2$.g(java.lang.String) <bridge> <synthetic>
-  public java.lang.Object Test$bar2$.h(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar2$.h(java.lang.Object)
 }
 
 class Test$bar3$ {
@@ -23,7 +23,7 @@ class Test$bar3$ {
   public java.lang.String Test$bar3$.g(java.lang.String)
   public java.lang.Object Test$bar3$.g(java.lang.Object) <bridge> <synthetic>
   public java.lang.String Test$bar3$.g(java.lang.Object) <bridge> <synthetic>
-  public java.lang.Object Foo3.h(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Foo3.h(java.lang.Object)
 }
 
 class Test$bar4$ {
@@ -33,7 +33,7 @@ class Test$bar4$ {
   public java.lang.String Test$bar4$.g(java.lang.String)
   public java.lang.Object Test$bar4$.g(java.lang.Object) <bridge> <synthetic>
   public java.lang.Object Test$bar4$.g(java.lang.String) <bridge> <synthetic>
-  public java.lang.Object Foo4.h(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Foo4.h(java.lang.Object)
 }
 
 class Test$bar5$ {
@@ -45,7 +45,7 @@ class Test$bar5$ {
   public java.lang.Object Test$bar5$.g(java.lang.Object) <bridge> <synthetic>
   public java.lang.Object Test$bar5$.g(java.lang.String) <bridge> <synthetic>
   public java.lang.String Test$bar5$.g(java.lang.Object) <bridge> <synthetic>
-  public java.lang.Object Test$bar5$.h(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar5$.h(java.lang.Object)
 }
 
 interface Foo1 {

@@ -169,7 +169,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     clazz.info.decls enter member setFlag MIXEDIN resetFlag JAVA_DEFAULTMETHOD
   }
   def cloneAndAddMember(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol =
-    addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz).setFlag(BRIDGE))
+    addMember(clazz, cloneBeforeErasure(mixinClass, mixinMember, clazz))
 
   def cloneBeforeErasure(mixinClass: Symbol, mixinMember: Symbol, clazz: Symbol): Symbol = {
     val newSym = enteringErasure {

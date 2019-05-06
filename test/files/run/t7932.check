@@ -1,5 +1,5 @@
-public Category C.category()
-public Category C.category1()
+public Category<?> C.category()
+public Category<scala.Tuple2> C.category1()
 public default Category<java.lang.Object> M1.category()
 public default Category<scala.Tuple2> M1.category1()
 public static Category M1.category$(M1)
