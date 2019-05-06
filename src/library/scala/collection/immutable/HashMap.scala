@@ -152,6 +152,10 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     newHashMapOrThis(rootNode.updated(key, value, keyUnimprovedHash, improve(keyUnimprovedHash), 0, replaceValue = true))
   }
 
+  // preemptively overridden in anticipation of performance optimizations
+  override def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): HashMap[K, V1] =
+    super.updatedWith[V1](key)(remappingFunction)
+
   def removed(key: K): HashMap[K, V] = {
     val keyUnimprovedHash = key.##
     newHashMapOrThis(rootNode.removed(key, keyUnimprovedHash, improve(keyUnimprovedHash), 0))
