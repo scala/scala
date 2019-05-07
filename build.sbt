@@ -119,6 +119,7 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.mutable.BitSet.fromSpecific"),
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.mutable.BitSet.empty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.PropertiesTrait.versionFor"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.versionFor"),
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.HashMap.updatedWith"),
     ProblemFilters.exclude[FinalClassProblem]("scala.collection.StringView"),
   ),

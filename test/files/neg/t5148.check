@@ -1,6 +1,6 @@
-t5148.scala:4: error: Symbol 'type scala.tools.nsc.interpreter.IMain.Request' is missing from the classpath.
+t5148.scala:4: error: Symbol 'term scala.tools.nsc.interpreter.IMain.memberHandlers' is missing from the classpath.
 This symbol is required by 'method scala.tools.nsc.interpreter.Imports.allReqAndHandlers'.
-Make sure that type Request is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
+Make sure that term memberHandlers is in your classpath and check for conflicting dependencies with `-Ylog-classpath`.
 A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
 class IMain extends Imports
             ^
