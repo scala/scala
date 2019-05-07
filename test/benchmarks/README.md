@@ -93,7 +93,7 @@ You can generate the `hotspot.log` file for a benchmark run by adding the [requi
 to JMH benchmark execution: 
 
 ```
-sbt:root> bench/jmh:run scala.collection.mutable.ArrayOpsBenchmark.insertInteger -psize=1000 -f1 -jvmArgs -XX:+UnlockDiagnosticVMOptions -jvmArgs -XX:+TraceClassLoading -jvmArgs -XX:+LogCompilation -jvmArgs -XX:LogFile=hotspot.log -jvmArgs -XX:+PrintAssembly
+sbt:root> bench/jmh:run scala.collection.mutable.ArrayOpsBenchmark.insertInteger -psize=1000 -f1 -jvmArgs -XX:+UnlockDiagnosticVMOptions -jvmArgs -XX:+TraceClassLoading -jvmArgs -XX:+LogCompilation -jvmArgs -XX:LogFile=target/hotspot.log -jvmArgs -XX:+PrintAssembly
 ...
 [info] Loaded disassembler from /Users/jz/.jabba/jdk/1.8.172/Contents/Home/jre/lib/hsdis-amd64.dylib
 [info] Decoding compiled method 0x0000000113f60bd0:
@@ -111,34 +111,21 @@ sbt:root> bench/jmh:run scala.collection.mutable.ArrayOpsBenchmark.insertInteger
 [info] ArrayOpsBenchmark.insertInteger    1000  avgt   10  188199.582 ± 5930.520  ns/op
 ```
 
-JITWatch requires configuration of the class and source path. We can generate that with a custom
-task in our build:
+JITWatch requires configuration of the class and source path. We generate that with a custom task in our build:
 
 ```
 sbt> bench/jmh:jitwatchConfigFile
 [info] Resolving jline#jline;2.14.6 ...
 jmh
-[info] ./launchUI.sh -Djitwatch.config.file=/Users/jz/code/scala/test/benchmarks/target/jitwatch-jmh.properties
-
+...
+[info] ^-- UNRESOLVED DEPENDENCIES warnings above are normal, please ignore
+[info] After cloning https://github.com/AdoptOpenJDK/jitwatch to $JITWATCH_HOME, compile and launch with:
+[info] mvn -f $JITWATCH_HOME clean compile exec:java -Djitwatch.config.file=/Users/jz/code/scala/test/benchmarks/target/jitwatch-compile.properties -Djitwatch.logfile=/Users/jz/code/scala/test/benchmarks/target/hotspot.log
+[info] Note: Add, for example, `-Djitwatch.focus.member="scala/collection/mutable/ArrayOpsBenchmark insertInteger (Lorg/openjdk/jmh/infra/Blackhole;)V"` to focus UI on a method of interest.
 sbt> ^C
 ```
 
-Build jitwatch.
-
-```
-$ git clone https://github.com/AdoptOpenJDK/jitwatch
-$ cd jitwatch
-$ mvn install
-```
-
-Launch with the generated config file.
-``` 
-$ ./launchUI.sh -Djitwatch.config.file=/Users/jz/code/scala/test/benchmarks/target/jitwatch-jmh.properties
-```
-
-
-
-Select the generated `hotspot.log`, `start`, and then browse the benchmark to start gleaning insights!
+Follow instructions in the output above and start gleaning insights!
 
 ## Useful reading
 * [OpenJDK advice on microbenchmarks](https://wiki.openjdk.java.net/display/HotSpot/MicroBenchmarks)
