@@ -331,7 +331,7 @@ object Duration {
  * {{{
  * import scala.concurrent.duration._
  *
- * val duration = 100 millis
+ * val duration = 100.millis
  * }}}
  *
  * '''''The DSL provided by the implicit conversions always allows construction of finite durations, even for infinite Double inputs; use Duration.Inf instead.'''''
