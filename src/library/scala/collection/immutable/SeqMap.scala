@@ -51,7 +51,7 @@ object SeqMap extends MapFactory[SeqMap] {
       case _ => (newBuilder[K, V] ++= it).result()
     }
 
-  def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = VectorMap.newBuilder
+  def newBuilder[K, V]: Builder[(K, V), SeqMap[K, V]] = TreeSeqMap.newBuilder
 
   @SerialVersionUID(3L)
   private object EmptySeqMap extends SeqMap[Any, Nothing] with Serializable {

@@ -281,8 +281,8 @@ class FactoriesTest {
     assert(Iterable().isInstanceOf[List[_]], "Iterable.apply should delegate to List.apply")
     assert(Iterable(1,2,3).isInstanceOf[List[_]], "Iterable.apply should delegate to List.apply")
 
-    assert(im.SeqMap().isInstanceOf[im.VectorMap[_, _]], "immutable.SeqMap.apply should delegate to VectorMap.apply")
-    assert(im.SeqMap(1 -> 2, 3 -> 4, 5 -> 6).isInstanceOf[im.VectorMap[_, _]], "immutable.SeqMap.apply should delegate to VectorMap.apply")
+    assert(im.SeqMap().isInstanceOf[im.TreeSeqMap[_, _]], "immutable.SeqMap.apply should delegate to TreeSeqMap.apply")
+    assert(im.SeqMap(1 -> 2, 3 -> 4, 5 -> 6).isInstanceOf[im.TreeSeqMap[_, _]], "immutable.SeqMap.apply should delegate to TreeSeqMap.apply")
 
     assert(Map().isInstanceOf[im.Map[_, _]], "Map.apply should delegate to immutable.Map.apply")
     assert(Map(1 -> 2, 3 -> 4, 5 -> 6).isInstanceOf[im.Map[_, _]], "Map.apply should delegate to immutable.Map.apply")
