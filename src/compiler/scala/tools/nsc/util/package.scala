@@ -116,8 +116,8 @@ package object util {
 
   lazy val trace = new SimpleTracer(System.out)
 
-  // These four deprecated since 2.10.0 are still used in (at least)
-  // the sbt 0.12.4 compiler interface.
+  // These four deprecated since 2.10.0 are still used in
+  // the sbt 0.13 compiler interface.
   @deprecated("Moved to scala.reflect.internal.util.Position", "2.10.0")
   type Position = scala.reflect.internal.util.Position
   @deprecated("Moved to scala.reflect.internal.util.NoPosition", "2.10.0")
