@@ -5,22 +5,22 @@ true
 true
 
 Array(1)
-LazyList(?)
-LazyList(?)
-LazyList(?)
-LazyList(?)
+LazyList(<not computed>)
+LazyList(<not computed>)
+LazyList(<not computed>)
+LazyList(<not computed>)
 LazyList(1)
-LazyList(?)
+LazyList(<not computed>)
 true
 true
 true
 true
 
 Array(1, 2)
-LazyList(?)
-LazyList(?)
+LazyList(<not computed>)
+LazyList(<not computed>)
 LazyList(1, 2)
-LazyList(?)
+LazyList(<not computed>)
 true
 true
 true
@@ -30,8 +30,8 @@ true
 999
 512
 100000
-LazyList(?)
-LazyList(?)
+LazyList(<not computed>)
+LazyList(<not computed>)
 true
 true
 705082704
