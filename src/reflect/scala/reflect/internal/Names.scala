@@ -121,9 +121,7 @@ trait Names extends api.Names {
           enterChars(cs, offset, len)
         }
         val next = termHashtable(h)
-        val termName =
-          if (cachedString ne null) new TermName_S(startIndex, len, next, cachedString)
-          else new TermName_R(startIndex, len, next)
+        val termName = new TermName(startIndex, len, next, cachedString)
         // Add the new termName to the hashtable only after it's been fully constructed
         termHashtable(h) = termName
         termName
@@ -187,7 +185,7 @@ trait Names extends api.Names {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends NameApi with CharSequence {
+  sealed abstract class Name(protected val index: Int, protected val len: Int, cachedString: String) extends NameApi with CharSequence {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
@@ -470,6 +468,9 @@ trait Names extends api.Names {
     def isOperatorName: Boolean = decode != toString  // used by ide
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
+
+    override final def toString: String = if (cachedString == null) new String(chrs, index, len) else cachedString
+
   }
 
   implicit def AnyNameOps(name: Name): NameOps[Name]          = new NameOps(name)
@@ -515,28 +516,9 @@ trait Names extends api.Names {
   //   final override def isOperatorName = false
   // }
 
-  /** TermName_S and TypeName_S have fields containing the string version of the name.
-   *  TermName_R and TypeName_R recreate it each time toString is called.
-   */
-  private final class TermName_S(index0: Int, len0: Int, next0: TermName, override val toString: String) extends TermName(index0, len0, next0) {
-    protected def createCompanionName(next: TypeName): TypeName = new TypeName_S(index, len, next, toString)
-    override def newName(str: String): TermName = newTermNameCached(str)
-  }
-  private final class TypeName_S(index0: Int, len0: Int, next0: TypeName, override val toString: String) extends TypeName(index0, len0, next0) {
-    override def newName(str: String): TypeName = newTypeNameCached(str)
-  }
-
-  private final class TermName_R(index0: Int, len0: Int, next0: TermName) extends TermName(index0, len0, next0) {
-    protected def createCompanionName(next: TypeName): TypeName = new TypeName_R(index, len, next)
-    override def toString = new String(chrs, index, len)
-  }
-
-  private final class TypeName_R(index0: Int, len0: Int, next0: TypeName) extends TypeName(index0, len0, next0) {
-    override def toString = new String(chrs, index, len)
-  }
 
   // SYNCNOTE: caller to constructor must synchronize if `synchronizeNames` is enabled
-  sealed abstract class TermName(index0: Int, len0: Int, val next: TermName) extends Name(index0, len0) with TermNameApi {
+  final class TermName(index0: Int, len0: Int, val next: TermName, cachedString: String) extends Name(index0, len0, cachedString) with TermNameApi {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
 
@@ -568,8 +550,7 @@ trait Names extends api.Names {
       newTermName(chrs, start + from, to - from)
 
     def nameKind = "term"
-    /** SYNCNOTE: caller must synchronize if `synchronizeNames` is enabled */
-    protected def createCompanionName(next: TypeName): TypeName
+    private def createCompanionName(next: TypeName): TypeName = new TypeName(index, len, next, cachedString)
   }
 
   implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
@@ -579,7 +560,7 @@ trait Names extends api.Names {
     def unapply(name: TermName): Option[String] = Some(name.toString)
   }
 
-  sealed abstract class TypeName(index0: Int, len0: Int, val next: TypeName) extends Name(index0, len0) with TypeNameApi {
+  final class TypeName(index0: Int, len0: Int, val next: TypeName, cachedString: String) extends Name(index0, len0, cachedString) with TypeNameApi {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
 
