@@ -38,7 +38,7 @@ trait Names extends api.Names {
   private val nameLock: Object = new Object
 
   /** Memory to store all names sequentially. */
-  var chrs: Array[Char] = new Array[Char](NAME_SIZE)
+  var chrs: Array[Char] = new Array[Char](NAME_SIZE) // TODO this ought to be private
   private var nc = 0
 
   /** Hashtable for finding term names quickly. */
@@ -470,7 +470,9 @@ trait Names extends api.Names {
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
 
     override final def toString: String = if (cachedString == null) new String(chrs, index, len) else cachedString
-
+    final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit = {
+      buffer.append(chrs, this.start + start, length)
+    }
   }
 
   implicit def AnyNameOps(name: Name): NameOps[Name]          = new NameOps(name)
