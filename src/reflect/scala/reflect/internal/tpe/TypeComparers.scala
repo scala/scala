@@ -149,8 +149,9 @@ trait TypeComparers {
     && (tp1.normalize =:= tp2.normalize)
   )
   private def isSameTypeRef(tr1: TypeRef, tr2: TypeRef) = (
-       equalSymsAndPrefixes(tr1.sym, tr1.pre, tr2.sym, tr2.pre)
-    && (isSameHKTypes(tr1, tr2) || isSameTypes(tr1.args, tr2.args))
+    if ((((tr1 eq ObjectTpeJava) && (tr2.sym eq AnyClass)) || (tr2 eq ObjectTpeJava) && (tr1.sym eq AnyClass)))
+      true
+    else equalSymsAndPrefixes(tr1.sym, tr1.pre, tr2.sym, tr2.pre) && (isSameHKTypes(tr1, tr2) || isSameTypes(tr1.args, tr2.args))
   )
 
   private def isSameSingletonType(tp1: SingletonType, tp2: SingletonType): Boolean = {
@@ -459,7 +460,7 @@ trait TypeComparers {
             // These typerefs are pattern matched up and down far more
             // than is necessary.
             val sym1 = tr1.sym
-            val sym2 = tr2.sym
+            val sym2 = if (!phase.erasedTypes && (tr2 eq ObjectTpeJava)) AnyClass else tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
             (((if (sym1 eq sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
@@ -557,7 +558,7 @@ trait TypeComparers {
             val res2 = mt2.resultType
             (sameLength(params1, params2) &&
               mt1.isImplicit == mt2.isImplicit &&
-              matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
+              matchingParams(params1, params2) &&
               isSubType(res1.substSym(params1, params2), res2, depth))
           // TODO: if mt1.params.isEmpty, consider NullaryMethodType?
           case _ =>

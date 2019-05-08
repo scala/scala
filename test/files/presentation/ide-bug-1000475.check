@@ -12,7 +12,7 @@ def ensuring(cond: Boolean): Object
 def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
 def ensuring(cond: Object => Boolean, msg: => Any): Object
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String
@@ -44,7 +44,7 @@ def ensuring(cond: Boolean): Object
 def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
 def ensuring(cond: Object => Boolean, msg: => Any): Object
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String
@@ -76,7 +76,7 @@ def ensuring(cond: Boolean): Object
 def ensuring(cond: Boolean, msg: => Any): Object
 def ensuring(cond: Object => Boolean): Object
 def ensuring(cond: Object => Boolean, msg: => Any): Object
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hashCode(): Int
 def toString(): String

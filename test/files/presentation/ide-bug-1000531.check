@@ -12,7 +12,7 @@ def ensuring(cond: Boolean): other.TestIterator[Nothing]
 def ensuring(cond: Boolean, msg: => Any): other.TestIterator[Nothing]
 def ensuring(cond: other.TestIterator[Nothing] => Boolean): other.TestIterator[Nothing]
 def ensuring(cond: other.TestIterator[Nothing] => Boolean, msg: => Any): other.TestIterator[Nothing]
-def equals(x$1: Any): Boolean
+def equals(x$1: Object): Boolean
 def formatted(fmtstr: String): String
 def hasNext: Boolean
 def hashCode(): Int

@@ -11,7 +11,7 @@ t8035-deprecated.scala:7: warning: adaptation of an empty argument list by inser
   new A
   ^
 t8035-deprecated.scala:11: warning: adaptation of an empty argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous
-        signature: Format.format(x$1: Any): String
+        signature: Format.format(x$1: Object): String
   given arguments: <none>
  after adaptation: Format.format((): Unit)
   sdf.format()

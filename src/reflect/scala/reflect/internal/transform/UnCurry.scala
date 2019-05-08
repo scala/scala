@@ -76,7 +76,7 @@ trait UnCurry {
       case TypeRef(pre, RepeatedParamClass, arg :: Nil) =>
         Some(seqType(arg))
       case TypeRef(pre, JavaRepeatedParamClass, arg :: Nil) =>
-        Some(arrayType(if (isUnboundedGeneric(arg)) ObjectTpe else arg))
+        Some(arrayType(if (isUnboundedGeneric(arg)) ObjectTpeJava else arg))
       case _ =>
         None
       }
