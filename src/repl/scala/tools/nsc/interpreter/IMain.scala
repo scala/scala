@@ -538,14 +538,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   def namedParam[T: ru.TypeTag : ClassTag](name: String, value: T): NamedParam = NamedParam[T](name, value)
 
-  def rebind(p: NamedParam): Result = {
-    val name     = p.name
-    val newType  = p.tpe
-    val tempName = freshInternalVarName()
-
-    quietRun(s"val $tempName = $name")
-    quietRun(s"val $name = $tempName.asInstanceOf[$newType]")
-  }
   override def quietBind(p: NamedParam): Result                               = reporter.withoutPrintingResults(bind(p))
   override def bind(p: NamedParam): Result                                    = bind(p.name, p.tpe, p.value)
   def bind[T: ru.TypeTag : ClassTag](name: String, value: T): Result = bind((name, value))
