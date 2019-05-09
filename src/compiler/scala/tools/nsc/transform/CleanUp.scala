@@ -338,7 +338,8 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               (mparams, resType)
             case tpe @ OverloadedType(pre, alts) =>
               reporter.warning(ad.pos, s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe))
-              alts filter (_.paramss.flatten.size == params.length) map (_.tpe) match {
+              val fittingAlts = alts collect { case alt if sumSize(alt.paramss, 0) == params.length => alt.tpe }
+              fittingAlts match {
                 case mt @ MethodType(mparams, resType) :: Nil =>
                   reporter.warning(NoPosition, "Only one overload has the right arity, proceeding with overload " + mt)
                   (mparams, resType)

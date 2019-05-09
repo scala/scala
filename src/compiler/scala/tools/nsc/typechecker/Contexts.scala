@@ -1720,7 +1720,7 @@ trait Contexts { self: Analyzer =>
     }
 
     /** Is name imported explicitly, not via wildcard? */
-    def isExplicitImport(name: Name): Boolean = tree.selectors.exists(_.introduces(name.toTermName))
+    def isExplicitImport(name: Name): Boolean = tree.selectors.exists(_.introduces(name))
 
     /** The symbol with name `name` imported from import clause `tree`. */
     def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false, record = true)
@@ -1741,11 +1741,10 @@ trait Contexts { self: Analyzer =>
       var selectors = tree.selectors
       @inline def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
-        if (current.introduces(name.toTermName))
+        if (current.introduces(name))
           result = qual.tpe.nonLocalMember( // #2733: consider only non-local members for imports
-            if (name.isTypeName) current.name.toTypeName else current.name
-          )
-        else if (!current.isWildcard && current.name == name.toTermName)
+            if (name.isTypeName) current.name.toTypeName else current.name)
+        else if (!current.isWildcard && current.hasName(name))
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)
           result = qual.tpe.nonLocalMember(name)
