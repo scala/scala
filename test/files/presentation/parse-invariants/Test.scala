@@ -6,7 +6,7 @@ object Test extends InteractiveTest {
 
   override def execute(): Unit = {
     def test(fileName: String): Unit = {
-      val sf = sourceFiles.find(_.file.name == fileName).head
+      val sf = sourceFiles.find(_.file.name == fileName).get
       noNewSymbols(sf)
       uniqueParseTree(sf)
       unattributedParseTree(sf)

@@ -122,6 +122,17 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.versionFor"),
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.HashMap.updatedWith"),
     ProblemFilters.exclude[FinalClassProblem]("scala.collection.StringView"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.None$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.Option"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.Some"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Option.knownSize"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Option.stepper"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isDefined"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.Option.isEmpty"),
+    ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.Option.isEmpty"),
   ),
 )
 

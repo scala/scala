@@ -18,6 +18,7 @@ object Option {
 
   /** An implicit conversion that converts an option to an iterable value
    */
+  @deprecated("use `option.toList` or `option.iterator` instead", "2.13.0")
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] =
     if (xo.isEmpty) Iterable.empty else Iterable.single(xo.get)
 
@@ -143,7 +144,7 @@ object Option {
  *  @define undefinedorder
  */
 @SerialVersionUID(-114498752079829388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
-sealed abstract class Option[+A] extends Product with Serializable {
+sealed abstract class Option[+A] extends IterableOnce[A] with Product with Serializable {
   self =>
 
   /** Returns true if the option is $none, false otherwise.
@@ -156,7 +157,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * }
    * }}}
    */
-  def isEmpty: Boolean
+  final def isEmpty: Boolean = this eq None
 
   /** Returns true if the option is an instance of $some, false otherwise.
    *
@@ -168,7 +169,9 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * }
    * }}}
    */
-  def isDefined: Boolean = !isEmpty
+  final def isDefined: Boolean = !isEmpty
+
+  final def knownSize: Int = if (isEmpty) 0 else 1
 
   /** Returns the option's value.
    *
@@ -344,7 +347,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * }}}
    *  @note   Implemented here to avoid the implicit conversion to Iterable.
    */
-  final def nonEmpty = isDefined
+  final def nonEmpty: Boolean = isDefined
 
   /** Necessary to keep $option from being implicitly converted to
    *  [[scala.collection.Iterable]] in `for` comprehensions.
@@ -618,8 +621,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class Some[+A](value: A) extends Option[A] {
-  def isEmpty = false
-  def get = value
+  def get: A = value
 }
 
 
@@ -629,6 +631,5 @@ final case class Some[+A](value: A) extends Option[A] {
  */
 @SerialVersionUID(5066590221178148012L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 case object None extends Option[Nothing] {
-  def isEmpty = true
-  def get = throw new NoSuchElementException("None.get")
+  def get: Nothing = throw new NoSuchElementException("None.get")
 }

@@ -10,7 +10,7 @@ object Test extends InteractiveTest {
   }
 
   private def loadSourceAndWaitUntilTypechecked(sourceName: String): SourceFile = {
-    val sourceFile = sourceFiles.find(_.file.name == sourceName).head
+    val sourceFile = sourceFiles.find(_.file.name == sourceName).get
     askReload(List(sourceFile)).get
     askLoadedTyped(sourceFile).get
     sourceFile

@@ -22,7 +22,7 @@ object Test extends DirectTest {
       "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite;",
       /* itf = */ false)
     modifyClassFile(new File(testOutput.toFile, "A_1.class"))((cn: ClassNode) => {
-      val testMethod = cn.methods.iterator.asScala.find(_.name == "test").head
+      val testMethod = cn.methods.iterator.asScala.find(_.name == "test").get
       val indy = testMethod.instructions.iterator.asScala.collect({ case i: InvokeDynamicInsnNode => i }).next()
       indy.bsm = unknownBootstrapMethod
       cn

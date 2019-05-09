@@ -9,7 +9,7 @@ object Test extends InteractiveTest {
   }
 
   private def loadSourceAndWaitUntilTypechecked(sourceName: String): SourceFile = {
-    val sourceFile = sourceFiles.find(_.file.name == sourceName).head
+    val sourceFile = sourceFiles.find(_.file.name == sourceName).get
     askLoadedTyped(sourceFile).get
     /* The response to `askLoadedType` may return before `interactive.Global.waitLoadedType`
      * fully executes. Because this test expects `waitLoadedType` is fully executed before

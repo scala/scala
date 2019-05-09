@@ -60,7 +60,7 @@ object Test extends DirectTest {
   def addDeadCode(): Unit = {
     val file = (testOutput / "p" / "A.class").path
     val cnode = readClass(file)
-    val method = cnode.methods.asScala.find(_.name == "f").head
+    val method = cnode.methods.asScala.find(_.name == "f").get
 
     AsmUtils.traceMethod(method)
 
