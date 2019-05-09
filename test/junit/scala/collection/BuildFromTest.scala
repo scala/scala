@@ -148,6 +148,14 @@ class BuildFromTest {
     val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }
 
+  @Test
+  def buildFromToFactory: Unit = {
+    val bf = implicitly[BuildFrom[Iterable[Int], Int, Iterable[Int]]]
+    val f = bf.toFactory(Set.empty[Int])
+    val bs = f.fromSpecific(Iterator(1, 2, 3))
+    bs.asInstanceOf[Set[Int]]
+  }
+
   implicitly[BuildFrom[String, Char, String]]
   implicitly[BuildFrom[Array[Int], Char, Array[Char]]]
   implicitly[BuildFrom[BitSet, Int, BitSet]]

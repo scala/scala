@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
   * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
   */
 @implicitNotFound(msg = "Cannot construct a collection of type ${C} with elements of type ${A} based on a collection of type ${From}.")
-trait BuildFrom[-From, -A, +C] extends Any {
+trait BuildFrom[-From, -A, +C] extends Any { self =>
   def fromSpecific(from: From)(it: IterableOnce[A]): C
 
   /** Get a Builder for the collection. For non-strict collection types this will use an intermediate buffer.
@@ -35,6 +35,12 @@ trait BuildFrom[-From, -A, +C] extends Any {
 
   @deprecated("Use newBuilder() instead of apply()", "2.13.0")
   @`inline` def apply(from: From): Builder[A, C] = newBuilder(from)
+
+  /** Partially apply a BuildFrom to a Factory */
+  def toFactory(from: From): Factory[A, C] = new Factory[A, C] {
+    def fromSpecific(it: IterableOnce[A]): C = self.fromSpecific(from)(it)
+    def newBuilder: Builder[A, C] = self.newBuilder(from)
+  }
 }
 
 object BuildFrom extends BuildFromLowPriority1 {

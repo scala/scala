@@ -133,6 +133,13 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
     ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.Option.isEmpty"),
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.Option.isEmpty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SortedMapFactory#SortedMapFactoryToBuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.BuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.EvidenceIterableFactory#EvidenceIterableFactoryToBuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.IntMap#ToBuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.LongMap#ToBuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.AnyRefMap#ToBuildFrom.toFactory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.LongMap#ToBuildFrom.toFactory"),
   ),
 )
 
