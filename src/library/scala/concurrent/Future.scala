@@ -264,7 +264,7 @@ trait Future[+T] extends Awaitable[T] {
    * @tparam S  the type of the returned `Future`
    * @group Transformations
    */
-  def flatten[S](implicit ev: T <:< Future[S]): Future[S] = flatMap(ev)(parasitic)
+  def flatten[S](implicit ev: T => Future[S]): Future[S] = flatMap(ev)(parasitic)
 
   /** Creates a new future by filtering the value of the current future with a predicate.
    *
@@ -598,7 +598,7 @@ object Future {
     override final def transformWith[S](f: Try[Nothing] => Future[S])(implicit executor: ExecutionContext): Future[S] = this
     override final def map[S](f: Nothing => S)(implicit executor: ExecutionContext): Future[S] = this
     override final def flatMap[S](f: Nothing => Future[S])(implicit executor: ExecutionContext): Future[S] = this
-    override final def flatten[S](implicit ev: Nothing <:< Future[S]): Future[S] = this
+    override final def flatten[S](implicit ev: Nothing => Future[S]): Future[S] = this
     override final def filter(p: Nothing => Boolean)(implicit executor: ExecutionContext): Future[Nothing] = this
     override final def collect[S](pf: PartialFunction[Nothing, S])(implicit executor: ExecutionContext): Future[S] = this
     override final def recover[U >: Nothing](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] = this

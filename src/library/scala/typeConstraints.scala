@@ -39,11 +39,10 @@ import scala.annotation.implicitNotFound
   *            sealed trait Option[+A] {
   *              // def flatten[B, A <: Option[B]]: Option[B] = ...
   *              // won't work, since the A in flatten shadows the class-scoped A.
-  *              def flatten[B](implicit ev: A <:< Option[B]): Option[B]
-  *                = if(isEmpty) None else ev(get)
-  *              // Because (A <:< Option[B]) <: (A => Option[B]), ev can be called to turn the
-  *              // A from get into an Option[B], and because ev is implicit, that call can be
-  *              // left out and inserted automatically.
+  *
+  *              def flatten[B](implicit ev: A => Option[B]): Option[B] = if(isEmpty) None else ev(get)
+  *              // Because (A <:< Option[B]) <: (A => Option[B]), the compiler provides the `<:<`
+  *              // value when invoking `flatten`.
   *            }
   *           }}}
   *

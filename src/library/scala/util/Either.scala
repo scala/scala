@@ -371,7 +371,7 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
     *
     * Equivalent to `flatMap(id => id)`
     */
-  def flatten[A1 >: A, B1](implicit ev: B <:< Either[A1, B1]): Either[A1, B1] = flatMap(ev)
+  def flatten[A1 >: A, B1](implicit ev: B => Either[A1, B1]): Either[A1, B1] = flatMap(ev)
 
   /** The given function is applied if this is a `Right`.
    *

@@ -164,7 +164,7 @@ sealed abstract class Try[+T] extends Product with Serializable {
    * Transforms a nested `Try`, ie, a `Try` of type `Try[Try[T]]`,
    * into an un-nested `Try`, ie, a `Try` of type `Try[T]`.
    */
-  def flatten[U](implicit ev: T <:< Try[U]): Try[U]
+  def flatten[U](implicit ev: T => Try[U]): Try[U]
 
   /**
    * Inverts this `Try`. If this is a `Failure`, returns its exception wrapped in a `Success`.
@@ -222,7 +222,7 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
   override def orElse[U >: T](default: => Try[U]): Try[U] =
     try default catch { case NonFatal(e) => Failure(e) }
   override def flatMap[U](f: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
-  override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = this.asInstanceOf[Try[U]]
+  override def flatten[U](implicit ev: T => Try[U]): Try[U] = this.asInstanceOf[Try[U]]
   override def foreach[U](f: T => U): Unit = ()
   override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] =
     try f(exception) catch { case NonFatal(e) => Failure(e) }
@@ -258,7 +258,7 @@ final case class Success[+T](value: T) extends Try[T] {
   override def orElse[U >: T](default: => Try[U]): Try[U] = this
   override def flatMap[U](f: T => Try[U]): Try[U] =
     try f(value) catch { case NonFatal(e) => Failure(e) }
-  override def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
+  override def flatten[U](implicit ev: T => Try[U]): Try[U] = value
   override def foreach[U](f: T => U): Unit = f(value)
   override def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U] = this flatMap s
   override def map[U](f: T => U): Try[U] = Try[U](f(value))
