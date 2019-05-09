@@ -167,38 +167,4 @@ trait Plugins { global: Global =>
     (for (plug <- roughPluginsList ; help <- plug.optionsHelp) yield {
       "\nOptions for plugin '%s':\n%s\n".format(plug.name, help)
     }).mkString
-
-  /** Obtains a `ClassLoader` instance used for macro expansion.
-    *
-    *  By default a new `ScalaClassLoader` is created using the classpath
-    *  from global and the classloader of self as parent.
-    *
-    *  Mirrors with runtime definitions (e.g. Repl) need to adjust this method.
-    */
-  protected def findMacroClassLoader(): ClassLoader = {
-    val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
-      for {
-        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
-        af <- Option(nsc.io.AbstractFile getDirectory file)
-      } yield af.file.toURI.toURL
-    } else global.classPath.asURLs
-    def newLoader: () => ScalaClassLoader.URLClassLoader = () => {
-      analyzer.macroLogVerbose("macro classloader: initializing from -cp: %s".format(classpath))
-      ScalaClassLoader.fromURLs(classpath, getClass.getClassLoader)
-    }
-
-    val policy = settings.YcacheMacroClassLoader.value
-    val cache = Macros.macroClassLoadersCache
-    val disableCache = policy == settings.CachePolicy.None.name
-    val checkStamps = policy == settings.CachePolicy.LastModified.name
-    cache.checkCacheability(classpath, checkStamps, disableCache) match {
-      case Left(msg) =>
-        analyzer.macroLogVerbose(s"macro classloader: $msg.")
-        val loader = newLoader()
-        closeableRegistry.registerClosable(loader)
-        loader
-      case Right(paths) =>
-        cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
-    }
-  }
 }
