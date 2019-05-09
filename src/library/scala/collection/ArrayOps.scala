@@ -999,7 +999,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @param asIterable A function that converts elements of this array to rows - Iterables of type `B`.
     *  @return           An array obtained by concatenating rows of this array.
     */
-  def flatten[B](implicit asIterable: A => scala.collection.Iterable[B], m: ClassTag[B]): Array[B] = {
+  def flatten[B](implicit asIterable: A => IterableOnce[B], m: ClassTag[B]): Array[B] = {
     val b = ArrayBuilder.make[B]
     val len = xs.length
     var size = 0

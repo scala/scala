@@ -18,6 +18,7 @@ object Option {
 
   /** An implicit conversion that converts an option to an iterable value
    */
+  @deprecated("use `option.toList` or `option.iterator` instead", "2.13.0")
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] =
     if (xo.isEmpty) Iterable.empty else Iterable.single(xo.get)
 
