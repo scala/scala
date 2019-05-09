@@ -792,8 +792,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         classTParams = tparams
         val parents = new ListBuffer[Type]()
         while (index < end) {
-          val parent = sig2type(tparams, skiptvs = false)
-          parents += (if (parent == ObjectTpeJava) ObjectTpe else parent)  // here the variance doesn't matter
+          val parent = sig2type(tparams, skiptvs = false) // here the variance doesn't matter
+          parents += (if (parent == ObjectTpeJava) ObjectTpe else parent)
         }
         ClassInfoType(parents.toList, instanceScope, sym)
       }

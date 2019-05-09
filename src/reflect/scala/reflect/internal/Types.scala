@@ -2709,6 +2709,14 @@ trait Types
   private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym){
     override def contains(sym0: Symbol): Boolean = (sym eq sym0) || pre.contains(sym0)
   }
+
+  /** Expose ClassNoArgsTypeRef so we can create a non-uniqued ObjectTpeJava here and in reflect
+   *
+   * NOTE:
+   *   - definitions.ObjectTpe is forced first, so that it ends up in the unique cache.
+   *   - the created TypeRef is structurally equal to  ObjectTpe, but with its own identity
+   *   - we don't want the TypeRef we create here to be unique'd
+   */
   private[scala] def mkObjectTpeJava: Type = new ClassNoArgsTypeRef(definitions.ObjectTpe.prefix, definitions.ObjectClass)
 
   object TypeRef extends TypeRefExtractor {

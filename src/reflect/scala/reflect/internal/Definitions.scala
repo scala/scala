@@ -292,8 +292,19 @@ trait Definitions extends api.StandardDefinitions {
     lazy val BoxedUnitTpe    = BoxedUnitClass.tpe
     lazy val NothingTpe      = NothingClass.tpe
     lazy val NullTpe         = NullClass.tpe
+
+    /** Represents `java.lang.Object` as referenced from Scala code. */
     lazy val ObjectTpe       = ObjectClass.tpe
+
+    /** ObjectTpeJava is a TypeRef that's structurally equal to ObjectTpe, but with its own object identity.
+     *
+     * When referenced from Java (source or bytecode), `Object` should be considered equal to Scala's `Any`,
+     * as these types are both conceptually the top of the subtyping lattice of the respective languages.
+     *
+     * We use `ObjectTpeJava`'s identity to equate it, but not `ObjectTpe`, to `AnyTpe` in subtyping and type equality.
+     */
     lazy val ObjectTpeJava   = mkObjectTpeJava
+
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
