@@ -220,7 +220,25 @@ abstract class Erasure extends InfoTransform
   private final def javaSig0(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = {
     val builder = new java.lang.StringBuilder(64)
     val isTraitSignature = sym0.enclClass.isTrait
-    val mixinTParamsToRename = mutable.Set.empty[Symbol]
+    var mixinTParamsToRename: Set[Symbol] = Set.empty // TODO: could this just be a lazy val with initMixinTParamsToRename as RHS, or is this perf critical?
+
+    // Find any name clashes in a mixedin sym's signature, where one of its type parameters name-clashes with another type param
+    // tparams == info.typeParams (and they are nonempty)
+    def initMixinTParamsToRename(tparams: List[Symbol]) = {
+      val mixinTParamByName = tparams.map(tparam => (tparam.name: Name, tparam)).toMap
+      val clashes = mutable.Set.empty[Symbol]
+      info.foreach {
+        case TypeRef(_, sym, _) if sym.isTypeParameter =>
+          mixinTParamByName.get(sym.name) match {
+            // same name, different symbol
+            case Some(nameClash) if nameClash != sym => clashes += nameClash
+            case _                                   =>
+          }
+        case _                                         =>
+      }
+
+      mixinTParamsToRename = clashes.toSet
+    }
 
     def tParamName(sym: Symbol): CharSequence = if (mixinTParamsToRename(sym)) sym.name.toString + "$M" else sym.name
 
@@ -414,15 +432,12 @@ abstract class Erasure extends InfoTransform
     }
     val throwsArgs = sym0.annotations flatMap ThrownException.unapply
     if (needsJavaSig(sym0, info, throwsArgs)) {
-      val mixinTParams: Set[Symbol] = if (sym0.hasFlag(MIXEDIN)) info.typeParams.toSet else Set.empty
-      if (mixinTParams.nonEmpty) {
-        val mixinTParamByName = mixinTParams.map(tp => (tp.name: Name, tp)).toMap
-        info.foreach({
-          case TypeRef(_, sym, _) if !mixinTParams(sym) =>
-            mixinTParamsToRename ++= mixinTParamByName.get(sym.name)
+      if (sym0.hasFlag(MIXEDIN))
+        info.typeParams match {
+          case tparams if !tparams.isEmpty => initMixinTParamsToRename(tparams)
           case _ =>
-        })
-      }
+        }
+
       try {
         jsig(info, toplevel = true)
         throwsArgs.foreach { t =>
