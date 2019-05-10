@@ -384,6 +384,7 @@ private[internal] trait TypeMaps {
     def apply(tp: Type): Type =
       tp match {
         case BoundedWildcardType(TypeBounds(lo, AnyTpe)) if variance.isContravariant => lo
+        case BoundedWildcardType(TypeBounds(lo, ObjectTpeJava)) if variance.isContravariant => lo
         case BoundedWildcardType(TypeBounds(NothingTpe, hi)) if variance.isCovariant => hi
         case tp => tp.mapOver(this)
       }

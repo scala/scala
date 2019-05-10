@@ -672,11 +672,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
                         case '+' => TypeBounds.upper(sig2type(tparams, skiptvs))
                         case '-' =>
                           val tp = sig2type(tparams, skiptvs)
-                          // sig2type seems to return AnyClass regardless of the situation:
-                          // we don't want Any as a LOWER bound.
-                          if (tp.typeSymbol == AnyClass) TypeBounds.empty
-                          else TypeBounds.lower(tp)
-                        case '*' => TypeBounds.empty
+                          // Interpret `sig2type` returning `Any` as "no bounds";
+                          // morally equivalent to TypeBounds.empty, but we're representing Java code, so use ObjectTpeJava for AnyTpe.
+                          if (tp.typeSymbol == AnyClass) TypeBounds.upper(definitions.ObjectTpeJava)
+                          else TypeBounds(tp, definitions.ObjectTpeJava)
+                        case '*' => TypeBounds.upper(definitions.ObjectTpeJava)
                       }
                       val newtparam = sym.newExistential(newTypeName("?"+i), sym.pos) setInfo bounds
                       existentials += newtparam
