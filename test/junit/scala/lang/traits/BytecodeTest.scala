@@ -25,6 +25,16 @@ class BytecodeTest extends BytecodeTesting {
   }
 
   @Test
+  def t11523(): Unit = {
+    val code =
+      """trait T[A, B] { def m[R]: T[R, B] = null }
+        |class C[X, R] extends T[X, R]
+      """.stripMargin
+    val List(c, t) = compileClasses(code)
+    assertEquals("<R$M:Ljava/lang/Object;>()LT<TR$M;TR;>;", getAsmMethod(c, "m").signature)
+  }
+
+  @Test
   def t10853(): Unit = {
     val code =
       """trait F[T1, R] { def apply(funArg: T1): R }

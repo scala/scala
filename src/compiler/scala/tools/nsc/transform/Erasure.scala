@@ -220,6 +220,9 @@ abstract class Erasure extends InfoTransform
   private final def javaSig0(sym0: Symbol, info: Type, markClassUsed: Symbol => Unit): Option[String] = {
     val builder = new java.lang.StringBuilder(64)
     val isTraitSignature = sym0.enclClass.isTrait
+    val mixinTParamsToRename = mutable.Set.empty[Symbol]
+
+    def tParamName(sym: Symbol): CharSequence = if (mixinTParamsToRename(sym)) sym.name.toString + "$M" else sym.name
 
     def superSig(cls: Symbol, parents: List[Type]): Unit = {
       def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
@@ -254,7 +257,7 @@ abstract class Erasure extends InfoTransform
       }
     }
     def paramSig(tsym: Symbol): Unit = {
-      builder.append(tsym.name)
+      builder.append(tParamName(tsym))
       boundsSig(hiBounds(tsym.info.bounds))
     }
     def polyParamSig(tparams: List[Symbol]): Unit = (
@@ -339,7 +342,7 @@ abstract class Erasure extends InfoTransform
           }
           else if (isTypeParameterInSig(sym, sym0)) {
             assert(!sym.isAliasType, "Unexpected alias type: " + sym)
-            builder.append(TVAR_TAG).append(sym.name).append(';')
+            builder.append(TVAR_TAG).append(tParamName(sym)).append(';')
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectTpe)
@@ -411,6 +414,15 @@ abstract class Erasure extends InfoTransform
     }
     val throwsArgs = sym0.annotations flatMap ThrownException.unapply
     if (needsJavaSig(sym0, info, throwsArgs)) {
+      val mixinTParams: Set[Symbol] = if (sym0.hasFlag(MIXEDIN)) info.typeParams.toSet else Set.empty
+      if (mixinTParams.nonEmpty) {
+        val mixinTParamByName = mixinTParams.map(tp => (tp.name: Name, tp)).toMap
+        info.foreach({
+          case TypeRef(_, sym, _) if !mixinTParams(sym) =>
+            mixinTParamsToRename ++= mixinTParamByName.get(sym.name)
+          case _ =>
+        })
+      }
       try {
         jsig(info, toplevel = true)
         throwsArgs.foreach { t =>
