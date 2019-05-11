@@ -486,7 +486,7 @@ trait Trees extends api.Trees {
     def isSpecific = !isWildcard
     def isRename = rename != null && rename != nme.WILDCARD && name != rename
     private def isLiteralWildcard = name == nme.WILDCARD && rename == nme.WILDCARD
-    private def sameName(name: Name, other: Name) =  (name eq other) || (name ne null) && name.start == other.start
+    private def sameName(name: Name, other: Name) =  (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
     def hasName(other: Name) = sameName(name, other)
     def introduces(target: Name) =
       if (target == nme.WILDCARD) isLiteralWildcard
