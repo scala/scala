@@ -1533,7 +1533,7 @@ trait Contexts { self: Analyzer =>
       @inline def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
         def sameName(name: Name, other: Name) = {
-          (name eq other) || (name ne null) && name.start == other.start
+          (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
         }
         if (sameName(current.rename, name))
           result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
