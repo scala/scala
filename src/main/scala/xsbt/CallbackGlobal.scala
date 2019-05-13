@@ -21,10 +21,11 @@ import java.io.File
 import scala.reflect.io.PlainFile
 
 /** Defines the interface of the incremental compiler hiding implementation details. */
-sealed abstract class CallbackGlobal(settings: Settings,
-                                     reporter: reporters.Reporter,
-                                     output: Output)
-    extends Global(settings, reporter) {
+sealed abstract class CallbackGlobal(
+    settings: Settings,
+    reporter: reporters.Reporter,
+    output: Output
+) extends Global(settings, reporter) {
 
   def callback: AnalysisCallback
   def findAssociatedFile(name: String): Option[(AbstractFile, Boolean)]

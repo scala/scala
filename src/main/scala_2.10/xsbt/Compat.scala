@@ -95,8 +95,10 @@ abstract class Compat {
 
     // Not present in 2.10
     @inline final def getterIn(base: Symbol): Symbol = sym.getter(base)
-    @inline final def setterIn(base: Symbol,
-                               hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
+    @inline final def setterIn(
+        base: Symbol,
+        hasExpandedName: Boolean = needsExpandedSetterName
+    ): Symbol =
       sym.setter(base, hasExpandedName)
 
     // copied from 2.12.1 sources

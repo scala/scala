@@ -26,10 +26,12 @@ object Command {
     } catch {
       case _: NoSuchMethodException =>
         constr(classOf[List[_]], classOf[Settings], classOf[(_) => _], classOf[Boolean])
-          .newInstance(arguments,
-                       settings,
-                       (s: String) => throw new RuntimeException(s),
-                       false.asInstanceOf[AnyRef])
+          .newInstance(
+            arguments,
+            settings,
+            (s: String) => throw new RuntimeException(s),
+            false.asInstanceOf[AnyRef]
+          )
     }
   }
 

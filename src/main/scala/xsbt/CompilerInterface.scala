@@ -19,26 +19,31 @@ import Log.debug
 import java.io.File
 
 final class CompilerInterface {
-  def newCompiler(options: Array[String],
-                  output: Output,
-                  initialLog: Logger,
-                  initialDelegate: Reporter): CachedCompiler =
+  def newCompiler(
+      options: Array[String],
+      output: Output,
+      initialLog: Logger,
+      initialDelegate: Reporter
+  ): CachedCompiler =
     new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
 
-  def run(sources: Array[File],
-          changes: DependencyChanges,
-          callback: AnalysisCallback,
-          log: Logger,
-          delegate: Reporter,
-          progress: CompileProgress,
-          cached: CachedCompiler): Unit =
+  def run(
+      sources: Array[File],
+      changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      delegate: Reporter,
+      progress: CompileProgress,
+      cached: CachedCompiler
+  ): Unit =
     cached.run(sources, changes, callback, log, delegate, progress)
 }
 
-class InterfaceCompileFailed(val arguments: Array[String],
-                             val problems: Array[Problem],
-                             override val toString: String)
-    extends xsbti.CompileFailed
+class InterfaceCompileFailed(
+    val arguments: Array[String],
+    val problems: Array[Problem],
+    override val toString: String
+) extends xsbti.CompileFailed
 
 class InterfaceCompileCancelled(val arguments: Array[String], override val toString: String)
     extends xsbti.CompileCancelled
@@ -106,15 +111,19 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   def infoOnCachedCompiler(compilerId: String): String =
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
-  def run(sources: Array[File],
-          changes: DependencyChanges,
-          callback: AnalysisCallback,
-          log: Logger,
-          delegate: Reporter,
-          progress: CompileProgress): Unit = synchronized {
+  def run(
+      sources: Array[File],
+      changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      delegate: Reporter,
+      progress: CompileProgress
+  ): Unit = synchronized {
     debug(log, infoOnCachedCompiler(hashCode().toLong.toHexString))
     val dreporter = DelegatingReporter(settings, delegate)
-    try { run(sources.toList, changes, callback, log, dreporter, progress) } finally {
+    try {
+      run(sources.toList, changes, callback, log, dreporter, progress)
+    } finally {
       dreporter.dropDelegate()
     }
   }
@@ -122,12 +131,14 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   private def prettyPrintCompilationArguments(args: Array[String]) =
     args.mkString("[zinc] The Scala compiler is invoked with:\n\t", "\n\t", "")
   private val StopInfoError = "Compiler option supplied that disabled Zinc compilation."
-  private[this] def run(sources: List[File],
-                        changes: DependencyChanges,
-                        callback: AnalysisCallback,
-                        log: Logger,
-                        underlyingReporter: DelegatingReporter,
-                        compileProgress: CompileProgress): Unit = {
+  private[this] def run(
+      sources: List[File],
+      changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      underlyingReporter: DelegatingReporter,
+      compileProgress: CompileProgress
+  ): Unit = {
 
     if (command.shouldStopWithInfo) {
       underlyingReporter.info(null, command.getInfoMessage(compiler), true)
@@ -141,8 +152,9 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       val sortedSourceFiles = sources.map(_.getAbsolutePath).sortWith(_ < _)
       run.compile(sortedSourceFiles)
       processUnreportedWarnings(run)
-      underlyingReporter.problems.foreach(p =>
-        callback.problem(p.category, p.position, p.message, p.severity, true))
+      underlyingReporter.problems.foreach(
+        p => callback.problem(p.category, p.position, p.message, p.severity, true)
+      )
     }
 
     underlyingReporter.printSummary()
@@ -169,8 +181,10 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 
   def processUnreportedWarnings(run: compiler.Run): Unit = {
     // allConditionalWarnings and the ConditionalWarning class are only in 2.10+
-    final class CondWarnCompat(val what: String,
-                               val warnings: mutable.ListBuffer[(compiler.Position, String)])
+    final class CondWarnCompat(
+        val what: String,
+        val warnings: mutable.ListBuffer[(compiler.Position, String)]
+    )
     implicit def compat(run: AnyRef): Compat = new Compat
     final class Compat { def allConditionalWarnings = List[CondWarnCompat]() }
 

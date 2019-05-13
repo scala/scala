@@ -22,20 +22,21 @@ private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
     new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
 
-  class PositionImpl(sourcePath0: Option[String],
-                     sourceFile0: Option[File],
-                     line0: Option[Int],
-                     lineContent0: String,
-                     offset0: Option[Int],
-                     pointer0: Option[Int],
-                     pointerSpace0: Option[String],
-                     startOffset0: Option[Int],
-                     endOffset0: Option[Int],
-                     startLine0: Option[Int],
-                     startColumn0: Option[Int],
-                     endLine0: Option[Int],
-                     endColumn0: Option[Int])
-      extends xsbti.Position {
+  class PositionImpl(
+      sourcePath0: Option[String],
+      sourceFile0: Option[File],
+      line0: Option[Int],
+      lineContent0: String,
+      offset0: Option[Int],
+      pointer0: Option[Int],
+      pointerSpace0: Option[String],
+      startOffset0: Option[Int],
+      endOffset0: Option[Int],
+      startLine0: Option[Int],
+      startColumn0: Option[Int],
+      endLine0: Option[Int],
+      endColumn0: Option[Int]
+  ) extends xsbti.Position {
     val line = o2oi(line0)
     val lineContent = lineContent0
     val offset = o2oi(offset0)

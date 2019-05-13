@@ -110,7 +110,8 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
      * run) or from class file and calls respective callback method.
      */
     def processDependency(context: DependencyContext, allowLocal: Boolean)(
-        dep: ClassDependency): Unit = {
+        dep: ClassDependency
+    ): Unit = {
       val fromClassName = classNameAsString(dep.from)
 
       def binaryDependency(file: File, binaryClassName: String) =
@@ -406,7 +407,8 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
         debuglog(
           "Parent types for " + tree.symbol + " (self: " + self.tpt.tpe + "): " + inheritanceTypes + " with symbols " + inheritanceSymbols
-            .map(_.fullName))
+            .map(_.fullName)
+        )
 
         inheritanceSymbols.foreach { symbol =>
           addInheritanceDependency(symbol)
