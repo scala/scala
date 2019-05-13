@@ -17,6 +17,7 @@ import symtab._
 import Flags._
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.NameTransformer
 
 
 abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
@@ -192,9 +193,35 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
       // Optimize: no need if mixinClass has no typeparams.
       // !!! JZ Really? What about the effect of abstract types, prefix?
       if (mixinClass.typeParams.isEmpty) sym
-      else sym modifyInfo (_ => forwarderInfo)
+      else {
+        sym modifyInfo (_ => forwarderInfo)
+        avoidTypeParamShadowing(mixinMember, sym)
+        sym
+      }
     }
     newSym
+  }
+
+  // scala/bug#11523 rename method type parameters that shadow enclosing class type parameters in the host class
+  // of the mixin forwarder
+  private def avoidTypeParamShadowing(mixinMember: Symbol, forwarder: Symbol): Unit = {
+    def isForwarderTparam(sym: Symbol) = {
+      val owner = sym.owner
+      // TODO fix forwarder's info should not refer to tparams of mixinMember, fix cloning in caller!
+      //      try forwarderInfo.cloneInfo(sym)
+      owner == forwarder || owner == mixinMember
+    }
+
+    val symTparams: mutable.Map[Name, Symbol] = mutable.Map.from(forwarder.typeParams.iterator.map(t => (t.name, t)))
+    forwarder.info.foreach {
+      case TypeRef(_, tparam, _) if tparam.isTypeParameter && !isForwarderTparam(tparam) =>
+        symTparams.get(tparam.name).foreach{ symTparam =>
+          debuglog(s"Renaming ${symTparam} (owned by ${symTparam.owner}, a mixin forwarder hosted in ${forwarder.enclClass.fullNameString}) to avoid shadowing enclosing type parameter of ${tparam.owner.fullNameString})")
+          symTparam.name = symTparam.name.append(NameTransformer.NAME_JOIN_STRING)
+          symTparams.remove(tparam.name) // only rename once
+        }
+      case _ =>
+    }
   }
 
   def publicizeTraitMethods(clazz: Symbol): Unit = {
