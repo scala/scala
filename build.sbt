@@ -548,7 +548,6 @@ lazy val partest = configureAsSubproject(project)
 
 lazy val scalacheckLib = project.in(file("src") / "scalacheck")
   .dependsOn(library)
-  .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(skip in publish := true)
@@ -560,7 +559,6 @@ lazy val scalacheckLib = project.in(file("src") / "scalacheck")
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
 lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
-  .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(skip in publish := true)
@@ -609,22 +607,26 @@ lazy val bench = project.in(file("test") / "benchmarks")
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
-lazy val testkit = project.in(file("src") / "testkit")
+lazy val testkit = configureAsSubproject(project)
   .dependsOn(library)
-  .settings(clearSourceAndResourceDirectories)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.testkit"))
   .settings(
+    name := "scala-testkit",
+    description := "Scala Compiler Testkit",
     scalacOptions += "-feature",
     libraryDependencies ++= Seq(junitDep, asmDep),
     unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+    fixPom(
+      "/project/name" -> <name>Scala Testkit</name>,
+      "/project/description" -> <description>Scala Compiler Testing Tool</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    )
   )
 
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
-  .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
   .settings(disableDocs)
@@ -644,7 +646,6 @@ lazy val junit = project.in(file("test") / "junit")
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc, scalacheckLib)
-  .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(skip in publish := true)
@@ -675,7 +676,6 @@ lazy val osgiTestEclipse = osgiTestProject(
 
 def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
-  .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(skip in publish := true)
@@ -956,7 +956,7 @@ lazy val root: Project = (project in file("."))
     setIncOptions
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, partest, junit, scalaDist).settings(
+    scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
@@ -1137,6 +1137,7 @@ intellij := {
       moduleDeps(junit).value,
       moduleDeps(library).value,
       moduleDeps(manual).value,
+      moduleDeps(testkit).value,
       moduleDeps(partest).value,
       moduleDeps(partestJavaAgent).value,
       moduleDeps(reflect).value,
