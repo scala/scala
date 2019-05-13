@@ -349,8 +349,8 @@ trait Object extends MemberTemplateEntity {
 }
 
 /** An annotation template. Any class which extends `scala.annotation.Annotation` */
-trait AnnotationClass extends MemberTemplateEntity {
-  def kind = "annotation"
+trait AnnotationClass extends Class {
+  override def kind = "annotation"
 }
 
 /** A package template. A package is in the universe if it is declared as a package object, or if it
